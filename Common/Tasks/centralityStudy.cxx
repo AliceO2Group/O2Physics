@@ -203,12 +203,13 @@ struct centralityStudy {
     }
 
     if (doprocessCollisionsWithCentrality) {
-      // in case requested: do vs centrality debugging
+      // in case requested: do vs centrality debugging of key quantities
       histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
       histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNGlobalTracksVsCentrality", "hNGlobalTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
+      histos.add("hNGlobalTracksEtaHalfVsCentrality", "hNGlobalTracksEtaHalfVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNMFTTracksVsCentrality", "hNMFTTracksVsCentrality", kTH2F, {axisCentrality, axisMultMFTTracks});
       histos.add("hPVChi2VsCentrality", "hPVChi2VsCentrality", kTH2F, {axisCentrality, axisPVChi2});
       histos.add("hDeltaTimeVsCentrality", "hDeltaTimeVsCentrality", kTH2F, {axisCentrality, axisDeltaTime});
@@ -386,6 +387,7 @@ struct centralityStudy {
       histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSTPC());
       histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
       histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+      histos.fill(HIST("hNGlobalTracksEtaHalfVsCentrality"), collision.centFT0C(), collision.multNGlobalTracksPVetaHalf());
       histos.fill(HIST("hNMFTTracksVsCentrality"), collision.centFT0C(), collision.mftNtracks());
       histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C(), collision.multPVChi2());
 
