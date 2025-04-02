@@ -187,9 +187,6 @@ struct FlowGfwOmegaXi {
   int nMultBins = 0;
   TAxis* fMultAxis = nullptr;
 
-  int nPhiBins = 60;
-  TAxis* fPhiAxis = new TAxis(nPhiBins, 0, constants::math::TwoPI);
-
   TAxis* fOmegaMass = nullptr;
 
   TAxis* fXiMass = nullptr;
@@ -211,6 +208,7 @@ struct FlowGfwOmegaXi {
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+    registry.add("hCentvsNch", "", {HistType::kTH2D, {{90, 0, 90}, {3000, 0.5, 3000.5}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOIXi", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
@@ -228,18 +226,32 @@ struct FlowGfwOmegaXi {
     registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(4, "Omega");
 
     // QA
-    registry.add("hqaV0radiusbefore", "", {HistType::kTH1D, {{200, 0, 200}}});
-    registry.add("hqaV0radiusafter", "", {HistType::kTH1D, {{200, 0, 200}}});
-    registry.add("hqaV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
-    registry.add("hqaV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
-    registry.add("hqadcaV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
-    registry.add("hqadcaV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
-    registry.add("hqaarm_podobefore", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
-    registry.add("hqaarm_podoafter", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
-    registry.add("hqadcapostoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
-    registry.add("hqadcapostoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
-    registry.add("hqadcanegtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
-    registry.add("hqadcanegtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    // V0 QA
+    registry.add("QAhisto/V0/hqaV0radiusbefore", "", {HistType::kTH1D, {{200, 0, 200}}});
+    registry.add("QAhisto/V0/hqaV0radiusafter", "", {HistType::kTH1D, {{200, 0, 200}}});
+    registry.add("QAhisto/V0/hqaV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/V0/hqaV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/V0/hqadcaV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/V0/hqadcaV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/V0/hqaarm_podobefore", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
+    registry.add("QAhisto/V0/hqaarm_podoafter", "", {HistType::kTH2D, {{100, -1, 1}, {50, 0, 0.3}}});
+    registry.add("QAhisto/V0/hqadcapostoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcapostoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcanegtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/V0/hqadcanegtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    // Cascade QA
+    registry.add("QAhisto/Casc/hqaCasccosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCasccosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCascV0cosPAbefore", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqaCascV0cosPAafter", "", {HistType::kTH1D, {{1000, 0.95, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0toPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0toPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascBachtoPVbefore", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascBachtoPVafter", "", {HistType::kTH1D, {{1000, -10, 10}}});
+    registry.add("QAhisto/Casc/hqadcaCascdaubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascdauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0daubefore", "", {HistType::kTH1D, {{100, 0, 1}}});
+    registry.add("QAhisto/Casc/hqadcaCascV0dauafter", "", {HistType::kTH1D, {{100, 0, 1}}});
 
     // cumulant of flow
     registry.add("c22", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
@@ -706,6 +718,8 @@ struct FlowGfwOmegaXi {
       if (cfgOutputNUAWeights)
         fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
     }
+    double nch = hLocalDensity->Integral() / 2;
+    registry.fill(HIST("hCentvsNch"), cent, nch);
     // fill GFW of V0 flow
     for (const auto& v0 : V0s) {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
@@ -714,25 +728,25 @@ struct FlowGfwOmegaXi {
       bool isK0s = false;
       bool isLambda = false;
       // fill QA
-      registry.fill(HIST("hqaarm_podobefore"), v0.alpha(), v0.qtarm());
+      registry.fill(HIST("QAhisto/V0/hqaarm_podobefore"), v0.alpha(), v0.qtarm());
       // check daughter TPC and TOF
       // K0short
-      if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
+      if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0])) &&
           (!cfgcheckDauTOF || ((std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < 0.4) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgNSigma[3] || v0negdau.pt() < 0.4)))) {
         registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
         isK0s = true;
         candNumAll[0] = candNumAll[0] + 1;
-        registry.fill(HIST("hqaarm_podoafter"), v0.alpha(), v0.qtarm());
+        registry.fill(HIST("QAhisto/V0/hqaarm_podoafter"), v0.alpha(), v0.qtarm());
       }
       // Lambda and antiLambda
-      if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+      if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
           (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0])) &&
           (!cfgcheckDauTOF || ((std::fabs(v0posdau.tofNSigmaPr()) < cfgNSigma[4] || v0posdau.pt() < 0.4) && (std::fabs(v0negdau.tofNSigmaPi()) < cfgNSigma[3] || v0negdau.pt() < 0.4)))) {
         registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         isLambda = true;
         candNumAll[1] = candNumAll[1] + 1;
-      } else if (std::fabs(v0.y()) < 0.5 && std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+      } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
                  (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0])) &&
                  (!cfgcheckDauTOF || ((std::fabs(v0negdau.tofNSigmaPr()) < cfgNSigma[4] || v0negdau.pt() < 0.4) && (std::fabs(v0posdau.tofNSigmaPi()) < cfgNSigma[3] || v0posdau.pt() < 0.4)))) {
         registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
@@ -740,12 +754,13 @@ struct FlowGfwOmegaXi {
         candNumAll[1] = candNumAll[1] + 1;
       }
       // fill QA before cut
-      registry.fill(HIST("hqaV0radiusbefore"), v0.v0radius());
-      registry.fill(HIST("hqaV0cosPAbefore"), v0.v0cosPA());
-      registry.fill(HIST("hqadcaV0daubefore"), v0.dcaV0daughters());
-      registry.fill(HIST("hqadcapostoPVbefore"), v0.dcapostopv());
-      registry.fill(HIST("hqadcanegtoPVbefore"), v0.dcanegtopv());
-
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusbefore"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAbefore"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0daubefore"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVbefore"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVbefore"), v0.dcanegtopv());
+      if (!isK0s && !isLambda)
+        continue;
       // track quality check
       if (v0posdau.tpcNClsFound() < cfgtpcclusters)
         continue;
@@ -773,11 +788,11 @@ struct FlowGfwOmegaXi {
       if (std::fabs(v0.dcanegtopv()) < cfgv0_dcadautopv)
         continue;
       // fill QA after cut
-      registry.fill(HIST("hqaV0radiusafter"), v0.v0radius());
-      registry.fill(HIST("hqaV0cosPAafter"), v0.v0cosPA());
-      registry.fill(HIST("hqadcaV0dauafter"), v0.dcaV0daughters());
-      registry.fill(HIST("hqadcapostoPVafter"), v0.dcapostopv());
-      registry.fill(HIST("hqadcanegtoPVafter"), v0.dcanegtopv());
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusafter"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAafter"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0dauafter"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVafter"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVafter"), v0.dcanegtopv());
       if (isK0s) {
         setCurrentParticleWeights(weff, wacc, v0, vtxz, 1);
         int phibin = -999;
@@ -850,6 +865,15 @@ struct FlowGfwOmegaXi {
         isXi = true;
         candNumAll[2] = candNumAll[2] + 1;
       }
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVbefore"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdaubefore"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0daubefore"), casc.dcaV0daughters());
+      if (!isXi && !isOmega)
+        continue;
       // topological cut
       if (casc.cascradius() < cfgcasc_radius)
         continue;
@@ -880,6 +904,13 @@ struct FlowGfwOmegaXi {
         continue;
       if (negdau.itsNCls() < cfgitsclusters)
         continue;
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVafter"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdauafter"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0dauafter"), casc.dcaV0daughters());
       if (isOmega) {
         setCurrentParticleWeights(weff, wacc, casc, vtxz, 4);
         int phibin = -999;
