@@ -501,7 +501,7 @@ struct he3hadronfemto {
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
   bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, he3HadCandidate& he3Hadcand, const Ttracks& /*trackTable*/, bool isMixedEvent)
-  { 
+  {
     if (!isMixedEvent) {
       auto trackCovHe3 = getTrackParCov(trackHe3);
       auto trackCovHad = getTrackParCov(trackHad);
@@ -566,7 +566,7 @@ struct he3hadronfemto {
 
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
-    
+
     gpu::gpustd::array<float, 2> dcaInfo;
     if (setting_enableDCAfitter) {
       auto trackCovHe3 = getTrackParCov(trackHe3);
