@@ -200,14 +200,14 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // A) Process only reconstructed data:
-  void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks, aod::FT0s const&)
+  void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks)
   {
     // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.
 
     // *) Steer all analysis steps:
     Steer<eRec>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", false); // yes, keep always one process switch "true", so that I have default running version
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
@@ -295,7 +295,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // K) Process data with more than necessary subscriptions to the tables, only for QA purposes:
-  //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables, only for QA purposes.
+  //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables (e.g. detector specific), only for QA purposes.
   //    Remark 2: Ideally, i use the same workflow for "processRec" and "processQA", but most likely at some point I will have to establish separate workflow for "processQA"
   void processQA(Collision_QA const& collision, BCs_QA const& bcs, TracksRec_QA const& tracks, aod::FT0s const&)
   {
@@ -303,7 +303,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     // *) FT0s => bc.foundFT0().sumAmpC(), etc.
     Steer<eQA>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", true);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", false);
 
 }; // struct MultiparticleCorrelationsAB
 
