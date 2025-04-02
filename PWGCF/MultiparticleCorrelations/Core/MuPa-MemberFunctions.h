@@ -235,9 +235,9 @@ void DefaultConfiguration()
   eh.fEventHistogramsName[eMultiplicity] = "Multiplicity";
   eh.fEventHistogramsName[eReferenceMultiplicity] = "ReferenceMultiplicity";
   eh.fEventHistogramsName[eCentrality] = "Centrality";
-  eh.fEventHistogramsName[eVertex_x] = "Vertex_x";
-  eh.fEventHistogramsName[eVertex_y] = "Vertex_y";
-  eh.fEventHistogramsName[eVertex_z] = "Vertex_z";
+  eh.fEventHistogramsName[eVertexX] = "VertexX";
+  eh.fEventHistogramsName[eVertexY] = "VertexY";
+  eh.fEventHistogramsName[eVertexZ] = "VertexZ";
   eh.fEventHistogramsName[eNContributors] = "NContributors";
   eh.fEventHistogramsName[eImpactParameter] = "ImpactParameter";
   eh.fEventHistogramsName[eEventPlaneAngle] = "EventPlaneAngle";
@@ -263,9 +263,9 @@ void DefaultConfiguration()
   ec.fEventCutName[eMultiplicity] = "Multiplicity";
   ec.fEventCutName[eReferenceMultiplicity] = "ReferenceMultiplicity";
   ec.fEventCutName[eCentrality] = "Centrality";
-  ec.fEventCutName[eVertex_x] = "Vertex_x";
-  ec.fEventCutName[eVertex_y] = "Vertex_y";
-  ec.fEventCutName[eVertex_z] = "Vertex_z";
+  ec.fEventCutName[eVertexX] = "VertexX";
+  ec.fEventCutName[eVertexY] = "VertexY";
+  ec.fEventCutName[eVertexZ] = "VertexZ";
   ec.fEventCutName[eNContributors] = "NContributors";
   ec.fEventCutName[eImpactParameter] = "ImpactParameter";
   ec.fEventCutName[eEventPlaneAngle] = "EventPlaneAngle";
@@ -298,8 +298,8 @@ void DefaultConfiguration()
   ec.fEventCutName[eNoPileupTPC] = "NoPileupTPC";
   ec.fEventCutName[eNoPileupFromSPD] = "NoPileupFromSPD";
   ec.fEventCutName[eNoSPDOnVsOfPileup] = "NoSPDOnVsOfPileup";
-  ec.fEventCutName[eRefMult_vs_NContr_Up] = "RefMult_vs_NContr_Up";
-  ec.fEventCutName[eRefMult_vs_NContr_Low] = "RefMult_vs_NContr_Low";
+  ec.fEventCutName[eRefMultVsNContrUp] = "RefMultVsNContrUp";
+  ec.fEventCutName[eRefMultVsNContrLow] = "RefMultVsNContrLow";
   ec.fEventCutName[eCentralityCorrelationsCut] = "CentralityCorrelationsCut";
   ec.fEventCutName[eCentralityWeights] = "CentralityWeights";
   for (int t = 0; t < eEventCuts_N; t++) {
@@ -438,8 +438,8 @@ void DefaultConfiguration()
       pw.fUseDiffPhiWeights[wPhiChargeAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
     } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wCentrality")) {
       pw.fUseDiffPhiWeights[wPhiCentralityAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
-    } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wVertex_z")) {
-      pw.fUseDiffPhiWeights[wPhiVertex_zAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
+    } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wVertexZ") || TString(lWhichDiffPhiWeights[dpw]).Contains("wVertex_z")) { // TBI 20250402 I keep "wVertex_z" here just in case I still have somewhere dependency on it, remove eventually
+      pw.fUseDiffPhiWeights[wPhiVertexZAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d : The setting %s in configurable cfWhichDiffPhiWeights is not supported yet. See enum eDiffPhiWeights . \n \033[0m", __FUNCTION__, __LINE__, TString(lWhichDiffPhiWeights[dpw]).Data());
     }
@@ -624,24 +624,24 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eMultiplicity_vs_ReferenceMultiplicity] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eReferenceMultiplicity].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eMultiplicity_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eNContributors_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eNContributors_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eOccupancy].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
-  qa.fEventHistogramsName2D[eCentrality_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eCentrality_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eOccupancy].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_ImpactParameter] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eImpactParameter].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
-  qa.fEventHistogramsName2D[eVertex_z_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertex_z].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-  qa.fEventHistogramsName2D[eVertex_z_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertex_z].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
+  qa.fEventHistogramsName2D[eVertexZ_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertexZ].Data(), eh.fEventHistogramsName[eOccupancy].Data());
+  qa.fEventHistogramsName2D[eVertexZ_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertexZ].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), "FT0CAmplitudeOnFoundBC"); // TBI 20250331 hardwired string
   qa.fEventHistogramsName2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), "FT0CAmplitudeOnFoundBC");     // TBI 20250331 hardwired string
   qa.fEventHistogramsName2D[eMultNTracksPV_vs_MultNTracksGlobal] = Form("%s_vs_%s", qa.fReferenceMultiplicityEstimatorName[eMultNTracksPV].Data(), qa.fReferenceMultiplicityEstimatorName[eMultNTracksGlobal].Data());
@@ -894,9 +894,9 @@ void DefaultBooking()
   eh.fBookEventHistograms[eMultiplicity] = Alright(lBookEventHistograms[eMultiplicity]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eReferenceMultiplicity] = Alright(lBookEventHistograms[eReferenceMultiplicity]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eCentrality] = Alright(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_x] = Alright(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_y] = Alright(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_z] = Alright(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexX] = Alright(lBookEventHistograms[eVertexX]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexY] = Alright(lBookEventHistograms[eVertexY]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexZ] = Alright(lBookEventHistograms[eVertexZ]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eNContributors] = Alright(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eImpactParameter] = Alright(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eEventPlaneAngle] = Alright(lBookEventHistograms[eEventPlaneAngle]) && eh.fFillEventHistograms;
@@ -1037,24 +1037,24 @@ void DefaultBooking()
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eMultiplicity_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eNContributors_vs_Centrality] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eNContributors_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eNContributors_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eNContributors_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eNContributors_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eNContributors_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eNContributors_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentrality_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eCentrality_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eCentrality_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentrality_vs_ImpactParameter] = Alright(lBookQAEventHistograms2D[eCentrality_vs_ImpactParameter]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentrality_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eCentrality_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eVertex_z_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertex_z_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eVertex_z_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eVertex_z_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eVertexZ_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertexZ_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eVertexZ_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eVertexZ_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal] = Alright(lBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal]) && qa.fFillQAEventHistograms2D;
@@ -1261,9 +1261,9 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eTotalMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eTotalMultiplicity][2] = 100000.;
 
-  eh.fEventHistogramsBins[eMultiplicity][0] = 2000.;
+  eh.fEventHistogramsBins[eMultiplicity][0] = 500.;
   eh.fEventHistogramsBins[eMultiplicity][1] = 0.;
-  eh.fEventHistogramsBins[eMultiplicity][2] = 20000.;
+  eh.fEventHistogramsBins[eMultiplicity][2] = 5000.;
 
   eh.fEventHistogramsBins[eReferenceMultiplicity][0] = 700.; // bin width is 100
   eh.fEventHistogramsBins[eReferenceMultiplicity][1] = 0.;
@@ -1273,17 +1273,17 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eCentrality][1] = 0.;
   eh.fEventHistogramsBins[eCentrality][2] = 110.;
 
-  eh.fEventHistogramsBins[eVertex_x][0] = 1600;
-  eh.fEventHistogramsBins[eVertex_x][1] = -0.8;
-  eh.fEventHistogramsBins[eVertex_x][2] = 0.8;
+  eh.fEventHistogramsBins[eVertexX][0] = 1600;
+  eh.fEventHistogramsBins[eVertexX][1] = -0.8;
+  eh.fEventHistogramsBins[eVertexX][2] = 0.8;
 
-  eh.fEventHistogramsBins[eVertex_y][0] = 1600;
-  eh.fEventHistogramsBins[eVertex_y][1] = -0.8;
-  eh.fEventHistogramsBins[eVertex_y][2] = 0.8;
+  eh.fEventHistogramsBins[eVertexY][0] = 1600;
+  eh.fEventHistogramsBins[eVertexY][1] = -0.8;
+  eh.fEventHistogramsBins[eVertexY][2] = 0.8;
 
-  eh.fEventHistogramsBins[eVertex_z][0] = 800;
-  eh.fEventHistogramsBins[eVertex_z][1] = -40.;
-  eh.fEventHistogramsBins[eVertex_z][2] = 40.;
+  eh.fEventHistogramsBins[eVertexZ][0] = 800;
+  eh.fEventHistogramsBins[eVertexZ][1] = -40.;
+  eh.fEventHistogramsBins[eVertexZ][2] = 40.;
 
   eh.fEventHistogramsBins[eNContributors][0] = 600.; // bin width is 20
   eh.fEventHistogramsBins[eNContributors][1] = 0.;
@@ -1685,9 +1685,9 @@ void DefaultCuts()
   ec.fUseEventCuts[eMultiplicity] = Alright(lUseEventCuts[eMultiplicity]);
   ec.fUseEventCuts[eReferenceMultiplicity] = Alright(lUseEventCuts[eReferenceMultiplicity]);
   ec.fUseEventCuts[eCentrality] = Alright(lUseEventCuts[eCentrality]);
-  ec.fUseEventCuts[eVertex_x] = Alright(lUseEventCuts[eVertex_x]);
-  ec.fUseEventCuts[eVertex_y] = Alright(lUseEventCuts[eVertex_y]);
-  ec.fUseEventCuts[eVertex_z] = Alright(lUseEventCuts[eVertex_z]);
+  ec.fUseEventCuts[eVertexX] = Alright(lUseEventCuts[eVertexX]);
+  ec.fUseEventCuts[eVertexY] = Alright(lUseEventCuts[eVertexY]);
+  ec.fUseEventCuts[eVertexZ] = Alright(lUseEventCuts[eVertexZ]);
   ec.fUseEventCuts[eNContributors] = Alright(lUseEventCuts[eNContributors]);
   ec.fUseEventCuts[eImpactParameter] = Alright(lUseEventCuts[eImpactParameter]);
   ec.fUseEventCuts[eEventPlaneAngle] = Alright(lUseEventCuts[eEventPlaneAngle]);
@@ -1722,8 +1722,8 @@ void DefaultCuts()
   ec.fUseEventCuts[eNoPileupTPC] = Alright(lUseEventCuts[eNoPileupTPC]);
   ec.fUseEventCuts[eNoPileupFromSPD] = Alright(lUseEventCuts[eNoPileupFromSPD]);
   ec.fUseEventCuts[eNoSPDOnVsOfPileup] = Alright(lUseEventCuts[eNoSPDOnVsOfPileup]);
-  ec.fUseEventCuts[eRefMult_vs_NContr_Up] = Alright(lUseEventCuts[eRefMult_vs_NContr_Up]);
-  ec.fUseEventCuts[eRefMult_vs_NContr_Low] = Alright(lUseEventCuts[eRefMult_vs_NContr_Low]);
+  ec.fUseEventCuts[eRefMultVsNContrUp] = Alright(lUseEventCuts[eRefMultVsNContrUp]);
+  ec.fUseEventCuts[eRefMultVsNContrLow] = Alright(lUseEventCuts[eRefMultVsNContrLow]);
   ec.fUseEventCuts[eCentralityCorrelationsCut] = Alright(lUseEventCuts[eCentralityCorrelationsCut]);
   ec.fUseEventCuts[eCentralityWeights] = Alright(lUseEventCuts[eCentralityWeights]);
 
@@ -1775,17 +1775,17 @@ void DefaultCuts()
   ec.fdEventCuts[eCentrality][eMin] = lCentrality[eMin];
   ec.fdEventCuts[eCentrality][eMax] = lCentrality[eMax];
 
-  auto lVertex_x = (std::vector<float>)cf_ec.cfVertex_x;
-  ec.fdEventCuts[eVertex_x][eMin] = lVertex_x[eMin];
-  ec.fdEventCuts[eVertex_x][eMax] = lVertex_x[eMax];
+  auto lVertexX = (std::vector<float>)cf_ec.cfVertexX;
+  ec.fdEventCuts[eVertexX][eMin] = lVertexX[eMin];
+  ec.fdEventCuts[eVertexX][eMax] = lVertexX[eMax];
 
-  auto lVertex_y = (std::vector<float>)cf_ec.cfVertex_y;
-  ec.fdEventCuts[eVertex_y][eMin] = lVertex_y[eMin];
-  ec.fdEventCuts[eVertex_y][eMax] = lVertex_y[eMax];
+  auto lVertexY = (std::vector<float>)cf_ec.cfVertexY;
+  ec.fdEventCuts[eVertexY][eMin] = lVertexY[eMin];
+  ec.fdEventCuts[eVertexY][eMax] = lVertexY[eMax];
 
-  auto lVertex_z = (std::vector<float>)cf_ec.cfVertex_z;
-  ec.fdEventCuts[eVertex_z][eMin] = lVertex_z[eMin];
-  ec.fdEventCuts[eVertex_z][eMax] = lVertex_z[eMax];
+  auto lVertexZ = (std::vector<float>)cf_ec.cfVertexZ;
+  ec.fdEventCuts[eVertexZ][eMin] = lVertexZ[eMin];
+  ec.fdEventCuts[eVertexZ][eMax] = lVertexZ[eMax];
 
   auto lNContributors = (std::vector<int>)cf_ec.cfNContributors;
   ec.fdEventCuts[eNContributors][eMin] = lNContributors[eMin];
@@ -1828,8 +1828,8 @@ void DefaultCuts()
   ec.fsEventCuts[eCentralityEstimator] = cf_ec.cfCentralityEstimator;
   ec.fsEventCuts[eTrigger] = cf_ec.cfTrigger;
   ec.fsEventCuts[eOccupancyEstimator] = cf_ec.cfOccupancyEstimator;
-  ec.fsEventCuts[eRefMult_vs_NContr_Up] = cf_ec.cfRefMult_vs_NContr_Up;
-  ec.fsEventCuts[eRefMult_vs_NContr_Low] = cf_ec.cfRefMult_vs_NContr_Low;
+  ec.fsEventCuts[eRefMultVsNContrUp] = cf_ec.cfRefMultVsNContrUp;
+  ec.fsEventCuts[eRefMultVsNContrLow] = cf_ec.cfRefMultVsNContrLow;
   ec.fsEventCuts[eCentralityCorrelationsCut] = cf_ec.cfCentralityCorrelationsCut;
 
   // **) additional info for some specific event cuts, which I didn't enumerate in enum eEventCuts, to trim down bookeeping:
@@ -2044,11 +2044,11 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
       ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
 
-      ec.fUseEventCuts[eRefMult_vs_NContr_Up] = true;
-      ec.fUseEventCuts[eRefMult_vs_NContr_Low] = true;
+      ec.fUseEventCuts[eRefMultVsNContrUp] = true;
+      ec.fUseEventCuts[eRefMultVsNContrLow] = true;
       if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFT0C")) {
-        ec.fsEventCuts[eRefMult_vs_NContr_Up] = "1200. + 0.20*x";  // TBI 20250401 not fine-tune, just an example
-        ec.fsEventCuts[eRefMult_vs_NContr_Low] = "-650. + 0.08*x"; // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrUp] = "1200. + 0.20*x";  // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrLow] = "-650. + 0.08*x"; // TBI 20250401 not fine-tune, just an example
         // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
       }
 
@@ -2127,11 +2127,11 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
       ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
 
-      ec.fUseEventCuts[eRefMult_vs_NContr_Up] = false;  // TBI 20250331 set to true only when I fine-tune
-      ec.fUseEventCuts[eRefMult_vs_NContr_Low] = false; // TBI 20250331 set to true only when I fine-tune
+      ec.fUseEventCuts[eRefMultVsNContrUp] = false;  // TBI 20250331 set to true only when I fine-tune
+      ec.fUseEventCuts[eRefMultVsNContrLow] = false; // TBI 20250331 set to true only when I fine-tune
       if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFT0C")) {
-        ec.fsEventCuts[eRefMult_vs_NContr_Up] = "...";  // TBI 20250329 I need to tune and validate for this dataset, and estimator
-        ec.fsEventCuts[eRefMult_vs_NContr_Low] = "..."; // TBI 20250329 I need to tune and validate for this dataset, and estimator
+        ec.fsEventCuts[eRefMultVsNContrUp] = "...";  // TBI 20250329 I need to tune and validate for this dataset, and estimator
+        ec.fsEventCuts[eRefMultVsNContrLow] = "..."; // TBI 20250329 I need to tune and validate for this dataset, and estimator
         // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
       }
 
@@ -2214,11 +2214,11 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fsEventCuts[eReferenceMultiplicityEstimator] = "MultTracklets"; // default ref. mult. estimator in Run 2
       ec.fsEventCuts[eCentralityEstimator] = "CentRun2V0M";              // default centrality estimator in Run 2
 
-      ec.fUseEventCuts[eRefMult_vs_NContr_Up] = true;
-      ec.fUseEventCuts[eRefMult_vs_NContr_Low] = true;
+      ec.fUseEventCuts[eRefMultVsNContrUp] = true;
+      ec.fUseEventCuts[eRefMultVsNContrLow] = true;
       if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultTracklets")) {
-        ec.fsEventCuts[eRefMult_vs_NContr_Up] = "700. + 0.95*x";  // TBI 20250401 not fine-tune, just an example
-        ec.fsEventCuts[eRefMult_vs_NContr_Low] = "-400. + 0.5*x"; // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrUp] = "700. + 0.95*x";  // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrLow] = "-400. + 0.5*x"; // TBI 20250401 not fine-tune, just an example
         // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
       }
 
@@ -2262,8 +2262,8 @@ void SpecificCuts(TString whichSpecificCuts)
       qa.fBookQAEventHistograms2D[eNContributors_vs_InteractionRate] = false;
       qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = false;
       qa.fBookQAEventHistograms2D[eCentrality_vs_InteractionRate] = false;
-      qa.fBookQAEventHistograms2D[eVertex_z_vs_Occupancy] = false;
-      qa.fBookQAEventHistograms2D[eVertex_z_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eVertexZ_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eVertexZ_vs_InteractionRate] = false;
       qa.fBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = false;
       qa.fBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = false;
       qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1] = false;
@@ -3235,15 +3235,15 @@ void BookQAHistograms()
   max_y_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "Multiplicity_vs_Vertex_z":
-  nBins_x_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
-  min_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][1];
-  max_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][2];
-  title_x_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "Multiplicity_vs_VertexZ":
+  nBins_x_Event[eMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  min_x_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_x_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_x_Event[eMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+  nBins_y_Event[eMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "Multiplicity_vs_Occupancy":
   nBins_x_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
@@ -3285,15 +3285,15 @@ void BookQAHistograms()
   max_y_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eReferenceMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "ReferenceMultiplicity_vs_Vertex_z":
-  nBins_x_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
-  min_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
-  max_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
-  title_x_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "ReferenceMultiplicity_vs_VertexZ":
+  nBins_x_Event[eReferenceMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  min_x_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
+  max_x_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
+  title_x_Event[eReferenceMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
+  nBins_y_Event[eReferenceMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eReferenceMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "ReferenceMultiplicity_vs_Occupancy":
   nBins_x_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
@@ -3325,15 +3325,15 @@ void BookQAHistograms()
   max_y_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eNContributors_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "NContributors_vs_Vertex_z":
-  nBins_x_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
-  min_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][1];
-  max_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][2];
-  title_x_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
-  nBins_y_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "NContributors_vs_VertexZ":
+  nBins_x_Event[eNContributors_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
+  min_x_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eNContributors][1];
+  max_x_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eNContributors][2];
+  title_x_Event[eNContributors_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
+  nBins_y_Event[eNContributors_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eNContributors_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "NContributors_vs_Occupancy":
   nBins_x_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
@@ -3355,15 +3355,15 @@ void BookQAHistograms()
   max_y_Event[eNContributors_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
   title_y_Event[eNContributors_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
 
-  // *) "Centrality_vs_Vertex_z":
-  nBins_x_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
-  min_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][1];
-  max_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][2];
-  title_x_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
-  nBins_y_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "Centrality_vs_VertexZ":
+  nBins_x_Event[eCentrality_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
+  min_x_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eCentrality][1];
+  max_x_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eCentrality][2];
+  title_x_Event[eCentrality_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+  nBins_y_Event[eCentrality_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eCentrality_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "Centrality_vs_Occupancy":
   nBins_x_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
@@ -3395,25 +3395,25 @@ void BookQAHistograms()
   max_y_Event[eCentrality_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
   title_y_Event[eCentrality_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
 
-  // *) "Vertex_z_vs_Occupancy":
-  nBins_x_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_x_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
-  nBins_y_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
-  min_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
-  max_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
-  title_y_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
+  // *) "VertexZ_vs_Occupancy":
+  nBins_x_Event[eVertexZ_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_x_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_x_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_x_Event[eVertexZ_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
+  nBins_y_Event[eVertexZ_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
+  min_y_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
+  max_y_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
+  title_y_Event[eVertexZ_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
-  // *) "Vertex_z_vs_InteractionRate":
-  nBins_x_Event[eVertex_z_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_x_Event[eVertex_z_vs_InteractionRate] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_x_Event[eVertex_z_vs_InteractionRate] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_x_Event[eVertex_z_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
-  nBins_y_Event[eVertex_z_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
-  min_y_Event[eVertex_z_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
-  max_y_Event[eVertex_z_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
-  title_y_Event[eVertex_z_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
+  // *) "VertexZ_vs_InteractionRate":
+  nBins_x_Event[eVertexZ_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_x_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_x_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_x_Event[eVertexZ_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
+  nBins_y_Event[eVertexZ_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eVertexZ_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
 
   // *) "Multiplicity_vs_FT0CAmplitudeOnFoundBC":
   // nBins_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]);
@@ -4319,20 +4319,20 @@ void BookEventCutsHistograms()
 
   // d) Book the formulas for all event cuts defined via mathematical expressions:
 
-  //  **) eRefMult_vs_NContr_Up:
-  if (ec.fUseEventCuts[eRefMult_vs_NContr_Up]) {
-    ec.fEventCutsFormulas[eRefMult_vs_NContr_Up_Formula] = new TFormula("RefMult_vs_NContr_Up_Formula", ec.fsEventCuts[eRefMult_vs_NContr_Up].Data());
+  //  **) eRefMultVsNContrUp:
+  if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
+    ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula] = new TFormula("RefMultVsNContrUp_Formula", ec.fsEventCuts[eRefMultVsNContrUp].Data());
     // As a quick insanity check, try immediately to evaluate something from this formula:
-    if (std::isnan(ec.fEventCutsFormulas[eRefMult_vs_NContr_Up_Formula]->Eval(1.44))) {
+    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(1.44))) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
-  //  **) eRefMult_vs_NContr_Low:
-  if (ec.fUseEventCuts[eRefMult_vs_NContr_Low]) {
-    ec.fEventCutsFormulas[eRefMult_vs_NContr_Low_Formula] = new TFormula("RefMult_vs_NContr_Low_Formula", ec.fsEventCuts[eRefMult_vs_NContr_Low].Data());
+  //  **) eRefMultVsNContrLow:
+  if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
+    ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula] = new TFormula("RefMultVsNContrLow_Formula", ec.fsEventCuts[eRefMultVsNContrLow].Data());
     // As a quick insanity check, try immediately to evaluate something from this formula:
-    if (std::isnan(ec.fEventCutsFormulas[eRefMult_vs_NContr_Low_Formula]->Eval(1.44))) {
+    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(1.44))) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
   }
@@ -4549,16 +4549,16 @@ void BookParticleHistograms()
   // delete lAxis; // I do not need to delete here, only when new TAxis(...)
   ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiCentralityAxis] = "Centrality"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator] is still not fetched and set from configurable. Re-think how to proceed for this specific case.
 
-  // ***) vertex_z-axis for diff phi weights: I re-use binning from results histograms
-  ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertex_zAxis] = res.fResultsPro[AFO_VZ]->GetNbinsX();
+  // ***) VertexZ-axis for diff phi weights: I re-use binning from results histograms
+  ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertexZAxis] = res.fResultsPro[AFO_VZ]->GetNbinsX();
   lAxis = res.fResultsPro[AFO_VZ]->GetXaxis();
-  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertex_zAxis]);
+  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertexZAxis]);
   for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
-    ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+    ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
   }
-  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
   // delete lAxis; // I do not need to delete here, only when new TAxis(...)
-  ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiVertex_zAxis] = "Vertex_z"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator]
+  ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiVertexZAxis] = "VertexZ"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator]
 
   // ...
 
@@ -4970,7 +4970,7 @@ void BookWeightsHistograms()
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(8, "(w_{#varphi})_{#eta axis (sparse)}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(9, "(w_{#varphi})_{charge axis (sparse)}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(10, "(w_{#varphi})_{centrality axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{vertex_z axis (sparse)}");
+  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{VertexZ axis (sparse)}");
 
   // **) differential pt weights using sparse:
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(12, "(w_{p_{T}})_{pt axis (sparse)}");
@@ -5009,7 +5009,7 @@ void BookWeightsHistograms()
   if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
     pw.fWeightsFlagsPro->Fill(9.5, 1.);
   }
-  if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+  if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
     pw.fWeightsFlagsPro->Fill(10.5, 1.);
   }
 
@@ -5630,7 +5630,7 @@ void InternalValidation()
       !eh.fEventHistograms[eOccupancy][eSim][eBefore] ? true : eh.fEventHistograms[eOccupancy][eSim][eBefore]->Fill(ebye.fOccupancy);
       !eh.fEventHistograms[eInteractionRate][eSim][eBefore] ? true : eh.fEventHistograms[eInteractionRate][eSim][eBefore]->Fill(ebye.fInteractionRate);
       !eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore]->Fill(ebye.fCurrentRunDuration);
-      !eh.fEventHistograms[eVertex_z][eSim][eBefore] ? true : eh.fEventHistograms[eVertex_z][eSim][eBefore]->Fill(ebye.fVz);
+      !eh.fEventHistograms[eVertexZ][eSim][eBefore] ? true : eh.fEventHistograms[eVertexZ][eSim][eBefore]->Fill(ebye.fVz);
       !eh.fEventHistograms[eEventPlaneAngle][eSim][eBefore] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][eBefore]->Fill(fReactionPlane);
     }
 
@@ -5776,7 +5776,7 @@ void InternalValidation()
       !eh.fEventHistograms[eOccupancy][eSim][eAfter] ? true : eh.fEventHistograms[eOccupancy][eSim][eAfter]->Fill(ebye.fOccupancy);
       !eh.fEventHistograms[eInteractionRate][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fInteractionRate);
       !eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter]->Fill(ebye.fCurrentRunDuration);
-      !eh.fEventHistograms[eVertex_z][eSim][eAfter] ? true : eh.fEventHistograms[eVertex_z][eSim][eAfter]->Fill(ebye.fVz);
+      !eh.fEventHistograms[eVertexZ][eSim][eAfter] ? true : eh.fEventHistograms[eVertexZ][eSim][eAfter]->Fill(ebye.fVz);
       !eh.fEventHistograms[eEventPlaneAngle][eSim][eAfter] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][eAfter]->Fill(fReactionPlane);
     }
 
@@ -6943,34 +6943,34 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) Vertex_x:
-    if (ec.fUseEventCuts[eVertex_x]) {
+    //   *) VertexX:
+    if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_x, cutModus)) {
+        EventCut(eRec, eVertexX, eCutCounterBinning);
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexX, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_y:
-    if (ec.fUseEventCuts[eVertex_y]) {
+    //   *) VertexY:
+    if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_y, cutModus)) {
+        EventCut(eRec, eVertexY, eCutCounterBinning);
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexY, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_z, cutModus)) {
+        EventCut(eRec, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -6998,23 +6998,23 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) RefMult_vs_NContr_Up:
-    if (ec.fUseEventCuts[eRefMult_vs_NContr_Up]) {
+    //   *) RefMultVsNContrUp:
+    if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eRefMult_vs_NContr_Up, eCutCounterBinning);
-      } else if (collision.numContrib() > ec.fEventCutsFormulas[eRefMult_vs_NContr_Up_Formula]->Eval(ebye.fReferenceMultiplicity)) {
-        if (!EventCut(eRec, eRefMult_vs_NContr_Up, cutModus)) {
+        EventCut(eRec, eRefMultVsNContrUp, eCutCounterBinning);
+      } else if (collision.numContrib() > ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+        if (!EventCut(eRec, eRefMultVsNContrUp, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) RefMult_vs_NContr_Low:
-    if (ec.fUseEventCuts[eRefMult_vs_NContr_Low]) {
+    //   *) RefMultVsNContrLow:
+    if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eRefMult_vs_NContr_Low, eCutCounterBinning);
-      } else if (collision.numContrib() < ec.fEventCutsFormulas[eRefMult_vs_NContr_Low_Formula]->Eval(ebye.fReferenceMultiplicity)) {
-        if (!EventCut(eRec, eRefMult_vs_NContr_Low, cutModus)) {
+        EventCut(eRec, eRefMultVsNContrLow, eCutCounterBinning);
+      } else if (collision.numContrib() < ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+        if (!EventCut(eRec, eRefMultVsNContrLow, cutModus)) {
           return false;
         }
       }
@@ -7090,34 +7090,34 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 
     //   *) Centrality: this is related to eImpactParameter. TBI 20240509 How do I proceed here? Shall i calculate it in void DetermineCentrality( ... ), from IP, and store it in ebye.fCentrality?
 
-    //   *) Vertex_x:
-    if (ec.fUseEventCuts[eVertex_x]) {
+    //   *) VertexX:
+    if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_x, cutModus)) {
+        EventCut(eSim, eVertexX, eCutCounterBinning);
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexX, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_y:
-    if (ec.fUseEventCuts[eVertex_y]) {
+    //   *) VertexY:
+    if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_y, cutModus)) {
+        EventCut(eSim, eVertexY, eCutCounterBinning);
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexY, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_z, cutModus)) {
+        EventCut(eSim, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -7495,12 +7495,12 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_z, cutModus)) {
+        EventCut(eRec, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -7689,9 +7689,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eQA) {
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5); // basically, if histogram is not booked, do nothing. 'true' is a placeholder, for the time being
-      !eh.fEventHistograms[eVertex_x][eRec][ba] ? true : eh.fEventHistograms[eVertex_x][eRec][ba]->Fill(collision.posX());
-      !eh.fEventHistograms[eVertex_y][eRec][ba] ? true : eh.fEventHistograms[eVertex_y][eRec][ba]->Fill(collision.posY());
-      !eh.fEventHistograms[eVertex_z][eRec][ba] ? true : eh.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
+      !eh.fEventHistograms[eVertexX][eRec][ba] ? true : eh.fEventHistograms[eVertexX][eRec][ba]->Fill(collision.posX());
+      !eh.fEventHistograms[eVertexY][eRec][ba] ? true : eh.fEventHistograms[eVertexY][eRec][ba]->Fill(collision.posY());
+      !eh.fEventHistograms[eVertexZ][eRec][ba] ? true : eh.fEventHistograms[eVertexZ][eRec][ba]->Fill(collision.posZ());
       !eh.fEventHistograms[eNContributors][eRec][ba] ? true : eh.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
       !eh.fEventHistograms[eTotalMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size()); // TBI 20231106 check and validate further
       !eh.fEventHistograms[eMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eMultiplicity][eRec][ba]->Fill(ebye.fMultiplicity);
@@ -7704,13 +7704,13 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !qa.fQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fReferenceMultiplicity);
       !qa.fQAEventHistograms2D[eMultiplicity_vs_NContributors][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_NContributors][eRec][ba]->Fill(ebye.fMultiplicity, collision.numContrib());
       !qa.fQAEventHistograms2D[eMultiplicity_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_Centrality][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eMultiplicity_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_Vertex_z][eRec][ba]->Fill(ebye.fMultiplicity, collision.posZ());
+      !qa.fQAEventHistograms2D[eMultiplicity_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_VertexZ][eRec][ba]->Fill(ebye.fMultiplicity, collision.posZ());
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.numContrib());
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.posZ());
+      !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.posZ());
       !qa.fQAEventHistograms2D[eNContributors_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Centrality][eRec][ba]->Fill(collision.numContrib(), ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eNContributors_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Vertex_z][eRec][ba]->Fill(collision.numContrib(), collision.posZ());
-      !qa.fQAEventHistograms2D[eCentrality_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_Vertex_z][eRec][ba]->Fill(ebye.fCentrality, collision.posZ());
+      !qa.fQAEventHistograms2D[eNContributors_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_VertexZ][eRec][ba]->Fill(collision.numContrib(), collision.posZ());
+      !qa.fQAEventHistograms2D[eCentrality_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_VertexZ][eRec][ba]->Fill(ebye.fCentrality, collision.posZ());
     }
 
     if (qa.fFillQACorrelationsVsHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) { // fill only for eAfter, because I do not calculate Q-vectors before cuts
@@ -7775,9 +7775,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       }
       if (eh.fFillEventHistograms) {
         !eh.fEventHistograms[eNumberOfEvents][eSim][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][ba]->Fill(0.5);
-        !eh.fEventHistograms[eVertex_x][eSim][ba] ? true : eh.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.mcCollision().posX());
-        !eh.fEventHistograms[eVertex_y][eSim][ba] ? true : eh.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.mcCollision().posY());
-        !eh.fEventHistograms[eVertex_z][eSim][ba] ? true : eh.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
+        !eh.fEventHistograms[eVertexX][eSim][ba] ? true : eh.fEventHistograms[eVertexX][eSim][ba]->Fill(collision.mcCollision().posX());
+        !eh.fEventHistograms[eVertexY][eSim][ba] ? true : eh.fEventHistograms[eVertexY][eSim][ba]->Fill(collision.mcCollision().posY());
+        !eh.fEventHistograms[eVertexZ][eSim][ba] ? true : eh.fEventHistograms[eVertexZ][eSim][ba]->Fill(collision.mcCollision().posZ());
         !eh.fEventHistograms[eImpactParameter][eSim][ba] ? true : eh.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.mcCollision().impactParameter());
         !eh.fEventHistograms[eEventPlaneAngle][eSim][ba] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][ba]->Fill(collision.mcCollision().eventPlaneAngle());
         // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
@@ -7835,14 +7835,14 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fOccupancy);
       !qa.fQAEventHistograms2D[eNContributors_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Occupancy][eRec][ba]->Fill(collision.numContrib(), ebye.fOccupancy);
       !qa.fQAEventHistograms2D[eCentrality_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_Occupancy][eRec][ba]->Fill(ebye.fCentrality, ebye.fOccupancy);
-      !qa.fQAEventHistograms2D[eVertex_z_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertex_z_vs_Occupancy][eRec][ba]->Fill(collision.posZ(), ebye.fOccupancy);
+      !qa.fQAEventHistograms2D[eVertexZ_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertexZ_vs_Occupancy][eRec][ba]->Fill(collision.posZ(), ebye.fOccupancy);
 
       // **) vs interaction rate:
       !qa.fQAEventHistograms2D[eMultiplicity_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_InteractionRate][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fInteractionRate);
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fInteractionRate);
       !qa.fQAEventHistograms2D[eNContributors_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_InteractionRate][eRec][ba]->Fill(collision.numContrib(), ebye.fInteractionRate);
       !qa.fQAEventHistograms2D[eCentrality_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_InteractionRate][eRec][ba]->Fill(ebye.fCentrality, ebye.fInteractionRate);
-      !qa.fQAEventHistograms2D[eVertex_z_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertex_z_vs_InteractionRate][eRec][ba]->Fill(collision.posZ(), ebye.fInteractionRate);
+      !qa.fQAEventHistograms2D[eVertexZ_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertexZ_vs_InteractionRate][eRec][ba]->Fill(collision.posZ(), ebye.fInteractionRate);
 
       // **) unsorted TBI 20250331 sort at some point
       !qa.fQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fFT0CAmplitudeOnFoundBC);
@@ -7984,7 +7984,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // A few example histograms, just to check if I access corresponding tables:
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5);
-      !eh.fEventHistograms[eVertex_z][eRec][ba] ? true : eh.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
+      !eh.fEventHistograms[eVertexZ][eRec][ba] ? true : eh.fEventHistograms[eVertexZ][eRec][ba]->Fill(collision.posZ());
       !eh.fEventHistograms[eTotalMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size());
       !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality);
     }
@@ -8310,7 +8310,7 @@ float GetCentralityPercentile(TString ce)
     // ... ctd here with Run 1 and Run 2 estimators ...
 
   } else {
-    LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ce.Data());
+    LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, ce.Data());
   }
 
   if (tc.fVerbose) {
@@ -8349,7 +8349,7 @@ bool CentralityCorrelationCut()
 
   // Okay, do the thing:
   // *) "Relative" <=> |(firstEstimator-secondEstimator)/(firstEstimator+secondEstimator)| > treshold => reject the event => alright = false
-  // *) "Absolute" <=> |(firstEstimator-secondEstimator)| > treshold => reject the event => alright = false
+  // *) "Absolute" <=> |firstEstimator-secondEstimator| > treshold => reject the event => alright = false
   // *) ...
   if (ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.) {
     if (ec.fCentralityCorrelationsCutVersion.EqualTo("Relative")) {
@@ -12734,7 +12734,7 @@ double WeightFromSparse(const double& dPhi, const double& dPt, const double& dEt
       if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
         pw.fFindBinVector[dwc]->AddAt(ebye.fCentrality, dim++);
       }
-      if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+      if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
         pw.fFindBinVector[dwc]->AddAt(ebye.fVz, dim++);
       }
       // ...
@@ -13007,8 +13007,8 @@ void GetParticleWeights()
     if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
       whichDimensions += "_centrality";
     }
-    if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
-      whichDimensions += "_vertex_z";
+    if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
+      whichDimensions += "_vertexZ";
     }
     // ...
 
@@ -13315,11 +13315,11 @@ const char* FancyFormatting(const char* name)
     fancyFormatting = "p_{T}";
   } else if (TString(name).EqualTo("Eta", TString::kIgnoreCase)) {
     fancyFormatting = "#eta";
-  } else if (TString(name).EqualTo("Vertex_x")) {
+  } else if (TString(name).EqualTo("VertexX")) {
     fancyFormatting = "V_{x}";
-  } else if (TString(name).EqualTo("Vertex_y")) {
+  } else if (TString(name).EqualTo("VertexY")) {
     fancyFormatting = "V_{y}";
-  } else if (TString(name).EqualTo("Vertex_z")) {
+  } else if (TString(name).EqualTo("VertexZ")) {
     fancyFormatting = "V_{z}";
   } else if (TString(name).EqualTo("TotalMultiplicity")) {
     fancyFormatting = "TotalMultiplicity (tracks.size())";
@@ -14132,13 +14132,6 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
       LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than tc.fRunTime[eDurationInSec] = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(tc.fRunTime[eDurationInSec]));
     }
 
-    /*
-        // a3) Determine FT0CAmplitudeOnFoundBC: TBI 20250331 to reduce code bloat, I have it quickly here. Shall I rename the function?
-        if (bc.has_foundFT0()) {
-          ebye.fFT0CAmplitudeOnFoundBC = bc.foundFT0().sumAmpC(); // Credits: rofOccupancyQa.cxx
-        }
-    */
-
   } else {
     // b) For all other cases, set interaction rate to -1:
     ebye.fInteractionRate = -1.;
@@ -14211,7 +14204,7 @@ void DetermineQAThingies(T1 const& collision, T2 const&)
     } // if (tc.fVerbose) {
 
   } else {
-    // For all other cases, set interaction rate to -1: TBI 20250401 shall I really do it this way, in a sense that for all other cases, this function should never be called?
+    // For all other cases, set all QA-specific variables calculated here to -1. TBI 20250401 shall I really do it this way, in a sense that for all other cases, this function should never be called?
     ebye.fFT0CAmplitudeOnFoundBC = -1.;
   }
 
@@ -14683,7 +14676,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
       if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
         LOGF(fatal, "ebye.Centrality = %f", ebye.fCentrality);
       }
-      if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+      if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
         LOGF(fatal, "ebye.Vz = %f", ebye.fVz);
       }
       LOGF(fatal, "Multidimensional weight for enabled dimensions is wPhi = %f", wPhi);
@@ -15029,7 +15022,7 @@ void MainLoopOverParticles(T const& tracks)
   // *) There is also processTest(...), to process data with minimum subscription to the tables. To use it, set field "processTest": "true" in json config
 
   // Remark #4:
-  // *) There is also processQA(...), to process data with maximum subscription to the tables (use for Run 3 only). To use it, set field "processTest": "true" in json config
+  // *) There is also processQA(...), to process data with maximum subscription to the tables (use for Run 3 only). To use it, set field "processQA: "true" in json config
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
