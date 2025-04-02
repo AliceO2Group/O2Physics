@@ -12,7 +12,7 @@
 /// \file CFFilterAll.cxx
 /// \brief Selection of events with triplets and pairs for femtoscopic studies
 ///
-/// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch
+/// \author Laura Serksnyte, TU München, laura.serksnyte@cern.ch; Anton Riedel, TU München, anton.riedel@cern.ch; Maximilian Korwieser, TU Munich, maximilian.korwieser@cern.ch
 
 #include <iostream>
 #include <iterator>
@@ -57,6 +57,7 @@ enum CFThreeBodyTriggers { kPPP,
                            kPLL,
                            kLLL,
                            kPPPhi,
+                           kPPRho,
                            kNThreeBodyTriggers };
 enum CFTwoBodyTriggers { kPD,
                          kLD,
@@ -65,6 +66,7 @@ enum CFTwoBodyTriggers { kPD,
 enum ParticleSpecies {
   kProton,
   kDeuteron,
+  kPion,
   kLambda,
   kNParticleSpecies
 };
@@ -89,43 +91,49 @@ enum PIDLimits { kTPCMin,
 };
 
 // For configurable tables
-static const std::vector<std::string> CFTriggerNamesALL{"ppp", "ppL", "pLL", "LLL", "ppPhi", "pd", "Ld"};
-static const std::vector<std::string> SpeciesNameAll{"Proton", "Deuteron", "Lambda"};
-static const std::vector<std::string> SpeciesName{"Proton", "Deuteron"};
-static const std::vector<std::string> SpeciesNameAnti{"AntiProton", "AntiDeuteron"};
+static const std::vector<std::string> CFTriggerNamesALL{"ppp", "ppL", "pLL", "LLL", "ppPhi", "ppRho", "pd", "Ld"};
+static const std::vector<std::string> SpeciesNameAll{"Proton", "Deuteron", "Lambda", "Pion"};
+static const std::vector<std::string> SpeciesName{"Proton", "Deuteron", "Pion"};
+static const std::vector<std::string> SpeciesNameAnti{"AntiProton", "AntiDeuteron", "AntiPion"};
 static const std::vector<std::string> SpeciesV0DaughterName{"Pion", "Proton"};
 static const std::vector<std::string> SpeciesRejectionName{"Proton", "Pion", "Electron"};
 static const std::vector<std::string> TPCCutName{"TPC min", "TPC max"};
-static const std::vector<std::string> SpeciesMinTPCClustersName{"Proton", "Deuteron"};
-static const std::vector<std::string> SpeciesAvgTPCTOFName{"Proton", "AntiProton", "Deuteron", "AntiDeuteron"};
+static const std::vector<std::string> SpeciesMinTPCClustersName{"Proton", "Deuteron", "Pion"};
+static const std::vector<std::string> SpeciesAvgTPCTOFName{"Proton", "AntiProton", "Deuteron", "AntiDeuteron", "Pion", "AntiPion"};
 static const std::vector<std::string> TPCTOFAvgName{"TPC Avg", "TOF Avg"};
 static const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TOF min", "TOF max", "TPCTOF max", "ITS min", "ITS max"};
 static const std::vector<std::string> PtCutsName{"Pt min (particle)", "Pt max (particle)", "Pt min (antiparticle)", "Pt max (antiparticle)", "P thres"};
 static const std::vector<std::string> MomCorCutsName{"Momemtum Correlation min", "Momemtum Correlation max"};
 static const std::vector<std::string> PIDForTrackingName{"Switch", "Momemtum Threshold"};
-static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL", "PPPhi"};
+static const std::vector<std::string> ThreeBodyFilterNames{"PPP", "PPL", "PLL", "LLL", "PPPhi", "PPRho"};
 static const std::vector<std::string> TwoBodyFilterNames{"PD", "LD"};
-static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PPPhi", "aPaPPhi", "PD", "aPaD", "LD", "aLaD"};
+static const std::vector<std::string> ParticleNames{"PPP", "aPaPaP", "PPL", "aPaPaL", "PLL", "aPaLaL", "LLL", "aLaLaL", "PPPhi", "aPaPPhi", "PPRho", "aPaPRho", "PD", "aPaD", "LD", "aLaD"};
 
 static const int nPidRejection = 2;
-static const int nTracks = 2;
-static const int nPidAvg = 4;
+static const int nTracks = 3;
+static const int nPidAvg = 6;
 static const int nPidCutsDaughers = 2;
 static const int nPtCuts = 5;
-static const int nAllTriggers = 7;
-static const int nTriggerAllNames = 14;
+static const int nAllTriggers = 8;
+static const int nTriggerAllNames = 16;
 static const int nMomCorCuts = 2;
+static const int nTPCTOFAvg = 2;
 
 static const float pidcutsTable[nTracks][kNPIDLimits]{
   {-6.f, 6.f, -6.f, 6.f, 6.f, -99.f, 99.f},
-  {-6.f, 6.f, -99.f, 99.f, 99.f, -6.f, 6.f}};
+  {-6.f, 6.f, -99.f, 99.f, 99.f, -6.f, 6.f},
+  {-6.f, 6.f, -99.f, 99.f, 99.f, -9999.f, 9999.f}};
 static const float pidcutsTableAnti[nTracks][kNPIDLimits]{
   {-6.f, 6.f, -6.f, 6.f, 6.f, -99.f, 99.f},
-  {-6.f, 6.f, -99.f, 99.f, 99.f, -6.f, 6.f}};
+  {-6.f, 6.f, -99.f, 99.f, 99.f, -6.f, 6.f},
+  {-6.f, 6.f, -99.f, 99.f, 99.f, -9999.f, 9999.f}};
 static const float pidRejectionTable[kNParticleRejection][nPidRejection]{
   {-2.f, 2.f},
-  {-2.f, 2.f}};
-static const double pidTPCTOFAvgTable[nPidAvg][nTracks]{
+  {-2.f, 2.f},
+  {-999.f, 999.f}};
+static const double pidTPCTOFAvgTable[nPidAvg][nTPCTOFAvg]{
+  {0.f, 0.f},
+  {0.f, 0.f},
   {0.f, 0.f},
   {0.f, 0.f},
   {0.f, 0.f},
@@ -133,33 +141,36 @@ static const double pidTPCTOFAvgTable[nPidAvg][nTracks]{
 static const float pidcutsV0DaughterTable[kNV0Daughters][nPidCutsDaughers]{
   {-6.f, 6.f},
   {-6.f, 6.f}};
-static const float ptcutsTable[kNParticleRejection][nPtCuts]{
+static const float ptcutsTable[kNParticleSpecies][nPtCuts]{
   {0.35f, 6.f, 0.35f, 6.0f, 0.75f},
   {0.35f, 1.6f, 0.35f, 1.6f, 99.f},
+  {0.f, 6.f, 0.f, 6.f, 99.f},
   {0.f, 6.f, 0.f, 6.f, 99.f}};
 static const float NClustersMin[1][nTracks]{
-  {60.0f, 60.0f}};
-static const float MomCorLimits[2][nMomCorCuts] =
+  {60.0f, 60.0f, 60.0f}};
+static const float MomCorLimits[3][nMomCorCuts] =
   {{-99, 99},
+   {-99, 99},
    {-99, 99}};
-static const float PIDForTrackingTable[2][nTracks]{
+static const float PIDForTrackingTable[nTracks][2]{
   {-1, 0.75},
+  {-1, 1.2},
   {-1, 1.2}};
 static const float ITSCutsTable[1][nTracks] = {
-  {1, 1}};
+  {1, 1, 0}};
 
 static const float triggerSwitches[1][nAllTriggers]{
-  {1, 1, 1, 1, 1, 1, 1}};
+  {1, 1, 1, 1, 1, 1, 1, 1}};
 
 static const float Q3Limits[1][kNThreeBodyTriggers]{
-  {0.6f, 0.6f, 0.6f, 0.6f, 0.6f}};
+  {0.6f, 0.6f, 0.6f, 0.6f, 0.6f, 0.6f}};
 
 static const float KstarLimits[1][kNTwoBodyTriggers]{
   {1.2f, 1.2f}};
 
 static const float Downsample[2][nTriggerAllNames]{
-  {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1, -1., -1.},
-  {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.}};
+  {-1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1., -1, -1., -1., -1., -1.},
+  {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.}};
 
 } // namespace CFTrigger
 
@@ -375,7 +386,7 @@ struct CFFilter {
     "Particle PID Rejection selections (Deuteron candidates only)"};
   Configurable<LabeledArray<double>> ConfPIDTPCTOFAvg{
     "ConfPIDTPCTOFAvg",
-    {CFTrigger::pidTPCTOFAvgTable[0], CFTrigger::nPidAvg, CFTrigger::nTracks, CFTrigger::SpeciesAvgTPCTOFName, CFTrigger::TPCTOFAvgName},
+    {CFTrigger::pidTPCTOFAvgTable[0], CFTrigger::nPidAvg, CFTrigger::nTPCTOFAvg, CFTrigger::SpeciesAvgTPCTOFName, CFTrigger::TPCTOFAvgName},
     "Average expected nSigma of TPC and TOF, which is substracted in calculation of combined TPC and TOF nSigma"};
 
   // Momentum selections
@@ -491,6 +502,16 @@ struct CFFilter {
     Configurable<float> ConfTrkKaSigmaPID{"ConfTrkKaSigmaPID", 3.50, "n_sigma kaon daughters"}; // 3.0
   } PPPhi;
 
+  // config collection for ppRho //
+  struct : ConfigurableGroup {
+    std::string prefix = "PPRho";
+    Configurable<float> ConfResoRho0InvMassLowLimit{"ConfResoRho0InvMassLowLimit", 0.7, "Lower limit of the RhoReso invariant mass"};
+    Configurable<float> ConfResoRho0InvMassUpLimit{"ConfResoRho0InvMassUpLimit", 0.85, "Upper limit of the RhoReso invariant mass"};
+
+    Configurable<float> ConfTrkPtRho0CandLowLimit{"ConfTrkPtRho0CandLowLimit", 1.8, "Pt_LowLimit Rho0Cand"};
+    Configurable<float> ConfTrkPtRho0CandUpLimit{"ConfTrkPtRho0CandUpLimit", 10., "Pt_UpLimit Rho0Cand"};
+  } PPRho;
+
   // Trigger selections
   Configurable<LabeledArray<float>> ConfTriggerSwitches{
     "ConfTriggerSwitches",
@@ -540,8 +561,8 @@ struct CFFilter {
     }
 
     // global histograms
-    registry.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{9, -0.5, 8.5}});
-    std::vector<std::string> eventTitles = {"all", "rejected", "ppp", "ppL", "pLL", "LLL", "ppPhi", "pD", "LD"};
+    registry.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{10, -0.5, 9.5}});
+    std::vector<std::string> eventTitles = {"all", "rejected", "ppp", "ppL", "pLL", "LLL", "ppPhi", "ppRho", "pD", "LD"};
     for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
       registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
     }
@@ -562,6 +583,9 @@ struct CFFilter {
     registry.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiProton", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
     registry.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsDeuteron", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
     registry.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiDeuteron", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
+
+    registry.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsPion", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 20.0f}}});
+    registry.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiPion", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 20.0f}}});
 
     // all tracks
     registry.add("TrackCuts/TracksBefore/fPtTrackBefore", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
@@ -603,14 +627,16 @@ struct CFFilter {
     registry.add("TrackCuts/TPCSignal/fTPCSignalAntiALLCUTSP", "TPCSignalALLCUTSP;p(GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
 
     // TPC signal particles
-    registry.add("TrackCuts/TPCSignal/fTPCSignalProton", "fTPCSignalProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalAntiProton", "fTPCSignalAntiProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalDeuteron", "fTPCSignalDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalAntiDeuteron", "fTPCSignalAntiDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalPionMinusV0Daughter", "fTPCSignalPionMinusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalPionPlusV0Daughter", "fTPCSignalPionPlusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalProtonMinusV0Daughter", "fTPCSignalProtonMinusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
-    registry.add("TrackCuts/TPCSignal/fTPCSignalProtonPlusV0Daughter", "fTPCSignalProtonPlusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {20000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalProton", "fTPCSignalProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalAntiProton", "fTPCSignalAntiProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalDeuteron", "fTPCSignalDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalAntiDeuteron", "fTPCSignalAntiDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalPionMinusV0Daughter", "fTPCSignalPionMinusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalPionPlusV0Daughter", "fTPCSignalPionPlusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalProtonMinusV0Daughter", "fTPCSignalProtonMinusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalProtonPlusV0Daughter", "fTPCSignalProtonPlusV0Daughter;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalPion", "fTPCSignalPion;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    registry.add("TrackCuts/TPCSignal/fTPCSignalAntiPion", "fTPCSignalAntiPion;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
 
     // PID vs momentum before cuts daughters
     registry.add("TrackCuts/NSigmaBefore/fNsigmaTPCvsPProtonV0DaughBefore", "NSigmaTPC Proton V0Daught Before;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
@@ -830,6 +856,80 @@ struct CFFilter {
     registry.add("TrackCuts/Phi/After/NegDaughter/fEta", "Phi Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
     registry.add("TrackCuts/Phi/After/NegDaughter/fPhi", "Azimuthal angle of Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
+    // pions
+    registry.add("TrackCuts/Pion/fPPion", "Momentum of Pions at PV;p (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Pion/fPTPCPion", "Momentum of Pions at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Pion/fPtPion", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Pion/fMomCorPionDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/Pion/fMomCorPionRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
+    registry.add("TrackCuts/Pion/fEtaPion", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Pion/fPhiPion", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    registry.add("TrackCuts/Pion/fNsigmaTPCvsPPion", "NSigmaTPC Pion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/Pion/fNsigmaTOFvsPPion", "NSigmaTOF Pion;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/Pion/fNsigmaTPCTOFvsPPion", "NSigmaTPCTOF Pion;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+
+    registry.add("TrackCuts/Pion/fNsigmaTPCvsPPionP", "NSigmaTPC Pion P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/Pion/fNsigmaTOFvsPPionP", "NSigmaTOF Pion P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/Pion/fNsigmaTPCTOFvsPPionP", "NSigmaTPCTOF Pion P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+
+    registry.add("TrackCuts/Pion/fDCAxyPion", "fDCAxy Pion;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
+    registry.add("TrackCuts/Pion/fDCAzPion", "fDCAz Pion;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
+    registry.add("TrackCuts/Pion/fTPCsClsPion", "fTPCsCls Pion;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Pion/fTPCcRowsPion", "fTPCcRows Pion;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/Pion/fTrkTPCfClsPion", "fTrkTPCfCls Pion;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/Pion/fTPCnclsPion", "fTPCncls Pion;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+
+    // anti-pions
+    registry.add("TrackCuts/AntiPion/fPtAntiPion", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/AntiPion/fMomCorAntiPionDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+    registry.add("TrackCuts/AntiPion/fMomCorAntiPionRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
+    registry.add("TrackCuts/AntiPion/fEtaAntiPion", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/AntiPion/fPhiAntiPion", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    registry.add("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPion", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPion", "NSigmaTOF AntiPion;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPion", "NSigmaTPCTOF AntiPion;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+
+    registry.add("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPionP", "NSigmaTPC AntiPion P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPionP", "NSigmaTOF AntiPion P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    registry.add("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPionP", "NSigmaTPCTOF AntiPion P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+
+    registry.add("TrackCuts/AntiPion/fDCAxyAntiPion", "fDCAxy AntiPion;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
+    registry.add("TrackCuts/AntiPion/fDCAzAntiPion", "fDCAz AntiPion;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
+    registry.add("TrackCuts/AntiPion/fTPCsClsAntiPion", "fTPCsCls AntiPion;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiPion/fTPCcRowsAntiPion", "fTPCcRows AntiPion;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    registry.add("TrackCuts/AntiPion/fTrkTPCfClsAntiPion", "fTrkTPCfCls AntiPion;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
+    registry.add("TrackCuts/AntiPion/fTPCnclsAntiPion", "fTPCncls AntiPion;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+
+    // rho QA
+    // daughter pos before
+    registry.add("TrackCuts/Rho/Before/PosDaughter/fInvMass", "Invariant mass Rho Pos Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
+    registry.add("TrackCuts/Rho/Before/PosDaughter/fPt", "Transverse momentum Rho Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/Before/PosDaughter/fEta", "Rho Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/Before/PosDaughter/fPhi", "Azimuthal angle of Rho Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // daughter neg before
+    registry.add("TrackCuts/Rho/Before/NegDaughter/fInvMass", "Invariant mass Rho Neg Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
+    registry.add("TrackCuts/Rho/Before/NegDaughter/fPt", "Transverse momentum Rho Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/Before/NegDaughter/fEta", "Rho Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/Before/NegDaughter/fPhi", "Azimuthal angle of Rho Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // rhoCand before
+    registry.add("TrackCuts/Rho/Before/fInvMass", "Invariant mass RhoCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    registry.add("TrackCuts/Rho/Before/fPt", "Transverse momentum RhoCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/Before/fEta", "Pseudorapidity of RhoCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/Before/fPhi", "Azimuthal angle of RhoCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // daughter pos after
+    registry.add("TrackCuts/Rho/After/PosDaughter/fPt", "Transverse momentum RhoCand Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/After/PosDaughter/fEta", "RhoCand Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/After/PosDaughter/fPhi", "Azimuthal angle of RhoCand Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // daughter neg after
+    registry.add("TrackCuts/Rho/After/NegDaughter/fPt", "Transverse momentum RhoCand Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/After/NegDaughter/fEta", "RhoCand Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/After/NegDaughter/fPhi", "Azimuthal angle of RhoCand Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // rhoCand after
+    registry.add("TrackCuts/Rho/After/fInvMass", "Invariant mass RhoCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    registry.add("TrackCuts/Rho/After/fPt", "Transverse momentum RhoCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    registry.add("TrackCuts/Rho/After/fEta", "Pseudorapidity of RhoCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    registry.add("TrackCuts/Rho/After/fPhi", "Azimuthal angle of RhoCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+
     // for ppp
     registry.add("ppp/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
     registry.add("ppp/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
@@ -886,6 +986,17 @@ struct CFFilter {
     registry.add("ppphi/fAntiProtonPtVsQ3", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
     registry.add("ppphi/fAntiPhiPtVsQ3", "Same Event distribution;SE;Q_{3} (GeV/c)", HistType::kTH1F, {{8000, 0, 8}});
 
+    // for ppRho
+    registry.add("ppRho/fMultiplicity", "Multiplicity of all triggered events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
+    registry.add("ppRho/fZvtx", "Zvtx of all triggered events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
+    registry.add("ppRho/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fSE_particle_downsample", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fSE_antiparticle_downsample", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fProtonPtVsQ3", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fAntiProtonPtVsQ3", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+    registry.add("ppRho/fRhoCandPtVsQ3", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {{8000, 0, 8}});
+
     // for pd
     registry.add("pd/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
     registry.add("pd/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
@@ -919,6 +1030,7 @@ struct CFFilter {
   float mMassPhi = o2::constants::physics::MassPhi;
   float mMassKaonPlus = o2::constants::physics::MassKPlus;
   float mMassKaonMinus = o2::constants::physics::MassKMinus;
+  float mMassRho0 = 0.7665; // GeV/c^2 // o2::constants::physics::MassRho0; //Will not work as this is missing in the central framework, also ROOT reports the lepton production value of 0.77549 GeV/c^2, which is wrong for the hadron production at ALICE.
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
@@ -1097,7 +1209,7 @@ struct CFFilter {
   template <typename T>
   bool isSelectedTrackPID(T const& track, CFTrigger::ParticleSpecies partSpecies, bool Rejection, double nSigmaTPC[2], int charge)
   {
-    // nSigma should have entries [proton, deuteron]
+    // nSigma should have entries [proton, deuteron, pion]
     bool isSelected = false;
     bool pThres = true;
     float nSigma = -999.;
@@ -1109,6 +1221,8 @@ struct CFFilter {
       SpeciesForTracking = o2::track::PID::Proton;
     } else if (partSpecies == CFTrigger::kDeuteron) {
       SpeciesForTracking = o2::track::PID::Deuteron;
+    } else if (partSpecies == CFTrigger::kPion) {
+      SpeciesForTracking = o2::track::PID::Pion;
     } else {
       LOG(warn) << "Unknown PID for tracking encountered";
     }
@@ -1160,6 +1274,18 @@ struct CFFilter {
         break;
       case CFTrigger::kLambda:
         LOG(fatal) << "No PID selection for Lambdas";
+        break;
+      case CFTrigger::kPion:
+        nSigmaIts = track.itsNSigmaPi();
+        if (pThres) {
+          nSigma = nSigmaTPC[2];
+        } else {
+          if (charge > 0) {
+            nSigma = std::sqrt(std::pow(nSigmaTPC[2] - TPCTOFAvg[8], 2) + std::pow(track.tofNSigmaPr() - TPCTOFAvg[9], 2));
+          } else {
+            nSigma = std::sqrt(std::pow(nSigmaTPC[2] - TPCTOFAvg[10], 2) + std::pow(track.tofNSigmaPr() - TPCTOFAvg[11], 2));
+          }
+        }
         break;
       default:
         LOG(fatal) << "Particle species not known";
@@ -1309,6 +1435,14 @@ struct CFFilter {
     return isSelected;
   }
 
+  double translatePhi(double phi)
+  {
+    if (phi < 0) {
+      phi += 2 * M_PI; // Add 2 pi to make it positive
+    }
+    return phi;
+  }
+
   float getkstar(const ROOT::Math::PtEtaPhiMVector part1,
                  const ROOT::Math::PtEtaPhiMVector part2)
   {
@@ -1445,14 +1579,14 @@ struct CFFilter {
       }
     }
 
-    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
 
     registry.fill(HIST("fProcessedEvents"), 0);
     registry.fill(HIST("EventCuts/fMultiplicityBefore"), col.multNTracksPV());
     registry.fill(HIST("EventCuts/fZvtxBefore"), col.posZ());
 
-    bool keepEvent3N[CFTrigger::kNThreeBodyTriggers] = {false, false, false, false};
-    int lowQ3Triplets[CFTrigger::kNThreeBodyTriggers] = {0, 0, 0, 0};
+    bool keepEvent3N[CFTrigger::kNThreeBodyTriggers] = {false, false, false, false, false, false};
+    int lowQ3Triplets[CFTrigger::kNThreeBodyTriggers] = {0, 0, 0, 0, 0, 0};
 
     bool keepEvent2N[CFTrigger::kNTwoBodyTriggers] = {false, false};
     int lowKstarPairs[CFTrigger::kNTwoBodyTriggers] = {0, 0};
@@ -1467,13 +1601,13 @@ struct CFFilter {
       std::vector<int> AntiProtonIndex = {};
 
       // Prepare vectors for different species
-      std::vector<ROOT::Math::PtEtaPhiMVector> protons, antiprotons, deuterons, antideuterons, lambdas, antilambdas, kaons, antikaons, phi;
+      std::vector<ROOT::Math::PtEtaPhiMVector> protons, antiprotons, deuterons, antideuterons, lambdas, antilambdas, kaons, antikaons, phi, pions, antipions, rho;
 
       // create deuteron and proton vectors (and corresponding antiparticles) for pair and triplet creation
       for (auto& track : tracksWithItsPid) {
 
-        double nTPCSigmaP[2]{track.tpcNSigmaPr(), track.tpcNSigmaDe()};
-        double nTPCSigmaN[2]{track.tpcNSigmaPr(), track.tpcNSigmaDe()};
+        double nTPCSigmaP[3]{track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaPi()};
+        double nTPCSigmaN[3]{track.tpcNSigmaPr(), track.tpcNSigmaDe(), track.tpcNSigmaPi()};
 
         if (ConfUseManualPIDproton) {
           auto bgScalingProton = 1 / mMassProton; // momentum scaling?
@@ -1704,6 +1838,64 @@ struct CFFilter {
             }
           }
         }
+        // get pions
+        if (isSelectedTrack(track, CFTrigger::kPion)) {
+          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), mMassPion);
+          if (track.sign() > 0 && isSelectedTrackPID(track, CFTrigger::kPion, false, nTPCSigmaP, 1)) {
+            pions.push_back(temp);
+
+            registry.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsPion"), track.p(), track.tpcInnerParam());
+
+            registry.fill(HIST("TrackCuts/TPCSignal/fTPCSignalPion"), track.tpcInnerParam(), track.tpcSignal());
+            registry.fill(HIST("TrackCuts/Pion/fPPion"), track.p());
+            registry.fill(HIST("TrackCuts/Pion/fPTPCPion"), track.tpcInnerParam());
+            registry.fill(HIST("TrackCuts/Pion/fPtPion"), track.pt());
+            registry.fill(HIST("TrackCuts/Pion/fMomCorPionDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/Pion/fMomCorPionRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+            registry.fill(HIST("TrackCuts/Pion/fEtaPion"), track.eta());
+            registry.fill(HIST("TrackCuts/Pion/fPhiPion"), track.phi());
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsPPion"), track.tpcInnerParam(), nTPCSigmaP[2]);
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsPPion"), track.tpcInnerParam(), track.tofNSigmaPi());
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsPPion"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaP[2] - TPCTOFAvg[8], 2) + std::pow(track.tofNSigmaPi() - TPCTOFAvg[9], 2)));
+
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsPPionP"), track.p(), nTPCSigmaP[2]);
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsPPionP"), track.p(), track.tofNSigmaPi());
+            registry.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsPPionP"), track.p(), std::sqrt(std::pow(nTPCSigmaP[2] - TPCTOFAvg[8], 2) + std::pow(track.tofNSigmaPi() - TPCTOFAvg[9], 2)));
+
+            registry.fill(HIST("TrackCuts/Pion/fDCAxyPion"), track.dcaXY());
+            registry.fill(HIST("TrackCuts/Pion/fDCAzPion"), track.dcaZ());
+            registry.fill(HIST("TrackCuts/Pion/fTPCsClsPion"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/Pion/fTPCcRowsPion"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/Pion/fTrkTPCfClsPion"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/Pion/fTPCnclsPion"), track.tpcNClsFound());
+          }
+          if (track.sign() < 0 && isSelectedTrackPID(track, CFTrigger::kPion, false, nTPCSigmaN, -1)) {
+            antipions.push_back(temp);
+
+            registry.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiPion"), track.p(), track.tpcInnerParam());
+
+            registry.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiPion"), track.tpcInnerParam(), track.tpcSignal());
+            registry.fill(HIST("TrackCuts/AntiPion/fPtAntiPion"), track.pt());
+            registry.fill(HIST("TrackCuts/AntiPion/fMomCorAntiPionDif"), track.p(), track.tpcInnerParam() - track.p());
+            registry.fill(HIST("TrackCuts/AntiPion/fMomCorAntiPionRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+            registry.fill(HIST("TrackCuts/AntiPion/fEtaAntiPion"), track.eta());
+            registry.fill(HIST("TrackCuts/AntiPion/fPhiAntiPion"), track.phi());
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPion"), track.tpcInnerParam(), nTPCSigmaN[2]);
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPion"), track.tpcInnerParam(), track.tofNSigmaPi());
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPion"), track.tpcInnerParam(), std::sqrt(std::pow(nTPCSigmaN[2] - TPCTOFAvg[10], 2) + std::pow(track.tofNSigmaPi() - TPCTOFAvg[11], 2)));
+
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPionP"), track.p(), nTPCSigmaN[2]);
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPionP"), track.p(), track.tofNSigmaPi());
+            registry.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPionP"), track.p(), std::sqrt(std::pow(nTPCSigmaN[2] - TPCTOFAvg[10], 2) + std::pow(track.tofNSigmaPi() - TPCTOFAvg[11], 2)));
+
+            registry.fill(HIST("TrackCuts/AntiPion/fDCAxyAntiPion"), track.dcaXY());
+            registry.fill(HIST("TrackCuts/AntiPion/fDCAzAntiPion"), track.dcaZ());
+            registry.fill(HIST("TrackCuts/AntiPion/fTPCsClsAntiPion"), track.tpcNClsShared());
+            registry.fill(HIST("TrackCuts/AntiPion/fTPCcRowsAntiPion"), track.tpcNClsCrossedRows());
+            registry.fill(HIST("TrackCuts/AntiPion/fTrkTPCfClsAntiPion"), track.tpcCrossedRowsOverFindableCls());
+            registry.fill(HIST("TrackCuts/AntiPion/fTPCnclsAntiPion"), track.tpcNClsFound());
+          }
+        }
       }
 
       // keep track of daugher indices to avoid selfcorrelations
@@ -1816,6 +2008,7 @@ struct CFFilter {
       }
 
       if (ConfTriggerSwitches->get("Switch", "ppPhi") > 0.) {
+
         for (const auto& postrack : kaons) {
           for (const auto& negtrack : antikaons) {
 
@@ -1824,7 +2017,7 @@ struct CFFilter {
             registry.fill(HIST("TrackCuts/Phi/Before/fInvMass"), temp.M());
             registry.fill(HIST("TrackCuts/Phi/Before/fPt"), temp.pt());
             registry.fill(HIST("TrackCuts/Phi/Before/fEta"), temp.eta());
-            registry.fill(HIST("TrackCuts/Phi/Before/fPhi"), temp.phi());
+            registry.fill(HIST("TrackCuts/Phi/Before/fPhi"), translatePhi(temp.phi()));
 
             if ((temp.M() >= PPPhi.ConfResoInvMassLowLimit.value) && (temp.M() <= PPPhi.ConfResoInvMassUpLimit.value)) {
 
@@ -1833,15 +2026,59 @@ struct CFFilter {
               registry.fill(HIST("TrackCuts/Phi/After/fInvMass"), temp.M());
               registry.fill(HIST("TrackCuts/Phi/After/fPt"), temp.pt());
               registry.fill(HIST("TrackCuts/Phi/After/fEta"), temp.eta());
-              registry.fill(HIST("TrackCuts/Phi/After/fPhi"), temp.phi());
+              registry.fill(HIST("TrackCuts/Phi/After/fPhi"), translatePhi(temp.phi()));
 
               registry.fill(HIST("TrackCuts/Phi/After/PosDaughter/fPt"), postrack.pt());
               registry.fill(HIST("TrackCuts/Phi/After/PosDaughter/fEta"), postrack.eta());
-              registry.fill(HIST("TrackCuts/Phi/After/PosDaughter/fPhi"), postrack.phi());
+              registry.fill(HIST("TrackCuts/Phi/After/PosDaughter/fPhi"), translatePhi(postrack.phi()));
 
               registry.fill(HIST("TrackCuts/Phi/After/NegDaughter/fPt"), negtrack.pt());
               registry.fill(HIST("TrackCuts/Phi/After/NegDaughter/fEta"), negtrack.eta());
-              registry.fill(HIST("TrackCuts/Phi/After/NegDaughter/fPhi"), negtrack.phi());
+              registry.fill(HIST("TrackCuts/Phi/After/NegDaughter/fPhi"), translatePhi(negtrack.phi()));
+            }
+          }
+        }
+      }
+
+      // construct rho cand
+      if (ConfTriggerSwitches->get("Switch", "ppRho") > 0.) { // here we could select on extra pion properties important for the Rho0Cands
+
+        for (const auto& postrack : pions) {
+          for (const auto& negtrack : antipions) {
+
+            ROOT::Math::PtEtaPhiMVector temp = postrack + negtrack;
+
+            registry.fill(HIST("TrackCuts/Rho/Before/fInvMass"), temp.M());
+            registry.fill(HIST("TrackCuts/Rho/Before/fPt"), temp.pt());
+            registry.fill(HIST("TrackCuts/Rho/Before/fEta"), temp.eta());
+            registry.fill(HIST("TrackCuts/Rho/Before/fPhi"), translatePhi(temp.phi()));
+
+            registry.fill(HIST("TrackCuts/Rho/Before/PosDaughter/fInvMass"), postrack.M());
+            registry.fill(HIST("TrackCuts/Rho/Before/PosDaughter/fPt"), postrack.pt());
+            registry.fill(HIST("TrackCuts/Rho/Before/PosDaughter/fEta"), postrack.eta());
+            registry.fill(HIST("TrackCuts/Rho/Before/PosDaughter/fPhi"), translatePhi(postrack.phi()));
+
+            registry.fill(HIST("TrackCuts/Rho/Before/PosDaughter/fInvMass"), negtrack.M());
+            registry.fill(HIST("TrackCuts/Rho/Before/NegDaughter/fPt"), negtrack.pt());
+            registry.fill(HIST("TrackCuts/Rho/Before/NegDaughter/fEta"), negtrack.eta());
+            registry.fill(HIST("TrackCuts/Rho/Before/NegDaughter/fPhi"), translatePhi(negtrack.phi()));
+
+            if ((temp.M() >= PPRho.ConfResoRho0InvMassLowLimit.value) && (temp.M() <= PPRho.ConfResoRho0InvMassUpLimit.value) && (temp.pt() >= PPRho.ConfTrkPtRho0CandLowLimit.value) && (temp.pt() <= PPRho.ConfTrkPtRho0CandUpLimit.value)) {
+
+              rho.push_back(temp);
+
+              registry.fill(HIST("TrackCuts/Rho/After/fInvMass"), temp.M());
+              registry.fill(HIST("TrackCuts/Rho/After/fPt"), temp.pt());
+              registry.fill(HIST("TrackCuts/Rho/After/fEta"), temp.eta());
+              registry.fill(HIST("TrackCuts/Rho/After/fPhi"), translatePhi(temp.phi()));
+
+              registry.fill(HIST("TrackCuts/Rho/After/PosDaughter/fPt"), postrack.pt());
+              registry.fill(HIST("TrackCuts/Rho/After/PosDaughter/fEta"), postrack.eta());
+              registry.fill(HIST("TrackCuts/Rho/After/PosDaughter/fPhi"), translatePhi(postrack.phi()));
+
+              registry.fill(HIST("TrackCuts/Rho/After/NegDaughter/fPt"), negtrack.pt());
+              registry.fill(HIST("TrackCuts/Rho/After/NegDaughter/fEta"), negtrack.eta());
+              registry.fill(HIST("TrackCuts/Rho/After/NegDaughter/fPhi"), translatePhi(negtrack.phi()));
             }
           }
         }
@@ -2160,6 +2397,63 @@ struct CFFilter {
           }
         }
       }
+      if (ConfTriggerSwitches->get("Switch", "ppRho") > 0.) {
+        // ppRho trigger
+        for (size_t i = 0; i < protons.size(); ++i) {
+          for (size_t j = i + 1; j < protons.size(); ++j) {
+            for (const auto& rhoParticle : rho) {
+              const auto& Proton1 = protons[i];
+              const auto& Proton2 = protons[j];
+
+              Q3 = getQ3(Proton1, Proton2, rhoParticle);
+
+              registry.fill(HIST("ppRho/fSE_particle"), Q3);
+              registry.fill(HIST("ppRho/fProtonPtVsQ3"), Q3, Proton1.Pt());
+              registry.fill(HIST("ppRho/fProtonPtVsQ3"), Q3, Proton2.Pt());
+              registry.fill(HIST("ppRho/fRhoCandPtVsQ3"), Q3, rhoParticle.Pt());
+
+              if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPRho)) {
+                if (ConfDownsample->get("Switch", "PPRho") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "PPRho")) {
+                    registry.fill(HIST("ppRho/fSE_particle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPRho] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPRho] += 1;
+                }
+              }
+            }
+          }
+        }
+        // apapRho trigger
+        for (size_t i = 0; i < antiprotons.size(); ++i) {
+          for (size_t j = i + 1; j < antiprotons.size(); ++j) {
+            for (const auto& rhoParticle : rho) {
+              const auto& antiProton1 = antiprotons[i];
+              const auto& antiProton2 = antiprotons[j];
+
+              Q3 = getQ3(antiProton1, antiProton2, rhoParticle);
+
+              registry.fill(HIST("ppRho/fSE_antiparticle"), Q3);
+              registry.fill(HIST("ppRho/fAntiProtonPtVsQ3"), Q3, antiProton1.Pt());
+              registry.fill(HIST("ppRho/fAntiProtonPtVsQ3"), Q3, antiProton2.Pt());
+              registry.fill(HIST("ppRho/fRhoCandPtVsQ3"), Q3, rhoParticle.Pt());
+
+              if (Q3 < ConfQ3Limits->get(static_cast<uint>(0), CFTrigger::kPPRho)) {
+                if (ConfDownsample->get("Switch", "aPaPRho") > 0) {
+                  if (rng->Uniform(0., 1.) < ConfDownsample->get("Factor", "aPaPRho")) {
+                    registry.fill(HIST("ppRho/fSE_antiparticle_downsample"), Q3);
+                    lowQ3Triplets[CFTrigger::kPPRho] += 1;
+                  }
+                } else {
+                  lowQ3Triplets[CFTrigger::kPPRho] += 1;
+                }
+              }
+            }
+          }
+        }
+      }
+
       if (ConfTriggerSwitches->get("Switch", "pd") > 0.) {
         // pd trigger
         for (auto iProton = protons.begin(); iProton != protons.end(); ++iProton) {
@@ -2272,17 +2566,23 @@ struct CFFilter {
       registry.fill(HIST("ppphi/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ppphi/fZvtx"), col.posZ());
     }
+    if (lowQ3Triplets[CFTrigger::kPPRho] > 0) {
+      keepEvent3N[CFTrigger::kPPRho] = true;
+      registry.fill(HIST("fProcessedEvents"), 7);
+      registry.fill(HIST("ppRho/fMultiplicity"), col.multNTracksPV());
+      registry.fill(HIST("ppRho/fZvtx"), col.posZ());
+    }
 
     // create tags for two body triggers
     if (lowKstarPairs[CFTrigger::kPD] > 0) {
       keepEvent2N[CFTrigger::kPD] = true;
-      registry.fill(HIST("fProcessedEvents"), 7);
+      registry.fill(HIST("fProcessedEvents"), 8);
       registry.fill(HIST("pd/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("pd/fZvtx"), col.posZ());
     }
     if (lowKstarPairs[CFTrigger::kLD] > 0) {
       keepEvent2N[CFTrigger::kLD] = true;
-      registry.fill(HIST("fProcessedEvents"), 8);
+      registry.fill(HIST("fProcessedEvents"), 9);
       registry.fill(HIST("ld/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ld/fZvtx"), col.posZ());
     }
@@ -2292,10 +2592,11 @@ struct CFFilter {
          keepEvent3N[CFTrigger::kPLL],
          keepEvent3N[CFTrigger::kLLL],
          keepEvent3N[CFTrigger::kPPPhi],
+         // keepEvent3N[CFTrigger::kPPRho], //To be changed once trigger is integrated
          keepEvent2N[CFTrigger::kPD],
          keepEvent2N[CFTrigger::kLD]);
 
-    if (!keepEvent3N[CFTrigger::kPPP] && !keepEvent3N[CFTrigger::kPPL] && !keepEvent3N[CFTrigger::kPLL] && !keepEvent3N[CFTrigger::kLLL] && !keepEvent3N[CFTrigger::kPPPhi] &&
+    if (!keepEvent3N[CFTrigger::kPPP] && !keepEvent3N[CFTrigger::kPPL] && !keepEvent3N[CFTrigger::kPLL] && !keepEvent3N[CFTrigger::kLLL] && !keepEvent3N[CFTrigger::kPPPhi] && !keepEvent3N[CFTrigger::kPPRho] &&
         !keepEvent2N[CFTrigger::kPD] && !keepEvent2N[CFTrigger::kLD]) {
       registry.fill(HIST("fProcessedEvents"), 1);
     }

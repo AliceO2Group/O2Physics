@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorToOmegaPi.cxx
+/// \file candidateSelectorOmegac0ToOmegaPi.cxx
 /// \brief Omegac0 → Omega Pi selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
@@ -37,11 +37,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
 
-enum pidInfoStored {
-  kPiFromLam = 0,
-  kPrFromLam,
-  kKaFromCasc,
-  kPiFromCharm
+enum PidInfoStored {
+  PiFromLam = 0,
+  PrFromLam,
+  KaFromCasc,
+  PiFromCharm
 };
 
 /// Struct for applying Omegac0 -> Omega pi selection cuts
@@ -157,14 +157,14 @@ struct HfCandidateSelectorToOmegaPi {
   } KfconfigurableGroup;
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_omegac_to_omega_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_omegac_to_omega_pi::cuts[0], hf_cuts_omegac_to_omega_pi::nBinsPt, hf_cuts_omegac_to_omega_pi::nCutVars, hf_cuts_omegac_to_omega_pi::labelsPt, hf_cuts_omegac_to_omega_pi::labelsCutVar}, "OmegaC0 candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_omegac_to_omega_pi::Cuts[0], hf_cuts_omegac_to_omega_pi::NBinsPt, hf_cuts_omegac_to_omega_pi::NCutVars, hf_cuts_omegac_to_omega_pi::labelsPt, hf_cuts_omegac_to_omega_pi::labelsCutVar}, "OmegaC0 candidate selection per pT bin"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
-  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeaturesW", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTOmegac0"}, "Paths of models on CCDB"};
@@ -546,7 +546,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Omegac ctau selsection
-          if (candidate.ctauOmegac() > KfconfigurableGroup.cTauOmegacMax) {
+          if (candidate.cTauOmegac() > KfconfigurableGroup.cTauOmegacMax) {
             resultSelections = false;
             registry.fill(HIST("hSelctauOmegac"), 0);
           } else {
@@ -640,28 +640,28 @@ struct HfCandidateSelectorToOmegaPi {
       }
 
       if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromLam);
+        SETBIT(infoTpcStored, PiFromLam);
       }
       if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPrFromLam);
+        SETBIT(infoTpcStored, PrFromLam);
       }
       if (trackKaFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, kKaFromCasc);
+        SETBIT(infoTpcStored, KaFromCasc);
       }
       if (trackPiFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromCharm);
+        SETBIT(infoTpcStored, PiFromCharm);
       }
       if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromLam);
+        SETBIT(infoTofStored, PiFromLam);
       }
       if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPrFromLam);
+        SETBIT(infoTofStored, PrFromLam);
       }
       if (trackKaFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, kKaFromCasc);
+        SETBIT(infoTofStored, KaFromCasc);
       }
       if (trackPiFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromCharm);
+        SETBIT(infoTofStored, PiFromCharm);
       }
 
       if (usePidTpcOnly) {

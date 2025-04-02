@@ -35,6 +35,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
 #include "TGeoGlobalMagField.h"
 #include "Field/MagneticField.h"
 
@@ -66,6 +67,11 @@ struct CreateResolutionMap {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<bool> cfg_require_true_mc_collision_association{"cfg_require_true_mc_collision_association", true, "flag to require true mc collision association"};
@@ -148,7 +154,12 @@ struct CreateResolutionMap {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::globaltracking::MatchGlobalFwd mMatching;
   int mRunNumber = 0;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  float d_bz;
+  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::dataformats::VertexBase mVtx;
+  const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
 
   void init(o2::framework::InitContext&)
   {
@@ -165,6 +176,9 @@ struct CreateResolutionMap {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
+
+    mRunNumber = 0;
+    d_bz = 0;
 
     const AxisSpec axis_cent{ConfCentBins, "centrality (%)"};
     const AxisSpec axis_pt_gen{ConfPtGenBins, "p_{T,l}^{gen} (GeV/c)"};
@@ -199,12 +213,67 @@ struct CreateResolutionMap {
       return;
     }
 
+    // load matLUT for this timestamp
+    if (!lut) {
+      LOG(info) << "Loading material look-up table for timestamp: " << bc.timestamp();
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(lutPath, bc.timestamp()));
+    } else {
+      LOG(info) << "Material look-up table already in place. Not reloading.";
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (std::fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+      mRunNumber = bc.runNumber();
+
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        ccdb->get<TGeoManager>(geoPath);
+      }
+      o2::mch::TrackExtrap::setField();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mMeanVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
+
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
     mRunNumber = bc.runNumber();
-    std::map<string, string> metadata;
-    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
-    auto ts = soreor.first;
-    auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
-    o2::base::Propagator::initFieldFromGRP(grpmag);
+
+    // std::map<string, string> metadata;
+    // auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
+    // auto ts = soreor.first;
+    // auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
+    // o2::base::Propagator::initFieldFromGRP(grpmag);
+
     if (!o2::base::GeometryManager::isGeometryLoaded()) {
       ccdb->get<TGeoManager>(geoPath);
     }
@@ -337,16 +406,19 @@ struct CreateResolutionMap {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
 
     // LOGF(info, "collision.globalIndex() = %d, track.collisionId() = %d, track.pt() = %.16f, track_par_cov_recalc.getPt() = %.16f", collision.globalIndex(), track.collisionId(), track.pt(), track_par_cov_recalc.getPt());
 
-    if (std::fabs(dcaInfo[0]) > electroncuts.cfg_max_dcaxy || std::fabs(dcaInfo[1]) > electroncuts.cfg_max_dcaz) {
+    if (std::fabs(dcaXY) > electroncuts.cfg_max_dcaxy || std::fabs(dcaZ) > electroncuts.cfg_max_dcaz) {
       return false;
     }
 
@@ -412,7 +484,7 @@ struct CreateResolutionMap {
   void fillMuon(TCollision const& collision, TMuon const& muon, const float centrality)
   {
     auto mcparticle = muon.template mcParticle_as<aod::McParticles>();
-    if (abs(mcparticle.pdgCode()) != 13 || !(mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator())) {
+    if (std::abs(mcparticle.pdgCode()) != 13 || !(mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator())) {
       return;
     }
     if (cfg_require_true_mc_collision_association && mcparticle.mcCollisionId() != collision.mcCollisionId()) {
@@ -527,12 +599,15 @@ struct CreateResolutionMap {
       return;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    o2::dataformats::DCA mDcaInfoCov;
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
-    // getPxPyPz(track_par_cov_recalc, pVec_recalc);
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    // float dcaXY = mDcaInfoCov.getY();
+    // float dcaZ = mDcaInfoCov.getZ();
 
     float pt = track_par_cov_recalc.getPt();
     float eta = track_par_cov_recalc.getEta();

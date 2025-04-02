@@ -229,14 +229,14 @@ void V0PhotonCut::SetRequireTPCTOF(bool flag)
   LOG(info) << "V0 Photon Cut, require TPC-TOF track: " << mRequireTPCTOF;
 }
 
-void V0PhotonCut::SetRequireTPCTRDTOF(bool flag)
-{
-  mRequireTPCTRDTOF = flag;
-  LOG(info) << "V0 Photon Cut, require TPC-TOF track: " << mRequireTPCTRDTOF;
-}
-
 void V0PhotonCut::SetDisableITSonly(bool flag)
 {
   mDisableITSonly = flag;
   LOG(info) << "V0 Photon Cut, disable ITS only track: " << mDisableITSonly;
+}
+
+void V0PhotonCut::SetDisableTPConly(bool flag)
+{
+  mDisableTPConly = flag;
+  LOG(info) << "V0 Photon Cut, disable TPC only track: " << mDisableTPConly;
 }

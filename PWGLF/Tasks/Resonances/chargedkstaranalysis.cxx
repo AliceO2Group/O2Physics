@@ -25,7 +25,7 @@
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-// #include <TPDGCode.h>
+#include <TPDGCode.h>
 #include <string>
 
 #include <array>
@@ -79,6 +79,8 @@ struct chargedkstaranalysis {
                             {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0},
                             "Binning of the pT axis"};
 
+  AxisSpec k892pmCountAxis = {2, 0., 2., "K*^{+}(892) = 1, K*^{-}(892) = 2"};
+
   HistogramRegistry histos1{
     "histos1",
     {},
@@ -92,7 +94,6 @@ struct chargedkstaranalysis {
   /// PID Selections
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999,
                                              "Combined nSigma cut for Pion"}; // Combined
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
 
   // DCAr to PV
   Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5,
@@ -125,6 +126,9 @@ struct chargedkstaranalysis {
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
   Configurable<int> cInvMassBins{"cInvMassBins", 900, "Invariant mass binning"};
 
+  // Rapidity Cut
+  Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
+
   // Event mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
   ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -141,6 +145,13 @@ struct chargedkstaranalysis {
                                    "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the Combined Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+
+  // For rotational background
+  Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
+  Configurable<float> confMinRot{"confMinRot", 5.0 * o2::constants::math::PI / 6.0, "Minimum of rotation"};
+  Configurable<float> confMaxRot{"confMaxRot", 7.0 * o2::constants::math::PI / 6.0, "Maximum of rotation"};
+  Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
+
   void init(InitContext const&)
   {
     AxisSpec dcaxyAxisQA = {cDCABinsQA, 0.0, 3.0, "DCA_{#it{xy}} (cm)"};
@@ -167,6 +178,7 @@ struct chargedkstaranalysis {
     histos1.add("QAbefore/chargedkstarpmRapidity",
                 "Reconstructed K*^{#pm} rapidity", kTH1F, {etaAxis});
     histos1.add("QAbefore/trkpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
+    histos1.add("QAbefore/trkpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
 
     histos1.add("QAbefore/DCAxy_pi",
                 "DCAxy distribution of pion track candidates", HistType::kTH1F,
@@ -208,9 +220,29 @@ struct chargedkstaranalysis {
     histos1.add("chargekstarMassPtMultPtUnlikeSign",
                 "Invariant mass of CKS meson Unlike Sign", kTHnSparseF,
                 {invMassAxis, ptAxis, centAxis}, true);
+    histos1.add("hSparseChargeKstarSameEventRotational", "hSparseChargeKstarSameEventRotational", HistType::kTHnSparseF, {invMassAxis, ptAxis, centAxis}, true);
+
     histos1.add("chargekstarMassPtMultPtMixedEvent",
                 "Invariant mass of CKS meson MixedEvent Sign", kTHnSparseF,
                 {invMassAxis, ptAxis, centAxis}, true);
+    if (fillRotation) {
+      histos1.add("hRotation", "hRotation", kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+    }
+
+    // for MC production
+    if (doprocessMCTrue) {
+      // DEBUG HISTOGRAMS
+      histos1.add("hK892pmCounter", "Generated MC resonances", kTH1F, {k892pmCountAxis});
+      histos1.add("k892pmPtGen", "pT distribution of True MC charged K*(892)", kTH1F, {ptAxis});
+      histos1.add("k892pPtGen", "pT distribution of True MC K*(892) Plus", kTH1F, {ptAxis});
+      histos1.add("k892mPtGen", "pT distribution of True MC K*(892) Minus", kTH1F, {ptAxis});
+
+      // histos.add("hDaughterCounter", "Generated MC resonance daughters", kTH1F, {daughterCountAxis});
+    }
+    if (doprocessMCLight) {
+      // MC QA
+      histos1.add("k892pmPtRec", "pT distribution of Reconstructed MC charged K*(892)", kTH1F, {ptAxis});
+    }
   }
   double massPi = o2::constants::physics::MassPionCharged;
   double massK0s = o2::constants::physics::MassK0Short;
@@ -230,7 +262,7 @@ struct chargedkstaranalysis {
     // auto multiplicity = collision.cent();
     auto multiplicity = collision.cent();
     histos1.fill(HIST("QAbefore/collMult"), multiplicity);
-    TLorentzVector lDecayDaughter, lDecayV0, lResonance;
+    TLorentzVector lDecayDaughter, lDecayV0, lResonance, pionrot, chargekstarrot;
 
     for (const auto& track : dTracks) { // loop over all dTracks1 to find the bachelor pion
       auto trackId = track.index();
@@ -246,8 +278,8 @@ struct chargedkstaranalysis {
         // TPC PID (before cuts)
         histos1.fill(HIST("QAbefore/tpcNsigmaPionQA"), trackptPi, trkNSigmaPiTPC);
         if (istrkhasTOF) {
-          histos1.fill(HIST("QA/before/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
-          histos1.fill(HIST("QA/before/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTOFPID"), trackptPi, trkNSigmaPiTOF);
+          histos1.fill(HIST("QAbefore/trkpionTPCTOFPID"), trkNSigmaPiTPC, trkNSigmaPiTOF);
         }
         // DCA QA (before cuts)
         histos1.fill(HIST("QAbefore/DCAxy_pi"), track.dcaXY());
@@ -296,19 +328,59 @@ struct chargedkstaranalysis {
         histos1.fill(HIST("QAafter/hGoodTracksV0s"), 2.5);
 
         // Checking whether the mid-rapidity condition is met
-        if (std::abs(lResonance.Rapidity()) > 0.5)
+        if (std::abs(lResonance.Rapidity()) > confRapidity)
           continue;
         if constexpr (!IsMix) {
           histos1.fill(HIST("chargedkstarinvmassUlikeSign"), lResonance.M());
           // Reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
           histos1.fill(HIST("chargekstarMassPtMultPtUnlikeSign"),
                        lResonance.M(), lResonance.Pt(), multiplicity);
-
+          if constexpr (IsMC) {
+            bool pass1 = false;
+            bool pass2 = false;
+            // LOG(info) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
+            if ((track.pdgCode() != PDG_t::kPiPlus) && (v0.pdgCode() != PDG_t::kK0Short)) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
+              pass1 = true;
+            }
+            if ((track.pdgCode() != PDG_t::kPiMinus) && (v0.pdgCode() != -310)) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
+              pass2 = true;
+            }
+            if (!pass1 && !pass2) // Go on only if we have both decay products, else skip to next iteration
+              continue;
+            if (track.motherPDG() != v0.motherPDG())
+              continue;
+            // LOG(info) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
+            if (track.motherPDG() != o2::constants::physics::Pdg::kKPlusStar892)
+              continue;
+            histos1.fill(HIST("k892pmPtRec"), lResonance.Pt());
+          }
         } else {
           histos1.fill(HIST("chargedkstarinvmassMixedEvent"), lResonance.M());
           // Reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
           histos1.fill(HIST("chargekstarMassPtMultPtMixedEvent"),
                        lResonance.M(), lResonance.Pt(), multiplicity);
+        }
+        if constexpr (!IsMix) {
+          if (fillRotation) {
+            for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+              auto rotangle = o2::constants::math::PI;
+              if (nBkgRotations > 1) {
+                auto anglestart = confMinRot;
+                auto angleend = confMaxRot;
+                auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+                rotangle = anglestart + nrotbkg * anglestep;
+              }
+              histos1.fill(HIST("hRotation"), rotangle);
+              auto rotpionPx = lDecayDaughter.Px() * std::cos(rotangle) - lDecayDaughter.Py() * std::sin(rotangle);
+              auto rotpionPy = lDecayDaughter.Px() * std::sin(rotangle) + lDecayDaughter.Py() * std::cos(rotangle);
+              pionrot.SetXYZM(rotpionPx, rotpionPy, lDecayDaughter.Pz(), massPi);
+              chargekstarrot = pionrot + lDecayV0;
+              if (std::abs(chargekstarrot.Rapidity()) > confRapidity) {
+                continue;
+              }
+              histos1.fill(HIST("hSparseChargeKstarSameEventRotational"), chargekstarrot.M(), chargekstarrot.Pt(), multiplicity);
+            }
+          }
         }
       }
     }
@@ -347,8 +419,6 @@ struct chargedkstaranalysis {
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (std::abs(track.eta()) > confdaugheta)
-      return false;
-    if (track.itsNCls() < cfgITScluster)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
       return false;
@@ -421,6 +491,41 @@ struct chargedkstaranalysis {
   }
   PROCESS_SWITCH(chargedkstaranalysis, processMEnew, "Process Mixed events new",
                  true);
+
+  void processMCTrue(aod::ResoMCParents const& resoParents)
+  {
+    for (const auto& part : resoParents) {                                        // loop over all pre-filtered MC particles
+      if (std::abs(part.pdgCode()) != o2::constants::physics::Pdg::kKPlusStar892) // K*892(pm)
+        continue;
+      if (std::abs(part.y()) > 0.5) // rapidity cut
+        continue;
+      bool pass1 = false;
+      bool pass2 = false;
+
+      if (part.daughterPDG1() == PDG_t::kPiPlus && part.daughterPDG2() == PDG_t::kK0Short) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
+        pass1 = true;
+        histos1.fill(HIST("hK892pmCounter"), 0.5);
+        histos1.fill(HIST("k892pPtGen"), part.pt());
+      }
+      if (part.daughterPDG1() == PDG_t::kPiMinus && part.daughterPDG2() == -310) { // One decay to AntiK0s and the other to pi- (K*(892)- mother) - Antiparticle pass
+        pass2 = true;
+        histos1.fill(HIST("hK892pmCounter"), 1.5);
+        histos1.fill(HIST("k892mPtGen"), part.pt());
+      }
+      if (!pass1 && !pass2) // Go on only if we have both decay products, else skip to next iteration
+        continue;
+      histos1.fill(HIST("k892pmPtGen"), part.pt());
+    }
+  }
+  PROCESS_SWITCH(chargedkstaranalysis, processMCTrue, "Process Event for MC", false);
+
+  void processMCLight(aod::ResoCollision const& collision,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+                      soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resov0s)
+  {
+    fillHistograms<true, false>(collision, resotracks, resov0s);
+  }
+  PROCESS_SWITCH(chargedkstaranalysis, processMCLight, "Process Event for MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
