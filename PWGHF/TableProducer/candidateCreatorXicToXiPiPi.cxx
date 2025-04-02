@@ -14,10 +14,11 @@
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
+/// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
-#define HomogeneousField // o2-linter: disable=name/macro
+#define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
 #include <string>
@@ -79,6 +80,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
+  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
   Configurable<bool> constrainXiToXicPlus{"constrainXiToXicPlus", false, "Constrain Xi to XicPlus"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
@@ -178,7 +180,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovDcaPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovDcaPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -189,7 +193,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb---------------------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -241,7 +247,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
@@ -399,7 +407,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
       auto collision = rowTrackIndexXicPlus.collision();
-      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
+      }
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -410,7 +420,9 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
-      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
+      }
 
       //----------------------Set the magnetic field from ccdb-----------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -452,7 +464,11 @@ struct HfCandidateCreatorXicToXiPiPi {
       }
       // create KFParticle
       KFParticle kfXi;
-      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.mXi());
+      float massXi = casc.mXi();
+      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
+      if (useXiMassConstraint) {
+        kfXi.SetNonlinearMassConstraint(MassXiMinus);
+      }
 
       // create XicPlus as KFParticle object
       KFParticle kfXicPlus;
@@ -464,7 +480,9 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(debug) << "Failed to construct XicPlus : " << e.what();
         continue;
       }
-      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      if (fillHistograms) {
+        registry.fill(HIST("hCandCounter"), 1 + VertexFit);
+      }
 
       // get geometrical chi2 of XicPlus
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
@@ -567,6 +585,14 @@ struct HfCandidateCreatorXicToXiPiPi {
       float errMassXiPiPi;
       kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
 
+      // decay length of XicPlus
+      // use XicPlus constrained to PV (kfXicPlusToPV), since production point must be set before calling GetDecayLength(XY) on KFParticle
+      float kfDecayLength = 0., errorKfDecayLength = 0., kfDecayLengthXY = 0., errorKfDecayLengthXY = 0.;
+      kfXicPlusToPV.GetDecayLength(kfDecayLength, errorKfDecayLength);
+      kfXicPlusToPV.GetDecayLengthXY(kfDecayLengthXY, errorKfDecayLengthXY);
+      float kfDecayLengthNormalised = ldlFromKF(kfXicPlus, kfPv);
+      float kfDecayLengthXYNormalised = ldlXYFromKF(kfXicPlus, kfPv);
+
       //--------------------- get PID information-----------------------
       float nSigTpcPiFromXicPlus0 = trackCharmBachelor0.tpcNSigmaPi();
       float nSigTofPiFromXicPlus0 = trackCharmBachelor0.tofNSigmaPi();
@@ -625,7 +651,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
-                       kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
+                       errorKfDecayLength, errorKfDecayLengthXY,
                        chi2GeoXicPlus, massXiPiPi, signXic,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
@@ -635,7 +661,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*cascade specific columns*/
                        trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
-                       casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
+                       massXi, casc.mLambda(), massXiPi0, massXiPi1,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
@@ -643,10 +669,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
                      chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
-                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
-                     casc.dcacascdaughters());
+                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithKFParticle, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);

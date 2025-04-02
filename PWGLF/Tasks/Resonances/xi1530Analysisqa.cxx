@@ -106,20 +106,13 @@ struct xi1530analysisqa {
 
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
 
-  Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"}; // Minmimum
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 1, "Minimum Number of TPC cluster"}; // Minmimum
 
   Configurable<int> cfgTPCRows{"cfgTPCRows", 70, "Minimum Number of TPC Crossed Rows "};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8, "Minimum of TPC Crossed Rows to Findable Clusters"}; // Minmimum
-
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 4.0, "Maximum ITS Chi2/NCl"}; // Maximum
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 4.0, "Maximum TPC Chi2/NCl"}; // Maximum
 
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
 
-  Configurable<bool> cfgHasITS{"cfgHasITS", true, "Require ITS"};
-  Configurable<bool> cfgHasTPC{"cfgHasTPC", true, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
@@ -404,21 +397,9 @@ struct xi1530analysisqa {
       return false;
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
     if (track.tpcNClsCrossedRows() < cfgTPCRows)
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
-      return false;
-    if (track.itsChi2NCl() >= cfgITSChi2NCl)
-      return false;
-    if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
-      return false;
-    if (cfgHasITS && !track.hasITS())
-      return false;
-    if (cfgHasTPC && !track.hasTPC())
       return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;

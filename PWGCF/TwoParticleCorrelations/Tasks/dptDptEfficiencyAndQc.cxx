@@ -15,9 +15,11 @@
 
 #include <TH2F.h>
 #include <TProfile2D.h>
+#include <THnSparse.h>
 #include <TPDGCode.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
+#include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -70,6 +72,7 @@ enum KindOfData {
 /// \brief The kind of processing for templating the procedures and produce histograms
 enum KindOfProcess {
   kBASIC,   ///< produce the basic histograms
+  kEXTRA,   ///< produce the extra pair based histograms
   kPID,     ///< produce the basic PID histograms
   kPIDEXTRA ///< produce the extra PID histograms
 };
@@ -90,6 +93,9 @@ float minNSigma = -4.05f;
 float maxNSigma = 4.05f;
 float widthNSigmaBin = 0.1f;
 int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
+
+/* the pT bins of interest for the relative separation within TPC sectors data collection */
+std::vector<int> ptBinsOfInterest{1, 2, 3};
 
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
@@ -278,10 +284,10 @@ struct QADataCollectingEngine {
       int nPhiSectorBins = fhNchVsPhiVsPtPosB->GetNbinsY();
       float phiSectorLow = fhNchVsPhiVsPtNegB->GetYaxis()->GetBinLowEdge(1);
       float phiSectorHigh = fhNchVsPhiVsPtNegB->GetYaxis()->GetBinUpEdge(nPhiSectorBins);
-      fhPerColNchVsPhiVsPtPosB = new TH2F("PerColNchVsPhiVsPtPosB", "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsInnerWallMomPosB = new TH2F("PerColNchVsPhiVsInnerWallMomPosB", "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsPtNegB = new TH2F("PerColNchVsPhiVsPtNegB", "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-      fhPerColNchVsPhiVsInnerWallMomNegB = new TH2F("PerColNchVsPhiVsInnerWallMomNegB", "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsPtPosB = new TH2F(TString::Format("%s_PerColNchVsPhiVsPtPosB", dirname), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsInnerWallMomPosB = new TH2F(TString::Format("%s_PerColNchVsPhiVsInnerWallMomPosB", dirname), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsPtNegB = new TH2F(TString::Format("%s_PerColNchVsPhiVsPtNegB", dirname), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+      fhPerColNchVsPhiVsInnerWallMomNegB = new TH2F(TString::Format("%s_PerColNchVsPhiVsInnerWallMomNegB", dirname), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
       for (uint isp = 0; isp < nsp; ++isp) {
         fhPhiVsPtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("PhiVsPt_%s", tnames[isp].c_str()), HTITLESTRING("#varphi %s (mod(2#pi/18))", tnames[isp].c_str()), kTH2F, {pidPtAxis, phiSectorAxis});
         fhNchVsPhiVsPtA[isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("NchVsPhiVsPt_%s", tnames[isp].c_str()), HTITLESTRING("#it{N}_{ch}^{%s} #varphi (mod(2#pi/18))", tnames[isp].c_str()), kTH3F, {pidPtAxisReduced, phiSectorAxisReduced, nChargeAxis});
@@ -306,8 +312,8 @@ struct QADataCollectingEngine {
         fhPtVsEtaTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
         fhPtVsEtaItsTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptItsTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("ITS&TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
         /* per collision histograms not going to the results file */
-        fhPerColNchVsPhiVsPtA[isp] = new TH2F(HNAMESTRING("PerColNchVsPhiVsPt_%s", tnames[isp].c_str()), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
-        fhPerColNchVsPhiVsInnerWallMomA[isp] = new TH2F(HNAMESTRING("PerColNchVsPhiVsInnerWallMom_%s", tnames[isp].c_str()), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+        fhPerColNchVsPhiVsPtA[isp] = new TH2F(HNAMESTRING("%s_PerColNchVsPhiVsPt_%s", dirname, tnames[isp].c_str()), "", nPtBins, ptLow, ptHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
+        fhPerColNchVsPhiVsInnerWallMomA[isp] = new TH2F(HNAMESTRING("%s_PerColNchVsPhiVsInnerWallMom_%s", dirname, tnames[isp].c_str()), "", nTpcIwMomBins, tpcIwMomLow, tpcIwMomHigh, nPhiSectorBins, phiSectorLow, phiSectorHigh);
       }
     } else {
       AxisSpec recoSpecies{static_cast<int>(nsp) + 1, -0.5, nsp - 0.5, "reco species"};
@@ -564,6 +570,113 @@ struct QADataCollectingEngine {
       for (uint isp = 0; isp < nsp; ++isp) {
         fillHistogram(fhNchVsPhiVsPtA[isp], fhPerColNchVsPhiVsPtA[isp]);
         fillHistogram(fhNchVsPhiVsInnerWallMomA[isp], fhPerColNchVsPhiVsInnerWallMomA[isp]);
+      }
+    }
+  }
+};
+
+/* the QA extra data, pairs, collecting engine */
+struct QAExtraDataCollectingEngine {
+  uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
+  uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
+  uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
+
+  //===================================================
+  // The QA output objects
+  //===================================================
+  /* pairs histograms */
+  std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhN2VsDeltaEtaVsDeltaPhi{2, {nsp, {nsp, nullptr}}};
+  TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
+  std::vector<int> ptOfInterestBinMap{analysis::dptdptfilter::ptbins + 1, -1};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
+  std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
+
+  template <efficiencyandqatask::KindOfData kindOfData>
+  void init(HistogramRegistry& registry, const char* dirname)
+  {
+    using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+
+    AxisSpec phiAxis = {phibins, 0.0f, constants::math::TwoPI, "#varphi"};
+    AxisSpec phiSectorAxis = {72, 0.0f, kTpcPhiSectorWidth, "#varphi (mod(2#pi/18)) (rad)"};
+    AxisSpec deltaPhiAxis = {phibins, 0.0f, constants::math::TwoPI, "#Delta#varphi (rad)"};
+    AxisSpec deltaEtaAxis = {2 * etabins - 1, etalow - etaup, etaup - etalow, "#Delta#eta"};
+    AxisSpec deltaPhiInSectorAxis = {144, -kTpcPhiSectorWidth, kTpcPhiSectorWidth, "#Delta#varphi (rad)"};
+    AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
+    AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
+
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    std::string hPtRangesOfInterestTitle;
+    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
+      TString ptRange = TString::Format("%s%.2f-%.2f", ix == 0 ? "" : ",", ptAxis.GetBinLowEdge(ptBinsOfInterest[ix]), ptAxis.GetBinUpEdge(ptBinsOfInterest[ix]));
+      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
+      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
+      hPtRangesOfInterestTitle += ptRange.Data();
+    }
+
+    /* the reconstructed and generated levels histograms */
+    std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
+    for (uint isp = 0; isp < nsp; ++isp) {
+      for (uint jsp = 0; jsp < nsp; ++jsp) {
+        fhPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("PhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                       HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {phiAxis, phiAxis});
+        fhEtaEtaA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("EtaEta_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                       HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {etaAxis, etaAxis});
+        fhN2VsDeltaEtaVsDeltaPhi[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("N2VsDeltaEtaDeltaPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                      HTITLESTRING("%s%s pairs", tnames[isp].c_str(), tnames[jsp].c_str()), kTH2F, {deltaEtaAxis, deltaPhiAxis});
+        fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsPhiPhiPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {phiSectorAxis, phiSectorAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+        fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][isp][jsp] = ADDHISTOGRAM(THnSparse, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("DeltaPhiVsEtaEtaPt_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
+                                                                                 HTITLESTRING("%s%s pairs, #it{p}_{T}: %s", tnames[isp].c_str(), tnames[jsp].c_str(), hPtRangesOfInterestTitle.c_str()),
+                                                                                 kTHnSparseF, {etaAxis, etaAxis, deltaPhiInSectorAxis, ptOfInterestAxis, ptOfInterestAxis});
+      }
+    }
+  }
+
+  template <efficiencyandqatask::KindOfData kindOfData, typename CollisionsObject, typename TracksObject>
+  void processTrackPairs(TracksObject const& tracks1, TracksObject const& tracks2)
+  {
+    using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+    float deltaEtaSpan = etaup - etalow;
+
+    /* we should only receive accepted tracks */
+    for (auto const& track1 : tracks1) {
+      auto binForPt = [&](auto const& track) {
+        return ptOfInterestBinMap[ptAxis.FindFixBin(track.pt())];
+      };
+      int ptBin1 = binForPt(track1);
+      if (ptBin1 > 0) {
+        float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
+        for (auto const& track2 : tracks2) {
+          /* checking the same track id condition */
+          if (track1 == track2) {
+            /* exclude autocorrelations */
+            continue;
+          }
+          int ptBin2 = binForPt(track2);
+          if (ptBin2 > 0) {
+            float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi());
+            float deltaEta = track1.eta() - track2.eta();
+            float preWeight = 1 - std::abs(deltaEta) / deltaEtaSpan;
+            float weight = preWeight != 0 ? 1.0f / preWeight : 0.0f;
+            fhPhiPhiA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.phi(), track2.phi(), weight);
+            fhEtaEtaA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.eta(), track2.eta());
+            fhN2VsDeltaEtaVsDeltaPhi[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaEta, deltaPhi, weight);
+            if (static_cast<int>(track1.phi() / kTpcPhiSectorWidth) == static_cast<int>(track2.phi() / kTpcPhiSectorWidth)) {
+              /* only if, for sure, both tracks are within the same sector */
+              float inTpcSectorPhi2 = std::fmod(track2.phi(), kTpcPhiSectorWidth);
+              float inTpcSectorDeltaPhi = inTpcSectorPhi1 - inTpcSectorPhi2;
+              double values[] = {inTpcSectorPhi1, inTpcSectorPhi2, inTpcSectorDeltaPhi, static_cast<float>(ptBin1), static_cast<float>(ptBin2)};
+              fhInSectorDeltaPhiVsPhiPhiPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values, weight);
+              values[0] = track1.eta(), values[1] = track2.eta();
+              fhInSectorDeltaPhiVsEtaEtaPerPtBinA[kindOfData][track1.trackacceptedid()][track2.trackacceptedid()]->Fill(values, weight);
+            }
+          }
+        }
       }
     }
   }
@@ -850,6 +963,7 @@ struct DptDptEfficiencyAndQc {
 
   /* the data collecting engine instances */
   QADataCollectingEngine** qaDataCE;
+  QAExtraDataCollectingEngine** qaExtraDataCE;
   PidDataCollectingEngine** pidDataCE;
   PidExtraDataCollectingEngine** pidExtraDataCE;
 
@@ -864,6 +978,16 @@ struct DptDptEfficiencyAndQc {
   HistogramRegistry registryEight{"registryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryNine{"registryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryTen{"registryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraOne{"extraregistryOne", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraTwo{"extraregistryTwo", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraThree{"extraregistryThree", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraFour{"extraregistryFour", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraFive{"extraregistryFive", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraSix{"extraregistrySix", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraSeven{"extraregistrySeven", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraEight{"extraregistryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraNine{"extraregistryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryExtraTen{"extraregistryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidOne{"pidregistryOne", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidTwo{"pidregistryTwo", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidThree{"pidregistryThree", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -874,9 +998,11 @@ struct DptDptEfficiencyAndQc {
   HistogramRegistry registryPidEight{"pidregistryEight", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidNine{"pidregistryNine", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryPidTen{"pidregistryTen", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::vector<HistogramRegistry*> registrybank{&registryOne, &registryTwo, &registryThree, &registryFour, &registryFive,
+  std::vector<HistogramRegistry*> registryBank{&registryOne, &registryTwo, &registryThree, &registryFour, &registryFive,
                                                &registrySix, &registrySeven, &registryEight, &registryNine, &registryTen};
-  std::vector<HistogramRegistry*> pidregistrybank{&registryPidOne, &registryPidTwo, &registryPidThree, &registryPidFour, &registryPidFive,
+  std::vector<HistogramRegistry*> extraRegistryBank{&registryExtraOne, &registryExtraTwo, &registryExtraThree, &registryExtraFour, &registryExtraFive,
+                                                    &registryExtraSix, &registryExtraSeven, &registryExtraEight, &registryExtraNine, &registryExtraTen};
+  std::vector<HistogramRegistry*> pidRegistryBank{&registryPidOne, &registryPidTwo, &registryPidThree, &registryPidFour, &registryPidFive,
                                                   &registryPidSix, &registryPidSeven, &registryPidEight, &registryPidNine, &registryPidTen};
 
   Configurable<bool> useCentrality{"useCentrality", false, "Perform the task using centrality/multiplicity classes. Default value: false"};
@@ -884,6 +1010,7 @@ struct DptDptEfficiencyAndQc {
   Configurable<float> cfgMinNSigma{"cfgMinNSigma", -4.05f, "nsigma axes lowest value. Default: -4.05"};
   Configurable<float> cfgMaxNSigma{"cfgMaxNSigma", 4.05f, "nsigma axes highest value. Default: 4.05"};
   Configurable<float> cfgWidthNSigmaBin{"cfgWidthNSigmaBin", 0.1, "nsigma axes bin width. Deafault: 0.1"};
+  Configurable<std::vector<int>> cfgPtBinsOfInterest{"cfgPtBinsOfInterest", {1, 2, 3}, "The pt bins of interest"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -892,12 +1019,15 @@ struct DptDptEfficiencyAndQc {
 
     /* do nothing if not active */
     if (!doprocessDetectorLevelNotStored &&
+        !doprocessExtraDetectorLevelNotStored &&
         !doprocessDetectorLevelNotStoredPID &&
         !doprocessDetectorLevelNotStoredTunedOnDataPID &&
         !doprocessDetectorLevelNotStoredPIDExtra &&
         !doprocessDetectorLevelNotStoredTunedOnDataPIDExtra &&
         !doprocessGeneratorLevelNotStored &&
+        !doprocessExtraGeneratorLevelNotStored &&
         !doprocessReconstructedNotStored &&
+        !doprocessExtraReconstructedNotStored &&
         !doprocessReconstructedNotStoredPID &&
         !doprocessReconstructedNotStoredPIDExtra) {
       return;
@@ -916,6 +1046,7 @@ struct DptDptEfficiencyAndQc {
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
 
       /* configuring the involved species */
       std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
@@ -982,12 +1113,19 @@ struct DptDptEfficiencyAndQc {
       widthNSigmaBin = cfgWidthNSigmaBin.value;
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
-      bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored;
+      /* configure the pT bins of interest */
+      ptBinsOfInterest = cfgPtBinsOfInterest.value;
+
+      bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored || doprocessGeneratorLevelNotStored;
+      bool doExtraAnalysis = doprocessExtraDetectorLevelNotStored || doprocessExtraReconstructedNotStored || doprocessExtraGeneratorLevelNotStored;
       bool doPidAnalysis = doprocessDetectorLevelNotStoredPID || doprocessDetectorLevelNotStoredTunedOnDataPID || doprocessReconstructedNotStoredPID;
       bool doPidExtraAnalysis = doprocessDetectorLevelNotStoredPIDExtra || doprocessDetectorLevelNotStoredTunedOnDataPIDExtra || doprocessReconstructedNotStoredPIDExtra;
 
       if (doBasicAnalysis) {
         qaDataCE = new QADataCollectingEngine*[ncmranges];
+      }
+      if (doExtraAnalysis) {
+        qaExtraDataCE = new QAExtraDataCollectingEngine*[ncmranges];
       }
       if (doPidAnalysis) {
         pidDataCE = new PidDataCollectingEngine*[ncmranges];
@@ -996,37 +1134,45 @@ struct DptDptEfficiencyAndQc {
         pidExtraDataCE = new PidExtraDataCollectingEngine*[ncmranges];
       }
       std::string recogen;
-      if (ncmranges > registrybank.size()) {
+      if (ncmranges > registryBank.size()) {
         LOGF(fatal, "There are more centrality ranges configured than registries in the bank. Please fix it!");
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name, auto& registry) {
+        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool genlevel) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
           dce->template init<kReco>(registry, name.Data());
-          if (doprocessGeneratorLevelNotStored) {
+          if (genlevel) {
             dce->template init<kGen>(registry, name.Data());
           }
         };
         auto buildQACEInstance = [&](float min, float max) {
           auto* dce = new QADataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i], doprocessGeneratorLevelNotStored);
+          return dce;
+        };
+        auto buildQACEExtraInstance = [&](float min, float max) {
+          auto* dce = new QAExtraDataCollectingEngine();
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i], doprocessExtraGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidCEInstance = [&](float min, float max) {
           auto* dce = new PidDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidregistrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidExtraCEInstance = [&](float min, float max) {
           auto* dce = new PidExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidregistrybank[i]);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
           return dce;
         };
         /* in reverse order for proper order in results file */
         if (doBasicAnalysis) {
           qaDataCE[ncmranges - i - 1] = buildQACEInstance(fCentMultMin[ncmranges - i - 1], fCentMultMax[ncmranges - i - 1]);
+        }
+        if (doExtraAnalysis) {
+          qaExtraDataCE[ncmranges - i - 1] = buildQACEExtraInstance(fCentMultMin[ncmranges - i - 1], fCentMultMax[ncmranges - i - 1]);
         }
         if (doPidAnalysis) {
           pidDataCE[ncmranges - i - 1] = buildPidCEInstance(fCentMultMin[ncmranges - i - 1], fCentMultMax[ncmranges - i - 1]);
@@ -1075,6 +1221,9 @@ struct DptDptEfficiencyAndQc {
       if constexpr (kindOfProcess == kBASIC) {
         qaDataCE[ixDCE]->newCollision<kindOfData>();
       }
+      if constexpr (kindOfProcess == kEXTRA) {
+        qaExtraDataCE[ixDCE]->processTrackPairs<kindOfData, FilteredCollisions>(tracks, tracks);
+      }
       for (auto const& track : tracks) {
         float tpcmom = track.p();
         float tofmom = track.p();
@@ -1109,6 +1258,7 @@ struct DptDptEfficiencyAndQc {
   using TofPID = soa::Join<aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass>;
 
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
+  Filter onlyacceptedtracks = (aod::dptdptfilter::trackacceptedid >= int8_t(0));
 
   void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
                                      soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection> const& tracks)
@@ -1137,6 +1287,34 @@ struct DptDptEfficiencyAndQc {
     processTracks<soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>, kBASIC, kGen>(collision, particles);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processGeneratorLevelNotStored, "Process MC generator level efficiency and QA for not stored derived data", true);
+
+  void processExtraReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                          soa::Filtered<soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection>> const& tracks)
+  {
+    using namespace efficiencyandqatask;
+
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kEXTRA, kReco>(collision, tracks);
+  }
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processExtraReconstructedNotStored, "Process reconstructed extra efficiency and QA for not stored derived data", false);
+
+  void processExtraDetectorLevelNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                          soa::Filtered<soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels>> const& tracks,
+                                          soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
+  {
+    using namespace efficiencyandqatask;
+
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, kEXTRA, kReco>(collision, tracks);
+  }
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processExtraDetectorLevelNotStored, "Process MC detector level extra efficiency and QA for not stored derived data", false);
+
+  void processExtraGeneratorLevelNotStored(soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
+                                           soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> const& particles)
+  {
+    using namespace efficiencyandqatask;
+
+    processTracks<soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>, kEXTRA, kGen>(collision, particles);
+  }
+  PROCESS_SWITCH(DptDptEfficiencyAndQc, processExtraGeneratorLevelNotStored, "Process MC generator level extra efficiency and QA for not stored derived data", true);
 
   void processReconstructedNotStoredPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
                                         soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, TpcPID, TofPID> const& tracks)

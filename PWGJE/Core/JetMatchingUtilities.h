@@ -40,6 +40,7 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetCandidateUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
 
 namespace jetmatchingutilities
 {
@@ -364,8 +365,14 @@ template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename 
 void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& /*candidatesBase*/, M const& /*candidatesTag*/, N const& tracksBase, O const& tracksTag)
 {
   for (const auto& jetBase : jetsBasePerCollision) {
+    if (jetBase.candidatesIds().size() == 0) {
+      continue;
+    }
     const auto candidateBase = jetBase.template candidates_first_as<V>();
     for (const auto& jetTag : jetsTagPerCollision) {
+      if (jetTag.candidatesIds().size() == 0) {
+        continue;
+      }
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
@@ -406,8 +413,8 @@ auto constexpr getConstituentId(T const& track)
   }
 }
 
-template <bool isEMCAL, bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename O>
-float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O const& clustersTag)
+template <bool isEMCAL, bool isCandidate, bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename O, typename P, typename Q, typename R, typename S>
+float getPtSum(T const& tracksBase, U const& candidatesBase, V const& clustersBase, O const& tracksTag, P const& candidatesTag, Q const& clustersTag, R const& fullTracksBase, S const& fullTracksTag)
 {
   std::vector<int> particleTracker;
   float ptSum = 0.;
@@ -464,6 +471,47 @@ float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O
       }
     }
   }
+  if constexpr (isCandidate) {
+    if constexpr (jetsTagIsMc) {
+      for (auto const& candidateBase : candidatesBase) {
+        if (jetcandidateutilities::isMatchedCandidate(candidateBase)) {
+          const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase, fullTracksBase, fullTracksTag);
+          for (auto const& candidateTag : candidatesTag) {
+            const auto candidateTagId = candidateTag.mcParticleId();
+            if (candidateBaseMcId == candidateTagId) {
+              ptSum += candidateBase.pt();
+            }
+            break; // should only be one
+          }
+        }
+        break;
+      }
+    } else if constexpr (jetsBaseIsMc) {
+      for (auto const& candidateTag : candidatesTag) {
+        if (jetcandidateutilities::isMatchedCandidate(candidateTag)) {
+          const auto candidateTagMcId = jetcandidateutilities::matchedParticleId(candidateTag, fullTracksTag, fullTracksBase);
+          for (auto const& candidateBase : candidatesBase) {
+            const auto candidateBaseId = candidateBase.mcParticleId();
+            if (candidateTagMcId == candidateBaseId) {
+              ptSum += candidateTag.pt();
+            }
+            break; // should only be one
+          }
+        }
+        break;
+      }
+    } else {
+      for (auto const& candidateBase : candidatesBase) {
+        for (auto const& candidateTag : candidatesTag) {
+          if (candidateBase.globalIndex() == candidateTag.globalIndex()) {
+            ptSum += candidateBase.pt();
+          }
+          break; // should only be one
+        }
+        break;
+      }
+    }
+  }
   return ptSum;
 }
 
@@ -472,30 +520,34 @@ auto getConstituents(T const& jet, U const& /*constituents*/)
 {
   if constexpr (jetfindingutilities::isEMCALClusterTable<U>()) {
     return jet.template clusters_as<U>();
-  } else if constexpr (jetfindingutilities::isDummyTable<U>()) { // this is for the case where EMCal clusters are tested but no clusters exist, like in the case of charged jet analyses
+  } else if constexpr (jetcandidateutilities::isCandidateTable<U>() || jetcandidateutilities::isCandidateMcTable<U>()) {
+    return jet.template candidates_as<U>();
+  } else if constexpr (jetfindingutilities::isDummyTable<U>() || std::is_same_v<U, o2::aod::JCollisions> || std::is_same_v<U, o2::aod::JMcCollisions>) { // this is for the case where EMCal clusters or candidates are tested but no clusters or candidates exist and dummy tables are used, like in the case of charged jet analyses
     return nullptr;
   } else {
     return jet.template tracks_as<U>();
   }
 }
 
-template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& tracksBase, M const& clustersBase, N const& tracksTag, O const& clustersTag, float minPtFraction)
+template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
+void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingPt, V const& tracksBase, M const& candidatesBase, N const& clustersBase, O const& tracksTag, P const& candidatesTag, Q const& clustersTag, float minPtFraction)
 {
   float ptSumBase;
   float ptSumTag;
   for (const auto& jetBase : jetsBasePerCollision) {
     auto jetBaseTracks = getConstituents(jetBase, tracksBase);
     auto jetBaseClusters = getConstituents(jetBase, clustersBase);
+    auto jetBaseCandidates = getConstituents(jetBase, candidatesBase);
     for (const auto& jetTag : jetsTagPerCollision) {
       if (std::round(jetBase.r()) != std::round(jetTag.r())) {
         continue;
       }
       auto jetTagTracks = getConstituents(jetTag, tracksTag);
       auto jetTagClusters = getConstituents(jetTag, clustersTag);
+      auto jetTagCandidates = getConstituents(jetTag, candidatesTag);
 
-      ptSumBase = getPtSum < jetfindingutilities::isEMCALClusterTable<M>() || jetfindingutilities::isEMCALClusterTable<O>(), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseClusters, jetTagTracks, jetTagClusters);
-      ptSumTag = getPtSum < jetfindingutilities::isEMCALClusterTable<M>() || jetfindingutilities::isEMCALClusterTable<O>(), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagClusters, jetBaseTracks, jetBaseClusters);
+      ptSumBase = getPtSum < jetfindingutilities::isEMCALClusterTable<N>() || jetfindingutilities::isEMCALClusterTable<Q>(), (jetcandidateutilities::isCandidateTable<M>() || jetcandidateutilities::isCandidateMcTable<M>()) && (jetcandidateutilities::isCandidateTable<P>() || jetcandidateutilities::isCandidateMcTable<P>()), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseCandidates, jetBaseClusters, jetTagTracks, jetTagCandidates, jetTagClusters, tracksBase, tracksTag);
+      ptSumTag = getPtSum < jetfindingutilities::isEMCALClusterTable<N>() || jetfindingutilities::isEMCALClusterTable<Q>(), (jetcandidateutilities::isCandidateTable<M>() || jetcandidateutilities::isCandidateMcTable<M>()) && (jetcandidateutilities::isCandidateTable<P>() || jetcandidateutilities::isCandidateMcTable<P>()), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagCandidates, jetTagClusters, jetBaseTracks, jetBaseCandidates, jetBaseClusters, tracksTag, tracksBase);
       if (ptSumBase > jetBase.pt() * minPtFraction) {
         baseToTagMatchingPt[jetBase.globalIndex()].push_back(jetTag.globalIndex());
       }
@@ -508,7 +560,7 @@ void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
 
 // function that calls all the Match functions
 template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename R>
-void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& candidatesTag, N const& tracksBase, O const& clustersBase, P const& tracksTag, R const& clustersTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float maxMatchingDistance, float minPtFraction)
+void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::vector<std::vector<int>>& baseToTagMatchingGeo, std::vector<std::vector<int>>& baseToTagMatchingPt, std::vector<std::vector<int>>& baseToTagMatchingHF, std::vector<std::vector<int>>& tagToBaseMatchingGeo, std::vector<std::vector<int>>& tagToBaseMatchingPt, std::vector<std::vector<int>>& tagToBaseMatchingHF, V const& candidatesBase, M const& tracksBase, N const& clustersBase, O const& candidatesTag, P const& tracksTag, R const& clustersTag, bool doMatchingGeo, bool doMatchingHf, bool doMatchingPt, float maxMatchingDistance, float minPtFraction)
 {
   // geometric matching
   if (doMatchingGeo) {
@@ -516,14 +568,179 @@ void doAllMatching(T const& jetsBasePerCollision, U const& jetsTagPerCollision, 
   }
   // pt matching
   if (doMatchingPt) {
-    MatchPt<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingPt, tagToBaseMatchingPt, tracksBase, clustersBase, tracksTag, clustersTag, minPtFraction);
+    MatchPt<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingPt, tagToBaseMatchingPt, tracksBase, candidatesBase, clustersBase, tracksTag, candidatesTag, clustersTag, minPtFraction);
   }
   // HF matching
-  if constexpr (jetcandidateutilities::isCandidateTable<V>()) {
+  if constexpr (jetcandidateutilities::isCandidateTable<V>() || jetcandidateutilities::isCandidateMcTable<V>()) {
     if (doMatchingHf) {
       MatchHF<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerCollision, jetsTagPerCollision, baseToTagMatchingHF, tagToBaseMatchingHF, candidatesBase, candidatesTag, tracksBase, tracksTag);
     }
   }
 }
+
+// function that does pair matching
+template <bool jetsBaseIsMc, bool jetsTagIsMc, typename T, typename U, typename V, typename M, typename N, typename O>
+void doPairMatching(T const& pairsBase, U const& pairsTag, std::vector<std::vector<int>>& baseToTagMatching, std::vector<std::vector<int>>& tagToBaseMatching, V const& /*candidatesBase*/, M const& tracksBase, N const& /*candidatesTag*/, O const& tracksTag)
+{
+  bool hasTrackBase1 = false;
+  bool hasTrackBase2 = false;
+  bool hasCandidateBase1 = false;
+  bool hasCandidateBase2 = false;
+  std::vector<int> pairsTagIndices;
+  for (auto i = 0; i < pairsTag.size(); i++) {
+    pairsTagIndices.push_back(i);
+  }
+  for (const auto& pairBase : pairsBase) {
+    if (pairBase.has_track1()) {
+      hasTrackBase1 = true;
+    }
+    if (pairBase.has_track2()) {
+      hasTrackBase2 = true;
+    }
+    if (pairBase.has_candidate1()) {
+      hasCandidateBase1 = true;
+    }
+    if (pairBase.has_candidate2()) {
+      hasCandidateBase2 = true;
+    }
+    int matchedPairTagIndex = -1;
+    for (auto pairTagIndex : pairsTagIndices) {
+      const auto& pairTag = pairsTag.iteratorAt(pairTagIndex);
+      if (hasTrackBase1 && !pairTag.has_track1()) {
+        continue;
+      }
+      if (hasTrackBase2 && !pairTag.has_track2()) {
+        continue;
+      }
+      if (hasCandidateBase1 && !pairTag.has_candidate1()) {
+        continue;
+      }
+      if (hasCandidateBase2 && !pairTag.has_candidate2()) {
+        continue;
+      }
+      int nMatched = 0;
+      bool isMatched = false;
+      if (hasTrackBase1) {
+        const auto& trackBase1 = pairBase.template track1_as<M>();
+        const auto& trackTag1 = pairTag.template track1_as<O>();
+        if constexpr (jetsTagIsMc) {
+          if (trackBase1.mcParticleId() == trackTag1.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        } else if constexpr (jetsBaseIsMc) {
+          if (trackBase1.globalIndex() == trackTag1.mcParticleId()) {
+            nMatched++;
+            isMatched = true;
+          }
+        } else {
+          if (trackBase1.globalIndex() == trackTag1.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        }
+        if (!isMatched) {
+          continue;
+        }
+      }
+      isMatched = false;
+
+      if (hasTrackBase2) {
+        const auto& trackBase2 = pairBase.template track2_as<M>();
+        const auto& trackTag2 = pairTag.template track2_as<O>();
+        if constexpr (jetsTagIsMc) {
+          if (trackBase2.mcParticleId() == trackTag2.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        } else if constexpr (jetsBaseIsMc) {
+          if (trackBase2.globalIndex() == trackTag2.mcParticleId()) {
+            nMatched++;
+            isMatched = true;
+          }
+        } else {
+          if (trackBase2.globalIndex() == trackTag2.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        }
+        if (!isMatched) {
+          continue;
+        }
+      }
+      isMatched = false;
+      if (hasCandidateBase1) {
+        const auto& candidateBase1 = pairBase.template candidate1_as<V>();
+        const auto& candidateTag1 = pairTag.template candidate1_as<N>();
+        if constexpr (jetsTagIsMc) {
+          if (jetcandidateutilities::isMatchedCandidate(candidateBase1)) {
+            const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase1, tracksBase, tracksTag);
+            if (candidateBaseMcId == candidateTag1.globalIndex()) {
+              nMatched++;
+              isMatched = true;
+            }
+          }
+        } else if constexpr (jetsBaseIsMc) {
+          if (jetcandidateutilities::isMatchedCandidate(candidateTag1)) {
+            const auto candidateTagMcId = jetcandidateutilities::matchedParticleId(candidateTag1, tracksTag, tracksBase);
+            if (candidateTagMcId == candidateBase1.globalIndex()) {
+              nMatched++;
+              isMatched = true;
+            }
+          }
+        } else {
+          if (candidateBase1.globalIndex() == candidateTag1.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        }
+        if (!isMatched) {
+          continue;
+        }
+      }
+      isMatched = false;
+      if (hasCandidateBase2) {
+        const auto& candidateBase2 = pairBase.template candidate2_as<V>();
+        const auto& candidateTag2 = pairTag.template candidate2_as<N>();
+        if constexpr (jetsTagIsMc) {
+          if (jetcandidateutilities::isMatchedCandidate(candidateBase2)) {
+            const auto candidateBaseMcId = jetcandidateutilities::matchedParticleId(candidateBase2, tracksBase, tracksTag);
+            if (candidateBaseMcId == candidateTag2.globalIndex()) {
+              nMatched++;
+              isMatched = true;
+            }
+          }
+        } else if constexpr (jetsBaseIsMc) {
+          if (jetcandidateutilities::isMatchedCandidate(candidateTag2)) {
+            const auto candidateTagMcId = jetcandidateutilities::matchedParticleId(candidateTag2, tracksTag, tracksBase);
+            if (candidateTagMcId == candidateBase2.globalIndex()) {
+              nMatched++;
+              isMatched = true;
+            }
+          }
+        } else {
+          if (candidateBase2.globalIndex() == candidateTag2.globalIndex()) {
+            nMatched++;
+            isMatched = true;
+          }
+        }
+        if (!isMatched) {
+          continue;
+        }
+      }
+
+      if (nMatched == 2) {
+        baseToTagMatching[pairBase.globalIndex()].push_back(pairTag.globalIndex());
+        tagToBaseMatching[pairTag.globalIndex()].push_back(pairBase.globalIndex());
+        matchedPairTagIndex = pairTagIndex;
+        break; // can only be one match per jet
+      }
+    }
+    if (matchedPairTagIndex != -1) {
+      pairsTagIndices.erase(std::find(pairsTagIndices.begin(), pairsTagIndices.end(), matchedPairTagIndex));
+    }
+  }
+}
+
 };     // namespace jetmatchingutilities
 #endif // PWGJE_CORE_JETMATCHINGUTILITIES_H_
