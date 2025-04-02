@@ -1566,7 +1566,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
+  PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", false);
 
   void processOccupancy(CollisionCandidates::iterator const& collision,
                         soa::Join<TrackCandidates,
