@@ -558,7 +558,7 @@ struct FlowSP {
         fMultPVCutHigh->SetParameters((cfgMultPv.value)[5], (cfgMultPv.value)[6], (cfgMultPv.value)[7], (cfgMultPv.value)[8], (cfgMultPv.value)[9]);
         fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
         fMultCutHigh->SetParameters((cfgMult.value)[5], (cfgMult.value)[6], (cfgMult.value)[7], (cfgMult.value)[8], (cfgMult.value)[9]);
-    }
+      }
     }
 
     if (cfgUseAdditionalTrackCut) {
