@@ -512,7 +512,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
 
   void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -529,7 +529,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
 
   void processDataLiteWithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -546,7 +546,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
 
   void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                     soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+                                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -580,7 +580,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
 
   void processMcLiteXic0WithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
-                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -597,7 +597,7 @@ struct HfTreeCreatorToXiPi {
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
 
   void processMcLiteXic0WithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
-                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -613,9 +613,8 @@ struct HfTreeCreatorToXiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
 
-
   void processMcLiteXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
-                                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+                                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -630,7 +629,6 @@ struct HfTreeCreatorToXiPi {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
-
 
   void processMcLiteOmegac0(MyEventTable const& collisions, MyTrackTable const&,
                             soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
