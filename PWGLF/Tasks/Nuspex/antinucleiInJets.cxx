@@ -25,6 +25,7 @@
 #include <TVector3.h>
 #include "TGrid.h"
 #include <random>
+#include <memory>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -290,51 +291,55 @@ struct AntinucleiInJets {
     }
   }
 
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
+  void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
   {
-    // initialization
-    double ux(0), uy(0), uz(0);
-
-    // components of vector p
     double px = p.X();
     double py = p.Y();
     double pz = p.Z();
 
+    double px2 = px * px;
+    double py2 = py * py;
+    double pz2 = pz * pz;
+    double pz4 = pz2 * pz2;
+
+    // px and py are both zero
+    if (px == 0 && py == 0) {
+      u.SetXYZ(0, 0, 0);
+      return;
+    }
+
     // protection 1
     if (px == 0 && py != 0) {
-      uy = -(pz * pz) / py;
-      ux = sign * std::sqrt(py * py - (pz * pz * pz * pz) / (py * py));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
+      double ux = sign * std::sqrt(py2 - pz4 / py2);
+      double uy = -pz2 / py;
+      u.SetXYZ(ux, uy, pz);
       return;
     }
 
     // protection 2
     if (py == 0 && px != 0) {
-      ux = -(pz * pz) / px;
-      uy = sign * std::sqrt(px * px - (pz * pz * pz * pz) / (px * px));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
+      double ux = -pz2 / px;
+      double uy = sign * std::sqrt(px2 - pz4 / px2);
+      u.SetXYZ(ux, uy, pz);
       return;
     }
 
-    // equation parameters
-    double a = px * px + py * py;
-    double b = 2.0 * px * pz * pz;
-    double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
+    // General case
+    double a = px2 + py2;
+    double b = 2.0 * px * pz2;
+    double c = pz4 - py2 * py2 - px2 * py2;
+
     double delta = b * b - 4.0 * a * c;
 
-    // protection agains delta<0
-    if (delta < 0) {
+    if (delta < 0 || a == 0) {
+      LOGP(warn, "Invalid input in getPerpendicularAxis: delta = {}, a = {}", delta, a);
+      u.SetXYZ(0, 0, 0);
       return;
     }
 
-    // solutions
-    ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
-    uy = (-pz * pz - px * ux) / py;
-    uz = pz;
-    u.SetXYZ(ux, uy, uz);
-    return;
+    double ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
+    double uy = (-pz2 - px * ux) / py;
+    u.SetXYZ(ux, uy, pz);
   }
 
   double getDeltaPhi(double a1, double a2)
@@ -448,19 +453,25 @@ struct AntinucleiInJets {
 
   double getCorrectedPt(double ptRec, TH2* responseMatrix)
   {
+    if (!responseMatrix) {
+      LOGP(error, "Response matrix is null. Returning uncorrected pt.");
+      return ptRec;
+    }
 
     int binX = responseMatrix->GetXaxis()->FindBin(ptRec);
-    TH1D* proj = responseMatrix->ProjectionY("proj", binX, binX);
+    if (binX < 1 || binX > responseMatrix->GetNbinsX()) {
+      LOGP(error, "Bin index out of range: binX = {}", binX);
+      return ptRec; // Return uncorrected pt if bin index is invalid
+    }
+    std::unique_ptr<TH1D> proj(responseMatrix->ProjectionY("proj", binX, binX));
 
     // add a protection in case the projection is empty
     if (proj->GetEntries() == 0) {
-      delete proj;
       return ptRec;
     }
 
     double deltaPt = proj->GetRandom();
     double ptGen = ptRec + deltaPt;
-    delete proj;
 
     return ptGen;
   }
@@ -472,11 +483,12 @@ struct AntinucleiInJets {
       LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
       return;
     }
-    responseMatrix = static_cast<TH2F*>(l->FindObject(Form("%s", histoNamePtUnfolding.Data())));
-    if (!responseMatrix) {
-      LOGP(error, "Could not open histogram {}", Form("%s", histoNamePtUnfolding.Data()));
+    TObject* obj = l->FindObject(Form("%s", histoNamePtUnfolding.Data()));
+    if (!obj || !obj->InheritsFrom(TH2F::Class())) {
+      LOGP(error, "Could not find a valid TH2F histogram {}", Form("%s", histoNamePtUnfolding.Data()));
       return;
     }
+    responseMatrix = static_cast<TH2F*>(obj);
     LOGP(info, "Opened histogram {}", Form("%s", histoNamePtUnfolding.Data()));
   }
 
