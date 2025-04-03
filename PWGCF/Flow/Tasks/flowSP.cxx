@@ -456,6 +456,9 @@ struct FlowSP {
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_ParticleWeights + 1, "Apply weights");
 
     if (cfgUseAdditionalEventCut) {
+
+      int twoSigma = 2;
+      int threeSigma = 3;
       // Fitted for LHC23zzh_pass4
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
@@ -466,13 +469,13 @@ struct FlowSP {
       double fitParamLowPV4 = -0.00974862;
       double fitParamLowPV5 = 2.71433e-05;
 
-      if (cfgnSigmaMultCuts == 2) {
+      if (cfgnSigmaMultCuts == twoSigma) {
         fitParamLowPV1 = 2665.68;
         fitParamLowPV2 = -93.3784;
         fitParamLowPV3 = 1.27137;
         fitParamLowPV4 = -0.00818936;
         fitParamLowPV5 = 2.115e-05;
-      } else if (cfgnSigmaMultCuts == 3) {
+      } else if (cfgnSigmaMultCuts == threeSigma) {
         fitParamLowPV1 = 2389.99;
         fitParamLowPV2 = -83.8483;
         fitParamLowPV3 = 1.11062;
@@ -491,13 +494,13 @@ struct FlowSP {
       double fitParamHighPV4 = -0.0145343;
       double fitParamHighPV5 = 4.80688e-05;
 
-      if (cfgnSigmaMultCuts == 2) {
+      if (cfgnSigmaMultCuts == twoSigma) {
         fitParamHighPV1 = 3787.93;
         fitParamHighPV2 = -135.184;
         fitParamHighPV3 = 2.07683;
         fitParamHighPV4 = -0.0165997;
         fitParamHighPV5 = 5.68725e-05;
-      } else if (cfgnSigmaMultCuts == 3) {
+      } else if (cfgnSigmaMultCuts == threeSigma) {
         fitParamHighPV1 = 4067.4;
         fitParamHighPV2 = -145.485;
         fitParamHighPV3 = 2.27273;
@@ -514,13 +517,13 @@ struct FlowSP {
       double fitParamLow4 = -0.00235284;
       double fitParamLow5 = 3.01132e-06;
 
-      if (cfgnSigmaMultCuts == 2) {
+      if (cfgnSigmaMultCuts == twoSigma) {
         fitParamLow1 = 1307.92;
         fitParamLow2 = -39.9168;
         fitParamLow3 = 0.412675;
         fitParamLow4 = -0.00148081;
         fitParamLow5 = 1.10868e-07;
-      } else if (cfgnSigmaMultCuts == 3) {
+      } else if (cfgnSigmaMultCuts == threeSigma) {
         fitParamLow1 = 1048.48;
         fitParamLow2 = -31.4568;
         fitParamLow3 = 0.287794;
@@ -537,13 +540,13 @@ struct FlowSP {
       double fitParamHigh4 = -0.00496563;
       double fitParamHigh5 = 1.34314e-05;
 
-      if (cfgnSigmaMultCuts == 2) {
+      if (cfgnSigmaMultCuts == twoSigma) {
         fitParamHigh1 = 2350.39;
         fitParamHigh2 = -74.6939;
         fitParamHigh3 = 0.953287;
         fitParamHigh4 = -0.006162;
         fitParamHigh5 = 1.80808e-05;
-      } else if (cfgnSigmaMultCuts == 3) {
+      } else if (cfgnSigmaMultCuts == threeSigma) {
         fitParamHigh1 = 2610.98;
         fitParamHigh2 = -83.3983;
         fitParamHigh3 = 1.0893;
@@ -1182,11 +1185,6 @@ struct FlowSP {
       if (track.sign() == 0.0)
         continue;
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
-<<<<<<< Updated upstream
-
-      bool pos = (track.sign() > 0) ? true : false;
-=======
->>>>>>> Stashed changes
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
