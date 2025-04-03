@@ -459,8 +459,8 @@ struct AntinucleiInJets {
 
     int binX = responseMatrix->GetXaxis()->FindBin(ptRec);
     if (binX < 1 || binX > responseMatrix->GetNbinsX()) {
-        LOGP(error, "Bin index out of range: binX = {}", binX);
-        return ptRec; // Return uncorrected pt if bin index is invalid
+      LOGP(error, "Bin index out of range: binX = {}", binX);
+      return ptRec; // Return uncorrected pt if bin index is invalid
     }
     std::unique_ptr<TH1D> proj(responseMatrix->ProjectionY("proj", binX, binX));
 
