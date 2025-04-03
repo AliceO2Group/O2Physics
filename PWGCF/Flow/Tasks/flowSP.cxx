@@ -39,6 +39,7 @@
 #include "PWGCF/DataModel/SPTableZDC.h"
 #include "GFWWeights.h"
 #include "TF1.h"
+#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -231,10 +232,10 @@ struct FlowSP {
     AxisSpec axisVz = {40, -10, 10, "v_{z}"};
     AxisSpec axisCent = {90, 0, 90, "Centrality(%)"};
     AxisSpec axisPhiPlane = {100, -constants::math::PI, constants::math::PI, "#Psi"};
-    AxisSpec axisNch = {40, 0, 4000, "N_{ch}"};
-    AxisSpec axisT0c = {70, 0, 70000, "N_{ch} (T0C)"};
-    AxisSpec axisT0a = {70, 0, 70000, "N_{ch} (T0A)"};
-    AxisSpec axisV0a = {70, 0, 70000, "N_{ch} (V0A)"};
+    AxisSpec axisNch = {40, 0, 40000, "N_{ch}"};
+    AxisSpec axisT0c = {70, 0, 100000, "N_{ch} (T0C)"};
+    AxisSpec axisT0a = {70, 0, 200000, "N_{ch} (T0A)"};
+    AxisSpec axisV0a = {70, 0, 200000, "N_{ch} (V0A)"};
     AxisSpec axisMultpv = {40, 0, 4000, "N_{ch} (PV)"};
     AxisSpec axisShCl = {100, 0, 1, "Fraction shared cl. TPC"};
     AxisSpec axisCl = {100, 0, 160, "Number of cl. TPC"};
@@ -457,33 +458,103 @@ struct FlowSP {
     if (cfgUseAdditionalEventCut) {
       // Fitted for LHC23zzh_pass4
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultPVCutLow->SetParameters(2942.55, -103.111, 1.4397, -0.00974862, 2.71433e-05);
-      if (cfgnSigmaMultCuts == 2)
-        fMultPVCutLow->SetParameters(2665.68, -93.3784, 1.27137, -0.00818936, 2.115e-05);
-      if (cfgnSigmaMultCuts == 3)
-        fMultPVCutLow->SetParameters(2389.99, -83.8483, 1.11062, -0.00672263, 1.54725e-05);
+
+      // Variables from fitting distribution with mean+1sigma
+      double fitParamLowPV1 = 2942.55; 
+      double fitParamLowPV2 = -103.111;
+      double fitParamLowPV3 = 1.4397;
+      double fitParamLowPV4 = -0.00974862;
+      double fitParamLowPV5 = 2.71433e-05;
+
+      if (cfgnSigmaMultCuts == 2){
+        fitParamLowPV1 = 2665.68;
+        fitParamLowPV2 = -93.3784;
+        fitParamLowPV3 = 1.27137;
+        fitParamLowPV4 = -0.00818936;
+        fitParamLowPV5 = 2.115e-05;
+      }
+      else if (cfgnSigmaMultCuts == 3){
+        fitParamLowPV1 = 2389.99;
+        fitParamLowPV2 = -83.8483;
+        fitParamLowPV3 = 1.11062;
+        fitParamLowPV4 = -0.00672263;
+        fitParamLowPV5 = 1.54725e-05;
+      }
+
+      fMultPVCutLow->SetParameters( fitParamLowPV1, fitParamLowPV2, fitParamLowPV3, fitParamLowPV4, fitParamLowPV5);
 
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultPVCutHigh->SetParameters(3508.13, -124.831, 1.87871, -0.0145343, 4.80688e-05);
-      if (cfgnSigmaMultCuts == 2)
-        fMultPVCutHigh->SetParameters(3787.93, -135.184, 2.07683, -0.0165997, 5.68725e-05);
-      if (cfgnSigmaMultCuts == 3)
-        fMultPVCutHigh->SetParameters(4067.4, -145.485, 2.27273, -0.0186308, 6.5501e-05);
+
+      // Variables from fitting distribution with mean+1sigma
+      double fitParamHighPV1 = 3508.13;
+      double fitParamHighPV2 = -124.831;
+      double fitParamHighPV3 = 1.87871;
+      double fitParamHighPV4 = -0.0145343;
+      double fitParamHighPV5 = 4.80688e-05;
+
+      if (cfgnSigmaMultCuts == 2){
+        fitParamHighPV1 = 3787.93;
+        fitParamHighPV2 = -135.184;
+        fitParamHighPV3 = 2.07683;
+        fitParamHighPV4 = -0.0165997;
+        fitParamHighPV5 = 5.68725e-05;
+      }
+      else if (cfgnSigmaMultCuts == 3){
+        fitParamHighPV1 = 4067.4;
+        fitParamHighPV2 = -145.485;
+        fitParamHighPV3 = 2.27273;
+        fitParamHighPV4 = -0.0186308;
+        fitParamHighPV5 = 6.5501e-05;
+      }
+      fMultPVCutHigh->SetParameters(fitParamHighPV1, fitParamHighPV2, fitParamHighPV3, fitParamHighPV4, fitParamHighPV5);
 
       fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutLow->SetParameters(1566.5, -48.2114, 0.529522, -0.00235284, 3.01132e-06);
-      if (cfgnSigmaMultCuts == 2)
-        fMultCutLow->SetParameters(1307.92, -39.9168, 0.412675, -0.00148081, 1.10868e-07);
-      if (cfgnSigmaMultCuts == 3)
-        fMultCutLow->SetParameters(1048.48, -31.4568, 0.287794, -0.00046847, -3.5909e-06);
+
+      double fitParamLow1 = 1566.5;
+      double fitParamLow2 = -48.2114;
+      double fitParamLow3 = 0.529522;
+      double fitParamLow4 = -0.00235284;
+      double fitParamLow5 = 3.01132e-06;
+
+      if (cfgnSigmaMultCuts == 2){
+        fitParamLow1 = 1307.92;
+        fitParamLow2 = -39.9168;
+        fitParamLow3 = 0.412675;
+        fitParamLow4 = -0.00148081;
+        fitParamLow5 = 1.10868e-07;
+      }
+      else if (cfgnSigmaMultCuts == 3){
+        fitParamLow1 = 1048.48;
+        fitParamLow2 = -31.4568;
+        fitParamLow3 = 0.287794;
+        fitParamLow4 = -0.00046847;
+        fitParamLow5 = -3.5909e-06;
+      }
+      fMultCutLow->SetParameters(fitParamLow1, fitParamLow2, fitParamLow3, fitParamLow4, fitParamLow5);
 
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
-      fMultCutHigh->SetParameters(2089.73, -65.9772, 0.816781, -0.00496563, 1.34314e-05);
-      if (cfgnSigmaMultCuts == 2)
-        fMultCutHigh->SetParameters(2350.39, -74.6939, 0.953287, -0.006162, 1.80808e-05);
-      if (cfgnSigmaMultCuts == 3)
-        fMultCutHigh->SetParameters(2610.98, -83.3983, 1.0893, -0.00735094, 2.26929e-05);
-    }
+
+      double fitParamHigh1 = 2089.73;
+      double fitParamHigh2 = -65.9772;
+      double fitParamHigh3 = 0.816781;
+      double fitParamHigh4 = -0.00496563;
+      double fitParamHigh5 = 1.34314e-05;
+      if (cfgnSigmaMultCuts == 2){
+        fitParamHigh1 = 2350.39;
+        fitParamHigh2 = -74.6939;
+        fitParamHigh3 = 0.953287;
+        fitParamHigh4 = -0.006162;
+        fitParamHigh5 = 1.80808e-05;
+      }
+      else if (cfgnSigmaMultCuts == 3){
+        fitParamHigh1 = 2610.98;
+        fitParamHigh2 = -83.3983;
+        fitParamHigh3 = 1.0893;
+        fitParamHigh4 = -0.00735094;
+        fitParamHigh5 = 2.26929e-05;
+      }
+
+      fMultCutHigh->SetParameters(fitParamHigh1, fitParamHigh2, fitParamHigh3, fitParamHigh4, fitParamHigh5);
 
     if (cfgManualEventParameters) {
       fMultPVCutLow->SetParameters((cfgMultPv.value)[0], (cfgMultPv.value)[1], (cfgMultPv.value)[2], (cfgMultPv.value)[3], (cfgMultPv.value)[4]);
@@ -491,6 +562,8 @@ struct FlowSP {
       fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
       fMultCutHigh->SetParameters((cfgMult.value)[5], (cfgMult.value)[6], (cfgMult.value)[7], (cfgMult.value)[8], (cfgMult.value)[9]);
     }
+
+  }
 
     if (cfgUseAdditionalTrackCut) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
@@ -876,23 +949,41 @@ struct FlowSP {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt());
     }
 
+<<<<<<< Updated upstream
     if (pdgCode == 211 || pdgCode == -211) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
       if (pdgCode == 211) {
+=======
+    if(pdgCode == kPiPlus || pdgCode == kPiMinus){
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
+      if(pdgCode == kPiPlus) {
+>>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt());
       }
+<<<<<<< Updated upstream
     } else if (pdgCode == 321 || pdgCode == -321) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
       if (pdgCode == 321) {
+=======
+    } else if(pdgCode == kKPlus || pdgCode == kKMinus) {
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
+      if(pdgCode == kKPlus) {
+>>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt());
       }
+<<<<<<< Updated upstream
     } else if (pdgCode == 2212 || pdgCode == -2212) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
       if (pdgCode == 2212) {
+=======
+    } else if(pdgCode == kProton || pdgCode ==  kProtonBar) {
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
+      if(pdgCode == kProton) {
+>>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt());
@@ -1111,8 +1202,11 @@ struct FlowSP {
       if (track.sign() == 0.0)
         continue;
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
+<<<<<<< Updated upstream
 
       bool pos = (track.sign() > 0) ? true : false;
+=======
+>>>>>>> Stashed changes
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
