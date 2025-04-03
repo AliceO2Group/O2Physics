@@ -52,14 +52,17 @@ struct LumiStabilityTask {
   Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 128, "number of orbits per time frame"};
   Configurable<double> minOrbitConf{"minOrbitConf", 0, "minimum orbit"};
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
+  Configurable<int> minEmpty{"minEmpty", 5, "number of BCs empty for leading BC"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int nBCsPerOrbit = 3564;
   int lastRunNumber = -1;
   int nOrbits = nOrbitsConf;
   double minOrbit = minOrbitConf;
-  int64_t bcSOR = 0;                      // global bc of the start of the first orbit, setting 0 by default for unanchored MC
-  int64_t nBCsPerTF = 128 * nBCsPerOrbit; // duration of TF in bcs, should be 128*3564 or 32*3564, setting 128 orbits by default sfor unanchored MC
+  int64_t bcSOR = 0; // global bc of the start of the first orbit, setting 0 by default for unanchored MC
+  int64_t tsSOR;
+  int64_t tsEOR;
+  int64_t nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit; // duration of TF in bcs, should be 128*3564 or 32*3564, setting 128 orbits by default sfor unanchored MC
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
@@ -75,59 +78,63 @@ struct LumiStabilityTask {
 
     const AxisSpec axisCounts{6, -0.5, 5.5};
     const AxisSpec axisV0Counts{5, -0.5, 4.5};
-    const AxisSpec axisTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
+    const AxisSpec axisTrigger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
     const AxisSpec axisPos{1000, -1, 1};
     const AxisSpec axisPosZ{1000, -25, 25};
     const AxisSpec axisNumContrib{1001, -0.5, 1000};
-    const AxisSpec axisColisionTime{1000, -50, 50};
+    const AxisSpec axisCollisionTime{1000, -50, 50};
     const AxisSpec axisTime{1000, -10, 40};
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
     const AxisSpec axisTimeRate{1440, 0., 86400, ""}; // t in seconds. Histo for 24 hrs. Each bin contain 1 min.
 
-    histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
-    histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
-    histos.add("hBcB", "BC pattern B; BC ; It is present", kTH1F, {axisTriggger});
-    histos.add("hBcE", "BC pattern Empty; BC ; It is present", kTH1F, {axisTriggger});
+    histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTrigger});
+    histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTrigger});
+    histos.add("hBcB", "BC pattern B; BC ; It is present", kTH1F, {axisTrigger});
+    histos.add("hBcBL", "BC pattern B - Leading BC; BC ; It is present", kTH1F, {axisTrigger});
+    histos.add("hBcE", "BC pattern Empty; BC ; It is present", kTH1F, {axisTrigger});
     histos.add("hvertexX", "Pos X vertex trigger; Pos x; Count ", kTH1F, {axisPos});
-    histos.add("hvertexXvsTime", "Pos X vertex vs Collision Time; vertex X (cm) ; time (ns)", {HistType::kTH2F, {{axisPos}, {axisColisionTime}}});
+    histos.add("hvertexXvsTime", "Pos X vertex vs Collision Time; vertex X (cm) ; time (ns)", {HistType::kTH2F, {{axisPos}, {axisCollisionTime}}});
     histos.add("hvertexY", "Pos Y vertex trigger; Pos y; Count ", kTH1F, {axisPos});
     histos.add("hvertexZ", "Pos Z vertex trigger; Pos z; Count ", kTH1F, {axisPosZ});
     histos.add("hnumContrib", "Num of contributors; Num of contributors; Count ", kTH1I, {axisNumContrib});
-    histos.add("hcollisinTime", "Collision Time; ns; Count ", kTH1F, {axisColisionTime});
+    histos.add("hcollisinTime", "Collision Time; ns; Count ", kTH1F, {axisCollisionTime});
     histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
     histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
     histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
     histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
+    histos.add("tsValues", "", kTH1D, {{2, -0.5, 1.5}});
     // time 32.766 is dummy time
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
-    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVertexTriggerPP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVertexTriggerCoincidencePP", "vertex trigger per BC (FDD) with coincidences and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVertexTriggerBothSidesCoincidencePP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcAVertex", "BC pattern A in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcCVertex", "BC pattern C in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcBVertex", "BC pattern B in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcEVertex", "BC pattern Empty in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
+    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVertexTriggerPP", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVertexTriggerCoincidence", "vertex trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVertexTriggerCoincidencePP", "vertex trigger per BC (FDD) with coincidences and Past Protection;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVertexTriggerBothSidesCoincidencePP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcSCentralTrigger", "scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcSCentralTriggerCoincidence", "scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVSCTrigger", "vertex and scentral trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVSCTriggerCoincidence", "vertex and scentral trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcCentralTrigger", "central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcAVertex", "BC pattern A in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcCVertex", "BC pattern C in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcBVertex", "BC pattern B in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcBVertexL", "BC pattern B in FDD - Leading BC; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcEVertex", "BC pattern Empty in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
     histos.add("FDD/timeACbcBVertex", "time bcB ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FDD/timeACbcAVertex", "time bcA ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FDD/timeACbcCVertex", "time bcC ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FDD/timeACbcEVertex", "time bcE ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
-    histos.add("FDD/hBcA", "BC pattern A in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcC", "BC pattern C in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcB", "BC pattern B in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
-    histos.add("FDD/hBcE", "BC pattern Empty in FDD; BC in FDD ; It is present", kTH1F, {axisTriggger});
+    histos.add("FDD/hBcA", "BC pattern A in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcC", "BC pattern C in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcB", "BC pattern B in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcBL", "BC pattern B in FDD - Leading BC; BC in FDD ; It is present", kTH1F, {axisTrigger});
+    histos.add("FDD/hBcE", "BC pattern Empty in FDD; BC in FDD ; It is present", kTH1F, {axisTrigger});
     histos.add("FDD/timeACbcB", "time bcB ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FDD/timeACbcA", "time bcA ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FDD/timeACbcC", "time bcC ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
@@ -139,35 +146,36 @@ struct LumiStabilityTask {
     histos.add("FDD/hCountsTimeA2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTimeC2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTime2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
-    histos.add("FDD/hValidTimeAvsBC2022", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimeAvsBC2022", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hValidTimeCvsBC2022", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimeCvsBC2022", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hValidTimevsBC2022", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimevsBC2022", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hValidTimeAvsBC2022", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimeAvsBC2022", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hValidTimeCvsBC2022", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimeCvsBC2022", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hValidTimevsBC2022", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimevsBC2022", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hCountsTimeA", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTimeC", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTime", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
-    histos.add("FDD/hValidTimeAvsBC", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimeAvsBC", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hValidTimeCvsBC", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hValidTimeAvsBC", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimeAvsBC", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hValidTimeCvsBC", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
-    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcVertexTriggerPP", "vertex trigger per BC (FT0) with Past Protection;BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcVertexTriggerBothSidesPP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hBcA", "BC pattern A in FT0; BC in FT0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FT0/hBcC", "BC pattern C in FT0; BC in FT0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FT0/hBcB", "BC pattern B in FT0; BC in FT0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FT0/hBcE", "BC pattern Empty in FT0; BC in FT0 ; It is present", kTH1F, {axisTriggger});
+    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcVertexTriggerPP", "vertex trigger per BC (FT0) with Past Protection;BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcVertexTriggerBothSidesPP", "vertex per BC (FDD) with coincidences, at least one side trigger and Past Protection;BC in FDD; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcCentralTrigger", "central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/bcVCTrigger", "vertex and central trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hBcA", "BC pattern A in FT0; BC in FT0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FT0/hBcC", "BC pattern C in FT0; BC in FT0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FT0/hBcB", "BC pattern B in FT0; BC in FT0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FT0/hBcBL", "BC pattern B in FT0 - Leading BC; BC in FT0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FT0/hBcE", "BC pattern Empty in FT0; BC in FT0 ; It is present", kTH1F, {axisTrigger});
     histos.add("FT0/timeACbcB", "time bcB ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FT0/timeACbcA", "time bcA ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
     histos.add("FT0/timeACbcC", "time bcC ; A (ns); C (ns)", {HistType::kTH2F, {{300, -15, 15}, {300, -15, 15}}});
@@ -177,27 +185,27 @@ struct LumiStabilityTask {
     histos.add("FT0/hCountsTimeA", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FT0/hCountsTimeC", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FT0/hCountsTime", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
-    histos.add("FT0/hValidTimeAvsBC", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hInvTimeAvsBC", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hValidTimeCvsBC", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
-    histos.add("FT0/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
+    histos.add("FT0/hValidTimeAvsBC", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hInvTimeAvsBC", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hValidTimeCvsBC", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
+    histos.add("FT0/hTimeForRate", "Counts by time in FT0;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisV0Counts});
-    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcCenTrigger", "Central trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcCenTriggerPFPCentral", "Central trigger per BC (FV0) with PFP in central trigger;BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcCenTriggerPPCentral", "Central trigger per BC (FV0) with PP in central trigger;BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcCenTriggerPFPOutIn", "Central trigger per BC (FV0) with PFP in Out and In trigger;BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/bcCenTriggerPPOutIn", "Central trigger per BC (FV0) with PP in Out and In trigger;BC in V0; counts", kTH1F, {axisTriggger});
-    histos.add("FV0/hBcA", "BC pattern A in FV0; BC in FV0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FV0/hBcC", "BC pattern C in FV0; BC in FV0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FV0/hBcB", "BC pattern B in FV0; BC in FV0 ; It is present", kTH1F, {axisTriggger});
-    histos.add("FV0/hBcE", "BC pattern Empty in FV0; BC in FV0 ; It is present", kTH1F, {axisTriggger});
+    histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcInTrigger", "In trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcSCenTrigger", "SCen trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcCenTrigger", "Central trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcCenTriggerPFPCentral", "Central trigger per BC (FV0) with PFP in central trigger;BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcCenTriggerPPCentral", "Central trigger per BC (FV0) with PP in central trigger;BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcCenTriggerPFPOutIn", "Central trigger per BC (FV0) with PFP in Out and In trigger;BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/bcCenTriggerPPOutIn", "Central trigger per BC (FV0) with PP in Out and In trigger;BC in V0; counts", kTH1F, {axisTrigger});
+    histos.add("FV0/hBcA", "BC pattern A in FV0; BC in FV0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FV0/hBcC", "BC pattern C in FV0; BC in FV0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FV0/hBcB", "BC pattern B in FV0; BC in FV0 ; It is present", kTH1F, {axisTrigger});
+    histos.add("FV0/hBcE", "BC pattern Empty in FV0; BC in FV0 ; It is present", kTH1F, {axisTrigger});
     histos.add("FV0/timeAbcB", "time bcB ; A (ns)", kTH1F, {{300, -15, 15}});
     histos.add("FV0/timeAbcA", "time bcA ; A (ns)", kTH1F, {{300, -15, 15}});
     histos.add("FV0/timeAbcC", "time bcC ; A (ns)", kTH1F, {{300, -15, 15}});
@@ -224,6 +232,7 @@ struct LumiStabilityTask {
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
     int executionCounter = 0;
+    int nbin = o2::constants::lhc::LHCMaxBunches;
     uint32_t nOrbitsPerTF = 0; // 128 in 2022, 32 in 2023
     if (is2022Data) {
       nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
@@ -231,8 +240,6 @@ struct LumiStabilityTask {
       nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
     }
     int runNumber = bcs.iteratorAt(0).runNumber();
-    int64_t tsSOR = 0;
-    int64_t tsEOR = 1;
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
       tsEOR = 1;
@@ -260,6 +267,18 @@ struct LumiStabilityTask {
           }
           if (bcPatternB[i]) {
             histos.fill(HIST("hBcB"), i);
+            bool isLeadBC = true;
+            for (int jbit = i - minEmpty; jbit < i; jbit++) {
+              int kbit = jbit;
+              if (kbit < 0)
+                kbit += nbin;
+              if (bcPatternB[kbit]) {
+                isLeadBC = false;
+                break;
+              }
+            }
+            if (isLeadBC)
+              histos.fill(HIST("hBcBL"), i);
           }
           if (bcPatternE[i]) {
             histos.fill(HIST("hBcE"), i);
@@ -291,6 +310,12 @@ struct LumiStabilityTask {
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
         LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
+
+        auto hTsValues = histos.get<TH1>(HIST("tsValues"));
+        hTsValues->GetXaxis()->SetBinLabel(1, "tsSOR");
+        hTsValues->GetXaxis()->SetBinLabel(2, "tsEOR");
+        hTsValues->SetBinContent(1, tsSOR / 1000); // seconds
+        hTsValues->SetBinContent(2, tsEOR / 1000); // seconds
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -375,6 +400,18 @@ struct LumiStabilityTask {
           if (bcPatternB[localBC]) {
             histos.fill(HIST("FDD/timeACbcBVertex"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcBVertex"), localBC);
+            bool isLeadBC = true;
+            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+              int kbit = jbit;
+              if (kbit < 0)
+                kbit += nbin;
+              if (bcPatternB[kbit]) {
+                isLeadBC = false;
+                break;
+              }
+            }
+            if (isLeadBC)
+              histos.fill(HIST("FDD/hBcBVertexL"), localBC);
             histos.fill(HIST("FDD/hTimeAVertex"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCVertex"), fdd.timeC());
             if (is2022Data) {
@@ -426,6 +463,18 @@ struct LumiStabilityTask {
           if (bcPatternB[localBC]) {
             histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcB"), localBC);
+            bool isLeadBC = true;
+            for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+              int kbit = jbit;
+              if (kbit < 0)
+                kbit += nbin;
+              if (bcPatternB[kbit]) {
+                isLeadBC = false;
+                break;
+              }
+            }
+            if (isLeadBC)
+              histos.fill(HIST("FDD/hBcBL"), localBC);
             histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
             if (!is2022Data) {
@@ -574,6 +623,18 @@ struct LumiStabilityTask {
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FT0/timeACbcB"), ft0.timeA(), ft0.timeC());
           histos.fill(HIST("FT0/hBcB"), localBC);
+          bool isLeadBC = true;
+          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+            int kbit = jbit;
+            if (kbit < 0)
+              kbit += nbin;
+            if (bcPatternB[kbit]) {
+              isLeadBC = false;
+              break;
+            }
+          }
+          if (isLeadBC)
+            histos.fill(HIST("FT0/hBcBL"), localBC);
           histos.fill(HIST("FT0/hTimeA"), ft0.timeA());
           histos.fill(HIST("FT0/hTimeC"), ft0.timeC());
 
