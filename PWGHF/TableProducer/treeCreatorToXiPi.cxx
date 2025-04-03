@@ -366,7 +366,7 @@ struct HfTreeCreatorToXiPi {
       float centrality = -999.f;
       if constexpr (useCentrality) {
         auto const& collision = candidate.template collision_as<MyEventTableType>();
-        centrality = o2::hf_centrality::getCentralityPercentile(collision);
+        centrality = o2::hf_centrality::getCentralityColl(collision);
       }
 
       rowCandidateLite(
