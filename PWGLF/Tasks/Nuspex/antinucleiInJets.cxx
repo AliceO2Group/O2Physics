@@ -25,6 +25,7 @@
 #include <TVector3.h>
 #include "TGrid.h"
 #include <random>
+#include <memory>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
