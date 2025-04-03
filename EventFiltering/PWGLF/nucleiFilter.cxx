@@ -27,6 +27,18 @@
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
 #include "../filterTables.h"
 
+#include "ReconstructionDataFormats/Track.h"
+#include "Common/Core/trackUtilities.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsTOF/ParameterContainers.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "Common/Core/PID/PIDTOF.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -94,28 +106,57 @@ struct nucleiFilter {
   Configurable<LabeledArray<double>> cfgMinTPCmom{"cfgMinTPCmom", {minTPCmom[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum TPC p/Z for nuclei PID"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
-
-  // configurable for hypertriton 3body decay
-  Configurable<float> minCosPA3body{"minCosPA3body", 0.99, "minCosPA3body"};
-  Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
-  Configurable<float> dcapiontopv{"dcapiontopv", 0.05, "DCA Pion To PV"};
-  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
-  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
-  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-  Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
-  Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
-  Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
-  Configurable<float> minPionPt{"minPionPt", 0.1, "minPionPt"};
-  Configurable<float> maxPionPt{"maxPionPt", 1.2, "maxPionPt"};
-  Configurable<float> minDeuteronPt{"minDeuteronPt", 0.6, "minDeuteronPt"};
-  Configurable<float> maxDeuteronPt{"maxDeuteronPt", 10, "maxDeuteronPt"};
-  Configurable<float> minDeuteronPUseTOF{"minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
-  Configurable<float> h3LMassLowerlimit{"h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
-  Configurable<float> h3LMassUpperlimit{"h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
-  Configurable<int> mintpcNClsproton{"mintpcNClsproton", 90, "min tpc Nclusters for proton"};
-  Configurable<int> mintpcNClspion{"mintpcNClspion", 70, "min tpc Nclusters for pion"};
-  Configurable<int> mintpcNClsdeuteron{"mintpcNClsdeuteron", 100, "min tpc Nclusters for deuteron"};
   Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
+
+  // variable/tool for hypertriton 3body decay
+  int mRunNumber;
+  float d_bz;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA, aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>; // FIXME: positio has been changed
+  o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID;
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<3> fitter3body;
+  o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  // configurable for hypertriton 3body decay
+  struct : ConfigurableGroup {
+    Configurable<double> d_bz_input{"trgH3L3Body.d_bz", -999, "bz field, -999 is automatic"};
+    Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.04, "meen DCA among Daughters"};
+    Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
+    Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
+    Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
+    Configurable<float> tpcPIDNSigmaCut{"trgH3L3Body.tpcPIDNSigmaCut", 5, "tpcPIDNSigmaCut"};
+    Configurable<float> lifetimecut{"trgH3L3Body.lifetimecut", 40., "lifetimecut"};
+    Configurable<float> minProtonPt{"trgH3L3Body.minProtonPt", 0.3, "minProtonPt"};
+    Configurable<float> maxProtonPt{"trgH3L3Body.maxProtonPt", 5, "maxProtonPt"};
+    Configurable<float> minPionPt{"trgH3L3Body.minPionPt", 0.1, "minPionPt"};
+    Configurable<float> maxPionPt{"trgH3L3Body.maxPionPt", 1.2, "maxPionPt"};
+    Configurable<float> minDeuteronPt{"trgH3L3Body.minDeuteronPt", 0.6, "minDeuteronPt"};
+    Configurable<float> maxDeuteronPt{"trgH3L3Body.maxDeuteronPt", 10, "maxDeuteronPt"};
+    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
+    Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
+    Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
+    Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 0.5, "min P3Body"};
+    Configurable<int> mintpcNClsproton{"trgH3L3Body.mintpcNClsproton", 90, "min tpc Nclusters for proton"};
+    Configurable<int> mintpcNClspion{"trgH3L3Body.mintpcNClspion", 70, "min tpc Nclusters for pion"};
+    Configurable<int> mintpcNClsdeuteron{"trgH3L3Body.mintpcNClsdeuteron", 100, "min tpc Nclusters for deuteron"};
+
+    Configurable<int> useMatCorrType{"trgH3L3Body.useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+    // CCDB options
+    Configurable<std::string> ccdburl{"trgH3L3Body.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"trgH3L3Body.grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"trgH3L3Body.grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"trgH3L3Body.lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> geoPath{"trgH3L3Body.geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    // CCDB TOF PID paras
+    Configurable<int64_t> timestamp{"trgH3L3Body.ccdb-timestamp", -1, "timestamp of the object"};
+    Configurable<std::string> paramFileName{"trgH3L3Body.paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+    Configurable<std::string> parametrizationPath{"trgH3L3Body.parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+    Configurable<std::string> passName{"trgH3L3Body.passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+    Configurable<std::string> timeShiftCCDBPath{"trgH3L3Body.timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+    Configurable<bool> loadResponseFromCCDB{"trgH3L3Body.loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
+    Configurable<bool> fatalOnPassNotAvailable{"trgH3L3Body.fatalOnPassNotAvailable", false, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+  } trgH3L3Body;
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + nITStriggers + 1, -0.5, nNuclei + nHyperNuclei + nITStriggers + 0.5)};
@@ -143,10 +184,135 @@ struct nucleiFilter {
     for (uint32_t iS{0}; iS < columnsNames.size(); ++iS) {
       hProcessedEvents->GetXaxis()->SetBinLabel(iS + 2, columnsNames[iS].data());
     }
+
+    // for fH3L3Body
+    bachelorTOFPID.SetPidType(o2::track::PID::Deuteron);
+    fitter3body.setPropagateToPCA(true);
+    fitter3body.setMaxR(200.);
+    fitter3body.setMinParamChange(1e-3);
+    fitter3body.setMinRelChi2Change(0.9);
+    fitter3body.setMaxDZIni(1e9);
+    fitter3body.setMaxChi2(1e9);
+    fitter3body.setUseAbsDCA(true);
+
+    ccdb->setURL(trgH3L3Body.ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
   }
 
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (trgH3L3Body.d_bz_input > -990) {
+      d_bz = trgH3L3Body.d_bz_input;
+      fitter3body.setBz(d_bz);
+      o2::parameters::GRPMagField grpmag;
+      if (std::fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
+      mRunNumber = bc.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = bc.timestamp();
+    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(trgH3L3Body.grpPath, run3grp_timestamp);
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(trgH3L3Body.grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << trgH3L3Body.grpmagPath << " of object GRPMagField and " << trgH3L3Body.grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      // d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      d_bz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = bc.runNumber();
+    // Set magnetic field value once known
+    fitter3body.setBz(d_bz);
+
+    if (trgH3L3Body.useMatCorrType == 2) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+    }
+
+    // Initial TOF PID Paras, copied from pidTOF.cxx
+    trgH3L3Body.timestamp.value = bc.timestamp();
+    ccdb->setTimestamp(trgH3L3Body.timestamp.value);
+    // Not later than now objects
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    // TODO: implement the automatic pass name detection from metadata
+    if (trgH3L3Body.passName.value == "") {
+      trgH3L3Body.passName.value = "unanchored"; // temporary default
+      LOG(warning) << "Passed autodetect mode for pass, not implemented yet, waiting for metadata. Taking '" << trgH3L3Body.passName.value << "'";
+    }
+    LOG(info) << "Using parameter collection, starting from pass '" << trgH3L3Body.passName.value << "'";
+
+    const std::string fname = trgH3L3Body.paramFileName.value;
+    if (!fname.empty()) { // Loading the parametrization from file
+      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << trgH3L3Body.parametrizationPath.value;
+      if (1) {
+        o2::tof::ParameterCollection paramCollection;
+        paramCollection.loadParamFromFile(fname, trgH3L3Body.parametrizationPath.value);
+        LOG(info) << "+++ Loaded parameter collection from file +++";
+        if (!paramCollection.retrieveParameters(mRespParamsV2, trgH3L3Body.passName.value)) {
+          if (trgH3L3Body.fatalOnPassNotAvailable) {
+            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
+          } else {
+            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
+          }
+        } else {
+          mRespParamsV2.setShiftParameters(paramCollection.getPars(trgH3L3Body.passName.value));
+          mRespParamsV2.printShiftParameters();
+        }
+      } else {
+        mRespParamsV2.loadParamFromFile(fname.data(), trgH3L3Body.parametrizationPath.value);
+      }
+    } else if (trgH3L3Body.loadResponseFromCCDB) { // Loading it from CCDB
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << trgH3L3Body.parametrizationPath.value << " for timestamp " << trgH3L3Body.timestamp.value;
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(trgH3L3Body.parametrizationPath.value, trgH3L3Body.timestamp.value);
+      paramCollection->print();
+      if (!paramCollection->retrieveParameters(mRespParamsV2, trgH3L3Body.passName.value)) { // Attempt at loading the parameters with the pass defined
+        if (trgH3L3Body.fatalOnPassNotAvailable) {
+          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
+        } else {
+          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", trgH3L3Body.passName.value.data());
+        }
+      } else { // Pass is available, load non standard parameters
+        mRespParamsV2.setShiftParameters(paramCollection->getPars(trgH3L3Body.passName.value));
+        mRespParamsV2.printShiftParameters();
+      }
+    }
+    mRespParamsV2.print();
+    if (trgH3L3Body.timeShiftCCDBPath.value != "") {
+      if (trgH3L3Body.timeShiftCCDBPath.value.find(".root") != std::string::npos) {
+        mRespParamsV2.setTimeShiftParameters(trgH3L3Body.timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV2.setTimeShiftParameters(trgH3L3Body.timeShiftCCDBPath.value, "gmean_Neg", false);
+      } else {
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", trgH3L3Body.timeShiftCCDBPath.value.c_str()), trgH3L3Body.timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", trgH3L3Body.timeShiftCCDBPath.value.c_str()), trgH3L3Body.timestamp.value), false);
+      }
+    }
+
+    bachelorTOFPID.SetParams(mRespParamsV2);
+  }
+
+  // void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
+  using ColWithEvTime = soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
+  void process(ColWithEvTime::iterator const& collision, aod::Decay3Bodys const& decay3bodys, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     // collision process loop
     bool keepEvent[nNuclei + nHyperNuclei + nITStriggers]{false};
@@ -232,45 +398,141 @@ struct nucleiFilter {
 
     } // end loop over tracks
 
-    // hypertriton 3body loop
-    for (auto& vtx : vtx3bodydatas) {
+    // fH3L3Body trigger
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
 
-      auto track0 = vtx.track0_as<TrackCandidates>();
-      auto track1 = vtx.track1_as<TrackCandidates>();
-      auto track2 = vtx.track2_as<TrackCandidates>();
+    for (const auto& decay3body : decay3bodys) {
+      auto track0 = decay3body.track0_as<TrackCandidates>();
+      auto track1 = decay3body.track1_as<TrackCandidates>();
+      auto track2 = decay3body.track2_as<TrackCandidates>();
 
-      qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), vtx.tofNSigmaBachDe());
+      // track selection
+      // keep like-sign triplets, do not check sign of deuteron, use same cut for p and pi
+      if (track0.tpcNClsFound() < trgH3L3Body.mintpcNClspion || track1.tpcNClsFound() < trgH3L3Body.mintpcNClspion || track2.tpcNClsFound() < trgH3L3Body.mintpcNClsdeuteron) {
+        continue;
+      }
 
-      if (vtx.vtxcosPA(collision.posX(), collision.posY(), collision.posZ()) < minCosPA3body) {
-        continue;
-      }
-      float ct = vtx.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassHyperTriton;
-      if (ct > lifetimecut) {
-        continue;
-      }
-      if (vtx.dcaVtxdaughters() > dcavtxdau) {
-        continue;
-      }
-      if ((vtx.tofNSigmaBachDe() < TofPidNsigmaMin || vtx.tofNSigmaBachDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
-        continue;
-      }
-      if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsFound() >= mintpcNClsproton && track1.tpcNClsFound() >= mintpcNClspion && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
-          if (std::abs(vtx.dcatrack1topv()) > dcapiontopv) {
-            keepEvent[3] = true;
-            qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mHypertriton());
+      bool isProton = false, isPion = false, isAntiProton = false, isAntiPion = false;
+      if (std::abs(track0.tpcNSigmaPr()) < std::abs(track0.tpcNSigmaPi())) {
+        if (track0.p() >= trgH3L3Body.minProtonPt && track0.p() <= trgH3L3Body.maxProtonPt) {
+          if (track0.tpcNClsFound() >= trgH3L3Body.mintpcNClsproton) {
+            isProton = true;
           }
         }
       }
-      if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsFound() >= mintpcNClspion && track1.tpcNClsFound() >= mintpcNClsproton && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
-          if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
-            keepEvent[3] = true;
-            qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());
+      if (std::abs(track0.tpcNSigmaPi()) < std::abs(track0.tpcNSigmaPr())) {
+        if (track0.p() >= trgH3L3Body.minPionPt && track0.p() <= trgH3L3Body.maxPionPt) {
+          isPion = true;
+        }
+      }
+      if (std::abs(track1.tpcNSigmaPr()) < std::abs(track1.tpcNSigmaPi())) {
+        if (track1.p() >= trgH3L3Body.minProtonPt && track1.p() <= trgH3L3Body.maxProtonPt) {
+          if (track1.tpcNClsFound() >= trgH3L3Body.mintpcNClsproton) {
+            isAntiProton = true;
           }
         }
       }
-    } // end loop over hypertriton 3body decay candidates
+      if (std::abs(track1.tpcNSigmaPi()) < std::abs(track1.tpcNSigmaPr())) {
+        if (track1.p() >= trgH3L3Body.minPionPt && track1.p() <= trgH3L3Body.maxPionPt) {
+          isAntiPion = true;
+        }
+      }
+
+      if (!(isProton && isAntiPion) && !(isAntiProton && isPion)) {
+        continue;
+      }
+
+      if (std::abs(track2.tpcNSigmaDe()) > trgH3L3Body.tpcPIDNSigmaCut || track2.p() < trgH3L3Body.minDeuteronPt || track2.p() > trgH3L3Body.maxDeuteronPt) {
+        continue;
+      }
+
+      float tofNSigmaDeuteron = -999;
+      if (track2.has_collision() && track2.hasTOF()) {
+        auto originalcol = track2.collision_as<ColWithEvTime>();
+        tofNSigmaDeuteron = bachelorTOFPID.GetTOFNSigma(track2, originalcol, collision);
+      }
+      if (track2.p() > trgH3L3Body.minDeuteronPUseTOF && (tofNSigmaDeuteron < trgH3L3Body.tofPIDNSigmaMin || tofNSigmaDeuteron > trgH3L3Body.tofPIDNSigmaMax)) {
+        continue;
+      }
+
+      // reconstruct the secondary vertex
+      auto Track0 = getTrackParCov(track0);
+      auto Track1 = getTrackParCov(track1);
+      auto Track2 = getTrackParCov(track2);
+      int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+      if (n3bodyVtx == 0) { // discard this pair
+        continue;
+      }
+
+      std::array<float, 3> pos = {0.};
+      const auto& vtxXYZ = fitter3body.getPCACandidate();
+      for (int i = 0; i < 3; i++) {
+        pos[i] = vtxXYZ[i];
+      }
+
+      // Calculate DCA with respect to the collision associated to the SV, not individual tracks
+      gpu::gpustd::array<float, 2> dcaInfo;
+
+      auto track0Par = getTrackPar(track0);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+      auto track0dcaXY = dcaInfo[0];
+      auto track0dca = std::sqrt(track0dcaXY * track0dcaXY + dcaInfo[1] * dcaInfo[1]);
+
+      auto track1Par = getTrackPar(track1);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+      auto track1dcaXY = dcaInfo[0];
+      auto track1dca = std::sqrt(track1dcaXY * track1dcaXY + dcaInfo[1] * dcaInfo[1]);
+
+      std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
+      const auto& propagatedTrack0 = fitter3body.getTrack(0);
+      const auto& propagatedTrack1 = fitter3body.getTrack(1);
+      const auto& propagatedTrack2 = fitter3body.getTrack(2);
+      propagatedTrack0.getPxPyPzGlo(p0);
+      propagatedTrack1.getPxPyPzGlo(p1);
+      propagatedTrack2.getPxPyPzGlo(p2);
+      std::array<float, 3> p3BXYZ = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
+      float sqpt3B = p3BXYZ[0] * p3BXYZ[0] + p3BXYZ[1] * p3BXYZ[1];
+      float sqp3B = sqpt3B + p3BXYZ[2] * p3BXYZ[2];
+      float pt3B = std::sqrt(sqpt3B), p3B = std::sqrt(sqp3B);
+
+      if (p3B < trgH3L3Body.minP3Body) {
+        continue;
+      }
+
+      if (fitter3body.getChi2AtPCACandidate() > trgH3L3Body.dcavtxdau) {
+        continue;
+      }
+
+      float vtxCosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{pos[0], pos[1], pos[2]}, std::array{p3BXYZ[0], p3BXYZ[1], p3BXYZ[2]});
+      if (vtxCosPA < trgH3L3Body.minCosPA3body) {
+        continue;
+      }
+      float ct = std::sqrt(std::pow(pos[0] - collision.posX(), 2) + std::pow(pos[1] - collision.posY(), 2) + std::pow(pos[2] - collision.posZ(), 2)) / (p3B + 1E-10) * constants::physics::MassHyperTriton;
+      if (ct > trgH3L3Body.lifetimecut) {
+        continue;
+      }
+
+      float invmassH3L = RecoDecay::m(std::array{std::array{p0[0], p0[1], p0[2]}, std::array{p1[0], p1[1], p1[2]}, std::array{p2[0], p2[1], p2[2]}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
+      float invmassAntiH3L = RecoDecay::m(std::array{std::array{p0[0], p0[1], p0[2]}, std::array{p1[0], p1[1], p1[2]}, std::array{p2[0], p2[1], p2[2]}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
+
+      if (invmassH3L >= trgH3L3Body.h3LMassLowerlimit && invmassH3L <= trgH3L3Body.h3LMassUpperlimit) {
+        // Hypertriton hypothesis
+        if (isProton && isAntiPion && std::abs(track1dca) >= trgH3L3Body.dcapiontopv) {
+          qaHists.fill(HIST("fH3LMassVsPt"), pt3B, invmassH3L);
+          qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
+          keepEvent[3] = true;
+        }
+      }
+      if (invmassAntiH3L >= trgH3L3Body.h3LMassLowerlimit && invmassAntiH3L <= trgH3L3Body.h3LMassUpperlimit) {
+        // Anti-Hypertriton hypothesis
+        if (isAntiProton && isPion && std::abs(track0dca) >= trgH3L3Body.dcapiontopv) {
+          qaHists.fill(HIST("fH3LMassVsPt"), pt3B, invmassAntiH3L);
+          qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
+          keepEvent[3] = true;
+        }
+      }
+    }
 
     for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei + nITStriggers; ++iDecision) {
       if (keepEvent[iDecision]) {
