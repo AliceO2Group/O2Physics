@@ -266,29 +266,30 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    float massLc, massKPi;
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-      if (trackProton.globalIndex() == candidate.prong0Id()) {
-        massLc = hfHelper.invMassLcToPKPi(candidate);
-        massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
-      } else {
-        massLc = hfHelper.invMassLcToPiKP(candidate);
-        massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
-      }
-    } else if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-      if (trackProton.globalIndex() == candidate.prong0Id()) {
-        massLc = candidate.kfMassPKPi();
-        massKPi = candidate.kfMassKPi();
-      } else {
-        massLc = candidate.kfMassPiKP();
-        massKPi = candidate.kfMassPiK();
-      }
-    }
-
     if (reconstructionType == aod::hf_cand::VertexerType::DCAFitter || (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
+
       // cut on daughter pT
       if (trackProton.pt() < cuts->get(pTBin, "pT p") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
         return false;
+      }
+
+      float massLc, massKPi;
+      if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+        if (trackProton.globalIndex() == candidate.prong0Id()) {
+          massLc = hfHelper.invMassLcToPKPi(candidate);
+          massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
+        } else {
+          massLc = hfHelper.invMassLcToPiKP(candidate);
+          massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
+        }
+      } else if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+        if (trackProton.globalIndex() == candidate.prong0Id()) {
+          massLc = candidate.kfMassPKPi();
+          massKPi = candidate.kfMassKPi();
+        } else {
+          massLc = candidate.kfMassPiKP();
+          massKPi = candidate.kfMassPiK();
+        }
       }
 
       // cut on Lc->pKpi, piKp mass values
