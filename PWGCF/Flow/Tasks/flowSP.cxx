@@ -707,13 +707,15 @@ struct FlowSP {
       if (collision.numContrib() > 1) {
         vtxz = collision.posZ();
         float zRes = std::sqrt(collision.covZZ());
-        if (zRes > 0.25 && collision.numContrib() < 20)
+        float minzRes = 0.25; 
+        int maxNumContrib = 20;
+        if (zRes > minzRes && collision.numContrib() < maxNumContrib) {
           vtxz = -999;
       }
 
       auto multNTracksPV = collision.multNTracksPV();
 
-      if (vtxz > 10 || vtxz < -10)
+      if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ)
         return 0;
       if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()))
         return 0;
@@ -978,7 +980,8 @@ struct FlowSP {
   {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
+    int standardMagField = 99999;
+    auto field = (cfgMagField == standardMagField) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
     if (bc.runNumber() != cfg.lastRunNumber) {
       // load corrections again for new run!
@@ -1149,7 +1152,8 @@ struct FlowSP {
   void processMCReco(CC const& collision, aod::BCsWithTimestamps const&, TCs const& tracks, FilteredTCs const& filteredTracks, aod::McParticles const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
+    int standardMagField = 99999;
+    auto field = (cfgMagField == standardMagField) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
     double vtxz = collision.posZ();
     float centrality = collision.centFT0C();
