@@ -47,6 +47,7 @@ using namespace o2::framework::expressions;
 
 using TracksComplete = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
+using V0DatasWithoutTrackXMC = soa::Join<aod::V0Indices, aod::V0Cores, aod::McV0Labels>;
 
 struct HStrangeCorrelation {
   // for efficiency corrections if requested
@@ -654,6 +655,8 @@ struct HStrangeCorrelation {
     const AxisSpec preAxisPtTrigger{axisPtTrigger, "#it{p}_{T}^{trigger} (GeV/c)"};
     const AxisSpec preAxisVtxZ{axisVtxZ, "vertex Z (cm)"};
     const AxisSpec preAxisMult{axisMult, "mult percentile"};
+    const AxisSpec axisPtLambda{axisPtAssoc, "#it{p}_{T}^{#Lambda} (GeV/c)"};
+    const AxisSpec axisPtCascade{axisPtAssoc, "#it{p}_{T}^{Mother} (GeV/c)"};
 
     // store the original axes in specific TH1Cs for completeness
     histos.add("axes/hDeltaPhiAxis", "", kTH1C, {preAxisDeltaPhi});
@@ -881,6 +884,14 @@ struct HStrangeCorrelation {
           histos.add(fmt::format("ClosureTest/h{}", kParticlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
       }
       histos.add("ClosureTest/hTrigger", "Trigger Tracks", kTH3F, {axisPtQA, axisEta, axisMult});
+    }
+    if (doprocessFeedDown) {
+      histos.add("hLambdaXiMinusFeeddownMatrix", "hLambdaXiMinusFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hLambdaXiZeroFeeddownMatrix", "hLambdaXiZeroFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hLambdaOmegaFeeddownMatrix", "hLambdaOmegaFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hAntiLambdaXiPlusFeeddownMatrix", "hAntiLambdaXiPlusFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hAntiLambdaXiZeroFeeddownMatrix", "hAntiLambdaXiZeroFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hAntiLambdaOmegaFeeddownMatrix", "hAntiLambdaOmegaFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
     }
 
     // visual inspection of sizes
@@ -1780,6 +1791,72 @@ struct HStrangeCorrelation {
     }
   }
 
+  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
+  {
+
+    // ________________________________________________
+    // Perform basic event selection
+    if (!isCollisionSelected(collision)) {
+      return;
+    }
+
+    for (auto const& v0 : associatedV0s) {
+      auto v0Data = v0.v0Core_as<V0DatasWithoutTrackXMC>();
+
+      //---] track quality check [---
+      auto postrack = v0Data.posTrack_as<TracksComplete>();
+      auto negtrack = v0Data.negTrack_as<TracksComplete>();
+      if (postrack.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRowsAssociated || negtrack.tpcNClsCrossedRows() < systCuts.minTPCNCrossedRowsAssociated)
+        continue;
+
+      //---] syst cuts [---
+      if (v0Data.v0radius() < systCuts.v0RadiusMin || v0Data.v0radius() > systCuts.v0RadiusMax ||
+          std::abs(v0Data.dcapostopv()) < systCuts.dcapostopv || std::abs(v0Data.dcanegtopv()) < systCuts.dcanegtopv ||
+          v0Data.v0cosPA() < systCuts.v0cospa || v0Data.dcaV0daughters() > systCuts.dcaV0dau)
+        continue;
+
+      if (v0Data.has_mcParticle()) {
+        auto v0mcParticle = v0Data.mcParticle_as<aod::McParticles>();
+        int mcParticlePdg = v0mcParticle.pdgCode();
+        if (mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()) {
+          auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
+          if (!v0mothers.empty()) {
+            auto& v0mcParticleMother = v0mothers.front(); // First mother
+            if (v0mcParticleMother.pdgCode() == 3312)     // Xi Minus Mother Matched
+            {
+              histos.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == 3322) // Xi Zero Mother Matched
+            {
+              histos.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == 3334) // Omega Mother Matched
+            {
+              histos.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+          }
+        }
+        if (mcParticlePdg == -3122 && !v0mcParticle.isPhysicalPrimary()) {
+          auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
+          if (!v0mothers.empty()) {
+            auto& v0mcParticleMother = v0mothers.front(); // First mother
+            if (v0mcParticleMother.pdgCode() == -3312)    // Xi Plus Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == -3322) // Anti Xi Zero Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == -3334) // Omega Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+          }
+        }
+      }
+    }
+  }
   PROCESS_SWITCH(HStrangeCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHV0s, "Process same events, h-V0s", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHCascades, "Process same events, h-Cascades", true);
@@ -1793,6 +1870,7 @@ struct HStrangeCorrelation {
 
   PROCESS_SWITCH(HStrangeCorrelation, processMCGenerated, "Process MC generated", false);
   PROCESS_SWITCH(HStrangeCorrelation, processClosureTest, "Process Closure Test", false);
+  PROCESS_SWITCH(HStrangeCorrelation, processFeedDown, "process Feed Down", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
