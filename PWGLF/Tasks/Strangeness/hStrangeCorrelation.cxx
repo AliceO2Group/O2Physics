@@ -1818,7 +1818,7 @@ struct HStrangeCorrelation {
       if (v0Data.has_mcParticle()) {
         auto v0mcParticle = v0Data.mcParticle_as<aod::McParticles>();
         int mcParticlePdg = v0mcParticle.pdgCode();
-        if (mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()){
+        if (mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()) {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
             auto& v0mcParticleMother = v0mothers.front(); // First mother
@@ -1836,11 +1836,11 @@ struct HStrangeCorrelation {
             }
           }
         }
-        if(mcParticlePdg == -3122 && !v0mcParticle.isPhysicalPrimary()){
+        if(mcParticlePdg == -3122 && !v0mcParticle.isPhysicalPrimary()) {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
             auto& v0mcParticleMother = v0mothers.front(); // First mother
-            if (v0mcParticleMother.pdgCode() == -3312)     // Xi Plus Mother Matched
+            if (v0mcParticleMother.pdgCode() == -3312)    // Xi Plus Mother Matched
             {
               histos.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
             }
