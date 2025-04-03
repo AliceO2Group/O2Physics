@@ -1791,9 +1791,7 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
-                            aod::AssocV0s const& associatedV0s, aod::McParticles const&,
-                            V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
+  void processFeedDown(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision, aod::AssocV0s const& associatedV0s, aod::McParticles const&, V0DatasWithoutTrackXMC const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
 
     // ________________________________________________
@@ -1820,21 +1818,21 @@ struct HStrangeCorrelation {
       if (v0Data.has_mcParticle()) {
         auto v0mcParticle = v0Data.mcParticle_as<aod::McParticles>();
         int mcParticlePdg = v0mcParticle.pdgCode();
-        if(mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()){
+        if (mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()){
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
             auto& v0mcParticleMother = v0mothers.front(); // First mother
-              if (v0mcParticleMother.pdgCode() == 3312)     // Xi Minus Mother Matched
-              {
-                histos.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
-              }
-              if (v0mcParticleMother.pdgCode() == 3322) // Xi Zero Mother Matched
-              {
-                histos.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
-              }
-              if (v0mcParticleMother.pdgCode() == 3334) // Omega Mother Matched
-              {
-                histos.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            if (v0mcParticleMother.pdgCode() == 3312)     // Xi Minus Mother Matched
+            {
+              histos.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == 3322) // Xi Zero Mother Matched
+            {
+              histos.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == 3334) // Omega Mother Matched
+            {
+              histos.fill(HIST("hLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
             }
           }
         }
@@ -1842,24 +1840,23 @@ struct HStrangeCorrelation {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
             auto& v0mcParticleMother = v0mothers.front(); // First mother
-              if (v0mcParticleMother.pdgCode() == -3312)     // Xi Plus Mother Matched
-              {
-                histos.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
-              }
-              if (v0mcParticleMother.pdgCode() == -3322) // Anti Xi Zero Mother Matched
-              {
-                histos.fill(HIST("hAntiLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
-              }
-              if (v0mcParticleMother.pdgCode() == -3334) // Omega Mother Matched
-              {
-                histos.fill(HIST("hAntiLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            if (v0mcParticleMother.pdgCode() == -3312)     // Xi Plus Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == -3322) // Anti Xi Zero Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+            }
+            if (v0mcParticleMother.pdgCode() == -3334) // Omega Mother Matched
+            {
+              histos.fill(HIST("hAntiLambdaOmegaFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
             }
           }
         }
-      }   
+      }
     }
   }
-
   PROCESS_SWITCH(HStrangeCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHV0s, "Process same events, h-V0s", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHCascades, "Process same events, h-Cascades", true);
