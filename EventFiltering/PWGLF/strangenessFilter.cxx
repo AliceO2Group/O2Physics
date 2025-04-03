@@ -496,8 +496,8 @@ struct strangenessFilter {
             multFT0MNorm = sumAmpFT0C * weigthsEta5[0] + sumAmpFT0A * weigthsEta5[1];
           }
           LOG(debug) << "meanMult:" << multFT0MNorm << " multFT0M:" << collision.multFT0M();
-          if(sumAmpFT0A < 0 || sumAmpFT0C < 0) {
-            //LOG(info) << "ampa: " << sumAmpFT0A << " ampc:" << sumAmpFT0C;
+          if (sumAmpFT0A < 0 || sumAmpFT0C < 0) {
+            // LOG(info) << "ampa: " << sumAmpFT0A << " ampc:" << sumAmpFT0C;
             ampneg++;
           }
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
@@ -510,7 +510,7 @@ struct strangenessFilter {
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 148);
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
         }
-        if(ampneg) {
+        if (ampneg) {
           LOG(warn) << "# of negative amplitudes:" << ampneg;
         }
       } else {
