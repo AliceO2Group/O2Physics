@@ -608,9 +608,9 @@ struct FlowGfwOmegaXi {
   {
     if (correctionsLoaded)
       return;
-    int nspecies = 5
+    long unsigned int nspecies = 5;
     if (cfgAcceptance.size() == nspecies) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i <= 4; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
       if (mAcceptance.size() == nspecies)
@@ -619,7 +619,7 @@ struct FlowGfwOmegaXi {
         LOGF(warning, "Could not load acceptance weights");
     }
     if (cfgEfficiency.size() == nspecies) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i <= 4; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
       }
       if (mEfficiency.size() == nspecies)
@@ -633,7 +633,7 @@ struct FlowGfwOmegaXi {
   template <typename TrackObject>
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
-    int nspecies = 5;
+    long unsigned int nspecies = 5;
     float eff = 1.;
     if (mEfficiency.size() == nspecies)
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
@@ -654,7 +654,7 @@ struct FlowGfwOmegaXi {
   {
     auto cfgLocDenPara = (std::vector<std::vector<double>>){cfgLocDenParaK0s, cfgLocDenParaLambda, cfgLocDenParaXi, cfgLocDenParaOmega};
     int ptbin = fXiPtAxis->FindBin(track.pt());
-    if (ptbin == 0 || ptbin == (fXiPtAxis->GetNBins() + 1)) {
+    if (ptbin == 0 || ptbin == (fXiPtAxis->GetNbins() + 1)) {
       weight_loc = 1.0;
       return true;
     }
@@ -741,7 +741,7 @@ struct FlowGfwOmegaXi {
     const auto cent = collision.centFT0C();
     if (!collision.sel8())
       return;
-    if (eventSelected(collision,/* tracks.size(),*/ cent))
+    if (eventSelected(collision, cent))
       return;
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
