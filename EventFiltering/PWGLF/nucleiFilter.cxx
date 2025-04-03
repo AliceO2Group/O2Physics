@@ -113,7 +113,7 @@ struct nucleiFilter {
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA, aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>; // FIXME: positio has been changed
-  o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID; // first check if results are the same
+  o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
