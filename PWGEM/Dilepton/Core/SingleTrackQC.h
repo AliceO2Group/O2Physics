@@ -266,8 +266,8 @@ struct SingleTrackQC {
       fRegistry.addClone("Track/positive/", "Track/negative/");
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
-      const AxisSpec axis_eta{40, -5, -1, "#eta_{#mu}"};
-      const AxisSpec axis_phi{90, 0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
+      const AxisSpec axis_eta{100, -6, -1, "#eta_{#mu}"};
+      const AxisSpec axis_phi{180, 0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
       const AxisSpec axis_dca{ConfDCABins, "DCA_{#mu}^{XY} (#sigma)"};
 
       // track info
