@@ -320,7 +320,7 @@ namespace hf_trigger_cuts_presel_beauty
 {
 static constexpr int nBinsPt = 2;
 static constexpr int nCutVars = 4;
-static constexpr int nCutVarsBtoJPsi = 4;
+static constexpr int nCutVarsBtoJPsi = 6;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any beauty candidate
 constexpr double binsPt[nBinsPt + 1] = {
@@ -332,14 +332,14 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 constexpr double cuts[nBinsPt][nCutVars] = {{0.4, -1, -1, 10.},  /* 0 < pt < 5 */
                                             {0.4, -1, -1, 10.}}; /* 5 < pt < 1000 */
 
-constexpr double cutsBtoJPsi[nBinsPt][nCutVarsBtoJPsi] = {{1., 0.6, 0.9, 0.02},  /* 0 < pt < 5 */
-                                                          {1., 0.8, 0.9, 0.02}}; /* 5 < pt < 1000 */
+constexpr double cutsBtoJPsi[nBinsPt][nCutVarsBtoJPsi] = {{1., 0.6, 0.9, 0.02, 0.02, 0.1},  /* 0 < pt < 5 */
+                                                          {1., 0.8, 0.9, 0.02, 0.02, 0.1}}; /* 5 < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsColumnsTopolBeauty = {"DeltaMassB", "minCPA", "minDecayLength", "maxImpParProd"};
-static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuon", "DeltaMassB", "minCPA", "minDecayLength"};
+static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuon", "DeltaMassB", "minCPA", "minDecayLength", "DeltaMassKK", "DeltaMassKPi"};
 
 } // namespace hf_trigger_cuts_presel_beauty
 
@@ -2154,7 +2154,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     bool isSecondProton = isSelectedProton4CharmOrBeautyBaryons<true>(tracksDauNoMu[1]);
     auto massKaKa = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massKa, massKa});
     if (isFirstKaon && isSeconKaon) {
-      if (std::fabs(massKaKa - massPhi) < 0.02f) {
+      if (std::fabs(massKaKa - massPhi) < mCutsBhadToJPsi.get(binPtB, 4u)) {
         auto massJPsiKaKa = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massKa, massKa});
         if (std::fabs(massJPsiKaKa - massBs) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kBsToJPsi);
@@ -2166,7 +2166,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isFirstKaon) {
       auto massKaPi = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massKa, massPi});
-      if (std::fabs(massKaPi - massPhi) < 0.1f) {
+      if (std::fabs(massKaPi - massK0Star892) < mCutsBhadToJPsi.get(binPtB, 5u)) {
         auto massJPsiKaPi = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massKa, massPi});
         if (std::fabs(massJPsiKaPi - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);
@@ -2178,7 +2178,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isSeconKaon) {
       auto massPiKa = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massPi, massKa});
-      if (std::fabs(massPiKa - massPhi) < 0.1f) {
+      if (std::fabs(massPiKa - massK0Star892) < mCutsBhadToJPsi.get(binPtB, 5u)) {
         auto massJPsiPiKa = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massPi, massKa});
         if (std::fabs(massJPsiPiKa - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);
