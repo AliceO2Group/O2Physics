@@ -157,7 +157,6 @@ struct TaskPolarisationCharmHadrons {
   float minInvMass{0.f};
   float maxInvMass{1000.f};
 
-
   /// table for Lc->pKpi background studies in MC
   Configurable<int> cosThStarAxisLcPKPiBkgMc{"cosThStarAxisLcPKPiBkgMc", 1, "cos(Theta*) axis for background studies (1 = helicity; 2 = production; 3 = beam; 4 = random)"};
 
