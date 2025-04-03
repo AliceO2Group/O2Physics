@@ -174,7 +174,6 @@ DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::XEvent, mc_match::YEvent, mc_match::ZEvent)
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
-                  full::CollisionId,
                   kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
                   kf::ErrPVX, kf::ErrPVY, kf::ErrPVZ,
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
@@ -746,7 +745,6 @@ struct HfTreeCreatorLcToPKPi {
             const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             rowCandidateKF(
-              candidate.collisionId(),
               svX, svY, svZ, svErrX, svErrY, svErrZ,
               pvErrX, pvErrY, pvErrZ,
               chi2primProton, chi2primKaon, chi2primPion,
@@ -1191,7 +1189,6 @@ struct HfTreeCreatorLcToPKPi {
             const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             rowCandidateKF(
-              candidate.collisionId(),
               x, y, z, errX, errY, errZ,
               errPVX, errPVY, errPVZ,
               chi2primProton, chi2primKaon, chi2primPion,
