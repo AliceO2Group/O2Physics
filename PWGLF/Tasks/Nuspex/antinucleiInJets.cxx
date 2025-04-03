@@ -122,9 +122,15 @@ struct AntinucleiInJets {
   Configurable<std::string> pathToFile{"pathToFile", "", "path to file with reweighting"};
   Configurable<std::string> histoNameWeightAntipJet{"histoNameWeightAntipJet", "", "reweighting histogram: antip in jet"};
   Configurable<std::string> histoNameWeightAntipUe{"histoNameWeightAntipUe", "", "reweighting histogram: antip in ue"};
-
   TH2F* twoDweightsAntipJet;
   TH2F* twoDweightsAntipUe;
+
+  // jet pt unfolding
+  Configurable<bool> applyPtUnfolding{"applyPtUnfolding", true, "apply jet pt unfolding"};
+  Configurable<std::string> urlToCcdbPtUnfolding{"urlToCcdbPtUnfolding", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> pathToFilePtUnfolding{"pathToFilePtUnfolding", "Users/c/chpinto/My/Object/ResponseMatrix", "path to file with pt unfolding"};
+  Configurable<std::string> histoNamePtUnfolding{"histoNamePtUnfolding", "detectorResponseMatrix", "pt unfolding histogram"};
+  TH2F* responseMatrix;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -144,6 +150,12 @@ struct AntinucleiInJets {
     } else {
       twoDweightsAntipJet = nullptr;
       twoDweightsAntipUe = nullptr;
+    }
+
+    if (applyPtUnfolding) {
+      getPtUnfoldingHistogram(ccdb, TString(pathToFilePtUnfolding), TString(histoNamePtUnfolding));
+    } else {
+      responseMatrix = nullptr;
     }
 
     // binning
@@ -352,27 +364,39 @@ struct AntinucleiInJets {
   template <typename JetTrack>
   bool passedTrackSelectionForJetReconstruction(const JetTrack& track)
   {
+
+    const int minTpcCr = 70;
+    const double minCrFindable = 0.8;
+    const double maxChi2Tpc = 4.0;
+    const double maxChi2Its = 36.0;
+    const double maxPseudorapidity = 0.8;
+    const double minPtTrack = 0.1;
+    const double dcaxyMaxTrackPar0 = 0.0105;
+    const double dcaxyMaxTrackPar1 = 0.035;
+    const double dcaxyMaxTrackPar2 = 1.1;
+    const double dcazMaxTrack = 2.0;
+
     if (!track.hasITS())
       return false;
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    if (track.tpcNClsCrossedRows() < minTpcCr)
       return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minCrFindable)
       return false;
-    if (track.tpcChi2NCl() > 4)
+    if (track.tpcChi2NCl() > maxChi2Tpc)
       return false;
-    if (track.itsChi2NCl() > 36)
+    if (track.itsChi2NCl() > maxChi2Its)
       return false;
-    if (track.eta() < -0.8 || track.eta() > 0.8)
+    if (track.eta() < -maxPseudorapidity || track.eta() > maxPseudorapidity)
       return false;
-    if (track.pt() < 0.1)
+    if (track.pt() < minPtTrack)
       return false;
-    if (std::fabs(track.dcaXY()) > (0.0105 + 0.035 / std::pow(track.pt(), 1.1)))
+    if (std::fabs(track.dcaXY()) > (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2)))
       return false;
-    if (std::fabs(track.dcaZ()) > 2.0)
+    if (std::fabs(track.dcaZ()) > dcazMaxTrack)
       return false;
     return true;
   }
@@ -412,10 +436,12 @@ struct AntinucleiInJets {
     double nsigmaTPCPr = track.tpcNSigmaPr();
     double nsigmaTOFPr = track.tofNSigmaPr();
     double pt = track.pt();
+    double ptThreshold = 0.5;
+    double nsigmaMaxPr = 2.0;
 
-    if (pt < 0.5 && std::fabs(nsigmaTPCPr) < 2.0)
+    if (pt < ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr)
       return true;
-    if (pt >= 0.5 && std::fabs(nsigmaTPCPr) < 2.0 && track.hasTOF() && std::fabs(nsigmaTOFPr) < 2.0)
+    if (pt >= ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr && track.hasTOF() && std::fabs(nsigmaTOFPr) < nsigmaMaxPr)
       return true;
     return false;
   }
@@ -437,6 +463,21 @@ struct AntinucleiInJets {
     delete proj;
 
     return ptGen;
+  }
+
+  void getPtUnfoldingHistogram(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histoNamePtUnfolding)
+  {
+    TList* l = ccdbObj->get<TList>(filepath.Data());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      return;
+    }
+    responseMatrix = static_cast<TH2F*>(l->FindObject(Form("%s", histoNamePtUnfolding.Data())));
+    if (!responseMatrix) {
+      LOGP(error, "Could not open histogram {}", Form("%s", histoNamePtUnfolding.Data()));
+      return;
+    }
+    LOGP(info, "Opened histogram {}", Form("%s", histoNamePtUnfolding.Data()));
   }
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
@@ -533,8 +574,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -766,8 +806,7 @@ struct AntinucleiInJets {
       double ptJetAfterSub = jetForSub.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -988,7 +1027,8 @@ struct AntinucleiInJets {
 
         if (!particle.isPhysicalPrimary())
           continue;
-        if (particle.eta() < -0.8 || particle.eta() > 0.8 || particle.pt() < 0.1)
+        double minPtParticle = 0.1;
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
           continue;
 
         double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
@@ -1043,7 +1083,8 @@ struct AntinucleiInJets {
 
           if (!particle.isPhysicalPrimary())
             continue;
-          if (particle.eta() < -0.8 || particle.eta() > 0.8 || particle.pt() < 0.1)
+          double minPtParticle = 0.1;
+          if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
             continue;
 
           double deltaEtaUe1 = particle.eta() - ueAxis1.Eta();
@@ -1126,8 +1167,7 @@ struct AntinucleiInJets {
         // jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-        if (jetMinusBkg.pt() < minJetPt)
+        if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
           continue;
 
         // perpendicular cone
@@ -1302,8 +1342,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
 
       // get jet constituents

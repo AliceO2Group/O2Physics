@@ -337,13 +337,15 @@ struct NonPromptCascadeTask {
       o2::math_utils::SVector<double, 3> cascadePos, v0Pos;
 
       float cascCpa = -1, v0Cpa = -1;
+      o2::track::TrackParCov ntCascadeTrack;
       if (mDCAFitter.process(pionTrkParCov, protonTrkParCov)) {
         auto trackParCovV0 = mDCAFitter.createParentTrackParCov(0); // V0 track retrieved from p and pi daughters
         v0Pos = mDCAFitter.getPCACandidate();
         if (mDCAFitter.process(trackParCovV0, bachTrkParCov)) {
           mDCAFitter.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
           mDCAFitter.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
-          mDCAFitter.createParentTrackParCov().getPxPyPzGlo(cascadeMomentum);
+          ntCascadeTrack = mDCAFitter.createParentTrackParCov();
+          ntCascadeTrack.getPxPyPzGlo(cascadeMomentum);
           std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
           cascadePos = mDCAFitter.getPCACandidate();
           cascCpa = RecoDecay::cpa(pvPos, mDCAFitter.getPCACandidate(), cascadeMomentum);
@@ -443,6 +445,8 @@ struct NonPromptCascadeTask {
           }
           itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
         }
+      } else {
+        o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, ntCascadeTrack, mBz, 2.f, matCorr, &motherDCA);
       }
       candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),

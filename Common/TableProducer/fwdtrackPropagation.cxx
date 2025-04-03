@@ -69,14 +69,15 @@ struct FwdTrackPropagation {
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 50.f, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2{"maxChi2", 1e+6, "max. chi2 for muon tracking"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", false, "flag to refit global muon"};
+  Configurable<bool> applyEtaCutToSAinGL{"applyEtaCutToSAinGL", false, "flag to apply eta cut to samuon in global muon"};
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
 
   void init(o2::framework::InitContext&)
   {
-    if (doprocessWithoutTTCA && doprocessWithTTCA) {
-      LOGF(fatal, "Cannot enable doprocessWithoutTTCA and doprocessWithTTCA at the same time. Please choose one.");
+    if (doprocessWithoutFTTCA && doprocessWithFTTCA) {
+      LOGF(fatal, "Cannot enable doprocessWithoutFTTCA and doprocessWithFTTCA at the same time. Please choose one.");
     }
 
     ccdb->setURL(ccdburl);
@@ -148,7 +149,7 @@ struct FwdTrackPropagation {
     fRegistry.add("MCHMID/hDCAyResolutionvsPt", "DCA_{y} vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 5e+5}}, false);
   }
 
-  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType)
+  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float etaMatchedMCHMID)
   {
     if (pt < minPt || maxPt < pt) {
       return false;
@@ -158,12 +159,15 @@ struct FwdTrackPropagation {
       return false;
     }
 
-    if (maxChi2 < chi2) {
+    if (chi2 < 0.f || maxChi2 < chi2) {
       return false;
     }
 
     if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
       if (eta < minEtaGL || maxEtaGL < eta) {
+        return false;
+      }
+      if (applyEtaCutToSAinGL && (etaMatchedMCHMID < minEtaSA || maxEtaSA < etaMatchedMCHMID)) {
         return false;
       }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
@@ -251,18 +255,18 @@ struct FwdTrackPropagation {
 
       const auto& mfttrack = fwdtrack.template matchMFTTrack_as<TMFTTracks>();
       nClustersMFT = mfttrack.nClusters();
+      chi2mft = mfttrack.chi2();
       if (refitGlobalMuon) {
         eta = mfttrack.eta();
         phi = mfttrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        pt = propmuonAtPV.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
+        pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
 
         x = mfttrack.x();
         y = mfttrack.y();
         z = mfttrack.z();
         tgl = mfttrack.tgl();
       }
-      chi2mft = mfttrack.chi2();
     } else if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       o2::dataformats::GlobalFwdTrack propmuonAtRabs = propagateMuon(fwdtrack, collision, propagationPoint::kToRabs); // this is necessary only for MuonStandaloneTrack
       float xAbs = propmuonAtRabs.getX();
@@ -272,7 +276,7 @@ struct FwdTrackPropagation {
       return;
     }
 
-    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType())) {
+    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType(), etaMatchedMCHMID)) {
       return;
     }
 
@@ -302,7 +306,7 @@ struct FwdTrackPropagation {
       fwdtrack.sign() / pt, fwdtrack.nClusters(), pDCA, rAtAbsorberEnd,
       fwdtrack.chi2(), fwdtrack.chi2MatchMCHMID(), fwdtrack.chi2MatchMCHMFT(),
       fwdtrack.matchScoreMCHMFT(), fwdtrack.globalIndex(), fwdtrack.matchMFTTrackId(), fwdtrack.matchMCHTrackId(),
-      fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), fwdtrack.trackTime(), fwdtrack.trackTimeRes(),
+      fwdtrack.mchBitMap(), fwdtrack.midBitMap(), fwdtrack.midBoards(), fwdtrack.trackTime(), fwdtrack.trackTimeRes(), dcaX, dcaY,
       cXXatDCA, cYYatDCA, cXYatDCA, etaMatchedMCHMID, phiMatchedMCHMID, isAssociatedToMPC, isAmbiguous);
 
     propfwdtrackscov(
@@ -367,7 +371,7 @@ struct FwdTrackPropagation {
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   PresliceUnsorted<aod::FwdTrackAssoc> fwdtrackIndicesPerFwdTrack = aod::track_association::fwdtrackId;
 
-  void processWithoutTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
+  void processWithoutFTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -382,9 +386,9 @@ struct FwdTrackPropagation {
       } // end of fwdtrack loop
     } // end of collision loop
   }
-  PROCESS_SWITCH(FwdTrackPropagation, processWithoutTTCA, "process without TTCA", true);
+  PROCESS_SWITCH(FwdTrackPropagation, processWithoutFTTCA, "process without FTTCA", true);
 
-  void processWithTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processWithFTTCA(aod::Collisions const& collisions, MyFwdTracks const& fwdtracks, aod::MFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     std::unordered_map<int64_t, bool> mapAmb; // fwdtrack.globalIndex() -> bool isAmb;
     for (const auto& fwdtrack : fwdtracks) {
@@ -408,7 +412,7 @@ struct FwdTrackPropagation {
     } // end of collision loop
     mapAmb.clear();
   }
-  PROCESS_SWITCH(FwdTrackPropagation, processWithTTCA, "process with TTCA", false);
+  PROCESS_SWITCH(FwdTrackPropagation, processWithFTTCA, "process with FTTCA", false);
 };
 
 // Extends the PropagatedFwdTracks table for expression columns

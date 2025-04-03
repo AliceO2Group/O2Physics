@@ -315,9 +315,9 @@ struct QaImpactPar {
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     if (addTrackIUinfo) {
-      histograms.add("Reco/h4ClusterSizeIU", "", kTHnD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+      histograms.add("Reco/h4ClusterSizeIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       // histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
-      histograms.add("Reco/h4ImpParZIU", "", kTHnD, {trackPaxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+      histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPaxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
     }
     // if(fEnablePulls && !doPVrefit) {
     //   LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
@@ -329,7 +329,7 @@ struct QaImpactPar {
     isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     if (isPIDPionApplied) {
       if (addTrackIUinfo) {
-        histograms.add("Reco/h4ClusterSizeIU_Pion", "", kTHnD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+        histograms.add("Reco/h4ClusterSizeIU_Pion", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
       histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
@@ -337,7 +337,7 @@ struct QaImpactPar {
     isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
     if (isPIDKaonApplied) {
       if (addTrackIUinfo) {
-        histograms.add("Reco/h4ClusterSizeIU_Kaon", "", kTHnD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+        histograms.add("Reco/h4ClusterSizeIU_Kaon", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
       histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
@@ -345,7 +345,7 @@ struct QaImpactPar {
     isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
     if (isPIDProtonApplied) {
       if (addTrackIUinfo) {
-        histograms.add("Reco/h4ClusterSizeIU_Proton", "", kTHnD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
+        histograms.add("Reco/h4ClusterSizeIU_Proton", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
       histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
