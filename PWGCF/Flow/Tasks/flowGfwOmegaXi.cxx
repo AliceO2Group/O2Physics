@@ -40,7 +40,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGMM/Mult/DataModel/Index.h" 
+#include "PWGMM/Mult/DataModel/Index.h"
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
@@ -53,16 +53,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace
 {
-std::shared_ptr<TProfile> refc22[10];
-std::shared_ptr<TProfile> refc24[10];
-std::shared_ptr<TProfile3D> k0sc22[10];
-std::shared_ptr<TProfile3D> k0sc24[10];
-std::shared_ptr<TProfile3D> lambdac22[10];
-std::shared_ptr<TProfile3D> lambdac24[10];
-std::shared_ptr<TProfile3D> xic22[10];
-std::shared_ptr<TProfile3D> xic24[10];
-std::shared_ptr<TProfile3D> omegac22[10];
-std::shared_ptr<TProfile3D> omegac24[10];
+std::shared_ptr<TProfile> refc22[20];
+std::shared_ptr<TProfile> refc24[20];
+std::shared_ptr<TProfile3D> k0sc22[20];
+std::shared_ptr<TProfile3D> k0sc24[20];
+std::shared_ptr<TProfile3D> lambdac22[20];
+std::shared_ptr<TProfile3D> lambdac24[20];
+std::shared_ptr<TProfile3D> xic22[20];
+std::shared_ptr<TProfile3D> xic24[20];
+std::shared_ptr<TProfile3D> omegac22[20];
+std::shared_ptr<TProfile3D> omegac24[20];
 } // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -202,6 +202,31 @@ struct FlowGfwOmegaXi {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(cfgnolaterthan.value);
 
+    // Set the pt, mult and phi Axis;
+    o2::framework::AxisSpec axisPt = cfgaxisPt;
+    nPtBins = axisPt.binEdges.size() - 1;
+    fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisXiPt = cfgaxisPtXi;
+    nXiPtBins = axisXiPt.binEdges.size() - 1;
+    fXiPtAxis = new TAxis(nXiPtBins, &(axisXiPt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisV0Pt = cfgaxisPtV0;
+    nV0PtBins = axisV0Pt.binEdges.size() - 1;
+    fV0PtAxis = new TAxis(nV0PtBins, &(axisV0Pt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisMult = axisMultiplicity;
+    int nMultBins = axisMult.binEdges.size() - 1;
+    fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
+
+    fOmegaMass = new TAxis(cfgmassbins[3], 1.63, 1.71);
+
+    fXiMass = new TAxis(cfgmassbins[2], 1.3, 1.37);
+
+    fK0sMass = new TAxis(cfgmassbins[0], 0.4, 0.6);
+
+    fLambdaMass = new TAxis(cfgmassbins[1], 1.08, 1.16);
+
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hPhicorr", "", {HistType::kTH1D, {cfgaxisPhi}});
@@ -273,7 +298,7 @@ struct FlowGfwOmegaXi {
     registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
     // for Jackknife
     if (cfgDoJackknife) {
-      for (int i = 1; i <= 10; i++) {
+      for (int i = 1; i <= nPtBins; i++) {
         refc22[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c22_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
         refc24[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c24_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
         xic22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
@@ -310,31 +335,6 @@ struct FlowGfwOmegaXi {
     registry.add("MC/densityMCRecLambda", "", {HistType::kTHnSparseF, {cfgaxisPtV0, cfgaxisNch, cfgaxisLocalDensity, axisLambdaMass}});
     registry.add("MC/densityMCRecXi", "", {HistType::kTHnSparseF, {cfgaxisPtXi, cfgaxisNch, cfgaxisLocalDensity, axisXiMass}});
     registry.add("MC/densityMCRecOmega", "", {HistType::kTHnSparseF, {cfgaxisPtXi, cfgaxisNch, cfgaxisLocalDensity, axisOmegaMass}});
-
-    // Set the pt, mult and phi Axis;
-    o2::framework::AxisSpec axisPt = cfgaxisPt;
-    nPtBins = axisPt.binEdges.size() - 1;
-    fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
-
-    o2::framework::AxisSpec axisXiPt = cfgaxisPtXi;
-    nXiPtBins = axisXiPt.binEdges.size() - 1;
-    fXiPtAxis = new TAxis(nXiPtBins, &(axisXiPt.binEdges)[0]);
-
-    o2::framework::AxisSpec axisV0Pt = cfgaxisPtV0;
-    nV0PtBins = axisV0Pt.binEdges.size() - 1;
-    fV0PtAxis = new TAxis(nV0PtBins, &(axisV0Pt.binEdges)[0]);
-
-    o2::framework::AxisSpec axisMult = axisMultiplicity;
-    int nMultBins = axisMult.binEdges.size() - 1;
-    fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
-
-    fOmegaMass = new TAxis(cfgmassbins[3], 1.63, 1.71);
-
-    fXiMass = new TAxis(cfgmassbins[2], 1.3, 1.37);
-
-    fK0sMass = new TAxis(cfgmassbins[0], 0.4, 0.6);
-
-    fLambdaMass = new TAxis(cfgmassbins[1], 1.08, 1.16);
 
     // Data
     fGFW->AddRegion("reffull", -0.8, 0.8, 1, 1); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
@@ -608,20 +608,21 @@ struct FlowGfwOmegaXi {
   {
     if (correctionsLoaded)
       return;
-    if (cfgAcceptance.size() == 5) {
-      for (int i = 0; i <= 4; i++) {
+    int nspecies = 5
+    if (cfgAcceptance.size() == nspecies) {
+      for (int i = 0; i <= nspecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
-      if (mAcceptance.size() == 5)
+      if (mAcceptance.size() == nspecies)
         LOGF(info, "Loaded acceptance weights");
       else
         LOGF(warning, "Could not load acceptance weights");
     }
-    if (cfgEfficiency.size() == 5) {
-      for (int i = 0; i <= 4; i++) {
+    if (cfgEfficiency.size() == nspecies) {
+      for (int i = 0; i <= nspecies - 1; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
       }
-      if (mEfficiency.size() == 5)
+      if (mEfficiency.size() == nspecies)
         LOGF(info, "Loaded efficiency histogram");
       else
         LOGF(fatal, "Could not load efficiency histogram");
@@ -632,15 +633,16 @@ struct FlowGfwOmegaXi {
   template <typename TrackObject>
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
+    int nspecies = 5;
     float eff = 1.;
-    if (mEfficiency.size() == 5)
+    if (mEfficiency.size() == nspecies)
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (mAcceptance.size() == 5)
+    if (mAcceptance.size() == nspecies)
       weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
@@ -651,11 +653,11 @@ struct FlowGfwOmegaXi {
   bool setCurrentLocalDensityWeights(float& weight_loc, TrackObject track, double locDensity, int ispecies)
   {
     auto cfgLocDenPara = (std::vector<std::vector<double>>){cfgLocDenParaK0s, cfgLocDenParaLambda, cfgLocDenParaXi, cfgLocDenParaOmega};
-    if (track.pt() < 0.9 || track.pt() > 10) {
+    int ptbin = fXiPtAxis->FindBin(track.pt());
+    if (ptbin == 0 || ptbin == (fXiPtAxis->GetNBins() + 1)) {
       weight_loc = 1.0;
       return true;
     }
-    int ptbin = fXiPtAxis->FindBin(track.pt());
     double paraA = cfgLocDenPara[ispecies - 1][2 * ptbin - 2];
     double paraB = cfgLocDenPara[ispecies - 1][2 * ptbin - 1];
     double density = locDensity * 200 / (2 * cfgDeltaPhiLocDen + 1);
@@ -1087,16 +1089,16 @@ struct FlowGfwOmegaXi {
         }
       }
     }
-
   }
   PROCESS_SWITCH(FlowGfwOmegaXi, processData, "", true);
 
-  void processMC(aod::McCollisions::iterator const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& tracksGen, soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisionsRec, AodTracks const&) {
+  void processMC(aod::McCollisions::iterator const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& tracksGen, soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisionsRec, AodTracks const&)
+  {
     fGFW->Clear();
     int nch = 0;
     double cent = -1;
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
-    for (auto& collision : collisionsRec) {
+    for (const auto& collision : collisionsRec) {
       if (!collision.sel8())
         return;
       if (eventSelected(collision, cent))
