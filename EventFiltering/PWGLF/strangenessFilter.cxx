@@ -475,6 +475,7 @@ struct strangenessFilter {
       }
       LOG(debug) << "Mean mults t0:" << fac_FT0A_ebe << " " << fac_FT0C_ebe;
       if (collision.has_foundFT0()) {
+        static int ampneg = 0;
         auto ft0 = collision.foundFT0();
         float sumAmpFT0C = 0.f;
         for (std::size_t i_c = 0; i_c < ft0.amplitudeC().size(); i_c++) {
@@ -494,19 +495,26 @@ struct strangenessFilter {
           } else {
             multFT0MNorm = sumAmpFT0C * weigthsEta5[0] + sumAmpFT0A * weigthsEta5[1];
           }
-          LOG(info) << "meanMult:" << multFT0MNorm << " multFT0M:" << collision.multFT0M();
+          LOG(debug) << "meanMult:" << multFT0MNorm << " multFT0M:" << collision.multFT0M();
+          if (sumAmpFT0A < 0 || sumAmpFT0C < 0) {
+            // LOG(info) << "ampa: " << sumAmpFT0A << " ampc:" << sumAmpFT0C;
+            ampneg++;
+          }
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), multFT0MNorm);
           if (multFT0MNorm > LowLimitFT0MMultNorm) {
             isHighMultEvent = 1;
-            LOG(info) << "Found FT0 using aver mult";
+            LOG(debug) << "Found FT0 using norm mult";
           }
         } else {
-          LOG(warn) << "Found FT0 but, amplitudes are 0 ?";
+          LOG(warn) << "Found FT0 but, bith amplitudes are <=0 ";
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 148);
           EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
         }
+        if (ampneg) {
+          LOG(warn) << "# of negative amplitudes:" << ampneg;
+        }
       } else {
-        LOG(warn) << "FT0 not Found, using FT0M";
+        LOG(debug) << "FT0 not Found, using FT0M";
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNorm"), 149);
         EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicityFT0MNoFT0"), collision.multFT0M());
       }
