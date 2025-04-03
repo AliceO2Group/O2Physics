@@ -594,7 +594,7 @@ struct FlowSP {
     if (cfg.correctionsLoaded)
       return;
 
-    int nWeights = 3; 
+    int nWeights = 3;
 
     if (cfgNUA.value.empty() == false) {
       TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUA, timestamp);
@@ -604,26 +604,25 @@ struct FlowSP {
       int sizeAcc = cfg.mAcceptance.size();
       if (sizeAcc < nWeights) {
         LOGF(warning, "Could not load acceptance weights from %s", cfgNUA.value.c_str());
-      else
-        LOGF(info, "Loaded acceptance weights from %s", cfgNUA.value.c_str());
-    } else {
-      LOGF(info, "cfgNUA empty! No corrections loaded");
-    }
-    if (cfgNUE.value.empty() == false) {
-      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUE, timestamp);
-      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
-      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
-      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
-      int sizeEff = cfg.mEfficiency.size();
-      if (sizeEff < nWeights) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
+        else LOGF(info, "Loaded acceptance weights from %s", cfgNUA.value.c_str());
+      } else {
+        LOGF(info, "cfgNUA empty! No corrections loaded");
       }
-      LOGF(info, "Loaded efficiency histogram from %s", cfgNUE.value.c_str());
-    } else {
-      LOGF(info, "cfgNUE empty! No corrections loaded");
-    }
+      if (cfgNUE.value.empty() == false) {
+        TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUE, timestamp);
+        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
+        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
+        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
+        int sizeEff = cfg.mEfficiency.size();
+        if (sizeEff < nWeights) {
+          LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
+        }
+        LOGF(info, "Loaded efficiency histogram from %s", cfgNUE.value.c_str());
+      } else {
+        LOGF(info, "cfgNUE empty! No corrections loaded");
+      }
     cfg.correctionsLoaded = true;
-  }
+    }
 
   // From Generic Framework
   bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
@@ -707,11 +706,11 @@ struct FlowSP {
       if (collision.numContrib() > 1) {
         vtxz = collision.posZ();
         float zRes = std::sqrt(collision.covZZ());
-        float minzRes = 0.25; 
+        float minzRes = 0.25;
         int maxNumContrib = 20;
         if (zRes > minzRes && collision.numContrib() < maxNumContrib) {
           vtxz = -999;
-      }
+        }
 
       auto multNTracksPV = collision.multNTracksPV();
 
