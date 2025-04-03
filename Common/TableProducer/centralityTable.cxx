@@ -238,6 +238,7 @@ struct CentralityTable {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     mRunNumber = 0;
+    listCalib.setObject(new TList);
     if (!produceHistograms.value) {
       return;
     }
@@ -259,7 +260,6 @@ struct CentralityTable {
     histos.addClone("FT0A/", "sel8FT0A/");
 
     histos.print();
-    listCalib.setObject(new TList);
   }
 
   using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
@@ -590,7 +590,7 @@ struct CentralityTable {
               estimator.mCalibrationStored = true;
               estimator.isSane();
             } else {
-              LOGF(error, "Calibration information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+              LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
             }
           };
 

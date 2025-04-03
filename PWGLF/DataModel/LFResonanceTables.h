@@ -23,6 +23,7 @@
 #define PWGLF_DATAMODEL_LFRESONANCETABLES_H_
 
 #include <cmath>
+#include <algorithm>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
@@ -75,21 +76,17 @@ DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParamete
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
-                  resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
                   resocollision::Cent,
-                  resocollision::Spherocity,
-                  resocollision::EvtPl,
-                  resocollision::EvtPlResAB,
-                  resocollision::EvtPlResAC,
-                  resocollision::EvtPlResBC,
-                  resocollision::BMagField,
-                  timestamp::Timestamp,
-                  evsel::NumTracksInTimeRange);
+                  resocollision::BMagField);
 using ResoCollision = ResoCollisions::iterator;
+
+DECLARE_SOA_TABLE(ResoCollisionColls, "AOD", "RESOCOLLISIONCOL",
+                  resocollision::CollisionId);
+using ResoCollisionColl = ResoCollisionColls::iterator;
 
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   o2::soa::Index<>,
@@ -103,13 +100,11 @@ using ResoMCCollision = ResoMCCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoSpheroCollisions, "AOD", "RESOSPHEROCOLLISION",
                   o2::soa::Index<>,
-                  resocollision::CollisionId,
                   resocollision::Spherocity);
 using ResoSpheroCollision = ResoSpheroCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoEvtPlCollisions, "AOD", "RESOEVTPLCOLLISION",
                   o2::soa::Index<>,
-                  resocollision::CollisionId,
                   resocollision::EvtPl,
                   resocollision::EvtPlResAB,
                   resocollision::EvtPlResAC,
@@ -119,7 +114,6 @@ using ResoEvtPlCollision = ResoEvtPlCollisions::iterator;
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
                   o2::soa::Index<>,
-                  // resocollision::CollisionId,
                   o2::aod::mult::MultNTracksPV,
                   collision::PosX,
                   collision::PosY,
@@ -139,6 +133,36 @@ using ResoCollisionDF = ResoCollisionDFs::iterator;
 // inspired from PWGCF/DataModel/FemtoDerived.h
 namespace resodaughter
 {
+struct ResoTrackFlags {
+ public:
+  typedef uint8_t flagtype;
+  static constexpr flagtype kPassedITSRefit = 1 << 0;
+  static constexpr flagtype kPassedTPCRefit = 1 << 1;
+  static constexpr flagtype kIsGlobalTrackWoDCA = 1 << 2;
+  static constexpr flagtype kIsGlobalTrack = 1 << 3;
+  static constexpr flagtype kIsPrimaryTrack = 1 << 4;
+  static constexpr flagtype kIsPVContributor = 1 << 5;
+  static constexpr flagtype kHasTOF = 1 << 6;
+  static constexpr flagtype kSign = 1 << 7;
+  /// @brief check if the flag is set
+  static bool checkFlag(const flagtype flags, const flagtype mask)
+  {
+    return (flags & mask) == mask;
+  }
+};
+#define requireTrackFlag(mask) ((o2::aod::resodaughter::trackFlags & o2::aod::resodaughter::mask) == o2::aod::resodaughter::mask)
+
+#define requirePassedITSRefit() requireTrackFlag(ResoTrackFlags::kPassedITSRefit)
+#define requirePassedTPCRefit() requireTrackFlag(ResoTrackFlags::kPassedTPCRefit)
+#define requireGlobalTrack() requireTrackFlag(ResoTrackFlags::kIsGlobalTrack)
+#define requireGlobalTrackWoDCA() requireTrackFlag(ResoTrackFlags::kIsGlobalTrackWoDCA)
+#define requirePrimaryTrack() requireTrackFlag(ResoTrackFlags::kIsPrimaryTrack)
+#define requirePVContributor() requireTrackFlag(ResoTrackFlags::kIsPVContributor)
+#define requireHasTOF() requireTrackFlag(ResoTrackFlags::kHasTOF)
+#define requireSign() requireTrackFlag(ResoTrackFlags::kSign)
+
+#define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
+  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, mask); });
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
@@ -155,6 +179,8 @@ DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                   
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                       //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);              //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                          //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(DcaXY10000, dcaXY10000, int16_t);                              //! DCA_xy x10,000 in int16_t, resolution 10 um
+DECLARE_SOA_COLUMN(DcaZ10000, dcaZ10000, int16_t);                                //! DCA_z x10,000 in int16_t, resolution 10 um
 DECLARE_SOA_COLUMN(TrackFlags, trackFlags, uint8_t);                              //! Track flags
 DECLARE_SOA_COLUMN(TpcNSigmaPi10, tpcNSigmaPi10, int8_t);                         //! TPC PID x10 of the track as Pion
 DECLARE_SOA_COLUMN(TpcNSigmaKa10, tpcNSigmaKa10, int8_t);                         //! TPC PID x10 of the track as Kaon
@@ -208,6 +234,12 @@ DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles 
 DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);       //! Id of the bach track from cascade
 DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
 // Dynamic columns
+// DCA_xy x10,000
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
+                           [](int16_t dcaXY10000) { return (float)dcaXY10000 / 10000.f; });
+// DCA_z x10,000
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
+                           [](int16_t dcaZ10000) { return (float)dcaZ10000 / 10000.f; });
 // TPC PID return value/10
 DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigmaPi, tpcNSigmaPi,
                            [](int8_t tpcNSigmaPi10) { return (float)tpcNSigmaPi10 / 10.f; });
@@ -266,34 +298,192 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 // Track flags
 DECLARE_SOA_DYNAMIC_COLUMN(PassedITSRefit, passedITSRefit,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 0)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kPassedITSRefit);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(PassedTPCRefit, passedTPCRefit,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 1)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kPassedTPCRefit);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 2)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsGlobalTrackWoDCA);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGlobalTrack, isGlobalTrack,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 3)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsGlobalTrack);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPrimaryTrack, isPrimaryTrack,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 4)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsPrimaryTrack);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(IsPVContributor, isPVContributor,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 5)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kIsPVContributor);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
-                           [](uint8_t trackFlags) -> bool { return (trackFlags & (1 << 6)) != 0; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> bool {
+                             return ResoTrackFlags::checkFlag(trackFlags, ResoTrackFlags::kHasTOF);
+                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
-                           [](uint8_t trackFlags) -> int8_t { return (trackFlags & (1 << 7)) ? 1 : -1; });
+                           [](ResoTrackFlags::flagtype trackFlags) -> int8_t {
+                             return (trackFlags & ResoTrackFlags::kSign) ? 1 : -1;
+                           });
+
 } // namespace resodaughter
+
+namespace resodmciroaughter
+{
+// micro track for primary pion
+
+/// @brief Save TPC & TOF nSigma info with 8-bit variable
+struct PidNSigma {
+  uint8_t flag;
+
+  /// @brief Constructor: Convert TPC & TOF values and save
+  PidNSigma(float TPCnSigma, float TOFnSigma, bool hasTOF)
+  {
+    uint8_t TPCencoded = encodeNSigma(TPCnSigma);
+    uint8_t TOFencoded = hasTOF ? encodeNSigma(TOFnSigma) : 0x0F; // If TOF is not available, set all 4 bits to 1
+    flag = (TPCencoded << 4) | TOFencoded;                        // Upper 4 bits = TPC, Lower 4 bits = TOF
+  }
+
+  /// @brief Encode 0.2 sigma interval to 0~10 range
+  static uint8_t encodeNSigma(float nSigma)
+  {
+    float encoded = std::abs((nSigma - 1.5) / 0.2);   // Convert to 0~10 range
+    encoded = std::min(std::max(encoded, 0.f), 10.f); // Clamp to 0~10 range
+    return (uint8_t)round(encoded);
+  }
+
+  /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
+  static float decodeNSigma(uint8_t encoded)
+  {
+    encoded = std::min(encoded, (uint8_t)10); // Safety check, should not be needed if encode is used properly
+    return (encoded * 0.2) + 1.5;
+  }
+
+  /// @brief Check if TOF info is available
+  bool hasTOF() const
+  {
+    return (flag & 0x0F) != 0x0F; // Check if lower 4 bits are not all 1
+  }
+
+  /// @brief Restore TPC nSigma value
+  static float getTPCnSigma(uint8_t encoded)
+  {
+    return decodeNSigma((encoded >> 4) & 0x0F); // Extract upper 4 bits
+  }
+
+  /// @brief Restore TOF nSigma value (if not available, return NAN)
+  static float getTOFnSigma(uint8_t encoded)
+  {
+    uint8_t TOFencoded = encoded & 0x0F; // Extract lower 4 bits
+    return (TOFencoded == 0x0F) ? NAN : decodeNSigma(TOFencoded);
+  }
+
+  /// @brief Operator to convert to uint8_t (automatic conversion support)
+  operator uint8_t() const
+  {
+    return flag;
+  }
+};
+
+DECLARE_SOA_COLUMN(PidNSigmaPiFlag, pidNSigmaPiFlag, uint8_t);        //! Pid flag for the track as Pion
+DECLARE_SOA_COLUMN(PidNSigmaKaFlag, pidNSigmaKaFlag, uint8_t);        //! Pid flag for the track as Kaon
+DECLARE_SOA_COLUMN(PidNSigmaPrFlag, pidNSigmaPrFlag, uint8_t);        //! Pid flag for the track as Proton
+DECLARE_SOA_COLUMN(TrackSelectionFlags, trackSelectionFlags, int8_t); //! Track selection flags
+DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
+                           [](uint8_t pidNSigmaFlags) -> bool {
+                             return (pidNSigmaFlags & 0x0F) != 0x0F;
+                           });
+
+/// @brief DCAxy & DCAz selection flag
+struct ResoMicroTrackSelFlag {
+  uint8_t flag; // Flag for DCAxy & DCAz selection (8-bit variable)
+
+  /// @brief Default constructor
+  ResoMicroTrackSelFlag()
+  {
+    flag = 0x00;
+  }
+
+  /// @brief Constructor: Convert DCAxy/DCAz and save (default 1~15 values)
+  ResoMicroTrackSelFlag(float DCAxy, float DCAz)
+  {
+    uint8_t DCAxyEncoded = encodeDCA(DCAxy);
+    uint8_t DCAzEncoded = encodeDCA(DCAz);
+    flag = (DCAxyEncoded << 4) | DCAzEncoded; // Upper 4 bits = DCAxy, Lower 4 bits = DCAz
+  }
+
+  /// @brief Convert DCA to 1~15 steps (0 value is not used)
+  static uint8_t encodeDCA(float DCA)
+  {
+    for (uint8_t i = 1; i < 15; i++) {
+      if (DCA < i * 0.1f)
+        return i;
+    }
+    return 15;
+  }
+
+  /// @brief Operator to convert to `uint8_t` (for SOA storage)
+  operator uint8_t() const
+  {
+    return flag;
+  }
+
+  /// @brief Get DCAxy value
+  uint8_t getDCAxyFlag() const
+  {
+    return (flag >> 4) & 0x0F; // Extract upper 4 bits
+  }
+
+  /// @brief Get DCAz value
+  uint8_t getDCAzFlag() const
+  {
+    return flag & 0x0F; // Extract lower 4 bits
+  }
+
+  /// @brief Apply DCAxy tight cut (0 value)
+  void setDCAxy0()
+  {
+    flag &= 0x0F; // Set DCAxy to 0 (delete upper 4 bits)
+  }
+
+  /// @brief Apply DCAz tight cut (0 value)
+  void setDCAz0()
+  {
+    flag &= 0xF0; // Set DCAz to 0 (delete lower 4 bits)
+  }
+  /// @brief Decode DCAxy
+  static float decodeDCAxy(uint8_t flag_saved)
+  {
+    uint8_t DCAxyFlag = (flag_saved >> 4) & 0x0F;      // Extract upper 4 bits
+    return (DCAxyFlag == 0) ? 0.0f : DCAxyFlag * 0.1f; // Tight cut(0) is 0.0, otherwise flag * 0.1 cm
+  }
+
+  /// @brief Decode DCAz
+  static float decodeDCAz(uint8_t flag_saved)
+  {
+    uint8_t DCAzFlag = flag_saved & 0x0F;            // Extract lower 4 bits
+    return (DCAzFlag == 0) ? 0.0f : DCAzFlag * 0.1f; // Tight cut(0) is 0.0, otherwise flag * 0.1 cm
+  }
+};
+
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+} // namespace resodmciroaughter
+
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
-                  resodaughter::TrackId,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
-                  o2::aod::track::DcaXY,
-                  o2::aod::track::DcaZ,
+                  resodaughter::DcaXY10000,
+                  resodaughter::DcaZ10000,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
@@ -311,6 +501,8 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
                   resodaughter::TpcSignal<resodaughter::TpcSignal10>,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DcaXY<resodaughter::DcaXY10000>,
+                  resodaughter::DcaZ<resodaughter::DcaZ10000>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
@@ -323,19 +515,51 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoTrack = ResoTracks::iterator;
 
+DECLARE_SOA_TABLE(ResoTrackTracks, "AOD", "RESOTRACKTRACK",
+                  resodaughter::TrackId);
+using ResoTrackTrack = ResoTrackTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoMicroTracks, "AOD", "RESOMICROTRACK",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resodaughter::Px,
+                  resodaughter::Py,
+                  resodaughter::Pz,
+                  resodmciroaughter::PidNSigmaPiFlag,
+                  resodmciroaughter::PidNSigmaKaFlag,
+                  resodmciroaughter::PidNSigmaPrFlag,
+                  resodmciroaughter::TrackSelectionFlags,
+                  resodaughter::TrackFlags,
+                  // Dynamic columns
+                  resodmciroaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
+                  resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodmciroaughter::HasTOF<resodmciroaughter::PidNSigmaPiFlag>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
+using ResoMicroTrack = ResoMicroTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoMicroTrackTracks, "AOD", "RESOMICROTRACKTRACK",
+                  resodaughter::TrackId);
+using ResoMicroTrackTrack = ResoMicroTrackTracks::iterator;
+
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
-                  //  resodaughter::TrackId,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
                   resodaughter::TpcNClsCrossedRows,
                   resodaughter::TpcNClsFound,
-                  o2::aod::track::DcaXY,
-                  o2::aod::track::DcaZ,
+                  resodaughter::DcaXY10000,
+                  resodaughter::DcaZ10000,
                   resodaughter::TpcNSigmaPi10,
                   resodaughter::TpcNSigmaKa10,
                   resodaughter::TpcNSigmaPr10,
@@ -353,6 +577,8 @@ DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
                   resodaughter::TofNSigmaPr<resodaughter::TofNSigmaPr10>,
                   resodaughter::TpcSignal<resodaughter::TpcSignal10>,
                   // resodaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resodaughter::DcaXY<resodaughter::DcaXY10000>,
+                  resodaughter::DcaZ<resodaughter::DcaZ10000>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
@@ -368,7 +594,6 @@ using ResoTrackDF = ResoTrackDFs::iterator;
 DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
-                  resodaughter::V0Id,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,
@@ -415,10 +640,13 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0",
                   resodaughter::DaughterTOFNSigmaNegPr<resodaughter::DaughterTOFNSigmaNegPr10>);
 using ResoV0 = ResoV0s::iterator;
 
+DECLARE_SOA_TABLE(ResoV0V0s, "AOD", "RESOV0V0",
+                  resodaughter::V0Id);
+using ResoV0V0 = ResoV0V0s::iterator;
+
 DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
-                  resodaughter::CascadeId,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,
@@ -483,10 +711,13 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADE",
                   resodaughter::DaughterTOFNSigmaBachPr<resodaughter::DaughterTOFNSigmaBachPr10>);
 using ResoCascade = ResoCascades::iterator;
 
+DECLARE_SOA_TABLE(ResoCascadeCascades, "AOD", "RESOCASCADECASCADE",
+                  resodaughter::CascadeId);
+using ResoCascadeCascade = ResoCascadeCascades::iterator;
+
 DECLARE_SOA_TABLE(ResoCascadeDFs, "AOD", "RESOCASCADEDF",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionDFId,
-                  // resodaughter::CascadeId,
                   resodaughter::Pt,
                   resodaughter::Px,
                   resodaughter::Py,

@@ -36,6 +36,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using namespace o2::aod::resodaughter;
 
 struct kstar892analysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -245,16 +246,16 @@ struct kstar892analysis {
   Filter acceptanceFilter = nabs(aod::resodaughter::pt) >= cMinPtcut;
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) <= cMaxDCArToPVcut) && (nabs(aod::track::dcaZ) <= cMaxDCAzToPVcut);
   // Filter primarytrackFilter = aod::resodaughter::isPVContributor && aod::resodaughter::isPrimaryTrack && aod::resodaughter::isGlobalTrackWoDCA;
-  Filter primarytrackFilter = ((aod::resodaughter::trackFlags & ((1 << 5) | (1 << 4) | (1 << 2))) == ((1 << 5) | (1 << 4) | (1 << 2)));
+  Filter primarytrackFilter = requirePVContributor() && requirePrimaryTrack() && requireGlobalTrackWoDCA();
 
   // partitions for data
   Partition<aod::ResoTracks> resoKaWithTof =
     (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+    requireHasTOF();
 
   Partition<aod::ResoTracks> resoPiWithTof =
     (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+    requireHasTOF();
 
   Partition<aod::ResoTracks> resoKa =
     (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
@@ -272,22 +273,20 @@ struct kstar892analysis {
 
   Partition<aod::ResoTracks> resoKaTOFhighPt =
     (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
-    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   Partition<aod::ResoTracks> resoPiTOFhighPt =
     (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
-    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   // Partitions for mc
   Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaWithTof =
     (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+    requireHasTOF();
 
   Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiWithTof =
     (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0);
+    requireHasTOF();
 
   Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKa =
     (nabs(aod::resodaughter::tpcNSigmaKa10) <= 10 * cMaxTPCnSigmaKaon);
@@ -305,13 +304,11 @@ struct kstar892analysis {
 
   Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecKaTOFhighPt =
     (nabs(aod::resodaughter::tofNSigmaKa10) <= 10 * cMaxTOFnSigmaKaon) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
-    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   Partition<soa::Join<aod::ResoTracks, aod::ResoMCTracks>> resoMCrecPiTOFhighPt =
     (nabs(aod::resodaughter::tofNSigmaPi10) <= 10 * cMaxTOFnSigmaPion) &&
-    ((aod::resodaughter::trackFlags & (1 << 6)) != 0) &&
-    (nabs(aod::resodaughter::pt) >= cMinPtTOF);
+    requireHasTOF() && (nabs(aod::resodaughter::pt) >= cMinPtTOF);
 
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
@@ -323,27 +320,10 @@ struct kstar892analysis {
   template <typename TrackType>
   bool trackCut(const TrackType track)
   {
-    // pT
-    if (track.pt() < cMinPtcut)
-      return false;
-    // DCA
-    if (track.dcaXY() > cMaxDCArToPVcut)
-      return false;
-    if (track.dcaZ() > cMaxDCAzToPVcut)
-      return false;
-    // Primary filters
-    if (!track.isPrimaryTrack())
-      return false;
-    if (!track.isGlobalTrackWoDCA())
-      return false;
-    // PV contributor
-    if (!track.isPVContributor())
-      return false;
     // TPC
     if (track.tpcNClsFound() < cfgTPCcluster)
       return false;
     // ITS
-
     if (cfgUseITSRefit && !track.passedITSRefit())
       return false;
     if (cfgUseTPCRefit && !track.passedTPCRefit())

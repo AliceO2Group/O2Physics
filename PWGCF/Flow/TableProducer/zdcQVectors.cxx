@@ -70,11 +70,7 @@ using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3Match
 
 namespace o2::analysis::qvectortask
 {
-
 int counter = 0;
-
-// step0 -> Energy calib
-std::shared_ptr<TProfile2D> energyZN[10] = {{nullptr}};
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
@@ -88,8 +84,7 @@ std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
 double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4);    // start values of [QxA, QyA, QxC, QyC]
-std::vector<double> qRec(4); // Recentered values of [QxA, QyA, QxC, QyC]
+std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
 std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
@@ -178,7 +173,7 @@ struct ZdcQVectors {
     // Tower mean energies vs. centrality used for tower gain equalisation
     for (int tower = 0; tower < 10; tower++) {
       namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
-      energyZN[tower] = registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
+      registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
 
     registry.add<TH2>(Form("before/QA/hSPplaneA"), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
@@ -293,8 +288,8 @@ struct ZdcQVectors {
             }
           }
           // Try to cast to TProfile
-          if (TProfile* profile2D = dynamic_cast<TProfile*>(obj)) {
-            if (profile2D->GetEntries() < 1) {
+          if (TProfile* profile = dynamic_cast<TProfile*>(obj)) {
+            if (profile->GetEntries() < 1) {
               if (counter < 1)
                 LOGF(info, "%s (TProfile) is empty! Produce calibration file at given step", names[i].Data());
               cal.calibfilesLoaded[iteration][step] = false;
@@ -385,14 +380,19 @@ struct ZdcQVectors {
       for (std::size_t i = 0; i < sparsePars.size(); i++) {
         h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
       }
-      calibConstant = h->Projection(4)->GetMean();
 
-      if (h->Projection(4)->GetEntries() < cfgMinEntriesSparseBin) {
+      TH1D* tempProj = h->Projection(4);
+      calibConstant = tempProj->GetMean();
+
+      if (tempProj->GetEntries() < cfgMinEntriesSparseBin) {
         LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
         calibConstant = 0;
         isSelected = false;
       }
+
+      delete tempProj;
     }
+
     return calibConstant;
   }
 
@@ -422,6 +422,7 @@ struct ZdcQVectors {
     if (cent < 0 || cent > 90) {
       isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
+      counter++;
       return;
     }
 
@@ -432,6 +433,7 @@ struct ZdcQVectors {
     if (!foundBC.has_zdc()) {
       isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
+      counter++;
       return;
     }
 
@@ -443,7 +445,11 @@ struct ZdcQVectors {
 
     // load new calibrations for new runs only
     if (runnumber != lastRunNumber) {
-      cal.calibfilesLoaded = std::vector<std::vector<bool>>(7, std::vector<bool>(8, false));
+      cal.calibfilesLoaded.clear();
+      cal.calibfilesLoaded.resize(7, std::vector<bool>(8, false));
+
+      cal.calibList.clear();
+      cal.calibList.resize(7, std::vector<TList*>(8, nullptr));
       lastRunNumber = runnumber;
     }
 
@@ -473,9 +479,6 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
     }
 
-    if (counter < 1)
-      LOGF(info, "=====================> .....Start Energy Calibration..... <=====================");
-
     bool isZNAhit = true;
     bool isZNChit = true;
 
@@ -492,20 +495,19 @@ struct ZdcQVectors {
       isZNChit = false;
 
     // Fill to get mean energy per tower in 1% centrality bins
-    for (int tower = 0; tower < 5; tower++) {
-      if (tower == 0) {
-        if (isZNAhit)
-          energyZN[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
-        if (isZNChit)
-          energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
-        LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent, zdcCol.energyCommonZNA());
-      } else {
-        if (isZNAhit)
-          energyZN[tower]->Fill(Form("%d", runnumber), cent, eZN[tower - 1], 1);
-        if (isZNChit)
-          energyZN[tower + 5]->Fill(Form("%d", runnumber), cent, eZN[tower - 1 + 4], 1);
-        LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, eZN[tower - 1 + 4]);
-      }
+    if (isZNAhit) {
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[0], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[1], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[2], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[3], 1);
+    }
+    if (isZNChit) {
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[4], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[5], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[6], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[7], 1);
     }
 
     // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
@@ -521,13 +523,6 @@ struct ZdcQVectors {
       isSelected = false;
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       return;
-    }
-
-    if (counter < 1)
-      LOGF(info, "files for step 0 (energy Calibraton) are open!");
-
-    if (counter < 1) {
-      LOGF(info, "=====================> .....Start Calculating Q-Vectors..... <=====================");
     }
 
     // Now start gain equalisation!
@@ -575,8 +570,6 @@ struct ZdcQVectors {
     }
 
     if (cal.calibfilesLoaded[0][1]) {
-      if (counter < 1)
-        LOGF(info, "=====================> Setting v to vmean!");
       v[0] = v[0] - getCorrection<TProfile>(0, 1, vnames[0].Data());
       v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
     }
@@ -599,21 +592,17 @@ struct ZdcQVectors {
       }
     }
 
-    if (counter < 1)
-      LOGF(info, "We evaluate cal.atIteration=%i and cal.atStep=%i ", cal.atIteration, cal.atStep);
+    std::vector<double> qRec(q);
 
     if (cal.atIteration == 0) {
-      if (counter < 1)
-        LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
       if (isSelected)
         fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
     } else if (cal.atIteration == 5 && cal.atStep == 4) {
-      std::vector<double> qRec(4);
       fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
-      qRec = q;
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -628,7 +617,6 @@ struct ZdcQVectors {
         corrQyA.push_back(getCorrection<THnSparse>(it, 0, names[0][1].Data()));
         corrQxC.push_back(getCorrection<THnSparse>(it, 0, names[0][2].Data()));
         corrQyC.push_back(getCorrection<THnSparse>(it, 0, names[0][3].Data()));
-
         pb++;
 
         for (int step = 1; step < 5; step++) {
@@ -647,13 +635,15 @@ struct ZdcQVectors {
         qRec[3] -= corrQyC[cor];
       }
 
-      if (counter < 1)
-        LOGF(info, "Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
       if (isSelected) {
         fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
         registry.fill(HIST("QA/centrality_after"), centrality);
       }
+
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);
+
+      qRec.clear();
+
       counter++;
       return;
     } else {

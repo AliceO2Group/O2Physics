@@ -472,6 +472,10 @@ struct McDGCandProducer {
   Produces<aod::UDMcCollsLabels> outputMcCollsLabels;
   Produces<aod::UDMcTrackLabels> outputMcTrackLabels;
 
+  // save all McTruth, even if the collisions is not reconstructed
+  Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
+  Configurable<bool> saveAllMcCollisions{"saveAllMcCollisions", true, "save all McCollisions"};
+
   using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using TCs = soa::Join<aod::Tracks, aod::McTrackLabels>;
@@ -670,30 +674,10 @@ struct McDGCandProducer {
     }
   }
 
-  void init(InitContext& context)
+  // updating McTruth data and links to reconstructed data
+  void procWithDgCand(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
+                      UDCCs const& dgcands, UDTCs const& udtracks)
   {
-    // add histograms for the different process functions
-    if (context.mOptions.get<bool>("processMCTruth")) {
-      registry.add("mcTruth/collisions", "Number of associated collisions", {HistType::kTH1F, {{11, -0.5, 10.5}}});
-      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-      registry.add("mcTruth/IVMpt", "Invariant mass versus p_{T}", {HistType::kTH2F, {{150, 0.0, 3.0}, {150, 0.0, 3.0}}});
-    }
-  }
-
-  // process function for MC data
-  // save the MC truth of all events of interest and of the DG events
-  void processMCTruth(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
-                      UDCCs const& dgcands, UDTCs const& udtracks,
-                      CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
-  {
-    LOGF(debug, "Number of McCollisions %d", mccols.size());
-    LOGF(debug, "Number of DG candidates %d", dgcands.size());
-    LOGF(debug, "Number of UD tracks %d", udtracks.size());
-    if (dgcands.size() <= 0) {
-      LOGF(info, "No DG candidates to save!");
-      return;
-    }
-
     // use a hash table to keep track of the McCollisions which have been added to the UDMcCollision table
     // {McCollisionId : udMcCollisionId}
     // similar for the McParticles which have been added to the UDMcParticle table
@@ -703,18 +687,20 @@ struct McDGCandProducer {
 
     // loop over McCollisions and UDCCs simultaneously
     auto mccol = mccols.iteratorAt(0);
-    auto dgcand = dgcands.iteratorAt(0);
+    auto mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
     auto lastmccol = mccols.iteratorAt(mccols.size() - 1);
+    auto mccolAtEnd = false;
+
+    auto dgcand = dgcands.iteratorAt(0);
     auto lastdgcand = dgcands.iteratorAt(dgcands.size() - 1);
+    auto dgcandAtEnd = false;
 
     // advance dgcand and mccol until both are AtEnd
     int64_t mccolId = mccol.globalIndex();
     int64_t mcdgId = -1;
     int64_t colId = -1;
-    auto dgcandAtEnd = dgcand == lastdgcand;
-    auto mccolAtEnd = mccol == lastmccol;
-    bool goon = !dgcandAtEnd || !mccolAtEnd;
 
+    bool goon = true;
     while (goon) {
       // check if dgcand has an associated Collision and McCollision
       if (dgcand.has_collision()) {
@@ -745,7 +731,9 @@ struct McDGCandProducer {
 
         // If the dgcand has an associated McCollision then the McCollision and all associated
         // McParticles are saved
-        if (mcdgId >= 0) {
+        // but only consider generated events of interest
+        if (mcdgId >= 0 && mcOfInterest) {
+
           if (mcColIsSaved.find(mcdgId) == mcColIsSaved.end()) {
             // update UDMcCollisions
             LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mcdgId);
@@ -805,7 +793,8 @@ struct McDGCandProducer {
         // this is case 2.
 
         // update UDMcCollisions and UDMcParticles
-        if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
+        // but only consider generated events of interest
+        if (mcOfInterest && mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
 
           // update UDMcCollisions
           LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mccolId);
@@ -820,13 +809,78 @@ struct McDGCandProducer {
         // advance mccol
         if (mccol != lastmccol) {
           mccol++;
+          mcOfInterest = std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) != generatorIds->end();
           mccolId = mccol.globalIndex();
         } else {
           mccolAtEnd = true;
         }
       }
-      LOGF(debug, "  UDMcCollsLabels %d (of %d) UDMcCollisions %d", outputMcCollsLabels.lastIndex(), dgcands.size() - 1, outputMcCollisions.lastIndex());
+      LOGF(info, "  UDMcCollsLabels %d (of %d) UDMcCollisions %d", outputMcCollsLabels.lastIndex(), dgcands.size() - 1, outputMcCollisions.lastIndex());
       goon = !dgcandAtEnd || !mccolAtEnd;
+    }
+  }
+
+  // updating McTruth data only
+  void procWithoutDgCand(aod::McCollisions const& mccols, aod::McParticles const& mcparts)
+  {
+    // use a hash table to keep track of the McCollisions which have been added to the UDMcCollision table
+    // {McCollisionId : udMcCollisionId}
+    // similar for the McParticles which have been added to the UDMcParticle table
+    // {McParticleId : udMcParticleId}
+    std::map<int64_t, int64_t> mcColIsSaved;
+    std::map<int64_t, int64_t> mcPartIsSaved;
+
+    // loop over McCollisions
+    for (auto const& mccol : mccols) {
+      // only consider generated events of interest
+      if (std::find(generatorIds->begin(), generatorIds->end(), mccol.getGeneratorId()) == generatorIds->end())
+        continue;
+
+      int64_t mccolId = mccol.globalIndex();
+      // update UDMcCollisions and UDMcParticles
+      if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
+
+        // update UDMcCollisions
+        LOGF(debug, "  writing mcCollision %d to UDMcCollisions", mccolId);
+        updateUDMcCollisions(mccol);
+        mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
+
+        // update UDMcParticles
+        auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mccolId);
+        updateUDMcParticles(mcPartsSlice, mcColIsSaved[mccolId], mcPartIsSaved);
+      }
+    }
+  }
+
+  void init(InitContext& context)
+  {
+    // add histograms for the different process functions
+    if (context.mOptions.get<bool>("processMCTruth")) {
+      LOGF(info, "Preparing histograms for processMCTruth.");
+      registry.add("mcTruth/collisions", "Number of associated collisions", {HistType::kTH1F, {{11, -0.5, 10.5}}});
+      registry.add("mcTruth/collType", "Collision type", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("mcTruth/IVMpt", "Invariant mass versus p_{T}", {HistType::kTH2F, {{150, 0.0, 3.0}, {150, 0.0, 3.0}}});
+    }
+  }
+
+  // process function for MC data
+  // save the MC truth of all events of interest and of the DG events
+  void processMCTruth(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
+                      UDCCs const& dgcands, UDTCs const& udtracks,
+                      CCs const& /*collisions*/, BCs const& /*bcs*/, TCs const& /*tracks*/)
+  {
+    LOGF(info, "Number of McCollisions %d", mccols.size());
+    LOGF(info, "Number of DG candidates %d", dgcands.size());
+    LOGF(info, "Number of UD tracks %d", udtracks.size());
+
+    if (mccols.size() > 0) {
+      if (dgcands.size() > 0) {
+        procWithDgCand(mccols, mcparts, dgcands, udtracks);
+      } else {
+        if (saveAllMcCollisions) {
+          procWithoutDgCand(mccols, mcparts);
+        }
+      }
     }
   }
   PROCESS_SWITCH(McDGCandProducer, processMCTruth, "Produce MC tables", false);

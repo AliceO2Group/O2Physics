@@ -96,13 +96,15 @@ struct TaskPi0FlowEMC {
   Configurable<float> cfgRotAngle{"cfgRotAngle", std::move(const_cast<float&>(o2::constants::math::PIHalf)), "Angle used for the rotation method"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
+  Configurable<bool> cfgDoReverseScaling{"cfgDoReverseScaling", false, "Flag to reverse the scaling that is possibly applied during NonLin"};
+  Configurable<bool> cfgDoPlaneQA{"cfgDoPlaneQA", false, "Flag to enable QA plots comparing in and out of plane"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, ""};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, ""};
   ConfigurableAxis thnConfigAxisCosNPhi{"thnConfigAxisCosNPhi", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {100, -1., 1.}, ""};
+  ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {8, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, -5., 5.}, ""};
   ConfigurableAxis thnConfigAxisM02{"thnConfigAxisM02", {200, 0., 5.}, ""};
 
@@ -302,6 +304,9 @@ struct TaskPi0FlowEMC {
     registry.add("hSparseBkgRotFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgMixFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("h3DMixingCount", "THn Event Mixing QA", HistType::kTH3D, {thnAxisMixingVtx, thnAxisMixingCent, thnAxisMixingEP});
+    if (cfgDoPlaneQA.value) {
+      registry.add("hSparsePi0FlowPlane", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosDeltaPhi});
+    }
     auto hClusterCuts = registry.add<TH1>("hClusterCuts", "hClusterCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
     hClusterCuts->GetXaxis()->SetBinLabel(1, "in");
     hClusterCuts->GetXaxis()->SetBinLabel(2, "opening angle");
@@ -849,6 +854,12 @@ struct TaskPi0FlowEMC {
       scalprodCand = scalprodCand / h1SPResolution->GetBinContent(h1SPResolution->FindBin(cent + epsilon));
     }
 
+    if (cfgDoPlaneQA.value && histType == 0) {
+      float epAngle = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
+      float cosDeltaPhi = std::cos(harmonic * getDeltaPsiInRange(phiCand, epAngle));
+      registry.fill(HIST("hSparsePi0FlowPlane"), massCand, ptCand, cent, cosDeltaPhi);
+    }
+
     fillThn<histType>(massCand, ptCand, cent, scalprodCand);
     return;
   }
@@ -938,6 +949,15 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        if (cfgDoReverseScaling.value) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
@@ -1036,6 +1056,16 @@ struct TaskPi0FlowEMC {
         }
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+
+        if (cfgDoReverseScaling.value) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -1253,6 +1283,15 @@ struct TaskPi0FlowEMC {
 
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        if (cfgDoReverseScaling.value) {
+          // Convert to PxPyPzEVector to modify energy
+          ROOT::Math::PxPyPzEVector v1Mod(v1);
+          v1Mod.SetE(v1Mod.E() * 1.0505);
+          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
+          ROOT::Math::PxPyPzEVector v2Mod(v2);
+          v2Mod.SetE(v2Mod.E() * 1.0505);
+          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        }
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();

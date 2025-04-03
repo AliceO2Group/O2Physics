@@ -342,7 +342,7 @@ struct HfCorrelatorLcHadrons {
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -490,7 +490,7 @@ struct HfCorrelatorLcHadrons {
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -775,7 +775,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
-      if (std::abs(yL) > yCandMax || particle.pt() < ptCandMin) {
+      if (std::abs(yL) > yCandGenMax || particle.pt() < ptCandMin) {
         continue;
       }
       registry.fill(HIST("hLcBin"), poolBin);

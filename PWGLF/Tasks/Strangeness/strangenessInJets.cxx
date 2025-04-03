@@ -580,7 +580,7 @@ struct StrangenessInJets {
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
-    if (v0.dcaV0daughters() > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
     if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
@@ -631,7 +631,7 @@ struct StrangenessInJets {
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
-    if (v0.dcaV0daughters() > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
     if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
@@ -682,7 +682,7 @@ struct StrangenessInJets {
       return false;
     if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
-    if (v0.dcaV0daughters() > dcaV0DaughtersMax)
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
     if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
@@ -773,11 +773,11 @@ struct StrangenessInJets {
       return false;
     if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
       return false;
-    if (casc.dcaV0daughters() > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (casc.dcapostopv() < dcapostoPVmin)
+    if (std::fabs(casc.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (casc.dcanegtopv() < dcanegtoPVmin)
+    if (std::fabs(casc.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // Cascade Selections
@@ -785,11 +785,11 @@ struct StrangenessInJets {
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
       return false;
-    if (casc.dcabachtopv() < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
       return false;
-    if (casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
       return false;
-    if (casc.dcacascdaughters() > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
       return false;
 
     // PID Selection on bachelor
@@ -872,11 +872,11 @@ struct StrangenessInJets {
       return false;
     if (casc.v0radius() < minimumV0Radius || casc.v0radius() > maximumV0Radius)
       return false;
-    if (casc.dcaV0daughters() > dcaV0DaughtersMax)
+    if (std::fabs(casc.dcaV0daughters()) > dcaV0DaughtersMax)
       return false;
-    if (casc.dcapostopv() < dcapostoPVmin)
+    if (std::fabs(casc.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (casc.dcanegtopv() < dcanegtoPVmin)
+    if (std::fabs(casc.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // Cascade Selections
@@ -884,11 +884,11 @@ struct StrangenessInJets {
       return false;
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < casccospaMin)
       return false;
-    if (casc.dcabachtopv() < dcabachtopvMin)
+    if (std::fabs(casc.dcabachtopv()) < dcabachtopvMin)
       return false;
-    if (casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()) < dcaV0topvMin)
+    if (std::fabs(casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ())) < dcaV0topvMin)
       return false;
-    if (casc.dcacascdaughters() > dcaCascDaughtersMax)
+    if (std::fabs(casc.dcacascdaughters()) > dcaCascDaughtersMax)
       return false;
 
     // PID Selection on bachelor
@@ -1053,7 +1053,7 @@ struct StrangenessInJets {
     std::vector<TVector3> ue1;
     std::vector<TVector3> ue2;
 
-    for (auto& jet : jets) { // o2-linter: disable=[const-ref-in-for-loop]
+    for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
 
       // jet must be fully contained in the acceptance
       if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
@@ -1365,7 +1365,7 @@ struct StrangenessInJets {
         continue;
       registryQC.fill(HIST("survivedK0"), 8.5);
 
-      if (v0.dcaV0daughters() > dcaV0DaughtersMax)
+      if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
         continue;
       registryQC.fill(HIST("survivedK0"), 9.5);
 
@@ -1467,7 +1467,7 @@ struct StrangenessInJets {
         TVector3 momentumV0 = momentumPos + momentumNeg;
 
         // Feed-down for lambda
-        if (passedLambdaSelection(v0, pos, neg) && pdgParent == 3122) {
+        if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
           if (!isPhysPrim) {
             double wSecLambdaInJet(1.0);
             double wSecLambdaInUe(1.0);
@@ -1476,10 +1476,10 @@ struct StrangenessInJets {
             int idGrandMother = mother.mothersIds()[0];
             const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
             switch (grandMother.pdgCode()) {
-              case 3312:
-              case -3312:
-              case 3322:
-              case -3322:
+              case kXiMinus:
+              case kXiPlusBar:
+                // case 3322:
+                // case -3322:
                 if (weightsXiInJet) {
                   int ibinXiInJet = weightsXiInJet->GetXaxis()->FindBin(grandMother.pt());
                   wSecLambdaInJet = weightsXiInJet->GetBinContent(ibinXiInJet);
@@ -1498,7 +1498,7 @@ struct StrangenessInJets {
         }
 
         // Feed-down for antilambda
-        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == -3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
           if (!isPhysPrim) {
             double wSecAntiLambdaInJet(1.0);
             double wSecAntiLambdaInUe(1.0);
@@ -1507,10 +1507,10 @@ struct StrangenessInJets {
             int idGrandMother = mother.mothersIds()[0];
             const auto& grandMother = mcParticles.iteratorAt(idGrandMother);
             switch (grandMother.pdgCode()) {
-              case 3312:
-              case -3312:
-              case 3322:
-              case -3322:
+              case kXiMinus:
+              case kXiPlusBar:
+                // case 3322:
+                // case -3322:
                 if (weightsAntiXiInJet) {
                   int ibinAntiXiInJet = weightsAntiXiInJet->GetXaxis()->FindBin(grandMother.pt());
                   wSecAntiLambdaInJet = weightsAntiXiInJet->GetBinContent(ibinAntiXiInJet);
@@ -1528,13 +1528,13 @@ struct StrangenessInJets {
           }
         }
 
-        if (passedK0ShortSelection(v0, pos, neg) && pdgParent == 310) {
+        if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
           registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
         }
-        if (passedLambdaSelection(v0, pos, neg) && pdgParent == 3122) {
+        if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
           registryMC.fill(HIST("Lambda_reconstructed_incl"), multiplicity, v0.pt());
         }
-        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == -3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
           registryMC.fill(HIST("AntiLambda_reconstructed_incl"), multiplicity, v0.pt());
         }
         if (!isPhysPrim)
@@ -1570,15 +1570,15 @@ struct StrangenessInJets {
           }
         }
 
-        if (passedK0ShortSelection(v0, pos, neg) && pdgParent == 310) {
+        if (passedK0ShortSelection(v0, pos, neg) && pdgParent == kK0Short) {
           registryMC.fill(HIST("K0s_reconstructed_jet"), multiplicity, v0.pt(), wK0jet);
           registryMC.fill(HIST("K0s_reconstructed_ue"), multiplicity, v0.pt(), wK0Ue);
         }
-        if (passedLambdaSelection(v0, pos, neg) && pdgParent == 3122) {
+        if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
           registryMC.fill(HIST("Lambda_reconstructed_jet"), multiplicity, v0.pt(), wLambdaJet);
           registryMC.fill(HIST("Lambda_reconstructed_ue"), multiplicity, v0.pt(), wLambdaUe);
         }
-        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == -3122) {
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
           registryMC.fill(HIST("AntiLambda_reconstructed_jet"), multiplicity, v0.pt(), wAntilambdaJet);
           registryMC.fill(HIST("AntiLambda_reconstructed_ue"), multiplicity, v0.pt(), wAntilambdaUe);
         }
@@ -1613,7 +1613,7 @@ struct StrangenessInJets {
             for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
-              if (std::fabs(particleMotherOfNeg.pdgCode()) != 3122)
+              if (std::abs(particleMotherOfNeg.pdgCode()) != kLambda0)
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
@@ -1626,19 +1626,19 @@ struct StrangenessInJets {
           continue;
 
         // Xi+
-        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == -3312) {
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiPlusBar) {
           registryMC.fill(HIST("XiPos_reconstructed"), multiplicity, casc.pt());
         }
         // Xi-
-        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == 3312) {
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiMinus) {
           registryMC.fill(HIST("XiNeg_reconstructed"), multiplicity, casc.pt());
         }
         // Omega+
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == -3334) {
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaPlusBar) {
           registryMC.fill(HIST("OmegaPos_reconstructed"), multiplicity, casc.pt());
         }
         // Omega-
-        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == 3334) {
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaMinus) {
           registryMC.fill(HIST("OmegaNeg_reconstructed"), multiplicity, casc.pt());
         }
       }
@@ -1655,7 +1655,7 @@ struct StrangenessInJets {
 
         const auto particle = track.mcParticle();
         switch (std::abs(particle.pdgCode())) {
-          case 211:
+          case kPiPlus:
             if (particle.isPhysicalPrimary()) {
               if (track.sign() > 0)
                 registryMC.fill(HIST("pi_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
@@ -1668,7 +1668,7 @@ struct StrangenessInJets {
                 registryMC.fill(HIST("pi_minus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
             }
             break;
-          case 321:
+          case kKPlus:
             if (particle.isPhysicalPrimary()) {
               if (track.sign() > 0)
                 registryMC.fill(HIST("ka_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
@@ -1681,7 +1681,7 @@ struct StrangenessInJets {
                 registryMC.fill(HIST("ka_minus_dcaxy/sec"), multiplicity, track.pt(), track.dcaXY());
             }
             break;
-          case 2212:
+          case kProton:
             if (particle.isPhysicalPrimary()) {
               if (track.sign() > 0)
                 registryMC.fill(HIST("pr_plus_dcaxy/prm"), multiplicity, track.pt(), track.dcaXY());
@@ -1814,64 +1814,64 @@ struct StrangenessInJets {
         }
 
         switch (mcParticle.pdgCode()) {
-          case 211: // Pi+
+          case kPiPlus: // Pi+
             registryMC.fill(HIST("mc_pi_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiplusJet);
             registryMC.fill(HIST("mc_pi_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiplusUe);
             registryMC.fill(HIST("pi_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -211: // Pi-
+          case kPiMinus: // Pi-
             registryMC.fill(HIST("mc_pi_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiminusJet);
             registryMC.fill(HIST("mc_pi_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiminusUe);
             registryMC.fill(HIST("pi_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 321: // Ka+
+          case kKPlus: // Ka+
             registryMC.fill(HIST("mc_ka_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wKaplusJet);
             registryMC.fill(HIST("mc_ka_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wKaplusUe);
             registryMC.fill(HIST("ka_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -321: // Ka-
+          case kKMinus: // Ka-
             registryMC.fill(HIST("mc_ka_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wKaminusJet);
             registryMC.fill(HIST("mc_ka_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wKaminusUe);
             registryMC.fill(HIST("ka_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 2212: // Pr+
+          case kProton: // Pr+
             registryMC.fill(HIST("mc_pr_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPrplusJet);
             registryMC.fill(HIST("mc_pr_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrplusUe);
             registryMC.fill(HIST("pr_plus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -2212: // Pr-
+          case kProtonBar: // Pr-
             registryMC.fill(HIST("mc_pr_minus/in_jet/gen"), multiplicity, mcParticle.pt(), wPrminusJet);
             registryMC.fill(HIST("mc_pr_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrminusUe);
             registryMC.fill(HIST("pr_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 310: // K0s
+          case kK0Short: // K0s
             registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), wK0jet);
             registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), wK0Ue);
             registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 3122: // Lambda
+          case kLambda0: // Lambda
             registryMC.fill(HIST("Lambda_generated_jet"), multiplicity, mcParticle.pt(), wLambdaJet);
             registryMC.fill(HIST("Lambda_generated_ue"), multiplicity, mcParticle.pt(), wLambdaUe);
             registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -3122: // AntiLambda
+          case kLambda0Bar: // AntiLambda
             registryMC.fill(HIST("AntiLambda_generated_jet"), multiplicity, mcParticle.pt(), wAntilambdaJet);
             registryMC.fill(HIST("AntiLambda_generated_ue"), multiplicity, mcParticle.pt(), wAntilambdaUe);
             registryMC.fill(HIST("AntiLambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -3312: // Xi Pos
+          case kXiPlusBar: // Xi Pos
             registryMC.fill(HIST("XiPos_generated"), multiplicity, mcParticle.pt());
             registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 3312: // Xi Neg
+          case kXiMinus: // Xi Neg
             registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
             registryMC.fill(HIST("AntiXi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case -3334: // Omega Pos
+          case kOmegaPlusBar: // Omega Pos
             registryMC.fill(HIST("OmegaPos_generated"), multiplicity, mcParticle.pt());
             registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
-          case 3334: // Omega Neg
+          case kOmegaMinus: // Omega Neg
             registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
             registryMC.fill(HIST("AntiOmega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
@@ -1881,262 +1881,170 @@ struct StrangenessInJets {
   }
   PROCESS_SWITCH(StrangenessInJets, processMCefficiency, "Process MC Efficiency", false);
 
-  /*
   void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     for (const auto& mccollision : mcCollisions) {
 
-      registryMC.fill(HIST("number_of_events_mc"), 3.5);
-
       // Selection on z_{vertex}
-      if (std::fabs(mccollision.posZ()) > 10)
+      if (std::fabs(mccollision.posZ()) > 10.0)
         continue;
-      registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
       // MC Particles per Collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
 
-      // List of Tracks
-      std::vector<TVector3> trk;
-      std::vector<int> ntrk;
-
+      // loop over generated MC particles
+      std::vector<fastjet::PseudoJet> fjParticles;
       for (const auto& particle : mcParticlesPerColl) {
 
-        // Select Primary Particles
-        double dx = particle.vx() - mccollision.posX();
-        double dy = particle.vy() - mccollision.posY();
-        double dz = particle.vz() - mccollision.posZ();
-        double dcaxy = std::sqrt(dx * dx + dy * dy);
-        double dcaz = std::fabs(dz);
-        if (dcaxy > 0.25)
-          continue;
-        if (dcaz > 2.0)
+        if (!particle.isPhysicalPrimary())
           continue;
         if (std::fabs(particle.eta()) > 0.8)
           continue;
-        if (particle.pt() < 0.15)
+        if (particle.pt() < 0.1)
           continue;
 
-        // PDG Selection
-        int pdg = std::fabs(particle.pdgCode());
-        if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
-          continue;
-
-        TVector3 momentum(particle.px(), particle.py(), particle.pz());
-        trk.push_back(momentum);
-        ntrk.push_back(1);
+        // 4-momentum representation of a particle
+        double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
+        fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
+        fjParticles.emplace_back(fourMomentum);
       }
-
-      // Anti-kt Jet Finder
-      int nParticlesRemoved(0);
-      std::vector<TVector3> jet;
-      std::vector<TVector3> ue1;
-      std::vector<TVector3> ue2;
-      std::vector<int> nParticlesInjet;
-
-      do {
-        double dijMin(1e+06), diBmin(1e+06);
-        int iMin(0), jMin(0), iBmin(0);
-        for (int i = 0; i < static_cast<int>(trk.size()); i++) {
-          if (trk[i].Mag() == 0)
-            continue;
-          double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
-          if (diB < diBmin) {
-            diBmin = diB;
-            iBmin = i;
-          }
-          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
-            if (trk[j].Mag() == 0)
-              continue;
-            double dij = calculateDij(trk[i], trk[j], rJet);
-            if (dij < dijMin) {
-              dijMin = dij;
-              iMin = i;
-              jMin = j;
-            }
-          }
-        }
-        if (dijMin < diBmin) {
-          trk[iMin] = trk[iMin] + trk[jMin];
-          ntrk[iMin] = ntrk[iMin] + ntrk[jMin];
-          trk[jMin].SetXYZ(0, 0, 0);
-          ntrk[jMin] = 0;
-          nParticlesRemoved++;
-        }
-        if (dijMin > diBmin) {
-          jet.push_back(trk[iBmin]);
-          nParticlesInjet.push_back(ntrk[iBmin]);
-          trk[iBmin].SetXYZ(0, 0, 0);
-          nParticlesRemoved++;
-        }
-      } while (nParticlesRemoved < static_cast<int>(trk.size()));
-
-      // Jet Selection
-      std::vector<int> isSelected;
-      int nJetsSelected(0);
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
-
-        // Initialization
-        isSelected.push_back(0);
-
-        // Jet fully contained inside acceptance
-        if ((std::fabs(jet[i].Eta()) + rJet) > (etaMax - 0.5))
-          continue;
-        if (nParticlesInjet[i] < 2)
-          continue;
-
-        // Perpendicular cones
-        TVector3 ueAxis1(0, 0, 0);
-        TVector3 ueAxis2(0, 0, 0);
-        getPerpendicularAxis(jet[i], ueAxis1, +1);
-        getPerpendicularAxis(jet[i], ueAxis2, -1);
-        ue1.push_back(ueAxis1);
-        ue2.push_back(ueAxis2);
-
-        double ptJetCorr = jet[i].Pt() - 0.5;
-        if (ptJetCorr < minJetPt)
-          continue;
-
-        nJetsSelected++;
-        isSelected[i] = 1;
-      }
-      if (nJetsSelected == 0)
+      // reject empty events
+      if (fjParticles.size() < 1)
         continue;
 
-      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+      // cluster particles using the anti-kt algorithm
+      fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet);
+      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(1.0));
+      fastjet::ClusterSequenceArea cs(fjParticles, jetDef, areaDef);
+      std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(cs.inclusive_jets());
+      auto [rhoPerp, rhoMPerp] = backgroundSub.estimateRhoPerpCone(fjParticles, jets);
 
-        if (isSelected[i] == 0)
+      // jet selection
+      bool isAtLeastOneJetSelected = false;
+      std::vector<TVector3> selectedJet;
+      std::vector<TVector3> ue1;
+      std::vector<TVector3> ue2;
+
+      for (auto& jet : jets) { // o2-linter: disable=const-ref-in-for-loop (required by backgroundSub)
+
+        // jet must be fully contained in the acceptance
+        if ((std::fabs(jet.eta()) + rJet) > (etaMax - deltaEtaEdge))
           continue;
 
-        // Generated Particles
+        // jet pt must be larger than threshold
+        fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
+        if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt)
+          continue;
+        isAtLeastOneJetSelected = true;
+
+        // perpendicular cone
+        TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
+        TVector3 ueAxis1(0, 0, 0);
+        TVector3 ueAxis2(0, 0, 0);
+        getPerpendicularAxis(jetAxis, ueAxis1, +1);
+        getPerpendicularAxis(jetAxis, ueAxis2, -1);
+        selectedJet.emplace_back(jetAxis);
+        ue1.emplace_back(ueAxis1);
+        ue2.emplace_back(ueAxis2);
+      }
+      if (!isAtLeastOneJetSelected)
+        continue;
+
+      // loop over selected jets / UE
+      for (int i = 0; i < static_cast<int>(selectedJet.size()); i++) {
         for (const auto& particle : mcParticlesPerColl) {
 
           if (!particle.isPhysicalPrimary())
             continue;
+          if (std::fabs(particle.eta()) > 0.8)
+            continue;
+          if (particle.pt() < 0.1)
+            continue;
 
           TVector3 particleDir(particle.px(), particle.py(), particle.pz());
-          const double deltaEtaJet = particleDir.Eta() - jet[i].Eta();
-          const double deltaPhiJet = getDeltaPhi(particleDir.Phi(), jet[i].Phi());
-          const double deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          const double deltaEtaUe1 = particleDir.Eta() - ue1[i].Eta();
-          const double deltaPhiUe1 = getDeltaPhi(particleDir.Phi(), ue1[i].Phi());
-          const double deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          const double deltaEtaUe2 = particleDir.Eta() - ue2[i].Eta();
-          const double deltaPhiUe2 = getDeltaPhi(particleDir.Phi(), ue2[i].Phi());
-          const double deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
+          float deltaEtaJet = particleDir.Eta() - selectedJet[i].Eta();
+          float deltaPhiJet = getDeltaPhi(particleDir.Phi(), selectedJet[i].Phi());
+          float deltaRjet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
+          float deltaEtaUe1 = particleDir.Eta() - ue1[i].Eta();
+          float deltaPhiUe1 = getDeltaPhi(particleDir.Phi(), ue1[i].Phi());
+          float deltaRue1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
+          float deltaEtaUe2 = particleDir.Eta() - ue2[i].Eta();
+          float deltaPhiUe2 = getDeltaPhi(particleDir.Phi(), ue2[i].Phi());
+          float deltaRue2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
-          switch (particle.pdgCode()) {
-            case 211:
-              if (deltaRjet < rJet) {
+          // In jet
+          if (deltaRjet < rJet) {
+            switch (particle.pdgCode()) {
+              case kPiPlus:
                 registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -211:
-              if (deltaRjet < rJet) {
+                break;
+              case kPiMinus:
                 registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 321:
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -321:
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 2212:
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -2212:
-              if (deltaRjet < rJet) {
-                registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 310:
-              if (deltaRjet < rJet) {
+                break;
+              case kK0Short:
                 registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 3122:
-              if (deltaRjet < rJet) {
+                break;
+              case kLambda0:
                 registryMC.fill(HIST("Lambda_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -3122:
-              if (deltaRjet < rJet) {
+                break;
+              case kLambda0Bar:
                 registryMC.fill(HIST("AntiLambda_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 3312:
-              if (deltaRjet < rJet) {
+                break;
+              case kXiMinus:
                 registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -3312:
-              if (deltaRjet < rJet) {
+                break;
+              case kXiPlusBar:
                 registryMC.fill(HIST("AntiXi_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case 3334:
-              if (deltaRjet < rJet) {
+                break;
+              case kOmegaMinus:
                 registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
-                registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
-            case -3334:
-              if (deltaRjet < rJet) {
+                break;
+              case kOmegaPlusBar:
                 registryMC.fill(HIST("AntiOmega_eta_pt_jet"), particle.pt(), particle.eta());
-              }
-              if (deltaRue1 < rJet || deltaRue2 < rJet) {
+                break;
+              default:
+                continue;
+            }
+          }
+
+          if (deltaRue1 < rJet || deltaRue2 < rJet) {
+            switch (particle.pdgCode()) {
+              case kPiPlus:
+                registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kPiMinus:
+                registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kK0Short:
+                registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kLambda0:
+                registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kLambda0Bar:
+                registryMC.fill(HIST("AntiLambda_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kXiMinus:
+                registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kXiPlusBar:
+                registryMC.fill(HIST("AntiXi_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kOmegaMinus:
+                registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
+                break;
+              case kOmegaPlusBar:
                 registryMC.fill(HIST("AntiOmega_eta_pt_ue"), particle.pt(), particle.eta());
-              }
-              break;
+                break;
+              default:
+                continue;
+            }
           }
         }
       }
     }
   }
   PROCESS_SWITCH(StrangenessInJets, processGen, "Process generated MC", false);
-  */
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

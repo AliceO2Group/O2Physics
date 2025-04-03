@@ -100,6 +100,8 @@ DECLARE_SOA_COLUMN(IsPrimary, isPrimary, int);                       //! -1 unkn
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(EventSelFilterBitMask, eventSelFilterBitMask, uint8_t);
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenY, genY, float);
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsINEL, isINEL, //! True if the Event belongs to the INEL event class
                            [](uint8_t flags) -> bool { return (flags & EvFlags::EvINEL) == EvFlags::EvINEL; });
@@ -158,6 +160,8 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::McPdgCode, mycascades::IsPrimary,
                   mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV,
                   mycascades::EventSelFilterBitMask,
+                  mycascades::GenPt,
+                  mycascades::GenY,
                   mycascades::IsINEL<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt1<mycascades::EventSelFilterBitMask>);

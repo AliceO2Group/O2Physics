@@ -35,7 +35,7 @@ float dca3DinSigma(T const& track)
   if (det < 0) {
     return 999.f;
   } else {
-    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+    return std::sqrt(std::fabs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
   }
 }
 //_______________________________________________________________________
@@ -54,9 +54,9 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXX();
-  float cYY = track.cYY();
-  float cXY = track.cXY();
+  float cXX = track.cXXatDCA();
+  float cYY = track.cYYatDCA();
+  float cXY = track.cXYatDCA();
   float dcaX = track.fwdDcaX(); // in cm
   float dcaY = track.fwdDcaY(); // in cm
 
@@ -64,7 +64,7 @@ float fwdDcaXYinSigma(T const& track)
   if (det < 0) {
     return 999.f;
   } else {
-    return std::sqrt(std::abs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+    return std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
   }
 }
 //_______________________________________________________________________
