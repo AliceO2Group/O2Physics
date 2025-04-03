@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Monitoring task for EMCAL event selection
-//
+/// \file emcEventSelectionQA.cxx
+/// \brief Monitoring task for EMCAL event selection
 /// \author Markus Fasel <markus.fasel@cern.ch>, Oak Ridge National Laoratory
 
 #include <unordered_map>
@@ -27,8 +27,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using bcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
-using collEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+using BCEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
+using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 
 struct EmcEventSelectionQA {
   o2::framework::HistogramRegistry mHistManager{"EMCALEventSelectionQAHistograms"};
@@ -38,41 +38,43 @@ struct EmcEventSelectionQA {
 
   void init(o2::framework::InitContext const&)
   {
-    using o2HistType = o2::framework::HistType;
-    using o2Axis = o2::framework::AxisSpec;
+    using O2HistType = o2::framework::HistType;
+    using O2Axis = o2::framework::AxisSpec;
 
-    o2Axis matchingAxis{3, -0.5, 2.5, "Matching Status (0, 1, 2+ collisions)", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
+    O2Axis matchingAxis{3, -0.5, 2.5, "Matching Status (0, 1, 2+ collisions)", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
       bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"};
 
-    mHistManager.add("hCollisionMatching", "Collision Status", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingReadout", "Collision Status EMCAL Readout", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingMB", "Collision Status EMCAL MB", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatching0EMC", "Collision Status EMCAL L0 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatching0DMC", "Collision Status DCAL L0 tr", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingEG1", "Collision Status EG1 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingDG1", "Collision Status DG1 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingEG2", "Collision Status EG2 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingDG2", "Collision Status DG2 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingEJ1", "Collision Status EJ1 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingDJ1", "Collision Status DJ1 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingEJ2", "Collision Status EJ2 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hCollisionMatchingDJ2", "Collision Status DJ2 trigger", o2HistType::kTH1F, {matchingAxis});
-    mHistManager.add("hBCCollisions", "Bunch crossings of found collisions", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalReadout", "Bunch crossings with EMCAL trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalMB", "Bunch crossings with EMCAL MB from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcal0EMC", "Bunch crossings with EMCAL L0 from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcal0DMC", "Bunch crossings with DCAL L0 from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalEG1", "Bunch crossings with EG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalDG1", "Bunch crossings with DG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalEG2", "Bunch crossings with EG1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalDG2", "Bunch crossings with DG2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalEJ1", "Bunch crossings with EJ1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalDJ1", "Bunch crossings with DJ1 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalEJ2", "Bunch crossings with EJ2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalDJ2", "Bunch crossings with DJ2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCTVX", "Bunch crossings with FIT TVX trigger from CTP", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("hBCCollisionCounter_TVX", "Number of BCs with a certain number of rec. colls", o2HistType::kTH2F, {bcAxis, matchingAxis});
+    mHistManager.add("hCollisionMatching", "Collision Status", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingReadout", "Collision Status EMCAL Readout", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingMB", "Collision Status EMCAL MB", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatching0EMC", "Collision Status EMCAL L0 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatching0DMC", "Collision Status DCAL L0 tr", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEG1", "Collision Status EG1 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDG1", "Collision Status DG1 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEG2", "Collision Status EG2 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDG2", "Collision Status DG2 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEJ1", "Collision Status EJ1 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDJ1", "Collision Status DJ1 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingEJ2", "Collision Status EJ2 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hCollisionMatchingDJ2", "Collision Status DJ2 trigger", O2HistType::kTH1F, {matchingAxis});
+    mHistManager.add("hBCCollisions", "Bunch crossings of found collisions", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalReadout", "Bunch crossings with EMCAL trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalMB", "Bunch crossings with EMCAL MB from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcal0EMC", "Bunch crossings with EMCAL L0 from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcal0DMC", "Bunch crossings with DCAL L0 from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEG1", "Bunch crossings with EG1 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDG1", "Bunch crossings with DG1 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEG2", "Bunch crossings with EG1 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDG2", "Bunch crossings with DG2 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEJ1", "Bunch crossings with EJ1 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDJ1", "Bunch crossings with DJ1 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalEJ2", "Bunch crossings with EJ2 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalDJ2", "Bunch crossings with DJ2 trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCTVX", "Bunch crossings with FIT TVX trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCCollisionCounter_TVX", "Number of BCs with a certain number of rec. colls", O2HistType::kTH2F, {bcAxis, matchingAxis});
+    mHistManager.add("hBCEMCalReadoutAndEmcalCellContent", "Bunch crossings with EMCAL trigger from CTP and non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCNotEMCalReadoutButEmcalCellContent", "Bunch crossings without EMCAL trigger from CTP but with non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
 
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingReadout")).get());
@@ -89,15 +91,15 @@ struct EmcEventSelectionQA {
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDJ2")).get());
   }
 
-  PresliceUnsorted<collEventSels> perFoundBC = aod::evsel::foundBCId;
+  PresliceUnsorted<CollEventSels> perFoundBC = aod::evsel::foundBCId;
 
-  void process(bcEvSels const& bcs, collEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
+  void process(BCEvSels const& bcs, CollEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
     std::unordered_map<uint64_t, int> cellGlobalBCs;
     // Build map of number of cells for corrected BCs using global BCs
     // used later in the determination whether a BC has EMC cell content (for speed reason)
     for (const auto& cell : cells) {
-      auto globalbcid = cell.bc_as<bcEvSels>().globalBC();
+      auto globalbcid = cell.bc_as<BCEvSels>().globalBC();
       auto found = cellGlobalBCs.find(globalbcid);
       if (found != cellGlobalBCs.end()) {
         found->second++;
@@ -170,6 +172,11 @@ struct EmcEventSelectionQA {
         // require at least 1 cell for global BC
         if (found->second > 0) {
           mHistManager.fill(HIST("hBCEmcalCellContent"), bcID);
+          if (isEMCALreadout) {
+            mHistManager.fill(HIST("hBCEMCalReadoutAndEmcalCellContent"), bcID);
+          } else {
+            mHistManager.fill(HIST("hBCNotEMCalReadoutButEmcalCellContent"), bcID);
+          }
         }
       }
 
