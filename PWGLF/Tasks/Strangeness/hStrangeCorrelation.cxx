@@ -1836,7 +1836,7 @@ struct HStrangeCorrelation {
             }
           }
         }
-        if(mcParticlePdg == -3122 && !v0mcParticle.isPhysicalPrimary()) {
+        if (mcParticlePdg == -3122 && !v0mcParticle.isPhysicalPrimary()) {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
             auto& v0mcParticleMother = v0mothers.front(); // First mother
