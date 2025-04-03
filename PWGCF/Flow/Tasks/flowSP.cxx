@@ -591,13 +591,15 @@ struct FlowSP {
     if (cfg.correctionsLoaded)
       return;
 
+    int nWeights = 3; 
+
     if (cfgNUA.value.empty() == false) {
       TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUA, timestamp);
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
       int sizeAcc = cfg.mAcceptance.size();
-      if (sizeAcc < 3)
+      if (sizeAcc < nWeights) {
         LOGF(warning, "Could not load acceptance weights from %s", cfgNUA.value.c_str());
       else
         LOGF(info, "Loaded acceptance weights from %s", cfgNUA.value.c_str());
@@ -610,7 +612,7 @@ struct FlowSP {
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = cfg.mEfficiency.size();
-      if (sizeEff < 3) {
+      if (sizeEff < nWeights) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
       }
       LOGF(info, "Loaded efficiency histogram from %s", cfgNUE.value.c_str());
@@ -1180,6 +1182,11 @@ struct FlowSP {
       if (track.sign() == 0.0)
         continue;
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
+<<<<<<< Updated upstream
+
+      bool pos = (track.sign() > 0) ? true : false;
+=======
+>>>>>>> Stashed changes
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
