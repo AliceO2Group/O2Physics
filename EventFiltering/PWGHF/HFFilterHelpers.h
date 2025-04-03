@@ -320,7 +320,7 @@ namespace hf_trigger_cuts_presel_beauty
 {
 static constexpr int nBinsPt = 2;
 static constexpr int nCutVars = 4;
-static constexpr int nCutVarsBtoJPsi = 4;
+static constexpr int nCutVarsBtoJPsi = 6;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any beauty candidate
 constexpr double binsPt[nBinsPt + 1] = {
