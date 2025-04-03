@@ -108,7 +108,7 @@ struct FlowSP {
   // axis
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy && nabs(aod::track::dcaZ) < cfgDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
   Filter trackFilterMC = nabs(aod::mcparticle::eta) < cfgEta && aod::mcparticle::pt > cfgPtmin&& aod::mcparticle::pt < cfgPtmax;
   using UsedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals, aod::SPTableZDC>>;
   using UsedTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
@@ -876,23 +876,23 @@ struct FlowSP {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt());
     }
 
-    if(pdgCode == 211 || pdgCode == -211){
+    if (pdgCode == 211 || pdgCode == -211) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
-      if(pdgCode == 211) {
+      if (pdgCode == 211) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt());
       }
-    } else if(pdgCode == 321 || pdgCode == -321) {
+    } else if (pdgCode == 321 || pdgCode == -321) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
-      if(pdgCode == 321) {
+      if (pdgCode == 321) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt());
       }
-    } else if(pdgCode == 2212 || pdgCode == -2212) {
+    } else if (pdgCode == 2212 || pdgCode == -2212) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
-      if(pdgCode == 2212) {
+      if (pdgCode == 2212) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt());
@@ -1111,7 +1111,7 @@ struct FlowSP {
       if (track.sign() == 0.0)
         continue;
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
-      
+
       bool pos = (track.sign() > 0) ? true : false;
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
@@ -1125,7 +1125,7 @@ struct FlowSP {
 
       if (!trackSelected(track, field))
         continue;
-      
+
       fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
 
       if (cfgFillQAHistos)
@@ -1215,7 +1215,6 @@ struct FlowSP {
 
           if (particle.eta() < -cfgEta || particle.eta() > cfgEta || particle.pt() < cfgPtmin || particle.pt() > cfgPtmax)
             continue;
-
 
           fillMCPtHistos<kAfter, kGen>(particle, pdgCode);
 
