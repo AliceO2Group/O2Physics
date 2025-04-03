@@ -1819,7 +1819,7 @@ struct HStrangeCorrelation {
 
       if (v0Data.has_mcParticle()) {
         auto v0mcParticle = v0Data.mcParticle_as<aod::McParticles>();
-        Int_t mcParticlePdg = v0mcParticle.pdgCode();
+        int mcParticlePdg = v0mcParticle.pdgCode();
         if(mcParticlePdg == 3122 && !v0mcParticle.isPhysicalPrimary()){
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (!v0mothers.empty()) {
