@@ -59,13 +59,18 @@ float fwdDcaXYinSigma(T const& track)
   float cXY = track.cXYatDCA();
   float dcaX = track.fwdDcaX(); // in cm
   float dcaY = track.fwdDcaY(); // in cm
+  float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+  float dFdx = 2.f * dcaX / dcaXY;
+  float dFdy = 2.f * dcaY / dcaXY;
+  float sigma_dcaXY = std::sqrt(cXX * dFdx * dFdx + cYY * dFdy * dFdy + 2.f * cXY * dFdx * dFdy);
+  return dcaXY / sigma_dcaXY;
 
-  float det = cXX * cYY - cXY * cXY; // determinant
-  if (det < 0) {
-    return 999.f;
-  } else {
-    return std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
-  }
+  // float det = cXX * cYY - cXY * cXY; // determinant
+  // if (det < 0) {
+  //   return 999.f;
+  // } else {
+  //   return std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+  // }
 }
 //_______________________________________________________________________
 template <typename T>

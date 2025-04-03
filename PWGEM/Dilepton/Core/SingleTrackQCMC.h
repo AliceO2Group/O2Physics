@@ -310,8 +310,8 @@ struct SingleTrackQCMC {
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
-      const AxisSpec axis_eta{25, -4.5, -2.0, "#eta_{#mu}"};
-      const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
+      const AxisSpec axis_eta{100, -6, -1, "#eta_{#mu}"};
+      const AxisSpec axis_phi{180, 0.0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
       const AxisSpec axis_dca{ConfDCABins, "DCA_{#mu}^{XY} (#sigma)"};
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
