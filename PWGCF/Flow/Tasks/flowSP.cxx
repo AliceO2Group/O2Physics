@@ -539,6 +539,7 @@ struct FlowSP {
       double fitParamHigh3 = 0.816781;
       double fitParamHigh4 = -0.00496563;
       double fitParamHigh5 = 1.34314e-05;
+
       if (cfgnSigmaMultCuts == 2){
         fitParamHigh1 = 2350.39;
         fitParamHigh2 = -74.6939;
@@ -949,41 +950,23 @@ struct FlowSP {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt());
     }
 
-<<<<<<< Updated upstream
-    if (pdgCode == 211 || pdgCode == -211) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
-      if (pdgCode == 211) {
-=======
     if(pdgCode == kPiPlus || pdgCode == kPiMinus){
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
       if(pdgCode == kPiPlus) {
->>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt());
       }
-<<<<<<< Updated upstream
-    } else if (pdgCode == 321 || pdgCode == -321) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
-      if (pdgCode == 321) {
-=======
     } else if(pdgCode == kKPlus || pdgCode == kKMinus) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
       if(pdgCode == kKPlus) {
->>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt());
       }
-<<<<<<< Updated upstream
-    } else if (pdgCode == 2212 || pdgCode == -2212) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
-      if (pdgCode == 2212) {
-=======
     } else if(pdgCode == kProton || pdgCode ==  kProtonBar) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
       if(pdgCode == kProton) {
->>>>>>> Stashed changes
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt());
@@ -1202,11 +1185,6 @@ struct FlowSP {
       if (track.sign() == 0.0)
         continue;
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
-<<<<<<< Updated upstream
-
-      bool pos = (track.sign() > 0) ? true : false;
-=======
->>>>>>> Stashed changes
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
