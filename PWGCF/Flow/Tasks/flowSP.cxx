@@ -460,20 +460,19 @@ struct FlowSP {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
       // Variables from fitting distribution with mean+1sigma
-      double fitParamLowPV1 = 2942.55; 
+      double fitParamLowPV1 = 2942.55;
       double fitParamLowPV2 = -103.111;
       double fitParamLowPV3 = 1.4397;
       double fitParamLowPV4 = -0.00974862;
       double fitParamLowPV5 = 2.71433e-05;
 
-      if (cfgnSigmaMultCuts == 2){
+      if (cfgnSigmaMultCuts == 2) {
         fitParamLowPV1 = 2665.68;
         fitParamLowPV2 = -93.3784;
         fitParamLowPV3 = 1.27137;
         fitParamLowPV4 = -0.00818936;
         fitParamLowPV5 = 2.115e-05;
-      }
-      else if (cfgnSigmaMultCuts == 3){
+      } else if (cfgnSigmaMultCuts == 3) {
         fitParamLowPV1 = 2389.99;
         fitParamLowPV2 = -83.8483;
         fitParamLowPV3 = 1.11062;
@@ -481,7 +480,7 @@ struct FlowSP {
         fitParamLowPV5 = 1.54725e-05;
       }
 
-      fMultPVCutLow->SetParameters( fitParamLowPV1, fitParamLowPV2, fitParamLowPV3, fitParamLowPV4, fitParamLowPV5);
+      fMultPVCutLow->SetParameters(fitParamLowPV1, fitParamLowPV2, fitParamLowPV3, fitParamLowPV4, fitParamLowPV5);
 
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
 
@@ -492,14 +491,13 @@ struct FlowSP {
       double fitParamHighPV4 = -0.0145343;
       double fitParamHighPV5 = 4.80688e-05;
 
-      if (cfgnSigmaMultCuts == 2){
+      if (cfgnSigmaMultCuts == 2) {
         fitParamHighPV1 = 3787.93;
         fitParamHighPV2 = -135.184;
         fitParamHighPV3 = 2.07683;
         fitParamHighPV4 = -0.0165997;
         fitParamHighPV5 = 5.68725e-05;
-      }
-      else if (cfgnSigmaMultCuts == 3){
+      } else if (cfgnSigmaMultCuts == 3) {
         fitParamHighPV1 = 4067.4;
         fitParamHighPV2 = -145.485;
         fitParamHighPV3 = 2.27273;
@@ -516,14 +514,13 @@ struct FlowSP {
       double fitParamLow4 = -0.00235284;
       double fitParamLow5 = 3.01132e-06;
 
-      if (cfgnSigmaMultCuts == 2){
+      if (cfgnSigmaMultCuts == 2) {
         fitParamLow1 = 1307.92;
         fitParamLow2 = -39.9168;
         fitParamLow3 = 0.412675;
         fitParamLow4 = -0.00148081;
         fitParamLow5 = 1.10868e-07;
-      }
-      else if (cfgnSigmaMultCuts == 3){
+      } else if (cfgnSigmaMultCuts == 3) {
         fitParamLow1 = 1048.48;
         fitParamLow2 = -31.4568;
         fitParamLow3 = 0.287794;
@@ -540,14 +537,13 @@ struct FlowSP {
       double fitParamHigh4 = -0.00496563;
       double fitParamHigh5 = 1.34314e-05;
 
-      if (cfgnSigmaMultCuts == 2){
+      if (cfgnSigmaMultCuts == 2) {
         fitParamHigh1 = 2350.39;
         fitParamHigh2 = -74.6939;
         fitParamHigh3 = 0.953287;
         fitParamHigh4 = -0.006162;
         fitParamHigh5 = 1.80808e-05;
-      }
-      else if (cfgnSigmaMultCuts == 3){
+      } else if (cfgnSigmaMultCuts == 3) {
         fitParamHigh1 = 2610.98;
         fitParamHigh2 = -83.3983;
         fitParamHigh3 = 1.0893;
@@ -557,14 +553,13 @@ struct FlowSP {
 
       fMultCutHigh->SetParameters(fitParamHigh1, fitParamHigh2, fitParamHigh3, fitParamHigh4, fitParamHigh5);
 
-    if (cfgManualEventParameters) {
-      fMultPVCutLow->SetParameters((cfgMultPv.value)[0], (cfgMultPv.value)[1], (cfgMultPv.value)[2], (cfgMultPv.value)[3], (cfgMultPv.value)[4]);
-      fMultPVCutHigh->SetParameters((cfgMultPv.value)[5], (cfgMultPv.value)[6], (cfgMultPv.value)[7], (cfgMultPv.value)[8], (cfgMultPv.value)[9]);
-      fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
-      fMultCutHigh->SetParameters((cfgMult.value)[5], (cfgMult.value)[6], (cfgMult.value)[7], (cfgMult.value)[8], (cfgMult.value)[9]);
+      if (cfgManualEventParameters) {
+        fMultPVCutLow->SetParameters((cfgMultPv.value)[0], (cfgMultPv.value)[1], (cfgMultPv.value)[2], (cfgMultPv.value)[3], (cfgMultPv.value)[4]);
+        fMultPVCutHigh->SetParameters((cfgMultPv.value)[5], (cfgMultPv.value)[6], (cfgMultPv.value)[7], (cfgMultPv.value)[8], (cfgMultPv.value)[9]);
+        fMultCutLow->SetParameters((cfgMult.value)[0], (cfgMult.value)[1], (cfgMult.value)[2], (cfgMult.value)[3], (cfgMult.value)[4]);
+        fMultCutHigh->SetParameters((cfgMult.value)[5], (cfgMult.value)[6], (cfgMult.value)[7], (cfgMult.value)[8], (cfgMult.value)[9]);
     }
-
-  }
+    }
 
     if (cfgUseAdditionalTrackCut) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
@@ -950,23 +945,23 @@ struct FlowSP {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt());
     }
 
-    if(pdgCode == kPiPlus || pdgCode == kPiMinus){
+    if (pdgCode == kPiPlus || pdgCode == kPiMinus) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt());
-      if(pdgCode == kPiPlus) {
+      if (pdgCode == kPiPlus) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt());
       }
-    } else if(pdgCode == kKPlus || pdgCode == kKMinus) {
+    } else if (pdgCode == kKPlus || pdgCode == kKMinus) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt());
-      if(pdgCode == kKPlus) {
+      if (pdgCode == kKPlus) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt());
       }
-    } else if(pdgCode == kProton || pdgCode ==  kProtonBar) {
+    } else if (pdgCode == kProton || pdgCode == kProtonBar) {
       registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt());
-      if(pdgCode == kProton) {
+      if (pdgCode == kProton) {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt());
       } else {
         registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt());
