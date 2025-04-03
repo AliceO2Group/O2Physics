@@ -608,21 +608,20 @@ struct FlowGfwOmegaXi {
   {
     if (correctionsLoaded)
       return;
-    long unsigned int nspecies = 5;
-    if (cfgAcceptance.size() == nspecies) {
+    if (cfgAcceptance.size() == 5) {
       for (int i = 0; i <= 4; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
-      if (mAcceptance.size() == nspecies)
+      if (mAcceptance.size() == 5)
         LOGF(info, "Loaded acceptance weights");
       else
         LOGF(warning, "Could not load acceptance weights");
     }
-    if (cfgEfficiency.size() == nspecies) {
+    if (cfgEfficiency.size() == 5) {
       for (int i = 0; i <= 4; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
       }
-      if (mEfficiency.size() == nspecies)
+      if (mEfficiency.size() == 5)
         LOGF(info, "Loaded efficiency histogram");
       else
         LOGF(fatal, "Could not load efficiency histogram");
@@ -633,16 +632,15 @@ struct FlowGfwOmegaXi {
   template <typename TrackObject>
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
-    long unsigned int nspecies = 5;
     float eff = 1.;
-    if (mEfficiency.size() == nspecies)
+    if (mEfficiency.size() == 5)
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (mAcceptance.size() == nspecies)
+    if (mAcceptance.size() == 5)
       weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
