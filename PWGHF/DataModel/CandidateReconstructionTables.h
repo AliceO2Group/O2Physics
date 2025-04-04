@@ -2302,6 +2302,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); //! particle origin, gener
 enum DecayType {
   DstarToD0Pi = 0,
   D0ToPiK,
+  DstarToD0PiPi0,
+  D0ToPiKPi0,
   NDstarDecayType
 };
 
