@@ -1549,9 +1549,13 @@ struct FemtoUniverseProducerTask {
       }
       // implementing PID cuts for phi children
       if (ConfPhiSelection.confPhiDoLFPID4Kaons) {
+        if ((p1.isGlobalTrackWoDCA() == false) || (p2.isGlobalTrackWoDCA() == false) || (p1.isPVContributor() == false) || (p2.isPVContributor() == false)) {
+          continue;
+        }
         if (!(isKaonNSigmaLF(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), p1.hasTOF()))) {
           continue;
-        } else if (!(isKaonNSigmaLF(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), p2.hasTOF()))) {
+        }
+        if (!(isKaonNSigmaLF(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), p2.hasTOF()))) {
           continue;
         }
       } else {
@@ -1563,7 +1567,8 @@ struct FemtoUniverseProducerTask {
       }
       if (isKaonRejected(p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion))) {
         continue;
-      } else if (isKaonRejected(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion))) {
+      }
+      if (isKaonRejected(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion))) {
         continue;
       }
 
