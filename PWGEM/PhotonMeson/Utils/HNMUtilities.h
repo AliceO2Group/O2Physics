@@ -121,6 +121,8 @@ struct HeavyNeutralMeson {
     return massHNM;
   }
   float pT() const { return vHeavyNeutralMeson.Pt(); }
+  float eta() const { return vHeavyNeutralMeson.Eta(); }
+  float phi() const { return vHeavyNeutralMeson.Phi(); }
 };
 
 /// \brief Reconstruct light neutral mesons from EMC clusters and V0s and fill them into the vGGs vector
@@ -153,7 +155,7 @@ void reconstructGGs(C clusters, V v0s, std::vector<GammaGammaPair>& vGGs)
 
 /// \brief Reconstruct heavy neutral mesons from tracks and GG candidates and fill them into the vHNMs vector
 template <typename Track>
-void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs)
+void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs) // ToDO: Pion comb. in main code, tracks -> 4-vectors
 {
   vHNMs.clear();
   for (const auto& posTrack : tracks) {
@@ -167,6 +169,16 @@ void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPa
         vHNMs.push_back(heavyNeutralMeson);
       }
     }
+  }
+}
+
+/// \brief Reconstruct heavy neutral mesons from pion and antipion and GG candidates and fill them into the vHNMs vector
+void reconstructHeavyNeutralMesons(ROOT::Math::PtEtaPhiMVector const& posPion, ROOT::Math::PtEtaPhiMVector const& negPion, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs) // ToDO: Pion comb. in main code, tracks -> 4-vectors
+{
+  const ROOT::Math::PtEtaPhiMVector trackSum = posPion + negPion;
+  for (size_t iGG = 0; iGG < vGGs.size(); iGG++) {
+    HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), trackSum.E(), trackSum.Px(), trackSum.Py(), trackSum.Pz());
+    vHNMs.push_back(heavyNeutralMeson);
   }
 }
 

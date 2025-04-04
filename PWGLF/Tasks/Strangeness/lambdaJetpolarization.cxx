@@ -95,6 +95,11 @@ struct LfMyV0s {
     registry.add("hAntiLambdamassandSinPhi", "hAntiLambdamassandSinPhi", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registry.add("profile", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registry.add("profileAntiV0", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registry.add("hLambdaPhiandSinPhi", "hLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
+    registry.add("hAntiLambdaPhiandSinPhi", "hAntiLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
+
+    registry.add("V0LambdaprotonPhi", "V0LambdaprotonPhi", {HistType::kTH1F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}}});
+    registry.add("V0AntiLambdaprotonPhi", "V0AntiLambdaprotonPhi", {HistType::kTH1F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}}});
   }
   double massPr = o2::constants::physics::MassProton;
   double massLambda = o2::constants::physics::MassLambda;
@@ -256,6 +261,8 @@ struct LfMyV0s {
         if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
           registry.fill(HIST("V0protonphiInJetV0frame"), protonsinPhiInJetV0frame / V0Numbers);
           registry.fill(HIST("hLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("hLambdaPhiandSinPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("V0LambdaprotonPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers));
           registry.fill(HIST("profile"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
         }
       }
@@ -307,6 +314,8 @@ struct LfMyV0s {
         if (candidate.mycollisionv0() == LeadingJet.mycollisionleadingjet()) {
           registry.fill(HIST("V0antiprotonphiInJetV0frame"), protonsinPhiInJetV0frame / V0Numbers);
           registry.fill(HIST("hAntiLambdamassandSinPhi"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("hAntiLambdaPhiandSinPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers), protonsinPhiInJetV0frame / V0Numbers);
+          registry.fill(HIST("V0AntiLambdaprotonPhi"), TMath::ASin(protonsinPhiInJetV0frame / V0Numbers));
           registry.fill(HIST("profileAntiV0"), candidate.v0Lambdamass(), protonsinPhiInJetV0frame / V0Numbers);
         }
       }

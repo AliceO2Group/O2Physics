@@ -344,6 +344,8 @@ struct SGCandProducer {
                      aod::FT0s const& ft0s, aod::FDDs const& fdds)
   {
     // select specific processes with the GeneratorID
+    if (!collision.has_mcCollision())
+      return;
     auto mccol = collision.mcCollision();
     if (verboseInfo)
       LOGF(info, "GeneratorId %d (%d)", mccol.getGeneratorId(), generatorIds->size());
