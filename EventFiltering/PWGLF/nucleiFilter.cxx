@@ -121,12 +121,13 @@ struct nucleiFilter {
   struct : ConfigurableGroup {
     Configurable<double> d_bz_input{"trgH3L3Body.d_bz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
-    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.04, "meen DCA among Daughters"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
     Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
     Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
     Configurable<float> tpcPIDNSigmaCut{"trgH3L3Body.tpcPIDNSigmaCut", 5, "tpcPIDNSigmaCut"};
     Configurable<float> lifetimecut{"trgH3L3Body.lifetimecut", 40., "lifetimecut"};
+    Configurable<float> minDaughtersEta{"trgH3L3Body.minDaughtersEta", 1.f, "minDaughtersEta"};
     Configurable<float> minProtonPt{"trgH3L3Body.minProtonPt", 0.3, "minProtonPt"};
     Configurable<float> maxProtonPt{"trgH3L3Body.maxProtonPt", 5, "maxProtonPt"};
     Configurable<float> minPionPt{"trgH3L3Body.minPionPt", 0.1, "minPionPt"};
@@ -136,7 +137,7 @@ struct nucleiFilter {
     Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
     Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
     Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
-    Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 0.5, "min P3Body"};
+    Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 1.5, "min P3Body"};
     Configurable<int> mintpcNClsproton{"trgH3L3Body.mintpcNClsproton", 90, "min tpc Nclusters for proton"};
     Configurable<int> mintpcNClspion{"trgH3L3Body.mintpcNClspion", 70, "min tpc Nclusters for pion"};
     Configurable<int> mintpcNClsdeuteron{"trgH3L3Body.mintpcNClsdeuteron", 100, "min tpc Nclusters for deuteron"};
@@ -173,6 +174,8 @@ struct nucleiFilter {
     qaHists.add("fDeuTOFNsigma", "Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fBachDeuTOFNsigma", "Bachelor Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fH3LMassVsPt", "Hypertrion mass Vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {80, 2.96, 3.04, "Inv. Mass (GeV/c^{2})"}});
+    qaHists.add("fH3LDcaVsPt", "DCA vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {100, 0, 0.05, "DCA (cm)"}});
+    qaHists.add("fH3LCosPAVsPt", "CosPA vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {100, 0.999, 1.0, "CosPA"}});
     qaHists.add("fExtremeIonisationITS", "ITS clusters for extreme ionisation trigger", HistType::kTH3F, {{4, 3.5, 7.5, "Number of ITS clusters"}, {150, 0, 15, "Average cluster size in ITS x cos#lambda"}, {100, 0.1, 10, "#it{p} (GeV/#it{c})"}});
 
     for (int iN{0}; iN < nNuclei; ++iN) {
@@ -413,6 +416,10 @@ struct nucleiFilter {
         continue;
       }
 
+      if (std::abs(track0.eta()) > trgH3L3Body.minDaughtersEta || std::abs(track1.eta()) > trgH3L3Body.minDaughtersEta || std::abs(track2.eta()) > trgH3L3Body.minDaughtersEta) {
+        continue;
+      }
+
       bool isProton = false, isPion = false, isAntiProton = false, isAntiPion = false;
       if (std::abs(track0.tpcNSigmaPr()) < std::abs(track0.tpcNSigmaPi())) {
         if (track0.p() >= trgH3L3Body.minProtonPt && track0.p() <= trgH3L3Body.maxProtonPt) {
@@ -500,7 +507,8 @@ struct nucleiFilter {
         continue;
       }
 
-      if (fitter3body.getChi2AtPCACandidate() > trgH3L3Body.dcavtxdau) {
+      float dcaDaughters = fitter3body.getChi2AtPCACandidate();
+      if (dcaDaughters > trgH3L3Body.dcavtxdau) {
         continue;
       }
 
@@ -521,6 +529,8 @@ struct nucleiFilter {
         if (isProton && isAntiPion && std::abs(track1dca) >= trgH3L3Body.dcapiontopv) {
           qaHists.fill(HIST("fH3LMassVsPt"), pt3B, invmassH3L);
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
+          qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
+          qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
           keepEvent[3] = true;
         }
       }
@@ -529,6 +539,8 @@ struct nucleiFilter {
         if (isAntiProton && isPion && std::abs(track0dca) >= trgH3L3Body.dcapiontopv) {
           qaHists.fill(HIST("fH3LMassVsPt"), pt3B, invmassAntiH3L);
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
+          qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
+          qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
           keepEvent[3] = true;
         }
       }
