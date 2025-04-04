@@ -763,7 +763,7 @@ struct DQFilterPPTask {
           VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
           for (int icut = 0; icut < fNBarrelCuts; icut++) {
             // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
-            if (!(fPairingLS & (static_cast<uint32_t>(1) << icut))) {
+            if (!(fPairingLSBarrel & (static_cast<uint32_t>(1) << icut))) {
               if (t1.sign() * t2.sign() > 0) {
                 continue;
               }
@@ -777,6 +777,7 @@ struct DQFilterPPTask {
             }
             objCountersBarrel[icut] += 1; // count the pair
             if (fConfigQA) {              // fill histograms if QA is enabled
+              cout << "=========== filling pair for collision " << collision.globalIndex() << endl;
               fHistMan->FillHistClass(fBarrelPairHistNames[icut].Data(), VarManager::fgValues);
             }
           }
