@@ -615,7 +615,7 @@ struct FlowSP {
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
       cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
       int sizeEff = cfg.mEfficiency.size();
-      if (sizeEff < nWeights) 
+      if (sizeEff < nWeights)
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
       else
         LOGF(info, "Loaded efficiency histogram from %s", cfgNUE.value.c_str());
@@ -623,7 +623,7 @@ struct FlowSP {
       LOGF(info, "cfgNUE empty! No corrections loaded");
     }
     cfg.correctionsLoaded = true;
-    }
+  }
 
   // From Generic Framework
   bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
@@ -711,7 +711,7 @@ struct FlowSP {
         int maxNumContrib = 20;
         if (zRes > minzRes && collision.numContrib() < maxNumContrib)
           vtxz = -999;
-        }
+      }
 
       auto multNTracksPV = collision.multNTracksPV();
 
