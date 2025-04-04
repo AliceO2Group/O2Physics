@@ -271,6 +271,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
     registryMCreco.add("motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    registryMCreco.add("particleCount", "MC reco particle count;particle PDG;", {HistType::kTH1F, {{8001, -4000, 4000}}});
 
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confV0PDGCodePartTwo);
@@ -897,6 +898,50 @@ struct FemtoUniversePairTaskTrackV0Extended {
   }
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCTruth, "Process MC truth data", false);
+
+  void processContaminationTracksV0s(FilteredFDCollision const& col, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
+  {
+    auto groupPartsOne = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    // count particles before cuts
+    for (const auto& part : parts) {
+      auto mcPartId = part.fdMCParticleId();
+      if (mcPartId == -1)
+        continue; // no MC particle
+      const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      if (mcpart.pdgMCTruth() == confTrkPDGCodePartOne || mcpart.pdgMCTruth() == confV0PDGCodePartTwo)
+        registryMCreco.fill(HIST("particleCount"), mcpart.pdgMCTruth());
+    }
+
+    // check for secondary contamination after cuts
+    for (const auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+        continue;
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      /// Daughters that do not pass this condition are not selected
+      if (!isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[confV0Type1][1]))
+        continue;
+
+      trackHistoPartTwo.fillQA<true, true>(part);
+    }
+
+    for (const auto& part : groupPartsOne) {
+      /// PID plot for particle 1
+      const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[confTrackChoicePartOne], tofNSigmas[confTrackChoicePartOne]))
+        continue;
+      if (part.sign() > 0) {
+        trackHistoPartOnePos.fillQA<true, false>(part);
+      } else if (part.sign() < 0) {
+        trackHistoPartOneNeg.fillQA<true, false>(part);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processContaminationTracksV0s, "Process to obtain number of particles before cuts and fake/material particles", false);
 
   void processPairFractions(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts)
   {
