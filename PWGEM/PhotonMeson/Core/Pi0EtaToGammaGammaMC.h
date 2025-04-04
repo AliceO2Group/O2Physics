@@ -563,7 +563,7 @@ struct Pi0EtaToGammaGammaMC {
               continue;
             }
 
-            if (!cut2.template IsSelectedPair(pos2, ele2, d_bz)) {
+            if (!cut2.IsSelectedPair(pos2, ele2, d_bz)) {
               continue;
             }
 
