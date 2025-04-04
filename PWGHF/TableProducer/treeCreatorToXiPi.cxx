@@ -153,7 +153,7 @@ DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::IsEventSel8, full::IsEventSelZ);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
+                  full::XPv, full::YPv, full::ZPv, full::Centrality, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -246,10 +246,18 @@ struct HfTreeCreatorToXiPi {
   template <bool useCentrality, typename MyEventTableType, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
+    
+    float centrality = -999.f;
+    if constexpr (useCentrality) {
+      auto const& collision = candidate.template collision_as<MyEventTableType>();
+      centrality = o2::hf_centrality::getCentralityColl(collision);
+    }
+
     rowCandidateFull(
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
+      centrality,
       candidate.template collision_as<MyEventTableType>().numContrib(),
       candidate.template collision_as<MyEventTableType>().chi2(),
       candidate.xDecayVtxCharmBaryon(),
