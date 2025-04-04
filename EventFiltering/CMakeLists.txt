@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(selected-bc-range-task
 
 o2physics_add_dpl_workflow(nuclei-filter
     SOURCES PWGLF/nucleiFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(diffraction-filter

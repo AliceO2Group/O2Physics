@@ -782,14 +782,14 @@ struct DileptonMC {
           return false;
         }
       }
-      if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
+      if (!cut.IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
       }
-      if (!cut.template IsSelectedPair(t1, t2)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     }
