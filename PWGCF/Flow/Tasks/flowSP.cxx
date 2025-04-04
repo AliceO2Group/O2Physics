@@ -602,25 +602,26 @@ struct FlowSP {
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_positive")));
       cfg.mAcceptance.push_back(reinterpret_cast<GFWWeights*>(listCorrections->FindObject("weights_negative")));
       int sizeAcc = cfg.mAcceptance.size();
-      if (sizeAcc < nWeights) {
+      if (sizeAcc < nWeights)
         LOGF(warning, "Could not load acceptance weights from %s", cfgNUA.value.c_str());
-        else LOGF(info, "Loaded acceptance weights from %s", cfgNUA.value.c_str());
-      } else {
-        LOGF(info, "cfgNUA empty! No corrections loaded");
-      }
-      if (cfgNUE.value.empty() == false) {
-        TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUE, timestamp);
-        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
-        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
-        cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
-        int sizeEff = cfg.mEfficiency.size();
-        if (sizeEff < nWeights) {
-          LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
-        }
+      else
+        LOGF(info, "Loaded acceptance weights from %s", cfgNUA.value.c_str());
+    } else {
+      LOGF(info, "cfgNUA empty! No corrections loaded");
+    }
+    if (cfgNUE.value.empty() == false) {
+      TList* listCorrections = ccdb->getForTimeStamp<TList>(cfgNUE, timestamp);
+      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency")));
+      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_pos")));
+      cfg.mEfficiency.push_back(reinterpret_cast<TH1D*>(listCorrections->FindObject("Efficiency_neg")));
+      int sizeEff = cfg.mEfficiency.size();
+      if (sizeEff < nWeights) 
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgNUE.value.c_str());
+      else
         LOGF(info, "Loaded efficiency histogram from %s", cfgNUE.value.c_str());
-      } else {
-        LOGF(info, "cfgNUE empty! No corrections loaded");
-      }
+    } else {
+      LOGF(info, "cfgNUE empty! No corrections loaded");
+    }
     cfg.correctionsLoaded = true;
     }
 
@@ -708,7 +709,7 @@ struct FlowSP {
         float zRes = std::sqrt(collision.covZZ());
         float minzRes = 0.25;
         int maxNumContrib = 20;
-        if (zRes > minzRes && collision.numContrib() < maxNumContrib) {
+        if (zRes > minzRes && collision.numContrib() < maxNumContrib)
           vtxz = -999;
         }
 
