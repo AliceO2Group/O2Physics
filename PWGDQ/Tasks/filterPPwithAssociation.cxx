@@ -777,7 +777,7 @@ struct DQFilterPPTask {
             }
             objCountersBarrel[icut] += 1; // count the pair
             if (fConfigQA) {              // fill histograms if QA is enabled
-              cout << "=========== filling pair for collision " << collision.globalIndex() << endl;
+              //cout << "=========== filling pair for collision " << collision.globalIndex() << endl;
               fHistMan->FillHistClass(fBarrelPairHistNames[icut].Data(), VarManager::fgValues);
             }
           }
