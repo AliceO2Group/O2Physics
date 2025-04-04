@@ -61,6 +61,7 @@ struct FwdTrackPropagation {
   Configurable<float> maxEtaSA{"maxEtaSA", -2.5, "max. eta acceptance for MCH-MID"};
   Configurable<float> minEtaGL{"minEtaGL", -3.6, "min. eta acceptance for MFT-MCH-MID"};
   Configurable<float> maxEtaGL{"maxEtaGL", -2.5, "max. eta acceptance for MFT-MCH-MID"};
+  Configurable<float> minRabsGL{"minRabsGL", 27.6, "min. R at absorber end for global muon (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505.
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
@@ -175,6 +176,9 @@ struct FwdTrackPropagation {
       if (chi2 < 0.f || maxChi2GL < chi2) {
         return false;
       }
+      if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
+        return false;
+      }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
@@ -228,7 +232,7 @@ struct FwdTrackPropagation {
       }
 
       float rAtAbsorberEnd = matchedtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
-      if (rAtAbsorberEnd < minRabs || maxRabs < rAtAbsorberEnd) {
+      if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
         continue;
       }
       o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(matchedtrack, collision, propagationPoint::kToDCA);
