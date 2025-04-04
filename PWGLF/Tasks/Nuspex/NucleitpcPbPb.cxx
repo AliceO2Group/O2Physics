@@ -265,7 +265,7 @@ struct NucleitpcPbPb {
         if (cfgTrackPIDsettings->get(i, "TOFrequiredabove") >= 0 && getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (track.mass() < cfgTrackPIDsettings->get(i, "minTOFmass") || track.mass() > cfgTrackPIDsettings->get(i, "maxTOFmass")))
           continue;
         histos.fill(HIST("Tof_signal"), track.sign() * momn, track.beta());
-      }; // particle wise loop ends here
+      };
     } // track loop
   }
   //----------------------------------------------------------------------------------------------------------------
