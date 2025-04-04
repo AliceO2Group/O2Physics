@@ -128,19 +128,14 @@ struct f0980pbpbanalysis {
   Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
 
   //for phi test
-  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 3000, "Occupancy cut"};
-  Configurable<bool> cfgEvselITS{"cfgEvselITS", true, "Additional event selcection for ITS"};
-  Configurable<float> cfgTPCSharedcluster{"cfgTPCSharedcluster", 0.4, "Maximum Number of TPC shared cluster"};
+  Configurable<bool> cfgTPCFinableClsSel{"cfgTPCFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
+  Configurable<bool> cfgITSClsSel{"cfgITSClsSel", false, "ITS cluster selection flag"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
-  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-  Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
+  Configurable<bool> cfgpTDepPID{"cfgpTDepPID", false, "pT dependent PID"};
+  Configurable<bool> cfgBetaCutSel{"cfgBetaCutSel", false, "TOF beta cut selection flag"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
-  Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
-  Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
-  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
-  Configurable<bool> removefaketrack{"removefaketrack", true, "Remove fake track from momentum difference"};
-  Configurable<float> nsigmaKaCutTPC{"nsigmacutKaTPC", 3.0, "Value of the TPC Nsigma Kaon cut"};
+  Configurable<bool> isDeepAngle{"isDeepAngle", true, "Deep Angle cut"};
+  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
 
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -174,8 +169,8 @@ struct f0980pbpbanalysis {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
   Filter cutDCAFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
   //from phi
-  Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCentSel;
-  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaKaCutTPC;
+  // Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCentSel;
+  // Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < cMaxTPCnSigmaPion;
   // Filter PIDcutFilter = nabs(aod::pidTPCFullKa::tpcNSigmaKa) < cMaxTPCnSigmaPion;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::EPCalibrationTables>>;
@@ -206,117 +201,77 @@ struct f0980pbpbanalysis {
   template <typename TCollision>
   bool eventSelected(TCollision collision)
   {
-    if (cfgSelectPID == 2) {
-      // if (collision.alias_bit(kTVXinTRD)) {
-      //   // return 0;
-      // }
-      // auto multNTracksPV = collision.multNTracksPV();
-      // if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
-      //   return 0;
-      // }
-      // if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
-      //   return 0;
-      // }
-      if (!collision.sel8()) {
-        return 0;
-      }
-      if (!collision.triggereventep()) {
-        return 0;
-      }
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-        return 0;
-      }
-      int occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy > cfgCutOccupancy) {
-        return 0;
-      }
-      if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        return 0;
-      }
-      if (cfgEvselITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-        return 0;
-      }
-      return 1;
-    } else {
-      if (!collision.sel8()) {
-        return 0;
-      }
-
-      if (cfgCentSel < centrality) {
-        return 0;
-      }
-      /*
-          auto multNTracksPV = collision.multNTracksPV();
-          if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
-            return 0;
-          }
-          if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
-            return 0;
-          }
-      */
-      if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        return 0;
-      }
-      if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-        return 0;
-      }
-      if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
-        return 0;
-      }
-      if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
-        return 0;
-      }
-      if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        return 0;
-      }
-      if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
-        return 0;
-      }
-      return 1;
+    if (!collision.sel8()) {
+      return 0;
     }
+
+    if (cfgCentSel < centrality) {
+      return 0;
+    }
+    /*
+        auto multNTracksPV = collision.multNTracksPV();
+        if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
+          return 0;
+        }
+        if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
+          return 0;
+        }
+    */
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return 0;
+    }
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return 0;
+    }
+    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
+      return 0;
+    }
+    if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return 0;
+    }
+    if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return 0;
+    }
+    if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
+      return 0;
+    }
+    return 1;
   } // event selection
 
   template <typename TrackType>
   bool trackSelected(const TrackType track)
   {
-    if (cfgSelectPID == 2){
-      if (useGlobalTrack && !(track.isGlobalTrack() && track.isPVContributor() && track.itsNCls() > cfgITScluster && track.tpcNClsCrossedRows() > cfgTPCcluster && track.tpcFractionSharedCls() < cfgTPCSharedcluster)) {
+    if (std::abs(track.pt()) < cfgMinPt) {
       return 0;
-      }
-      if (!useGlobalTrack && !(track.tpcNClsFound() > cfgTPCcluster)) {
-        return 0;
-      }
-      return 1;
-    } else {
-      if (std::abs(track.pt()) < cfgMinPt) {
-        return 0;
-      }
-      if (std::fabs(track.eta()) > cfgMaxEta) {
-        return 0;
-      }
-      if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut) {
-        return 0;
-      }
-      if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut) {
-        return 0;
-      }
-      if (track.tpcNClsFound() < cfgTPCcluster) {
-        return 0;
-      }
-      if (cfgPVContributor && !track.isPVContributor()) {
-        return 0;
-      }
-      if (cfgPrimaryTrack && !track.isPrimaryTrack()) {
-        return 0;
-      }
-      if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
-        return 0;
-      }
-      if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
-        return 0;
-      }
-      return 1;
     }
+    if (std::fabs(track.eta()) > cfgMaxEta) {
+      return 0;
+    }
+    if (std::fabs(track.dcaXY()) > cfgMaxDCArToPVcut) {
+      return 0;
+    }
+    if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut) {
+      return 0;
+    }
+    if (cfgPVContributor && !track.isPVContributor()) {
+      return 0;
+    }
+    if (cfgPrimaryTrack && !track.isPrimaryTrack()) {
+      return 0;
+    }
+    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
+      return 0;
+    }
+    if (track.tpcNClsFound() < cfgTPCcluster) {
+      return 0;
+    }      
+    if (cfgTPCFinableClsSel && track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
+      return 0;
+    }
+    if (cfgITSClsSel && track.itsNCls() < cfgITScluster) {
+      return 0;
+    }
+    return 1;
   }
 
   template <typename TrackType>
@@ -334,7 +289,6 @@ struct f0980pbpbanalysis {
       if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
-      return 1;
     } else if (cfgSelectPID == 1) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
@@ -354,51 +308,21 @@ struct f0980pbpbanalysis {
           return 0;
         }
       }
-      return 1;
     } else if (cfgSelectPID == 2) {
-      if (cfgSelectPtl == 0) {
-        if (!track.hasTOF() && TMath::Abs(track.tpcNSigmaPi()) < cMaxTPCnSigmaPionS) {
-          return 1;
+      if (track.hasTOF()) {
+        if (std::fabs(getTofNSigma(track)) > cMaxTOFnSigmaPion) {
+          return 0;
         }
-        if (track.hasTOF() && track.beta() > cfgCutTOFBeta && TMath::Abs(track.tpcNSigmaPi()) < cMaxTPCnSigmaPion && TMath::Abs(track.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
-          return 1;
+        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPion) {
+          return 0;
         }
-        return 0;
       } else {
-        if (!track.hasTOF() && TMath::Abs(track.tpcNSigmaKa()) < 3) {
-          return 1;
+        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
+          return 0;
         }
-        if (track.hasTOF() && track.beta() > cfgCutTOFBeta && TMath::Abs(track.tpcNSigmaKa()) < 3 && TMath::Abs(track.tofNSigmaKa()) < 3) {
-          return 1;
-        }
-        return 0;
       }
     }
-    return 0;
-  }
-
-  template <typename TrackType>
-  bool selectionPIDpTdependent(const TrackType track)
-  {
-    if (track.pt() < 0.5 && TMath::Abs(track.tpcNSigmaKa()) < cMaxTPCnSigmaPionS) {
-      return 0;
-    }
-    if (track.pt() >= 0.5 && track.hasTOF() && track.beta() > cfgCutTOFBeta && TMath::Abs(track.tpcNSigmaKa()) < cMaxTPCnSigmaPion && TMath::Abs(track.tofNSigmaKa()) < cMaxTOFnSigmaPion) {
-      return 1;
-    }
-    if (!useGlobalTrack && !track.hasTPC()) {
-      return 1;
-    }
-    return 0;
-  }
-
-  template <typename TrackType>
-  bool selectionPID2(const TrackType track)
-  {
-    if (track.hasTOF() && track.beta() > cfgCutTOFBeta && TMath::Abs(track.tofNSigmaKa()) < cMaxTOFnSigmaPion) {
-      return 1;
-    }
-    return 0;
+    return 1;
   }
 
   template <typename TrackType1, typename TrackType2>
@@ -411,44 +335,11 @@ struct f0980pbpbanalysis {
     pz2 = track2.pz();
     p1 = track1.p();
     p2 = track2.p();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
     if (isDeepAngle && angle < cfgDeepAngle) {
       return 0;
     }
     return 1;
-  }
-  double GetPhiInRange(double phi)
-  {
-    double result = phi;
-    while (result < 0) {
-      result = result + 2. * TMath::Pi() / 2;
-    }
-    while (result > 2. * TMath::Pi() / 2) {
-      result = result - 2. * TMath::Pi() / 2;
-    }
-    return result;
-  }
-  double GetDeltaPsiSubInRange(double psi1, double psi2)
-  {
-    double delta = psi1 - psi2;
-    if (TMath::Abs(delta) > TMath::Pi() / 2) {
-      if (delta > 0.)
-        delta -= 2. * TMath::Pi() / 2;
-      else
-        delta += 2. * TMath::Pi() / 2;
-    }
-    return delta;
-  }
-
-  template <typename TrackType>
-  bool isFakeKaon(const TrackType track)
-  {
-    const auto pglobal = track.p();
-    const auto ptpc = track.tpcInnerParam();
-    if (TMath::Abs(pglobal - ptpc) > ConfFakeKaonCut) {
-      return 1;
-    }
-    return 0;
   }
 
   template <typename TrackType>
@@ -468,17 +359,6 @@ struct f0980pbpbanalysis {
       return track.tofNSigmaPi();
     } else {
       return track.tofNSigmaKa();
-    }
-  }
-
-  template<typename TrackType>
-  double getITSResponse(const TrackType track)
-  {
-    o2::aod::ITSResponse itsResponse;
-    if (cfgSelectPtl == 0) {
-      return itsResponse.nSigmaITS<o2::track::PID::Pion>(track);
-    } else {
-      return itsResponse.nSigmaITS<o2::track::PID::Kaon>(track);
     }
   }
 
@@ -507,21 +387,8 @@ struct f0980pbpbanalysis {
         continue;
       }
 
-      // if (!selectionPID(trk1)) {
-      //     continue;
-      // } //original
-
-      if (!ispTdepPID && !selectionPID(trk1)) {
-        continue;
-      }
-      if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(trk1)) {
-      continue;
-      }
-      if (isTOFOnly && !selectionPID2(trk1)) {
-        continue;
-      }
-      if (useGlobalTrack && trk1.p() < 1.0 && !(getITSResponse(trk1) > -2.5 && getITSResponse(trk1) < 2.5)) {
-        continue;
+      if (!selectionPID(trk1)) {
+          continue;
       }
 
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), getTpcNSigma(trk1));
@@ -538,18 +405,8 @@ struct f0980pbpbanalysis {
           continue;
         }
 
-        // // PID
-        // if (!selectionPID(trk2)) {
-        //   continue;
-        // } //original
-
-        if (!ispTdepPID && !selectionPID(trk2)) {
-          continue;
-        }
-        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(trk2)) {
-          continue;
-        }
-        if (isTOFOnly && !selectionPID2(trk2)) {
+        // PID
+        if (!selectionPID(trk2)) {
           continue;
         }
 
@@ -559,19 +416,11 @@ struct f0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
-        if (trk2.globalIndex() == trk1.globalIndex()) {
+        if (cfgSelectPID == 2 && trk2.globalIndex() == trk1.globalIndex()) {
           continue;
         }
-        if (!selectionPair(trk1, trk2)) {
-          continue;
-        }
-        if (removefaketrack && isFakeKaon(trk1)) {
-          continue;
-        }
-        if (removefaketrack && isFakeKaon(trk2)) {
-          continue;
-        }
-        if (useGlobalTrack && trk2.p() < 1.0 && !(getITSResponse(trk2) > -2.5 && getITSResponse(trk2) < 2.5)) {
+
+        if (cfgSelectPID == 2 && !selectionPair(trk1, trk2)) {
           continue;
         }
 
