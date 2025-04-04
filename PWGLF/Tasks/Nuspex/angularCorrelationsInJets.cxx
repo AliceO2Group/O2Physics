@@ -547,7 +547,7 @@ struct AngularCorrelationsInJets {
     float pt = track.pt();
     float maxSigmaTPC = 4.0;
     float maxSigmaTOF = 3.0;
-  
+
     // Loosen PID at high momentum
     if (pt > 1.5) {
       maxSigmaTPC = 3.0;
@@ -557,10 +557,10 @@ struct AngularCorrelationsInJets {
       maxSigmaTPC = 2.0;
       maxSigmaTOF = 1.0;
     }
-  
+
     bool tpcOK = std::abs(track.tpcNSigmaProton()) < maxSigmaTPC;
     bool tofOK = track.hasTOF() ? std::abs(track.tofNSigmaProton()) < maxSigmaTOF : false;
-  
+
     return tpcOK || tofOK;
   }
 
@@ -572,7 +572,7 @@ struct AngularCorrelationsInJets {
     float pt = track.pt();
     float maxSigmaTPC = 4.0;
     float maxSigmaTOF = 3.0;
-  
+
     // Loosen PID at high momentum
     if (pt > 1.5) {
       maxSigmaTPC = 3.0;
@@ -582,10 +582,10 @@ struct AngularCorrelationsInJets {
       maxSigmaTPC = 2.0;
       maxSigmaTOF = 1.0;
     }
-  
+
     bool tpcOK = std::abs(track.tpcNSigmaProton()) < maxSigmaTPC;
     bool tofOK = track.hasTOF() ? std::abs(track.tofNSigmaProton()) < maxSigmaTOF : false;
-  
+
     return tpcOK || tofOK;
   }
 
@@ -1136,13 +1136,13 @@ struct AngularCorrelationsInJets {
       }
       if (measureCorrelations) {
         if (isSmartProtonPID(jetParticle)) {
-        //if (isProton(jetParticle, true)) { // while debugging issue for proton correlations
+          // if (isProton(jetParticle, true)) { // while debugging issue for proton correlations
           registryData.fill(HIST("trackProtocol"), 5); // # high purity protons
           jetProtons.emplace_back(jetParticle);
           registryData.fill(HIST("dcaZJetProton"), jetParticle.pt(), jetParticle.dcaZ());
         }
         if (isSmartAntiProtonPID(jetParticle)) {
-        //if (isAntiproton(jetParticle, true)) { // while debugging issue for antiproton correlations
+          // if (isAntiproton(jetParticle, true)) { // while debugging issue for antiproton correlations
           registryData.fill(HIST("trackProtocol"), 7); // # high purity antiprotons
           jetAntiprotons.emplace_back(jetParticle);
           registryData.fill(HIST("dcaZJetAntiproton"), jetParticle.pt(), jetParticle.dcaZ());
