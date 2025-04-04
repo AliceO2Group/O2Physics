@@ -623,6 +623,58 @@ struct HfCandidateCreatorDstarExpressions {
         flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
       }
 
+      // check partly reconstructed decays, namely D0->Kpipi0
+      if (indexRecDstar < 0 && indexRecD0) {
+        if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar, &nInteractionsWithMaterialDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0, &nInteractionsWithMaterialD0);
+        } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0);
+        } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, nullptr, &nInteractionsWithMaterialDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, nullptr, &nInteractionsWithMaterialD0);
+        } else {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
+        }
+
+        if (indexRecDstar > -1) {
+          // D*± → D0(bar) π± π0
+          auto motherParticleDstar = mcParticles.rawIteratorAt(indexRecDstar);
+          if (signDstar > 0) {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus, +kPi0}, false, &signDstar, 2)) {
+              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+            }
+          } else {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, -Pdg::kDStar, std::array{-kPiPlus, -kPiPlus, +kKPlus, +kPi0}, false, &signDstar, 2)) {
+              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+            }
+          }
+        }
+        if (indexRecD0 > -1) {
+          // D0(bar) → π± K∓ π0
+          auto motherParticleD0 = mcParticles.rawIteratorAt(indexRecD0);
+          if (signD0 > 0) {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0)) {
+              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            }
+          } else {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
+              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            }
+          }
+        }
+      }
+
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);

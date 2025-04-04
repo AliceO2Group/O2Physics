@@ -34,7 +34,7 @@ void DimuonCut::SetPairYRange(float minY, float maxY)
 {
   mMinPairY = minY;
   mMaxPairY = maxY;
-  LOG(info) << "Dimuon Cut, set pair eta range: " << mMinPairY << " - " << mMaxPairY;
+  LOG(info) << "Dimuon Cut, set pair rapidity range: " << mMinPairY << " - " << mMaxPairY;
 }
 void DimuonCut::SetPairDCAxyRange(float min, float max)
 {

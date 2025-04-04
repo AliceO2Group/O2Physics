@@ -40,8 +40,6 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DCAFitter/FwdDCAFitterN.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
@@ -73,7 +71,7 @@ using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = soa::Filtered<MyMCElectrons>;
 using FilteredMyMCElectron = FilteredMyMCElectrons::iterator;
 
-using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonsCov, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMPrimaryMuonMCLabels>;
+using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMAmbiguousMuonSelfIds, aod::EMPrimaryMuonMCLabels>;
 using MyMCMuon = MyMCMuons::iterator;
 using FilteredMyMCMuons = soa::Filtered<MyMCMuons>;
 using FilteredMyMCMuon = FilteredMyMCMuons::iterator;
@@ -252,8 +250,8 @@ struct DileptonMC {
     Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
-    Configurable<uint> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
+    Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -2.5, "max eta for single track"};
@@ -261,8 +259,8 @@ struct DileptonMC {
     Configurable<float> cfg_max_phi_track{"cfg_max_phi_track", 6.3, "max phi for single track"};
     Configurable<int> cfg_min_ncluster_mft{"cfg_min_ncluster_mft", 5, "min ncluster MFT"};
     Configurable<int> cfg_min_ncluster_mch{"cfg_min_ncluster_mch", 5, "min ncluster MCH"};
-    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+10, "max chi2"};
-    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 1e+10, "max chi2 for MFT-MCH matching"};
+    Configurable<float> cfg_max_chi2{"cfg_max_chi2", 1e+6, "max chi2"};
+    Configurable<float> cfg_max_matching_chi2_mftmch{"cfg_max_matching_chi2_mftmch", 40, "max chi2 for MFT-MCH matching"};
     Configurable<float> cfg_max_matching_chi2_mchmid{"cfg_max_matching_chi2_mchmid", 1e+10, "max chi2 for MCH-MID matching"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
@@ -272,8 +270,6 @@ struct DileptonMC {
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  // o2::vertexing::DCAFitterN<2> fitter;
-  // o2::vertexing::FwdDCAFitterN<2> fwdfitter;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
@@ -506,29 +502,15 @@ struct DileptonMC {
       leptonM1 = o2::constants::physics::MassElectron;
       leptonM2 = o2::constants::physics::MassElectron;
       pdg_lepton = 11;
-      // fitter.setPropagateToPCA(true);
-      // fitter.setMaxR(5.f);
-      // fitter.setMinParamChange(1e-3);
-      // fitter.setMinRelChi2Change(0.9);
-      // fitter.setMaxDZIni(1e9);
-      // fitter.setMaxChi2(1e9);
-      // fitter.setUseAbsDCA(true);
-      // fitter.setWeightedFinalPCA(false);
-      // fitter.setMatCorrType(matCorr);
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       DefineDimuonCut();
       leptonM1 = o2::constants::physics::MassMuon;
       leptonM2 = o2::constants::physics::MassMuon;
       pdg_lepton = 13;
-      // fwdfitter.setPropagateToPCA(true);
-      // fwdfitter.setMaxR(90.f);
-      // fwdfitter.setMinParamChange(1e-3);
-      // fwdfitter.setMinRelChi2Change(0.9);
-      // fwdfitter.setMaxChi2(1e9);
-      // fwdfitter.setUseAbsDCA(true);
-      // fwdfitter.setTGeoMat(false);
     }
-    fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
+    if (doprocessNorm) {
+      fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
+    }
   }
 
   template <typename TCollision>
@@ -547,8 +529,6 @@ struct DileptonMC {
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = collision.runNumber();
-      // fitter.setBz(d_bz);
-      // fwdfitter.setBz(d_bz);
       return;
     }
 
@@ -573,8 +553,6 @@ struct DileptonMC {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = collision.runNumber();
-    // fitter.setBz(d_bz);
-    // fwdfitter.setBz(d_bz);
 
     //// for muon
     // o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -804,20 +782,18 @@ struct DileptonMC {
           return false;
         }
       }
-      if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
+      if (!cut.IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
+      if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
         return false;
       }
-      if (!cut.template IsSelectedPair(t1, t2)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     }
 
-    // float pca = 999.f, lxy = 999.f; // in unit of cm
-    // o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t2, pca, lxy);
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
     if constexpr (isSmeared) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
