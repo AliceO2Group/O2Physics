@@ -246,7 +246,7 @@ struct HfTreeCreatorToXiPi {
   template <bool useCentrality, typename MyEventTableType, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
-    
+
     float centrality = -999.f;
     if constexpr (useCentrality) {
       auto const& collision = candidate.template collision_as<MyEventTableType>();
