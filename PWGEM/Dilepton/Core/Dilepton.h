@@ -817,11 +817,11 @@ struct Dilepton {
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
+      if (!cut.IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (!cut.template IsSelectedPair(t1, t2)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     }
@@ -1329,17 +1329,17 @@ struct Dilepton {
         }
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
+      if (!cut.IsSelectedTrack(t1) || !cut.IsSelectedTrack(t2)) {
         return false;
       }
     }
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
+      if (!cut.IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (!cut.template IsSelectedPair(t1, t2)) {
+      if (!cut.IsSelectedPair(t1, t2)) {
         return false;
       }
     }
