@@ -60,6 +60,7 @@ struct matchingMFT {
   Configurable<float> maxEtaSA{"maxEtaSA", -2.5, "max. eta acceptance for MCH-MID"};
   Configurable<float> minEtaGL{"minEtaGL", -3.6, "min. eta acceptance for MFT-MCH-MID"};
   Configurable<float> maxEtaGL{"maxEtaGL", -2.5, "max. eta acceptance for MFT-MCH-MID"};
+  Configurable<float> minRabsGL{"minRabsGL", 27.6, "min. R at absorber end for global muons (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505.
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
@@ -70,7 +71,6 @@ struct matchingMFT {
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+6, "max. chi2 for standalone muon"};
   Configurable<float> maxChi2GL{"maxChi2GL", 1e+6, "max. chi2 for global muon"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
-  Configurable<bool> applyEtaCutToSAinGL{"applyEtaCutToSAinGL", false, "flag to apply eta cut to samuon in global muon"};
   Configurable<bool> requireTrueAssociation{"requireTrueAssociation", false, "flag to require true mc collision association"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -172,7 +172,7 @@ struct matchingMFT {
     fRegistry.addClone("MFTMCHMID/primary/", "MFTMCHMID/secondary/");
   }
 
-  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float etaMatchedMCHMID, const float dcaXY)
+  bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float dcaXY)
   {
     if (pt < minPt || maxPt < pt) {
       return false;
@@ -188,13 +188,13 @@ struct matchingMFT {
       if (eta < minEtaGL || maxEtaGL < eta) {
         return false;
       }
-      if (applyEtaCutToSAinGL && (etaMatchedMCHMID < minEtaGL || maxEtaGL < etaMatchedMCHMID)) {
-        return false;
-      }
       if (maxDCAxy < dcaXY) {
         return false;
       }
       if (chi2 < 0.f || maxChi2GL < chi2) {
+        return false;
+      }
+      if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
         return false;
       }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
@@ -269,7 +269,6 @@ struct matchingMFT {
     float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     float pDCA = mchtrack.p() * dcaXY_Matched;
-
     int nClustersMFT = mfttrack.nClusters();
     float chi2mft = mfttrack.chi2();
 
@@ -280,7 +279,7 @@ struct matchingMFT {
       pt = propmuonAtPV_Matched.getP() * std::sin(2.f * std::atan(std::exp(-eta)));
     }
 
-    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType(), etaMatchedMCHMID, dcaXY)) {
+    if (!isSelected(pt, eta, rAtAbsorberEnd, pDCA, fwdtrack.chi2(), fwdtrack.trackType(), dcaXY)) {
       return;
     }
 
