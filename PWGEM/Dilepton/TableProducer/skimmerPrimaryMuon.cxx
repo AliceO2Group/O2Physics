@@ -304,14 +304,14 @@ struct associateAmbiguousMuon {
 
   void process(aod::EMPrimaryMuons const& muons)
   {
-    for (auto& muon : muons) {
+    for (const auto& muon : muons) {
       auto muons_with_same_trackId = muons.sliceBy(perTrack, muon.fwdtrackId());
       ambmuon_self_Ids.reserve(muons_with_same_trackId.size());
-      for (auto& amp_muon : muons_with_same_trackId) {
-        if (amp_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
+      for (const auto& amb_muon : muons_with_same_trackId) {
+        if (amb_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
           continue;
         }
-        ambmuon_self_Ids.emplace_back(amp_muon.globalIndex());
+        ambmuon_self_Ids.emplace_back(amb_muon.globalIndex());
       }
       em_amb_muon_ids(ambmuon_self_Ids);
       ambmuon_self_Ids.clear();
@@ -319,9 +319,38 @@ struct associateAmbiguousMuon {
     }
   }
 };
+struct associateSameMFT {
+  Produces<aod::EMGlobalMuonSelfIds> em_same_mft_ids;
+
+  SliceCache cache;
+  PresliceUnsorted<aod::EMPrimaryMuons> perMFTTrack = o2::aod::emprimarymuon::mfttrackId;
+  std::vector<int> self_Ids;
+
+  void process(aod::EMPrimaryMuons const& muons)
+  {
+    for (const auto& muon : muons) {
+      if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+        auto muons_with_same_mfttrackId = muons.sliceBy(perMFTTrack, muon.mfttrackId());
+        self_Ids.reserve(muons_with_same_mfttrackId.size());
+        for (const auto& global_muon : muons_with_same_mfttrackId) {
+          if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
+            continue;
+          }
+          self_Ids.emplace_back(global_muon.globalIndex());
+        }
+        em_same_mft_ids(self_Ids);
+        self_Ids.clear();
+        self_Ids.shrink_to_fit();
+      } else {                               // for standalone muons
+        em_same_mft_ids(std::vector<int>{}); // empty
+      }
+    } // end of muon loop
+  }
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<skimmerPrimaryMuon>(cfgc, TaskName{"skimmer-primary-muon"}),
-    adaptAnalysisTask<associateAmbiguousMuon>(cfgc, TaskName{"associate-ambiguous-muon"})};
+    adaptAnalysisTask<associateAmbiguousMuon>(cfgc, TaskName{"associate-ambiguous-muon"}),
+    adaptAnalysisTask<associateSameMFT>(cfgc, TaskName{"associate-same-mft"})};
 }
