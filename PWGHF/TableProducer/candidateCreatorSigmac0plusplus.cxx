@@ -515,7 +515,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
             break;
@@ -529,7 +529,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
             break;
@@ -539,7 +539,6 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
-        auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       /// fill the table with results of generation level MC matching
