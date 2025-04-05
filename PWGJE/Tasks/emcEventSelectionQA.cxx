@@ -29,6 +29,7 @@ using namespace o2::framework::expressions;
 
 using BCEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+using FilteredCells = o2::soa::Filtered<aod::Calos>;
 
 struct EmcEventSelectionQA {
   o2::framework::HistogramRegistry mHistManager{"EMCALEventSelectionQAHistograms"};
@@ -36,13 +37,17 @@ struct EmcEventSelectionQA {
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == 1;
 
+  const int mRun3MinNumber = 300000;
+
   void init(o2::framework::InitContext const&)
   {
     using O2HistType = o2::framework::HistType;
     using O2Axis = o2::framework::AxisSpec;
 
     O2Axis matchingAxis{3, -0.5, 2.5, "Matching Status (0, 1, 2+ collisions)", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
-      bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"};
+      bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"},
+      amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplitude (GeV)"},
+      timeAxisLarge{1500, -600, 900, "celltime", "#it{t}_{cell} (ns)"};
 
     mHistManager.add("hCollisionMatching", "Collision Status", O2HistType::kTH1F, {matchingAxis});
     mHistManager.add("hCollisionMatchingReadout", "Collision Status EMCAL Readout", O2HistType::kTH1F, {matchingAxis});
@@ -71,10 +76,12 @@ struct EmcEventSelectionQA {
     mHistManager.add("hBCEmcalEJ2", "Bunch crossings with EJ2 trigger from CTP", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCEmcalDJ2", "Bunch crossings with DJ2 trigger from CTP", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCTVX", "Bunch crossings with FIT TVX trigger from CTP", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCNoTVXEmcalReadout", "Bunch crossings with no FIT TVX trigger from CTP but with EMCal im readout", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCCollisionCounter_TVX", "Number of BCs with a certain number of rec. colls", O2HistType::kTH2F, {bcAxis, matchingAxis});
     mHistManager.add("hBCEMCalReadoutAndEmcalCellContent", "Bunch crossings with EMCAL trigger from CTP and non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCNotEMCalReadoutButEmcalCellContent", "Bunch crossings without EMCAL trigger from CTP but with non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hAmplitudevsCellTimeNoReadout", "Amplitude vs cell time for bunch crossings without EMCAL trigger from CTP but with non-0 EMCAL cell content", O2HistType::kTH2D, {timeAxisLarge, amplitudeAxisLarge});
 
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingReadout")).get());
@@ -92,6 +99,7 @@ struct EmcEventSelectionQA {
   }
 
   PresliceUnsorted<CollEventSels> perFoundBC = aod::evsel::foundBCId;
+  Preslice<FilteredCells> cellsPerFoundBC = aod::calo::bcId;
 
   void process(BCEvSels const& bcs, CollEventSels const& collisions, soa::Filtered<aod::Calos> const& cells)
   {
@@ -112,7 +120,7 @@ struct EmcEventSelectionQA {
       bool isEMCALreadout = false;
       auto bcID = bc.globalBC() % 3564;
 
-      if (bc.runNumber() > 300000) {
+      if (bc.runNumber() > mRun3MinNumber) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
         if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
@@ -176,6 +184,10 @@ struct EmcEventSelectionQA {
             mHistManager.fill(HIST("hBCEMCalReadoutAndEmcalCellContent"), bcID);
           } else {
             mHistManager.fill(HIST("hBCNotEMCalReadoutButEmcalCellContent"), bcID);
+            auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
+            for (const auto& cell : cellsInBC) {
+              mHistManager.fill(HIST("hAmplitudevsCellTimeNoReadout"), cell.time(), cell.amplitude());
+            }
           }
         }
       }
@@ -199,6 +211,9 @@ struct EmcEventSelectionQA {
         mHistManager.fill(HIST("hCollisionMatching"), collisionStatus);
         if (isEMCALreadout) {
           mHistManager.fill(HIST("hCollisionMatchingReadout"), collisionStatus);
+          if (!bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
+            mHistManager.fill(HIST("hBCNoTVXEmcalReadout"), bcID);
+          }
           // various triggers
           if (bc.alias_bit(kTVXinEMC)) {
             mHistManager.fill(HIST("hCollisionMatchingMB"), collisionStatus);
