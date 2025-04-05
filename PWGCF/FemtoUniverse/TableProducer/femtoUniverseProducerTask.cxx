@@ -685,7 +685,7 @@ struct FemtoUniverseProducerTask {
       else
         outputDebugPartsMC(motherparticleMC.pdgCode());
     } else {
-      outputDebugPartsMC(9999);
+      outputDebugPartsMC(-999);
     }
   }
 
