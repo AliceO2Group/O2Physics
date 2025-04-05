@@ -37,17 +37,17 @@ struct EmcEventSelectionQA {
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == 1;
 
+  const int mRun3MinNumber = 300000;
+
   void init(o2::framework::InitContext const&)
   {
     using O2HistType = o2::framework::HistType;
     using O2Axis = o2::framework::AxisSpec;
 
-    const int mRun3MinNumber = 300000;
-
     O2Axis matchingAxis{3, -0.5, 2.5, "Matching Status (0, 1, 2+ collisions)", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
       bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"},
-      amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplutude (GeV)"},
-      timeAxisLarge{1500, -600, 900, "celltime", "cell time (ns)"};
+      amplitudeAxisLarge{1000, 0., 100., "amplitudeLarge", "Amplitude (GeV)"},
+      timeAxisLarge{1500, -600, 900, "celltime", "#it{t}_{cell} (ns)"};
 
     mHistManager.add("hCollisionMatching", "Collision Status", O2HistType::kTH1F, {matchingAxis});
     mHistManager.add("hCollisionMatchingReadout", "Collision Status EMCAL Readout", O2HistType::kTH1F, {matchingAxis});
