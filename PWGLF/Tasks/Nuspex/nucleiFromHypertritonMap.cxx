@@ -118,10 +118,10 @@ struct nucleiFromHypertritonMap {
             }
           }
         }
-        if(mcparticle.pdgCode() == AntihePDG) {
+        if (mcparticle.pdgCode() == AntihePDG) {
           registryMC.fill(HIST("he3PtGen"), mcparticle.pt());
         }
-        if(mcparticle.pdgCode() == AntideuteronPDG) {
+        if (mcparticle.pdgCode() == AntideuteronPDG) {
           registryMC.fill(HIST("deutPtGen"), mcparticle.pt());
         }
       }
@@ -137,28 +137,28 @@ struct nucleiFromHypertritonMap {
       }
 
       if (track.itsNCls() < min_ITS_nClusters ||
-              track.tpcNClsFound() < min_TPC_nClusters ||
-              track.tpcNClsCrossedRows() < min_TPC_nCrossedRows ||
-              track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-              track.tpcChi2NCl() > 4.f ||
-              track.tpcChi2NCl() < min_chi2_TPC ||
-              track.eta() < min_eta || track.eta() > max_eta ||
-              track.dcaXY() > max_dcaxy || track.dcaXY() < -max_dcaxy ||
-              track.dcaZ() > max_dcaz || track.dcaZ() < -max_dcaz ||
-              track.itsChi2NCl() > 36.f) {
-            continue;
-          }
-      if(mcparticle.pdgCode()==AntideuteronPDG) {
+          track.tpcNClsFound() < min_TPC_nClusters ||
+          track.tpcNClsCrossedRows() < min_TPC_nCrossedRows ||
+          track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+          track.tpcChi2NCl() > 4.f ||
+          track.tpcChi2NCl() < min_chi2_TPC ||
+          track.eta() < min_eta || track.eta() > max_eta ||
+          track.dcaXY() > max_dcaxy || track.dcaXY() < -max_dcaxy ||
+          track.dcaZ() > max_dcaz || track.dcaZ() < -max_dcaz ||
+          track.itsChi2NCl() > 36.f) {
+        continue;
+      }
+      if (mcparticle.pdgCode() == AntideuteronPDG) {
         registryMC.fill(HIST("deutPtRec"), track.pt());
       }
-      if(mcparticle.pdgCode()==AntihePDG) {
+      if (mcparticle.pdgCode() == AntihePDG) {
         registryMC.fill(HIST("he3PtRec"), 2 * track.pt());
       }
 
       for (auto& motherparticle : mcparticle.mothers_as<aod::McParticles>()) {
-        if (motherparticle.pdgCode() == AntiHypertritonPDG || motherparticle.pdgCode() == AntiHyperHelium4PDG) { 
+        if (motherparticle.pdgCode() == AntiHypertritonPDG || motherparticle.pdgCode() == AntiHyperHelium4PDG) {
           if (motherparticle.pdgCode() == AntiHypertritonPDG) {
-            if (mcparticle.pdgCode()==AntihePDG) {
+            if (mcparticle.pdgCode() == AntihePDG) {
               registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
             } else {
               registryMC.fill(HIST("deutSecPtRec_from_hypertriton"), track.pt());
