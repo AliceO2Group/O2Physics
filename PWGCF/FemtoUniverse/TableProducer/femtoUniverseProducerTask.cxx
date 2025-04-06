@@ -1792,6 +1792,7 @@ struct FemtoUniverseProducerTask {
                     childIDs,
                     0,
                     0);
+        fillDebugParticleMC(particle);
       } else {
         childIDs.push_back(0);
         outputCascParts(outputCollision.lastIndex(),
@@ -1812,7 +1813,6 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
       }
     }
     if constexpr (resolveDaughs) {
@@ -1846,6 +1846,7 @@ struct FemtoUniverseProducerTask {
                       childIDs,
                       0,
                       0);
+          fillDebugParticleMC(particle);
         } else {
           outputCascParts(outputCollision.lastIndex(),
                           particle.pt(),
@@ -1865,7 +1866,6 @@ struct FemtoUniverseProducerTask {
         // aligned, so that they can be joined in the task.
         if constexpr (transientLabels) {
           outputPartsMCLabels(-1);
-          outputDebugPartsMC(9999);
         }
       }
     }
