@@ -1001,7 +1001,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
-
       auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
 
@@ -1026,7 +1025,6 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMC, "Process MC data to obtain pair fractions for MC Truth", false);
-
 
   void processPairFractionsV0(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts)
   {
