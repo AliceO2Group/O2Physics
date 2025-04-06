@@ -1098,7 +1098,7 @@ struct FlowSP {
         if (cfgFillWeightsPOS) {
           if (pos)
             fWeightsPOS->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-        } 
+        }
         if (cfgFillWeightsNEG) {
           if (!pos)
             fWeightsNEG->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
