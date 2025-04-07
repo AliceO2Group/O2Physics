@@ -1072,7 +1072,7 @@ struct LambdaTableProducer {
         continue;
       }
       auto dautracks = mcpart.template daughters_as<aod::McParticles>();
-      std::vector<int> daughterPDGs(2, 0), daughterIDs(2, 0);
+      std::vector<int> daughterPDGs, daughterIDs;
       std::vector<float> vDauPt, vDauEta, vDauRap, vDauPhi;
       for (auto const& dautrack : dautracks) {
         daughterPDGs.push_back(dautrack.pdgCode());
