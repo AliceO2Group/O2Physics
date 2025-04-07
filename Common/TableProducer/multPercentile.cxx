@@ -210,7 +210,7 @@ struct : ConfigurableGroup {
 
   int mRunNumber;
   bool lCalibLoaded;
-  TList* lCalibObjects;
+  TList* lCalibObjectsMultiplicity;
   TProfile* hVtxZFV0A;
   TProfile* hVtxZFT0A;
   TProfile* hVtxZFT0C;
@@ -218,11 +218,89 @@ struct : ConfigurableGroup {
 
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
-  std::vector<int> mEnabledTables; // Vector of enabled tables
+  std::vector<int> mEnabledMultiplicityTables; // Vector of enabled multiplicity tables
+  std::vector<int> mEnabledCentralityTables; // Vector of enabled centrality tables
+
+  struct TagRun2V0MCalibration {
+    bool mCalibrationStored = false;
+    TFormula* mMCScale = nullptr;
+    float mMCScalePars[6] = {0.0};
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhVtxAmpCorrV0C = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2V0MInfo;
+  struct TagRun2V0ACalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2V0AInfo;
+  struct TagRun2SPDTrackletsCalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2SPDTksInfo;
+  struct TagRun2SPDClustersCalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorrCL0 = nullptr;
+    TH1* mhVtxAmpCorrCL1 = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2SPDClsInfo;
+  struct TagRun2CL0Calibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2CL0Info;
+  struct TagRun2CL1Calibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2CL1Info;
+  struct CalibrationInfo {
+    std::string name = "";
+    bool mCalibrationStored = false;
+    TH1* mhMultSelCalib = nullptr;
+    float mMCScalePars[6] = {0.0};
+    TFormula* mMCScale = nullptr;
+    explicit CalibrationInfo(std::string name)
+      : name(name),
+        mCalibrationStored(false),
+        mhMultSelCalib(nullptr),
+        mMCScalePars{0.0},
+        mMCScale(nullptr)
+    {
+    }
+    bool isSane(bool fatalize = false)
+    {
+      if (!mhMultSelCalib) {
+        return true;
+      }
+      for (int i = 1; i < mhMultSelCalib->GetNbinsX() + 1; i++) {
+        if (mhMultSelCalib->GetXaxis()->GetBinLowEdge(i) > mhMultSelCalib->GetXaxis()->GetBinUpEdge(i)) {
+          if (fatalize) {
+            LOG(fatal) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          }
+          LOG(warning) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+  CalibrationInfo fv0aInfo = CalibrationInfo("FV0");
+  CalibrationInfo ft0mInfo = CalibrationInfo("FT0");
+  CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
+  CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
+  CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
+  CalibrationInfo fddmInfo = CalibrationInfo("FDD");
+  CalibrationInfo ntpvInfo = CalibrationInfo("NTracksPV");
+  CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
+  CalibrationInfo mftInfo = CalibrationInfo("MFT");
+
+
 
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
-  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+  OutputObj<TList> listCalibMultiplicity{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   unsigned int randomSeed = 0;
   void init(InitContext& context)
@@ -258,7 +336,7 @@ struct : ConfigurableGroup {
         enableFlagIfTableRequired(context, tableNames[i], f);
         if (f == 1) {
           enabledMultiplicities[i] = true;
-          mEnabledTables.push_back(i);
+          mEnabledMultiplicityTables.push_back(i);
           if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
             LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
           }
@@ -274,33 +352,62 @@ struct : ConfigurableGroup {
   
       // Check that the tables are enabled consistenly
       if (enabledMultiplicities[kFV0MultZeqs] && !enabledMultiplicities[kFV0Mults]) { // FV0
-        mEnabledTables.push_back(kFV0Mults);
+        mEnabledMultiplicityTables.push_back(kFV0Mults);
         LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
       }
       if (enabledMultiplicities[kFT0MultZeqs] && !enabledMultiplicities[kFT0Mults]) { // FT0
-        mEnabledTables.push_back(kFT0Mults);
+        mEnabledMultiplicityTables.push_back(kFT0Mults);
         LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
       }
       if (enabledMultiplicities[kFDDMultZeqs] && !enabledMultiplicities[kFDDMults]) { // FDD
-        mEnabledTables.push_back(kFDDMults);
+        mEnabledMultiplicityTables.push_back(kFDDMults);
         LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
       }
       if (enabledMultiplicities[kPVMultZeqs] && !enabledMultiplicities[kPVMults]) { // PV
-        mEnabledTables.push_back(kPVMults);
+        mEnabledMultiplicityTables.push_back(kPVMults);
         LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
+      }
+      std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
+  
+
+    /* Checking the tables which are requested in the workflow and enabling them */
+    for (int i = 0; i < centrality::kNTables; i++) {
+        int f = enabledCentralityTables->get(centrality::tableNames[i].c_str(), "Enable");
+        enableFlagIfTableRequired(context, centrality::tableNames[i], f);
+        if (f == 1) {
+          if (centrality::tableNames[i].find("Run2") != std::string::npos) {
+            if (doprocessRun3) {
+              LOG(fatal) << "Cannot enable Run2 table `" << centrality::tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
+            }
+          } else {
+            if (doprocessRun2) {
+              LOG(fatal) << "Cannot enable Run3 table `" << centrality::tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
+            }
+          }
+          isTableEnabled[i] = true;
+          mEnabledTables.push_back(i);
+        }
+      }
+  
+      if (mEnabledTables.size() == 0) {
+        LOGF(fatal, "No table enabled. Please enable at least one table.");
       }
       std::sort(mEnabledTables.begin(), mEnabledTables.end());
   
+
+
+
+
       mRunNumber = 0;
       lCalibLoaded = false;
-      lCalibObjects = nullptr;
+      lCalibObjectsMultiplicity = nullptr;
       hVtxZFV0A = nullptr;
       hVtxZFT0A = nullptr;
       hVtxZFT0C = nullptr;
       hVtxZFDDA = nullptr;
       hVtxZFDDC = nullptr;
       hVtxZNTracks = nullptr;
-      listCalib.setObject(new TList);
+      listCalibMultiplicity.setObject(new TList);
 
       if (!produceHistograms.value) {
         return;
@@ -343,7 +450,7 @@ struct : ConfigurableGroup {
                    aod::FDDs const&)
   {
     // reserve memory for multiplicity tables
-    for (const auto& i : mEnabledTables) {
+    for (const auto& i : mEnabledMultiplicityTables) {
       switch (i) {
         case kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
@@ -431,30 +538,30 @@ struct : ConfigurableGroup {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           if (ccdbConfig.reconstructionPass.value == "") {
-            lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
+            lCalibObjectsMultiplicity = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
           } else if (ccdbConfig.reconstructionPass.value == "metadata") {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
             LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+            lCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           } else {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
             LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
-            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
+            lCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           }
 
-          if (lCalibObjects) {
+          if (lCalibObjectsMultiplicity) {
             if (produceHistograms) {
-              listCalib->Add(lCalibObjects->Clone(Form("%i", bc.runNumber())));
+              listCalibMultiplicity->Add(lCalibObjectsMultiplicity->Clone(Form("%i", bc.runNumber())));
             }
 
-            hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-            hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-            hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-            hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-            hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-            hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+            hVtxZFV0A = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFV0A"));
+            hVtxZFT0A = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFT0A"));
+            hVtxZFT0C = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFT0C"));
+            hVtxZFDDA = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFDDA"));
+            hVtxZFDDC = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFDDC"));
+            hVtxZNTracks = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZNTracksPV"));
             lCalibLoaded = true;
             // Capture error
             if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
@@ -468,7 +575,7 @@ struct : ConfigurableGroup {
         }
       }
 
-      for (const auto& i : mEnabledTables) {
+      for (const auto& i : mEnabledMultiplicityTables) {
         switch (i) {
           case kFV0Mults: // FV0
           {

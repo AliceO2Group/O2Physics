@@ -55,7 +55,7 @@ static constexpr int kFDDMs = 11;
 static constexpr int kNTPVs = 12;
 static constexpr int kNGlobals = 13;
 static constexpr int kMFTs = 14;
-static constexpr int kNTables = 15;
+static constexpr int NTables = 15;
 static constexpr int kNParameters = 1;
 static const std::vector<std::string> tableNamesCentrality{"CentRun2V0Ms", // 0
                                                  "CentRun2V0As", // 1
@@ -87,7 +87,7 @@ static const std::vector<std::string> tableNamesMultiplicity{"FV0Mults",       /
                                                   "PVMultZeqs",     // 12
                                                   "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[kNTables][kNParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[NTables][kNParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
@@ -107,7 +107,7 @@ struct CentralityTable {
   Produces<aod::CentMFTs> centMFTs;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
-                                                {defaultParameters[0], kNTables, kNParameters, tableNamesCentrality, parameterNames},
+                                                {defaultParameters[0], NTables, kNParameters, tableNamesCentrality, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
   struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
@@ -197,7 +197,7 @@ struct CentralityTable {
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
   std::vector<int> mEnabledTables; // Vector of enabled tables
-  std::array<bool, kNTables> isTableEnabled;
+  std::array<bool, NTables> isTableEnabled;
 
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -217,7 +217,7 @@ struct CentralityTable {
     }
 
     /* Checking the tables which are requested in the workflow and enabling them */
-    for (int i = 0; i < kNTables; i++) {
+    for (int i = 0; i < NTables; i++) {
       int f = enabledCentralityTables->get(tableNamesCentrality[i].c_str(), "Enable");
       enableFlagIfTableRequired(context, tableNamesCentrality[i], f);
       if (f == 1) {
