@@ -15,7 +15,6 @@
 /// \author ALICE
 ///
 
-
 #include <vector>
 #include <algorithm>
 #include <map>
@@ -43,7 +42,8 @@ using namespace o2::framework::expressions;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-namespace multiplicity{
+namespace multiplicity
+{
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
 static constexpr int kFDDMults = 2;
@@ -66,26 +66,26 @@ static_assert(kFT0Mults < kFT0MultZeqs);
 static_assert(kFDDMults < kFDDMultZeqs);
 static_assert(kPVMults < kPVMultZeqs);
 
-
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
-    "FT0Mults",       // 1
-    "FDDMults",       // 2
-    "ZDCMults",       // 3
-    "TrackletMults",  // 4
-    "TPCMults",       // 5
-    "PVMults",        // 6
-    "MultsExtra",     // 7
-    "MultSelections", // 8
-    "FV0MultZeqs",    // 9
-    "FT0MultZeqs",    // 10
-    "FDDMultZeqs",    // 11
-    "PVMultZeqs",     // 12
-    "MultMCExtras"};  // 13
-    static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
-}
+                                                 "FT0Mults",       // 1
+                                                 "FDDMults",       // 2
+                                                 "ZDCMults",       // 3
+                                                 "TrackletMults",  // 4
+                                                 "TPCMults",       // 5
+                                                 "PVMults",        // 6
+                                                 "MultsExtra",     // 7
+                                                 "MultSelections", // 8
+                                                 "FV0MultZeqs",    // 9
+                                                 "FT0MultZeqs",    // 10
+                                                 "FDDMultZeqs",    // 11
+                                                 "PVMultZeqs",     // 12
+                                                 "MultMCExtras"};  // 13
+static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+} // namespace multiplicity
 
-namespace centrality{
-    static constexpr int kRun2V0Ms = 0;
+namespace centrality
+{
+static constexpr int kRun2V0Ms = 0;
 static constexpr int kRun2V0As = 1;
 static constexpr int kRun2SPDTrks = 2;
 static constexpr int kRun2SPDClss = 3;
@@ -101,90 +101,82 @@ static constexpr int kNTPVs = 12;
 static constexpr int kNGlobals = 13;
 static constexpr int kMFTs = 14;
 static constexpr int kNTables = 15;
-static const std::vector<std::string> tableNames{"CentRun2V0Ms", // 0
-    "CentRun2V0As", // 1
-    "CentRun2SPDTrks", // 2
-    "CentRun2SPDClss", // 3
-    "CentRun2CL0s", // 4
-    "CentRun2CL1s", // 5
-    "CentFV0As", // 6 
-    "CentFT0Ms", // 7
-    "CentFT0As", // 8
-    "CentFT0Cs", // 9
-    "CentFT0CVariant1s", // 10
-    "CentFDDMs", // 11
-    "CentNTPVs", // 12
-    "CentNGlobals", // 13
-    "CentMFTs"};
+static const std::vector<std::string> tableNames{"CentRun2V0Ms",      // 0
+                                                 "CentRun2V0As",      // 1
+                                                 "CentRun2SPDTrks",   // 2
+                                                 "CentRun2SPDClss",   // 3
+                                                 "CentRun2CL0s",      // 4
+                                                 "CentRun2CL1s",      // 5
+                                                 "CentFV0As",         // 6
+                                                 "CentFT0Ms",         // 7
+                                                 "CentFT0As",         // 8
+                                                 "CentFT0Cs",         // 9
+                                                 "CentFT0CVariant1s", // 10
+                                                 "CentFDDMs",         // 11
+                                                 "CentNTPVs",         // 12
+                                                 "CentNGlobals",      // 13
+                                                 "CentMFTs"};
 
 static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
-}
+} // namespace centrality
 
 static const std::vector<std::string> parameterNames{"Enable"};
 
-
-
-
 struct multiplicityPercentile {
-    SliceCache cache;
-    // Services
-    Service<o2::ccdb::BasicCCDBManager> ccdb;
-    Service<o2::framework::O2DatabasePDG> pdg;
+  SliceCache cache;
+  // Services
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
+  // Multiplicity tables
+  Produces<aod::FV0Mults> tableFV0;             // 0
+  Produces<aod::FV0AOuterMults> tableFV0AOuter; // 0-bis (produced with FV0)
+  Produces<aod::FT0Mults> tableFT0;             // 1
+  Produces<aod::FDDMults> tableFDD;             // 2
+  Produces<aod::ZDCMults> tableZDC;             // 3
+  Produces<aod::TrackletMults> tableTracklet;   // 4
+  Produces<aod::TPCMults> tableTpc;             // 5
+  Produces<aod::PVMults> tablePv;               // 6
+  Produces<aod::MultsExtra> tableExtra;         // 7
+  Produces<aod::MultSelections> multSelections; // 8
+  Produces<aod::FV0MultZeqs> tableFV0Zeqs;      // 9
+  Produces<aod::FT0MultZeqs> tableFT0Zeqs;      // 10
+  Produces<aod::FDDMultZeqs> tableFDDZeqs;      // 11
+  Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
+  Produces<aod::MultMCExtras> tableExtraMc;     // 13
+  Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
+  Produces<aod::MFTMults> mftMults;       // Not accounted for, produced using custom process function to avoid dependencies
+  Produces<aod::MultsGlobal> multsGlobal; // Not accounted for, produced based on process function processGlobalTrackingCounters
+  Configurable<LabeledArray<int>> enabledMultiplicityTables{"enabledMultiplicityTables",
+                                                            {defaultParameters[0], multiplicity::kNTables, 1, multiplicity::tableNames, parameterNames},
+                                                            "Produce multiplicity tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
+  // Centrality tables
+  Produces<aod::CentRun2V0Ms> centRun2V0M;
+  Produces<aod::CentRun2V0As> centRun2V0A;
+  Produces<aod::CentRun2SPDTrks> centRun2SPDTracklets;
+  Produces<aod::CentRun2SPDClss> centRun2SPDClusters;
+  Produces<aod::CentRun2CL0s> centRun2CL0;
+  Produces<aod::CentRun2CL1s> centRun2CL1;
+  Produces<aod::CentFV0As> centFV0A;
+  Produces<aod::CentFT0Ms> centFT0M;
+  Produces<aod::CentFT0As> centFT0A;
+  Produces<aod::CentFT0Cs> centFT0C;
+  Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
+  Produces<aod::CentFDDMs> centFDDM;
+  Produces<aod::CentNTPVs> centNTPV;
+  Produces<aod::CentNGlobals> centNGlobals;
+  Produces<aod::CentMFTs> centMFTs;
+  Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
+                                                          {defaultParameters[0], centrality::kNTables, 1, centrality::tableNames, parameterNames},
+                                                          "Produce centrality tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
-    // Multiplicity tables
-    Produces<aod::FV0Mults> tableFV0;             // 0
-    Produces<aod::FV0AOuterMults> tableFV0AOuter; // 0-bis (produced with FV0)
-    Produces<aod::FT0Mults> tableFT0;             // 1
-    Produces<aod::FDDMults> tableFDD;             // 2
-    Produces<aod::ZDCMults> tableZDC;             // 3
-    Produces<aod::TrackletMults> tableTracklet;   // 4
-    Produces<aod::TPCMults> tableTpc;             // 5
-    Produces<aod::PVMults> tablePv;               // 6
-    Produces<aod::MultsExtra> tableExtra;         // 7
-    Produces<aod::MultSelections> multSelections; // 8
-    Produces<aod::FV0MultZeqs> tableFV0Zeqs;      // 9
-    Produces<aod::FT0MultZeqs> tableFT0Zeqs;      // 10
-    Produces<aod::FDDMultZeqs> tableFDDZeqs;      // 11
-    Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
-    Produces<aod::MultMCExtras> tableExtraMc;     // 13
-    Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
-    Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
-    Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
-    Configurable<LabeledArray<int>> enabledMultiplicityTables{"enabledMultiplicityTables",
-        {defaultParameters[0], multiplicity::kNTables, 1, multiplicity::tableNames, parameterNames},
-        "Produce multiplicity tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
+  // Configuration
+  Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
+  Configurable<bool> autoSetupFromMetadata{"autoSetupFromMetadata", true, {"Autosetup the Run 2 and Run 3 processing from the metadata"}};
 
-
-    // Centrality tables
-    Produces<aod::CentRun2V0Ms> centRun2V0M;
-    Produces<aod::CentRun2V0As> centRun2V0A;
-    Produces<aod::CentRun2SPDTrks> centRun2SPDTracklets;
-    Produces<aod::CentRun2SPDClss> centRun2SPDClusters;
-    Produces<aod::CentRun2CL0s> centRun2CL0;
-    Produces<aod::CentRun2CL1s> centRun2CL1;
-    Produces<aod::CentFV0As> centFV0A;
-    Produces<aod::CentFT0Ms> centFT0M;
-    Produces<aod::CentFT0As> centFT0A;
-    Produces<aod::CentFT0Cs> centFT0C;
-    Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
-    Produces<aod::CentFDDMs> centFDDM;
-    Produces<aod::CentNTPVs> centNTPV;
-    Produces<aod::CentNGlobals> centNGlobals;
-    Produces<aod::CentMFTs> centMFTs;
-    Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
-                                                  {defaultParameters[0], centrality::kNTables, 1, centrality::tableNames, parameterNames},
-                                                  "Produce centrality tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
-  
-
-// Configuration
-Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
-Configurable<bool> autoSetupFromMetadata{"autoSetupFromMetadata", true, {"Autosetup the Run 2 and Run 3 processing from the metadata"}};
-
-
-struct : ConfigurableGroup {
+  struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
     Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
     Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
@@ -192,16 +184,11 @@ struct : ConfigurableGroup {
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
 
-
   // Configurable multiplicity
   struct : ConfigurableGroup {
-  Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};                                         
-} multiplicityConfig;
-
-
-
-
+    Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+    Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
+  } multiplicityConfig;
 
   // Configurable multiplicity
   struct : ConfigurableGroup {
@@ -219,7 +206,7 @@ struct : ConfigurableGroup {
   TProfile* hVtxZFDDC;
   TProfile* hVtxZNTracks;
   std::vector<int> mEnabledMultiplicityTables; // Vector of enabled multiplicity tables
-  std::vector<int> mEnabledCentralityTables; // Vector of enabled centrality tables
+  std::vector<int> mEnabledCentralityTables;   // Vector of enabled centrality tables
 
   struct TagRun2V0MCalibration {
     bool mCalibrationStored = false;
@@ -296,8 +283,6 @@ struct : ConfigurableGroup {
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
 
-
-
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
   OutputObj<TList> listCalibMultiplicity{"calib-list", OutputObjHandlingPolicy::QAObject};
@@ -309,117 +294,110 @@ struct : ConfigurableGroup {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
-    
 
+    if (autoSetupFromMetadata && metadataInfo.isFullyDefined()) {
+      LOG(info) << "Autosetting the processing from the metadata";
+      if (metadataInfo.isRun3()) {
+        doprocessRun2.value = false;
+      } else {
+        doprocessRun3.value = false;
+      }
+    }
 
-      if (autoSetupFromMetadata && metadataInfo.isFullyDefined()) {
-        LOG(info) << "Autosetting the processing from the metadata";
-          if (metadataInfo.isRun3()) {
-            doprocessRun2.value = false;
-          } else {
-            doprocessRun3.value = false;
-          }
-      }
-  
-      randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      if (doprocessRun2 == false && doprocessRun3 == false) {
-        LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
-      }
-      if (doprocessRun2 == true && doprocessRun3 == true) {
-        LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
-      }
-  
-      // Enable or disable the multiplicity tables
-      bool enabledMultiplicities[multiplicity::kNTables] = {false};
-      for (int i = 0; i < multiplicity::kNTables; i++) {
-        int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-        enableFlagIfTableRequired(context, tableNames[i], f);
-        if (f == 1) {
-          enabledMultiplicities[i] = true;
-          mEnabledMultiplicityTables.push_back(i);
-          if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
-            LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
-          }
+    randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    if (doprocessRun2 == false && doprocessRun3 == false) {
+      LOGF(fatal, "Neither processRun2 nor processRun3 enabled. Please choose one.");
+    }
+    if (doprocessRun2 == true && doprocessRun3 == true) {
+      LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
+    }
+
+    // Enable or disable the multiplicity tables
+    bool enabledMultiplicities[multiplicity::kNTables] = {false};
+    for (int i = 0; i < multiplicity::kNTables; i++) {
+      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, tableNames[i], f);
+      if (f == 1) {
+        enabledMultiplicities[i] = true;
+        mEnabledMultiplicityTables.push_back(i);
+        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
+          LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
         }
       }
-      // Handle the custom cases.
-      if (enabledMultiplicities[kMultMCExtras]) {
-        if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
-          doprocessMC.value = true;
-          LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
-        }
+    }
+    // Handle the custom cases.
+    if (enabledMultiplicities[kMultMCExtras]) {
+      if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
+        doprocessMC.value = true;
+        LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
       }
-  
-      // Check that the tables are enabled consistenly
-      if (enabledMultiplicities[kFV0MultZeqs] && !enabledMultiplicities[kFV0Mults]) { // FV0
-        mEnabledMultiplicityTables.push_back(kFV0Mults);
-        LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
-      }
-      if (enabledMultiplicities[kFT0MultZeqs] && !enabledMultiplicities[kFT0Mults]) { // FT0
-        mEnabledMultiplicityTables.push_back(kFT0Mults);
-        LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
-      }
-      if (enabledMultiplicities[kFDDMultZeqs] && !enabledMultiplicities[kFDDMults]) { // FDD
-        mEnabledMultiplicityTables.push_back(kFDDMults);
-        LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
-      }
-      if (enabledMultiplicities[kPVMultZeqs] && !enabledMultiplicities[kPVMults]) { // PV
-        mEnabledMultiplicityTables.push_back(kPVMults);
-        LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
-      }
-      std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
-  
+    }
+
+    // Check that the tables are enabled consistenly
+    if (enabledMultiplicities[kFV0MultZeqs] && !enabledMultiplicities[kFV0Mults]) { // FV0
+      mEnabledMultiplicityTables.push_back(kFV0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
+    }
+    if (enabledMultiplicities[kFT0MultZeqs] && !enabledMultiplicities[kFT0Mults]) { // FT0
+      mEnabledMultiplicityTables.push_back(kFT0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
+    }
+    if (enabledMultiplicities[kFDDMultZeqs] && !enabledMultiplicities[kFDDMults]) { // FDD
+      mEnabledMultiplicityTables.push_back(kFDDMults);
+      LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
+    }
+    if (enabledMultiplicities[kPVMultZeqs] && !enabledMultiplicities[kPVMults]) { // PV
+      mEnabledMultiplicityTables.push_back(kPVMults);
+      LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
+    }
+    std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
 
     /* Checking the tables which are requested in the workflow and enabling them */
     for (int i = 0; i < centrality::kNTables; i++) {
-        int f = enabledCentralityTables->get(centrality::tableNames[i].c_str(), "Enable");
-        enableFlagIfTableRequired(context, centrality::tableNames[i], f);
-        if (f == 1) {
-          if (centrality::tableNames[i].find("Run2") != std::string::npos) {
-            if (doprocessRun3) {
-              LOG(fatal) << "Cannot enable Run2 table `" << centrality::tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
-            }
-          } else {
-            if (doprocessRun2) {
-              LOG(fatal) << "Cannot enable Run3 table `" << centrality::tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
-            }
+      int f = enabledCentralityTables->get(centrality::tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, centrality::tableNames[i], f);
+      if (f == 1) {
+        if (centrality::tableNames[i].find("Run2") != std::string::npos) {
+          if (doprocessRun3) {
+            LOG(fatal) << "Cannot enable Run2 table `" << centrality::tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
           }
-          isTableEnabled[i] = true;
-          mEnabledCentralityTables.push_back(i);
+        } else {
+          if (doprocessRun2) {
+            LOG(fatal) << "Cannot enable Run3 table `" << centrality::tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
+          }
         }
+        isTableEnabled[i] = true;
+        mEnabledCentralityTables.push_back(i);
       }
-  
-      if (mEnabledCentralityTables.size() == 0) {
-        LOGF(fatal, "No table enabled. Please enable at least one table.");
-      }
-      std::sort(mEnabledCentralityTables.begin(), mEnabledCentralityTables.end());
-  
-
-
-
-
-      mRunNumber = 0;
-      lCalibLoaded = false;
-      lCalibObjectsMultiplicity = nullptr;
-      hVtxZFV0A = nullptr;
-      hVtxZFT0A = nullptr;
-      hVtxZFT0C = nullptr;
-      hVtxZFDDA = nullptr;
-      hVtxZFDDC = nullptr;
-      hVtxZNTracks = nullptr;
-      listCalibMultiplicity.setObject(new TList);
-
-      if (!produceHistograms.value) {
-        return;
-      }
-      histos.add("FT0A", "FT0A vs FT0A eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0A multiplicity"}, {1000, 0, 1000, "FT0A multiplicity eq."}});
-      histos.add("FT0C", "FT0C vs FT0C eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0C multiplicity"}, {1000, 0, 1000, "FT0C multiplicity eq."}});
-      histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
-      histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
     }
-  
-    /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
-    void process(aod::BCs const&) {}
+
+    if (mEnabledCentralityTables.size() == 0) {
+      LOGF(fatal, "No table enabled. Please enable at least one table.");
+    }
+    std::sort(mEnabledCentralityTables.begin(), mEnabledCentralityTables.end());
+
+    mRunNumber = 0;
+    lCalibLoaded = false;
+    lCalibObjectsMultiplicity = nullptr;
+    hVtxZFV0A = nullptr;
+    hVtxZFT0A = nullptr;
+    hVtxZFT0C = nullptr;
+    hVtxZFDDA = nullptr;
+    hVtxZFDDC = nullptr;
+    hVtxZNTracks = nullptr;
+    listCalibMultiplicity.setObject(new TList);
+
+    if (!produceHistograms.value) {
+      return;
+    }
+    histos.add("FT0A", "FT0A vs FT0A eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0A multiplicity"}, {1000, 0, 1000, "FT0A multiplicity eq."}});
+    histos.add("FT0C", "FT0C vs FT0C eq.", HistType::kTH2D, {{1000, 0, 1000, "FT0C multiplicity"}, {1000, 0, 1000, "FT0C multiplicity eq."}});
+    histos.add("FT0CMultvsPV", "FT0C vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0C mult."}, {100, 0, 100, "PV mult."}});
+    histos.add("FT0AMultvsPV", "FT0A vs mult.", HistType::kTH2D, {{1000, 0, 1000, "FT0A mult."}, {100, 0, 100, "PV mult."}});
+  }
+
+  /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
+  void process(aod::BCs const&) {}
 
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -431,8 +409,6 @@ struct : ConfigurableGroup {
   Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-
-
 
   using Run3TracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3TracksIU> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -502,39 +478,39 @@ struct : ConfigurableGroup {
 
     // reserve memory for centrality tables
     for (auto const& table : mEnabledCentralityTables) {
-        switch (table) {
-          case centrality::kFV0As:
-            centFV0A.reserve(collisions.size());
-            break;
-          case centrality::kFT0Ms:
-            centFT0M.reserve(collisions.size());
-            break;
-          case centrality::kFT0As:
-            centFT0A.reserve(collisions.size());
-            break;
-          case centrality::kFT0Cs:
-            centFT0C.reserve(collisions.size());
-            break;
-          case centrality::kFT0CVariant1s:
-            centFT0CVariant1.reserve(collisions.size());
-            break;
-          case centrality::kFDDMs:
-            centFDDM.reserve(collisions.size());
-            break;
-          case centrality::kNTPVs:
-            centNTPV.reserve(collisions.size());
-            break;
-          case centrality::kNGlobals:
-            centNGlobals.reserve(collisions.size());
-            break;
-          case centrality::kMFTs:
-            centMFTs.reserve(collisions.size());
-            break;
-          default:
-            LOGF(fatal, "Table %d not supported in Run3", table);
-            break;
-        }
+      switch (table) {
+        case centrality::kFV0As:
+          centFV0A.reserve(collisions.size());
+          break;
+        case centrality::kFT0Ms:
+          centFT0M.reserve(collisions.size());
+          break;
+        case centrality::kFT0As:
+          centFT0A.reserve(collisions.size());
+          break;
+        case centrality::kFT0Cs:
+          centFT0C.reserve(collisions.size());
+          break;
+        case centrality::kFT0CVariant1s:
+          centFT0CVariant1.reserve(collisions.size());
+          break;
+        case centrality::kFDDMs:
+          centFDDM.reserve(collisions.size());
+          break;
+        case centrality::kNTPVs:
+          centNTPV.reserve(collisions.size());
+          break;
+        case centrality::kNGlobals:
+          centNGlobals.reserve(collisions.size());
+          break;
+        case centrality::kMFTs:
+          centMFTs.reserve(collisions.size());
+          break;
+        default:
+          LOGF(fatal, "Table %d not supported in Run3", table);
+          break;
       }
+    }
 
     // Initializing multiplicity values
     float multFV0A = 0.f;
@@ -939,7 +915,7 @@ struct : ConfigurableGroup {
        * @param multiplicity The multiplicity value.
        */
 
-       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity) {
+      auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity) {
         const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
@@ -964,40 +940,38 @@ struct : ConfigurableGroup {
       for (auto const& table : mEnabledCentralityTables) {
         switch (table) {
           case centrality::kFV0As:
-              populateTable(centFV0A, fv0aInfo, multZeqFV0A);
+            populateTable(centFV0A, fv0aInfo, multZeqFV0A);
             break;
           case centrality::kFT0Ms:
-              const float perC = populateTable(centFT0M, ft0mInfo, multZeqFT0A + multZeqFT0C);
+            const float perC = populateTable(centFT0M, ft0mInfo, multZeqFT0A + multZeqFT0C);
             break;
           case centrality::kFT0As:
-              const float perC = populateTable(centFT0A, ft0aInfo, multZeqFT0A);
+            const float perC = populateTable(centFT0A, ft0aInfo, multZeqFT0A);
             break;
           case centrality::kFT0Cs:
-              const float perC = populateTable(centFT0C, ft0cInfo, multZeqFT0C);
+            const float perC = populateTable(centFT0C, ft0cInfo, multZeqFT0C);
             break;
           case centrality::kFT0CVariant1s:
-              populateTable(centFT0CVariant1, ft0cVariant1Info, multZeqFT0C);
+            populateTable(centFT0CVariant1, ft0cVariant1Info, multZeqFT0C);
             break;
           case centrality::kFDDMs:
-              populateTable(centFDDM, fddmInfo, multZeqFDDA + multZeqFDDC);
+            populateTable(centFDDM, fddmInfo, multZeqFDDA + multZeqFDDC);
             break;
           case centrality::kNTPVs:
-              populateTable(centNTPV, ntpvInfo, multZeqNTracksPV);
+            populateTable(centNTPV, ntpvInfo, multZeqNTracksPV);
             break;
           case centrality::kNGlobals:
-              populateTable(centNGlobals, nGlobalInfo, multNTracksGlobal);
+            populateTable(centNGlobals, nGlobalInfo, multNTracksGlobal);
             break;
           case centrality::kMFTs:
-              populateTable(centMFTs, mftInfo, mftNtracks);
+            populateTable(centMFTs, mftInfo, mftNtracks);
             break;
           default:
             LOGF(fatal, "Table %d not supported in Run3", table);
             break;
         }
       }
-
     }
   }
-
-
 }
+ 
