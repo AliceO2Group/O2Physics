@@ -385,14 +385,14 @@ struct : ConfigurableGroup {
             }
           }
           isTableEnabled[i] = true;
-          mEnabledTables.push_back(i);
+          mEnabledCentralityTables.push_back(i);
         }
       }
   
-      if (mEnabledTables.size() == 0) {
+      if (mEnabledCentralityTables.size() == 0) {
         LOGF(fatal, "No table enabled. Please enable at least one table.");
       }
-      std::sort(mEnabledTables.begin(), mEnabledTables.end());
+      std::sort(mEnabledCentralityTables.begin(), mEnabledCentralityTables.end());
   
 
 
@@ -501,6 +501,40 @@ struct : ConfigurableGroup {
     }
 
     // reserve memory for centrality tables
+    for (auto const& table : mEnabledCentralityTables) {
+        switch (table) {
+          case centrality::kFV0As:
+            centFV0A.reserve(collisions.size());
+            break;
+          case centrality::kFT0Ms:
+            centFT0M.reserve(collisions.size());
+            break;
+          case centrality::kFT0As:
+            centFT0A.reserve(collisions.size());
+            break;
+          case centrality::kFT0Cs:
+            centFT0C.reserve(collisions.size());
+            break;
+          case centrality::kFT0CVariant1s:
+            centFT0CVariant1.reserve(collisions.size());
+            break;
+          case centrality::kFDDMs:
+            centFDDM.reserve(collisions.size());
+            break;
+          case centrality::kNTPVs:
+            centNTPV.reserve(collisions.size());
+            break;
+          case centrality::kNGlobals:
+            centNGlobals.reserve(collisions.size());
+            break;
+          case centrality::kMFTs:
+            centMFTs.reserve(collisions.size());
+            break;
+          default:
+            LOGF(fatal, "Table %d not supported in Run3", table);
+            break;
+        }
+      }
 
     // Initializing multiplicity values
     float multFV0A = 0.f;
@@ -575,6 +609,7 @@ struct : ConfigurableGroup {
         }
       }
 
+      // First we compute the multiplicity
       for (const auto& i : mEnabledMultiplicityTables) {
         switch (i) {
           case kFV0Mults: // FV0
@@ -788,6 +823,179 @@ struct : ConfigurableGroup {
           } break;
         }
       }
+
+      if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
+        LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+        TList* callst = nullptr;
+        // Check if the ccdb path is a root file
+        if (ccdbConfig.ccdbPath.value.find(".root") != std::string::npos) {
+          TFile f(ccdbConfig.ccdbPath.value.c_str(), "READ");
+          f.GetObject(ccdbConfig.reconstructionPass.value.c_str(), callst);
+          if (!callst) {
+            f.ls();
+            LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << ccdbConfig.ccdbPath.value;
+          }
+        } else {
+          if (ccdbConfig.reconstructionPass.value == "") {
+            callst = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber());
+          } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+            callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
+          } else {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
+            callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
+          }
+        }
+
+        fv0aInfo.mCalibrationStored = false;
+        ft0mInfo.mCalibrationStored = false;
+        ft0aInfo.mCalibrationStored = false;
+        ft0cInfo.mCalibrationStored = false;
+        ft0cVariant1Info.mCalibrationStored = false;
+        fddmInfo.mCalibrationStored = false;
+        ntpvInfo.mCalibrationStored = false;
+        nGlobalInfo.mCalibrationStored = false;
+        mftInfo.mCalibrationStored = false;
+        if (callst != nullptr) {
+          if (produceHistograms) {
+            listCalib->Add(callst->Clone(Form("%i", bc.runNumber())));
+          }
+          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+            estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+            estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+            if (estimator.mhMultSelCalib != nullptr) {
+              if (generatorName->length() != 0) {
+                LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
+                if (estimator.mMCScale != nullptr) {
+                  for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                    estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                    LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
+                  }
+                } else {
+                  LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+                }
+              }
+              estimator.mCalibrationStored = true;
+              estimator.isSane();
+            } else {
+              LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
+            }
+          };
+
+          for (auto const& table : mEnabledCentralityTables) {
+            switch (table) {
+              case centrality::kFV0As:
+                getccdb(fv0aInfo, ccdbConfig.genName);
+                break;
+              case centrality::kFT0Ms:
+                getccdb(ft0mInfo, ccdbConfig.genName);
+                break;
+              case centrality::kFT0As:
+                getccdb(ft0aInfo, ccdbConfig.genName);
+                break;
+              case centrality::kFT0Cs:
+                getccdb(ft0cInfo, ccdbConfig.genName);
+                break;
+              case centrality::kFT0CVariant1s:
+                getccdb(ft0cVariant1Info, ccdbConfig.genName);
+                break;
+              case centrality::kFDDMs:
+                getccdb(fddmInfo, ccdbConfig.genName);
+                break;
+              case centrality::kNTPVs:
+                getccdb(ntpvInfo, ccdbConfig.genName);
+                break;
+              case centrality::kNGlobals:
+                getccdb(nGlobalInfo, ccdbConfig.genName);
+                break;
+              case centrality::kMFTs:
+                getccdb(mftInfo, ccdbConfig.genName);
+                break;
+              default:
+                LOGF(fatal, "Table %d not supported in Run3", table);
+                break;
+            }
+          }
+        } else {
+          if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+            LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+          } else { // only if asked: continue filling with non-valid values (105)
+            LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+          }
+        }
+      }
+
+      /**
+       * @brief Populates a table with data based on the given calibration information and multiplicity.
+       *
+       * @param table The table to populate.
+       * @param estimator The calibration information.
+       * @param multiplicity The multiplicity value.
+       */
+
+       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity) {
+        const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
+        auto scaleMC = [](float x, float pars[6]) {
+          return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+        };
+
+        float percentile = 105.0f;
+        float scaledMultiplicity = multiplicity;
+        if (estimator.mCalibrationStored) {
+          if (estimator.mMCScale != nullptr) {
+            scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
+            LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
+          }
+          percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+          if (assignOutOfRange)
+            percentile = 100.5f;
+        }
+        LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+        table(percentile);
+        return percentile;
+      };
+
+      for (auto const& table : mEnabledCentralityTables) {
+        switch (table) {
+          case centrality::kFV0As:
+              populateTable(centFV0A, fv0aInfo, multZeqFV0A);
+            break;
+          case centrality::kFT0Ms:
+              const float perC = populateTable(centFT0M, ft0mInfo, multZeqFT0A + multZeqFT0C);
+            break;
+          case centrality::kFT0As:
+              const float perC = populateTable(centFT0A, ft0aInfo, multZeqFT0A);
+            break;
+          case centrality::kFT0Cs:
+              const float perC = populateTable(centFT0C, ft0cInfo, multZeqFT0C);
+            break;
+          case centrality::kFT0CVariant1s:
+              populateTable(centFT0CVariant1, ft0cVariant1Info, multZeqFT0C);
+            break;
+          case centrality::kFDDMs:
+              populateTable(centFDDM, fddmInfo, multZeqFDDA + multZeqFDDC);
+            break;
+          case centrality::kNTPVs:
+              populateTable(centNTPV, ntpvInfo, multZeqNTracksPV);
+            break;
+          case centrality::kNGlobals:
+              populateTable(centNGlobals, nGlobalInfo, multNTracksGlobal);
+            break;
+          case centrality::kMFTs:
+              populateTable(centMFTs, mftInfo, mftNtracks);
+            break;
+          default:
+            LOGF(fatal, "Table %d not supported in Run3", table);
+            break;
+        }
+      }
+
     }
   }
 
