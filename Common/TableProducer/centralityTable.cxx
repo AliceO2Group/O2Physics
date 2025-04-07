@@ -57,21 +57,35 @@ static constexpr int kNGlobals = 13;
 static constexpr int kMFTs = 14;
 static constexpr int kNTables = 15;
 static constexpr int kNParameters = 1;
-static const std::vector<std::string> tableNames{"CentRun2V0Ms",
-                                                 "CentRun2V0As",
-                                                 "CentRun2SPDTrks",
-                                                 "CentRun2SPDClss",
-                                                 "CentRun2CL0s",
-                                                 "CentRun2CL1s",
-                                                 "CentFV0As",
-                                                 "CentFT0Ms",
-                                                 "CentFT0As",
-                                                 "CentFT0Cs",
-                                                 "CentFT0CVariant1s",
-                                                 "CentFDDMs",
-                                                 "CentNTPVs",
-                                                 "CentNGlobals",
+static const std::vector<std::string> tableNamesCentrality{"CentRun2V0Ms", // 0
+                                                 "CentRun2V0As", // 1
+                                                 "CentRun2SPDTrks", // 2
+                                                 "CentRun2SPDClss", // 3
+                                                 "CentRun2CL0s", // 4
+                                                 "CentRun2CL1s", // 5
+                                                 "CentFV0As", // 6 
+                                                 "CentFT0Ms", // 7
+                                                 "CentFT0As", // 8
+                                                 "CentFT0Cs", // 9
+                                                 "CentFT0CVariant1s", // 10
+                                                 "CentFDDMs", // 11
+                                                 "CentNTPVs", // 12
+                                                 "CentNGlobals", // 13
                                                  "CentMFTs"};
+static const std::vector<std::string> tableNamesMultiplicity{"FV0Mults",       // 0
+                                                  "FT0Mults",       // 1
+                                                  "FDDMults",       // 2
+                                                  "ZDCMults",       // 3
+                                                  "TrackletMults",  // 4
+                                                  "TPCMults",       // 5
+                                                  "PVMults",        // 6
+                                                  "MultsExtra",     // 7
+                                                  "MultSelections", // 8
+                                                  "FV0MultZeqs",    // 9
+                                                  "FT0MultZeqs",    // 10
+                                                  "FDDMultZeqs",    // 11
+                                                  "PVMultZeqs",     // 12
+                                                  "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
 static const int defaultParameters[kNTables][kNParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
@@ -92,8 +106,8 @@ struct CentralityTable {
   Produces<aod::CentNGlobals> centNGlobals;
   Produces<aod::CentMFTs> centMFTs;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], kNTables, kNParameters, tableNames, parameterNames},
+  Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
+                                                {defaultParameters[0], kNTables, kNParameters, tableNamesCentrality, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
   struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
@@ -204,16 +218,16 @@ struct CentralityTable {
 
     /* Checking the tables which are requested in the workflow and enabling them */
     for (int i = 0; i < kNTables; i++) {
-      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+      int f = enabledCentralityTables->get(tableNamesCentrality[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, tableNamesCentrality[i], f);
       if (f == 1) {
-        if (tableNames[i].find("Run2") != std::string::npos) {
+        if (tableNamesCentrality[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {
-            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
+            LOG(fatal) << "Cannot enable Run2 table `" << tableNamesCentrality[i] << "` while running in Run3 mode. Please check and disable them.";
           }
         } else {
           if (doprocessRun2) {
-            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
+            LOG(fatal) << "Cannot enable Run3 table `" << tableNamesCentrality[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
         isTableEnabled[i] = true;
