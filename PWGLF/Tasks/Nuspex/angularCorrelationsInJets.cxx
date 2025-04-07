@@ -1176,8 +1176,8 @@ struct AngularCorrelationsInJets {
       doCorrelationsAnti(jetProtons, jetAntiprotons, fBufferAntiproton, fTempBufferProton, pJet);
       doCorrelationsAnti(jetAntiprotons, jetProtons, fBufferProton, fTempBufferAntiproton, pJet); // divide SE distributions by 2 in post
     }
-    long unsigned int minNumPartForCorrelations = 2;
-    if ((jetProtons.size() < minNumPartForCorrelations) && (jetAntiprotons.size() < minNumPartForCorrelations) && (jetPiPlus.size() < minNumPartForCorrelations) && (jetPiMinus.size() < minNumPartForCorrelations))
+    int minNumPartForCorrelations = 2;
+    if ((static_cast<int>(jetProtons.size()) < minNumPartForCorrelations) && (static_cast<int>(jetAntiprotons.size()) < minNumPartForCorrelations) && (static_cast<int>(jetPiPlus.size()) < minNumPartForCorrelations) && (static_cast<int>(jetPiMinus.size()) < minNumPartForCorrelations))
       return jetCounter;
     registryData.fill(HIST("eventProtocol"), 6);
 
@@ -1262,8 +1262,8 @@ struct AngularCorrelationsInJets {
       index++;
     } // for (const auto& track : tracks)
 
-    long unsigned int minNumPartForJetReco = 2;
-    if (jetInput.size() < minNumPartForJetReco)
+    int minNumPartForJetReco = 2;
+    if (static_cast<int>(jetInput.size()) < minNumPartForJetReco)
       return;
     registryData.fill(HIST("eventProtocol"), 2);
 
@@ -1336,8 +1336,8 @@ struct AngularCorrelationsInJets {
       index++;
     } // for (const auto& track : tracks)
 
-    long unsigned int minNumPartForJetReco = 2;
-    if (jetInput.size() < minNumPartForJetReco)
+    int minNumPartForJetReco = 2;
+    if (static_cast<int>(jetInput.size()) < minNumPartForJetReco)
       return;
     registryData.fill(HIST("eventProtocol"), 2);
 
