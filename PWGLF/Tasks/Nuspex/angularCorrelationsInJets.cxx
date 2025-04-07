@@ -158,11 +158,11 @@ struct AngularCorrelationsInJets {
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
                                    aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                      aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
+                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using McTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
                                  aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                    aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
+                                 aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
@@ -172,7 +172,7 @@ struct AngularCorrelationsInJets {
                             nabs(aod::track::dcaZ) < maxDCAzForFilter &&
                             nabs(aod::track::eta) < maxEtaForFilter &&
                             aod::track::pt > minTrackPtForFilter); // add more preliminary cuts to filter if possible
-  
+
   Preslice<FullTracksRun2> perCollisionFullTracksRun2 = o2::aod::track::collisionId;
   Preslice<FullTracksRun3> perCollisionFullTracksRun3 = o2::aod::track::collisionId;
   Preslice<McTracksRun2> perCollisionMcTracksRun2 = o2::aod::track::collisionId;
@@ -435,7 +435,7 @@ struct AngularCorrelationsInJets {
       return false;
 
     double pt = track.pt();
-    
+
     // DCA
     double maxDCApt = 1.2;
     if (pt < maxDCApt) {
@@ -448,7 +448,7 @@ struct AngularCorrelationsInJets {
     // nsigma
     double midPt = 1.5;
     double highPt = 3.0;
-    
+
     double maxTPCnsigma = protonTPCnsigma;
     double maxTOFnsigma = protonTOFnsigma;
     if (pt > midPt) {
@@ -469,16 +469,16 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("tofNSigmaProtonCF"), track.pt(), track.tofNSigmaPr());
       tofNSigma = track.tofNSigmaPr();
     }
-    
+
     if (pt > protonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     if (useRejectionCut && !singleSpeciesTPCNSigma(track))
       return false;
-    
+
     return true;
   }
-  
+
   template <typename T>
   bool isProtonForYield(const T& track)
   {
@@ -516,7 +516,7 @@ struct AngularCorrelationsInJets {
       return false;
 
     double pt = track.pt();
-  
+
     // DCA
     double maxDCApt = 1.2;
     if (pt < maxDCApt) {
@@ -529,7 +529,7 @@ struct AngularCorrelationsInJets {
     // nsigma
     double midPt = 1.5;
     double highPt = 3.0;
-    
+
     double maxTPCnsigma = antiprotonTPCnsigma;
     double maxTOFnsigma = antiprotonTOFnsigma;
     if (pt > midPt) {
@@ -550,13 +550,13 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("tofNSigmaAntiprotonCF"), track.pt(), track.tofNSigmaPr());
       tofNSigma = track.tofNSigmaPr();
     }
-    
+
     if (pt > antiprotonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     if (useRejectionCut && !singleSpeciesTPCNSigma(track))
       return false;
-    
+
     return true;
   }
 
@@ -1119,7 +1119,7 @@ struct AngularCorrelationsInJets {
         if (isProtonForYield(jetParticle)) { // collect protons in jet
           registryData.fill(HIST("ptJetProton"), jetParticle.pt());
           registryQC.fill(HIST("ptJetProtonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
-          registryData.fill(HIST("trackProtocol"), 3); // # protons
+          registryData.fill(HIST("trackProtocol"), 3);  // # protons
         } else if (isAntiprotonForYield(jetParticle)) { // collect antiprotons in jet
           registryData.fill(HIST("ptJetAntiproton"), jetParticle.pt());
           registryQC.fill(HIST("ptJetAntiprotonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
@@ -1579,8 +1579,8 @@ struct AngularCorrelationsInJets {
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                      soa::Filtered<FullTracksRun2> const& tracks,
-                      BCsWithRun2Info const&)
+                   soa::Filtered<FullTracksRun2> const& tracks,
+                   BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1600,7 +1600,7 @@ struct AngularCorrelationsInJets {
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun2, "process Run 2 data w/o jet tables", false);
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                      soa::Filtered<FullTracksRun3> const& tracks)
+                   soa::Filtered<FullTracksRun3> const& tracks)
   {
     for (const auto& collision : collisions) {
       registryData.fill(HIST("eventProtocol"), 0);
