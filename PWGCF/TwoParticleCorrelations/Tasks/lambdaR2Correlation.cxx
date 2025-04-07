@@ -195,6 +195,12 @@ enum DMCType {
   kMC
 };
 
+enum CorrHistDim {
+  kOneDimCorr = 1,
+  kTwoDimCorr,
+  kThreeDimCorr
+};
+
 struct LambdaTableProducer {
 
   Produces<aod::LambdaCollisions> lambdaCollisionTable;
@@ -840,13 +846,13 @@ struct LambdaTableProducer {
     float retVal = 0.;
     float rap = (cDoEtaCorr) ? v0.eta() : v0.yLambda();
 
-    if (hist->GetDimension() == 1) {
+    if (hist->GetDimension() == kOneDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPt);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt()));
-    } else if (hist->GetDimension() == 2) {
+    } else if (hist->GetDimension() == kTwoDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRap);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap));
-    } else if (hist->GetDimension() == 3) {
+    } else if (hist->GetDimension() == kThreeDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapPhi);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap, v0.phi()));
     } else {
