@@ -61,10 +61,9 @@
 #include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
 
-//from phi
+// from phi
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "Common/DataModel/PIDResponseITS.h"
-
 
 using namespace o2;
 using namespace o2::framework;
@@ -127,7 +126,7 @@ struct f0980pbpbanalysis {
   Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
   Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
 
-  //for phi test
+  // for phi test
   Configurable<bool> cfgTPCFinableClsSel{"cfgTPCFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
   Configurable<bool> cfgITSClsSel{"cfgITSClsSel", false, "ITS cluster selection flag"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
@@ -136,7 +135,6 @@ struct f0980pbpbanalysis {
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> isDeepAngle{"isDeepAngle", true, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
-
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
@@ -168,10 +166,10 @@ struct f0980pbpbanalysis {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
   Filter cutDCAFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
-  //from phi
-  // Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCentSel;
-  // Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < cMaxTPCnSigmaPion;
-  // Filter PIDcutFilter = nabs(aod::pidTPCFullKa::tpcNSigmaKa) < cMaxTPCnSigmaPion;
+  // from phi
+  //  Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCentSel;
+  //  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < cMaxTPCnSigmaPion;
+  //  Filter PIDcutFilter = nabs(aod::pidTPCFullKa::tpcNSigmaKa) < cMaxTPCnSigmaPion;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::EPCalibrationTables>>;
   // aod::EPCalibrationTables 추가됨
@@ -264,7 +262,7 @@ struct f0980pbpbanalysis {
     }
     if (track.tpcNClsFound() < cfgTPCcluster) {
       return 0;
-    }      
+    }
     if (cfgTPCFinableClsSel && track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
       return 0;
     }
@@ -388,7 +386,7 @@ struct f0980pbpbanalysis {
       }
 
       if (!selectionPID(trk1)) {
-          continue;
+        continue;
       }
 
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), getTpcNSigma(trk1));
