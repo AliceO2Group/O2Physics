@@ -84,7 +84,6 @@ struct JetSpectraCharged {
   Configurable<int> acceptSplitCollisions{"acceptSplitCollisions", 0, "0: only look at mcCollisions that are not split; 1: accept split mcCollisions, 2: accept split mcCollisions but only look at the first reco collision associated with it"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection can also be applied at the jet finder level for jets only, here rejection is applied for collision and track process functions for the first time, and on jets in case it was set to false at the jet finder level"};
   Configurable<bool> checkLeadConstituentPtForMcpJets{"checkLeadConstituentPtForMcpJets", false, "flag to choose whether particle level jets should have their lead track pt above leadingConstituentPtMin to be accepted; off by default, as leadingConstituentPtMin cut is only applied on MCD jets for the Pb-Pb analysis using pp MC anchored to Pb-Pb for the response matrix"};
-  Configurable<bool> checkMcdEtaForMatchedJets{"checkMcdEtaForMatchedJets", false, "flag to choose whether matched jets should have the eta of the mcd jet within acceptance; off by default, as it sould not be checked for mcd jets for efficiency and response matrix: https://alice-notes.web.cern.ch/system/files/notes/analysis/34/2013-Sep-19-analysis_note-AnalysisNoteChargedJets.pdf"};
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
@@ -165,6 +164,13 @@ struct JetSpectraCharged {
       registry.add("h2_jet_pt_part_track_pt_part", "part jet #it{p}_{T,jet} vs. #it{p}_{T,track}; #it{p}_{T,jet}^{part} (GeV/#it{c}); #it{p}_{T,track}^{part} (GeV/#it{c})", {HistType::kTH2F, {jetPtAxisRhoAreaSub, trackPtAxis}});
       registry.add("h3_jet_pt_jet_eta_jet_phi_part", "part jet pt vs. eta vs. phi", {HistType::kTH3F, {jetPtAxis, jetEtaAxis, phiAxis}});
       if (doprocessSpectraMCPWeighted) {
+        registry.add("h_mcColl_counts_weight", " number of weighted mc events; event status; entries", {HistType::kTH1F, {{10, 0, 10}}});
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(1, "allMcColl");
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(2, "vertexZ");
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(3, "noRecoColl");
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(4, "recoEvtSel");
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(5, "centralitycut");
+        registry.get<TH1>(HIST("h_mcColl_counts_weight"))->GetXaxis()->SetBinLabel(6, "occupancycut");
         registry.add("h2_jet_ptcut_part", "p_{T} cut;p_{T,jet}^{part} (GeV/#it{c});N;entries", {HistType::kTH2F, {{300, 0, 300}, {20, 0, 5}}});
         registry.add("h_jet_phat_part_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
       }
@@ -515,7 +521,7 @@ struct JetSpectraCharged {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      fillTrackHistograms(track, collision.centrality());
+      fillTrackHistograms(track);
     }
   }
   PROCESS_SWITCH(JetSpectraCharged, processQC, "collisions and track QC for Data and MCD", false);
@@ -831,16 +837,20 @@ struct JetSpectraCharged {
                                  aod::JetParticles const&)
   {
     bool mcLevelIsParticleLevel = true;
+    float eventWeight = mccollision.weight();
 
     registry.fill(HIST("h_mcColl_counts"), 0.5);
+    registry.fill(HIST("h_mcColl_counts_weight"), 0.5, eventWeight);
     if (std::abs(mccollision.posZ()) > vertexZCut) {
       return;
     }
     registry.fill(HIST("h_mcColl_counts"), 1.5);
+    registry.fill(HIST("h_mcColl_counts_weight"), 1.5, eventWeight);
     if (collisions.size() < 1) {
       return;
     }
     registry.fill(HIST("h_mcColl_counts"), 2.5);
+    registry.fill(HIST("h_mcColl_counts_weight"), 2.5, eventWeight);
 
     bool hasSel8Coll = false;
     for (auto const& collision : collisions) {
@@ -852,7 +862,7 @@ struct JetSpectraCharged {
       return;
     }
     registry.fill(HIST("h_mcColl_counts"), 3.5);
-    registry.fill(HIST("h_mc_zvertex"), mccollision.posZ());
+    registry.fill(HIST("h_mcColl_counts_weight"), 3.5, eventWeight);
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
