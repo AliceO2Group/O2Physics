@@ -40,54 +40,40 @@ using namespace o2::framework;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-static constexpr int kRun2V0Ms = 0;
-static constexpr int kRun2V0As = 1;
-static constexpr int kRun2SPDTrks = 2;
-static constexpr int kRun2SPDClss = 3;
-static constexpr int kRun2CL0s = 4;
-static constexpr int kRun2CL1s = 5;
-static constexpr int kFV0As = 6;
-static constexpr int kFT0Ms = 7;
-static constexpr int kFT0As = 8;
-static constexpr int kFT0Cs = 9;
-static constexpr int kFT0CVariant1s = 10;
-static constexpr int kFDDMs = 11;
-static constexpr int kNTPVs = 12;
-static constexpr int kNGlobals = 13;
-static constexpr int kMFTs = 14;
+static constexpr int kCentRun2V0Ms = 0;
+static constexpr int kCentRun2V0As = 1;
+static constexpr int kCentRun2SPDTrks = 2;
+static constexpr int kCentRun2SPDClss = 3;
+static constexpr int kCentRun2CL0s = 4;
+static constexpr int kCentRun2CL1s = 5;
+static constexpr int kCentFV0As = 6;
+static constexpr int kCentFT0Ms = 7;
+static constexpr int kCentFT0As = 8;
+static constexpr int kCentFT0Cs = 9;
+static constexpr int kCentFT0CVariant1s = 10;
+static constexpr int kCentFDDMs = 11;
+static constexpr int kCentNTPVs = 12;
+static constexpr int kCentNGlobals = 13;
+static constexpr int kCentMFTs = 14;
 static constexpr int NTables = 15;
-static constexpr int kNParameters = 1;
-static const std::vector<std::string> tableNamesCentrality{"CentRun2V0Ms", // 0
-                                                 "CentRun2V0As", // 1
-                                                 "CentRun2SPDTrks", // 2
-                                                 "CentRun2SPDClss", // 3
-                                                 "CentRun2CL0s", // 4
-                                                 "CentRun2CL1s", // 5
-                                                 "CentFV0As", // 6 
-                                                 "CentFT0Ms", // 7
-                                                 "CentFT0As", // 8
-                                                 "CentFT0Cs", // 9
-                                                 "CentFT0CVariant1s", // 10
-                                                 "CentFDDMs", // 11
-                                                 "CentNTPVs", // 12
-                                                 "CentNGlobals", // 13
+static constexpr int NParameters = 1;
+static const std::vector<std::string> tableNames{"CentRun2V0Ms",
+                                                 "CentRun2V0As",
+                                                 "CentRun2SPDTrks",
+                                                 "CentRun2SPDClss",
+                                                 "CentRun2CL0s",
+                                                 "CentRun2CL1s",
+                                                 "CentFV0As",
+                                                 "CentFT0Ms",
+                                                 "CentFT0As",
+                                                 "CentFT0Cs",
+                                                 "CentFT0CVariant1s",
+                                                 "CentFDDMs",
+                                                 "CentNTPVs",
+                                                 "CentNGlobals",
                                                  "CentMFTs"};
-static const std::vector<std::string> tableNamesMultiplicity{"FV0Mults",       // 0
-                                                  "FT0Mults",       // 1
-                                                  "FDDMults",       // 2
-                                                  "ZDCMults",       // 3
-                                                  "TrackletMults",  // 4
-                                                  "TPCMults",       // 5
-                                                  "PVMults",        // 6
-                                                  "MultsExtra",     // 7
-                                                  "MultSelections", // 8
-                                                  "FV0MultZeqs",    // 9
-                                                  "FT0MultZeqs",    // 10
-                                                  "FDDMultZeqs",    // 11
-                                                  "PVMultZeqs",     // 12
-                                                  "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[NTables][kNParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[NTables][NParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct CentralityTable {
   Produces<aod::CentRun2V0Ms> centRun2V0M;
@@ -106,8 +92,8 @@ struct CentralityTable {
   Produces<aod::CentNGlobals> centNGlobals;
   Produces<aod::CentMFTs> centMFTs;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
-                                                {defaultParameters[0], NTables, kNParameters, tableNamesCentrality, parameterNames},
+  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
+                                                {defaultParameters[0], NTables, NParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
   struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
@@ -218,16 +204,16 @@ struct CentralityTable {
 
     /* Checking the tables which are requested in the workflow and enabling them */
     for (int i = 0; i < NTables; i++) {
-      int f = enabledCentralityTables->get(tableNamesCentrality[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNamesCentrality[i], f);
+      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, tableNames[i], f);
       if (f == 1) {
-        if (tableNamesCentrality[i].find("Run2") != std::string::npos) {
+        if (tableNames[i].find("Run2") != std::string::npos) {
           if (doprocessRun3) {
-            LOG(fatal) << "Cannot enable Run2 table `" << tableNamesCentrality[i] << "` while running in Run3 mode. Please check and disable them.";
+            LOG(fatal) << "Cannot enable Run2 table `" << tableNames[i] << "` while running in Run3 mode. Please check and disable them.";
           }
         } else {
           if (doprocessRun2) {
-            LOG(fatal) << "Cannot enable Run3 table `" << tableNamesCentrality[i] << "` while running in Run2 mode. Please check and disable them.";
+            LOG(fatal) << "Cannot enable Run3 table `" << tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
         isTableEnabled[i] = true;
@@ -241,7 +227,7 @@ struct CentralityTable {
     std::sort(mEnabledTables.begin(), mEnabledTables.end());
 
     // Check if FT0 is the only centrality needed
-    if (mEnabledTables.size() == 1 && isTableEnabled[kFT0Ms] == true) {
+    if (mEnabledTables.size() == 1 && isTableEnabled[kCentFT0Ms] == true) {
       LOG(info) << "FT0 only mode is enabled";
       doprocessRun3FT0.value = true;
       doprocessRun3.value = false;
@@ -315,7 +301,7 @@ struct CentralityTable {
           TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
           return f;
         };
-        if (isTableEnabled[kRun2V0Ms]) {
+        if (isTableEnabled[kCentRun2V0Ms]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
           Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
@@ -344,7 +330,7 @@ struct CentralityTable {
             }
           }
         }
-        if (isTableEnabled[kRun2V0As]) {
+        if (isTableEnabled[kCentRun2V0As]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2V0AInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
           Run2V0AInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0A");
@@ -358,7 +344,7 @@ struct CentralityTable {
             }
           }
         }
-        if (isTableEnabled[kRun2SPDTrks]) {
+        if (isTableEnabled[kCentRun2SPDTrks]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2SPDTksInfo.mhVtxAmpCorr = getccdb("hVtx_fnTracklets_Normalized");
           Run2SPDTksInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDTracklets");
@@ -372,7 +358,7 @@ struct CentralityTable {
             }
           }
         }
-        if (isTableEnabled[kRun2SPDClss]) {
+        if (isTableEnabled[kCentRun2SPDClss]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2SPDClsInfo.mhVtxAmpCorrCL0 = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2SPDClsInfo.mhVtxAmpCorrCL1 = getccdb("hVtx_fnSPDClusters1_Normalized");
@@ -387,7 +373,7 @@ struct CentralityTable {
             }
           }
         }
-        if (isTableEnabled[kRun2CL0s]) {
+        if (isTableEnabled[kCentRun2CL0s]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
           Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
@@ -401,7 +387,7 @@ struct CentralityTable {
             }
           }
         }
-        if (isTableEnabled[kRun2CL1s]) {
+        if (isTableEnabled[kCentRun2CL1s]) {
           LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
           Run2CL1Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters1_Normalized");
           Run2CL1Info.mhMultSelCalib = getccdb("hMultSelCalib_CL1");
@@ -428,7 +414,7 @@ struct CentralityTable {
       return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
-    if (isTableEnabled[kRun2V0Ms]) {
+    if (isTableEnabled[kCentRun2V0Ms]) {
       float cV0M = 105.0f;
       if (Run2V0MInfo.mCalibrationStored) {
         float v0m;
@@ -445,7 +431,7 @@ struct CentralityTable {
       // fill centrality columns
       centRun2V0M(cV0M);
     }
-    if (isTableEnabled[kRun2V0As]) {
+    if (isTableEnabled[kCentRun2V0As]) {
       float cV0A = 105.0f;
       if (Run2V0AInfo.mCalibrationStored) {
         float v0a = collision.multFV0A() * Run2V0AInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0AInfo.mhVtxAmpCorrV0A->FindFixBin(collision.posZ()));
@@ -455,7 +441,7 @@ struct CentralityTable {
       // fill centrality columns
       centRun2V0A(cV0A);
     }
-    if (isTableEnabled[kRun2SPDTrks]) {
+    if (isTableEnabled[kCentRun2SPDTrks]) {
       float cSPD = 105.0f;
       if (Run2SPDTksInfo.mCalibrationStored) {
         float spdm = collision.multTracklets() * Run2SPDTksInfo.mhVtxAmpCorr->GetBinContent(Run2SPDTksInfo.mhVtxAmpCorr->FindFixBin(collision.posZ()));
@@ -464,7 +450,7 @@ struct CentralityTable {
       LOGF(debug, "centSPDTracklets=%.0f", cSPD);
       centRun2SPDTracklets(cSPD);
     }
-    if (isTableEnabled[kRun2SPDClss]) {
+    if (isTableEnabled[kCentRun2SPDClss]) {
       float cSPD = 105.0f;
       if (Run2SPDClsInfo.mCalibrationStored) {
         float spdm = bc.spdClustersL0() * Run2SPDClsInfo.mhVtxAmpCorrCL0->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL0->FindFixBin(collision.posZ())) +
@@ -474,7 +460,7 @@ struct CentralityTable {
       LOGF(debug, "centSPDClusters=%.0f", cSPD);
       centRun2SPDClusters(cSPD);
     }
-    if (isTableEnabled[kRun2CL0s]) {
+    if (isTableEnabled[kCentRun2CL0s]) {
       float cCL0 = 105.0f;
       if (Run2CL0Info.mCalibrationStored) {
         float cl0m = bc.spdClustersL0() * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(collision.posZ()));
@@ -483,7 +469,7 @@ struct CentralityTable {
       LOGF(debug, "centCL0=%.0f", cCL0);
       centRun2CL0(cCL0);
     }
-    if (isTableEnabled[kRun2CL1s]) {
+    if (isTableEnabled[kCentRun2CL1s]) {
       float cCL1 = 105.0f;
       if (Run2CL1Info.mCalibrationStored) {
         float cl1m = bc.spdClustersL1() * Run2CL1Info.mhVtxAmpCorr->GetBinContent(Run2CL1Info.mhVtxAmpCorr->FindFixBin(collision.posZ()));
@@ -508,31 +494,31 @@ struct CentralityTable {
     // do memory reservation for the relevant tables only, please
     for (auto const& table : mEnabledTables) {
       switch (table) {
-        case kFV0As:
+        case kCentFV0As:
           centFV0A.reserve(collisions.size());
           break;
-        case kFT0Ms:
+        case kCentFT0Ms:
           centFT0M.reserve(collisions.size());
           break;
-        case kFT0As:
+        case kCentFT0As:
           centFT0A.reserve(collisions.size());
           break;
-        case kFT0Cs:
+        case kCentFT0Cs:
           centFT0C.reserve(collisions.size());
           break;
-        case kFT0CVariant1s:
+        case kCentFT0CVariant1s:
           centFT0CVariant1.reserve(collisions.size());
           break;
-        case kFDDMs:
+        case kCentFDDMs:
           centFDDM.reserve(collisions.size());
           break;
-        case kNTPVs:
+        case kCentNTPVs:
           centNTPV.reserve(collisions.size());
           break;
-        case kNGlobals:
+        case kCentNGlobals:
           centNGlobals.reserve(collisions.size());
           break;
-        case kMFTs:
+        case kCentMFTs:
           centMFTs.reserve(collisions.size());
           break;
         default:
@@ -610,31 +596,31 @@ struct CentralityTable {
 
           for (auto const& table : mEnabledTables) {
             switch (table) {
-              case kFV0As:
+              case kCentFV0As:
                 getccdb(fv0aInfo, ccdbConfig.genName);
                 break;
-              case kFT0Ms:
+              case kCentFT0Ms:
                 getccdb(ft0mInfo, ccdbConfig.genName);
                 break;
-              case kFT0As:
+              case kCentFT0As:
                 getccdb(ft0aInfo, ccdbConfig.genName);
                 break;
-              case kFT0Cs:
+              case kCentFT0Cs:
                 getccdb(ft0cInfo, ccdbConfig.genName);
                 break;
-              case kFT0CVariant1s:
+              case kCentFT0CVariant1s:
                 getccdb(ft0cVariant1Info, ccdbConfig.genName);
                 break;
-              case kFDDMs:
+              case kCentFDDMs:
                 getccdb(fddmInfo, ccdbConfig.genName);
                 break;
-              case kNTPVs:
+              case kCentNTPVs:
                 getccdb(ntpvInfo, ccdbConfig.genName);
                 break;
-              case kNGlobals:
+              case kCentNGlobals:
                 getccdb(nGlobalInfo, ccdbConfig.genName);
                 break;
-              case kMFTs:
+              case kCentMFTs:
                 getccdb(mftInfo, ccdbConfig.genName);
                 break;
               default:
@@ -683,12 +669,12 @@ struct CentralityTable {
 
       for (auto const& table : mEnabledTables) {
         switch (table) {
-          case kFV0As:
+          case kCentFV0As:
             if constexpr (enableCentFV0) {
               populateTable(centFV0A, fv0aInfo, collision.multZeqFV0A());
             }
             break;
-          case kFT0Ms:
+          case kCentFT0Ms:
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0M, ft0mInfo, collision.multZeqFT0A() + collision.multZeqFT0C());
               if (produceHistograms.value) {
@@ -703,7 +689,7 @@ struct CentralityTable {
               }
             }
             break;
-          case kFT0As:
+          case kCentFT0As:
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0A, ft0aInfo, collision.multZeqFT0A());
               if (produceHistograms.value) {
@@ -718,7 +704,7 @@ struct CentralityTable {
               }
             }
             break;
-          case kFT0Cs:
+          case kCentFT0Cs:
             if constexpr (enableCentFT0) {
               const float perC = populateTable(centFT0C, ft0cInfo, collision.multZeqFT0C());
               if (produceHistograms.value) {
@@ -733,27 +719,27 @@ struct CentralityTable {
               }
             }
             break;
-          case kFT0CVariant1s:
+          case kCentFT0CVariant1s:
             if constexpr (enableCentFT0) {
               populateTable(centFT0CVariant1, ft0cVariant1Info, collision.multZeqFT0C());
             }
             break;
-          case kFDDMs:
+          case kCentFDDMs:
             if constexpr (enableCentFDD) {
               populateTable(centFDDM, fddmInfo, collision.multZeqFDDA() + collision.multZeqFDDC());
             }
             break;
-          case kNTPVs:
+          case kCentNTPVs:
             if constexpr (enableCentNTPV) {
               populateTable(centNTPV, ntpvInfo, collision.multZeqNTracksPV());
             }
             break;
-          case kNGlobals:
+          case kCentNGlobals:
             if constexpr (enableCentNGlobal) {
               populateTable(centNGlobals, nGlobalInfo, collision.multNTracksGlobal());
             }
             break;
-          case kMFTs:
+          case kCentMFTs:
             if constexpr (enableCentMFT) {
               populateTable(centMFTs, mftInfo, collision.mftNtracks());
             }
