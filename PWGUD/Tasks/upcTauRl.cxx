@@ -79,9 +79,13 @@ DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
 DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
 DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
 DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 // tracks
 DECLARE_SOA_COLUMN(TrkPx, trkPx, float[2]);
 DECLARE_SOA_COLUMN(TrkPy, trkPy, float[2]);
@@ -90,6 +94,8 @@ DECLARE_SOA_COLUMN(TrkSign, trkSign, int[2]);
 DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[2]);
 DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[2]);
 DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float[2]);
+DECLARE_SOA_COLUMN(Trk1ITSclusterSizes, trk1ITSclusterSizes, uint32_t);
+DECLARE_SOA_COLUMN(Trk2ITSclusterSizes, trk2ITSclusterSizes, uint32_t);
 DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[2]);
@@ -103,18 +109,19 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCexpMom, trkTPCexpMom, float[2]);
+DECLARE_SOA_COLUMN(TrkTOFexpMom, trkTOFexpMom, float[2]);
 
 } // namespace tau_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
                   tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
                   tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
-                  tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
-                  tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
+                  tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA, tau_tree::EnergyCommonZNA, tau_tree::EnergyCommonZNC,
+                  tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A, tau_tree::TimeZNA, tau_tree::TimeZNC,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
+                  tau_tree::Trk1ITSclusterSizes, tau_tree::Trk2ITSclusterSizes,
                   tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
-                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTPCexpMom);
+                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTOFexpMom);
 
 } // namespace o2::aod
 
@@ -2117,6 +2124,8 @@ struct UpcTauRl {
       float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
       float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
       float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
+      uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
+      uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
       float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
       float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
       float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
@@ -2131,13 +2140,21 @@ struct UpcTauRl {
       float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
       float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
+      float ZNinfo[4] = {-999., -999., -999., -999.};
+      if constexpr (requires { collision.udZdcsReduced(); }) {
+        ZNinfo[0] = collision.energyCommonZNA();
+        ZNinfo[1] = collision.energyCommonZNC();
+        ZNinfo[2] = collision.timeZNA();
+        ZNinfo[3] = collision.timeZNC();
+      }
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
                    collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
                    collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
-                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(),
-                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), ZNinfo[0], ZNinfo[1],
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), ZNinfo[2], ZNinfo[3],
                    px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+                   itsClusterSizesTrk1, itsClusterSizesTrk2,
                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
     } else {
