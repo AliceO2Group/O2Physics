@@ -119,7 +119,7 @@ DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA, tau_tree::EnergyCommonZNA, tau_tree::EnergyCommonZNC,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A, tau_tree::TimeZNA, tau_tree::TimeZNC,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
-									tau_tree::Trk1ITSclusterSizes, tau_tree::Trk2ITSclusterSizes,
+                  tau_tree::Trk1ITSclusterSizes, tau_tree::Trk2ITSclusterSizes,
                   tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
                   tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTOFexpMom);
 
@@ -2124,8 +2124,8 @@ struct UpcTauRl {
       float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
       float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
       float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
-	    uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
-	    uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
+      uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
+      uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
       float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
       float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
       float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
@@ -2140,14 +2140,13 @@ struct UpcTauRl {
       float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
       float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
-			float ZNinfo[4] = {-999.,-999.,-999.,-999.};
-	    if constexpr (requires { collision.udZdcsReduced(); }) {
-	      ZNinfo[0] = collision.energyCommonZNA();
-	      ZNinfo[1] = collision.energyCommonZNC();
-	      ZNinfo[2] = collision.timeZNA();
-	      ZNinfo[3] = collision.timeZNC();
-			}
-
+      float ZNinfo[4] = {-999., -999., -999., -999.};
+      if constexpr (requires { collision.udZdcsReduced(); }) {
+        ZNinfo[0] = collision.energyCommonZNA();
+        ZNinfo[1] = collision.energyCommonZNC();
+        ZNinfo[2] = collision.timeZNA();
+        ZNinfo[3] = collision.timeZNC();
+      }
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
                    collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
