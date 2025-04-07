@@ -90,6 +90,7 @@ DECLARE_SOA_COLUMN(TrkSign, trkSign, int[2]);
 DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[2]);
 DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[2]);
 DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float[2]);
+DECLARE_SOA_COLUMN(TrkITSclusterSizes, trkITSclusterSizes, uint32_t[2]);
 DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[2]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[2]);
@@ -112,7 +113,7 @@ DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
                   tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
-                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
+                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes, tau_tree::TrkITSclusterSizes,
                   tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
                   tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTPCexpMom);
 
@@ -2117,6 +2118,7 @@ struct UpcTauRl {
       float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
       float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
       float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
+	    float itsClusterSizes[2] = {trk1.itsClusterSizes(), trk2.itsClusterSizes()};
       float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
       float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
       float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
