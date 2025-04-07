@@ -30,12 +30,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/McCollisionExtra.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/Core/FastJetUtilities.h"
+#include "Common/Core/RecoDecay.h"
 
 #include "fastjet/PseudoJet.hh"
 #include "fastjet/AreaDefinition.hh"
@@ -83,8 +78,8 @@ struct AngularCorrelationsInJets {
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0, "max chi2 per cluster TPC"};
   Configurable<float> maxDCAxy{"maxDCAxy", 0.05, "max DCA to vertex xy"};
   Configurable<float> maxDCAz{"maxDCAz", 0.05, "max DCA to vertex z"};
-  Configurable<float> maxEta{"maxEta", 0.8, "max pseudorapidity"};                                        // consider jet cone
-  Configurable<float> deltaEtaEdge{"deltaEtaEdge", 0.05, "min eta distance of jet from acceptance edge"}; // consider jet cone
+  Configurable<float> maxEta{"maxEta", 0.8, "max pseudorapidity"};
+  Configurable<float> deltaEtaEdge{"deltaEtaEdge", 0.05, "min eta distance of jet from acceptance edge"};
   Configurable<float> minTrackPt{"minTrackPt", 0.3, "minimum track pT"};
   Configurable<float> requirePVContributor{"requirePVContributor", false, "require track to be PV contributor"};
 
@@ -153,28 +148,31 @@ struct AngularCorrelationsInJets {
   Configurable<float> zVtx{"zVtx", 10.0, "max zVertex"};
   Configurable<float> rMax{"rMax", 0.4, "Maximum radius for jet and UE regions"};
 
+  double maxDCAzForFilter = 2.0;
+  double maxEtaForFilter = 0.8;
+  double minTrackPtForFilter = 0.1;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
 
   using FullTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
                                    aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using FullTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                   aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
+                                      aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa>;
   using McTracksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TOFSignal, aod::TOFEvTime, aod::TrackSelection,
                                  aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using McTracksRun3 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TrackSelection, aod::TrackSelectionExtension,
-                                 aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
+                                    aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCTr, aod::pidTPCAl, aod::pidTOFPi, aod::pidTOFKa, aod::McTrackLabels>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   using McCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 
   Filter prelimTrackCuts = (aod::track::itsChi2NCl < maxChi2ITS &&
                             aod::track::tpcChi2NCl < maxChi2TPC &&
                             nabs(aod::track::dcaXY) < maxDCAxy &&
-                            nabs(aod::track::dcaZ) < 2.0f &&
-                            nabs(aod::track::eta) < 0.8f &&
-                            aod::track::pt > 0.1f); // add more preliminary cuts to filter if possible
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < zVtx);
-
+                            nabs(aod::track::dcaZ) < maxDCAzForFilter &&
+                            nabs(aod::track::eta) < maxEtaForFilter &&
+                            aod::track::pt > minTrackPtForFilter); // add more preliminary cuts to filter if possible
+  
   Preslice<FullTracksRun2> perCollisionFullTracksRun2 = o2::aod::track::collisionId;
   Preslice<FullTracksRun3> perCollisionFullTracksRun3 = o2::aod::track::collisionId;
   Preslice<McTracksRun2> perCollisionMcTracksRun2 = o2::aod::track::collisionId;
@@ -196,8 +194,6 @@ struct AngularCorrelationsInJets {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-
-    eventSelection = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>("sel8"));
 
     // Counters
     registryData.add("numberOfEvents", "Number of events", HistType::kTH1I, {{1, 0, 1}});
@@ -377,11 +373,13 @@ struct AngularCorrelationsInJets {
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    int minCrossedRowsForJetReco = 70;
+    if (track.tpcNClsCrossedRows() < minCrossedRowsForJetReco)
       return false;
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
+    double minRatioCrRowsFindableJetReco = 0.8;
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minRatioCrRowsFindableJetReco)
       return false;
     if (std::fabs(track.dcaXY()) > (0.0105 + 0.035 / std::pow(track.pt(), 1.1)))
       return false;
@@ -437,7 +435,7 @@ struct AngularCorrelationsInJets {
       return false;
 
     double pt = track.pt();
-
+    
     // DCA
     double maxDCApt = 1.2;
     if (pt < maxDCApt) {
@@ -450,7 +448,7 @@ struct AngularCorrelationsInJets {
     // nsigma
     double midPt = 1.5;
     double highPt = 3.0;
-
+    
     double maxTPCnsigma = protonTPCnsigma;
     double maxTOFnsigma = protonTOFnsigma;
     if (pt > midPt) {
@@ -463,7 +461,7 @@ struct AngularCorrelationsInJets {
     }
 
     registryData.fill(HIST("tpcNSigmaProtonCF"), track.pt(), track.tpcNSigmaPr());
-    if (pt < protonTPCTOFpT && (std::abs(track.tpcNSigmaPr() > maxTPCnsigma)))
+    if (pt < protonTPCTOFpT && (std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     double tofNSigma = 999;
@@ -471,16 +469,16 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("tofNSigmaProtonCF"), track.pt(), track.tofNSigmaPr());
       tofNSigma = track.tofNSigmaPr();
     }
-
-    if (pt > protonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr() > maxTPCnsigma)))
+    
+    if (pt > protonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     if (useRejectionCut && !singleSpeciesTPCNSigma(track))
       return false;
-
+    
     return true;
   }
-
+  
   template <typename T>
   bool isProtonForYield(const T& track)
   {
@@ -518,7 +516,7 @@ struct AngularCorrelationsInJets {
       return false;
 
     double pt = track.pt();
-
+  
     // DCA
     double maxDCApt = 1.2;
     if (pt < maxDCApt) {
@@ -531,7 +529,7 @@ struct AngularCorrelationsInJets {
     // nsigma
     double midPt = 1.5;
     double highPt = 3.0;
-
+    
     double maxTPCnsigma = antiprotonTPCnsigma;
     double maxTOFnsigma = antiprotonTOFnsigma;
     if (pt > midPt) {
@@ -544,7 +542,7 @@ struct AngularCorrelationsInJets {
     }
 
     registryData.fill(HIST("tpcNSigmaAntiprotonCF"), track.pt(), track.tpcNSigmaPr());
-    if (pt < antiprotonTPCTOFpT && (std::abs(track.tpcNSigmaPr() > maxTPCnsigma)))
+    if (pt < antiprotonTPCTOFpT && (std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     double tofNSigma = 999;
@@ -552,13 +550,13 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("tofNSigmaAntiprotonCF"), track.pt(), track.tofNSigmaPr());
       tofNSigma = track.tofNSigmaPr();
     }
-
-    if (pt > antiprotonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr() > maxTPCnsigma)))
+    
+    if (pt > antiprotonTPCTOFpT && ((std::abs(tofNSigma) > maxTOFnsigma) || std::abs(track.tpcNSigmaPr()) > maxTPCnsigma))
       return false;
 
     if (useRejectionCut && !singleSpeciesTPCNSigma(track))
       return false;
-
+    
     return true;
   }
 
@@ -896,7 +894,8 @@ struct AngularCorrelationsInJets {
 
   double getDeltaPhi(double a1, double a2)
   {
-    if (std::isnan(a1) || std::isnan(a2) || a1 == -999 || a2 == -999)
+    double failedPhi = -999;
+    if (std::isnan(a1) || std::isnan(a2) || a1 == failedPhi || a2 == failedPhi)
       return -999;
     double deltaPhi(0);
     double phi1 = RecoDecay::constrainAngle(a1, 0);
@@ -1039,21 +1038,21 @@ struct AngularCorrelationsInJets {
         double deltaEtaUE2 = particleDir.Eta() - ueAxis2.Eta();
         double deltaPhiUE2 = getDeltaPhi(particleDir.Phi(), ueAxis2.Phi());
         double deltaRUE2 = std::abs(deltaEtaUE2 * deltaEtaUE2 + deltaPhiUE2 * deltaPhiUE2);
-
+        double failedPhi = -999;
         if (deltaRJet < rMax) {
-          if (deltaPhiJet != -999)
+          if (deltaPhiJet != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiJet"), deltaEtaJet, deltaPhiJet);
           nchJetPlusUE++;
           ptJetPlusUE = ptJetPlusUE + track.pt();
         }
         if (deltaRUE1 < rMax) {
-          if (deltaPhiUE1 != -999)
+          if (deltaPhiUE1 != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEtaUE1, deltaPhiUE1);
           nchUE++;
           ptUE = ptUE + track.pt();
         }
         if (deltaRUE2 < rMax) {
-          if (deltaPhiUE2 != -999)
+          if (deltaPhiUE2 != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEtaUE2, deltaPhiUE2);
           nchUE++;
           ptUE = ptUE + track.pt();
@@ -1120,7 +1119,7 @@ struct AngularCorrelationsInJets {
         if (isProtonForYield(jetParticle)) { // collect protons in jet
           registryData.fill(HIST("ptJetProton"), jetParticle.pt());
           registryQC.fill(HIST("ptJetProtonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
-          registryData.fill(HIST("trackProtocol"), 3);  // # protons
+          registryData.fill(HIST("trackProtocol"), 3); // # protons
         } else if (isAntiprotonForYield(jetParticle)) { // collect antiprotons in jet
           registryData.fill(HIST("ptJetAntiproton"), jetParticle.pt());
           registryQC.fill(HIST("ptJetAntiprotonVsTotalJet"), jetParticle.pt(), subtractedJetPerp.pt());
@@ -1177,7 +1176,8 @@ struct AngularCorrelationsInJets {
       doCorrelationsAnti(jetProtons, jetAntiprotons, fBufferAntiproton, fTempBufferProton, pJet);
       doCorrelationsAnti(jetAntiprotons, jetProtons, fBufferProton, fTempBufferAntiproton, pJet); // divide SE distributions by 2 in post
     }
-    if ((jetProtons.size() < 2) && (jetAntiprotons.size() < 2) && (jetPiPlus.size() < 2) && (jetPiMinus.size() < 2))
+    long unsigned int minNumPartForCorrelations = 2;
+    if ((jetProtons.size() < minNumPartForCorrelations) && (jetAntiprotons.size() < minNumPartForCorrelations) && (jetPiPlus.size() < minNumPartForCorrelations) && (jetPiMinus.size() < minNumPartForCorrelations))
       return jetCounter;
     registryData.fill(HIST("eventProtocol"), 6);
 
@@ -1262,7 +1262,8 @@ struct AngularCorrelationsInJets {
       index++;
     } // for (const auto& track : tracks)
 
-    if (jetInput.size() < 2)
+    long unsigned int minNumPartForJetReco = 2;
+    if (jetInput.size() < minNumPartForJetReco)
       return;
     registryData.fill(HIST("eventProtocol"), 2);
 
@@ -1335,7 +1336,8 @@ struct AngularCorrelationsInJets {
       index++;
     } // for (const auto& track : tracks)
 
-    if (jetInput.size() < 2)
+    long unsigned int minNumPartForJetReco = 2;
+    if (jetInput.size() < minNumPartForJetReco)
       return;
     registryData.fill(HIST("eventProtocol"), 2);
 
@@ -1433,20 +1435,21 @@ struct AngularCorrelationsInJets {
         double deltaPhiUE2 = getDeltaPhi(particleDir.Phi(), ueAxis2.Phi());
         double deltaRUE2 = std::abs(deltaEtaUE2 * deltaEtaUE2 + deltaPhiUE2 * deltaPhiUE2);
 
+        double failedPhi = -999;
         if (deltaRJet < rMax) {
-          if (deltaPhiJet != -999)
+          if (deltaPhiJet != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiJet"), deltaEtaJet, deltaPhiJet);
           nchJetPlusUE++;
           ptJetPlusUE = ptJetPlusUE + track.pt();
         }
         if (deltaRUE1 < rMax) {
-          if (deltaPhiUE1 != -999)
+          if (deltaPhiUE1 != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEtaUE1, deltaPhiUE1);
           nchUE++;
           ptUE = ptUE + track.pt();
         }
         if (deltaRUE2 < rMax) {
-          if (deltaPhiUE2 != -999)
+          if (deltaPhiUE2 != failedPhi)
             registryQC.fill(HIST("deltaEtadeltaPhiUE"), deltaEtaUE2, deltaPhiUE2);
           nchUE++;
           ptUE = ptUE + track.pt();
@@ -1576,8 +1579,8 @@ struct AngularCorrelationsInJets {
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   soa::Filtered<FullTracksRun2> const& tracks,
-                   BCsWithRun2Info const&)
+                      soa::Filtered<FullTracksRun2> const& tracks,
+                      BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1597,7 +1600,7 @@ struct AngularCorrelationsInJets {
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun2, "process Run 2 data w/o jet tables", false);
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   soa::Filtered<FullTracksRun3> const& tracks)
+                      soa::Filtered<FullTracksRun3> const& tracks)
   {
     for (const auto& collision : collisions) {
       registryData.fill(HIST("eventProtocol"), 0);
