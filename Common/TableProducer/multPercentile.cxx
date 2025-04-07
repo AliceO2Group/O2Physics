@@ -130,6 +130,8 @@ struct multiplicityPercentile {
     SliceCache cache;
     // Services
     Service<o2::ccdb::BasicCCDBManager> ccdb;
+    Service<o2::framework::O2DatabasePDG> pdg;
+
 
 
     // Multiplicity tables
@@ -178,6 +180,10 @@ struct multiplicityPercentile {
   
 
 // Configuration
+Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
+Configurable<bool> autoSetupFromMetadata{"autoSetupFromMetadata", true, {"Autosetup the Run 2 and Run 3 processing from the metadata"}};
+
+
 struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
     Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
@@ -185,6 +191,54 @@ struct : ConfigurableGroup {
     Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
   } ccdbConfig;
+
+
+  // Configurable multiplicity
+  struct : ConfigurableGroup {
+  Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};                                         
+} multiplicityConfig;
+
+
+
+
+
+  // Configurable multiplicity
+  struct : ConfigurableGroup {
+
+  } centralityConfig;
+
+  int mRunNumber;
+  bool lCalibLoaded;
+  TList* lCalibObjects;
+  TProfile* hVtxZFV0A;
+  TProfile* hVtxZFT0A;
+  TProfile* hVtxZFT0C;
+  TProfile* hVtxZFDDA;
+
+  TProfile* hVtxZFDDC;
+  TProfile* hVtxZNTracks;
+  std::vector<int> mEnabledTables; // Vector of enabled tables
+
+  // Debug output
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
+
+  unsigned int randomSeed = 0;
+  void init(InitContext& context)
+  {
+  }
+
+  using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
+  Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
+
+  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
 
 }
