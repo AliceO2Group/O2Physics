@@ -46,7 +46,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   Service<o2::framework::O2DatabasePDG> pdgMC;
 
   SliceCache cache;
-  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDExtMCParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCParticles>;
@@ -995,7 +995,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractions, "Process MC data to obtain pair fractions for MC Reco", false);
 
-  void processPairFractionsMC(FilteredFDCollisions const& cols)
+  void processPairFractionsMCTruthTrackV0(FilteredFDCollisions const& cols)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
@@ -1016,7 +1016,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         int pdgCode2 = static_cast<int>(p2.pidCut());
         if ((confV0Type1 == 0 && pdgCode2 != kLambda0) || (confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
           continue;
-        registryMCtruth.fill(HIST("motherParticleMCTruth"), p1.motherPDG(), p2.motherPDG());
+        registryMCtruth.fill(HIST("motherParticleMCTruth"), p1.tempFitVar(), p2.tempFitVar());
       }
     };
 
@@ -1024,7 +1024,40 @@ struct FemtoUniversePairTaskTrackV0Extended {
       mixedCollProcessFunc(collision1, collision2);
     }
   }
-  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMC, "Process MC data to obtain pair fractions for MC Truth", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthTrackV0, "Process MC data to obtain pair fractions for MC Truth", false);
+
+  void processPairFractionsMCTruthV0V0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+
+    auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
+      auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        int pdgCode1 = static_cast<int>(p1.pidCut());
+        if ((confV0Type1 == 0 && pdgCode1 != kLambda0) || (confV0Type1 == 1 && pdgCode1 != kLambda0Bar))
+          continue;
+        int pdgCode2 = static_cast<int>(p2.pidCut());
+        if ((confV0Type2 == 0 && pdgCode2 != kLambda0) || (confV0Type2 == 1 && pdgCode2 != kLambda0Bar))
+          continue;
+
+        registryMCtruth.fill(HIST("motherParticleMCTruth"), p1.tempFitVar(), p2.tempFitVar());
+      }
+    };
+
+    if (confUseCent) {
+      for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, confNEventsMix, -1, cols, cols)) {
+        mixedCollProcessFunc(collision1, collision2);
+      }
+    } else {
+      for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, confNEventsMix, -1, cols, cols)) {
+        mixedCollProcessFunc(collision1, collision2);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthV0V0, "Process MC data to obtain pair fractions for V0V0 MC truth pairs", false);
 
   void processPairFractionsV0(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts)
   {
