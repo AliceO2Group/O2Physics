@@ -223,8 +223,8 @@ struct UpcTauRl {
   } cutTauEvent;
 
   struct : ConfigurableGroup {
-		Configurable<bool> cutCanUseTrackPID{"cutUseTrackPID", true, {"Apply weak PID check on tracks."}};
-		Configurable<int> cutCanNgoodPVtracs{"cutCanNgoodPVtracs", 2, {"How many good PV tracks to select."}};
+    Configurable<bool> cutCanUseTrackPID{"cutUseTrackPID", true, {"Apply weak PID check on tracks."}};
+    Configurable<int> cutCanNgoodPVtracs{"cutCanNgoodPVtracs", 2, {"How many good PV tracks to select."}};
     Configurable<float> cutCanMinElectronNsigmaEl{"cutCanMinElectronNsigmaEl", 4.0, {"Good el candidate hypo in. Upper n sigma cut on el hypo of selected electron. What is more goes away."}};
     Configurable<float> cutCanMaxElectronNsigmaEl{"cutCanMaxElectronNsigmaEl", -2.0, {"Good el candidate hypo in. Lower n sigma cut on el hypo of selected electron. What is less goes away."}};
     Configurable<bool> cutCanElectronHasTOF{"cutCanElectronHasTOF", true, {"Electron candidated is required to hit TOF."}};
@@ -2091,7 +2091,7 @@ struct UpcTauRl {
 
     int countTracksPerCollision = 0;
     int countGoodNonPVtracks = 0;
-		int countGoodPVtracks = 0;
+    int countGoodPVtracks = 0;
     std::vector<int> vecTrkIdx;
     // Loop over tracks with selections
     for (const auto& track : tracks) {
@@ -2102,25 +2102,25 @@ struct UpcTauRl {
         countGoodNonPVtracks++;
         continue;
       }
-	    countGoodPVtracks++;
-	    vecTrkIdx.push_back(track.index());
+      countGoodPVtracks++;
+      vecTrkIdx.push_back(track.index());
     } // Loop over tracks with selections
 
-		// Apply weak condition on track PID
-	  int countPVGTel = 0;
-	  int countPVGTmupi = 0;
-		if (countGoodPVtracks == 2) {
-			for (const auto& vecMember : vecTrkIdx) {
-				const auto& thisTrk = tracks.iteratorAt(vecMember);
-				if (isElectronCandidate(thisTrk)) {
-					countPVGTel++;
-					continue;
-				}
-				if (isMuPionCandidate(thisTrk)) {
-					countPVGTmupi++;
-				}
-			}
-		}
+    // Apply weak condition on track PID
+    int countPVGTel = 0;
+    int countPVGTmupi = 0;
+    if (countGoodPVtracks == 2) {
+      for (const auto& vecMember : vecTrkIdx) {
+        const auto& thisTrk = tracks.iteratorAt(vecMember);
+        if (isElectronCandidate(thisTrk)) {
+          countPVGTel++;
+          continue;
+        }
+        if (isMuPionCandidate(thisTrk)) {
+          countPVGTmupi++;
+        }
+      }
+    }
 
     if (cutPreselect.cutCanUseTrackPID ? ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) : countGoodPVtracks == cutPreselect.cutCanNgoodPVtracs) {
       const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
