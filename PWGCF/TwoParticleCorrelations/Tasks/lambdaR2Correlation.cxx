@@ -195,6 +195,12 @@ enum DMCType {
   kMC
 };
 
+enum CorrHistDim {
+  kOneDimCorr = 1,
+  kTwoDimCorr,
+  kThreeDimCorr
+};
+
 struct LambdaTableProducer {
 
   Produces<aod::LambdaCollisions> lambdaCollisionTable;
@@ -256,6 +262,7 @@ struct LambdaTableProducer {
   Configurable<bool> cSelectPrimaryV0{"cSelectPrimaryV0", true, "Select Primary V0"};
   Configurable<bool> cRecPrimaryLambda{"cRecPrimaryLambda", true, "Primary Reconstructed Lambda"};
   Configurable<bool> cRecSecondaryLambda{"cRecSecondaryLambda", false, "Secondary Reconstructed Lambda"};
+  Configurable<bool> cCheckRecoDauFlag{"cCheckRecoDauFlag", false, "Check for reco daughter PID"};
   Configurable<bool> cGenPrimaryLambda{"cGenPrimaryLambda", true, "Primary Generated Lambda"};
   Configurable<bool> cGenSecondaryLambda{"cGenSecondaryLambda", false, "Secondary Generated Lambda"};
   Configurable<bool> cGenDecayChannel{"cGenDecayChannel", true, "Gen Level Decay Channel Flag"};
@@ -381,7 +388,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2) {
+    if (doprocessMCRun3 || doprocessMCRun2 || doprocessMCRecoRun3) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -733,31 +740,35 @@ struct LambdaTableProducer {
   {
     auto mcpart = v0.template mcParticle_as<aod::McParticles>();
 
+    // check if Lambda/AntiLambda
     if (std::abs(mcpart.pdgCode()) != kLambda0) {
       return false;
     }
 
-    auto postrack = v0.template posTrack_as<T>();
-    auto negtrack = v0.template negTrack_as<T>();
+    // Check for daughters
+    if (cCheckRecoDauFlag) {
+      auto postrack = v0.template posTrack_as<T>();
+      auto negtrack = v0.template negTrack_as<T>();
 
-    // check if the daughters have corresponding mcparticle
-    if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kLambdaDauNotMcParticle);
-      return false;
-    }
-
-    auto mcpostrack = postrack.template mcParticle_as<aod::McParticles>();
-    auto mcnegtrack = negtrack.template mcParticle_as<aod::McParticles>();
-
-    if (mcpart.pdgCode() == kLambda0) {
-      if (mcpostrack.pdgCode() != kProton || mcnegtrack.pdgCode() != kPiMinus) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kLambdaNotPrPiMinus);
+      // check if the daughters have corresponding mcparticle
+      if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kLambdaDauNotMcParticle);
         return false;
       }
-    } else if (mcpart.pdgCode() == kLambda0Bar) {
-      if (mcpostrack.pdgCode() != kPiPlus || mcnegtrack.pdgCode() != kProtonBar) {
-        histos.fill(HIST("Tracks/h1f_tracks_info"), kAntiLambdaNotAntiPrPiPlus);
-        return false;
+
+      auto mcpostrack = postrack.template mcParticle_as<aod::McParticles>();
+      auto mcnegtrack = negtrack.template mcParticle_as<aod::McParticles>();
+
+      if (mcpart.pdgCode() == kLambda0) {
+        if (mcpostrack.pdgCode() != kProton || mcnegtrack.pdgCode() != kPiMinus) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kLambdaNotPrPiMinus);
+          return false;
+        }
+      } else if (mcpart.pdgCode() == kLambda0Bar) {
+        if (mcpostrack.pdgCode() != kPiPlus || mcnegtrack.pdgCode() != kProtonBar) {
+          histos.fill(HIST("Tracks/h1f_tracks_info"), kAntiLambdaNotAntiPrPiPlus);
+          return false;
+        }
       }
     }
 
@@ -835,13 +846,13 @@ struct LambdaTableProducer {
     float retVal = 0.;
     float rap = (cDoEtaCorr) ? v0.eta() : v0.yLambda();
 
-    if (hist->GetDimension() == 1) {
+    if (hist->GetDimension() == kOneDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPt);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt()));
-    } else if (hist->GetDimension() == 2) {
+    } else if (hist->GetDimension() == kTwoDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRap);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap));
-    } else if (hist->GetDimension() == 3) {
+    } else if (hist->GetDimension() == kThreeDimCorr) {
       histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapPhi);
       retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap, v0.phi()));
     } else {
@@ -1189,7 +1200,7 @@ struct LambdaTableProducer {
     analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC Generated", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
 
   void processMCRun2(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
@@ -1199,7 +1210,72 @@ struct LambdaTableProducer {
     analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
   }
 
-  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC Generated", false);
+  PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);
+
+  // Temperory process function to check differences in way of computations (Will be deleted in future !!!)
+  void processMCRecoRun3(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision,
+                         soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                         McV0Tracks const& V0s, TracksMC const& tracks,
+                         aod::McParticles const& mcParticles)
+  {
+    // see if reco collison pass event selection
+    if (!collision.has_mcCollision() || !selCollision<kRun3>(collision)) {
+      return;
+    }
+
+    // Now we have reco event
+    // Fill V0 Lambda Table
+    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
+
+    // Get the mcCollision and mcParticles associated to this reco event
+    auto mccol = collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+    auto mcparticles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccol.globalIndex(), cache);
+
+    // Fill McGen Collision Table
+    lambdaMCGenCollisionTable(mccol.centFT0M(), mccol.posX(), mccol.posY(), mccol.posZ());
+
+    // initialize track objects
+    ParticleType v0Type = kLambda;
+    float rap = 0.;
+    for (auto const& mcpart : mcparticles) {
+      // check for Lambda first
+      if (mcpart.pdgCode() == kLambda0) {
+        v0Type = kLambda;
+      } else if (mcpart.pdgCode() == kLambda0Bar) {
+        v0Type = kAntiLambda;
+      } else {
+        continue;
+      }
+
+      // check for Primary Lambda/AntiLambda
+      if (cGenPrimaryLambda && !mcpart.isPhysicalPrimary()) {
+        continue;
+      } else if (cGenSecondaryLambda && mcpart.isPhysicalPrimary()) {
+        continue;
+      }
+
+      // Decide Eta/Rap
+      if (!cDoEtaAnalysis) {
+        rap = mcpart.y();
+      } else {
+        rap = mcpart.eta();
+      }
+
+      // Apply Kinematic Acceptance
+      if (!kinCutSelection(mcpart.pt(), std::abs(rap), cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
+        continue;
+      }
+
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kGenTotAccLambda);
+
+      // Fill Lambda McGen Table
+      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(),
+                            mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), RecoDecay::m(mcpart.p(), mcpart.e()),
+                            -999., 999., (int8_t)v0Type, -999., -999., 1.);
+    }
+  }
+
+  PROCESS_SWITCH(LambdaTableProducer, processMCRecoRun3, "Process for Run3 MC Reconstructed", false);
 };
 
 struct LambdaTracksExtProducer {
@@ -1369,10 +1445,6 @@ struct LambdaR2Correlation {
 
   // Eta/Rap Analysis
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Eta/Rap Analysis Flag"};
-
-  // Generator Level Particles
-  Configurable<bool> cGenParticleFlag{"cGenParticleFlag", true, "Generator Number Flag"};
-  Configurable<int> cGenParticles{"cGenParticles", 3, "Number of Truth Lambda to construct correlation"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
