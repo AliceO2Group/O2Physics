@@ -76,6 +76,9 @@ bool fullDerivedData = false; /* produce full derived data for its external stor
 TList* ccdblst = nullptr;
 bool loadfromccdb = false;
 
+std::vector<int> recoIdMethods = {0,1,2};//Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
+std::vector<int> trackTypes = {0,1,2,3};
+
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
 // TODO: consider registering in the histogram registry
@@ -1599,15 +1602,15 @@ inline int8_t IdentifiedBfFilterTracks::acceptTrack(TrackObject const& track)
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
       fillTrackHistosAfterSelection(track, kIdBfCharged);
       MatchRecoGenSpecies sp = kWrongSpecies;
-      if (recoIdMethod == 0) {
+      if (recoIdMethod == recoIdMethods[0]) {
         sp = kIdBfCharged;
-      } else if (recoIdMethod == 1) {
+      } else if (recoIdMethod == recoIdMethods[1]) {
         if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
           sp = identifyTrack(track);
         } else {
           LOGF(fatal, "Track identification required but PID information not present");
         }
-      } else if (recoIdMethod == 2) {
+      } else if (recoIdMethod == recoIdMethods[2]) {
         if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
           sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
         } else {
@@ -1735,7 +1738,7 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
     fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
     fhAmbiguousTrackPt->Fill(track.pt(), multiplicityclass);
     fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityclass);
-    if (tracktype == 2) {
+    if (tracktype == trackTypes[2]) {
       fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityclass);
     } else {
       fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityclass);
