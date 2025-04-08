@@ -248,6 +248,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
+    registryMCtruth.add("motherParticleMCTruth", "pair fractions MC truth;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+
     // MC reco
     registryMCreco.add("plus/MCrecoLambda", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("plus/MCrecoLambdaChildPr", "MC reco Lambdas;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -270,7 +272,8 @@ struct FemtoUniversePairTaskTrackV0Extended {
     registryMCreco.add("minus/MCrecoPiPt", "MC reco pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
-    registryMCreco.add("motherParticle", "pair fractions;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    registryMCreco.add("motherParticle", "pair fractions MC reco;part1 mother PDG;part2 mother PDG", {HistType::kTH2F, {{8001, -4000, 4000}, {8001, -4000, 4000}}});
+    registryMCreco.add("particleCount", "MC reco particle count;particle PDG;", {HistType::kTH1F, {{8001, -4000, 4000}}});
 
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confV0PDGCodePartTwo);
@@ -898,6 +901,50 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processMCTruth, "Process MC truth data", false);
 
+  void processContaminationTracksV0s(FilteredFDCollision const& col, FemtoRecoParticles const& parts, aod::FdMCParticles const& mcparts)
+  {
+    auto groupPartsOne = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsTwo = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    // count particles before cuts
+    for (const auto& part : parts) {
+      auto mcPartId = part.fdMCParticleId();
+      if (mcPartId == -1)
+        continue; // no MC particle
+      const auto& mcpart = mcparts.iteratorAt(mcPartId);
+      if (mcpart.pdgMCTruth() == confTrkPDGCodePartOne || mcpart.pdgMCTruth() == confV0PDGCodePartTwo)
+        registryMCreco.fill(HIST("particleCount"), mcpart.pdgMCTruth());
+    }
+
+    // check for secondary contamination after cuts
+    for (const auto& part : groupPartsTwo) {
+      if (!invMLambda(part.mLambda(), part.mAntiLambda()))
+        continue;
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      /// Daughters that do not pass this condition are not selected
+      if (!isParticleTPC(posChild, V0ChildTable[confV0Type1][0]) || !isParticleTPC(negChild, V0ChildTable[confV0Type1][1]))
+        continue;
+
+      trackHistoPartTwo.fillQA<true, true>(part);
+    }
+
+    for (const auto& part : groupPartsOne) {
+      /// PID plot for particle 1
+      const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+
+      if (!isNSigmaCombined(part.p(), tpcNSigmas[confTrackChoicePartOne], tofNSigmas[confTrackChoicePartOne]))
+        continue;
+      if (part.sign() > 0) {
+        trackHistoPartOnePos.fillQA<true, false>(part);
+      } else if (part.sign() < 0) {
+        trackHistoPartOneNeg.fillQA<true, false>(part);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processContaminationTracksV0s, "Process to obtain number of particles before cuts and fake/material particles", false);
+
   void processPairFractions(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts)
   {
 
@@ -946,7 +993,71 @@ struct FemtoUniversePairTaskTrackV0Extended {
       mixedCollProcessFunc(collision1, collision2);
     }
   }
-  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractions, "Process MC data to obtain pair fractions", false);
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractions, "Process MC data to obtain pair fractions for MC Reco", false);
+
+  void processPairFractionsMCTruthTrackV0(FilteredFDCollisions const& cols)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+
+    auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
+      auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        return;
+      }
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+          continue;
+        int pdgCode2 = static_cast<int>(p2.pidCut());
+        if ((confV0Type1 == 0 && pdgCode2 != kLambda0) || (confV0Type1 == 1 && pdgCode2 != kLambda0Bar))
+          continue;
+        registryMCtruth.fill(HIST("motherParticleMCTruth"), p1.tempFitVar(), p2.tempFitVar());
+      }
+    };
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, confNEventsMix, -1, cols, cols)) {
+      mixedCollProcessFunc(collision1, collision2);
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthTrackV0, "Process MC data to obtain pair fractions for MC Truth", false);
+
+  void processPairFractionsMCTruthV0V0(FilteredFDCollisions const& cols, FemtoFullParticles const& /*parts*/)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
+
+    auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
+      auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        int pdgCode1 = static_cast<int>(p1.pidCut());
+        if ((confV0Type1 == 0 && pdgCode1 != kLambda0) || (confV0Type1 == 1 && pdgCode1 != kLambda0Bar))
+          continue;
+        int pdgCode2 = static_cast<int>(p2.pidCut());
+        if ((confV0Type2 == 0 && pdgCode2 != kLambda0) || (confV0Type2 == 1 && pdgCode2 != kLambda0Bar))
+          continue;
+
+        registryMCtruth.fill(HIST("motherParticleMCTruth"), p1.tempFitVar(), p2.tempFitVar());
+      }
+    };
+
+    if (confUseCent) {
+      for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, confNEventsMix, -1, cols, cols)) {
+        mixedCollProcessFunc(collision1, collision2);
+      }
+    } else {
+      for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningMult, confNEventsMix, -1, cols, cols)) {
+        mixedCollProcessFunc(collision1, collision2);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackV0Extended, processPairFractionsMCTruthV0V0, "Process MC data to obtain pair fractions for V0V0 MC truth pairs", false);
 
   void processPairFractionsV0(FilteredFDCollisions const& cols, FemtoRecoParticles const& parts)
   {
