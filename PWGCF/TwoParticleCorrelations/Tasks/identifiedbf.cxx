@@ -1146,13 +1146,13 @@ struct IdentifiedbfTask {
   Filter onlyacceptedcollisions = (aod::identifiedbffilter::collisionaccepted == uint8_t(true));
   Filter onlyacceptedtracks = (aod::identifiedbffilter::trackacceptedid >= int8_t(0));
 
-  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks, aod::McParticles const&)
+  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
   PROCESS_SWITCH(IdentifiedbfTask, processRecLevel, "Process reco level correlations", false);
 
-  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::McParticles const&)
+  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     int nAssignedTracks = 0;
     int nNotAssignedTracks = 0;
@@ -1209,8 +1209,7 @@ struct IdentifiedbfTask {
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
-    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks,
-    aod::McParticles const&)
+    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }

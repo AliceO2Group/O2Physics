@@ -858,7 +858,6 @@ struct IdentifiedBfFilterTracks {
                                          48, -6, 6,
                                          ptbins, ptlow, ptup);
       }
-      LOGF(info, "Making histos");
 
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
@@ -950,7 +949,6 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhNSigmaTPCIdTrks[sp]);
       }
 
-      LOGF(info, "Adding Histos to list");
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fOutputList->Add(fhPA[sp]);
         fOutputList->Add(fhPtA[sp]);
@@ -963,10 +961,8 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhdEdxA[sp]);
         fOutputList->Add(fhdEdxIPTPCA[sp]);
       }
-      LOGF(info, "Adding Additional Histos to list");
       fOutputList->Add(fhdEdxA[kIdBfNoOfSpecies + 1]);
       fOutputList->Add(fhdEdxIPTPCA[kIdBfNoOfSpecies + 1]);
-      LOGF(info, "Added additional histos to list ");
     }
 
     if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
