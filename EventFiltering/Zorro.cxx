@@ -129,8 +129,8 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
     ToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
     ToiHisto->GetXaxis()->SetBinLabel(1, Form("%d", runNumber));
     for (size_t i{0}; i < mTOIs.size(); ++i) {
-      ToiHisto->GetYaxis()->SetBinLabel(i + 1, mTOIs[i].data());
-      ToiHisto->GetYaxis()->SetBinLabel(i + 2, Form("%s AnalysedTriggers", mTOIs[i].data()));
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 1, mTOIs[i].data());
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 2, Form("%s AnalysedTriggers", mTOIs[i].data()));
     }
   }
   if (mInspectedTVX) {
