@@ -76,8 +76,8 @@ bool fullDerivedData = false; /* produce full derived data for its external stor
 TList* ccdblst = nullptr;
 bool loadfromccdb = false;
 
-std::vector<int> recoIdMethods = {0,1,2};//Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
-std::vector<int> trackTypes = {0,1,2,3};
+std::vector<int> recoIdMethods = {0, 1, 2}; // Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
+std::vector<int> trackTypes = {0, 1, 2, 3};
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
