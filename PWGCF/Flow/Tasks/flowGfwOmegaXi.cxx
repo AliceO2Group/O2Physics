@@ -53,16 +53,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace
 {
-std::shared_ptr<TProfile> refc22[20];
-std::shared_ptr<TProfile> refc24[20];
-std::shared_ptr<TProfile3D> k0sc22[20];
-std::shared_ptr<TProfile3D> k0sc24[20];
-std::shared_ptr<TProfile3D> lambdac22[20];
-std::shared_ptr<TProfile3D> lambdac24[20];
-std::shared_ptr<TProfile3D> xic22[20];
-std::shared_ptr<TProfile3D> xic24[20];
-std::shared_ptr<TProfile3D> omegac22[20];
-std::shared_ptr<TProfile3D> omegac24[20];
+std::shared_ptr<TProfile> refc22[10];
+std::shared_ptr<TProfile> refc24[10];
+std::shared_ptr<TProfile3D> k0sc22[10];
+std::shared_ptr<TProfile3D> k0sc24[10];
+std::shared_ptr<TProfile3D> lambdac22[10];
+std::shared_ptr<TProfile3D> lambdac24[10];
+std::shared_ptr<TProfile3D> xic22[10];
+std::shared_ptr<TProfile3D> xic24[10];
+std::shared_ptr<TProfile3D> omegac22[10];
+std::shared_ptr<TProfile3D> omegac24[10];
 } // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -133,16 +133,12 @@ struct FlowGfwOmegaXi {
   ConfigurableAxis cfgaxisLocalDensity{"cfgaxisLocalDensity", {200, 0, 600}, "local density"};
 
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
-  AxisSpec axisOmegaMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
-  AxisSpec axisXiMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
-  AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
-  AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using TracksPID = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, TracksPID>>; // tracks filter
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, TracksPID, aod::TracksIU>>; // tracks filter
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, TracksPID>;
 
@@ -298,7 +294,7 @@ struct FlowGfwOmegaXi {
     registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
     // for Jackknife
     if (cfgDoJackknife) {
-      for (int i = 1; i <= nPtBins; i++) {
+      for (int i = 1; i <= 10; i++) {
         refc22[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c22_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
         refc24[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c24_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
         xic22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiMassforflow, axisMultiplicity}});
@@ -318,6 +314,10 @@ struct FlowGfwOmegaXi {
     registry.add("MC/K0sc22dptMC", ";pt ; C_{2}{2} ", {HistType::kTProfile2D, {cfgaxisPtV0, axisMultiplicity}});
     registry.add("MC/Lambdac22dptMC", ";pt ; C_{2}{2} ", {HistType::kTProfile2D, {cfgaxisPtV0, axisMultiplicity}});
     // InvMass(GeV) of casc and v0
+    AxisSpec axisOmegaMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
+    AxisSpec axisXiMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
+    AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
+    AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
     registry.add("InvMassXi_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassOmega_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassOmega", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaMass, cfgaxisEta, axisMultiplicity}});
@@ -776,7 +776,7 @@ struct FlowGfwOmegaXi {
         if (cfgDoLocDenCorr) {
           hLocalDensity->Fill(track.phi(), wacc * weff);
           hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), wacc * weff);
-          nch++;
+          nch += wacc * weff;
         }
       }
       if (cfgOutputNUAWeights)
@@ -1090,7 +1090,7 @@ struct FlowGfwOmegaXi {
   }
   PROCESS_SWITCH(FlowGfwOmegaXi, processData, "", true);
 
-  void processMC(aod::McCollisions::iterator const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& tracksGen, soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisionsRec, AodTracks const&)
+  void processMCGen(aod::McCollisions::iterator const&, soa::Join<aod::McParticles, aod::ParticlesToTracks> const& tracksGen, soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisionsRec, AodTracks const&)
   {
     fGFW->Clear();
     int nch = 0;
@@ -1135,50 +1135,43 @@ struct FlowGfwOmegaXi {
     }
     registry.fill(HIST("MC/hCentvsNchMC"), cent, nch);
 
-    for (const auto& cascGen : tracksGen) {
-      if (!cascGen.isPhysicalPrimary())
+    for (const auto& straGen : tracksGen) {
+      if (!straGen.isPhysicalPrimary())
         continue;
-      int pdgCode = std::abs(cascGen.pdgCode());
-      if (pdgCode != PDG_t::kXiMinus && pdgCode != PDG_t::kOmegaMinus)
+      int pdgCode = std::abs(straGen.pdgCode());
+      if (pdgCode != PDG_t::kXiMinus && pdgCode != PDG_t::kOmegaMinus && pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0)
         continue;
-      if (std::fabs(cascGen.eta()) > 0.8)
+      if (std::fabs(straGen.eta()) > 0.8)
         continue;
+
       if (pdgCode == PDG_t::kXiMinus) {
-        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascGen.phi(), -constants::math::PI));
+        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(straGen.phi(), -constants::math::PI));
         double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
         if (cfgOutputLocDenWeights)
-          registry.fill(HIST("MC/densityMCGenXi"), cascGen.pt(), nch, density);
-        fGFW->Fill(cascGen.eta(), fXiPtAxis->FindBin(cascGen.pt()) - 1, cascGen.phi(), 1, 128);
+          registry.fill(HIST("MC/densityMCGenXi"), straGen.pt(), nch, density);
+        fGFW->Fill(straGen.eta(), fXiPtAxis->FindBin(straGen.pt()) - 1, straGen.phi(), 1, 128);
       }
       if (pdgCode == PDG_t::kOmegaMinus) {
-        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascGen.phi(), -constants::math::PI));
+        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(straGen.phi(), -constants::math::PI));
         double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
         if (cfgOutputLocDenWeights)
-          registry.fill(HIST("MC/densityMCGenOmega"), cascGen.pt(), nch, density);
-        fGFW->Fill(cascGen.eta(), fXiPtAxis->FindBin(cascGen.pt()) - 1, cascGen.phi(), 1, 256);
+          registry.fill(HIST("MC/densityMCGenOmega"), straGen.pt(), nch, density);
+        fGFW->Fill(straGen.eta(), fXiPtAxis->FindBin(straGen.pt()) - 1, straGen.phi(), 1, 256);
       }
-    }
-    for (const auto& v0Gen : tracksGen) {
-      if (!v0Gen.isPhysicalPrimary())
-        continue;
-      int pdgCode = std::abs(v0Gen.pdgCode());
-      if (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0)
-        continue;
-      if (std::fabs(v0Gen.eta()) > 0.8)
-        continue;
+
       if (pdgCode == PDG_t::kK0Short) {
-        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0Gen.phi(), -constants::math::PI));
+        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(straGen.phi(), -constants::math::PI));
         double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
         if (cfgOutputLocDenWeights)
-          registry.fill(HIST("MC/densityMCGenK0s"), v0Gen.pt(), nch, density);
-        fGFW->Fill(v0Gen.eta(), fXiPtAxis->FindBin(v0Gen.pt()) - 1, v0Gen.phi(), 1, 512);
+          registry.fill(HIST("MC/densityMCGenK0s"), straGen.pt(), nch, density);
+        fGFW->Fill(straGen.eta(), fXiPtAxis->FindBin(straGen.pt()) - 1, straGen.phi(), 1, 512);
       }
       if (pdgCode == PDG_t::kLambda0) {
-        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0Gen.phi(), -constants::math::PI));
+        int phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(straGen.phi(), -constants::math::PI));
         double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
         if (cfgOutputLocDenWeights)
-          registry.fill(HIST("MC/densityMCGenLambda"), v0Gen.pt(), nch, density);
-        fGFW->Fill(v0Gen.eta(), fXiPtAxis->FindBin(v0Gen.pt()) - 1, v0Gen.phi(), 1, 1024);
+          registry.fill(HIST("MC/densityMCGenLambda"), straGen.pt(), nch, density);
+        fGFW->Fill(straGen.eta(), fXiPtAxis->FindBin(straGen.pt()) - 1, straGen.phi(), 1, 1024);
       }
     }
     fillProfile(corrconfigs.at(25), HIST("MC/c22MC"), cent);
@@ -1197,7 +1190,303 @@ struct FlowGfwOmegaXi {
 
     delete hLocalDensity;
   }
-  PROCESS_SWITCH(FlowGfwOmegaXi, processMC, "", true);
+  PROCESS_SWITCH(FlowGfwOmegaXi, processMCGen, "", true);
+
+  void processMCRec(AodCollisions::iterator const& collision, AodTracks const& tracks, aod::BCsWithTimestamps const&, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades, DaughterTracks const&, aod::McParticles const&)
+  {
+    fGFW->Clear();
+    const auto cent = collision.centFT0C();
+    if (!collision.sel8())
+      return;
+    if (eventSelected(collision, cent))
+      return;
+    TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    loadCorrections(bc.timestamp());
+    float vtxz = collision.posZ();
+    registry.fill(HIST("hVtxZ"), vtxz);
+    registry.fill(HIST("hCent"), cent);
+
+    float weff = 1;
+    float wacc = 1;
+    float wloc = 1;
+    double nch = 0;
+
+    for (const auto& track : tracks) {
+      if (cfgDoAccEffCorr) {
+        if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
+          continue;
+      }
+      registry.fill(HIST("hPhi"), track.phi());
+      registry.fill(HIST("hPhicorr"), track.phi(), wacc);
+      registry.fill(HIST("hEta"), track.eta());
+      registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz, wacc);
+      registry.fill(HIST("hPt"), track.pt());
+      int ptbin = fPtAxis->FindBin(track.pt()) - 1;
+      if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
+        fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 1); //(eta, ptbin, phi, wacc*weff, bitmask)
+      }
+      if ((track.pt() > cfgCutPtPOIMin) && (track.pt() < cfgCutPtPOIMax)) {
+        fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
+        if (cfgDoLocDenCorr) {
+          hLocalDensity->Fill(track.phi(), wacc * weff);
+          hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), wacc * weff);
+          nch += wacc * weff;
+        }
+      }
+    }
+    if (cfgDoLocDenCorr) {
+      registry.fill(HIST("hCentvsNch"), cent, nch);
+    }
+
+    for (const auto& casc : Cascades) {
+      if (!casc.has_mcParticle())
+        continue;
+      auto cascMC = casc.mcParticle_as<aod::McParticles>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto bachelor = casc.bachelor_as<DaughterTracks>();
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAbefore"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAbefore"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVbefore"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVbefore"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdaubefore"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0daubefore"), casc.dcaV0daughters());
+      // track quality check
+      if (bachelor.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (posdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (negdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (bachelor.itsNCls() < cfgitsclusters)
+        continue;
+      if (posdau.itsNCls() < cfgitsclusters)
+        continue;
+      if (negdau.itsNCls() < cfgitsclusters)
+        continue;
+      // topological cut
+      if (casc.cascradius() < cfgcasc_radius)
+        continue;
+      if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cfgcasc_casccospa)
+        continue;
+      if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < cfgcasc_v0cospa)
+        continue;
+      if (std::fabs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < cfgcasc_dcav0topv)
+        continue;
+      if (std::fabs(casc.dcabachtopv()) < cfgcasc_dcabachtopv)
+        continue;
+      if (casc.dcacascdaughters() > cfgcasc_dcacascdau)
+        continue;
+      if (casc.dcaV0daughters() > cfgcasc_dcav0dau)
+        continue;
+      if (std::fabs(casc.mLambda() - o2::constants::physics::MassLambda0) > cfgcasc_mlambdawindow)
+        continue;
+      // fill QA
+      registry.fill(HIST("QAhisto/Casc/hqaCasccosPAafter"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqaCascV0cosPAafter"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0toPVafter"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascBachtoPVafter"), casc.dcabachtopv());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascdauafter"), casc.dcacascdaughters());
+      registry.fill(HIST("QAhisto/Casc/hqadcaCascV0dauafter"), casc.dcaV0daughters());
+      // Omega and antiOmega
+      int pdgCode{cascMC.pdgCode()};
+      double cascPt{cascMC.pt()};
+      double cascPhi{casc.phi()};
+      double cascEta{casc.eta()};
+      if (std::abs(pdgCode) == kOmegaMinus) {
+        if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+            (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, casc, vtxz, 4);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascPhi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, casc, density, 4);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecOmega"), cascPt, nch, density, casc.mOmega());
+            }
+          }
+          fGFW->Fill(cascEta, fXiPtAxis->FindBin(cascPt) - 1, cascPhi, wacc * weff * wloc, 4);
+        } else if (casc.sign() > 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
+                   (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, casc, vtxz, 4);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascPhi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, casc, density, 4);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecOmega"), cascPt, nch, density, casc.mOmega());
+            }
+          }
+          fGFW->Fill(cascEta, fXiPtAxis->FindBin(cascPt) - 1, cascPhi, wacc * weff * wloc, 4);
+        }
+      }
+      // Xi and antiXi
+      if (std::abs(pdgCode) == kXiMinus) {
+        if (casc.sign() < 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+            (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, casc, vtxz, 3);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascPhi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, casc, density, 3);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecXi"), cascPt, nch, density, casc.mXi());
+            }
+          }
+          fGFW->Fill(cascEta, fXiPtAxis->FindBin(cascPt) - 1, cascPhi, wacc * weff * wloc, 2);
+        } else if (casc.sign() > 0 && (casc.mXi() > 1.30) && (casc.mXi() < 1.37) && std::fabs(casc.yXi()) < cfgCasc_rapidity &&
+                   (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, casc, vtxz, 3);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascPhi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, casc, density, 3);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecXi"), cascPt, nch, density, casc.mXi());
+            }
+          }
+          fGFW->Fill(cascEta, fXiPtAxis->FindBin(cascPt) - 1, cascPhi, wacc * weff * wloc, 2);
+        }
+      }
+    }
+
+    for (const auto& v0 : V0s) {
+      if (!v0.has_mcParticle())
+        continue;
+      auto v0MC = v0.mcParticle_as<aod::McParticles>();
+      auto v0negdau = v0.negTrack_as<DaughterTracks>();
+      auto v0posdau = v0.posTrack_as<DaughterTracks>();
+
+      // fill QA before cut
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusbefore"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAbefore"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0daubefore"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVbefore"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVbefore"), v0.dcanegtopv());
+      registry.fill(HIST("QAhisto/V0/hqaarm_podobefore"), v0.alpha(), v0.qtarm());
+      // track quality check
+      if (v0posdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (v0negdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (v0posdau.tpcNClsFindable() < cfgtpcclufindable)
+        continue;
+      if (v0negdau.tpcNClsFindable() < cfgtpcclufindable)
+        continue;
+      if (v0posdau.tpcCrossedRowsOverFindableCls() < cfgtpccrossoverfindable)
+        continue;
+      if (v0posdau.itsNCls() < cfgitsclusters)
+        continue;
+      if (v0negdau.itsNCls() < cfgitsclusters)
+        continue;
+      // topological cut
+      if (v0.v0radius() < cfgv0_radius)
+        continue;
+      if (v0.v0cosPA() < cfgv0_v0cospa)
+        continue;
+      if (v0.dcaV0daughters() > cfgv0_dcav0dau)
+        continue;
+      if (std::fabs(v0.dcapostopv()) < cfgv0_dcadautopv)
+        continue;
+      if (std::fabs(v0.dcanegtopv()) < cfgv0_dcadautopv)
+        continue;
+      // fill QA after cut
+      registry.fill(HIST("QAhisto/V0/hqaV0radiusafter"), v0.v0radius());
+      registry.fill(HIST("QAhisto/V0/hqaV0cosPAafter"), v0.v0cosPA());
+      registry.fill(HIST("QAhisto/V0/hqadcaV0dauafter"), v0.dcaV0daughters());
+      registry.fill(HIST("QAhisto/V0/hqadcapostoPVafter"), v0.dcapostopv());
+      registry.fill(HIST("QAhisto/V0/hqadcanegtoPVafter"), v0.dcanegtopv());
+
+      int pdgCode{v0MC.pdgCode()};
+      double v0Pt{v0MC.pt()};
+      double v0Phi{v0MC.phi()};
+      double v0Eta{v0MC.eta()};
+      // K0short
+      if (std::abs(pdgCode) == kK0Short) {
+        if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
+            (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, v0, vtxz, 1);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0Phi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, v0, density, 1);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecK0s"), v0Pt, nch, density, v0.mK0Short());
+            }
+          }
+          fGFW->Fill(v0Eta, fV0PtAxis->FindBin(v0Pt) - 1, v0Phi, wacc * weff * wloc, 8);
+        }
+      }
+      // Lambda and antiLambda
+      if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+          (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+        if (std::abs(pdgCode) == kLambda0) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, v0, vtxz, 2);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0Phi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, v0, density, 2);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecLambda"), v0Pt, nch, density, v0.mLambda());
+            }
+          }
+          fGFW->Fill(v0Eta, fV0PtAxis->FindBin(v0Pt) - 1, v0Phi, wacc * weff * wloc, 16);
+        }
+      } else if (std::fabs(v0.mLambda() - o2::constants::physics::MassLambda) < cfgv0_mlambdawindow &&
+                 (!cfgcheckDauTPC || (std::fabs(v0negdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
+        if (std::abs(pdgCode) == kLambda0) {
+          if (cfgDoAccEffCorr)
+            setCurrentParticleWeights(weff, wacc, v0, vtxz, 2);
+          if (cfgDoLocDenCorr) {
+            int phibin = -999;
+            phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(v0Phi, -constants::math::PI));
+            if (phibin > -900) {
+              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+              setCurrentLocalDensityWeights(wloc, v0, density, 2);
+              if (cfgOutputLocDenWeights)
+                registry.fill(HIST("MC/densityMCRecLambda"), v0Pt, nch, density, v0.mLambda());
+            }
+          }
+          fGFW->Fill(v0Eta, fV0PtAxis->FindBin(v0Pt) - 1, v0Phi, wacc * weff * wloc, 16);
+        }
+      }
+    }
+    delete hLocalDensity;
+    fillProfile(corrconfigs.at(15), HIST("c22"), cent);
+    for (int i = 1; i <= nV0PtBins; i++) {
+      fillProfilepTMass(corrconfigs.at(9), HIST("K0sc22dpt"), i, kK0Short, cent);
+      fillProfilepTMass(corrconfigs.at(10), HIST("K0sc22dpt"), i, kK0Short, cent);
+      fillProfilepTMass(corrconfigs.at(12), HIST("Lambdac22dpt"), i, kLambda0, cent);
+      fillProfilepTMass(corrconfigs.at(13), HIST("Lambdac22dpt"), i, kLambda0, cent);
+    }
+    for (int i = 1; i <= nXiPtBins; i++) {
+      fillProfilepTMass(corrconfigs.at(3), HIST("Xic22dpt"), i, kXiMinus, cent);
+      fillProfilepTMass(corrconfigs.at(4), HIST("Xic22dpt"), i, kXiMinus, cent);
+      fillProfilepTMass(corrconfigs.at(6), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
+      fillProfilepTMass(corrconfigs.at(7), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
+    }
+  }
+  PROCESS_SWITCH(FlowGfwOmegaXi, processMCRec, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
