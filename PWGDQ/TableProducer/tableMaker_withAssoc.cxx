@@ -1286,9 +1286,9 @@ struct TableMaker {
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
         }
-      }
-      if (fConfigVariousOptions.fPropMuon) {
-        VarManager::SetupMuonMagField();
+        if (fConfigVariousOptions.fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }
       }
       std::map<string, string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
