@@ -2295,6 +2295,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRecD0, flagMcMatchRecD0, int8_t); //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGenD0, flagMcMatchGenD0, int8_t); //! generator level
 
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); //! particle origin, generator level
@@ -2417,6 +2419,7 @@ using HfCandDstar = HfCandDstars::iterator;
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
+                  hf_cand_dstar::FlagMcMatchRecD0,
                   hf_cand_dstar::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
@@ -2426,6 +2429,7 @@ DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
+                  hf_cand_dstar::FlagMcMatchGenD0,
                   hf_cand_dstar::OriginMcGen,
                   hf_cand::IdxBhadMotherPart);
 
