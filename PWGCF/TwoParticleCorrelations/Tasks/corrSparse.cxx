@@ -223,10 +223,20 @@ struct CorrSparse {
       std::cout << "collision.multiplicity " << collision.multiplicity() << std::endl;
       std::cout << "collision id" << collision.globalIndex() << std::endl;
     }
+
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
     for (auto const& track1 : tracks) {
+
+      if (processMFT) {
+        if constexpr (std::is_same_v<aod::MFTTracks, TTracks>) {
+          if (!isAcceptedMftTrack(track1)) {
+            continue;
+          }
+        }
+      }
+
       registry.fill(HIST("Phi"), track1.phi());
       registry.fill(HIST("Eta"), track1.eta());
       registry.fill(HIST("pT"), track1.pt());
@@ -259,7 +269,7 @@ struct CorrSparse {
 
   //
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float Nch, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
@@ -332,6 +342,7 @@ struct CorrSparse {
     if (processMFT) {
       fillYield(collision, mfts);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, mfts, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
+
     } else {
       fillYield(collision, tracks);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
