@@ -24,11 +24,11 @@
 #include <random>
 
 // O2 headers
-#include "Framework/Core/include/Framework/AnalysisTask.h"
-#include "Framework/Core/include/Framework/AnalysisDataModel.h"
-#include "Framework/Core/include/Framework/HistogramRegistry.h"
-#include "Framework/PhysicsSupport/include/Framework/O2DatabasePDGPlugin.h"
-#include "Framework/Core/include/Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 
 // O2Physics headers
 #include "Common/CCDB/EventSelectionParams.h"
@@ -36,7 +36,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "DataFormats/Detectors/TPC/include/DataFormatsTPC/PIDResponse.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
