@@ -377,8 +377,6 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-    int test = 0;
-
     TLorentzVector pion1, pion2, pion2Rot, reco, recoRot;
     for (const auto& trk1 : dTracks) {
       if (!trackSelected(trk1)) {
@@ -392,12 +390,7 @@ struct f0980pbpbanalysis {
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), getTpcNSigma(trk1));
       histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), getTofNSigma(trk1));
       histos.fill(HIST("QA/TPC_TOF"), getTpcNSigma(trk1), getTofNSigma(trk1));
-
-      test++;
-      if (test < 10) {
-        std::cout << "index : " << trk1.index() << "global index :" << trk1.globalIndex() << std::endl;
-      }
-
+      
       for (const auto& trk2 : dTracks) {
         if (!trackSelected(trk2)) {
           continue;
