@@ -58,8 +58,7 @@ struct CalcNch {
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 10.0f, "Eta cut")
-  O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
+  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
 
   Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
@@ -95,13 +94,13 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
   O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.8f, "Eta cut")
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
-  O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 0, "Minimum multiplicity for collision")
-  O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 10, "Maximum multiplicity for collision")
+  O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 20, "Minimum multiplicity for collision")
+  O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 30, "Maximum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgMergingCut, float, 0.0, "Merging cut on track merge")
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, -5.0, "Minimum eta for MFT track")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, 0.0, "Maximum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, 3.6, "Minimum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, 2.5, "Maximum eta for MFT track")
   O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
 
@@ -157,7 +156,7 @@ struct CorrSparse {
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
     registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
 
-    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger}}});
+    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{3, 0, 3, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
@@ -219,6 +218,11 @@ struct CorrSparse {
   template <typename TCollision, typename TTracks>
   void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
   {
+    if (tracks.size() != collision.multiplicity()) {
+      std::cout << "track.size " << tracks.size() << std::endl;
+      std::cout << "collision.multiplicity " << collision.multiplicity() << std::endl;
+      std::cout << "collision id" << collision.globalIndex() << std::endl;
+    }
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
@@ -264,7 +268,7 @@ struct CorrSparse {
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), Nch, posZ, track1.pt());
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
 
       for (auto const& track2 : tracks2) {
@@ -325,14 +329,11 @@ struct CorrSparse {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
-    fillYield(collision, tracks);
-
     if (processMFT) {
-
+      fillYield(collision, mfts);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, mfts, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
-
     } else {
-
+      fillYield(collision, tracks);
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
     }
   }
