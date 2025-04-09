@@ -2155,9 +2155,9 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     for (auto& s : itgen) {
       bool exclude = (hasExclude ? excludeVec[is] : false);
       if (s != MCProng::kNothing) {
-        sBits |= (uint64_t(1) << s);
+        sBits |= (static_cast<uint64_t>(1) << s);
         if (exclude) {
-          sBitsExclude |= (uint64_t(1) << s);
+          sBitsExclude |= (static_cast<uint64_t>(1) << s);
         }
       }
       is++;
