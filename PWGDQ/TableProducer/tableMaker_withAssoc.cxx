@@ -1407,6 +1407,14 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
+  // produce the barrel-only DQ skimmed barrel data model, with V0 tagged tracks
+  void processPPBarrelOnlyWithV0s(MyEventsWithMults const& collisions, MyBCs const& bcs,
+                                  MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
+                                  TrackAssoc const& trackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithV0BitsNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+  }
+
   // produce the muon-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
   void processPPMuonOnly(MyEventsWithMults const& collisions, BCsWithTimestamps const& bcs,
                          MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs)
@@ -1505,6 +1513,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPPWithFilterMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterMuonMFT, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPBarrelOnly, "Build barrel only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
+  PROCESS_SWITCH(TableMaker, processPPBarrelOnlyWithV0s, "Build barrel only DQ skimmed data model, pp like, with V0 tagged tracks", false);
   PROCESS_SWITCH(TableMaker, processPPMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPPMuonMFT, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPPMuonMFTWithMultsExtra, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
