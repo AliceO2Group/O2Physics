@@ -152,9 +152,7 @@ struct kstarpbpbsa {
       if (candidate.pt() >= 0.5 && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
-    }
-
-    else if (PID == 1) {
+    } else if (PID == 1) {
       if (candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
         return true;
       }
