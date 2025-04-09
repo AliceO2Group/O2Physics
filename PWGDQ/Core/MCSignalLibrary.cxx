@@ -12,6 +12,7 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <string>
+#include <vector>
 // #include <iostream>
 
 #include <TPDGCode.h>
