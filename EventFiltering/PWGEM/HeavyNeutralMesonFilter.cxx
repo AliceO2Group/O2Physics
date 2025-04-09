@@ -208,6 +208,12 @@ struct HeavyNeutralMesonFilter {
     false,
     "Evt sel: check for offline selection"};
 
+  Configurable<bool> ConfDoEMCShift{"ConfDoEMCShift", false, "Apply SM-wise shift in eta and phi to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> ConfEMCEtaShift{"ConfEMCEtaShift", {0.f}, "values for SM-wise shift in eta to be added to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> ConfEMCPhiShift{"ConfEMCPhiShift", {0.f}, "values for SM-wise shift in phi to be added to EMCal clusters to align with TPC tracks"};
+  std::array<float, 20> EMCEtaShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<float, 20> EMCPhiShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
   template <typename T>
   bool isSelectedTrack(T const& track, CFTrigger::FemtoPartners partSpecies)
   {
@@ -760,6 +766,14 @@ struct HeavyNeutralMesonFilter {
     mHistManager.add("etaprimep/fetaprimePtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
     mHistManager.add("etaprimep/fProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
     mHistManager.add("etaprimep/fAntiProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
+
+    if (ConfDoEMCShift.value) {
+      for (unsigned short iSM = 0; iSM < 20; iSM++) {
+        EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
+        EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
+        LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];
+      }
+    }
   }
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
@@ -817,10 +831,11 @@ struct HeavyNeutralMesonFilter {
     mHistManager.fill(HIST("Event/nClustersVsV0s"), clustersInThisCollision.size(), v0sInThisCollision.size());
     mHistManager.fill(HIST("Event/nTracks"), tracksWithItsPid.size());
 
-    hnmutilities::reconstructGGs(clustersInThisCollision, v0sInThisCollision, vGGs);
+    std::vector<hnmutilities::Photon> vGammas;
+    hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, EMCEtaShift, EMCPhiShift);
+    hnmutilities::reconstructGGs(vGammas, vGGs);
+    vGammas.clear();
     processGGs(vGGs);
-    // hnmutilities::reconstructHeavyNeutralMesons(tracks, vGGs, vHNMs);
-    // processHNMs(vHNMs);
 
     bool isProton = false;
     bool isDeuteron = false;
