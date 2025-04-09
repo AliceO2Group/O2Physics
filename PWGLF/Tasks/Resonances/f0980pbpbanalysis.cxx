@@ -390,7 +390,7 @@ struct f0980pbpbanalysis {
       histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), getTpcNSigma(trk1));
       histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), getTofNSigma(trk1));
       histos.fill(HIST("QA/TPC_TOF"), getTpcNSigma(trk1), getTofNSigma(trk1));
-      
+
       for (const auto& trk2 : dTracks) {
         if (!trackSelected(trk2)) {
           continue;
