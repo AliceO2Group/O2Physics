@@ -159,20 +159,20 @@ struct F0980pbpbanalysis {
   // double massPi = o2::constants::physics::MassPionCharged;
   double massPtl;
 
-  enum listCentEst {
-    centEstFT0C = 0,
-    centEstFT0M = 1,
+  enum CentEstList {
+    FT0C = 0,
+    FT0M = 1,
   };
 
-  enum listPID {
-    pidRun3 = 0,
-    pidRun2 = 1,
-    pidTest = 2,
+  enum PIDList {
+    PIDRun3 = 0,
+    PIDRun2 = 1,
+    PIDTest = 2,
   };
 
-  enum listPtl {
-    ptlPion = 0,
-    ptlKaon = 1,
+  enum PtlList {
+    PtlPion = 0,
+    PtlKaon = 1,
   };
 
   TRandom* rn = new TRandom();
@@ -290,7 +290,7 @@ struct F0980pbpbanalysis {
   template <typename TrackType>
   bool selectionPID(const TrackType track)
   {
-    if (cfgSelectPID == listPID::pidRun3) {
+    if (cfgSelectPID == PIDList::PIDRun3) {
       if (cfgUSETOF) {
         if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
           return 0;
@@ -302,7 +302,7 @@ struct F0980pbpbanalysis {
       if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
-    } else if (cfgSelectPID == listPID::pidRun2) {
+    } else if (cfgSelectPID == PIDList::PIDRun2) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
           if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
@@ -321,7 +321,7 @@ struct F0980pbpbanalysis {
           return 0;
         }
       }
-    } else if (cfgSelectPID == listPID::pidTest) {
+    } else if (cfgSelectPID == PIDList::PIDTest) {
       if (track.hasTOF()) {
         if (std::fabs(getTofNSigma(track)) > cMaxTOFnSigmaPion) {
           return 0;
@@ -358,7 +358,7 @@ struct F0980pbpbanalysis {
   template <typename TrackType>
   float getTpcNSigma(const TrackType track)
   {
-    if (cfgSelectPtl == listPtl::ptlPion) {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       return track.tpcNSigmaPi();
     } else {
       return track.tpcNSigmaKa();
@@ -368,7 +368,7 @@ struct F0980pbpbanalysis {
   template <typename TrackType>
   float getTofNSigma(const TrackType track)
   {
-    if (cfgSelectPtl == listPtl::ptlPion) {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       return track.tofNSigmaPi();
     } else {
       return track.tofNSigmaKa();
@@ -422,11 +422,11 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
-        if (cfgSelectPID == listPID::pidTest && trk2.globalIndex() == trk1.globalIndex()) {
+        if (cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() == trk1.globalIndex()) {
           continue;
         }
 
-        if (cfgSelectPID == listPID::pidTest && !selectionPair(trk1, trk2)) {
+        if (cfgSelectPID == PIDList::PIDTest && !selectionPair(trk1, trk2)) {
           continue;
         }
 
@@ -512,9 +512,9 @@ struct F0980pbpbanalysis {
       refBId = 5;
     }
 
-    if (cfgSelectPtl == listPtl::ptlPion) {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       massPtl = o2::constants::physics::MassPionCharged;
-    } else if (cfgSelectPtl == listPtl::ptlKaon) {
+    } else if (cfgSelectPtl == PtlList::PtlKaon) {
       massPtl = o2::constants::physics::MassKaonCharged;
     }
 
@@ -533,9 +533,9 @@ struct F0980pbpbanalysis {
   void processData(EventCandidates::iterator const& collision,
                    TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (cfgCentEst == listCentEst::centEstFT0C) {
+    if (cfgCentEst == CentEstList::FT0C) {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == listCentEst::centEstFT0M) {
+    } else if (cfgCentEst == CentEstList::FT0M) {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision)) {
