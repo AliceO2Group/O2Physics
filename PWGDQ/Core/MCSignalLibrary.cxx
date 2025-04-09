@@ -586,55 +586,55 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     if (!nameStr.compare("eFromPromptLM1")) {
     MCProng prong(2, {11, 100}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group1 without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group1 without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromPromptLM2")) {
     MCProng prong(2, {11, 200}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group2 without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group2 without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromPromptKaon")) {
     MCProng prong(2, {11, 300}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from kaons without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from kaons without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromBtoLM1")) {
     MCProng prong(2, {11, 100}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group1 with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group1 with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromBtoLM2")) {
     MCProng prong(2, {11, 200}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group2 with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group2 with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromBtoKaon")) {
     MCProng prong(2, {11, 300}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from kaons with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from kaons with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromDtoLM1")) {
     MCProng prong(2, {11, 200, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromDtoLM2")) {
     MCProng prong(2, {11, 200, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("eFromDtoKaon")) {
     MCProng prong(2, {11, 300, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "electron from kaons from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "electron from kaons from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
 
@@ -677,55 +677,55 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("muFromPromptLM1")) {
     MCProng prong(2, {13, 100}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group1 without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group1 without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromPromptLM2")) {
     MCProng prong(2, {13, 200}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group2 without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group2 without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromPromptKaon")) {
     MCProng prong(2, {13, 300}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from kaons without B/D in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from kaons without B/D in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromBtoLM1")) {
     MCProng prong(2, {13, 100}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group1 with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group1 with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromBtoLM2")) {
     MCProng prong(2, {13, 200}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group2 with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group2 with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromBtoKaon")) {
     MCProng prong(2, {13, 300}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from kaons with b hadron in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from kaons with b hadron in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromDtoLM1")) {
     MCProng prong(2, {13, 200, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromDtoLM2")) {
     MCProng prong(2, {13, 200, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from light mesons group1 from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("muFromDtoKaon")) {
     MCProng prong(2, {13, 300, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "muon from kaons from D hadron decays and no B in decay history", {prong}, {-1}));
+    signal = new MCSignal(name, "muon from kaons from D hadron decays and no B in decay history", {prong}, {-1});
     return signal;
   }
 
