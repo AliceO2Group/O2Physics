@@ -451,13 +451,14 @@ struct TauEventTableProducer {
       float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
       float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
       float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
-      float infoZDC[4] = {-999., -999., -999., -999.};
-      if constexpr (requires { collision.udZdcsReduced(); }) {
-        infoZDC[0] = collision.energyCommonZNA();
-        infoZDC[1] = collision.energyCommonZNC();
-        infoZDC[2] = collision.timeZNA();
-        infoZDC[3] = collision.timeZNC();
-      }
+//      float infoZDC[4] = {-999., -999., -999., -999.};
+//      if constexpr (requires { collision.udZdcsReduced(); }) {
+//        infoZDC[0] = collision.energyCommonZNA();
+//        infoZDC[1] = collision.energyCommonZNC();
+//        infoZDC[2] = collision.timeZNA();
+//        infoZDC[3] = collision.timeZNC();
+//      }
+	    float infoZDC[4] = {collision.energyCommonZNA(), collision.energyCommonZNC(), collision.timeZNA(), collision.timeZNC()};
 
       tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
                    collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
