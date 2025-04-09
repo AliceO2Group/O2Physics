@@ -107,7 +107,7 @@ o2physics_add_dpl_workflow(cascpolsp
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangenessInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib O2Physics::EventFilteringUtils
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 endif()
 
@@ -140,3 +140,8 @@ o2physics_add_dpl_workflow(lambdajetpolarization
     SOURCES lambdaJetpolarization.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hstrangecorrelationPbPb
+    SOURCES hstrangecorrelationPbPb.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)    
