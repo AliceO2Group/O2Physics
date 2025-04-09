@@ -32,7 +32,7 @@ o2physics_add_dpl_workflow(upccand-producer
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tau-event-table-producer
-                           SOURCES TauEventTableProducer.cxx
+                           SOURCES tauEventTableProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
