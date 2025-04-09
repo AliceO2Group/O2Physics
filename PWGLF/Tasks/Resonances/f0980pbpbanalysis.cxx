@@ -448,7 +448,7 @@ struct F0980pbpbanalysis {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec epAxis = {6, 0.0, 2.0 * o2::constants::math::PI};
+    AxisSpec epAxis = {6, 0.0, o2::constants::math::TwoPI};
     AxisSpec qaCentAxis = {110, 0, 110};
     AxisSpec qaVzAxis = {100, -20, 20};
     AxisSpec qaPIDAxis = {100, -10, 10};
