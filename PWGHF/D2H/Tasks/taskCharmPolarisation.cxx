@@ -910,7 +910,7 @@ struct TaskPolarisationCharmHadrons {
   /// \param ptBhadMother is the pt of the b-hadron mother (only in case of non-prompt)
   /// \param areDausInAcc is a flag indicating whether the daughters are in acceptance or not
   /// \param resoChannelLc indicates the Lc decay channel (direct, resonant)
-  /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar meson (MC only)
+  /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar->D0pi->Kpipipi0 meson (MC only)
   template <charm_polarisation::CosThetaStarType cosThetaStarType>
   void fillGenHistos(float ptCharmHad, int numPvContributors, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, uint8_t resoChannelLc, int8_t charge, bool isPartRecoDstar)
   {
