@@ -212,7 +212,7 @@ struct TauEventTableProducer {
       return false;
 
     // FTOC
-    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0A() > -998.)
+    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0C() > -998.)
       return false;
 
     return true;
