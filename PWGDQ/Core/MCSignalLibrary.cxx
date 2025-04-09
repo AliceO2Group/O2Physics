@@ -583,7 +583,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open charmed hadron decays with b hadron in decay history", {prong}, {-1});
     return signal;
   }
-    if (!nameStr.compare("eFromPromptLM1")) {
+  if (!nameStr.compare("eFromPromptLM1")) {
     MCProng prong(2, {11, 100}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "electron from light mesons group1 without B/D in decay history", {prong}, {-1});
