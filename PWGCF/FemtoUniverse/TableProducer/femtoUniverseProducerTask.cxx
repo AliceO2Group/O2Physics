@@ -130,6 +130,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   Configurable<bool> confDoSpher{"confDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> confStoreMCmothers{"confStoreMCmothers", false, "MC truth: Fill with not only primary particles and store mothers' PDG in tempFitVar."};
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   /// Event cuts
@@ -675,18 +676,21 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename ParticleType>
-  void fillDebugParticleMC(ParticleType const& particle)
+  int32_t getMotherPDG(ParticleType particle)
   {
     auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
     if (!motherparticlesMC.empty()) {
       auto motherparticleMC = motherparticlesMC.front();
-      if (particle.isPhysicalPrimary())
-        outputDebugPartsMC(0);
-      else
-        outputDebugPartsMC(motherparticleMC.pdgCode());
+      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
     } else {
-      outputDebugPartsMC(9999);
+      return 9999;
     }
+  }
+
+  template <typename ParticleType>
+  void fillDebugParticleMC(ParticleType const& particle)
+  {
+    outputDebugPartsMC(getMotherPDG(particle));
   }
 
   template <typename ParticleType>
@@ -1691,7 +1695,7 @@ struct FemtoUniverseProducerTask {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (confStoreMCmothers || particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1711,6 +1715,8 @@ struct FemtoUniverseProducerTask {
       // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
+      int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
       // now the table is filled
       if constexpr (resolveDaughs) {
         tmpIDtrack.push_back(particle.globalIndex());
@@ -1724,7 +1730,7 @@ struct FemtoUniverseProducerTask {
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                     0,
                     pdgCode,
-                    pdgCode,
+                    variablePDG,
                     childIDs,
                     0,
                     0);
@@ -1770,6 +1776,9 @@ struct FemtoUniverseProducerTask {
             }
           }
         }
+
+        int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
         if (!confIsActivateCascade) {
           outputParts(outputCollision.lastIndex(),
                       particle.pt(),
@@ -1778,7 +1787,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                       0,
                       static_cast<uint32_t>(particle.pdgCode()),
-                      particle.pdgCode(),
+                      variablePDG,
                       childIDs,
                       0,
                       0);
