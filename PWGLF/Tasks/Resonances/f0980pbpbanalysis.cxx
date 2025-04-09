@@ -70,7 +70,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct f0980pbpbanalysis {
+struct F0980pbpbanalysis {
   HistogramRegistry histos{
     "histos",
     {},
@@ -530,11 +530,11 @@ struct f0980pbpbanalysis {
 
     fillHistograms<false>(collision, tracks, 2); // second order
   };
-  PROCESS_SWITCH(f0980pbpbanalysis, processData, "Process Event for data", true);
+  PROCESS_SWITCH(F0980pbpbanalysis, processData, "Process Event for data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<f0980pbpbanalysis>(cfgc, TaskName{"lf-f0980pbpbanalysis"})};
+    adaptAnalysisTask<F0980pbpbanalysis>(cfgc)};
 }
