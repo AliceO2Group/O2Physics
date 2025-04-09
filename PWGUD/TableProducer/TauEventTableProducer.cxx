@@ -203,43 +203,43 @@ struct TauEventTableProducer {
 
   } // end init
 
-	template <typename C>
-	bool isGoodFITtime(C const& coll, float maxFITtime)
-	{
+  template <typename C>
+  bool isGoodFITtime(C const& coll, float maxFITtime)
+  {
 
-		// FTOA
-		if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
-			return false;
+    // FTOA
+    if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
+      return false;
 
-		// FTOC
-		if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0A() > -998.)
-			return false;
+    // FTOC
+    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0A() > -998.)
+      return false;
 
-		return true;
-	}
+    return true;
+  }
 
-	template <typename C>
-	bool isGoodROFtime(C const& coll)
-	{
+  template <typename C>
+  bool isGoodROFtime(C const& coll)
+  {
 
-		// Occupancy
-		if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
-			return false;
+    // Occupancy
+    if (coll.occupancyInTime() > cutSample.cutEvOccupancy)
+      return false;
 
-		// kNoCollInTimeRangeStandard
-		if (cutSample.cutEvTrs && !coll.trs())
-			return false;
+    // kNoCollInTimeRangeStandard
+    if (cutSample.cutEvTrs && !coll.trs())
+      return false;
 
-		// kNoCollInRofStandard
-		if (cutSample.cutEvTrofs && !coll.trofs())
-			return false;
+    // kNoCollInRofStandard
+    if (cutSample.cutEvTrofs && !coll.trofs())
+      return false;
 
-		// kNoHighMultCollInPrevRof
-		if (cutSample.cutEvHmpr && !coll.hmpr())
-			return false;
+    // kNoHighMultCollInPrevRof
+    if (cutSample.cutEvHmpr && !coll.hmpr())
+      return false;
 
-		return true;
-	}
+    return true;
+  }
 
   std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
@@ -365,7 +365,7 @@ struct TauEventTableProducer {
       return false;
     return true;
   }
-	
+
   void processDataSG(FullSGUDCollision const& collision,
                      FullUDTracks const& tracks)
   {
@@ -391,84 +391,84 @@ struct TauEventTableProducer {
     if (cutSample.useRecoFlag && (collision.flags() != cutSample.cutRecoFlag))
       return;
 
-	  int countTracksPerCollision = 0;
-	  int countGoodNonPVtracks = 0;
-	  int countGoodPVtracks = 0;
-	  std::vector<int> vecTrkIdx;
-	  // Loop over tracks with selections
-	  for (const auto& track : tracks) {
-		  countTracksPerCollision++;
-		  if (!isGlobalTrackReinstatement(track))
-			  continue;
-		  if (!track.isPVContributor()) {
-			  countGoodNonPVtracks++;
-			  continue;
-		  }
-		  countGoodPVtracks++;
-		  vecTrkIdx.push_back(track.index());
-	  } // Loop over tracks with selections
+    int countTracksPerCollision = 0;
+    int countGoodNonPVtracks = 0;
+    int countGoodPVtracks = 0;
+    std::vector<int> vecTrkIdx;
+    // Loop over tracks with selections
+    for (const auto& track : tracks) {
+      countTracksPerCollision++;
+      if (!isGlobalTrackReinstatement(track))
+        continue;
+      if (!track.isPVContributor()) {
+        countGoodNonPVtracks++;
+        continue;
+      }
+      countGoodPVtracks++;
+      vecTrkIdx.push_back(track.index());
+    } // Loop over tracks with selections
 
-	  // Apply weak condition on track PID
-	  int countPVGTel = 0;
-	  int countPVGTmupi = 0;
-	  if (countGoodPVtracks == 2) {
-		  for (const auto& vecMember : vecTrkIdx) {
-			  const auto& thisTrk = tracks.iteratorAt(vecMember);
-			  if (isElectronCandidate(thisTrk)) {
-				  countPVGTel++;
-				  continue;
-			  }
-			  if (isMuPionCandidate(thisTrk)) {
-				  countPVGTmupi++;
-			  }
-		  }
-	  }
+    // Apply weak condition on track PID
+    int countPVGTel = 0;
+    int countPVGTmupi = 0;
+    if (countGoodPVtracks == 2) {
+      for (const auto& vecMember : vecTrkIdx) {
+        const auto& thisTrk = tracks.iteratorAt(vecMember);
+        if (isElectronCandidate(thisTrk)) {
+          countPVGTel++;
+          continue;
+        }
+        if (isMuPionCandidate(thisTrk)) {
+          countPVGTmupi++;
+        }
+      }
+    }
 
-	  if (cutPreselect.preselUseTrackPID ? ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) : countGoodPVtracks == cutPreselect.preselNgoodPVtracs) {
-		  const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
-		  const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
+    if (cutPreselect.preselUseTrackPID ? ((countPVGTel == 2 && countPVGTmupi == 0) || (countPVGTel == 1 && countPVGTmupi == 1)) : countGoodPVtracks == cutPreselect.preselNgoodPVtracs) {
+      const auto& trk1 = tracks.iteratorAt(vecTrkIdx[0]);
+      const auto& trk2 = tracks.iteratorAt(vecTrkIdx[1]);
 
-		  float px[2] = {trk1.px(), trk2.px()};
-		  float py[2] = {trk1.py(), trk2.py()};
-		  float pz[2] = {trk1.pz(), trk2.pz()};
-		  int sign[2] = {trk1.sign(), trk2.sign()};
-		  float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
-		  float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
-		  float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
-		  uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
-		  uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
-		  float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
-		  float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
-		  float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
-		  float tpcPi[2] = {trk1.tpcNSigmaPi(), trk2.tpcNSigmaPi()};
-		  float tpcKa[2] = {trk1.tpcNSigmaKa(), trk2.tpcNSigmaKa()};
-		  float tpcPr[2] = {trk1.tpcNSigmaPr(), trk2.tpcNSigmaPr()};
-		  float tpcIP[2] = {trk1.tpcInnerParam(), trk2.tpcInnerParam()};
-		  float tofSignal[2] = {trk1.tofSignal(), trk2.tofSignal()};
-		  float tofEl[2] = {trk1.tofNSigmaEl(), trk2.tofNSigmaEl()};
-		  float tofMu[2] = {trk1.tofNSigmaMu(), trk2.tofNSigmaMu()};
-		  float tofPi[2] = {trk1.tofNSigmaPi(), trk2.tofNSigmaPi()};
-		  float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
-		  float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
-		  float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
-		  float infoZDC[4] = {-999., -999., -999., -999.};
-		  if constexpr (requires { collision.udZdcsReduced(); }) {
-			  infoZDC[0] = collision.energyCommonZNA();
-			  infoZDC[1] = collision.energyCommonZNC();
-			  infoZDC[2] = collision.timeZNA();
-			  infoZDC[3] = collision.timeZNC();
-		  }
+      float px[2] = {trk1.px(), trk2.px()};
+      float py[2] = {trk1.py(), trk2.py()};
+      float pz[2] = {trk1.pz(), trk2.pz()};
+      int sign[2] = {trk1.sign(), trk2.sign()};
+      float dcaxy[2] = {trk1.dcaXY(), trk2.dcaXY()};
+      float dcaz[2] = {trk1.dcaZ(), trk2.dcaZ()};
+      float trkTimeRes[2] = {trk1.trackTimeRes(), trk2.trackTimeRes()};
+      uint32_t itsClusterSizesTrk1 = trk1.itsClusterSizes();
+      uint32_t itsClusterSizesTrk2 = trk2.itsClusterSizes();
+      float tpcSignal[2] = {trk1.tpcSignal(), trk2.tpcSignal()};
+      float tpcEl[2] = {trk1.tpcNSigmaEl(), trk2.tpcNSigmaEl()};
+      float tpcMu[2] = {trk1.tpcNSigmaMu(), trk2.tpcNSigmaMu()};
+      float tpcPi[2] = {trk1.tpcNSigmaPi(), trk2.tpcNSigmaPi()};
+      float tpcKa[2] = {trk1.tpcNSigmaKa(), trk2.tpcNSigmaKa()};
+      float tpcPr[2] = {trk1.tpcNSigmaPr(), trk2.tpcNSigmaPr()};
+      float tpcIP[2] = {trk1.tpcInnerParam(), trk2.tpcInnerParam()};
+      float tofSignal[2] = {trk1.tofSignal(), trk2.tofSignal()};
+      float tofEl[2] = {trk1.tofNSigmaEl(), trk2.tofNSigmaEl()};
+      float tofMu[2] = {trk1.tofNSigmaMu(), trk2.tofNSigmaMu()};
+      float tofPi[2] = {trk1.tofNSigmaPi(), trk2.tofNSigmaPi()};
+      float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
+      float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
+      float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
+      float infoZDC[4] = {-999., -999., -999., -999.};
+      if constexpr (requires { collision.udZdcsReduced(); }) {
+        infoZDC[0] = collision.energyCommonZNA();
+        infoZDC[1] = collision.energyCommonZNC();
+        infoZDC[2] = collision.timeZNA();
+        infoZDC[3] = collision.timeZNC();
+      }
 
-		  tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
-		               collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
-		               collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
-		               collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), infoZDC[0], infoZDC[1],
-		               collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), infoZDC[2], infoZDC[3],
-		               px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
-		               itsClusterSizesTrk1, itsClusterSizesTrk2,
-		               tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
-		               tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
-	  }
+      tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
+                   collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
+                   collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
+                   collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), infoZDC[0], infoZDC[1],
+                   collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), infoZDC[2], infoZDC[3],
+                   px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+                   itsClusterSizesTrk1, itsClusterSizesTrk2,
+                   tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+                   tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
+    }
 
   } // end processDataSG
 
