@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file upcTauRl.cxx
-/// \brief Personal task to analyze tau events from UPC collisions
+/// \file TauEventTableProducer.cxx
+/// \brief Produces derived table from UD tables
 ///
 /// \author Roman Lavicka <roman.lavicka@cern.ch>, Austrian Academy of Sciences & SMI
-/// \since  12.07.2022
+/// \since  09.04.2025
 //
 
 // C++ headers
@@ -24,23 +24,22 @@
 #include <random>
 
 // O2 headers
-#include "../../../O2/Framework/Core/include/Framework/AnalysisTask.h"
-#include "../../../O2/Framework/Core/include/Framework/AnalysisDataModel.h"
-#include "../../../O2/Framework/Core/include/Framework/HistogramRegistry.h"
-#include "../../../O2/Framework/PhysicsSupport/include/Framework/O2DatabasePDGPlugin.h"
-#include "../../../O2/Framework/Core/include/Framework/runDataProcessing.h"
+#include "Framework/Core/include/Framework/AnalysisTask.h"
+#include "Framework/Core/include/Framework/AnalysisDataModel.h"
+#include "Framework/Core/include/Framework/HistogramRegistry.h"
+#include "Framework/PhysicsSupport/include/Framework/O2DatabasePDGPlugin.h"
+#include "Framework/Core/include/Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "../../Common/CCDB/EventSelectionParams.h"
-#include "../../Common/Core/TrackSelection.h"
-#include "../../Common/Core/TrackSelectionDefaults.h"
-#include "../../Common/Core/trackUtilities.h"
-#include "../../Common/DataModel/EventSelection.h"
-#include "../../../O2/DataFormats/Detectors/TPC/include/DataFormatsTPC/PIDResponse.h"
-#include "../../Common/DataModel/TrackSelectionTables.h"
-#include "../../../neverdelete/UPCTauCentralBarrelHelperRL.h"
-#include "../DataModel/UDTables.h"
-#include "../Core/SGSelector.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "DataFormats/Detectors/TPC/include/DataFormatsTPC/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
@@ -452,19 +451,19 @@ struct TauEventTableProducer {
 		  float tofKa[2] = {trk1.tofNSigmaKa(), trk2.tofNSigmaKa()};
 		  float tofPr[2] = {trk1.tofNSigmaPr(), trk2.tofNSigmaPr()};
 		  float tofEP[2] = {trk1.tofExpMom(), trk2.tofExpMom()};
-		  float ZNinfo[4] = {-999., -999., -999., -999.};
+		  float infoZDC[4] = {-999., -999., -999., -999.};
 		  if constexpr (requires { collision.udZdcsReduced(); }) {
-			  ZNinfo[0] = collision.energyCommonZNA();
-			  ZNinfo[1] = collision.energyCommonZNC();
-			  ZNinfo[2] = collision.timeZNA();
-			  ZNinfo[3] = collision.timeZNC();
+			  infoZDC[0] = collision.energyCommonZNA();
+			  infoZDC[1] = collision.energyCommonZNC();
+			  infoZDC[2] = collision.timeZNA();
+			  infoZDC[3] = collision.timeZNC();
 		  }
 
 		  tauTwoTracks(collision.runNumber(), collision.globalBC(), countTracksPerCollision, collision.numContrib(), countGoodNonPVtracks, collision.posX(), collision.posY(), collision.posZ(),
 		               collision.flags(), collision.occupancyInTime(), collision.hadronicRate(), collision.trs(), collision.trofs(), collision.hmpr(),
 		               collision.tfb(), collision.itsROFb(), collision.sbp(), collision.zVtxFT0vPV(), collision.vtxITSTPC(),
-		               collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), ZNinfo[0], ZNinfo[1],
-		               collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), ZNinfo[2], ZNinfo[3],
+		               collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFV0AmplitudeA(), infoZDC[0], infoZDC[1],
+		               collision.timeFT0A(), collision.timeFT0C(), collision.timeFV0A(), infoZDC[2], infoZDC[3],
 		               px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
 		               itsClusterSizesTrk1, itsClusterSizesTrk2,
 		               tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
