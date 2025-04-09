@@ -345,7 +345,6 @@ struct TauEventTableProducer {
   // Loose criterium to find electron-like particle
   // Requiring TOF to avoid double-counting pions/electrons and for better timing
   {
-    fillRejectElectronCandidate(electronCandidate);
     if (electronCandidate.tpcNSigmaEl() < cutPreselect.preselMaxElectronNsigmaEl || electronCandidate.tpcNSigmaEl() > cutPreselect.preselMinElectronNsigmaEl)
       return false;
     if (cutPreselect.preselElectronHasTOF && !electronCandidate.hasTOF())
@@ -473,7 +472,7 @@ struct TauEventTableProducer {
 
   } // end processDataSG
 
-  PROCESS_SWITCH(UpcTauRl, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
