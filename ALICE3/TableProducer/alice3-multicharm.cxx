@@ -402,7 +402,7 @@ struct alice3multicharm {
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1D, {axisNConsidered});
     histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1D, {axisNConsidered});
     histos.add("hNCollisions", "hNCollisions", kTH1D, {{2, 0.5, 2.5}});
-    histos.add ("hNTracks", "hNTracks", kTH1D, {{500, 0, 5000}});
+    histos.add("hNTracks", "hNTracks", kTH1D, {{500, 0, 5000}});
 
     if (doDCAplots) {
       histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA});
@@ -486,7 +486,7 @@ struct alice3multicharm {
           continue;
 
         histos.fill(HIST("hPi1cPt"), pi1c.pt());
-        
+
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
 
