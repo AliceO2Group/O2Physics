@@ -11,6 +11,8 @@
 
 #include "PWGDQ/Core/MCProng.h"
 
+#include <map>
+#include <vector>
 #include <cmath>
 #include <iostream>
 
@@ -127,9 +129,9 @@ void MCProng::SetSourceBit(int generation, int sourceBit, bool exclude /*=false*
   if (generation < 0 || generation >= fNGenerations) {
     return;
   }
-  fSourceBits[generation] |= (uint64_t(1) << sourceBit);
+  fSourceBits[generation] |= (static_cast<uint64_t>(1) << sourceBit);
   if (exclude) {
-    fExcludeSource[generation] |= (uint64_t(1) << sourceBit);
+    fExcludeSource[generation] |= (static_cast<uint64_t>(1) << sourceBit);
   }
 }
 
