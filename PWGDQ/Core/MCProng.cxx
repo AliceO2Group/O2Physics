@@ -194,6 +194,13 @@ bool MCProng::ComparePDG(int pdg, int prongPDG, bool checkBothCharges, bool excl
         decision = (prongPDG > 0 ? pdg >= 100 && pdg <= 199 : pdg >= -199 && pdg <= -100);
       }
       break;
+    case 101: // all light flavoured and strange mesons
+      if (checkBothCharges) {
+        decision = absPDG >= 100 && absPDG <= 399;
+      } else {
+        decision = (prongPDG > 0 ? pdg >= 100 && pdg <= 399 : pdg >= -399 && pdg <= -100);
+      }
+      break;
     case 1000: // light flavoured baryons
       if (checkBothCharges) {
         decision = absPDG >= 1000 && absPDG <= 1999;
