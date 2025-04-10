@@ -61,6 +61,7 @@ struct FwdTrackPropagation {
   Configurable<float> maxEtaSA{"maxEtaSA", -2.5, "max. eta acceptance for MCH-MID"};
   Configurable<float> minEtaGL{"minEtaGL", -3.6, "min. eta acceptance for MFT-MCH-MID"};
   Configurable<float> maxEtaGL{"maxEtaGL", -2.5, "max. eta acceptance for MFT-MCH-MID"};
+  Configurable<float> minRabsGL{"minRabsGL", 27.6, "min. R at absorber end for global muon (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505.
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
@@ -69,11 +70,8 @@ struct FwdTrackPropagation {
   Configurable<float> maxPDCAforSmallR{"maxPDCAforSmallR", 594.f, "max. pDCA for small R at absorber end"};
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 50.f, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+6, "max. chi2 for standalone muon"};
-  Configurable<float> maxChi2GL{"maxChi2GL", 1e+6, "max. chi2 for global muon"};
+  Configurable<float> maxChi2GL{"maxChi2GL", 50.f, "max. chi2 for global muon"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
-  Configurable<bool> applyDEtaDPhi{"cfgApplyDEtaDPhi", false, "flag to apply deta-dphi elliptic cut"};
-  Configurable<float> minDEta{"minDEta", 0.1, "min deta between MFT-MCH-MID and its attached MID-MCH at PV"};
-  Configurable<float> minDPhi{"minDPhi", 0.1, "min dphi between MFT-MCH-MID and its attached MID-MCH at PV"};
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
@@ -175,6 +173,9 @@ struct FwdTrackPropagation {
       if (chi2 < 0.f || maxChi2GL < chi2) {
         return false;
       }
+      if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
+        return false;
+      }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
@@ -189,89 +190,16 @@ struct FwdTrackPropagation {
     return true;
   }
 
-  template <typename TFwdTracks, typename TMFTTracks, typename TCollision, typename TTarget, typename TCandidates>
-  bool isBestMatch(TCollision const& collision, TTarget const& target, TCandidates const& candidates)
-  {
-    std::map<int64_t, float> map_chi2MFTMCH;
-    for (const auto& matchedtrack : candidates) { // MFT-MCH-MID or MFT-MCH
-      if (matchedtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-        continue;
-      }
-      o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(matchedtrack, collision, propagationPoint::kToVertex);
-      float eta = propmuonAtPV.getEta();
-      float phi = propmuonAtPV.getPhi();
-      if (refitGlobalMuon) {
-        const auto& mfttrack = matchedtrack.template matchMFTTrack_as<TMFTTracks>();
-        eta = mfttrack.eta();
-        phi = mfttrack.phi();
-      }
-      o2::math_utils::bringTo02Pi(phi);
-      if (eta < minEtaGL || maxEtaGL < eta) {
-        continue;
-      }
-
-      const auto& mchtrack = matchedtrack.template matchMCHTrack_as<TFwdTracks>(); // MCH-MID
-      o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
-      float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
-      float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
-      o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
-
-      float deta = etaMatchedMCHMID - eta;
-      float dphi = phiMatchedMCHMID - phi;
-      o2::math_utils::bringToPMPi(dphi);
-      if (applyDEtaDPhi && std::sqrt(std::pow(deta / minDEta, 2) + std::pow(dphi / minDPhi, 2)) > 1.f) {
-        continue;
-      }
-
-      if (matchedtrack.chi2() < 0.f || maxChi2GL < matchedtrack.chi2()) {
-        continue;
-      }
-
-      float rAtAbsorberEnd = matchedtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
-      if (rAtAbsorberEnd < minRabs || maxRabs < rAtAbsorberEnd) {
-        continue;
-      }
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(matchedtrack, collision, propagationPoint::kToDCA);
-      float dcaX = propmuonAtDCA.getX() - collision.posX();
-      float dcaY = propmuonAtDCA.getY() - collision.posY();
-      float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-      if (maxDCAxy < dcaXY) {
-        continue;
-      }
-
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToDCA);
-      float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
-      float dcaY_Matched = propmuonAtDCA_Matched.getY() - collision.posY();
-      float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
-      float pDCA = mchtrack.p() * dcaXY_Matched;
-
-      if (rAtAbsorberEnd < midRabs ? pDCA > maxPDCAforSmallR : pDCA > maxPDCAforLargeR) {
-        continue;
-      }
-
-      map_chi2MFTMCH[matchedtrack.globalIndex()] = matchedtrack.chi2MatchMCHMFT();
-    }
-    if (map_chi2MFTMCH.begin()->first != target.globalIndex()) { // search for minimum matching chi2
-      map_chi2MFTMCH.clear();
-      return false;
-    }
-    map_chi2MFTMCH.clear();
-
-    if (target.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
-      return false;
-    }
-    return true;
-  }
-
   template <typename TCollision, typename TFwdTrack, typename TFwdTracks, typename TMFTTracks>
-  void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const& fwdtracks, TMFTTracks const&, const bool isAmbiguous)
+  void fillFwdTrackTable(TCollision const& collision, TFwdTrack fwdtrack, TFwdTracks const&, TMFTTracks const&, const bool isAmbiguous)
   {
-    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
-      const auto& matchedGlobalTracks = fwdtracks.sliceBy(perMFTTrack, fwdtrack.matchMFTTrackId()); // MFT-MCH-MID or MFT-MCH
-      if (!isBestMatch<TFwdTracks, TMFTTracks>(collision, fwdtrack, matchedGlobalTracks)) {
-        return;
-      }
-    } // find the best match between MFT and MCH-MID
+    if (fwdtrack.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && (fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT || fwdtrack.chi2() > maxChi2GL)) {
+      return;
+    } // Users have to decide the best match between MFT and MCH-MID at analysis level. The same global muon is repeatedly stored.
+
+    if (fwdtrack.chi2MatchMCHMID() < 0.f) { // this should never happen. only for protection.
+      return;
+    }
 
     o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, collision, propagationPoint::kToVertex);
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, collision, propagationPoint::kToDCA);

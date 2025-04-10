@@ -1094,10 +1094,12 @@ struct FlowSP {
         // Fill NUA weights
         if (cfgFillWeights) {
           fWeights->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-        } else if (cfgFillWeightsPOS) {
+        }
+        if (cfgFillWeightsPOS) {
           if (pos)
             fWeightsPOS->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
-        } else if (cfgFillWeightsNEG) {
+        }
+        if (cfgFillWeightsNEG) {
           if (!pos)
             fWeightsNEG->fill(track.phi(), track.eta(), vtxz, track.pt(), centrality, 0);
         }
