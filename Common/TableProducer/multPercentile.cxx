@@ -973,4 +973,13 @@ struct multiplicityPercentile {
       }
     }
   }
+  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
 }
+ 
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  metadataInfo.initMetadata(cfgc);
+  return WorkflowSpec{adaptAnalysisTask<multPercentile>(cfgc)};
+}
+
