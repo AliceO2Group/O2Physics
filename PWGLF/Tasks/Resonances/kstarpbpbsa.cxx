@@ -143,7 +143,7 @@ struct kstarpbpbsa {
   }
 
   template <typename T>
-  bool strategySelectionPID(const T& candidate, int PID, int strategy)
+  bool strategySelectionPID(const T& candidate, int PID)
   {
     if (PID == 0) {
       if (candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
@@ -186,12 +186,7 @@ struct kstarpbpbsa {
       return;
     }
 
-    o2::aod::ITSResponse itsResponse;
-
     auto centrality = collision.centFT0C();
-    auto QFT0C = collision.qFT0C();
-    auto QFT0A = collision.qFT0A();
-    auto QTPC = collision.qTPC();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
@@ -208,7 +203,7 @@ struct kstarpbpbsa {
       }
       bool track1kaon = false;
       auto track1ID = track1.globalIndex();
-      if (!strategySelectionPID(track1, 0, strategyPID)) {
+      if (!strategySelectionPID(track1, 0)) {
         continue;
       }
       track1kaon = true;
@@ -220,7 +215,7 @@ struct kstarpbpbsa {
 
         bool track2pion = false;
         auto track2ID = track2.globalIndex();
-        if (!strategySelectionPID(track2, 1, strategyPID)) {
+        if (!strategySelectionPID(track2, 1)) {
           continue;
         }
 
