@@ -32,6 +32,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverse3DContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
@@ -75,14 +76,16 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   } twotracksconfigs;
 
+  SliceCache cache;
+
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  // Filters for selecting particles (both p1 and p2)
   Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
   using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
-  // using FilteredFemtoFullParticles = FemtoFullParticles; //if no filtering is applied uncomment this option
-
-  SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
+
+  using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  using FilteredFemtoRecoParticles = soa::Filtered<FemtoRecoParticles>;
+  Preslice<FilteredFemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
   /// Particle 1
   struct : o2::framework::ConfigurableGroup {
@@ -97,7 +100,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// Partition for particle 1
   Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
+  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
   //
 
   /// Histogramming for particle 1
@@ -117,7 +120,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// Partition for particle 2
   Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
 
-  Partition<soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
+  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -137,7 +140,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   Configurable<bool> ConfIsCent{"ConfIsCent", true, "Condition to choose centrality of multiplicity for mixing"};
 
   Filter collfilter = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh) &&
-                      (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
+                      (o2::aod::femtouniversecollision::occupancy >= ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
   using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FdCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
 
@@ -170,12 +173,17 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
+  Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
   Configurable<bool> cfgProcessPM{"cfgProcessPM", false, "Process particles of the opposite charge"};
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process particles of the same, positice charge"};
   Configurable<bool> cfgProcessMM{"cfgProcessMM", true, "Process particles of the same, positice charge"};
   Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms in multiplicity bins (in multiplicity bins)"};
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
+
+  FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont1D;
+  FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont1D;
 
   FemtoUniverse3DContainer<femto_universe3d_container::EventType::same, femto_universe3d_container::Observable::kstar> sameEventCont;
   FemtoUniverse3DContainer<femto_universe3d_container::EventType::mixed, femto_universe3d_container::Observable::kstar> mixedEventCont;
@@ -205,6 +213,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry resultRegistry1D{"Correlations1D", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry resultRegistryPM{"CorrelationsPM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry resultRegistryPP{"CorrelationsPP", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry resultRegistryMM{"CorrelationsMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -393,6 +402,10 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         sameEventMultContPP.init(&SameMultRegistryPP, ConfkstarBins, ConfMultKstarBins, ConfKtKstarBins, cfgProcessKtBins, cfgProcessKtMt3DCF);
         mixedEventMultContPP.init(&MixedMultRegistryPP, ConfkstarBins, ConfMultKstarBins, ConfKtKstarBins, cfgProcessKtBins, cfgProcessKtMt3DCF);
       }
+      sameEventCont1D.init(&resultRegistry1D, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, twotracksconfigs.ConfIsMC, twotracksconfigs.ConfUse3D);
+      sameEventCont1D.setPDGCodes(trackonefilter.ConfPDGCodePartOne, tracktwofilter.ConfPDGCodePartTwo);
+      mixedEventCont1D.init(&resultRegistry1D, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, twotracksconfigs.ConfIsMC, twotracksconfigs.ConfUse3D);
+      mixedEventCont1D.setPDGCodes(trackonefilter.ConfPDGCodePartOne, tracktwofilter.ConfPDGCodePartTwo);
     }
 
     if (cfgProcessMM) {
@@ -438,8 +451,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
-  template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType, bool fillQA)
+  template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
+  void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType, bool fillQA, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
 
     /// Histogramming same event
@@ -449,6 +462,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
+        trackHistoPartOne.fillQAMisIden<isMC, true>(part, trackonefilter.ConfPDGCodePartOne);
       }
     }
 
@@ -531,12 +545,24 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
                 k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContPP.fill3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
+              float weight = 1.0f;
+              if constexpr (std::is_same<PartType, FilteredFemtoRecoParticles>::value) {
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              } else {
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+                sameEventContPP.setPair<true>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
                 k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContPP.fill3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+              }
+              float weight = 1.0f;
+              if constexpr (std::is_same<PartType, FemtoRecoParticles>::value) {
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              } else {
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             }
             break;
@@ -554,12 +580,24 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
                 k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContMM.fill3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
+              float weight = 1.0f;
+              if constexpr (std::is_same<PartType, FilteredFemtoRecoParticles>::value) {
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              } else {
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+                sameEventContMM.setPair<true>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
                 k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContMM.fill3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+              }
+              float weight = 1.0f;
+              if constexpr (std::is_same<PartType, FemtoRecoParticles>::value) {
+                sameEventCont1D.setPair<true>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
+              } else {
+                sameEventCont1D.setPair<false>(p1, p2, multCol, twotracksconfigs.ConfUse3D, weight, ConfIsIden);
               }
             }
             break;
@@ -614,12 +652,11 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FdCollision const& col,
-                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
-                          o2::aod::FdMCParticles const&)
+  void processSameEventMC(FilteredFDCollision const& col,
+                          FilteredFemtoRecoParticles const& parts,
+                          aod::FdMCParticles const& mcparts)
   {
     fillCollision(col, ConfIsCent);
-
     auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -631,7 +668,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
+        doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA, mcparts);
       }
       if (cfgProcessMM) {
         doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
@@ -641,7 +678,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
       }
       if (cfgProcessPP) {
-        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+        doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA, mcparts);
       }
       if (cfgProcessMM) {
         doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
@@ -797,9 +834,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMCCent(o2::aod::FdCollisions const& cols,
-                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
-                               o2::aod::FdMCParticles const&)
+  void processMixedEventMCCent(FilteredFDCollisions const& cols,
+                               FemtoRecoParticles const& parts,
+                               aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
 
@@ -881,9 +918,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMCNtr(o2::aod::FdCollisions& cols,
-                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
-                              o2::aod::FdMCParticles&)
+  void processMixedEventMCNtr(FilteredFDCollisions const& cols,
+                              FemtoRecoParticles const& parts,
+                              aod::FdMCParticles const&)
   {
     randgen = new TRandom2(0);
 

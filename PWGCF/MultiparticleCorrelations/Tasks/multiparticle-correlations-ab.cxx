@@ -25,9 +25,9 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>; // TBI 20241126 under testing
-// Remark 1: I have already timestamp in workflow, due to track-propagation. With Run3MatchedToBCSparse, I can use bc.has_zdc() TBI 20250112 is this redundant, I nowhere use bc.has_zdc()
-// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1
+using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps>; // TBI 20241126 under testing
+// Remark 1: I have already timestamp in workflow, due to track-propagation.
+// Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1 TBI 20250401 not sure any longer what I wanted to say here...
 
 // using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::MultsGlobal, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>; // TBI 20241209 validating "MultsGlobal"
 //  for using collision.multNTracksGlobal() TBI 20250128 do i still need this?
@@ -59,11 +59,21 @@ using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::itera
 using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run1>::iterator;
 // Remark: For tracks, I can use everything same as in Run 3
 
+// *) QA:
+//    Remark: This is Run 3 "Rec" + subscription to additional few tables (otherwise unnecessary in my analysis, e.g. some specific detector tables), used only for QA purposes.
+//            Therefore, I start all definitions from what I have defined for Run 3 "Rec", and on top of it join these additional tables for QA.
+using BCs_QA = soa::Join<BCs_Run3, aod::BcSels, aod::Run3MatchedToBCSparse>;
+//             *) BcSels => bc.has_foundFT0(), etc.
+//             *) Run3MatchedToBCSparse => bc.has_zdc(), etc. TBI 20250401 at the moment, I do not use this one
+using Collision_QA = CollisionRec; // if I would need additional tables for QA, just join 'em here with CollisionRec
+using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, just join 'em here with TracksRec
+
 // *) ROOT:
 #include <TList.h>
 #include <TSystem.h>
 #include <TFile.h>
 #include <TH1D.h>
+#include <TProfile2D.h>
 #include <TGrid.h>
 #include <Riostream.h>
 #include <TRandom3.h>
@@ -73,6 +83,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TF1.h>
 #include <TF3.h>
 #include <TObjString.h>
+#include <THnSparse.h>
 using namespace std;
 
 // *) Enums:
@@ -273,11 +284,26 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // J) Process data with minimum subscription to the tables, for testing purposes:
+  //    Remark: To keep this branch as simple as possible, I do not subscribe to centrality table. Therefore, when running with "processTest": "true" in JSON,
+  //            I have to remove "| o2-analysis-centrality-table $JsonFile \" from workflow (yes, remove, not comment out!)
   void processTest(aod::Collision const& collision, aod::BCs const& bcs, aod::Tracks const& tracks)
   {
     Steer<eTest>(collision, bcs, tracks);
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
+
+  // -------------------------------------------
+
+  // K) Process data with more than necessary subscriptions to the tables, only for QA purposes:
+  //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables (e.g. detector specific), only for QA purposes.
+  //    Remark 2: Ideally, i use the same workflow for "processRec" and "processQA", but most likely at some point I will have to establish separate workflow for "processQA"
+  void processQA(Collision_QA const& collision, BCs_QA const& bcs, TracksRec_QA const& tracks, aod::FT0s const&)
+  {
+    // Summary for additional tables subscribed to directly here:
+    // *) FT0s => bc.foundFT0().sumAmpC(), etc.
+    Steer<eQA>(collision, bcs, tracks);
+  }
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", false);
 
 }; // struct MultiparticleCorrelationsAB
 

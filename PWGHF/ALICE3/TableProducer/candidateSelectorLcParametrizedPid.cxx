@@ -70,7 +70,7 @@ struct HfCandidateSelectorLcParametrizedPid {
   // topological cuts
   Configurable<double> decayLengthXYNormalisedMin{"decayLengthXYNormalisedMin", 3., "Normalised decay length"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::Cuts[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   HfHelper hfHelper;
 

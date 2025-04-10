@@ -78,7 +78,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
@@ -86,7 +86,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= 1;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
@@ -117,7 +117,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
 
   template <typename T, typename U>
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
-                           double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, const std::vector<float>& mlScores)
+                           double ct, double y, int8_t flagMc, int8_t origin, int8_t swapping, int8_t flagDecayChan, const std::vector<float>& mlScores)
   {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
@@ -193,7 +193,8 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       rowCandidateMc(
         flagMc,
         origin,
-        swapping);
+        swapping,
+        flagDecayChan);
     }
   }
 
@@ -239,12 +240,18 @@ struct HfDerivedDataCreatorDplusToPiKPi {
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec = 0, origin = 0, swapping = 0;
+      int8_t flagMcRec = 0, origin = 0, swapping = 0, flagDecayChanRec = 0;
       for (const auto& candidate : candidatesThisColl) {
+        if constexpr (isMl) {
+          if (!TESTBIT(candidate.isSelDplusToPiKPi(), aod::SelectionStep::RecoMl)) {
+            continue;
+          }
+        }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           swapping = candidate.isCandidateSwapped();
+          flagDecayChanRec = candidate.flagMcDecayChanRec();
           if constexpr (onlyBkg) {
             if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
               continue;
@@ -272,9 +279,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
         if constexpr (isMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));
         }
-        if (candidate.isSelDplusToPiKPi()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, mlScoresDplusToPiKPi);
-        }
+        fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massDplusToPiKPi, ct, y, flagMcRec, origin, swapping, flagDecayChanRec, mlScoresDplusToPiKPi);
       }
     }
   }

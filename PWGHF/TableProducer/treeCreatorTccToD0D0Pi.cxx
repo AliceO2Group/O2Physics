@@ -291,7 +291,8 @@ struct HfTreeCreatorTccToD0D0Pi {
             candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
             std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0ToPiK(candidateD1);
-          } else if (candidateD1.isSelD0bar()) {
+          }
+          if (candidateD1.isSelD0bar()) {
             candFlagD1 = 2;
             std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0barToKPi(candidateD1);
@@ -301,8 +302,8 @@ struct HfTreeCreatorTccToD0D0Pi {
             candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
             std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
             massD02 = hfHelper.invMassD0ToPiK(candidateD2);
-
-          } else if (candidateD2.isSelD0bar()) {
+          }
+          if (candidateD2.isSelD0bar()) {
             candFlagD2 = 2;
             std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
             massD02 = hfHelper.invMassD0barToKPi(candidateD2);

@@ -69,7 +69,7 @@ struct HigherMassResonances {
     // PID and QA
     Configurable<bool> qAv0{"qAv0", false, "qAv0"};
     Configurable<bool> qAPID{"qAPID", true, "qAPID"};
-    Configurable<bool> qAv0Daughters{"qAv0Daughters", false, "QA of v0 daughters"};
+    // Configurable<bool> qAv0Daughters{"qAv0Daughters", false, "QA of v0 daughters"};
     Configurable<bool> qAevents{"qAevents", false, "QA of events"};
     // Configurable<bool> invMass1D{"invMass1D", false, "1D invariant mass histograms"};
     Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
@@ -111,6 +111,8 @@ struct HigherMassResonances {
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
     // Configurable<float> lowmasscutks0{"lowmasscutks0", 0.497 - 4 * 0.005, "Low mass cut on K0s"};
     // Configurable<float> highmasscutks0{"highmasscutks0", 0.497 + 4 * 0.005, "High mass cut on K0s"};
+    Configurable<bool> applyAngSepCut{"applyAngSepCut", false, "Apply angular separation cut"};
+    Configurable<float> angSepCut{"angSepCut", 0.01f, "Angular separation cut"};
 
     // Configurable for track selection and multiplicity
     Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
@@ -133,7 +135,7 @@ struct HigherMassResonances {
     Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
 
     // Other cuts on Ks and glueball
-    Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
+    // Configurable<bool> rapidityks{"rapidityks", true, "rapidity cut on K0s"};
     Configurable<bool> applyCompetingcut{"applyCompetingcut", false, "Competing cascade rejection cut"};
     Configurable<float> competingcascrejlambda{"competingcascrejlambda", 0.005, "rejecting competing cascade lambda"};
     Configurable<float> competingcascrejlambdaanti{"competingcascrejlambdaanti", 0.005, "rejecting competing cascade anti-lambda"}; // If one of the pions is misidentified as a proton, then instead of Ks we reconstruct lambda, therefore the competing cascade rejection cut is applied in which if the reconstrcted mass of a pion and proton (which we are assuming to be misidentified as proton) is close to lambda or anti-lambda, then the track is rejected
@@ -152,9 +154,9 @@ struct HigherMassResonances {
     Configurable<int> ksMassBins{"ksMassBins", 200, "Number of mass bins for K0s"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
     ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
-    ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
-    ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
-    ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
+    // ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
+    // ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+    // ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
     // ConfigurableAxis occupancyBins{"occupancyBins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning: occupancy axis"};
   } config;
 
@@ -208,10 +210,10 @@ struct HigherMassResonances {
     if (config.qAevents) {
       rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
       rEventSelection.add("hmultiplicity", "multiplicity percentile distribution", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
-      rEventSelection.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {config.axisMultdist});
-      rEventSelection.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {config.axisMultdist});
-      rEventSelection.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {config.axisMultdist});
-      rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+      // rEventSelection.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {config.axisMultdist});
+      // rEventSelection.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {config.axisMultdist});
+      // rEventSelection.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {config.axisMultdist});
+      // rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     }
 
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
@@ -224,15 +226,15 @@ struct HigherMassResonances {
     // K0s topological/PID cuts
     if (config.correlation2Dhist) {
       rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after1", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after2", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after3", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after4", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after5", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after6", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after7", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after8", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after9", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after1", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after2", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after3", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after4", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after5", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after6", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after7", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after8", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      // rKzeroShort.add("mass_lambda_kshort_after9", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
       rKzeroShort.add("mass_lambda_kshort_after10", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
     }
     if (config.qAv0) {
@@ -244,20 +246,21 @@ struct HigherMassResonances {
       rKzeroShort.add("hDCAV0Daughters", "DCA between v0 daughters", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
       rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.96f, 1.1f}}});
       rKzeroShort.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
-      rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
+      rKzeroShort.add("angularSeparation", "Angular distribution between two K0s vs pT", {HistType::kTH1F, {{200, 0.0f, 4.0f}}});
+      // rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
+      // rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
+      // rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
 
       // rKzeroShort.add("mass_Hypertriton", "Mass under hypertriton hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_AnitHypertriton", "Mass under anti-hypertriton hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("rapidity", "Rapidity distribution", kTH1F, {{100, -1.0f, 1.0f}});
-      rKzeroShort.add("hv0radius", "hv0radius", kTH1F, {{100, 0.0f, 200.0f}});
-      rKzeroShort.add("hDCApostopv", "DCA positive daughter to PV", kTH1F, {{1000, -10.0f, 10.0f}});
-      rKzeroShort.add("hDCAnegtopv", "DCA negative daughter to PV", kTH1F, {{1000, -10.0f, 10.0f}});
-      rKzeroShort.add("hcDCAv0topv", "DCA V0 to PV", kTH1F, {{60, -3.0f, 3.0f}});
-      rKzeroShort.add("halpha", "Armenteros alpha", kTH1F, {{100, -5.0f, 5.0f}});
-      rKzeroShort.add("hqtarmbyalpha", "qtarm/alpha", kTH1F, {{100, 0.0f, 1.0f}});
-      rKzeroShort.add("hpsipair", "psi pair angle", kTH1F, {{100, -5.0f, 5.0f}});
+      // rKzeroShort.add("rapidity", "Rapidity distribution", kTH1F, {{100, -1.0f, 1.0f}});
+      // rKzeroShort.add("hv0radius", "hv0radius", kTH1F, {{100, 0.0f, 200.0f}});
+      // rKzeroShort.add("hDCApostopv", "DCA positive daughter to PV", kTH1F, {{1000, -10.0f, 10.0f}});
+      // rKzeroShort.add("hDCAnegtopv", "DCA negative daughter to PV", kTH1F, {{1000, -10.0f, 10.0f}});
+      // rKzeroShort.add("hcDCAv0topv", "DCA V0 to PV", kTH1F, {{60, -3.0f, 3.0f}});
+      // rKzeroShort.add("halpha", "Armenteros alpha", kTH1F, {{100, -5.0f, 5.0f}});
+      // rKzeroShort.add("hqtarmbyalpha", "qtarm/alpha", kTH1F, {{100, 0.0f, 1.0f}});
+      // rKzeroShort.add("hpsipair", "psi pair angle", kTH1F, {{100, -5.0f, 5.0f}});
 
       // // Topological histograms (before the selection)
       // rKzeroShort.add("hDCAV0Daughters_before", "DCA between v0 daughters before the selection", {HistType::kTH1F, {{60, -3.0f, 3.0f}}});
@@ -268,19 +271,19 @@ struct HigherMassResonances {
 
     if (config.qAPID) {
       rKzeroShort.add("hNSigmaPosPionK0s_before", "hNSigmaPosPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-      // rKzeroShort.add("hNSigmaPosPionK0s_after", "hNSigmaPosPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      rKzeroShort.add("hNSigmaPosPionK0s_after", "hNSigmaPosPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
       rKzeroShort.add("hNSigmaNegPionK0s_before", "hNSigmaNegPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-      // rKzeroShort.add("hNSigmaNegPionK0s_after", "hNSigmaNegPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-      rKzeroShort.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {config.axisPtfordEbydx, config.axisdEdx});
+      rKzeroShort.add("hNSigmaNegPionK0s_after", "hNSigmaNegPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      // rKzeroShort.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {config.axisPtfordEbydx, config.axisdEdx});
     }
-    if (config.qAv0Daughters) {
-      rKzeroShort.add("negative_pt", "Negative daughter pT", kTH1F, {ptAxis});
-      rKzeroShort.add("positive_pt", "Positive daughter pT", kTH1F, {ptAxis});
-      rKzeroShort.add("negative_eta", "Negative daughter eta", kTH1F, {{100, -1.0f, 1.0f}});
-      rKzeroShort.add("positive_eta", "Positive daughter eta", kTH1F, {{100, -1.0f, 1.0f}});
-      rKzeroShort.add("negative_phi", "Negative daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
-      rKzeroShort.add("positive_phi", "Positive daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
-    }
+    // if (config.qAv0Daughters) {
+    //   rKzeroShort.add("negative_pt", "Negative daughter pT", kTH1F, {ptAxis});
+    //   rKzeroShort.add("positive_pt", "Positive daughter pT", kTH1F, {ptAxis});
+    //   rKzeroShort.add("negative_eta", "Negative daughter eta", kTH1F, {{100, -1.0f, 1.0f}});
+    //   rKzeroShort.add("positive_eta", "Positive daughter eta", kTH1F, {{100, -1.0f, 1.0f}});
+    //   rKzeroShort.add("negative_phi", "Negative daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
+    //   rKzeroShort.add("positive_phi", "Positive daughter phi", kTH1F, {{70, 0.0f, 7.0f}});
+    // }
 
     // For MC
     hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
@@ -293,14 +296,17 @@ struct HigherMassResonances {
 
     hMChists.add("Recf1710_mass", "Rec f_{0}(1710) mass", kTH1F, {glueballMassAxis});
     hMChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
-    hMChists.add("GenEta", "Gen Eta", kTH1F, {{100, -1.0f, 1.0f}});
+    hMChists.add("GenEta", "Gen Eta", kTHnSparseF, {ptAxis, {100, -1.0f, 1.0f}});
     hMChists.add("GenPhi", "Gen Phi", kTH1F, {{70, -3.5f, 3.5f}});
-    hMChists.add("GenRapidity", "Gen Rapidity", kTH1F, {{100, -1.0f, 1.0f}});
+    hMChists.add("GenRapidity", "Gen Rapidity", kTHnSparseF, {ptAxis, {100, -1.0f, 1.0f}});
     hMChists.add("RecEta", "Rec Eta", kTH1F, {{100, -1.0f, 1.0f}});
     hMChists.add("RecPhi", "Rec Phi", kTH1F, {{70, 0.0f, 7.0f}});
     hMChists.add("RecRapidity", "Rec Rapidity", kTH1F, {{100, -1.0f, 1.0f}});
     hMChists.add("MC_mult", "Multiplicity in MC", kTH1F, {multiplicityAxis});
     hMChists.add("MC_mult_after_event_sel", "Multiplicity in MC", kTH1F, {multiplicityAxis});
+    // hMChists.add("GenPx", "Gen Px", kTH1F, {{100, -10.0f, 10.0f}});
+    // hMChists.add("GenPy", "Gen Py", kTH1F, {{100, -10.0f, 10.0f}});
+    // hMChists.add("GenPz", "Gen Pz", kTH1F, {{100, -10.0f, 10.0f}});
   }
 
   template <typename Collision>
@@ -354,23 +360,22 @@ struct HigherMassResonances {
 
     if (config.qAv0) {
       rKzeroShort.fill(HIST("hMassK0Shortbefore"), candidate.mK0Short(), candidate.pt());
-      rKzeroShort.fill(HIST("hMasscorrelationbefore"), candidate.mK0Short(), candidate.mK0Short());
       rKzeroShort.fill(HIST("hLT"), ctauK0s);
       rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
       rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
-      rKzeroShort.fill(HIST("Mass_lambda"), candidate.mLambda());
-      rKzeroShort.fill(HIST("mass_AntiLambda"), candidate.mAntiLambda());
-      rKzeroShort.fill(HIST("mass_Gamma"), candidate.mGamma());
+      // rKzeroShort.fill(HIST("Mass_lambda"), candidate.mLambda());
+      // rKzeroShort.fill(HIST("mass_AntiLambda"), candidate.mAntiLambda());
+      // rKzeroShort.fill(HIST("mass_Gamma"), candidate.mGamma());
       // rKzeroShort.fill(HIST("mass_Hypertriton"), candidate.mHypertriton());
       // rKzeroShort.fill(HIST("mass_AnitHypertriton"), candidate.mAntiHypertriton());
-      rKzeroShort.fill(HIST("rapidity"), candidate.yK0Short());
-      rKzeroShort.fill(HIST("hv0radius"), candidate.v0radius());
-      rKzeroShort.fill(HIST("hDCApostopv"), candidate.dcapostopv());
-      rKzeroShort.fill(HIST("hDCAnegtopv"), candidate.dcanegtopv());
-      rKzeroShort.fill(HIST("hcDCAv0topv"), candidate.dcav0topv());
-      rKzeroShort.fill(HIST("halpha"), candidate.alpha());
-      rKzeroShort.fill(HIST("hqtarmbyalpha"), arm);
-      rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
+      // rKzeroShort.fill(HIST("rapidity"), candidate.yK0Short());
+      // rKzeroShort.fill(HIST("hv0radius"), candidate.v0radius());
+      // rKzeroShort.fill(HIST("hDCApostopv"), candidate.dcapostopv());
+      // rKzeroShort.fill(HIST("hDCAnegtopv"), candidate.dcanegtopv());
+      // rKzeroShort.fill(HIST("hcDCAv0topv"), candidate.dcav0topv());
+      // rKzeroShort.fill(HIST("halpha"), candidate.alpha());
+      // rKzeroShort.fill(HIST("hqtarmbyalpha"), arm);
+      // rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
     }
     if (config.correlation2Dhist)
       rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
@@ -381,64 +386,67 @@ struct HigherMassResonances {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 1.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after1"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after1"), candidate.mK0Short(), candidate.mLambda());
 
-    if (config.rapidityks && std::abs(candidate.yK0Short()) >= config.confKsrapidity) {
+    // if (config.rapidityks && std::abs(candidate.yK0Short()) >= config.confKsrapidity) {
+    //   return false;
+    // }
+    if (std::abs(candidate.yK0Short()) >= config.confKsrapidity) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
 
     if (pT < config.confV0PtMin) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 3.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after3"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after3"), candidate.mK0Short(), candidate.mLambda());
 
     if (dcaDaughv0 > config.confV0DCADaughMax) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 4.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after4"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after4"), candidate.mK0Short(), candidate.mLambda());
 
     if (cpav0 < config.confV0CPAMin) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 5.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after5"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after5"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad < config.confV0TranRadV0Min) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 6.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after6"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after6"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad > config.confV0TranRadV0Max) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 7.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after7"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after7"), candidate.mK0Short(), candidate.mLambda());
 
     if (std::fabs(ctauK0s) > config.cMaxV0LifeTime) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 8.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
 
     if (config.armcut && arm < config.confarmcut) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
-    if (config.correlation2Dhist)
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
+    // if (config.correlation2Dhist)
+    //   rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
 
     // if (config.applyCompetingcut && (std::abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= config.competingcascrejlambdaanti))
     if (config.applyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambdaanti)) {
@@ -465,7 +473,7 @@ struct HigherMassResonances {
     if (config.qAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
+      // rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
@@ -516,6 +524,28 @@ struct HigherMassResonances {
     }
     hglue.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
+    if (config.qAPID) {
+      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
+    }
+
+    return true;
+  }
+
+  // Angular separation cut on KsKs pairs
+  template <typename T1, typename T2>
+  bool applyAngSep(const T1& candidate1, const T2& candidate2)
+  {
+    double eta1, eta2, phi1, phi2;
+    eta1 = candidate1.eta();
+    eta2 = candidate2.eta();
+    phi1 = candidate1.phi();
+    phi2 = candidate2.phi();
+
+    double angle = std::sqrt(std::pow(eta1 - eta2, 2) + std::pow(phi1 - phi2, 2));
+    rKzeroShort.fill(HIST("angularSeparation"), angle);
+    if (config.applyAngSepCut && angle > config.angSepCut) {
+      return false;
+    }
     return true;
   }
 
@@ -630,10 +660,10 @@ struct HigherMassResonances {
     if (config.qAevents) {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
-      rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
-      rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
-      rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
-      rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
+      // rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
+      // rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
+      // rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
+      // rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
     std::vector<int> v0indexes;
@@ -680,14 +710,14 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (config.qAv0Daughters) {
-        rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
-        rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
-        rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
-        rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
-        rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
-        rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
-      }
+      // if (config.qAv0Daughters) {
+      //   rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
+      //   rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
+      //   rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
+      //   rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
+      //   rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
+      //   rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
+      // }
 
       if (postrack1.globalIndex() == postrack2.globalIndex()) {
         continue;
@@ -696,6 +726,13 @@ struct HigherMassResonances {
         continue;
       }
 
+      if (!applyAngSep(v1, v2)) {
+        continue;
+      }
+
+      if (config.qAv0) {
+        rKzeroShort.fill(HIST("hMasscorrelationbefore"), v1.mK0Short(), v2.mK0Short());
+      }
       allConditionsMet = 1;
       daughter1 = ROOT::Math::PxPyPzMVector(v1.px(), v1.py(), v1.pz(), o2::constants::physics::MassK0Short); // Kshort
 
@@ -876,7 +913,7 @@ struct HigherMassResonances {
   PROCESS_SWITCH(HigherMassResonances, processME, "mixed event process", true);
 
   int counter = 0;
-  float multiplicity_gen = 0.0;
+  float multiplicityGen = 0.0;
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
     TLorentzVector genvec;
@@ -898,7 +935,7 @@ struct HigherMassResonances {
 
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
-    multiplicity_gen = 0.0;
+    multiplicityGen = 0.0;
     for (const auto& collision : collisions) {
       if (std::abs(collision.mcCollision().posZ()) > config.cutzvertex) {
         continue;
@@ -911,7 +948,7 @@ struct HigherMassResonances {
         continue;
       }
 
-      multiplicity_gen = collision.centFT0M();
+      multiplicityGen = collision.centFT0M();
 
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
@@ -924,17 +961,25 @@ struct HigherMassResonances {
     }
     hMChists.fill(HIST("events_check"), 4.5);
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.y()) >= 0.5) {
+
+      if (std::abs(mcParticle.pdgCode()) != config.pdgCodes[config.selectMCparticles]) // f2(1525), f0(1710)
+      {
         continue;
       }
       hMChists.fill(HIST("events_check"), 5.5);
 
-      // if (counter < 1e4) {
-      //   std::cout << "PDG code mother " << mcParticle.pdgCode() << std::endl;
-      // }
+      // if (counter < 1e3)
+      //   std::cout << "px " << mcParticle.px() << " py " << mcParticle.py() << " pz " << mcParticle.pz() << " y " << mcParticle.y() << std::endl;
       // counter++;
-      if (std::abs(mcParticle.pdgCode()) != config.pdgCodes[config.selectMCparticles]) // f2(1525), f0(1710)
-      {
+
+      hMChists.fill(HIST("GenRapidity"), mcParticle.pt(), mcParticle.y());
+      hMChists.fill(HIST("GenPhi"), mcParticle.phi());
+      hMChists.fill(HIST("GenEta"), mcParticle.pt(), mcParticle.eta());
+      // hMChists.fill(HIST("GenPx"), mcParticle.px());
+      // hMChists.fill(HIST("GenPy"), mcParticle.py());
+      // hMChists.fill(HIST("GenPz"), mcParticle.pz());
+
+      if (std::abs(mcParticle.y()) >= 0.5) {
         continue;
       }
       hMChists.fill(HIST("events_check"), 6.5);
@@ -948,9 +993,6 @@ struct HigherMassResonances {
       auto passKs = false;
       for (const auto& kCurrentDaughter : kDaughters) {
         // int daupdg = std::abs(kCurrentDaughter.pdgCode());
-        // if (counter < 1e4)
-        //   std::cout << "Daughter pdg code: " << daupdg << std::endl;
-        // counter++;
 
         if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
@@ -965,10 +1007,7 @@ struct HigherMassResonances {
       if (passKs) {
         genvec.SetPtEtaPhiE(mcParticle.pt(), mcParticle.eta(), mcParticle.phi(), mcParticle.e());
         hMChists.fill(HIST("Genf1710_mass"), genvec.M());
-        hMChists.fill(HIST("Genf1710"), multiplicity_gen, mcParticle.pt());
-        hMChists.fill(HIST("GenRapidity"), genvec.Rapidity());
-        hMChists.fill(HIST("GenPhi"), genvec.Phi());
-        hMChists.fill(HIST("GenEta"), genvec.Eta());
+        hMChists.fill(HIST("Genf1710"), multiplicityGen, mcParticle.pt());
       }
     }
   }

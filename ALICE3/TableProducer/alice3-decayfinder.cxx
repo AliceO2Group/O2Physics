@@ -80,6 +80,15 @@ struct alice3decayFinder {
   Configurable<float> kaFromD_dcaXYconstant{"kaFromD_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> kaFromD_dcaXYpTdep{"kaFromD_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
 
+  Configurable<float> DCosPA{"DCosPA", 0.99, " Cos of pointing angle: pt < 3 GeV"};
+  Configurable<float> DCosPAHighPt{"DCosPAHighPt", 0.995, " Cos of pointing angle: 3 GeV < pt"};
+  Configurable<float> DCosPAxy{"DCosPAxy", 0.99, " Cos of pointing angle xy: pt < 3 GeV"};
+  Configurable<float> DCosPAxyHighPt{"DCosPAxyHighPt", 0.995, " Cos of pointing angle xy: 3 GeV < pt"};
+  Configurable<float> DCosThetaStarLowPt{"DCosThetaStarLowPt", 0.8, "Cos theta; pt < 9"};
+  Configurable<float> DCosThetaStarHighPt{"DCosThetaStarHighPt", 0.9, "Cos theta; 9 < pt < 16"};
+  Configurable<float> DCosThetaStarVHighPt{"DCosThetaStarVHighPt", 1.0, "Cos theta; 16 < pt"};
+  Configurable<float> DDauDecayLength{"DDauDecayLength", 3, "|Normalized dau decay length| > [0]"};
+
   Configurable<float> piFromLc_dcaXYconstant{"piFromLc_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromLc_dcaXYpTdep{"piFromLc_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> kaFromLc_dcaXYconstant{"kaFromLc_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
@@ -90,8 +99,8 @@ struct alice3decayFinder {
   ConfigurableAxis axisEta{"axisEta", {8, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   ConfigurableAxis axisDCA{"axisDCA", {200, -100, 100}, "DCA (#mum)"};
-  ConfigurableAxis axisDMass{"axisDMass", {200, 1.765f, 1.965f}, "D Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisDCADaughters{"axisDCADaughters", {200, 0, 100}, "DCA (#mum)"};
+  ConfigurableAxis axisDMass{"axisDMass", {200, 1.765f, 1.965f}, "D Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisLcMass{"axisLcMass", {200, 2.186f, 2.386f}, "#Lambda_{c} Inv Mass (GeV/c^{2})"};
 
   o2::vertexing::DCAFitterN<2> fitter;
@@ -120,7 +129,9 @@ struct alice3decayFinder {
 
   // partitions for D mesons
   Partition<alice3tracks> tracksPiPlusFromD =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) && aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiPlusFromD) == trackSelectionPiPlusFromD) &&
+    aod::track::signed1Pt > 0.0f &&
+    nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksPiMinusFromD =
     ((aod::a3DecayMap::decayMap & trackSelectionPiMinusFromD) == trackSelectionPiMinusFromD) && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > piFromD_dcaXYconstant + piFromD_dcaXYpTdep* nabs(aod::track::signed1Pt);
   Partition<alice3tracks> tracksKaPlusFromD =
@@ -147,8 +158,14 @@ struct alice3decayFinder {
   struct {
     float dcaDau;
     float mass;
+    std::array<float, 3> posSV;
+    std::array<float, 3> P;
     float pt;
     float eta;
+    float cosPA;
+    float cosPAxy;
+    float cosThetaStar;
+    float normalizedDecayLength;
   } dmeson;
 
   struct {
@@ -183,15 +200,19 @@ struct alice3decayFinder {
     std::array<float, 3> negP;
     posTrack.getPxPyPzGlo(posP);
     negTrack.getPxPyPzGlo(negP);
-
     dmeson.dcaDau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
-    if (dmeson.dcaDau > dcaDaughtersSelection)
-      return false;
 
     // return mass
     dmeson.mass = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{posMass, negMass});
     dmeson.pt = std::hypot(posP[0] + negP[0], posP[1] + negP[1]);
     dmeson.eta = RecoDecay::eta(array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]});
+    const auto posSV = fitter.getPCACandidate();
+    dmeson.posSV[0] = posSV[0];
+    dmeson.posSV[1] = posSV[1];
+    dmeson.posSV[2] = posSV[2];
+    o2::track::TrackParCov parentTrack = fitter.createParentTrackParCov();
+    parentTrack.getPxPyPzGlo(dmeson.P);
+    dmeson.cosThetaStar = RecoDecay::cosThetaStar(std::array{std::array{posP[0], posP[1], posP[2]}, std::array{negP[0], negP[1], negP[2]}}, std::array{posMass, negMass}, dmeson.mass, 0);
     return true;
   }
 
@@ -225,7 +246,7 @@ struct alice3decayFinder {
     t1.getPxPyPzGlo(P1);
     t2.getPxPyPzGlo(P2);
 
-    lcbaryon.dcaDau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    lcbaryon.dcaDau = TMath::Sqrt(fitter3.getChi2AtPCACandidate());
     if (lcbaryon.dcaDau > dcaDaughtersSelection)
       return false;
 
@@ -292,10 +313,15 @@ struct alice3decayFinder {
 
       histos.add("hMassD", "hMassD", kTH1F, {axisDMass});
       histos.add("hMassDbar", "hMassDbar", kTH1F, {axisDMass});
-      histos.add("hDCADDaughters", "hDCADDaughters", kTH1D, {axisDCADaughters});
-      histos.add("hDCADbarDaughters", "hDCADbarDaughters", kTH1D, {axisDCADaughters});
+
+      histos.add("hDCosPA", "hDCosPA", kTH1F, {{200, 0, 1}});
+      histos.add("hDCosPAxy", "hDCosPAxy", kTH1F, {{200, 0, 1}});
+      histos.add("hDCosThetaStar", "hDCosThetaStar", kTH1F, {{200, -1, 1}});
+      histos.add("hDDauDecayLength", "hDDauDecayLength", kTH1F, {{100, 0, 10}});
 
       if (doDCAplotsD) {
+        histos.add("hDCADDaughters", "hDCADDaughters", kTH1D, {axisDCADaughters});
+        histos.add("hDCADbarDaughters", "hDCADbarDaughters", kTH1D, {axisDCA});
         histos.add("h2dDCAxyVsPtPiPlusFromD", "h2dDCAxyVsPtPiPlusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtPiMinusFromD", "h2dDCAxyVsPtPiMinusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaPlusFromD", "h2dDCAxyVsPtKaPlusFromD", kTH2F, {axisPt, axisDCA});
@@ -310,10 +336,10 @@ struct alice3decayFinder {
 
       histos.add("hMassLc", "hMassLc", kTH1F, {axisLcMass});
       histos.add("hMassLcbar", "hMassLcbar", kTH1F, {axisLcMass});
-      histos.add("hDCALcDaughters", "hDCALcDaughters", kTH1D, {axisDCADaughters});
-      histos.add("hDCALcbarDaughters", "hDCALcbarDaughters", kTH1D, {axisDCADaughters});
 
       if (doDCAplotsD) {
+        histos.add("hDCALcDaughters", "hDCALcDaughters", kTH1D, {axisDCADaughters});
+        histos.add("hDCALcbarDaughters", "hDCALcbarDaughters", kTH1D, {axisDCA});
         histos.add("h2dDCAxyVsPtPiPlusFromLc", "h2dDCAxyVsPtPiPlusFromLc", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtPiMinusFromLc", "h2dDCAxyVsPtPiMinusFromLc", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaPlusFromLc", "h2dDCAxyVsPtKaPlusFromLc", kTH2F, {axisPt, axisDCA});
@@ -369,6 +395,41 @@ struct alice3decayFinder {
           continue;
         if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged))
           continue;
+
+        dmeson.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
+        dmeson.cosPAxy = RecoDecay::cpaXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
+
+        const float dmesonCtau = 0.012301;
+        dmeson.normalizedDecayLength = ((dmeson.mass * std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]))) / std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2])) / dmesonCtau;
+
+        histos.fill(HIST("hDCosPA"), dmeson.cosPA);
+        histos.fill(HIST("hDCosPAxy"), dmeson.cosPAxy);
+        histos.fill(HIST("hDCosThetaStar"), dmeson.cosThetaStar);
+        histos.fill(HIST("hDDauDecayLength"), dmeson.normalizedDecayLength);
+
+        if (dmeson.dcaDau > dcaDaughtersSelection)
+          continue;
+
+        if (dmeson.pt <= 3 && dmeson.cosPA < DCosPA)
+          continue;
+        else if (dmeson.pt > 3 && dmeson.cosPA < DCosPAHighPt)
+          continue;
+
+        if (dmeson.pt <= 3 && dmeson.cosPAxy < DCosPAxy)
+          continue;
+        else if (dmeson.pt > 3 && dmeson.cosPAxy < DCosPAxyHighPt)
+          continue;
+
+        if (dmeson.pt <= 9 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarLowPt)
+          continue;
+        else if (dmeson.pt <= 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarHighPt)
+          continue;
+        else if (dmeson.pt > 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
+          continue;
+
+        if (dmeson.normalizedDecayLength > DDauDecayLength)
+          continue;
+
         histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
@@ -381,6 +442,41 @@ struct alice3decayFinder {
           continue;
         if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
           continue;
+
+        dmeson.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
+        dmeson.cosPAxy = RecoDecay::cpaXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
+
+        const float dmesonCtau = 0.012301;
+        dmeson.normalizedDecayLength = ((dmeson.mass * std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]))) / std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2])) / dmesonCtau;
+
+        histos.fill(HIST("hDCosPA"), dmeson.cosPA);
+        histos.fill(HIST("hDCosPAxy"), dmeson.cosPAxy);
+        histos.fill(HIST("hDCosThetaStar"), dmeson.cosThetaStar);
+        histos.fill(HIST("hDDauDecayLength"), dmeson.normalizedDecayLength);
+
+        if (dmeson.dcaDau > dcaDaughtersSelection)
+          continue;
+
+        if (dmeson.pt <= 3 && dmeson.cosPA < DCosPA)
+          continue;
+        else if (dmeson.pt > 3 && dmeson.cosPA < DCosPAHighPt)
+          continue;
+
+        if (dmeson.pt <= 3 && dmeson.cosPAxy < DCosPAxy)
+          continue;
+        else if (dmeson.pt > 3 && dmeson.cosPAxy < DCosPAxyHighPt)
+          continue;
+
+        if (dmeson.pt <= 9 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarLowPt)
+          continue;
+        else if (dmeson.pt <= 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarHighPt)
+          continue;
+        else if (dmeson.pt > 16 && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
+          continue;
+
+        if (dmeson.normalizedDecayLength > DDauDecayLength)
+          continue;
+
         histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
@@ -426,7 +522,7 @@ struct alice3decayFinder {
             continue;
           if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
             continue;
-          histos.fill(HIST("hDCALcDaughters"), lcbaryon.dcaDau);
+          histos.fill(HIST("hDCALcDaughters"), lcbaryon.dcaDau * 1e+4);
           histos.fill(HIST("hMassLc"), lcbaryon.mass);
           histos.fill(HIST("h3dRecLc"), lcbaryon.pt, lcbaryon.eta, lcbaryon.mass);
         }
@@ -442,7 +538,7 @@ struct alice3decayFinder {
             continue;
           if (!buildDecayCandidateThreeBody(proton, kaon, pion, o2::constants::physics::MassProton, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
             continue;
-          histos.fill(HIST("hDCALcbarDaughters"), lcbaryon.dcaDau);
+          histos.fill(HIST("hDCALcbarDaughters"), lcbaryon.dcaDau * 1e+4);
           histos.fill(HIST("hMassLcbar"), lcbaryon.mass);
           histos.fill(HIST("h3dRecLcbar"), lcbaryon.pt, lcbaryon.eta, lcbaryon.mass);
         }

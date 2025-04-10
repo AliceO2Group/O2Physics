@@ -55,7 +55,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandLcMax{"yCandLcMax", -1., "max. candLc. Lc rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_sigmac_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::cuts[0], hf_cuts_sigmac_to_p_k_pi::nBinsPt, hf_cuts_sigmac_to_p_k_pi::nCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::Cuts[0], hf_cuts_sigmac_to_p_k_pi::NBinsPt, hf_cuts_sigmac_to_p_k_pi::NCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   /// Selections on candidate soft π-,+
   Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
@@ -252,7 +252,7 @@ struct HfCandidateCreatorSigmac0plusplus {
                       chargeSigmac,
                       statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
     } /// end loop over Λc+ → pK-π+ (and charge conj.) candidates
-  }   /// end makeSoftPiLcPair
+  } /// end makeSoftPiLcPair
 
   /// @brief function to loop over candidate soft pions and, for each of them, over candidate Λc+ for Σc0,++ → Λc+(→pK-π+) π- candidate reconstruction
   /// @param collision is a o2::aod::Collisions
@@ -515,7 +515,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
             break;
@@ -529,7 +529,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
           // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
             break;
@@ -539,7 +539,6 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
-        auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       /// fill the table with results of generation level MC matching
@@ -549,7 +548,7 @@ struct HfCandidateSigmac0plusplusMc {
         rowMCMatchScGen(flag, origin, -1);
       }
     } /// end loop over mcParticles
-  }   /// end processMc
+  } /// end processMc
   PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);
 };
 

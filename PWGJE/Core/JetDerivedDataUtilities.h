@@ -30,7 +30,7 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 enum JCollisionSel {
   sel8 = 0,
   sel7 = 1,
-  sel7KINT7 = 2,
+  selKINT7 = 2,
   selTVX = 3,
   selNoTimeFrameBorder = 4,
   selNoITSROFrameBorder = 5,
@@ -85,8 +85,8 @@ std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel7")) {
     eventSelectionMaskBits.push_back(JCollisionSel::sel7);
   }
-  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel7KINT7")) {
-    eventSelectionMaskBits.push_back(JCollisionSel::sel7KINT7);
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "selKINT7")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::selKINT7);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "TVX")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
@@ -121,10 +121,10 @@ std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selUnanchoredMC")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
-    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMC")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
+    eventSelectionMaskBits.push_back(JCollisionSel::selNoTimeFrameBorder);
   }
   if (eventSelectionMasksContainSelection(eventSelectionMasks, "selMCFull")) {
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
@@ -135,6 +135,10 @@ std::vector<int> initialiseEventSelectionBits(std::string eventSelectionMasks)
     eventSelectionMaskBits.push_back(JCollisionSel::selTVX);
     eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInTimeRangeStandard);
     eventSelectionMaskBits.push_back(JCollisionSel::selNoCollInRofStandard);
+  }
+  if (eventSelectionMasksContainSelection(eventSelectionMasks, "sel7KINT7")) {
+    eventSelectionMaskBits.push_back(JCollisionSel::sel7);
+    eventSelectionMaskBits.push_back(JCollisionSel::selKINT7);
   }
   return eventSelectionMaskBits;
 }
@@ -148,10 +152,10 @@ uint16_t setEventSelectionBit(T const& collision)
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
-    if (collision.alias_bit(kINT7)) {
-      SETBIT(bit, JCollisionSel::sel7KINT7);
-    }
   }
+    if (collision.alias_bit(kINT7)) {
+      SETBIT(bit, JCollisionSel::selKINT7);
+    }
   if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
     SETBIT(bit, JCollisionSel::selTVX);
   }
