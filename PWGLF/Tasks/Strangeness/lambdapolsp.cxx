@@ -642,8 +642,8 @@ struct lambdapolsp {
 
   TProfile2D* accprofileL;
   TProfile2D* accprofileAL;
-  int currentRunNumber = -999;
-  int lastRunNumber = -999;
+  // int currentRunNumber = -999;
+  // int lastRunNumber = -999;
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
@@ -677,7 +677,7 @@ struct lambdapolsp {
       return;
     }
 
-    currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
+    // currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto bc = collision.foundBC_as<BCsRun3>();
 
     auto qxZDCA = collision.qxZDCA();
@@ -918,7 +918,8 @@ struct lambdapolsp {
         int taga = LambdaTag;
         int tagb = aLambdaTag;
 
-        if (useAccCorr && (currentRunNumber != lastRunNumber)) {
+        // if (useAccCorr && (currentRunNumber != lastRunNumber)) {
+        if (useAccCorr) {
           accprofileL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathL.value, bc.timestamp());
           accprofileAL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathAL.value, bc.timestamp());
         }
@@ -977,7 +978,9 @@ struct lambdapolsp {
             if (LambdaTag) {
               Lambda = Proton + AntiPion;
               tagb = 0;
-              double acvalue = accprofileL->GetBinContent(accprofileL->FindBin(v0.eta(), v0.pt()));
+              int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+              double acvalue = accprofileL->GetBinContent(binx, biny);
               fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), desbinvalue, acvalue);
             }
 
@@ -985,7 +988,9 @@ struct lambdapolsp {
             if (aLambdaTag) {
               AntiLambda = AntiProton + Pion;
               taga = 0;
-              double acvalue = accprofileAL->GetBinContent(accprofileAL->FindBin(v0.eta(), v0.pt()));
+              int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+              int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+              double acvalue = accprofileAL->GetBinContent(binx, biny);
               fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), desbinvalue, acvalue);
             }
           }
@@ -993,7 +998,9 @@ struct lambdapolsp {
           if (LambdaTag) {
             Lambda = Proton + AntiPion;
             tagb = 0;
-            double acvalue = accprofileL->GetBinContent(accprofileL->FindBin(v0.eta(), v0.pt()));
+            int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+            double acvalue = accprofileL->GetBinContent(binx, biny);
             fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue);
           }
 
@@ -1001,13 +1008,15 @@ struct lambdapolsp {
           if (aLambdaTag) {
             AntiLambda = AntiProton + Pion;
             taga = 0;
-            double acvalue = accprofileAL->GetBinContent(accprofileAL->FindBin(v0.eta(), v0.pt()));
+            int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+            int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+            double acvalue = accprofileAL->GetBinContent(binx, biny);
             fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue);
           }
         }
       }
     }
-    lastRunNumber = currentRunNumber;
+    // lastRunNumber = currentRunNumber;
   }
   PROCESS_SWITCH(lambdapolsp, processData, "Process data", true);
 

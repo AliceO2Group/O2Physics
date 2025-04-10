@@ -187,6 +187,7 @@ struct he3hadronfemto {
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
+  Configurable<bool> setting_enableDCAfitter{"setting_enableDCAfitter", false, "Enable DCA fitter"};
   Configurable<bool> setting_saveUSandLS{"setting_saveUSandLS", true, "Save All Pairs"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
   Configurable<bool> setting_fillMultiplicity{"setting_fillMultiplicity", false, "Fill multiplicity table"};
@@ -244,7 +245,7 @@ struct he3hadronfemto {
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hNClsHe3ITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
       {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
@@ -536,6 +537,7 @@ struct he3hadronfemto {
         return false;
       }
       he3Hadcand.collisionID = collIdxMin;
+
     } else {
       he3Hadcand.collisionID = collBracket.getMin();
     }
@@ -564,11 +566,21 @@ struct he3hadronfemto {
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
 
-    he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
+    gpu::gpustd::array<float, 2> dcaInfo;
+    if (setting_enableDCAfitter) {
+      auto trackCovHe3 = getTrackParCov(trackHe3);
+      auto trackCovHad = getTrackParCov(trackHad);
+      auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackCovHe3, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.DCAxyHe3 = dcaInfo[0];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackCovHad, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.DCAxyHad = dcaInfo[0];
+    } else {
+      he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
+      he3Hadcand.DCAxyHad = trackHad.dcaXY();
+    }
     he3Hadcand.DCAzHe3 = trackHe3.dcaZ();
-    he3Hadcand.DCAxyHad = trackHad.dcaXY();
     he3Hadcand.DCAzHad = trackHad.dcaZ();
-
     he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
