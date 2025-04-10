@@ -85,7 +85,7 @@ class MCProng
   };
 
   MCProng();
-  MCProng(int n);
+  explicit MCProng(int n);
   MCProng(int n, int m);
   MCProng(int n, std::vector<int> pdgs, std::vector<bool> checkBothCharges, std::vector<bool> excludePDG,
           std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap,
