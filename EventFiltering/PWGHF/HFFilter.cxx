@@ -715,7 +715,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // Beauty with JPsi
           if (preselJPsiToMuMu) {
-            if (TESTBIT(helper.isSelectedTrackForSoftPionOrBeauty<kBtoJPsiKa>(track, trackParThird, dcaThird), kForBeauty)) { // same for all channels
+            if (!TESTBIT(helper.isSelectedTrackForSoftPionOrBeauty<kBtoJPsiKa>(track, trackParThird, dcaThird), kForBeauty)) { // same for all channels
               continue;
             }
             std::array<float, 3> pVecPosVtx{}, pVecNegVtx{}, pVecThirdVtx{}, pVecFourthVtx{};
@@ -753,7 +753,7 @@ struct HfFilter { // Main struct for HF triggers
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
                   getPxPyPz(trackParFourth, pVecFourth);
                 }
-                if (TESTBIT(helper.isSelectedTrackForSoftPionOrBeauty<kBtoJPsiKa>(trackFourth, trackParFourth, dcaFourth), kForBeauty)) { // same for all channels
+                if (!TESTBIT(helper.isSelectedTrackForSoftPionOrBeauty<kBtoJPsiKa>(trackFourth, trackParFourth, dcaFourth), kForBeauty)) { // same for all channels
                   continue;
                 }
                 if (df4.process(trackParPos, trackParNeg, trackParThird, trackParFourth) != 0) {

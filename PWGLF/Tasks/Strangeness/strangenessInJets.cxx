@@ -52,6 +52,9 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/Jet.h"
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 using namespace std;
 using namespace o2;
 using namespace o2::soa;
@@ -71,6 +74,12 @@ using MCTracks = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
 
 struct StrangenessInJets {
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryMC{"registryMC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -81,6 +90,7 @@ struct StrangenessInJets {
   Configurable<double> rJet{"rJet", 0.3, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
   // Axis parameters
   struct : ConfigurableGroup {
@@ -167,9 +177,6 @@ struct StrangenessInJets {
   TH1F* weightsAntiXiInJet;
   TH1F* weightsAntiXiInUe;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
-
   // List of Particles
   enum Option { KZeroLambda,
                 CascadePart,
@@ -180,8 +187,19 @@ struct StrangenessInJets {
   // Jet background subtraction
   JetBkgSubUtils backgroundSub;
 
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fOmega");
+    }
+  }
+
   void init(InitContext const&)
   {
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     ccdb->setURL(urlToCcdb.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -501,27 +519,38 @@ struct StrangenessInJets {
   template <typename JetTrack>
   bool passedTrackSelectionForJetReconstruction(const JetTrack& track)
   {
+    const int minTpcCr = 70;
+    const double minCrFindable = 0.8;
+    const double maxChi2Tpc = 4.0;
+    const double maxChi2Its = 36.0;
+    const double maxPseudorapidity = 0.8;
+    const double minPtTrack = 0.1;
+    const double dcaxyMaxTrackPar0 = 0.0105;
+    const double dcaxyMaxTrackPar1 = 0.035;
+    const double dcaxyMaxTrackPar2 = 1.1;
+    const double dcazMaxTrack = 2.0;
+
     if (!track.hasITS())
       return false;
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    if (track.tpcNClsCrossedRows() < minTpcCr)
       return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minCrFindable)
       return false;
-    if (track.tpcChi2NCl() > 4)
+    if (track.tpcChi2NCl() > maxChi2Tpc)
       return false;
-    if (track.itsChi2NCl() > 36)
+    if (track.itsChi2NCl() > maxChi2Its)
       return false;
-    if (track.eta() < -0.8 || track.eta() > 0.8)
+    if (track.eta() < -maxPseudorapidity || track.eta() > maxPseudorapidity)
       return false;
-    if (track.pt() < 0.1)
+    if (track.pt() < minPtTrack)
       return false;
-    if (std::fabs(track.dcaXY()) > (0.0105 + 0.035 / std::pow(track.pt(), 1.1)))
+    if (std::fabs(track.dcaXY()) > (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2)))
       return false;
-    if (std::fabs(track.dcaZ()) > 2.0)
+    if (std::fabs(track.dcaZ()) > dcazMaxTrack)
       return false;
     return true;
   }
@@ -932,9 +961,11 @@ struct StrangenessInJets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track, const float nsigmaTPC, const float nsigmaTOF)
   {
-    if (track.p() < 0.6 && std::fabs(nsigmaTPC) < 2.0)
+    double nsigmaPi = 2.0;
+    double pThreshold = 0.6;
+    if (track.p() < pThreshold && std::fabs(nsigmaTPC) < nsigmaPi)
       return true;
-    if (track.p() > 0.6 && std::fabs(nsigmaTPC) < 2.0 && std::fabs(nsigmaTOF) < 2.0)
+    if (track.p() > pThreshold && std::fabs(nsigmaTPC) < nsigmaPi && std::fabs(nsigmaTOF) < nsigmaPi)
       return true;
     return false;
   }
@@ -1015,6 +1046,13 @@ struct StrangenessInJets {
   {
     // event counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
+
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
+    if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC())) {
+      return;
+    }
 
     // event selection
     if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx)
@@ -1421,7 +1459,7 @@ struct StrangenessInJets {
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 1.5);
-      if (std::fabs(collision.posZ()) > 10.0)
+      if (std::fabs(collision.posZ()) > zVtx)
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 2.5);
@@ -1886,7 +1924,7 @@ struct StrangenessInJets {
     for (const auto& mccollision : mcCollisions) {
 
       // Selection on z_{vertex}
-      if (std::fabs(mccollision.posZ()) > 10.0)
+      if (std::fabs(mccollision.posZ()) > zVtx)
         continue;
 
       // MC Particles per Collision
@@ -1898,9 +1936,10 @@ struct StrangenessInJets {
 
         if (!particle.isPhysicalPrimary())
           continue;
-        if (std::fabs(particle.eta()) > 0.8)
+        if (std::fabs(particle.eta()) > etaMax)
           continue;
-        if (particle.pt() < 0.1)
+        double ptMinPart = 0.1;
+        if (particle.pt() < ptMinPart)
           continue;
 
         // 4-momentum representation of a particle
@@ -1956,9 +1995,10 @@ struct StrangenessInJets {
 
           if (!particle.isPhysicalPrimary())
             continue;
-          if (std::fabs(particle.eta()) > 0.8)
+          if (std::fabs(particle.eta()) > etaMax)
             continue;
-          if (particle.pt() < 0.1)
+          double ptMinPart = 0.1;
+          if (particle.pt() < ptMinPart)
             continue;
 
           TVector3 particleDir(particle.px(), particle.py(), particle.pz());
