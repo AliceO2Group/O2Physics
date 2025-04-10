@@ -24,6 +24,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <tuple>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -58,14 +59,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-
 struct lambdapolspspin {
 
-  int mRunNumber;
-  int multEstimator;
-  float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // fill output
