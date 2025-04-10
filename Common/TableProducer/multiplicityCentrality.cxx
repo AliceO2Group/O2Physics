@@ -81,7 +81,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "PVMultZeqs",     // 12
                                                  "MultMCExtras"};  // 13
 static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
-} // namespace multiplicity
+} // namespace multiplicityPercentile
 
 namespace centrality
 {
@@ -975,11 +975,10 @@ struct multiplicityPercentile {
   }
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
 }
- 
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec
+  defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<multiplicityPercentile>(cfgc)};
 }
-
