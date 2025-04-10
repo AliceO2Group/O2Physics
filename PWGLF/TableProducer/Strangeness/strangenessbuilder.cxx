@@ -277,7 +277,7 @@ struct StrangenessBuilder {
   // more algorithms to be added as necessary
   Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins"};
 
-  // V0 buffer for V0s used in cascades: master switch 
+  // V0 buffer for V0s used in cascades: master switch
   // exchanges CPU (generate V0s again) with memory (save pre-generated V0s)
   Configurable<bool> useV0BufferForCascades{"useV0BufferForCascades", false, "store array of V0s for cascades or not. False (default): save RAM, use more CPU; true: save CPU, use more RAM"};
 
@@ -458,7 +458,7 @@ struct StrangenessBuilder {
     auto h2 = histos.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
-    if(v0BuilderOpts.generatePhotonCandidates.value==true){ 
+    if (v0BuilderOpts.generatePhotonCandidates.value == true) {
       auto hDeduplicationStatistics = histos.add<TH1>("hDeduplicationStatistics", "hDeduplicationStatistics", kTH1D, {{2, -0.5f, 1.5f}});
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(1, "AO2D V0s");
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
@@ -722,9 +722,9 @@ struct StrangenessBuilder {
     v0Entry currentV0Entry;
     cascadeEntry currentCascadeEntry;
 
-    std::vector<int> ao2dV0toV0List;                // index to relate AO2D V0s -> deduplicated V0s
-    std::vector<int> bestCollisionArray;            // stores McCollision -> Collision map
-    std::vector<int> bestCollisionNContribsArray;   // stores Ncontribs for biggest coll assoc to mccoll
+    std::vector<int> ao2dV0toV0List;              // index to relate AO2D V0s -> deduplicated V0s
+    std::vector<int> bestCollisionArray;          // stores McCollision -> Collision map
+    std::vector<int> bestCollisionNContribsArray; // stores Ncontribs for biggest coll assoc to mccoll
 
     int collisionLessV0s = 0;
     int collisionLessCascades = 0;
@@ -754,16 +754,16 @@ struct StrangenessBuilder {
       ao2dV0toV0List.clear();
       ao2dV0toV0List.resize(v0s.size(), -1); // -1 means keep, -2 means do not keep
 
-      if(deduplicationAlgorithm>0 && v0BuilderOpts.generatePhotonCandidates){
+      if (deduplicationAlgorithm > 0 && v0BuilderOpts.generatePhotonCandidates) {
         // handle duplicates explicitly: group V0s according to (p,n) indices
-        // will provide a list of collisionIds (in V0group), allowing for 
+        // will provide a list of collisionIds (in V0group), allowing for
         // easy de-duplication when passing to the v0List
-        std::vector<o2::pwglf::V0group> v0tableGrouped = o2::pwglf::groupDuplicates(v0s); 
+        std::vector<o2::pwglf::V0group> v0tableGrouped = o2::pwglf::groupDuplicates(v0s);
         histos.fill(HIST("hDeduplicationStatistics"), 0.0, v0s.size());
         histos.fill(HIST("hDeduplicationStatistics"), 1.0, v0tableGrouped.size());
 
         // process grouped duplicates, remove 'bad' ones
-        for(size_t iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
+        for (size_t iV0 = 0; iV0 < v0tableGrouped.size(); iV0++) {
           auto pTrack = tracks.rawIteratorAt(v0tableGrouped[iV0].posTrackId);
           auto nTrack = tracks.rawIteratorAt(v0tableGrouped[iV0].negTrackId);
 
@@ -771,12 +771,12 @@ struct StrangenessBuilder {
           bool isNegTPCOnly = (nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF());
 
           // skip single copy V0s
-          if(v0tableGrouped[iV0].collisionIds.size() == 1){
+          if (v0tableGrouped[iV0].collisionIds.size() == 1) {
             continue;
           }
 
           // don't try to de-duplicate if no track is TPC only
-          if(!isPosTPCOnly && !isNegTPCOnly){
+          if (!isPosTPCOnly && !isNegTPCOnly) {
             continue;
           }
 
@@ -784,7 +784,7 @@ struct StrangenessBuilder {
           float bestPointingAngle = 10; // a nonsense angle, anything's better
           size_t bestPointingAngleIndex = -1;
 
-          for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+          for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             // get track parametrizations, collisions
             auto posTrackPar = getTrackParCov(pTrack);
             auto negTrackPar = getTrackParCov(nTrack);
@@ -808,14 +808,14 @@ struct StrangenessBuilder {
                   return;
                 }
               }
-            } //end TPC drift treatment 
+            } // end TPC drift treatment
 
             // process candidate with helper, generate properties for consulting
-            // <false>: do not apply selections: do as much as possible to preserve 
+            // <false>: do not apply selections: do as much as possible to preserve
             // candidate at this level and do not select with topo selections
-            if(straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)){ 
+            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)) {
               // candidate built, check pointing angle
-              if(straHelper.v0.pointingAngle < bestPointingAngle){ 
+              if (straHelper.v0.pointingAngle < bestPointingAngle) {
                 bestPointingAngle = straHelper.v0.pointingAngle;
                 bestPointingAngleIndex = ic;
               }
@@ -823,17 +823,17 @@ struct StrangenessBuilder {
           } // end candidate loop
 
           // mark de-duplicated candidates
-          for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+          for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -2;
-            if(bestPointingAngleIndex == ic){
+            if (bestPointingAngleIndex == ic) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
           }
-        } // end V0 loop 
+        } // end V0 loop
       } // end de-duplication process
 
       for (const auto& v0 : v0s) {
-        if(ao2dV0toV0List[v0.globalIndex()]==-1){ // keep only de-duplicated
+        if (ao2dV0toV0List[v0.globalIndex()] == -1) {       // keep only de-duplicated
           ao2dV0toV0List[v0.globalIndex()] = v0List.size(); // maps V0s to the corresponding v0List entry
           currentV0Entry.globalId = v0.globalIndex();
           currentV0Entry.collisionId = v0.collisionId();
@@ -982,14 +982,14 @@ struct StrangenessBuilder {
     // N.B.: necessary also before cascade part
     sorted_v0.clear();
     sorted_v0 = sort_indices(v0List, (mc_findableMode.value > 0));
-    
+
     // Cascade part if cores are requested, skip otherwise
     if (mEnabledTables[kStoredCascCores] || mEnabledTables[kStoredKFCascCores]) {
       if (mc_findableMode.value < 2) {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
           auto const& v0 = cascade.v0();
-          if(v0.v0Type()>1){ 
+          if (v0.v0Type() > 1) {
             continue; // skip any unexpected stuff (FIXME: follow-up)
           }
           currentCascadeEntry.globalId = cascade.globalIndex();
@@ -1716,11 +1716,11 @@ struct StrangenessBuilder {
         interlinks.cascadeToCascCores.push_back(-1);
         continue; // didn't work out, skip
       }
-      if(useV0BufferForCascades){ 
-        // this processing path uses a buffer of V0s so that no 
-        // additional minimization step is redone. It consumes less 
-        // CPU at the cost of more memory. Since memory is a more 
-        // limited commodity, this isn't the default option. 
+      if (useV0BufferForCascades) {
+        // this processing path uses a buffer of V0s so that no
+        // additional minimization step is redone. It consumes less
+        // CPU at the cost of more memory. Since memory is a more
+        // limited commodity, this isn't the default option.
         if (!straHelper.buildCascadeCandidate(cascade.collisionId, pvX, pvY, pvZ,
                                               v0sFromCascades[v0Map[cascade.v0Id]],
                                               posTrack,
@@ -1733,8 +1733,8 @@ struct StrangenessBuilder {
           interlinks.cascadeToCascCores.push_back(-1);
           continue; // didn't work out, skip
         }
-      }else{
-        // this processing path generates the entire cascade 
+      } else {
+        // this processing path generates the entire cascade
         // from tracks, without any need to have V0s generated.
         if (!straHelper.buildCascadeCandidate(cascade.collisionId, pvX, pvY, pvZ,
                                               posTrack,
