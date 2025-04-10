@@ -117,7 +117,7 @@ struct upcPhotonuclearAnalysisJMG {
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < myZVtxCut;
   Filter collisionZNTimeFilter = nabs(aod::udzdc::timeZNA) < myTimeZNACut && nabs(aod::udzdc::timeZNC) < myTimeZNCCut;
 
-  using FullSGUDCollision = soa::Filtered<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>>::iterator;
+  using FullSGUDCollision = soa::Filtered<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>>;
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
 
   // Output definitions
@@ -237,31 +237,17 @@ struct upcPhotonuclearAnalysisJMG {
   std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 50.0f, 400.0f};
   SliceCache cache;
 
-
   // Binning only on PosZ without centrality
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
+  BinningType bindingOnVtx{{vtxBinsEdges}, true};
+  SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, 5, -1, &cache};
+
   //ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::TotalFT0AmplitudeC> bindingOnVtx{{vtxBinsEdges, multBinsEdges}, true};
-  ColumnBinningPolicy<aod::collision::PosZ> bindingOnVtx{{vtxBinsEdges}, true};
 
   /*SameKindPair<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>,
                FullUDTracks,
                ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::TotalFT0AmplitudeC>>
                pair{bindingOnVtx, 5, -1, &cache};*/
-
-  SameKindPair<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>,
-               FullUDTracks,
-               ColumnBinningPolicy<aod::collision::PosZ>> pair{bindingOnVtx, 5, -1, &cache};
-
-  // template <typename C>
-  // bool isGlobalCollisionCut(C const& collision)
-  // {
-    /*if (collision.posZ() < cutMyPosZMin || myZVtxCut < collision.posZ()) {
-      return false;
-    }*/
-    /*if ((std::abs(collision.timeZNA()) < myTimeZNACut && std::abs(collision.timeZNC()) < myTimeZNCCut) == false) {
-      return false;
-    }
-    return true;*/
-  // }
 
   template <typename CSG>
   bool isCollisionCutSG(CSG const& collision, int SideGap)
@@ -280,14 +266,6 @@ struct upcPhotonuclearAnalysisJMG {
           return false;
         }
         /*if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
-          return false;
-        }*/
-        break;
-      case 2:                                                                                                                              // Gap in Both Sides
-        if ((collision.energyCommonZNA() < cutBothGapMyEnergyZNAMax && collision.energyCommonZNC() < cutBothGapMyEnergyZNCMax) == false) { // 0n - A side && 0n - C Side
-          return false;
-        }
-        /*if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false) {
           return false;
         }*/
         break;
@@ -397,17 +375,13 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
 
-  void processSG(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  void processSG(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
     histos.fill(HIST("Events/hCountCollisions"), 0);
     int SGside = reconstructedCollision.gapSide();
     int nTracksCharged = 0;
     float sumPt = 0;
     int multiplicity = 0;
-
-    /*if (isGlobalCollisionCut(reconstructedCollision) == false) {
-      return;
-    }*/
 
     //float centrality = 50.0;
     switch (SGside) {
@@ -510,16 +484,9 @@ struct upcPhotonuclearAnalysisJMG {
   }
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
 
-  void processSame(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  void processSame(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
     int SGside = reconstructedCollision.gapSide();
-    //int nTracksCharged = 0;
-    //float sumPt = 0;
-    //int multiplicity = 0;
-
-    /*if (isGlobalCollisionCut(reconstructedCollision) == false) {
-      return;
-    }*/
 
     float centrality = 100.0;
     switch (SGside) {
@@ -550,14 +517,12 @@ struct upcPhotonuclearAnalysisJMG {
 
   void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
-    int SGside = reconstructedCollision.gapSide();
+    //int SGside = reconstructedCollision::iterator.gapSide();
+    int SGside = 0;
 
-    /*if (isGlobalCollisionCut(reconstructedCollision) == false) {
-      return;
-    }*/
     //LOGF(info, "Process mixed events");
     //LOGF(info, ">>> Collision posZ: %f", reconstructedCollision.posZ());
-    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (collision1.size() == 0 || collision2.size() == 0) {
         LOGF(info, "One or both collisions are empty.");
         continue;
@@ -567,9 +532,9 @@ struct upcPhotonuclearAnalysisJMG {
       LOGF(info, "Filling mixed events");
       switch (SGside) {
         case 0: // gap for side A
-          if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+          /*if (isCollisionCutSG(reconstructedCollision, 0) == false) {
             return;
-          }
+          }*/
           if (fillCollisionUD(mixed, collision1, centrality) == false) {
             return;
           }
@@ -579,9 +544,9 @@ struct upcPhotonuclearAnalysisJMG {
           fillCorrelationsUD(mixed, tracks1, tracks2, centrality, collision1.posZ());
           break;
         case 1: // gap for side C
-          if (isCollisionCutSG(reconstructedCollision, 1) == false) {
+          /*if (isCollisionCutSG(reconstructedCollision, 1) == false) {
             return;
-          }
+          }*/
           break;
         default:
           return;
