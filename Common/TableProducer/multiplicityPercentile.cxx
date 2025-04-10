@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-namespace multiplicity
+namespace multiplicityPercentile
 {
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -975,10 +975,11 @@ struct multiplicityPercentile {
   }
   PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
 }
+ 
 
-WorkflowSpec
-  defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<multPercentile>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<multiplicityPercentile>(cfgc)};
 }
+
