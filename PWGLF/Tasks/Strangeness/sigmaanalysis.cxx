@@ -961,7 +961,7 @@ struct sigmaanalysis {
       histos.fill(HIST("BuilderQA/hPhotonAssociation"), sigma.photonIsCorrectlyAssoc());
       histos.fill(HIST("BuilderQA/hLambdaAssociation"), sigma.lambdaIsCorrectlyAssoc());
 
-      int GammaTrkCode = -10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only
+      int GammaTrkCode = -10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something
       int LambdaTrkCode = -10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something
       
       if (sigma.photonPosTrackCode()==1 && sigma.photonNegTrackCode()==1)
@@ -970,6 +970,8 @@ struct sigmaanalysis {
         GammaTrkCode = 2;
       if (sigma.photonPosTrackCode()==3 && sigma.photonNegTrackCode()==3)
         GammaTrkCode = 3;
+      if (sigma.photonPosTrackCode()==2 || sigma.photonNegTrackCode()==2)
+        GammaTrkCode = 4;
       if (sigma.lambdaPosTrackCode()==1 && sigma.lambdaNegTrackCode()==1)
         LambdaTrkCode = 1;
       if ((sigma.lambdaPosTrackCode()!=1 && sigma.lambdaNegTrackCode()==1) || (sigma.lambdaPosTrackCode()==1 && sigma.lambdaNegTrackCode()!=1))
@@ -979,8 +981,10 @@ struct sigmaanalysis {
       if (sigma.lambdaPosTrackCode()==2 || sigma.lambdaNegTrackCode()==2)
         LambdaTrkCode = 4;
 
-      histos.fill(HIST("BuilderQA/hPhotonTrackCode"), GammaTrkCode);
-      histos.fill(HIST("BuilderQA/hLambdaTrackCode"), LambdaTrkCode);
+      if (sigma.photonIsCorrectlyAssoc()){  
+        histos.fill(HIST("BuilderQA/hPhotonTrackCode"), GammaTrkCode);
+        histos.fill(HIST("BuilderQA/hLambdaTrackCode"), LambdaTrkCode);
+      }
 
       if ((GammaTrkCode==1) && (TMath::Abs(sigma.photonY()) <= 0.5) && (sigma.photonCandPDGCode() == 22)){
         histos.fill(HIST("BuilderQA/hPhotonZ"), sigma.photonZconv());
