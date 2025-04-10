@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
@@ -71,6 +72,33 @@ float fwdDcaXYinSigma(T const& track)
   // } else {
   //   return std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
   // }
+}
+//_______________________________________________________________________
+template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
+{
+  // this is only for muon at forward rapidity
+  if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    std::map<int64_t, float> map_chi2MCHMFT;
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
+      const auto& candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    }
+    if (map_chi2MCHMFT.begin()->first == track.globalIndex()) { // search for minimum matching-chi2
+      map_chi2MCHMFT.clear();
+      return true;
+    } else {
+      map_chi2MCHMFT.clear();
+      return false;
+    }
+  } else {
+    return true;
+  }
 }
 //_______________________________________________________________________
 template <typename T>

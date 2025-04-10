@@ -67,6 +67,8 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
+int maxLogComb = 10;
+
 bool processpairs = false;
 bool processmixedevents = false;
 bool ptorder = false;
@@ -1146,13 +1148,13 @@ struct IdentifiedbfTask {
   Filter onlyacceptedcollisions = (aod::identifiedbffilter::collisionaccepted == uint8_t(true));
   Filter onlyacceptedtracks = (aod::identifiedbffilter::trackacceptedid >= int8_t(0));
 
-  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks, aod::McParticles const&)
+  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
   PROCESS_SWITCH(IdentifiedbfTask, processRecLevel, "Process reco level correlations", false);
 
-  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::McParticles const&)
+  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     int nAssignedTracks = 0;
     int nNotAssignedTracks = 0;
@@ -1209,8 +1211,7 @@ struct IdentifiedbfTask {
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
-    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks,
-    aod::McParticles const&)
+    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
@@ -1263,7 +1264,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1298,7 +1299,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS,
              "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
@@ -1344,7 +1345,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1377,7 +1378,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS,
              "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
