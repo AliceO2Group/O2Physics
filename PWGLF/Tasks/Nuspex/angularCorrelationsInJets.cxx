@@ -85,26 +85,16 @@ struct AngularCorrelationsInJets {
   Configurable<float> minJetPt{"minJetPt", 10.0, "minimum total pT to accept jet"};
 
   // Proton Cuts
-  Configurable<float> protonDCAxyYield{"protonDCAxyYield", 0.05, "[proton] DCAxy cut for yield"};
-  Configurable<float> protonDCAzYield{"protonDCAzYield", 0.05, "[proton] DCAz cut for yield"};
   Configurable<float> protonDCAxyCF{"protonDCAxyCF", 0.05, "[proton] DCAxy cut for CF"};
   Configurable<float> protonDCAzCF{"protonDCAzCF", 0.02, "[proton] DCAz cut for CF"};
   Configurable<float> protonTPCTOFpT{"protonTPCTOFpT", 0.7, "[proton] pT for switch in TPC/TPC+TOF nsigma"};
-  Configurable<float> protonTPCnsigmaLowPtYield{"protonTPCnsigmaLowPtYield", 4.0, "[proton] max TPC nsigma with low pT for yield"};
-  Configurable<float> protonTPCnsigmaHighPtYield{"protonTPCnsigmaHighPtYield", 4.0, "[proton] max TPC nsigma with high pT for yield"};
-  Configurable<float> protonTOFnsigmaHighPtYield{"protonTOFnsigmaHighPtYield", 4.0, "[proton] max TOF nsigma with high pT yield"};
   Configurable<float> protonTPCnsigma{"protonTPCnsigma", 4.0, "[proton] max TPC nsigma for pt > 0/1.5/3.0 GeV"};
   Configurable<float> protonTOFnsigma{"protonTOFnsigma", 3.0, "[proton] max TOF nsigma for pt > 0/1.5/3.0 GeV"};
 
   // Antiproton Cuts
-  Configurable<float> antiprotonDCAxyYield{"antiprotonDCAxyYield", 0.05, "[antiproton] DCAxy cut for yield"};
-  Configurable<float> antiprotonDCAzYield{"antiprotonDCAzYield", 0.05, "[antiproton] DCAz cut for yield"};
   Configurable<float> antiprotonDCAxyCF{"antiprotonDCAxyCF", 0.05, "[antiproton] DCAxy cut for CF"};
   Configurable<float> antiprotonDCAzCF{"antiprotonDCAzCF", 0.02, "[antiproton] DCAz cut for CF"};
   Configurable<float> antiprotonTPCTOFpT{"antiprotonTPCTOFpT", 0.7, "[antiproton] pT for switch in TPC/TPC+TOF nsigma"};
-  Configurable<float> antiprotonTPCnsigmaLowPtYield{"antiprotonTPCnsigmaLowPtYield", 4.0, "[antiproton] max TPC nsigma with low pT for yield"};
-  Configurable<float> antiprotonTPCnsigmaHighPtYield{"antiprotonTPCnsigmaHighPtYield", 4.0, "[antiproton] max TPC nsigma with high pT for yield"};
-  Configurable<float> antiprotonTOFnsigmaHighPtYield{"antiprotonTOFnsigmaHighPtYield", 4.0, "[antiproton] min TOF nsigma with high pT for yield"};
   Configurable<float> antiprotonTPCnsigma{"antiprotonTPCnsigma", 4.0, "[antiproton] max TPC nsigma for pt > 0/1.5/3.0 GeV"};
   Configurable<float> antiprotonTOFnsigma{"antiprotonTOFnsigma", 3.0, "[antiproton] max TOF nsigma for pt > 0/1.5/3.0 GeV"};
 
@@ -1000,7 +990,7 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("trackProtocol"), 1); // # tracks selected for jet reconstruction
       double mass = 0.139;
 
-      if (track.tpcNClsFindable() != 0) {
+      if (outputQC && (track.tpcNClsFindable() != 0)) {
         registryQC.fill(HIST("ratioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
 
@@ -1075,7 +1065,7 @@ struct AngularCorrelationsInJets {
     jets.clear();
 
     for (const auto& track : tracks) {
-      if (track.tpcNClsFindable() != 0) {
+      if (outputQC && (track.tpcNClsFindable() != 0)) {
         registryQC.fill(HIST("ratioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
       }
       registryQC.fill(HIST("ptFullEvent"), track.pt());
