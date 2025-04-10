@@ -784,7 +784,7 @@ struct StrangenessBuilder {
           float bestPointingAngle = 10; // a nonsense angle, anything's better
           size_t bestPointingAngleIndex = -1;
 
-          float bestDCADaughters = 1e+3; // an excessively large DCA 
+          float bestDCADaughters = 1e+3; // an excessively large DCA
           size_t bestDCADaughtersIndex = -1;
 
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
@@ -833,13 +833,13 @@ struct StrangenessBuilder {
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -2;
             // algorithm 1: best pointing angle
-            if (bestPointingAngleIndex == ic && deduplicationAlgorithm.value==1) {
+            if (bestPointingAngleIndex == ic && deduplicationAlgorithm.value == 1) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
-            if (bestDCADaughtersIndex == ic && deduplicationAlgorithm.value==2) {
+            if (bestDCADaughtersIndex == ic && deduplicationAlgorithm.value == 2) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
-            if (bestDCADaughtersIndex == ic && bestPointingAngleIndex == ic && deduplicationAlgorithm.value==3) {
+            if (bestDCADaughtersIndex == ic && bestPointingAngleIndex == ic && deduplicationAlgorithm.value == 3) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
           }
