@@ -274,7 +274,7 @@ struct v0assoqa {
     }
 
     // simple inspection of grouped duplicates
-    for(int iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
+    for(size_t iV0 = 0; iV0<v0tableGrouped.size(); iV0++){ 
       // base QA histograms
       histos.fill(HIST("hDuplicateCount"), v0tableGrouped[iV0].collisionIds.size());
       if(v0tableGrouped[iV0].v0Type == 7){ 
@@ -307,8 +307,8 @@ struct v0assoqa {
         }
 
         bool hasCorrectCollisionCopy = false;
-        for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
-          for(int imcc=0; imcc<mcCollToColl[mcV0.mcCollisionId()].size(); imcc++){
+        for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+          for(size_t imcc=0; imcc<mcCollToColl[mcV0.mcCollisionId()].size(); imcc++){
             if(v0tableGrouped[iV0].collisionIds[ic] == mcCollToColl[mcV0.mcCollisionId()][imcc]){ 
               hasCorrectCollisionCopy = true; 
             }
@@ -324,15 +324,11 @@ struct v0assoqa {
 
         // de-duplication strategy tests start here
         // store best-of index for cross-checking strict de-duplication techniques
-        int bestPointingAngleIndex = -1; 
+        
         float bestPointingAngle = .99;
-        int bestDCADaughtersIndex = -1; 
         float bestDCADaughters = 1e+6;
-        int bestDCADaughters3DIndex = -1; 
         float bestDCADaughters3D = 1e+6;
-        int bestDCADaughtersXYIndex = -1; 
         float bestDCADaughtersXY = 1e+6;
-        int bestDCADaughtersZIndex = -1; 
         float bestDCADaughtersZ = 1e+6;
 
         bool bestPointingAngleCorrect = false;
@@ -342,13 +338,13 @@ struct v0assoqa {
         bool bestDCADaughtersZCorrect = false;
 
         // START OF MAIN DUPLICATE LOOP IS HERE
-        for(int ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
+        for(size_t ic=0; ic<v0tableGrouped[iV0].collisionIds.size(); ic++){
           // simple duplicate accounting
           histos.fill(HIST("hPhotonPt_Duplicates"), mcV0.pt());
 
           // check if candidate is correctly associated 
           bool correctlyAssociated = false;
-          for(int imcc=0; imcc<mcCollToColl[correctMcCollision].size(); imcc++){
+          for(size_t imcc=0; imcc<mcCollToColl[correctMcCollision].size(); imcc++){
             if(v0tableGrouped[iV0].collisionIds[ic] == mcCollToColl[correctMcCollision][imcc]){ 
               correctlyAssociated = true; 
             }
@@ -425,27 +421,22 @@ struct v0assoqa {
           // check criteria
           if(straHelper.v0.pointingAngle < bestPointingAngle){ 
             bestPointingAngle = straHelper.v0.pointingAngle; 
-            bestPointingAngleIndex = ic;
             bestPointingAngleCorrect = correctlyAssociated;
           }
           if(straHelper.v0.daughterDCA < bestDCADaughters){ 
             bestDCADaughters = straHelper.v0.daughterDCA; 
-            bestDCADaughtersIndex = ic;
             bestDCADaughtersCorrect = correctlyAssociated;
           }
           if(daughterDCA3D < bestDCADaughters3D){ 
             bestDCADaughters3D = daughterDCA3D; 
-            bestDCADaughters3DIndex = ic;
             bestDCADaughters3DCorrect = correctlyAssociated;
           }
           if(daughterDCAXY < bestDCADaughtersXY){ 
             bestDCADaughtersXY = daughterDCAXY; 
-            bestDCADaughtersXYIndex = ic;
             bestDCADaughtersXYCorrect = correctlyAssociated;
           }
           if(daughterDCAZ < bestDCADaughtersZ){ 
             bestDCADaughtersZ = daughterDCAZ; 
-            bestDCADaughtersZIndex = ic;
             bestDCADaughtersZCorrect = correctlyAssociated;
           }
         } //end duplicate loop 
