@@ -251,19 +251,19 @@ struct lambdapolspspin {
     double theta1 = acos(cosTheta1); // angle in radians
     double theta2 = acos(cosTheta2); // angle in radians
     // Step 2: Compute sin(theta1) and sin(theta2)
-    double sinTheta1 = std::sqrt(1 - cosTheta1 * cosTheta1);
-    double sinTheta2 = std::sqrt(1 - cosTheta2 * cosTheta2);
+    // double sinTheta1 = std::sqrt(1 - cosTheta1 * cosTheta1);
+    // double sinTheta2 = std::sqrt(1 - cosTheta2 * cosTheta2);
 
     // Step 3: Calculate cos(theta1 - theta2) using the trigonometric identity
     // double cosThetaDiff = cosTheta1 * cosTheta2 + sinTheta1 * sinTheta2;
     double cosThetaDiff = TMath::Cos(theta1 - theta2);
 
     if (tag1 && tag3)
-      histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candpt);
+      histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
     if (tag1 && tag4)
-      histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candpt);
+      histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
     if (tag2 && tag4)
-      histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candpt);
+      histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
   }
 
   std::tuple<int, int, bool> getLambdaTags(const auto& v0, const auto& collision)
@@ -318,7 +318,7 @@ struct lambdapolspspin {
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using ResoV0s = aod::V0Datas;
 
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& V0s, aod::BCs const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/, ResoV0s const& V0s, aod::BCs const&)
   {
 
     if (!collision.sel8()) {
