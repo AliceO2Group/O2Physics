@@ -94,7 +94,7 @@ struct alice3multicharm {
 
   Configurable<float> minPiCPt{"minPiCPt", 0.15, "Minimum pT for XiC pions"};
   Configurable<float> minPiCCPt{"minPiCCPt", 0.3, "Minimum pT for XiCC pions"};
-  Configurable<float> minMultiplicity{"minMultiplicity", 0, "Minimum multiplicity"};
+  Configurable<float> minNTracks{"minNTracks", -1, "Minimum number of tracks"};
 
   Configurable<float> minXiCRadius{"minXiCRadius", 0.001, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak"};
@@ -108,6 +108,7 @@ struct alice3multicharm {
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
 
+  ConfigurableAxis axisDCAXi{"axisDCAXi", {200, 0, 200}, "DCA (mum)"};
   ConfigurableAxis axisDCAXiCDaughters{"axisDCAXiCDaughters", {200, 0, 100}, "DCA (mum)"};
   ConfigurableAxis axisDCAXiCCDaughters{"axisDCAXiCCDaughters", {200, 0, 100}, "DCA (mum)"};
 
@@ -390,6 +391,10 @@ struct alice3multicharm {
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {axisDCAXiCCDaughters});
+    histos.add("hDCAXi", "hDCAXi", kTH1D, {axisDCAXi});
+    histos.add("hPi1cPt", "hPi1cPt", kTH1D, {axisPt});
+    histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
+    histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
 
     // These histograms bookkeep the exact number of combinations attempted
     // CombinationsXiC: triplets Xi-pi-pi considered per Xi
@@ -397,6 +402,8 @@ struct alice3multicharm {
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1D, {axisNConsidered});
     histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1D, {axisNConsidered});
     histos.add("hNCollisions", "hNCollisions", kTH1D, {{2, 0.5, 2.5}});
+    histos.add("hNTracks", "hNTracks", kTH1D, {{500, 0, 5000}});
+
     if (doDCAplots) {
       histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA});
       histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2D, {axisPt, axisDCA});
@@ -421,7 +428,9 @@ struct alice3multicharm {
   void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
     histos.fill(HIST("hNCollisions"), 1);
-    if (tracks.size() < minMultiplicity)
+    histos.fill(HIST("hNTracks"), tracks.size());
+
+    if (tracks.size() < minNTracks)
       return;
 
     histos.fill(HIST("hNCollisions"), 2);
@@ -463,6 +472,11 @@ struct alice3multicharm {
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
 
+      if (xi.dcaXY() < xiFromXiC_dcaXYconstant)
+        continue;
+
+      histos.fill(HIST("hDCAXi"), xi.dcaXY() * 1e+4);
+
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
@@ -470,6 +484,8 @@ struct alice3multicharm {
           continue; // avoid using any track that was already used
         if (pi1c.pt() < minPiCPt)
           continue;
+
+        histos.fill(HIST("hPi1cPt"), pi1c.pt());
 
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
@@ -482,6 +498,8 @@ struct alice3multicharm {
             continue; // avoid using any track that was already used
           if (pi2c.pt() < minPiCPt)
             continue;
+
+          histos.fill(HIST("hPi2cPt"), pi2c.pt());
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
@@ -523,12 +541,15 @@ struct alice3multicharm {
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
 
+            if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
+              continue;
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
               continue; // avoid using any track that was already used
             if (picc.pt() < minPiCCPt)
               continue;
-            if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
-              continue;
+
+            histos.fill(HIST("hPiccPt"), picc.pt());
+
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
             histos.fill(HIST("hCharmBuilding"), 2.0f);
