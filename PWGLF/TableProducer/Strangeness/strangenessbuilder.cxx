@@ -275,7 +275,7 @@ struct StrangenessBuilder {
 
   // first order deduplication implementation
   // more algorithms to be added as necessary
-  Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins"};
+  Configurable<int> deduplicationAlgorithm{"deduplicationAlgorithm", 1, "0: disabled; 1: best pointing angle wins; 2: best DCA daughters wins; 3: best pointing and best DCA wins"};
 
   // V0 buffer for V0s used in cascades: master switch
   // exchanges CPU (generate V0s again) with memory (save pre-generated V0s)
@@ -784,6 +784,9 @@ struct StrangenessBuilder {
           float bestPointingAngle = 10; // a nonsense angle, anything's better
           size_t bestPointingAngleIndex = -1;
 
+          float bestDCADaughters = 1e+3; // an excessively large DCA 
+          size_t bestDCADaughtersIndex = -1;
+
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             // get track parametrizations, collisions
             auto posTrackPar = getTrackParCov(pTrack);
@@ -819,13 +822,24 @@ struct StrangenessBuilder {
                 bestPointingAngle = straHelper.v0.pointingAngle;
                 bestPointingAngleIndex = ic;
               }
+              if (straHelper.v0.daughterDCA < bestDCADaughters) {
+                bestDCADaughters = straHelper.v0.daughterDCA;
+                bestDCADaughtersIndex = ic;
+              }
             } // end build V0
           } // end candidate loop
 
           // mark de-duplicated candidates
           for (size_t ic = 0; ic < v0tableGrouped[iV0].collisionIds.size(); ic++) {
             ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -2;
-            if (bestPointingAngleIndex == ic) {
+            // algorithm 1: best pointing angle
+            if (bestPointingAngleIndex == ic && deduplicationAlgorithm.value==1) {
+              ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
+            }
+            if (bestDCADaughtersIndex == ic && deduplicationAlgorithm.value==2) {
+              ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
+            }
+            if (bestDCADaughtersIndex == ic && bestPointingAngleIndex == ic && deduplicationAlgorithm.value==3) {
               ao2dV0toV0List[v0tableGrouped[iV0].V0Ids[ic]] = -1; // keep best only
             }
           }
