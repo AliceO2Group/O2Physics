@@ -52,7 +52,6 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, 
 namespace
 {
 static const int number_of_particles = 6;
-static const int number_of_antiparticle = 6;
 static const std::vector<std::string> particleNames{"pion", "proton", "deuteron", "triton", "helium3", "alpha"};
 static const std::vector<std::string> antiparticleNames{"anti-pion", "anti-proton", "anti-deuteron", "anti-triton", "anti-helium3", "anti-alpha"};
 static const std::vector<int> particlePdgCodes{211, 2212, o2::constants::physics::kDeuteron, o2::constants::physics::kTriton, o2::constants::physics::kHelium3, o2::constants::physics::kAlpha};
