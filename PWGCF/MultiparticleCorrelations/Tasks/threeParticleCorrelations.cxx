@@ -30,6 +30,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::physics;
 
 struct ThreeParticleCorrelations {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -51,8 +52,7 @@ struct ThreeParticleCorrelations {
   float dEtaMin = 0.02, dPhiStarMin = 0.1;
   float rMin = 0.8, rMax = 2.5;
 
-  // Particle masses
-  double massLambda = constants::physics::MassLambda0;
+  // Lambda invariant mass fit
   double dGaussSigma = 0.0021;
 
   // Histogram registry
@@ -316,7 +316,7 @@ struct ThreeParticleCorrelations {
               deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
               deltaEta = trigger.eta() - associate.eta();
 
-              if (candMass >= massLambda - 4 * dGaussSigma && candMass <= massLambda + 4 * dGaussSigma) {
+              if (candMass >= MassLambda0 - 4 * dGaussSigma && candMass <= MassLambda0 + 4 * dGaussSigma) {
                 if (assocPID[0] == pionID) { // Pions
                   rSECorrRegistry.fill(HIST("hSameLambdaPion_SGNL"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffPions, associate.sign(), associate.pt()));
                 } else if (assocPID[0] == kaonID) { // Kaons
@@ -324,7 +324,7 @@ struct ThreeParticleCorrelations {
                 } else if (assocPID[0] == protonID) { // Protons
                   rSECorrRegistry.fill(HIST("hSameLambdaProton_SGNL"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffProtons, associate.sign(), associate.pt()));
                 }
-              } else if (candMass >= massLambda - 8 * dGaussSigma && candMass <= massLambda + 8 * dGaussSigma) {
+              } else if (candMass >= MassLambda0 - 8 * dGaussSigma && candMass <= MassLambda0 + 8 * dGaussSigma) {
                 if (assocPID[0] == pionID) { // Pions
                   rSECorrRegistry.fill(HIST("hSameLambdaPion_SB"), deltaPhi, deltaEta, collision.centFT0C(), collision.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffPions, associate.sign(), associate.pt()));
                 } else if (assocPID[0] == kaonID) { // Kaons
@@ -364,7 +364,7 @@ struct ThreeParticleCorrelations {
             deltaPhi = RecoDecay::constrainAngle(trigger.phi() - associate.phi(), -constants::math::PIHalf);
             deltaEta = trigger.eta() - associate.eta();
 
-            if (candMass >= massLambda - 4 * dGaussSigma && candMass <= massLambda + 4 * dGaussSigma) {
+            if (candMass >= MassLambda0 - 4 * dGaussSigma && candMass <= MassLambda0 + 4 * dGaussSigma) {
               if (assocPID[0] == pionID) { // Pions
                 rMECorrRegistry.fill(HIST("hMixLambdaPion_SGNL"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffPions, associate.sign(), associate.pt()));
               } else if (assocPID[0] == kaonID) { // Kaons
@@ -372,7 +372,7 @@ struct ThreeParticleCorrelations {
               } else if (assocPID[0] == protonID) { // Protons
                 rMECorrRegistry.fill(HIST("hMixLambdaProton_SGNL"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffProtons, associate.sign(), associate.pt()));
               }
-            } else if (candMass >= massLambda - 8 * dGaussSigma && candMass <= massLambda + 8 * dGaussSigma) {
+            } else if (candMass >= MassLambda0 - 8 * dGaussSigma && candMass <= MassLambda0 + 8 * dGaussSigma) {
               if (assocPID[0] == pionID) { // Pions
                 rMECorrRegistry.fill(HIST("hMixLambdaPion_SB"), deltaPhi, deltaEta, coll_1.centFT0C(), coll_1.posZ(), triggSign, associate.sign(), 1. / trackEff(hEffPions, associate.sign(), associate.pt()));
               } else if (assocPID[0] == kaonID) { // Kaons
@@ -620,9 +620,9 @@ struct ThreeParticleCorrelations {
   int v0Sign(const V0Cand& v0)
   {
 
-    if (std::abs(v0.mLambda() - massLambda) <= std::abs(v0.mAntiLambda() - massLambda)) {
+    if (std::abs(v0.mLambda() - MassLambda0) <= std::abs(v0.mAntiLambda() - MassLambda0)) {
       return 1;
-    } else if (std::abs(v0.mLambda() - massLambda) > std::abs(v0.mAntiLambda() - massLambda)) {
+    } else if (std::abs(v0.mLambda() - MassLambda0) > std::abs(v0.mAntiLambda() - MassLambda0)) {
       return -1;
     }
 
@@ -777,7 +777,7 @@ struct ThreeParticleCorrelations {
       std::array<float, 3> dMomArray;
       std::array<float, 3> aMomArray = track.pVector();
       if (trackPID(track)[0] == pionID) {
-        massArray = {constants::physics::MassProton, constants::physics::MassPionCharged};
+        massArray = {MassProton, MassPionCharged};
 
         if (v0Sign(v0) == 1 && track.sign() == -1) { // Lambda - Pi_min
           const auto& dTrack = v0.template posTrack_as<MyFilteredTracks>();
@@ -787,7 +787,7 @@ struct ThreeParticleCorrelations {
           dMomArray = dTrack.pVector();
         }
       } else if (trackPID(track)[0] == protonID) {
-        massArray = {constants::physics::MassPionCharged, constants::physics::MassProton};
+        massArray = {MassPionCharged, MassProton};
 
         if (v0Sign(v0) == 1 && track.sign() == 1) { // Lambda - Proton
           const auto& dTrack = v0.template negTrack_as<MyFilteredTracks>();
@@ -799,7 +799,7 @@ struct ThreeParticleCorrelations {
       }
 
       double invMass = RecoDecay::m(std::array{dMomArray, aMomArray}, massArray);
-      if (invMass >= massLambda - 4 * dGaussSigma && invMass <= massLambda + 4 * dGaussSigma) {
+      if (invMass >= MassLambda0 - 4 * dGaussSigma && invMass <= MassLambda0 + 4 * dGaussSigma) {
         return kFALSE;
       }
     }
