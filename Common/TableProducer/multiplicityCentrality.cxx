@@ -29,12 +29,14 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "TableHelper.h"
 #include "MetadataHelper.h"
-#include "TList.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include "TList.h"
+#include "TFormula.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,7 +44,7 @@ using namespace o2::framework::expressions;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-namespace multiplicityPercentile
+namespace multiplicity
 {
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -80,7 +82,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FDDMultZeqs",    // 11
                                                  "PVMultZeqs",     // 12
                                                  "MultMCExtras"};  // 13
-static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 } // namespace multiplicity
 
 namespace centrality
@@ -149,7 +151,7 @@ struct multiplicityPercentile {
   Produces<aod::MFTMults> mftMults;       // Not accounted for, produced using custom process function to avoid dependencies
   Produces<aod::MultsGlobal> multsGlobal; // Not accounted for, produced based on process function processGlobalTrackingCounters
   Configurable<LabeledArray<int>> enabledMultiplicityTables{"enabledMultiplicityTables",
-                                                            {defaultParameters[0], multiplicity::kNTables, 1, multiplicity::tableNames, parameterNames},
+                                                            {multiplicity::defaultParameters[0], multiplicity::kNTables, 1, multiplicity::tableNames, parameterNames},
                                                             "Produce multiplicity tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   // Centrality tables
@@ -169,7 +171,7 @@ struct multiplicityPercentile {
   Produces<aod::CentNGlobals> centNGlobals;
   Produces<aod::CentMFTs> centMFTs;
   Configurable<LabeledArray<int>> enabledCentralityTables{"enabledCentralityTables",
-                                                          {defaultParameters[0], centrality::kNTables, 1, centrality::tableNames, parameterNames},
+                                                          {centrality::defaultParameters[0], centrality::kNTables, 1, centrality::tableNames, parameterNames},
                                                           "Produce centrality tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
   // Configuration
@@ -192,21 +194,69 @@ struct multiplicityPercentile {
 
   // Configurable multiplicity
   struct : ConfigurableGroup {
-
+    Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
   } centralityConfig;
 
-  struct TagRun2V0MCalibration {
-    bool lCalibLoaded;
-    TList* lCalibObjectsMultiplicity;
-    TProfile* hVtxZFV0A;
-    TProfile* hVtxZFT0A;
-    TProfile* hVtxZFT0C;
-    TProfile* hVtxZFDDA;
-    TProfile* hVtxZFDDC;
-    TProfile* hVtxZNTracks;
-  } centralityCalib;
+  struct MultiplicityCalibration {
+    bool isCalibLoaded = false;
+    TList* mCalibObjectsMultiplicity = nullptr;
+    TProfile* hVtxZFV0A = nullptr;
+    TProfile* hVtxZFT0A = nullptr;
+    TProfile* hVtxZFT0C = nullptr;
+    TProfile* hVtxZFDDA = nullptr;
+    TProfile* hVtxZFDDC = nullptr;
+    TProfile* hVtxZNTracks = nullptr;
 
-  int mRunNumber;
+    int mRunNumber = 0;
+  } multCalib;
+
+  template <typename T>
+  void initMultCalib(const T& bc)
+  {
+    if (bc.runNumber() == multCalib.mRunNumber) {
+      return;
+    }
+    multCalib.mRunNumber = bc.runNumber(); // mark this run as at least tried
+    std::map<std::string, std::string> metadata;
+    if (ccdbConfig.reconstructionPass.value == "") {
+      multCalib.mCalibObjectsMultiplicity = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, multCalib.mRunNumber);
+    } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+      metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+      LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+    } else {
+      metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+      LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
+    }
+    multCalib.mCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, multCalib.mRunNumber, metadata);
+
+    if (multCalib.mCalibObjectsMultiplicity) {
+      if (produceHistograms) {
+        listCalibMultiplicity->Add(multCalib.mCalibObjectsMultiplicity->Clone(Form("%i", bc.runNumber())));
+      }
+
+      auto findProfile = [&](const char* name) {
+        TProfile* p = static_cast<TProfile*>(multCalib.mCalibObjectsMultiplicity->FindObject(name));
+        if (!p) {
+          multCalib.mCalibObjectsMultiplicity->ls();
+          LOGF(error, "CCDB object %s not found in list!", name);
+          multCalib.isCalibLoaded = false;
+          return static_cast<TProfile*>(nullptr);
+        }
+        return p;
+      };
+      multCalib.isCalibLoaded = true;
+      multCalib.hVtxZFV0A = findProfile("hVtxZFV0A");
+      multCalib.hVtxZFT0A = findProfile("hVtxZFT0A");
+      multCalib.hVtxZFT0C = findProfile("hVtxZFT0C");
+      multCalib.hVtxZFDDA = findProfile("hVtxZFDDA");
+      multCalib.hVtxZFDDC = findProfile("hVtxZFDDC");
+      multCalib.hVtxZNTracks = findProfile("hVtxZNTracksPV");
+    } else {
+      LOGF(error, "Problem loading CCDB object! Please check");
+      multCalib.isCalibLoaded = false;
+    }
+  }
+
   std::vector<int> mEnabledMultiplicityTables; // Vector of enabled multiplicity tables
   std::vector<int> mEnabledCentralityTables;   // Vector of enabled centrality tables
 
@@ -245,13 +295,13 @@ struct multiplicityPercentile {
     TH1* mhMultSelCalib = nullptr;
   } Run2CL1Info;
 
-  struct CentralityCalibration {
+  struct CentralityCalibrationObject {
     std::string name = "";
     bool mCalibrationStored = false;
     TH1* mhMultSelCalib = nullptr;
     float mMCScalePars[6] = {0.0};
     TFormula* mMCScale = nullptr;
-    explicit CentralityCalibration(std::string name)
+    explicit CentralityCalibrationObject(std::string name)
       : name(name),
         mCalibrationStored(false),
         mhMultSelCalib(nullptr),
@@ -276,15 +326,122 @@ struct multiplicityPercentile {
       return true;
     }
   };
-  CentralityCalibration fv0aInfo = CentralityCalibration("FV0");
-  CentralityCalibration ft0mInfo = CentralityCalibration("FT0");
-  CentralityCalibration ft0aInfo = CentralityCalibration("FT0A");
-  CentralityCalibration ft0cInfo = CentralityCalibration("FT0C");
-  CentralityCalibration ft0cVariant1Info = CentralityCalibration("FT0Cvar1");
-  CentralityCalibration fddmInfo = CentralityCalibration("FDD");
-  CentralityCalibration ntpvInfo = CentralityCalibration("NTracksPV");
-  CentralityCalibration nGlobalInfo = CentralityCalibration("NGlobal");
-  CentralityCalibration mftInfo = CentralityCalibration("MFT");
+  CentralityCalibrationObject fv0aInfo = CentralityCalibrationObject("FV0");
+  CentralityCalibrationObject ft0mInfo = CentralityCalibrationObject("FT0");
+  CentralityCalibrationObject ft0aInfo = CentralityCalibrationObject("FT0A");
+  CentralityCalibrationObject ft0cInfo = CentralityCalibrationObject("FT0C");
+  CentralityCalibrationObject ft0cVariant1Info = CentralityCalibrationObject("FT0Cvar1");
+  CentralityCalibrationObject fddmInfo = CentralityCalibrationObject("FDD");
+  CentralityCalibrationObject ntpvInfo = CentralityCalibrationObject("NTracksPV");
+  CentralityCalibrationObject nGlobalInfo = CentralityCalibrationObject("NGlobal");
+  CentralityCalibrationObject mftInfo = CentralityCalibrationObject("MFT");
+
+  struct CentralityCalibration {
+    int mRunNumber = 0;
+    TList* mCalibObjectsCentrality = nullptr;
+  } centCalib;
+
+  template <typename T>
+  void initCentCalib(const T& bc)
+  {
+    if (bc.runNumber() != centCalib.mRunNumber) {
+      centCalib.mRunNumber = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
+      LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+      TList* calibrationList = nullptr;
+      // Check if the ccdb path is a root file
+      if (ccdbConfig.ccdbPath.value.find(".root") != std::string::npos) { // File
+        LOG(info) << "Fetching centrality calibration from TFile" << ccdbConfig.ccdbPath.value.c_str() << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
+        TFile f(ccdbConfig.ccdbPath.value.c_str(), "READ");
+        f.GetObject(ccdbConfig.reconstructionPass.value.c_str(), calibrationList);
+        if (!calibrationList) {
+          f.ls();
+          LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << ccdbConfig.ccdbPath.value;
+        }
+      } else { // CCDB
+        LOG(info) << "Fetching centrality calibration from ccdb" << ccdbConfig.ccdbPath.value << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
+        std::map<std::string, std::string> metadata;
+        if (ccdbConfig.reconstructionPass.value == "") {
+          LOG(info) << "No pass required";
+        } else {
+          if (ccdbConfig.reconstructionPass.value == "metadata") {
+            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+            ccdbConfig.reconstructionPass.value = metadataInfo.get("RecoPassName");
+          }
+          metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+        }
+        calibrationList = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
+      }
+
+      if (calibrationList != nullptr) {
+        if (produceHistograms) {
+          centCalib.mCalibObjectsCentrality->Add(calibrationList->Clone(Form("%i", bc.runNumber())));
+        }
+        LOGF(info, "Getting new histograms with %d run number for %d run number", centCalib.mRunNumber, bc.runNumber());
+        auto getccdb = [calibrationList, bc](struct CentralityCalibrationObject& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(calibrationList->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = reinterpret_cast<TFormula*>(calibrationList->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+          if (estimator.mhMultSelCalib != nullptr) {
+            if (generatorName->length() != 0) {
+              LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
+              if (estimator.mMCScale != nullptr) {
+                for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                  estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                  LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
+                }
+              } else {
+                LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+              }
+            }
+            estimator.mCalibrationStored = true;
+            estimator.isSane();
+          } else {
+            LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
+          }
+        };
+
+        for (auto const& table : mEnabledCentralityTables) {
+          switch (table) {
+            case centrality::kFV0As:
+              getccdb(fv0aInfo, ccdbConfig.genName);
+              break;
+            case centrality::kFT0Ms:
+              getccdb(ft0mInfo, ccdbConfig.genName);
+              break;
+            case centrality::kFT0As:
+              getccdb(ft0aInfo, ccdbConfig.genName);
+              break;
+            case centrality::kFT0Cs:
+              getccdb(ft0cInfo, ccdbConfig.genName);
+              break;
+            case centrality::kFT0CVariant1s:
+              getccdb(ft0cVariant1Info, ccdbConfig.genName);
+              break;
+            case centrality::kFDDMs:
+              getccdb(fddmInfo, ccdbConfig.genName);
+              break;
+            case centrality::kNTPVs:
+              getccdb(ntpvInfo, ccdbConfig.genName);
+              break;
+            case centrality::kNGlobals:
+              getccdb(nGlobalInfo, ccdbConfig.genName);
+              break;
+            case centrality::kMFTs:
+              getccdb(mftInfo, ccdbConfig.genName);
+              break;
+            default:
+              LOGF(fatal, "Table %d not supported in Run3", table);
+              break;
+          }
+        }
+      } else {
+        if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
+          LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        } else { // only if asked: continue filling with non-valid values (105)
+          LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+        }
+      }
+    }
+  }
 
   // Debug output
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
@@ -293,7 +450,7 @@ struct multiplicityPercentile {
   unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
-    ccdb->setURL(ccdbConfig.ccdburl);
+    ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
@@ -318,40 +475,40 @@ struct multiplicityPercentile {
     // Enable or disable the multiplicity tables
     bool enabledMultiplicities[multiplicity::kNTables] = {false};
     for (int i = 0; i < multiplicity::kNTables; i++) {
-      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+      int f = enabledMultiplicityTables->get(multiplicity::tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, multiplicity::tableNames[i], f);
       if (f == 1) {
         enabledMultiplicities[i] = true;
         mEnabledMultiplicityTables.push_back(i);
-        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
+        if (multiplicityConfig.fractionOfEvents <= 1.f && (multiplicity::tableNames[i] != "MultsExtra")) {
           LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
         }
       }
     }
     // Handle the custom cases.
-    if (enabledMultiplicities[kMultMCExtras]) {
-      if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
+    if (enabledMultiplicities[multiplicity::kMultMCExtras]) {
+      if (enabledMultiplicityTables->get(multiplicity::tableNames[multiplicity::kMultMCExtras].c_str(), "Enable") == -1) {
         doprocessMC.value = true;
-        LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
+        LOG(info) << "Enabling MC processing due to " << multiplicity::tableNames[multiplicity::kMultMCExtras] << " table being enabled.";
       }
     }
 
     // Check that the tables are enabled consistenly
-    if (enabledMultiplicities[kFV0MultZeqs] && !enabledMultiplicities[kFV0Mults]) { // FV0
-      mEnabledMultiplicityTables.push_back(kFV0Mults);
-      LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
+    if (enabledMultiplicities[multiplicity::kFV0MultZeqs] && !enabledMultiplicities[multiplicity::kFV0Mults]) { // FV0
+      mEnabledMultiplicityTables.push_back(multiplicity::kFV0Mults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFV0MultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFV0Mults] << ". Enabling it.";
     }
-    if (enabledMultiplicities[kFT0MultZeqs] && !enabledMultiplicities[kFT0Mults]) { // FT0
-      mEnabledMultiplicityTables.push_back(kFT0Mults);
-      LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
+    if (enabledMultiplicities[multiplicity::kFT0MultZeqs] && !enabledMultiplicities[multiplicity::kFT0Mults]) { // FT0
+      mEnabledMultiplicityTables.push_back(multiplicity::kFT0Mults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFT0MultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFT0Mults] << ". Enabling it.";
     }
-    if (enabledMultiplicities[kFDDMultZeqs] && !enabledMultiplicities[kFDDMults]) { // FDD
-      mEnabledMultiplicityTables.push_back(kFDDMults);
-      LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
+    if (enabledMultiplicities[multiplicity::kFDDMultZeqs] && !enabledMultiplicities[multiplicity::kFDDMults]) { // FDD
+      mEnabledMultiplicityTables.push_back(multiplicity::kFDDMults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFDDMultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFDDMults] << ". Enabling it.";
     }
-    if (enabledMultiplicities[kPVMultZeqs] && !enabledMultiplicities[kPVMults]) { // PV
-      mEnabledMultiplicityTables.push_back(kPVMults);
-      LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
+    if (enabledMultiplicities[multiplicity::kPVMultZeqs] && !enabledMultiplicities[multiplicity::kPVMults]) { // PV
+      mEnabledMultiplicityTables.push_back(multiplicity::kPVMults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kPVMultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kPVMults] << ". Enabling it.";
     }
     std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
 
@@ -369,7 +526,6 @@ struct multiplicityPercentile {
             LOG(fatal) << "Cannot enable Run3 table `" << centrality::tableNames[i] << "` while running in Run2 mode. Please check and disable them.";
           }
         }
-        isTableEnabled[i] = true;
         mEnabledCentralityTables.push_back(i);
       }
     }
@@ -379,15 +535,6 @@ struct multiplicityPercentile {
     }
     std::sort(mEnabledCentralityTables.begin(), mEnabledCentralityTables.end());
 
-    mRunNumber = 0;
-    lCalibLoaded = false;
-    lCalibObjectsMultiplicity = nullptr;
-    hVtxZFV0A = nullptr;
-    hVtxZFT0A = nullptr;
-    hVtxZFT0C = nullptr;
-    hVtxZFDDA = nullptr;
-    hVtxZFDDC = nullptr;
-    hVtxZNTracks = nullptr;
     listCalibMultiplicity.setObject(new TList);
 
     if (!produceHistograms.value) {
@@ -411,6 +558,81 @@ struct multiplicityPercentile {
   Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
   Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
 
+  void processRun2(aod::Run2MatchedSparse::iterator const& collision,
+                   Run2Tracks const&,
+                   aod::BCs const&,
+                   aod::Zdcs const&,
+                   aod::FV0As const&,
+                   aod::FV0Cs const&,
+                   aod::FT0s const&)
+  {
+    float multFV0A = 0.f;
+    float multFV0C = 0.f;
+    float multFT0A = 0.f;
+    float multFT0C = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+    float multZNA = 0.f;
+    float multZNC = 0.f;
+
+    auto trackletsGrouped = run2tracklets->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksGrouped = tracksWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    int multTracklets = trackletsGrouped.size();
+    int multTPC = tracksGrouped.size();
+    int multNContribs = 0;
+    int multNContribsEta1 = 0;
+    int multNContribsEtaHalf = 0;
+
+    if (collision.has_fv0a()) {
+      for (const auto& amplitude : collision.fv0a().amplitude()) {
+        multFV0A += amplitude;
+      }
+    }
+    if (collision.has_fv0c()) {
+      for (const auto& amplitude : collision.fv0c().amplitude()) {
+        multFV0C += amplitude;
+      }
+    }
+    if (collision.has_ft0()) {
+      auto ft0 = collision.ft0();
+      for (const auto& amplitude : ft0.amplitudeA()) {
+        multFT0A += amplitude;
+      }
+      for (const auto& amplitude : ft0.amplitudeC()) {
+        multFT0C += amplitude;
+      }
+    }
+    if (collision.has_zdc()) {
+      auto zdc = collision.zdc();
+      multZNA = zdc.energyCommonZNA();
+      multZNC = zdc.energyCommonZNC();
+    }
+
+    // Try to do something Similar to https://github.com/alisw/AliPhysics/blob/22862a945004f719f8e9664c0264db46e7186a48/OADB/AliPPVsMultUtils.cxx#L541C26-L541C37
+    for (const auto& tracklet : trackletsGrouped) {
+      if (std::abs(tracklet.eta()) < 1.0) {
+        multNContribsEta1++;
+      }
+      if (std::abs(tracklet.eta()) < 0.8) {
+        multNContribs++;
+      }
+      if (std::abs(tracklet.eta()) < 0.5) {
+        multNContribsEtaHalf++;
+      }
+    }
+
+    LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFDDA=%5.0f multFDDC=%5.0f multZNA=%6.0f multZNC=%6.0f multTracklets=%i multTPC=%i multNContribsEta1=%i multNContribs=%i multNContribsEtaHalf=%i", multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTPC, multNContribs, multNContribsEta1, multNContribsEtaHalf);
+    tableFV0(multFV0A, multFV0C);
+    tableFT0(multFT0A, multFT0C);
+    tableFDD(multFDDA, multFDDC);
+    tableZDC(multZNA, multZNC, 0.0f, 0.0f, 0.0f, 0.0f);
+    tableTracklet(multTracklets);
+    tableTpc(multTPC);
+    tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
+  }
+
+  PROCESS_SWITCH(multiplicityPercentile, processRun2, "Produce Run 2 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
+
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
   using Run3TracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
@@ -431,47 +653,47 @@ struct multiplicityPercentile {
     // reserve memory for multiplicity tables
     for (const auto tableId : mEnabledMultiplicityTables) {
       switch (tableId) {
-        case kFV0Mults: // FV0
+        case multiplicity::kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
           tableFV0AOuter.reserve(collisions.size());
           break;
-        case kFT0Mults: // FT0
+        case multiplicity::kFT0Mults: // FT0
           tableFT0.reserve(collisions.size());
           break;
-        case kFDDMults: // FDD
+        case multiplicity::kFDDMults: // FDD
           tableFDD.reserve(collisions.size());
           break;
-        case kZDCMults: // ZDC
+        case multiplicity::kZDCMults: // ZDC
           tableZDC.reserve(collisions.size());
           break;
-        case kTrackletMults: // Tracklets (Run 2 only, nothing to do) (to be removed!)
+        case multiplicity::kTrackletMults: // Tracklets (Run 2 only, nothing to do) (to be removed!)
           tableTracklet.reserve(collisions.size());
           break;
-        case kTPCMults: // TPC
+        case multiplicity::kTPCMults: // TPC
           tableTpc.reserve(collisions.size());
           break;
-        case kPVMults: // PV multiplicity
+        case multiplicity::kPVMults: // PV multiplicity
           tablePv.reserve(collisions.size());
           break;
-        case kMultsExtra: // Extra information
+        case multiplicity::kMultsExtra: // Extra information
           tableExtra.reserve(collisions.size());
           break;
-        case kMultSelections: // Extra information
+        case multiplicity::kMultSelections: // Extra information
           multSelections.reserve(collisions.size());
           break;
-        case kFV0MultZeqs: // Equalized multiplicity for FV0
+        case multiplicity::kFV0MultZeqs: // Equalized multiplicity for FV0
           tableFV0Zeqs.reserve(collisions.size());
           break;
-        case kFT0MultZeqs: // Equalized multiplicity for FT0
+        case multiplicity::kFT0MultZeqs: // Equalized multiplicity for FT0
           tableFT0Zeqs.reserve(collisions.size());
           break;
-        case kFDDMultZeqs: // Equalized multiplicity for FDD
+        case multiplicity::kFDDMultZeqs: // Equalized multiplicity for FDD
           tableFDDZeqs.reserve(collisions.size());
           break;
-        case kPVMultZeqs: // Equalized multiplicity for PV
+        case multiplicity::kPVMultZeqs: // Equalized multiplicity for PV
           tablePVZeqs.reserve(collisions.size());
           break;
-        case kMultMCExtras: // MC extra information (nothing to do in the data)
+        case multiplicity::kMultMCExtras: // MC extra information (nothing to do in the data)
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << tableId;
@@ -538,7 +760,7 @@ struct multiplicityPercentile {
     float multZeqNContribs = 0.f;
 
     for (auto const& collision : collisions) {
-      if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
+      if ((multiplicityConfig.fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > multiplicityConfig.fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
       }
       int multNContribs = 0;
@@ -547,51 +769,14 @@ struct multiplicityPercentile {
 
       /* check the previous run number */
       const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
-      if (doVertexZeq > 0) {
-        if (bc.runNumber() != mRunNumber) {
-          mRunNumber = bc.runNumber(); // mark this run as at least tried
-          if (ccdbConfig.reconstructionPass.value == "") {
-            lCalibObjectsMultiplicity = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
-          } else if (ccdbConfig.reconstructionPass.value == "metadata") {
-            std::map<std::string, std::string> metadata;
-            metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-            lCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
-          } else {
-            std::map<std::string, std::string> metadata;
-            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
-            lCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
-          }
-
-          if (lCalibObjectsMultiplicity) {
-            if (produceHistograms) {
-              listCalibMultiplicity->Add(lCalibObjectsMultiplicity->Clone(Form("%i", bc.runNumber())));
-            }
-
-            hVtxZFV0A = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFV0A"));
-            hVtxZFT0A = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFT0A"));
-            hVtxZFT0C = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFT0C"));
-            hVtxZFDDA = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFDDA"));
-            hVtxZFDDC = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZFDDC"));
-            hVtxZNTracks = static_cast<TProfile*>(lCalibObjectsMultiplicity->FindObject("hVtxZNTracksPV"));
-            lCalibLoaded = true;
-            // Capture error
-            if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-              LOGF(error, "Problem loading CCDB objects! Please check");
-              lCalibLoaded = false;
-            }
-          } else {
-            LOGF(error, "Problem loading CCDB object! Please check");
-            lCalibLoaded = false;
-          }
-        }
+      if (multiplicityConfig.doVertexZeq > 0) {
+        initMultCalib(bc);
       }
 
       // First we compute the multiplicity
       for (const auto tableId : mEnabledMultiplicityTables) {
         switch (tableId) {
-          case kFV0Mults: // FV0
+          case multiplicity::kFV0Mults: // FV0
           {
             multFV0A = 0.f;
             multFV0AOuter = 0.f;
@@ -615,7 +800,7 @@ struct multiplicityPercentile {
             tableFV0AOuter(multFV0AOuter);
             LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f", multFV0A, multFV0C);
           } break;
-          case kFT0Mults: // FT0
+          case multiplicity::kFT0Mults: // FT0
           {
             multFT0A = 0.f;
             multFT0C = 0.f;
@@ -635,7 +820,7 @@ struct multiplicityPercentile {
             tableFT0(multFT0A, multFT0C);
             LOGF(debug, "multFT0A=%5.0f multFT0C=%5.0f", multFV0A, multFV0C);
           } break;
-          case kFDDMults: // FDD
+          case multiplicity::kFDDMults: // FDD
           {
             multFDDA = 0.f;
             multFDDC = 0.f;
@@ -655,7 +840,7 @@ struct multiplicityPercentile {
             tableFDD(multFDDA, multFDDC);
             LOGF(debug, "multFDDA=%5.0f multFDDC=%5.0f", multFDDA, multFDDC);
           } break;
-          case kZDCMults: // ZDC
+          case multiplicity::kZDCMults: // ZDC
           {
             multZNA = -1.f;
             multZNC = -1.f;
@@ -681,18 +866,18 @@ struct multiplicityPercentile {
             tableZDC(multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC);
             LOGF(debug, "multZNA=%6.0f multZNC=%6.0f", multZNA, multZNC);
           } break;
-          case kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)
+          case multiplicity::kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)
           {
             tableTracklet(0);
           } break;
-          case kTPCMults: // TPC
+          case multiplicity::kTPCMults: // TPC
           {
             const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
             const int multTPC = tracksGrouped.size();
             tableTpc(multTPC);
             LOGF(debug, "multTPC=%i", multTPC);
           } break;
-          case kPVMults: // PV multiplicity
+          case multiplicity::kPVMults: // PV multiplicity
           {
             // use only one single grouping operation, then do loop
             const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -709,7 +894,7 @@ struct multiplicityPercentile {
             tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
             LOGF(debug, "multNContribs=%i, multNContribsEta1=%i, multNContribsEtaHalf=%i", multNContribs, multNContribsEta1, multNContribsEtaHalf);
           } break;
-          case kMultsExtra: // Extra
+          case multiplicity::kMultsExtra: // Extra
           {
             int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
             int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
@@ -746,29 +931,29 @@ struct multiplicityPercentile {
             }
 
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
-                       mRunNumber, collision.posZ(), collision.sel8(),
+                       bc.runNumber(), collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
                        nAllTracksTPCOnly, nAllTracksITSTPC,
                        collision.trackOccupancyInTimeRange(),
                        collision.ft0cOccupancyInTimeRange(),
                        collision.flags());
           } break;
-          case kMultSelections: // Multiplicity selections
+          case multiplicity::kMultSelections: // Multiplicity selections
           {
             multSelections(collision.selection_raw());
           } break;
-          case kFV0MultZeqs: // Z equalized FV0
+          case multiplicity::kFV0MultZeqs: // Z equalized FV0
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFV0A = multCalib.hVtxZFV0A->Interpolate(0.0) * multFV0A / multCalib.hVtxZFV0A->Interpolate(collision.posZ());
             }
             tableFV0Zeqs(multZeqFV0A);
           } break;
-          case kFT0MultZeqs: // Z equalized FT0
+          case multiplicity::kFT0MultZeqs: // Z equalized FT0
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-              multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFT0A = multCalib.hVtxZFT0A->Interpolate(0.0) * multFT0A / multCalib.hVtxZFT0A->Interpolate(collision.posZ());
+              multZeqFT0C = multCalib.hVtxZFT0C->Interpolate(0.0) * multFT0C / multCalib.hVtxZFT0C->Interpolate(collision.posZ());
             }
             if (produceHistograms.value) {
               histos.fill(HIST("FT0A"), multFT0A, multZeqFT0A);
@@ -778,22 +963,22 @@ struct multiplicityPercentile {
             }
             tableFT0Zeqs(multZeqFT0A, multZeqFT0C);
           } break;
-          case kFDDMultZeqs: // Z equalized FDD
+          case multiplicity::kFDDMultZeqs: // Z equalized FDD
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
-              multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFDDA = multCalib.hVtxZFDDA->Interpolate(0.0) * multFDDA / multCalib.hVtxZFDDA->Interpolate(collision.posZ());
+              multZeqFDDC = multCalib.hVtxZFDDC->Interpolate(0.0) * multFDDC / multCalib.hVtxZFDDC->Interpolate(collision.posZ());
             }
             tableFDDZeqs(multZeqFDDA, multZeqFDDC);
           } break;
-          case kPVMultZeqs: // Z equalized PV
+          case multiplicity::kPVMultZeqs: // Z equalized PV
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqNContribs = multCalib.hVtxZNTracks->Interpolate(0.0) * multNContribs / multCalib.hVtxZNTracks->Interpolate(collision.posZ());
             }
             tablePVZeqs(multZeqNContribs);
           } break;
-          case kMultMCExtras: // MC only (nothing to do)
+          case multiplicity::kMultMCExtras: // MC only (nothing to do)
           {
           } break;
           default: // Default
@@ -807,103 +992,8 @@ struct multiplicityPercentile {
         continue;
       }
 
-      if (bc.runNumber() != mRunNumber) {
-        mRunNumber = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
-        LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
-        TList* calibrationList = nullptr;
-        // Check if the ccdb path is a root file
-        if (ccdbConfig.ccdbPath.value.find(".root") != std::string::npos) { // File
-          LOG(info) << "Fetching centrality calibration from TFile" << ccdbConfig.ccdbPath.value.c_str() << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
-          TFile f(ccdbConfig.ccdbPath.value.c_str(), "READ");
-          f.GetObject(ccdbConfig.reconstructionPass.value.c_str(), calibrationList);
-          if (!calibrationList) {
-            f.ls();
-            LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << ccdbConfig.ccdbPath.value;
-          }
-        } else { // CCDB
-          LOG(info) << "Fetching centrality calibration from ccdb" << ccdbConfig.ccdbPath.value << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
-          std::map<std::string, std::string> metadata;
-          if (ccdbConfig.reconstructionPass.value == "") {
-            LOG(info) << "No pass required";
-          } else {
-            if (ccdbConfig.reconstructionPass.value == "metadata") {
-              LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-              ccdbConfig.reconstructionPass.value = metadataInfo.get("RecoPassName");
-            }
-            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-          }
-          calibrationList = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
-        }
-
-        if (calibrationList != nullptr) {
-          if (produceHistograms) {
-            listCalib->Add(calibrationList->Clone(Form("%i", bc.runNumber())));
-          }
-          LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
-          auto getccdb = [calibrationList, bc](struct CentralityCalibration& estimator, const Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
-            estimator.mhMultSelCalib = reinterpret_cast<TH1*>(calibrationList->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
-            estimator.mMCScale = reinterpret_cast<TFormula*>(calibrationList->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
-            if (estimator.mhMultSelCalib != nullptr) {
-              if (generatorName->length() != 0) {
-                LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
-                if (estimator.mMCScale != nullptr) {
-                  for (int ixpar = 0; ixpar < 6; ++ixpar) {
-                    estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
-                    LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
-                  }
-                } else {
-                  LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
-                }
-              }
-              estimator.mCalibrationStored = true;
-              estimator.isSane();
-            } else {
-              LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
-            }
-          };
-
-          for (auto const& table : mEnabledCentralityTables) {
-            switch (table) {
-              case centrality::kFV0As:
-                getccdb(fv0aInfo, ccdbConfig.genName);
-                break;
-              case centrality::kFT0Ms:
-                getccdb(ft0mInfo, ccdbConfig.genName);
-                break;
-              case centrality::kFT0As:
-                getccdb(ft0aInfo, ccdbConfig.genName);
-                break;
-              case centrality::kFT0Cs:
-                getccdb(ft0cInfo, ccdbConfig.genName);
-                break;
-              case centrality::kFT0CVariant1s:
-                getccdb(ft0cVariant1Info, ccdbConfig.genName);
-                break;
-              case centrality::kFDDMs:
-                getccdb(fddmInfo, ccdbConfig.genName);
-                break;
-              case centrality::kNTPVs:
-                getccdb(ntpvInfo, ccdbConfig.genName);
-                break;
-              case centrality::kNGlobals:
-                getccdb(nGlobalInfo, ccdbConfig.genName);
-                break;
-              case centrality::kMFTs:
-                getccdb(mftInfo, ccdbConfig.genName);
-                break;
-              default:
-                LOGF(fatal, "Table %d not supported in Run3", table);
-                break;
-            }
-          }
-        } else {
-          if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
-            LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-          } else { // only if asked: continue filling with non-valid values (105)
-            LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
-          }
-        }
-      }
+      // Now we compute the centrality
+      initCentCalib(bc);
 
       /**
        * @brief Populates a table with data based on the given calibration information and multiplicity.
@@ -914,9 +1004,9 @@ struct multiplicityPercentile {
        */
 
       auto populateCentralityTable = [&](auto& table,
-                                         struct CentralityCalibration& estimator,
+                                         struct CentralityCalibrationObject& estimator,
                                          float multiplicity) {
-        const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
+        const bool assignOutOfRange = centralityConfig.embedINELgtZEROselection && !(multNContribsEta1 > 0);
         auto scaleMC = [](float x, float pars[6]) {
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
@@ -943,13 +1033,13 @@ struct multiplicityPercentile {
             populateCentralityTable(centFV0A, fv0aInfo, multZeqFV0A);
             break;
           case centrality::kFT0Ms:
-            const float perC = populateCentralityTable(centFT0M, ft0mInfo, multZeqFT0A + multZeqFT0C);
+            populateCentralityTable(centFT0M, ft0mInfo, multZeqFT0A + multZeqFT0C);
             break;
           case centrality::kFT0As:
-            const float perC = populateCentralityTable(centFT0A, ft0aInfo, multZeqFT0A);
+            populateCentralityTable(centFT0A, ft0aInfo, multZeqFT0A);
             break;
           case centrality::kFT0Cs:
-            const float perC = populateCentralityTable(centFT0C, ft0cInfo, multZeqFT0C);
+            populateCentralityTable(centFT0C, ft0cInfo, multZeqFT0C);
             break;
           case centrality::kFT0CVariant1s:
             populateCentralityTable(centFT0CVariant1, ft0cVariant1Info, multZeqFT0C);
@@ -958,13 +1048,13 @@ struct multiplicityPercentile {
             populateCentralityTable(centFDDM, fddmInfo, multZeqFDDA + multZeqFDDC);
             break;
           case centrality::kNTPVs:
-            populateCentralityTable(centNTPV, ntpvInfo, multZeqNTracksPV);
+            // populateCentralityTable(centNTPV, ntpvInfo, multZeqNTracksPV);
             break;
           case centrality::kNGlobals:
-            populateCentralityTable(centNGlobals, nGlobalInfo, multNTracksGlobal);
+            // populateCentralityTable(centNGlobals, nGlobalInfo, multNTracksGlobal);
             break;
           case centrality::kMFTs:
-            populateCentralityTable(centMFTs, mftInfo, mftNtracks);
+            // populateCentralityTable(centMFTs, mftInfo, mftNtracks);
             break;
           default:
             LOGF(fatal, "Table %d not supported in Run3", table);
@@ -973,13 +1063,61 @@ struct multiplicityPercentile {
       }
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
-}
- 
+  PROCESS_SWITCH(multiplicityPercentile, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", true);
+
+  Filter mcParticleFilter = (aod::mcparticle::eta < 7.0f) && (aod::mcparticle::eta > -7.0f);
+  using McParticlesFiltered = soa::Filtered<aod::McParticles>;
+  void processMC(aod::McCollision const& mcCollision, McParticlesFiltered const& mcParticles)
+  {
+    int multFT0A = 0;
+    int multFV0A = 0;
+    int multFT0C = 0;
+    int multFDDA = 0;
+    int multFDDC = 0;
+    int multBarrelEta05 = 0;
+    int multBarrelEta08 = 0;
+    int multBarrelEta10 = 0;
+    for (auto const& mcPart : mcParticles) {
+      if (!mcPart.isPhysicalPrimary()) {
+        continue;
+      }
+
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(mcPart.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1e-3) {
+        continue; // reject neutral particles in counters
+      }
+
+      if (std::abs(mcPart.eta()) < 1.0) {
+        multBarrelEta10++;
+        if (std::abs(mcPart.eta()) < 0.8) {
+          multBarrelEta08++;
+          if (std::abs(mcPart.eta()) < 0.5) {
+            multBarrelEta05++;
+          }
+        }
+      }
+      if (-3.3 < mcPart.eta() && mcPart.eta() < -2.1)
+        multFT0C++;
+      if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
+        multFT0A++;
+      if (2.2 < mcPart.eta() && mcPart.eta() < 5.0)
+        multFV0A++;
+      if (-6.9 < mcPart.eta() && mcPart.eta() < -4.9)
+        multFDDC++;
+      if (4.7 < mcPart.eta() && mcPart.eta() < 6.3)
+        multFDDA++;
+    }
+    tableExtraMc(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multBarrelEta05, multBarrelEta08, multBarrelEta10, mcCollision.posZ());
+  }
+  PROCESS_SWITCH(multiplicityPercentile, processMC, "Produce MC multiplicity tables", false);
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<multiplicityPercentile>(cfgc)};
 }
-
