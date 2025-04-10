@@ -802,8 +802,8 @@ struct multiplicityPercentile {
           } break;
         }
       }
-      
-      if (mEnabledCentralityTables.size() == 0){// If no centrality table is required skip the rest
+
+      if (mEnabledCentralityTables.size() == 0) { // If no centrality table is required skip the rest
         continue;
       }
 
@@ -825,12 +825,13 @@ struct multiplicityPercentile {
           std::map<std::string, std::string> metadata;
           if (ccdbConfig.reconstructionPass.value == "") {
             LOG(info) << "No pass required";
-          } else{ if (ccdbConfig.reconstructionPass.value == "metadata") {
-            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-            ccdbConfig.reconstructionPass.value = metadataInfo.get("RecoPassName");
+          } else {
+            if (ccdbConfig.reconstructionPass.value == "metadata") {
+              LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+              ccdbConfig.reconstructionPass.value = metadataInfo.get("RecoPassName");
+            }
+            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
           }
-          metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-        }
           calibrationList = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
         }
 
@@ -912,9 +913,9 @@ struct multiplicityPercentile {
        * @param multiplicity The multiplicity value.
        */
 
-      auto populateCentralityTable = [&](auto& table, 
-        struct CentralityCalibration& estimator,
-        float multiplicity) {
+      auto populateCentralityTable = [&](auto& table,
+                                         struct CentralityCalibration& estimator,
+                                         float multiplicity) {
         const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
@@ -973,4 +974,3 @@ struct multiplicityPercentile {
     }
   }
 }
- 
