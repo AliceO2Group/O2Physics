@@ -67,7 +67,7 @@ struct V0PtInvMassPlots {
   Configurable<float> nSigmaTPCProton{"nSigmaTPCProton", 4, "nSigmaTPCProton"};
   Configurable<float> compv0masscut{"compv0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
-  Configurable<float> rapidity{"rapiditycut", 0.5, "V0 Rapidity Window GenMC"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "V0 Rapidity Window GenMC"};
 
   // Configurable Kaonsh Topological Cuts (best cuts determined by v0topologicalcuts task)
   Configurable<float> kaonshSettingdcav0dau{"kaonshSettingdcav0dau", 0.3, "DCA V0 Daughters"};
@@ -251,7 +251,7 @@ struct V0PtInvMassPlots {
                     aod::McParticles const& mcParticles)
   {
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.y()) < rapidity) {
+      if (std::abs(mcParticle.y()) < rapidityCut) {
         if (mcParticle.isPhysicalPrimary()) {
           rPtAnalysis.fill(HIST("GenParticleRapidity"), mcParticle.y());
           if (mcParticle.pdgCode() == kK0Short) // kzero matched
@@ -329,9 +329,9 @@ struct V0PtInvMassPlots {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       if (v0.has_mcParticle()) {
         auto v0mcParticle = v0.mcParticle();
-        if (std::abs(v0mcParticle.y()) < rapidity) {
+        if (std::abs(v0mcParticle.y()) < rapidityCut) {
           rPtAnalysis.fill(HIST("V0Rapidity"), v0.y());
-          if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
+          if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidityCut cut
             rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
             rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
             if (kzeroAnalysis == true) {
@@ -484,9 +484,9 @@ struct V0PtInvMassPlots {
       double aValue = (plpos - plneg) / (plpos + plneg);
       rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), aValue, qValue);
       rPtAnalysis.fill(HIST("hVertexZRec"), collision.posZ());
-      if (std::abs(v0.y()) < rapidity) {
+      if (std::abs(v0.y()) < rapidityCut) {
         rPtAnalysis.fill(HIST("V0Rapidity"), v0.y());
-        if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
+        if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidityCut cut
           rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.negTrack_as<DaughterTracks>().eta());
           rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.posTrack_as<DaughterTracks>().eta());
           // kzero analysis
