@@ -1724,17 +1724,20 @@ struct StrangenessBuilder {
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
-      if (v0Map[cascade.v0Id] < 0) {
-        // this V0 hasn't been stored / cached
-        products.cascdataLink(-1);
-        interlinks.cascadeToCascCores.push_back(-1);
-        continue; // didn't work out, skip
-      }
       if (useV0BufferForCascades) {
         // this processing path uses a buffer of V0s so that no
         // additional minimization step is redone. It consumes less
         // CPU at the cost of more memory. Since memory is a more
         // limited commodity, this isn't the default option.
+
+        // check if cached - if not, skip
+        if (v0Map[cascade.v0Id] < 0) {
+          // this V0 hasn't been stored / cached
+          products.cascdataLink(-1);
+          interlinks.cascadeToCascCores.push_back(-1);
+          continue; // didn't work out, skip
+        }
+
         if (!straHelper.buildCascadeCandidate(cascade.collisionId, pvX, pvY, pvZ,
                                               v0sFromCascades[v0Map[cascade.v0Id]],
                                               posTrack,
