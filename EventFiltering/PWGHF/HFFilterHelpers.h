@@ -2057,6 +2057,10 @@ inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 co
       massBhad = massBs;
       break;
     }
+    case kBc: {
+      massBhad = massBc;
+      break;
+    }
     case kLb: {
       massBhad = massLb;
       break;
