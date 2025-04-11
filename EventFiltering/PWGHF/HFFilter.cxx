@@ -552,10 +552,11 @@ struct HfFilter { // Main struct for HF triggers
           if (!keepEvent[kBeauty3P] && isD0BeautyTagged) {
             int16_t isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kBeauty3P>(track, trackParThird, dcaThird);
             if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0InMass, 0) && track.sign() < 0) || (TESTBIT(selD0InMass, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+
-              auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
+              auto massCandD0Pi = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
+              auto massCandD0K = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massKa});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
-              if (TESTBIT(isTrackSelected, kForBeauty) && helper.isSelectedBhadronInMassRange(ptCand, massCand, kBplus)) {
+              if (TESTBIT(isTrackSelected, kForBeauty) && (helper.isSelectedBhadronInMassRange(ptCand, massCandD0Pi, kBplus) || helper.isSelectedBhadronInMassRange(ptCand, massCandD0K, kBc))) {
                 if (activateQA) {
                   registry.fill(HIST("fHfVtxStages"), 1 + HfVtxStage::Skimmed, kBplus);
                 }
