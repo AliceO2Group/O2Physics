@@ -59,7 +59,7 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
-  ConfigurableAxis thnConfigAxisMSEXic{"thnConfigAxisMSEXic", {502, -0.0002, 1}, ""};//MSE axis
+  ConfigurableAxis thnConfigAxisMSEXic{"thnConfigAxisMSEXic", {502, -0.0002, 1}, ""}; // MSE axis
   //
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
@@ -237,7 +237,7 @@ struct HfTaskXic {
       const AxisSpec thnAxisMcOrigin{3, -0.5, 2.5, "MC origin"};
       const AxisSpec thnAxisMCAllProngAccepted{2, -0.5, 1.5, "All MC prongs accepted"};
       const AxisSpec thnAxisMSEXic{thnConfigAxisMSEXic, "MSE (Xic)"};
-      
+
       if (doprocessDataWithMl || doprocessMcWithMl) { // with ML
         registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin, thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted, thnAxisMSEXic});
       } else {
@@ -363,10 +363,9 @@ struct HfTaskXic {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
+            } else {
+              outputMSE = candidate.mlProbXicToPKPi()[0]; /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE
             }
-            else {
-             	outputMSE = candidate.mlProbXicToPKPi()[0];  /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE 
-             	}
             /// Fill the ML outputScores and variables of candidate Xic
             registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false, outputMSE);
           } else {
@@ -380,9 +379,8 @@ struct HfTaskXic {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
-            }
-            else {
-              outputMSE = candidate.mlProbXicToPiKP()[0];    /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE 
+            } else {
+              outputMSE = candidate.mlProbXicToPiKP()[0]; /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE
             }
             /// Fill the ML outputScores and variables of candidate
             registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false, outputMSE);
@@ -516,10 +514,9 @@ struct HfTaskXic {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
+              } else {
+                outputMSE = candidate.mlProbXicToPKPi()[0]; /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE
               }
-              else {
-             	outputMSE = candidate.mlProbXicToPKPi()[0];  /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE 
-             	}
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             } else {
@@ -540,10 +537,9 @@ struct HfTaskXic {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
+              } else {
+                outputMSE = candidate.mlProbXicToPiKP()[0]; /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE
               }
-              else {
-                outputMSE = candidate.mlProbXicToPiKP()[0];    /// temporary when MSE calculation is enabled, ML candidate [0] is filled with MSE 
-             }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
               registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance, outputMSE);
