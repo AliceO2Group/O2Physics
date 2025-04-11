@@ -85,7 +85,7 @@ DECLARE_SOA_TABLE(HfRedQvectors, "AOD", "HFREDQVECTOR", //! Table with collision
                   qvec::QvecTPCallRe,
                   qvec::QvecTPCallIm,
                   qvec::NTrkTPCall);
-  
+
 DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with collision extras for reduced workflow
                   collision::CovXX,
                   collision::CovXY,
