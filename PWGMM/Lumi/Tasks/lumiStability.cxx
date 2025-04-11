@@ -87,7 +87,7 @@ struct LumiStabilityTask {
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-    const AxisSpec axisTimeRate{int(double(43200)/(nOrbitsPerTF*89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for Run2/3).
+    const AxisSpec axisTimeRate{int(double(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for Run2/3).
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTrigger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTrigger});
