@@ -109,7 +109,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for resonance triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
-  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 13, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
+  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 4, 13, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
   Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
   Configurable<bool> keepAlsoWrongDmesProtonPairs{"keepAlsoWrongDmesProtonPairs", true, "flat go keep also wrong sign D0p pairs"};
   Configurable<bool> keepAlsoWrongDstarMesProtonPairs{"keepAlsoWrongDstarMesProtonPairs", true, "flat go keep also wrong sign D*0p pairs"};
@@ -971,6 +971,9 @@ struct HfFilter { // Main struct for HF triggers
                   }
                   auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kPrCharm2P>(trackBachelor, trackParBachelor, dcaBachelor);
                   if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0InMass, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0InMass, 1) && trackBachelor.sign() < 0))) {
+                    if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 12u)) {
+                      continue;
+                    }
                     std::array<float, 2> massDausD0{massPi, massKa};
                     auto massD0dau = massD0Cand;
                     if (trackBachelor.sign() < 0) {
@@ -1034,6 +1037,9 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 } // end bachelor pion for D*p pairs
                 // build D0p candidate with the possibility of storing also the other sign hyp.
+                if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 11u)) {
+                  continue;
+                }
                 float massLcStarCand{-999.}, massLcStarBarCand{-999.};
                 float massDiffLcStarCand{-999.}, massDiffLcStarBarCand{-999.};
                 bool isRightSignLcStar{false}, isRightSignLcStarBar{false};
