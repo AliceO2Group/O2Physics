@@ -87,7 +87,7 @@ struct LumiStabilityTask {
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-    const AxisSpec axisTimeRate{1440, 0., 86400, ""}; // t in seconds. Histo for 24 hrs. Each bin contain 1 min.
+    const AxisSpec axisTimeRate{int(double(43200) / (nOrbitsPerTF * 89e-6)), 0., 43200, ""}; // t in seconds. Histo for 12 hrs. Each bin contain one time frame (128/32 orbits for Run2/3).
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTrigger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTrigger});
@@ -162,6 +162,7 @@ struct LumiStabilityTask {
     histos.add("FDD/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FDD/hTimeForRate", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
+    histos.add("FDD/hTimeForRateLeadingBC", "Counts by time in FDD;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
 
     histos.add("FT0/hCounts", "0 FT0Count - 1 FT0VertexCount - 2 FT0PPVertexCount - 3 FT0PPBothSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisTrigger});
@@ -191,7 +192,8 @@ struct LumiStabilityTask {
     histos.add("FT0/hInvTimeCvsBC", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
     histos.add("FT0/hValidTimevsBC", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTrigger});
     histos.add("FT0/hInvTimevsBC", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTrigger});
-    histos.add("FT0/hTimeForRate", "Counts by time in FT0;t (in seconds) in FDD; counts", kTH1F, {axisTimeRate});
+    histos.add("FT0/hTimeForRate", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
+    histos.add("FT0/hTimeForRateLeadingBC", "Counts by time in FT0;t (in seconds) in FT0; counts", kTH1F, {axisTimeRate});
 
     histos.add("FV0/hCounts", "0 CountCentralFV0 - 1 CountPFPCentralFV0 - 2 CountPFPOutInFV0 - 3 CountPPCentralFV0 - 4 CountPPOutInFV0; Number; counts", kTH1F, {axisV0Counts});
     histos.add("FV0/bcOutTrigger", "Out trigger per BC (FV0);BC in V0; counts", kTH1F, {axisTrigger});
@@ -363,7 +365,22 @@ struct LumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
-        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+
+        if (bcPatternB[localBC]) {
+          histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+          bool isLeadBC = true;
+          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+            int kbit = jbit;
+            if (kbit < 0)
+              kbit += nbin;
+            if (bcPatternB[kbit]) {
+              isLeadBC = false;
+              break;
+            }
+          }
+          if (isLeadBC)
+            histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
 
         int deltaIndex = 0; // backward move counts
         int deltaBC = 0;    // current difference wrt globalBC
@@ -610,7 +627,6 @@ struct LumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
         histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
-        histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
@@ -623,6 +639,7 @@ struct LumiStabilityTask {
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FT0/timeACbcB"), ft0.timeA(), ft0.timeC());
           histos.fill(HIST("FT0/hBcB"), localBC);
+          histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
           bool isLeadBC = true;
           for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
             int kbit = jbit;
@@ -633,8 +650,10 @@ struct LumiStabilityTask {
               break;
             }
           }
-          if (isLeadBC)
+          if (isLeadBC) {
+            histos.fill(HIST("FT0/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
             histos.fill(HIST("FT0/hBcBL"), localBC);
+          }
           histos.fill(HIST("FT0/hTimeA"), ft0.timeA());
           histos.fill(HIST("FT0/hTimeC"), ft0.timeC());
 

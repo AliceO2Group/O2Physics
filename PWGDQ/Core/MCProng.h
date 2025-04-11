@@ -73,6 +73,7 @@ class MCProng
     kProducedByGenerator, // Produced by generator (if not, then produced by GEANT)
     kFromBackgroundEvent, // Produced in the underlying event
     kHEPMCFinalState,     // HEPMC code 11
+    kIsPowhegDYMuon,      // POWHEG muons based on Pythia Status Code (=23) -> Drell-Yan signal
     kNSources
   };
 
