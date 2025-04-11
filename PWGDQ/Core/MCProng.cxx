@@ -22,7 +22,8 @@ std::map<TString, int> MCProng::fgSourceNames = {
   {"kProducedInTransport", MCProng::kProducedInTransport},
   {"kProducedByGenerator", MCProng::kProducedByGenerator},
   {"kFromBackgroundEvent", MCProng::kFromBackgroundEvent},
-  {"kHEPMCFinalState", MCProng::kHEPMCFinalState}};
+  {"kHEPMCFinalState", MCProng::kHEPMCFinalState},
+  {"kIsPowhegDYMuon", MCProng::kIsPowhegDYMuon}};
 
 //________________________________________________________________________________________________________________
 MCProng::MCProng() : fNGenerations(0),

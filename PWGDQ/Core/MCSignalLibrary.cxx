@@ -348,6 +348,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "electron from a photon conversion", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("PowhegDYMuon1")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});        // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                   // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon singles", {prong}, {-1}); // define a signal with 1-prong
+    return signal;
+  }
 
   // 2-prong signals
   if (!nameStr.compare("dielectron")) {
@@ -379,6 +385,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("dielectronPCPi0")) {
     MCProng prong(3, {11, 22, 111}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "dielectron from a photon conversion from a pi0", {prong, prong}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("PowhegDYMuon2")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});                // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                           // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon pair", {prong, prong}, {-1, -1}); // define a signal with 2-prong
     return signal;
   }
 
