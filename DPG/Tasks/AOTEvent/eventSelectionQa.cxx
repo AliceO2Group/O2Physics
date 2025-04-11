@@ -356,6 +356,8 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF", ";nITStracks event #1;nITStracks event #2", kTH2D, {{200, 0., 6000}, {200, 0., 6000}});
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF_UPC", ";nITStracks event #1;nITStracks event #2", kTH2D, {{41, -0.5, 40.5}, {41, -0.5, 40.5}});
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF_nonUPC", ";nITStracks event #1;nITStracks event #2", kTH2D, {{200, 0., 6000}, {200, 0., 6000}});
+
+      histos.add("occupancyQA/dEdx_vs_centr_vs_occup_narrow_p_win", "dE/dx", kTH3F, {{20, 0, 4000, "n PV tracks"}, {60, 0, 15000, "occupancy"}, {800, 0.0, 800.0, "dE/dx (a. u.)"}});
     }
   }
 
@@ -1152,6 +1154,19 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hOccupancyByFT0CvsByTracks"), occupancyByTracks, occupancyByFT0C);
           histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy"), multV0A, nPV, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
+
+          // dE/dx QA for a narrow pT bin
+          for (const auto& track : tracksGrouped) {
+            if (!track.isPVContributor())
+              continue;
+            if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.itsNCls() >= 5) {
+              float signedP = track.sign() * track.tpcInnerParam();
+              if (std::fabs(signedP) > 0.38 && std::fabs(signedP) < 0.4 && track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+                float dEdx = track.tpcSignal();
+                histos.fill(HIST("occupancyQA/dEdx_vs_centr_vs_occup_narrow_p_win"), nPV, occupancyByTracks, dEdx);
+              }
+            }
+          }
         }
       }
 
