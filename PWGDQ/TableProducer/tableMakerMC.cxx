@@ -762,7 +762,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -811,7 +810,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
@@ -1322,10 +1320,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (fConfigQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
