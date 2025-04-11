@@ -301,17 +301,15 @@ class TestStdPrefix(TestSpec):
             # Ignore matches inside strings.
             for match in matches:
                 n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
-                if n_quotes_before % 2:  # If odd, we are inside a string and we should ignore this match.
-                    continue
-                # We are not inside a string and this match is valid.
-                return False
+                if not n_quotes_before % 2:  # If even, we are not inside a string and this match is valid.
+                    return False
         return True
 
 
-class TestROOT(TestSpec):
+class TestRootEntity(TestSpec):
     """Detect unnecessary use of ROOT entities."""
 
-    name = "root-entity"
+    name = "root/entity"
     message = "Replace ROOT entities with equivalents from standard C++ or from O2."
     suffixes = [".h", ".cxx"]
 
@@ -327,6 +325,23 @@ class TestROOT(TestSpec):
             return True
         line = remove_comment_cpp(line)
         return re.search(pattern, line) is None
+
+
+class TestRootLorentzVector(TestSpec):
+    """Detect use of TLorentzVector."""
+
+    name = "root/lorentz-vector"
+    message = (
+        "Do not use the TLorentzVector legacy class. "
+        "Use std::array with RecoDecay methods or ROOT::Math::LorentzVector instead."
+    )
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        return "TLorentzVector" not in line
 
 
 class TestPi(TestSpec):
@@ -404,7 +419,7 @@ class TestPdgDatabase(TestSpec):
         return "TDatabasePDG" not in line
 
 
-class TestPdgCode(TestSpec):
+class TestPdgExplicitCode(TestSpec):
     """Detect use of hard-coded PDG codes."""
 
     name = "pdg/explicit-code"
@@ -425,7 +440,7 @@ class TestPdgCode(TestSpec):
         return True
 
 
-class TestPdgMass(TestSpec):
+class TestPdgKnownMass(TestSpec):
     """Detect unnecessary call of Mass() for a known PDG code."""
 
     name = "pdg/known-mass"
@@ -441,6 +456,49 @@ class TestPdgMass(TestSpec):
             return False
         if re.search(rf"->Mass\({pattern_pdg_code}\)", line):
             return False
+        return True
+
+
+class TestPdgExplicitMass(TestSpec):
+    """Detect hard-coded particle masses."""
+
+    name = "pdg/explicit-mass"
+    message = "Avoid hard-coded particle masses. Use o2::constants::physics::Mass... instead."
+    suffixes = [".h", ".cxx"]
+    masses: "list[str]" = []  # list of mass values to detect
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # List of masses of commonly used particles
+        self.masses.append(r"0\.000511")  # e
+        self.masses.append(r"0\.105")  # μ
+        self.masses.append(r"0\.139")  # π+
+        self.masses.append(r"0\.493")  # K+
+        self.masses.append(r"0\.497")  # K0
+        self.masses.append(r"0\.938")  # p
+        self.masses.append(r"0\.939")  # n
+        self.masses.append(r"1\.115")  # Λ
+        self.masses.append(r"1\.864")  # D0
+        self.masses.append(r"2\.286")  # Λc
+        self.masses.append(r"3\.096")  # J/ψ
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        iterators = re.finditer(rf"(^|\D)({'|'.join(self.masses)})", line)
+        matches = [(it.start(), it.group(2)) for it in iterators]
+        if not matches:
+            return True
+        if '"' not in line:  # Found a match which cannot be inside a string.
+            return False
+        # Ignore matches inside strings.
+        for match in matches:
+            n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
+            if not n_quotes_before % 2:  # If even, we are not inside a string and this match is valid.
+                print(match[1])
+                return False
         return True
 
 
@@ -598,16 +656,30 @@ class TestMagicNumber(TestSpec):
     name = "magic-number"
     message = "Avoid magic numbers in expressions. Assign the value to a clearly named variable or constant."
     suffixes = [".h", ".cxx", ".C"]
+    pattern_compare = r"([<>]=?|[!=]=)"
+    pattern_number = r"[\+-]?([\d\.]+)f?"
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        if not (match := re.search(r" ([<>]=?|[!=]=) [\+-]?([\d\.]+)", line)):
+        iterators = re.finditer(
+            rf" {self.pattern_compare} {self.pattern_number}|\W{self.pattern_number} {self.pattern_compare} ", line
+        )
+        matches = [(it.start(), it.group(2), it.group(3)) for it in iterators]
+        if not matches:
             return True
-        number = match.group(2)
-        # Accept only 0 or 1 (int or float).
-        return re.match(r"[01](\.0?)?$", number) is not None
+        # Ignore matches inside strings.
+        for match in matches:
+            n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
+            if n_quotes_before % 2:  # If odd, we are inside a string and we should ignore this match.
+                continue
+            # We are not inside a string and this match is valid.
+            for match_n in (match[1], match[2]):
+                # Accept only 0 or 1 (int or float).
+                if (match_n is not None) and (re.match(r"[01](\.0?)?$", match_n) is None):
+                    return False
+        return True
 
 
 # Documentation
@@ -1442,13 +1514,15 @@ def main():
         tests.append(TestUsingStd())
         tests.append(TestUsingDirectives())
         tests.append(TestStdPrefix())
-        tests.append(TestROOT())
+        tests.append(TestRootEntity())
+        tests.append(TestRootLorentzVector())
         tests.append(TestPi())
         tests.append(TestTwoPiAddSubtract())
         tests.append(TestPiMultipleFraction())
         tests.append(TestPdgDatabase())
-        tests.append(TestPdgCode())
-        tests.append(TestPdgMass())
+        tests.append(TestPdgExplicitCode())
+        tests.append(TestPdgKnownMass())
+        tests.append(TestPdgExplicitMass())
         tests.append(TestLogging())
         tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
