@@ -66,6 +66,7 @@ struct HfTaskOmegac0ToOmegapi {
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
+  ConfigurableAxis thnConfigAxisMatchFlag{"thnConfigAxisMatchFlag", {15, -7.5, 7.5}, "Cand. MC Match Flag type"};
   ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
@@ -85,6 +86,7 @@ struct HfTaskOmegac0ToOmegapi {
     const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisY{thnConfigAxisY, "y"};
     const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
+    const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MatchFlag"};
     const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
@@ -103,6 +105,7 @@ struct HfTaskOmegac0ToOmegapi {
     if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
+      axes.push_back(thnAxisMatchFlag);
       axes.push_back(thnAxisNumPvContr);
     }
     if (applyMl) {
@@ -178,10 +181,10 @@ struct HfTaskOmegac0ToOmegapi {
       if (candidate.resultSelections() && !selectionFlagOmegac0)
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
           if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
 
           } else {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), candidate.flagMcMatchRec(), numPvContributors);
           }
         }
     }

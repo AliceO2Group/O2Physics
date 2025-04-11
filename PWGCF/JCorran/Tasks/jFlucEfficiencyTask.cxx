@@ -66,6 +66,8 @@ struct JFlucEfficiencyTask {
     Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 Ali event cuts"};
+    Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INEL>0 event cuts"};
   } EventCuts;
 
   // Configurable for track selection
@@ -107,6 +109,7 @@ struct JFlucEfficiencyTask {
   using MCCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabel>;
   using MCRun2CollisionCandidates = soa::Join<CollisionRun2Candidates, aod::McCollisionLabel>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabel>;
+  using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
 
   // Histogram Registry
   HistogramRegistry registry{
@@ -125,8 +128,11 @@ struct JFlucEfficiencyTask {
     if (debugMode) {
       LOGF(info, "Initializing JFlucEfficiencyTask");
     }
-
-    colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    if (!doprocessMCRun2 && !doprocessDataRun2) {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
+    } else {
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, false);
+    }
     colCuts.init(&registry);
     colCuts.setTriggerTVX(EventCuts.cfgEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(EventCuts.cfgEvtTFBorderCut);
@@ -135,9 +141,11 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyPileupRejection(EventCuts.cfgEvtPileupRejection);
     colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
     colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
+    colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
 
-    if (doprocessDerivedMC || doprocessMC) {
+    if (doprocessDerivedMC || doprocessMC || doprocessMCRun2) {
       registry.add("hPtGen", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hEtaGen", "Generated #eta (all);#eta;Centrality (%);Counts",
@@ -330,7 +338,8 @@ struct JFlucEfficiencyTask {
   void processMCRun2(aod::McCollisions::iterator const& mcCollision,
                      soa::SmallGroups<MCRun2CollisionCandidates> const& collisions,
                      soa::Filtered<MCTrackCandidates> const& mcTracks,
-                     aod::McParticles const& mcParticles)
+                     aod::McParticles const& mcParticles,
+                     BCsWithRun2Info const&)
   {
     registry.fill(HIST("hEventCounterMC"), 0);
     if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
@@ -424,7 +433,7 @@ struct JFlucEfficiencyTask {
     }
   }
 
-  void processDataRun2(CollisionRun2Candidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks)
+  void processDataRun2(CollisionRun2Candidates::iterator const& collision, soa::Filtered<TrackCandidates> const& tracks, BCsWithRun2Info const&)
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;

@@ -156,6 +156,9 @@ DECLARE_SOA_COLUMN(OmegaHighMult, hasOmegaHighMult, bool);       //! at least 1 
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
 
+// Double Phi
+DECLARE_SOA_COLUMN(TriggerEventDoublePhi, triggereventdoublephi, bool); //! Double Phi trigger event
+
 // multiplicity
 DECLARE_SOA_COLUMN(HighTrackMult, hasHighTrackMult, bool);     //! high trk muliplicity
 DECLARE_SOA_COLUMN(HighMultFv0, hasHighMultFv0, bool);         //! high FV0 muliplicity
@@ -181,6 +184,11 @@ DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson
 DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PPOmega, hasPPOmega, bool);                   //! PPomega meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PPEtaPrime, hasPPEtaPrime, bool);             //! PPEta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(Omegad, hasOmegad, bool);                     //! Omegad' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);               //! Eta'd meson candidate (3pi) in the collision
+
 } // namespace filtering
 
 namespace decision
@@ -294,6 +302,11 @@ DECLARE_SOA_TABLE(F1ProtonFilters, "AOD", "F1ProtonFilters", //!
                   filtering::TriggerEventF1Proton);
 using F1ProtonFilter = F1ProtonFilters::iterator;
 
+// Double Phi
+DECLARE_SOA_TABLE(DoublePhiFilters, "AOD", "DoublePhiFilters", //!
+                  filtering::TriggerEventDoublePhi);
+using DoublePhiFilter = DoublePhiFilters::iterator;
+
 // multiplicity
 DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
                   filtering::HighTrackMult, filtering::HighMultFv0, filtering::HighFt0Mult, filtering::HighFt0Flat, filtering::HighFt0cFv0Mult, filtering::HighFt0cFv0Flat, filtering::LeadingPtTrack);
@@ -309,7 +322,9 @@ using PhotonFilter = PhotonFilters::iterator;
 // heavy mesons
 DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
                   filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
-                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson);
+                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson,
+                  filtering::PPOmega, filtering::PPEtaPrime,
+                  filtering::Omegad, filtering::EtaPrimed);
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 
@@ -324,11 +339,11 @@ DECLARE_SOA_TABLE(BCRanges, "AOD", "BCRanges", //!
 using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
-constexpr int NumberOfFilters{13};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "HeavyNeutralMesonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "HNMesonFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-heavy-meson-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, HeavyNeutralMesonFilters> FiltersPack;
+constexpr int NumberOfFilters{14};
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "DoublePhiFilters", "HeavyNeutralMesonFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "2PhiFilters", "HNMesonFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-lf-doublephi-filter", "o2-analysis-heavy-meson-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, DoublePhiFilters, HeavyNeutralMesonFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>

@@ -529,21 +529,27 @@ using EMPrimaryElectronPrefilterBitDerived = EMPrimaryElectronsPrefilterBitDeriv
 
 namespace emprimarymuon
 {
-DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                                     //!
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                              //!
-DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                                //!
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "EMPRIMARYMUs_MatchMCHTrack"); //! Index of matched MCH track for GlobalMuonTracks and GlobalForwardTracks
+DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                                          //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                   //!
+DECLARE_SOA_COLUMN(FwdTrackId, fwdtrackId, int);                                     //!
+DECLARE_SOA_COLUMN(MFTTrackId, mfttrackId, int);                                     //!
+DECLARE_SOA_COLUMN(MCHTrackId, mchtrackId, int);                                     //!
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(GlobalMuonsWithSameMFT, globalMuonsWithSameMFT); //! self indices to global muons that have the same MFTTrackId
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(AmbiguousMuons, ambiguousMuons);
+DECLARE_SOA_COLUMN(CXXatDCA, cXXatDCA, float);                  //! DCAx resolution squared at DCA
+DECLARE_SOA_COLUMN(CYYatDCA, cYYatDCA, float);                  //! DCAy resolution squared at DCA
+DECLARE_SOA_COLUMN(CXYatDCA, cXYatDCA, float);                  //! correlation term of DCAx,y resolution at DCA
+DECLARE_SOA_COLUMN(EtaMatchedMCHMID, etaMatchedMCHMID, float);  //! eta of MCH-MID track in MFT-MCH-MID track at PV
+DECLARE_SOA_COLUMN(PhiMatchedMCHMID, phiMatchedMCHMID, float);  //! phi of MCH-MID track in MFT-MCH-MID track at PV
 DECLARE_SOA_COLUMN(IsAssociatedToMPC, isAssociatedToMPC, bool); //! is associated to most probable collision
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);             //! is ambiguous
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                         //!
-DECLARE_SOA_COLUMN(Chi2MFTsa, chi2MFTsa, float);                //! chi2 of MFT standalone track
+DECLARE_SOA_COLUMN(Chi2MFT, chi2MFT, float);                    //! chi2 of MFT standalone track
 DECLARE_SOA_DYNAMIC_COLUMN(Signed1Pt, signed1Pt, [](float pt, int8_t sign) -> float { return sign * 1. / pt; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, [](float tgl) -> float { return M_PI_2 - std::atan(tgl); });
-DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY, [](float dcaX, float dcaY) -> float { return std::sqrt(dcaX * dcaX + dcaY * dcaY); });
 DECLARE_SOA_DYNAMIC_COLUMN(NClustersMFT, nClustersMFT, //! Number of MFT clusters
                            [](uint64_t mftClusterSizesAndTrackFlags) -> uint8_t {
                              uint8_t nClusters = 0;
@@ -567,17 +573,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(MFTClusterMap, mftClusterMap, //! MFT cluster map, on
 } // namespace emprimarymuon
 DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   o2::soa::Index<>, emprimarymuon::CollisionId,
-                  emprimarymuon::FwdTrackId, fwdtrack::TrackType,
+                  emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
                   fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
-                  fwdtrack::FwdDcaX, fwdtrack::FwdDcaY,
-                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Tgl,
+                  fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CYYatDCA, emprimarymuon::CXYatDCA,
+                  emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+                  // fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Tgl,
 
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                  // fwdtrack::MatchScoreMCHMFT, fwdtrack::MFTTrackId, fwdtrack::MCHTrackId,
-                  emprimarymuon::MCHTrackId,
                   fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
-                  fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFTsa, emprimarymuon::IsAssociatedToMPC,
+                  fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
 
                   // dynamic column
                   emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
@@ -586,9 +591,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
                   emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
                   emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
-                  emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>,
-                  emprimarymuon::Theta<fwdtrack::Tgl>,
-                  emprimarymuon::DcaXY<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY>);
+                  emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
@@ -618,6 +621,10 @@ using EMPrimaryMuonEMEventId = EMPrimaryMuonEMEventIds::iterator;
 DECLARE_SOA_TABLE(EMAmbiguousMuonSelfIds, "AOD", "EMAMBMUSELFID", emprimarymuon::AmbiguousMuonsIds); // To be joined with EMPrimaryMuons table at analysis level.
 // iterators
 using EMAmbiguousMuonSelfId = EMAmbiguousMuonSelfIds::iterator;
+
+DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::GlobalMuonsWithSameMFTIds); // To be joined with EMPrimaryMuons table at analysis level.
+// iterators
+using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
 } // namespace o2::aod
 
