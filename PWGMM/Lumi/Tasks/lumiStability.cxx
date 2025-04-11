@@ -462,7 +462,22 @@ struct LumiStabilityTask {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
         histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
-        histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+
+        if (bcPatternB[localBC]) {
+          histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
+          bool isLeadBC = true;
+          for (int jbit = localBC - minEmpty; jbit < localBC; jbit++) {
+            int kbit = jbit;
+            if (kbit < 0)
+              kbit += nbin;
+            if (bcPatternB[kbit]) {
+              isLeadBC = false;
+              break;
+            }
+          }
+          if (isLeadBC)
+            histos.fill(HIST("FDD/hTimeForRateLeadingBC"), (bc.timestamp() - tsSOR) * 1.e-3);
+        }
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
@@ -755,7 +770,6 @@ struct LumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
         histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
-        histos.fill(HIST("FT0/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
