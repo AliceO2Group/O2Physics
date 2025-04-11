@@ -971,7 +971,7 @@ struct HfFilter { // Main struct for HF triggers
                   }
                   auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kPrCharm2P>(trackBachelor, trackParBachelor, dcaBachelor);
                   if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0InMass, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0InMass, 1) && trackBachelor.sign() < 0))) {
-                    if(pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 12u)) {
+                    if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 12u)) {
                       continue;
                     }
                     std::array<float, 2> massDausD0{massPi, massKa};
@@ -1037,7 +1037,7 @@ struct HfFilter { // Main struct for HF triggers
                   }
                 } // end bachelor pion for D*p pairs
                 // build D0p candidate with the possibility of storing also the other sign hyp.
-                if(pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 11u)) {
+                if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 11u)) {
                   continue;
                 }
                 float massLcStarCand{-999.}, massLcStarBarCand{-999.};
