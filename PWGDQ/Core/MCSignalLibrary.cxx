@@ -349,9 +349,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("PowhegDYMuon1")) {
-    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false}); // selecting muons
-    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);  // set source to be Muon from POWHEG
-    signal = new MCSignal(name, "POWHEG Muon singles", {prong}, {-1});// define a signal with 1-prong
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});        // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                   // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon singles", {prong}, {-1}); // define a signal with 1-prong
     return signal;
   }
 
@@ -388,9 +388,9 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("PowhegDYMuon2")) {
-    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false}); // selecting muons
-    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);  // set source to be Muon from POWHEG
-    signal = new MCSignal(name, "POWHEG Muon pair", {prong,prong}, {-1,-1});// define a signal with 2-prong
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});                // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                           // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon pair", {prong, prong}, {-1, -1}); // define a signal with 2-prong
     return signal;
   }
 
