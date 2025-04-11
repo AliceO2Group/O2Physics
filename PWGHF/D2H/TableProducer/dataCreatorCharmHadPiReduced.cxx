@@ -1044,11 +1044,11 @@ struct HfDataCreatorCharmHadPiReduced {
     hfReducedCollCentrality(collision.centFT0C(), collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
     if constexpr (withQvec) {
       hfReducedQvector(collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
-                      collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
-                      collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
-                      collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.nTrkTPCpos(),
-                      collision.qvecTPCnegRe(), collision.qvecTPCnegIm(), collision.nTrkTPCneg(),
-                      collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+                       collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
+                       collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
+                       collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.nTrkTPCpos(),
+                       collision.qvecTPCnegRe(), collision.qvecTPCnegIm(), collision.nTrkTPCneg(),
+                       collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
     }
   }
 
@@ -1275,8 +1275,8 @@ struct HfDataCreatorCharmHadPiReduced {
   {
     // store configurables needed for B0 workflow
     if (!isHfCandBhadConfigFilled) {
-    rowCandidateConfigB0(selectionFlagDplus.value, invMassWindowCharmHadPi.value);
-    isHfCandBhadConfigFilled = true;
+      rowCandidateConfigB0(selectionFlagDplus.value, invMassWindowCharmHadPi.value);
+      isHfCandBhadConfigFilled = true;
     }
 
     int zvtxColl{0};
@@ -1393,25 +1393,25 @@ struct HfDataCreatorCharmHadPiReduced {
                                TracksPidWithSel const& tracks,
                                aod::BCsWithTimestamps const& bcs)
   {
-  // store configurables needed for Bs workflow
-  if (!isHfCandBhadConfigFilled) {
-    rowCandidateConfigBs(selectionFlagDs.value, invMassWindowCharmHadPi.value);
-    isHfCandBhadConfigFilled = true;
-  }
+    // store configurables needed for Bs workflow
+    if (!isHfCandBhadConfigFilled) {
+      rowCandidateConfigBs(selectionFlagDs.value, invMassWindowCharmHadPi.value);
+      isHfCandBhadConfigFilled = true;
+    }
 
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
-    auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
-  }
+      auto thisCollId = collision.globalIndex();
+      auto candsCThisColl = candsC.sliceBy(candsDplusPerCollision, thisCollId);
+      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DecayChannel::BsToDsminusPi, true>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, -1, bcs);
+    }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
