@@ -349,11 +349,12 @@ static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"Doubl
 static const std::vector<std::string> labelsRowsDoubleCharmChannels = {"", "KeepNonprompt"};
 
 // charm resonances
-constexpr float cutsCharmReso[3][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
+constexpr float cutsCharmReso[4][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
                                         {0.155, 0.3, 0.3, 0.88, 0.88, 1.35, 0.18, 0.18, 0.25, 0.25, 0.8, 1.3, 1.3},
-                                        {0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0, 0.0, 6.0, 0.0, 0.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC, Lc*->D0P, Lc*->D*+P
+                                        {0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0, 0.0, 6.0, 0.0, 0.0, 0.0},
+                                        {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC, Lc*->D0P, Lc*->D*+P
 static const std::vector<std::string> labelsColumnsDeltaMassCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicResoToD", "SigmaC0", "SigmaCPlusPlus", "SigmaC02520", "SigmaCPlusPlus2520", "XicResoToSigmaC", "LcResoToD0Pr", "ThetaC"};
-static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin"};
+static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin", "ptMinCharmDaugh"};
 // V0s for charm resonances
 constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGamma, cosPaK0sLambda, radiusK0sLambda, nSigmaPrLambda, deltaMassK0S, deltaMassLambda
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
