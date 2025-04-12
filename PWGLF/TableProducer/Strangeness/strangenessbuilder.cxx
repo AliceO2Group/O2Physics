@@ -354,10 +354,6 @@ struct StrangenessBuilder {
   // for handling TPC-only tracks (photons)
   o2::aod::common::TPCVDriftManager mVDriftMgr;
 
-  // for tagging V0s used in cascades
-  std::vector<o2::pwglf::v0candidate> v0sFromCascades; // Vector of v0 candidates used in cascades
-  std::vector<int> v0Map;                              // index to relate V0s -> v0sFromCascades
-
   // for establishing CascData/KFData/TraCascData interlinks
   struct {
     std::vector<int> cascCoreToCascades;
@@ -397,10 +393,7 @@ struct StrangenessBuilder {
     int bachTrackId = -1;
     bool found = false;
   };
-  std::vector<v0Entry> v0List;
-  std::vector<cascadeEntry> cascadeList;
-  std::vector<std::size_t> sorted_v0;
-  std::vector<std::size_t> sorted_cascade;
+
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // Helper struct to contain V0MCCore information prior to filling
   struct mcV0info {
@@ -450,6 +443,16 @@ struct StrangenessBuilder {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  std::vector<v0Entry> v0List;
+  std::vector<cascadeEntry> cascadeList;
+  std::vector<std::size_t> sorted_v0;
+  std::vector<std::size_t> sorted_cascade;
+
+  // for tagging V0s used in cascades
+  std::vector<o2::pwglf::v0candidate> v0sFromCascades; // Vector of v0 candidates used in cascades
+  std::vector<int> ao2dV0toV0List;                     // index to relate v0s -> v0List
+  std::vector<int> v0Map;                              // index to relate v0List -> v0sFromCascades
 
   void init(InitContext& context)
   {
@@ -717,12 +720,12 @@ struct StrangenessBuilder {
     cascadeList.clear();
     sorted_v0.clear();
     sorted_cascade.clear();
+    ao2dV0toV0List.clear();
 
     trackEntry currentTrackEntry;
     v0Entry currentV0Entry;
     cascadeEntry currentCascadeEntry;
 
-    std::vector<int> ao2dV0toV0List;              // index to relate AO2D V0s -> deduplicated V0s
     std::vector<int> bestCollisionArray;          // stores McCollision -> Collision map
     std::vector<int> bestCollisionNContribsArray; // stores Ncontribs for biggest coll assoc to mccoll
 
@@ -751,7 +754,6 @@ struct StrangenessBuilder {
 
     if (mc_findableMode.value < 2) {
       // keep all unless de-duplication active
-      ao2dV0toV0List.clear();
       ao2dV0toV0List.resize(v0s.size(), -1); // -1 means keep, -2 means do not keep
 
       if (deduplicationAlgorithm > 0 && v0BuilderOpts.generatePhotonCandidates) {
@@ -1213,11 +1215,11 @@ struct StrangenessBuilder {
         trackedCascadeCount = trackedCascades.size();
         for (const auto& trackedCascade : trackedCascades) {
           auto const& cascade = trackedCascade.cascade();
-          LOGF(info, "trouble: cascade.v0Id() = %i but v0Map size %i", cascade.v0Id(), v0Map.size());
-          if (v0Map[cascade.v0Id()] == -2) {
+          LOGF(info, "trouble: cascade.v0Id() = %i but v0Map size %i", ao2dV0toV0List[cascade.v0Id()], v0Map.size());
+          if (v0Map[ao2dV0toV0List[cascade.v0Id()]] == -2) {
             v0sUsedInCascades++;
           }
-          v0Map[cascade.v0Id()] = -1; // marks used (but isn't the index of a properly built V0, which would be >= 0)
+          v0Map[ao2dV0toV0List[cascade.v0Id()]] = -1; // marks used (but isn't the index of a built V0, which would be >= 0)
         }
       }
     }
