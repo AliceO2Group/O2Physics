@@ -554,7 +554,7 @@ struct HfFilter { // Main struct for HF triggers
           // Beauty with D0
           if (!keepEvent[kBeauty3P] && isD0BeautyTagged) {
             int16_t isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty<kBeauty3P>(track, trackParThird, dcaThird);
-            if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0InMass, 0) && track.sign() < 0) || (TESTBIT(selD0InMass, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+
+            if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0InMass, 0) && track.sign() < 0) || (TESTBIT(selD0InMass, 1) && track.sign() > 0))) { // D0 pi-/K- and D0bar pi+/K+
               auto massCandD0Pi = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto massCandD0K = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massKa});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
