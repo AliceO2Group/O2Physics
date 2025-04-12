@@ -60,6 +60,32 @@ DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "HFREDCOLLISION", //! Table with colli
                   hf_reduced_collision::Bz,
                   o2::soa::Marker<1>);
 
+DECLARE_SOA_TABLE(HfRedCollCents, "AOD", "HFREDCOLLCENT", //! Table with collision centrality for reduced workflow
+                  cent::CentFT0C,
+                  cent::CentFT0M,
+                  evsel::NumTracksInTimeRange,
+                  evsel::SumAmpFT0CInTimeRange);
+
+DECLARE_SOA_TABLE(HfRedQvectors, "AOD", "HFREDQVECTOR", //! Table with collision centrality for reduced workflow
+                  qvec::QvecFT0CRe,
+                  qvec::QvecFT0CIm,
+                  qvec::SumAmplFT0C,
+                  qvec::QvecFT0ARe,
+                  qvec::QvecFT0AIm,
+                  qvec::SumAmplFT0A,
+                  qvec::QvecFT0MRe,
+                  qvec::QvecFT0MIm,
+                  qvec::SumAmplFT0M,
+                  qvec::QvecTPCposRe,
+                  qvec::QvecTPCposIm,
+                  qvec::NTrkTPCpos,
+                  qvec::QvecTPCnegRe,
+                  qvec::QvecTPCnegIm,
+                  qvec::NTrkTPCneg,
+                  qvec::QvecTPCallRe,
+                  qvec::QvecTPCallIm,
+                  qvec::NTrkTPCall);
+
 DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with collision extras for reduced workflow
                   collision::CovXX,
                   collision::CovXY,
