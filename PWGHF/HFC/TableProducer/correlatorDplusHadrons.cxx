@@ -163,6 +163,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Hadron> entryHadron;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
+  Configurable<bool> isPromptAnalysis{"isPromptAnalysis", true, "Flag for prompt D+-hadron correlations"};                              
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<bool> removeDaughters{"removeDaughters", true, "Flag for removing D-meson daughters from correlations"};
@@ -344,7 +345,8 @@ struct HfCorrelatorDplusHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-        entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        if (isPromptAnalysis) entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        else entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[2]); // 0: BkgBDTScore, 2:FDBDTScore
         entryDplus(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDplusToPiKPi(candidate), poolBin, gCollisionId, timeStamp);
 
         // Dplus-Hadron correlation dedicated section
@@ -366,7 +368,8 @@ struct HfCorrelatorDplusHadrons {
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), false);
           entryDplusHadronGenInfo(false, false, 0);
-          entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          if (isPromptAnalysis) entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          else entryDplusHadronMlInfo(outputMl[0], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
           if (cntDplus == 0) {
             entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
@@ -458,7 +461,8 @@ struct HfCorrelatorDplusHadrons {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
           }
           registry.fill(HIST("hMassDplusMcRecSig"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), efficiencyWeightD);
-          entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]);
+          if (isPromptAnalysis) entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]);
+          else entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[2]);
           entryDplusCandGenInfo(isDplusPrompt);
         } else {
           registry.fill(HIST("hPtCandMcRecBkg"), candidate.pt());
@@ -487,7 +491,8 @@ struct HfCorrelatorDplusHadrons {
                                candidate.pt(),
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
-          entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          if (isPromptAnalysis) entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          else entryDplusHadronMlInfo(outputMl[0], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -695,7 +700,8 @@ struct HfCorrelatorDplusHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-        entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+        if (isPromptAnalysis) entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+        else entryDplusHadronMlInfo(outputMl[0], outputMl[2]);
         entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
       }
     }
