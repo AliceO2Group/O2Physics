@@ -11,26 +11,17 @@
 // Lambda spin spin correlation task
 // prottay.das@cern.ch, sourav.kundu@cern.ch
 
-#include <TH1F.h>
-#include <TDirectory.h>
 #include <THn.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
 #include <tuple>
-
-#include "TRandom3.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
-#include "TF1.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -47,8 +38,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
@@ -128,20 +117,20 @@ struct lambdapolspspin {
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
 
-    histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT}, true);
-    histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT}, true);
-    histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT}, true);
+    histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
+    histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
+    histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
   }
 
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (std::abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
     const float pT = candidate.pt();
     const float tranRad = candidate.v0radius();
-    const float dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
+    const float dcaDaughv0 = std::abs(candidate.dcaV0daughters());
     const float cpav0 = candidate.v0cosPA();
 
     float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
@@ -161,10 +150,10 @@ struct lambdapolspspin {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (TMath::Abs(CtauLambda) > cMaxV0LifeTime) {
+    if (std::abs(CtauLambda) > cMaxV0LifeTime) {
       return false;
     }
-    if (TMath::Abs(candidate.yLambda()) > ConfV0Rap) {
+    if (std::abs(candidate.yLambda()) > ConfV0Rap) {
       return false;
     }
     return true;
@@ -183,10 +172,10 @@ struct lambdapolspspin {
       return false;
     }
 
-    if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
       return false;
     }
-    if (pid == 1 && TMath::Abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
       return false;
     }
     if (pid == 0 && (candidate.positivept() < cfgDaughPrPt || candidate.negativept() < cfgDaughPiPt)) {
@@ -199,10 +188,10 @@ struct lambdapolspspin {
       return false;
     }
 
-    if (pid == 0 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPr || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPi)) {
+    if (pid == 0 && (std::abs(candidate.dcapostopv()) < cMinV0DCAPr || std::abs(candidate.dcanegtopv()) < cMinV0DCAPi)) {
       return false;
     }
-    if (pid == 1 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPi || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPr)) {
+    if (pid == 1 && (std::abs(candidate.dcapostopv()) < cMinV0DCAPi || std::abs(candidate.dcanegtopv()) < cMinV0DCAPr)) {
       return false;
     }
 
@@ -223,7 +212,7 @@ struct lambdapolspspin {
   void fillHistograms(bool tag1, bool tag2, bool tag3, bool tag4, const ROOT::Math::PxPyPzMVector& particlepair,
                       const ROOT::Math::PxPyPzMVector& particle1, const ROOT::Math::PxPyPzMVector& particle2,
                       const ROOT::Math::PxPyPzMVector& daughpart1, const ROOT::Math::PxPyPzMVector& daughpart2,
-                      double centrality, double candmass, double candpt)
+                      double centrality)
   {
 
     ROOT::Math::Boost boostPairToCM{particlepair.BoostToCM()}; // boosting vector for pair CM
@@ -248,8 +237,8 @@ struct lambdapolspspin {
     double cosTheta1 = proton1_LambdaRF.Vect().Unit().Dot(quantizationAxis);
     double cosTheta2 = proton2_LambdaRF.Vect().Unit().Dot(-quantizationAxis); // Opposite for Lambda2
 
-    double theta1 = acos(cosTheta1); // angle in radians
-    double theta2 = acos(cosTheta2); // angle in radians
+    double theta1 = std::acos(cosTheta1); // angle in radians
+    double theta2 = std::acos(cosTheta2); // angle in radians
     // Step 2: Compute sin(theta1) and sin(theta2)
     // double sinTheta1 = std::sqrt(1 - cosTheta1 * cosTheta1);
     // double sinTheta2 = std::sqrt(1 - cosTheta2 * cosTheta2);
@@ -259,11 +248,11 @@ struct lambdapolspspin {
     double cosThetaDiff = TMath::Cos(theta1 - theta2);
 
     if (tag1 && tag3)
-      histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
+      histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particle1.Pt(), particle2.Pt());
     if (tag1 && tag4)
-      histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
+      histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particle1.Pt(), particle2.Pt());
     if (tag2 && tag4)
-      histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, candmass, candpt);
+      histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particle1.Pt(), particle2.Pt());
   }
 
   std::tuple<int, int, bool> getLambdaTags(const auto& v0, const auto& collision)
@@ -296,7 +285,7 @@ struct lambdapolspspin {
       return {0, 0, false}; // Fails selection
     }
 
-    if (TMath::Abs(v0.eta()) > 0.8) {
+    if (std::abs(v0.eta()) > 0.8) {
       return {0, 0, false}; // Fails selection
     }
 
@@ -339,7 +328,7 @@ struct lambdapolspspin {
 
     histos.fill(HIST("hCentrality"), centrality);
 
-    for (auto v0 : V0s) {
+    for (const auto& v0 : V0s) {
 
       auto [LambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
       if (!isValid)
@@ -364,7 +353,7 @@ struct lambdapolspspin {
       int tagb = aLambdaTag;
 
       // 2nd loop for combination of lambda lambda
-      for (auto v02 : V0s) {
+      for (const auto& v02 : V0s) {
 
         if (v0.v0Id() >= v02.v0Id())
           continue;
@@ -395,7 +384,8 @@ struct lambdapolspspin {
           LambdaLambdapair = Lambdadummy + Lambdadummy2;
           tagb = 0;
           tagb2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, LambdaLambdapair, Lambdadummy, Lambdadummy2, Proton, Proton2, centrality, LambdaLambdapair.M(), LambdaLambdapair.Pt());
+          // fillHistograms(taga, tagb, taga2, tagb2, LambdaLambdapair, Lambdadummy, Lambdadummy2, Proton, Proton2, centrality, LambdaLambdapair.M(), LambdaLambdapair.Pt());
+          fillHistograms(taga, tagb, taga2, tagb2, LambdaLambdapair, Lambdadummy, Lambdadummy2, Proton, Proton2, centrality);
         }
 
         tagb2 = aLambdaTag2;
@@ -404,7 +394,8 @@ struct lambdapolspspin {
           LambdaAntiLambdapair = Lambdadummy + AntiLambdadummy2;
           tagb = 0;
           taga2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, LambdaAntiLambdapair, Lambdadummy, AntiLambdadummy2, Proton, AntiProton2, centrality, LambdaAntiLambdapair.M(), LambdaAntiLambdapair.Pt());
+          // fillHistograms(taga, tagb, taga2, tagb2, LambdaAntiLambdapair, Lambdadummy, AntiLambdadummy2, Proton, AntiProton2, centrality, LambdaAntiLambdapair.M(), LambdaAntiLambdapair.Pt());
+          fillHistograms(taga, tagb, taga2, tagb2, LambdaAntiLambdapair, Lambdadummy, AntiLambdadummy2, Proton, AntiProton2, centrality);
         }
 
         tagb = aLambdaTag;
@@ -414,7 +405,8 @@ struct lambdapolspspin {
           AntiLambdaAntiLambdapair = AntiLambdadummy + AntiLambdadummy2;
           taga = 0;
           taga2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, AntiLambdaAntiLambdapair, AntiLambdadummy, AntiLambdadummy2, AntiProton, AntiProton2, centrality, AntiLambdaAntiLambdapair.M(), AntiLambdaAntiLambdapair.Pt());
+          // fillHistograms(taga, tagb, taga2, tagb2, AntiLambdaAntiLambdapair, AntiLambdadummy, AntiLambdadummy2, AntiProton, AntiProton2, centrality, AntiLambdaAntiLambdapair.M(), AntiLambdaAntiLambdapair.Pt());
+          fillHistograms(taga, tagb, taga2, tagb2, AntiLambdaAntiLambdapair, AntiLambdadummy, AntiLambdadummy2, AntiProton, AntiProton2, centrality);
         }
       }
     }
