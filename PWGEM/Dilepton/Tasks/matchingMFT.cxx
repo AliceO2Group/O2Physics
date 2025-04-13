@@ -60,7 +60,6 @@ struct matchingMFT {
   Configurable<float> maxEtaSA{"maxEtaSA", -2.5, "max. eta acceptance for MCH-MID"};
   Configurable<float> minEtaGL{"minEtaGL", -3.6, "min. eta acceptance for MFT-MCH-MID"};
   Configurable<float> maxEtaGL{"maxEtaGL", -2.5, "max. eta acceptance for MFT-MCH-MID"};
-  Configurable<float> minRabsGL{"minRabsGL", 27.6, "min. R at absorber end for global muons (min. eta = -3.6)"}; // std::tan(2.f * std::atan(std::exp(- -3.6)) ) * -505.
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> midRabs{"midRabs", 26.5, "middle R at absorber end for pDCA cut"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
@@ -195,9 +194,6 @@ struct matchingMFT {
       if (chi2 < 0.f || maxChi2GL < chi2) {
         return false;
       }
-      if (rAtAbsorberEnd < minRabsGL || maxRabs < rAtAbsorberEnd) {
-        return false;
-      }
     } else if (trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
       if (eta < minEtaSA || maxEtaSA < eta) {
         return false;
@@ -227,6 +223,18 @@ struct matchingMFT {
     const auto& mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
     // LOGF(info, "mcParticle_MFTMCHMID.pdgCode() = %d, mcParticle_MCHMID.pdgCode() = %d, mcParticle_MFT.pdgCode() = %d", mcParticle_MFTMCHMID.pdgCode(), mcParticle_MCHMID.pdgCode(), mcParticle_MFT.pdgCode());
     // LOGF(info, "mcParticle_MFTMCHMID.globalIndex() = %d, mcParticle_MCHMID.globalIndex() = %d, mcParticle_MFT.globalIndex() = %d", mcParticle_MFTMCHMID.globalIndex(), mcParticle_MCHMID.globalIndex(), mcParticle_MFT.globalIndex());
+
+    if (fwdtrack.chi2MatchMCHMFT() > maxMatchingChi2MCHMFT) {
+      return;
+    }
+
+    if (fwdtrack.chi2() < 0.f || maxChi2GL < fwdtrack.chi2()) {
+      return;
+    }
+
+    if (fwdtrack.rAtAbsorberEnd() < minRabs || maxRabs < fwdtrack.rAtAbsorberEnd()) {
+      return;
+    }
 
     if (std::abs(mcParticle_MCHMID.pdgCode()) != 13) { // select true muon
       return;
