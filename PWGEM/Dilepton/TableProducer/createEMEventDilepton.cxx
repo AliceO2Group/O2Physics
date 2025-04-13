@@ -52,6 +52,7 @@ using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentF
 using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 
 struct CreateEMEventDilepton {
+  Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
   // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
@@ -133,14 +134,22 @@ struct CreateEMEventDilepton {
     mRunNumber = bc.runNumber();
   }
 
-  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  Preslice<aod::Collisions> perBC = aod::collision::bcId;
+  // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
+  // PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
+  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const&)
+  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
-    for (auto& collision : collisions) {
+    for (const auto& bc : bcs) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
+        embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
+      }
+    } // end of bc loop
+
+    for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;
@@ -294,7 +303,7 @@ struct AssociateDileptonToEMEvent {
   template <typename TCollisions, typename TLeptons, typename TEventIds, typename TPreslice>
   void fillEventId(TCollisions const& collisions, TLeptons const& leptons, TEventIds& eventIds, TPreslice const& perCollision)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto leptons_coll = leptons.sliceBy(perCollision, collision.collisionId());
       int nl = leptons_coll.size();
       // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
