@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// Lambda spin spin correlation task
-// prottay.das@cern.ch, sourav.kundu@cern.ch
+
+/// \file lambdapolspspin2.cxx
+/// \brief Analysis task for Lambda spin spin correlation
+///
+/// \author prottay.das@cern.ch
 
 #include <THn.h>
 #include <TLorentzVector.h>
@@ -48,7 +51,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-struct lambdapolspspin {
+struct Lambdapolspspin {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -62,46 +65,28 @@ struct lambdapolspspin {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
 
   // Configs for V0
-  Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
-  Configurable<float> ConfV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
-  Configurable<double> ConfV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
-  Configurable<double> ConfV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
-  Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
-  Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
+  Configurable<float> confV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
+  Configurable<float> confV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
+  Configurable<double> confV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
+  Configurable<double> confV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
+  Configurable<float> confV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
+  Configurable<float> confV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<double> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<double> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   // config for V0 daughters
-  Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
+  Configurable<float> confDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.4, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
-  Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<double> ConfDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+  Configurable<float> confDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
+  Configurable<double> confDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
+  Configurable<float> confDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
 
-  Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
-  Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
-  Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
-  Configurable<int> PolNbins{"PolNbins", 20, "Number of bins in polarisation"};
-  Configurable<float> lbinPol{"lbinPol", -1.0, "lower bin value in #phi-#psi histograms"};
-  Configurable<float> hbinPol{"hbinPol", 1.0, "higher bin value in #phi-#psi histograms"};
-  Configurable<int> IMNbins{"IMNbins", 100, "Number of bins in invariant mass"};
+  Configurable<int> iMNbins{"iMNbins", 100, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
   Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
-  Configurable<int> ptNbins{"ptNbins", 50, "Number of bins in pt"};
-  Configurable<float> lbinpt{"lbinpt", 0.0, "lower bin value in pt histograms"};
-  Configurable<float> hbinpt{"hbinpt", 10.0, "higher bin value in pt histograms"};
-  Configurable<int> resNbins{"resNbins", 50, "Number of bins in reso"};
-  Configurable<float> lbinres{"lbinres", 0.0, "lower bin value in reso histograms"};
-  Configurable<float> hbinres{"hbinres", 10.0, "higher bin value in reso histograms"};
-  Configurable<int> etaNbins{"etaNbins", 20, "Number of bins in eta"};
-  Configurable<float> lbineta{"lbineta", -1.0, "lower bin value in eta histograms"};
-  Configurable<float> hbineta{"hbineta", 1.0, "higher bin value in eta histograms"};
-  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
-  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
-  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
 
   ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
   ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
@@ -112,8 +97,7 @@ struct lambdapolspspin {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec thnAxisres{resNbins, lbinres, hbinres, "Reso"};
-    AxisSpec thnAxisInvMass{IMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
+    AxisSpec thnAxisInvMass{iMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
 
@@ -135,25 +119,25 @@ struct lambdapolspspin {
 
     float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
 
-    if (pT < ConfV0PtMin) {
+    if (pT < confV0PtMin) {
       return false;
     }
-    if (dcaDaughv0 > ConfV0DCADaughMax) {
+    if (dcaDaughv0 > confV0DCADaughMax) {
       return false;
     }
-    if (cpav0 < ConfV0CPAMin) {
+    if (cpav0 < confV0CPAMin) {
       return false;
     }
-    if (tranRad < ConfV0TranRadV0Min) {
+    if (tranRad < confV0TranRadV0Min) {
       return false;
     }
-    if (tranRad > ConfV0TranRadV0Max) {
+    if (tranRad > confV0TranRadV0Max) {
       return false;
     }
     if (std::abs(CtauLambda) > cMaxV0LifeTime) {
       return false;
     }
-    if (std::abs(candidate.yLambda()) > ConfV0Rap) {
+    if (std::abs(candidate.yLambda()) > confV0Rap) {
       return false;
     }
     return true;
@@ -165,17 +149,17 @@ struct lambdapolspspin {
     if (track.tpcNClsCrossedRows() < 70) {
       return false;
     }
-    if (tpcNClsF < ConfDaughTPCnclsMin) {
+    if (tpcNClsF < confDaughTPCnclsMin) {
       return false;
     }
     if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
     }
 
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > confDaughPIDCuts) {
       return false;
     }
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > ConfDaughPIDCuts) {
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > confDaughPIDCuts) {
       return false;
     }
     if (pid == 0 && (candidate.positivept() < cfgDaughPrPt || candidate.negativept() < cfgDaughPiPt)) {
@@ -184,7 +168,7 @@ struct lambdapolspspin {
     if (pid == 1 && (candidate.positivept() < cfgDaughPiPt || candidate.negativept() < cfgDaughPrPt)) {
       return false;
     }
-    if (std::abs(candidate.positiveeta()) > ConfDaughEta || std::abs(candidate.negativeeta()) > ConfDaughEta) {
+    if (std::abs(candidate.positiveeta()) > confDaughEta || std::abs(candidate.negativeeta()) > confDaughEta) {
       return false;
     }
 
@@ -245,7 +229,7 @@ struct lambdapolspspin {
 
     // Step 3: Calculate cos(theta1 - theta2) using the trigonometric identity
     // double cosThetaDiff = cosTheta1 * cosTheta2 + sinTheta1 * sinTheta2;
-    double cosThetaDiff = TMath::Cos(theta1 - theta2);
+    double cosThetaDiff = std::cos(theta1 - theta2);
 
     if (tag1 && tag3)
       histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particle1.Pt(), particle2.Pt());
@@ -411,10 +395,10 @@ struct lambdapolspspin {
       }
     }
   }
-  PROCESS_SWITCH(lambdapolspspin, processData, "Process data", true);
+  PROCESS_SWITCH(Lambdapolspspin, processData, "Process data", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdapolspspin>(cfgc, TaskName{"lambdapolspspin"})};
+    adaptAnalysisTask<Lambdapolspspin>(cfgc, TaskName{"Lambdapolspspin"})};
 }
