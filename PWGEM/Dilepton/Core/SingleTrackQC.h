@@ -310,6 +310,13 @@ struct SingleTrackQC {
     if (doprocessQC_TriggeredData) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
+    if (doprocessBC) {
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{4, -0.5f, 3.5f}});
+      hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
+      hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && NoTFB && NoITSROFB");
+    }
   }
 
   template <bool isTriggerAnalysis, typename TCollision>
@@ -576,7 +583,7 @@ struct SingleTrackQC {
   template <bool isTriggerAnalysis, typename TCollisions, typename TTracks, typename TPreslice, typename TCut>
   void runQC(TCollisions const& collisions, TTracks const& tracks, TPreslice const& perCollision, TCut const& cut)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -599,7 +606,7 @@ struct SingleTrackQC {
       auto tracks_per_coll = tracks.sliceBy(perCollision, collision.globalIndex());
 
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
             if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
               continue;
@@ -612,7 +619,7 @@ struct SingleTrackQC {
           fillElectronInfo(track);
         } // end of track loop
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           if (!cut.template IsSelectedTrack<false>(track)) {
             continue;
           }
@@ -632,7 +639,7 @@ struct SingleTrackQC {
   {
     std::vector<int> passed_trackIds;
     passed_trackIds.reserve(tracks.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -651,7 +658,7 @@ struct SingleTrackQC {
       auto tracks_per_coll = tracks.sliceBy(perCollision, collision.globalIndex());
 
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
             if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
               continue;
@@ -664,7 +671,7 @@ struct SingleTrackQC {
           passed_trackIds.emplace_back(track.globalIndex());
         } // end of track loop
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           if (!cut.template IsSelectedTrack<false>(track)) {
             continue;
           }
@@ -677,11 +684,11 @@ struct SingleTrackQC {
     } // end of collision loop
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      for (auto& trackId : passed_trackIds) {
+      for (const auto& trackId : passed_trackIds) {
         auto track = tracks.rawIteratorAt(trackId);
         auto ambIds = track.ambiguousElectronsIds();
         float n = 1.f; // include myself.
-        for (auto& ambId : ambIds) {
+        for (const auto& ambId : ambIds) {
           if (std::find(passed_trackIds.begin(), passed_trackIds.end(), ambId) != passed_trackIds.end()) {
             n += 1.f;
           }
@@ -689,11 +696,11 @@ struct SingleTrackQC {
         map_weight[trackId] = 1.f / n;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      for (auto& trackId : passed_trackIds) {
+      for (const auto& trackId : passed_trackIds) {
         auto track = tracks.rawIteratorAt(trackId);
         auto ambIds = track.ambiguousMuonsIds();
         float n = 1.f; // include myself.
-        for (auto& ambId : ambIds) {
+        for (const auto& ambId : ambIds) {
           if (std::find(passed_trackIds.begin(), passed_trackIds.end(), ambId) != passed_trackIds.end()) {
             n += 1.f;
           }
@@ -765,7 +772,7 @@ struct SingleTrackQC {
 
   void processNorm(aod::EMEventNormInfos const& collisions)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
@@ -828,6 +835,25 @@ struct SingleTrackQC {
     } // end of collision loop
   }
   PROCESS_SWITCH(SingleTrackQC, processNorm, "process normalization info", false);
+
+  void processBC(aod::EMBCs const& bcs)
+  {
+    for (const auto& bc : bcs) {
+      if (bc.isTriggerTVX()) {
+        fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
+        if (bc.isNoTimeFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
+        }
+        if (bc.isNoITSROFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
+        }
+        if (bc.isNoTimeFrameBorder() && bc.isNoITSROFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(SingleTrackQC, processBC, "process BC counter", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQC, processDummy, "Dummy function", false);

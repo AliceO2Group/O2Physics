@@ -385,6 +385,13 @@ struct SingleTrackQCMC {
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     }
+    if (doprocessBC) {
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{4, -0.5f, 3.5f}});
+      hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
+      hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && NoTFB && NoITSROFB");
+    }
   }
 
   void DefineEMEventCut()
@@ -703,7 +710,7 @@ struct SingleTrackQCMC {
   template <bool isSmeared, typename TCollisions, typename TTracks, typename TPreslice, typename TCut, typename TMCCollisions, typename TMCParticles>
   void runQCMC(TCollisions const& collisions, TTracks const& tracks, TPreslice const& perCollision, TCut const& cut, TMCCollisions const&, TMCParticles const& mcparticles)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -719,7 +726,7 @@ struct SingleTrackQCMC {
 
       auto tracks_per_coll = tracks.sliceBy(perCollision, collision.globalIndex());
 
-      for (auto& track : tracks_per_coll) {
+      for (const auto& track : tracks_per_coll) {
         auto mctrack = track.template emmcparticle_as<TMCParticles>();
         if (std::abs(mctrack.pdgCode()) != pdg_lepton) {
           continue;
@@ -802,7 +809,7 @@ struct SingleTrackQCMC {
   template <bool isSmeared, typename TCollisions, typename TMCLeptons, typename TMCCollisions, typename TMCParticles>
   void runGenInfo(TCollisions const& collisions, TMCLeptons const& leptonsMC, TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
   {
-    for (auto& mccollision : mccollisions) {
+    for (const auto& mccollision : mccollisions) {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
@@ -824,7 +831,7 @@ struct SingleTrackQCMC {
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto leptonsMC_per_coll = leptonsMC.sliceByCachedUnsorted(o2::aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
-      for (auto& lepton : leptonsMC_per_coll) {
+      for (const auto& lepton : leptonsMC_per_coll) {
         if (!(lepton.isPhysicalPrimary() || lepton.producedByGenerator())) {
           continue;
         }
@@ -901,7 +908,7 @@ struct SingleTrackQCMC {
   {
     std::vector<int> passed_trackIds;
     passed_trackIds.reserve(tracks.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -919,7 +926,7 @@ struct SingleTrackQCMC {
       auto tracks_per_coll = tracks.sliceBy(perCollision, collision.globalIndex());
 
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           auto mctrack = track.template emmcparticle_as<TMCParticles>();
           auto mccollision_from_track = mctrack.template emmcevent_as<TMCCollisions>();
           if (cfgEventGeneratorType >= 0 && mccollision_from_track.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -938,7 +945,7 @@ struct SingleTrackQCMC {
           passed_trackIds.emplace_back(track.globalIndex());
         } // end of track loop
       } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-        for (auto& track : tracks_per_coll) {
+        for (const auto& track : tracks_per_coll) {
           auto mctrack = track.template emmcparticle_as<TMCParticles>();
           auto mccollision_from_track = mctrack.template emmcevent_as<TMCCollisions>();
           if (cfgEventGeneratorType >= 0 && mccollision_from_track.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -957,11 +964,11 @@ struct SingleTrackQCMC {
     } // end of collision loop
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      for (auto& trackId : passed_trackIds) {
+      for (const auto& trackId : passed_trackIds) {
         auto track = tracks.rawIteratorAt(trackId);
         auto ambIds = track.ambiguousElectronsIds();
         float n = 1.f; // include myself.
-        for (auto& ambId : ambIds) {
+        for (const auto& ambId : ambIds) {
           if (std::find(passed_trackIds.begin(), passed_trackIds.end(), ambId) != passed_trackIds.end()) {
             n += 1.f;
           }
@@ -969,11 +976,11 @@ struct SingleTrackQCMC {
         map_weight[trackId] = 1.f / n;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      for (auto& trackId : passed_trackIds) {
+      for (const auto& trackId : passed_trackIds) {
         auto track = tracks.rawIteratorAt(trackId);
         auto ambIds = track.ambiguousMuonsIds();
         float n = 1.f; // include myself.
-        for (auto& ambId : ambIds) {
+        for (const auto& ambId : ambIds) {
           if (std::find(passed_trackIds.begin(), passed_trackIds.end(), ambId) != passed_trackIds.end()) {
             n += 1.f;
           }
@@ -1051,7 +1058,7 @@ struct SingleTrackQCMC {
 
   void processNorm(aod::EMEventNormInfos const& collisions)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
@@ -1114,6 +1121,25 @@ struct SingleTrackQCMC {
     } // end of collision loop
   }
   PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
+
+  void processBC(aod::EMBCs const& bcs)
+  {
+    for (const auto& bc : bcs) {
+      if (bc.isTriggerTVX()) {
+        fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
+        if (bc.isNoTimeFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
+        }
+        if (bc.isNoITSROFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
+        }
+        if (bc.isNoTimeFrameBorder() && bc.isNoITSROFrameBorder()) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(SingleTrackQCMC, processBC, "process BC counter", false);
 
   void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);
