@@ -225,7 +225,6 @@ struct v0assoqa {
     }
 
     auto timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
 
     grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
@@ -465,10 +464,10 @@ struct v0assoqa {
         }
 
         // printout for inspection
-        TString cosPAString = "";
-        for (int iCollisionId = 0; iCollisionId < v0tableGrouped[iV0].collisionIds.size(); iCollisionId++) {
-          cosPAString.Append(Form("%.5f ", v0duplicates[iCollisionId].pointingAngle));
-        }
+        // TString cosPAString = "";
+        // for (size_t iCollisionId = 0; iCollisionId < v0tableGrouped[iV0].collisionIds.size(); iCollisionId++) {
+        //   cosPAString.Append(Form("%.5f ", v0duplicates[iCollisionId].pointingAngle));
+        // }
         // LOGF(info, "#%i (p,n) = (%i,%i), type %i, point. angles: %s", iV0, v0tableGrouped[iV0].posTrackId, v0tableGrouped[iV0].negTrackId, v0tableGrouped[iV0].v0Type, cosPAString.Data());
       } // end this-is-a-mc-gamma check
     }
