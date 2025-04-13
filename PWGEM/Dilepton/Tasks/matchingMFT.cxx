@@ -170,7 +170,7 @@ struct matchingMFT {
     fRegistry.addClone("MFTMCHMID/primary/correct/", "MFTMCHMID/primary/wrong/");
     fRegistry.addClone("MFTMCHMID/primary/", "MFTMCHMID/secondary/");
 
-    fRegistry.add("Generated/primary/hs", "gen. info;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0.0f, 10}, {100, -6, -1}, {90, 0, 2.f * M_PI}}, false);
+    fRegistry.add("Generated/primary/hs", "gen. info;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0.0f, 10}, {60, -5, -2}, {90, 0, 2.f * M_PI}}, false);
   }
 
   bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float dcaXY)
