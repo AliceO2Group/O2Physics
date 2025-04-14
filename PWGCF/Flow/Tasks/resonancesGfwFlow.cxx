@@ -64,8 +64,8 @@ using namespace std;
 
 namespace
 {
-std::shared_ptr<TProfile> RefC22Boot[10];
-std::shared_ptr<TProfile> RefC24Boot[10];
+std::shared_ptr<TProfile> refC22Boot[10];
+std::shared_ptr<TProfile> refC24Boot[10];
 
 std::shared_ptr<TProfile3D> phiD22FPtBoot[10];
 std::shared_ptr<TProfile3D> phiD22BPtBoot[10];
@@ -141,7 +141,7 @@ struct ResonancesGfwFlow {
   O2_DEFINE_CONFIGURABLE(cfgUsePhi, bool, true, "Analyze Phi")
 
   struct : ConfigurableGroup {
-    Configurable<std::vector<float>> cfgCosPAs{"cfgcosPAs", std::vector<float>{0.97f, 0.995f, 0.04f}, "Minimum Pointing angle for resonances [K0, Lambda, Phi]"};
+    Configurable<std::vector<float>> cfgCosPAs{"cfgCosPAs", std::vector<float>{0.97f, 0.995f, 0.04f}, "Minimum Pointing angle for resonances [K0, Lambda, Phi]"};
     Configurable<std::vector<int>> cfgDCABetDaug{"cfgDCABetDaug", std::vector<int>{1, 1, 1}, "Maximum DCA between resonance daughters [K0, Lambda, Phi]"};
     Configurable<std::vector<float>> cfgMassMin{"cfgMassMin", std::vector<float>{0.44f, 1.1f, 0.99f}, "Minimum mass for resonances [K0, Lambda, Phi]"};
     Configurable<std::vector<float>> cfgMassMax{"cfgMassMax", std::vector<float>{0.56f, 1.16f, 1.06f}, "Maximum mass for resonances [K0, Lambda, Phi]"};
@@ -352,8 +352,8 @@ struct ResonancesGfwFlow {
 
     if (cfgUseBootStrap) {
       for (int i = 0; i < cfgNbootstrap; i++) {
-        RefC22Boot[i] = histos.add<TProfile>(Form("BootStrap/Refc22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
-        RefC24Boot[i] = histos.add<TProfile>(Form("BootStrap/Refc24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        refC22Boot[i] = histos.add<TProfile>(Form("BootStrap/Refc22_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
+        refC24Boot[i] = histos.add<TProfile>(Form("BootStrap/Refc24_bootstrap_%d", i), "", {HistType::kTProfile, {axisMultiplicity}});
         if (cfgUsePhi) {
           phiD22FPtBoot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid22Fpt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
           phiD24FPtBoot[i] = histos.add<TProfile3D>(Form("BootStrap/Phid24Fpt_bootstrap_%d", i), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}});
@@ -838,7 +838,7 @@ struct ResonancesGfwFlow {
     histos.fill(HIST("hLambdaCount"), 2.5);
 
     // Rapidity correction
-    if (candidate.yLambda() > 0.5)
+    if (candidate.yLambda() > cfgRapidityCut)
       return false;
     histos.fill(HIST("hLambdaCount"), 3.5);
     // DCA cuts for lambda and antilambda
@@ -940,7 +940,7 @@ struct ResonancesGfwFlow {
       return false;
     histos.fill(HIST("hK0Count"), 2.5);
     // Rapidity correction
-    if (candidate.yK0Short() > 0.5)
+    if (candidate.yK0Short() > cfgRapidityCut)
       return false;
     histos.fill(HIST("hK0Count"), 3.5);
     // DCA cuts for K0short
@@ -1160,8 +1160,8 @@ struct ResonancesGfwFlow {
       double r = rand->Rndm();
       int bootId = static_cast<int>(r * 10);
 
-      fillProfileBoot(corrconfigs.at(0), RefC22Boot[bootId], cent);
-      fillProfileBoot(corrconfigs.at(1), RefC24Boot[bootId], cent);
+      fillProfileBoot(corrconfigs.at(0), refC22Boot[bootId], cent);
+      fillProfileBoot(corrconfigs.at(1), refC24Boot[bootId], cent);
 
       if (cfgUsePhi) {
         fillProfileBoot3D(corrconfigs.at(2), phiD22FPtBoot[bootId], cent, fPhiMassAxis);
