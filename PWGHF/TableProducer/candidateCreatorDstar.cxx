@@ -742,7 +742,7 @@ struct HfCandidateCreatorDstarExpressions {
           if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
             flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
             flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
-          } else if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0) || RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
+          } else if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0) || RecoDecay::isMatchedMCGen(mcParticles, particleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
             flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
             flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
           }
