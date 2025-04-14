@@ -418,10 +418,10 @@ struct nucleiFilter {
 
       for (const auto& track : tracks) {
         if (track.itsNCls() < cfgCutNclusITS ||
-          track.tpcNClsFound() < cfgCutNclusTPC ||
-          std::abs(track.dcaXY()) > cfgCutDCAxy ||
-          std::abs(track.dcaZ()) > cfgCutDCAz ||
-          std::abs(track.eta()) > 0.9) {
+            track.tpcNClsFound() < cfgCutNclusTPC ||
+            std::abs(track.dcaXY()) > cfgCutDCAxy ||
+            std::abs(track.dcaZ()) > cfgCutDCAz ||
+            std::abs(track.eta()) > 0.9) {
           continue;
         }
         const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
