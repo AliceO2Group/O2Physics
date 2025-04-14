@@ -14,7 +14,6 @@
 ///
 /// \author prottay.das@cern.ch
 
-#include <TLorentzVector.h>
 #include <tuple>
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -266,7 +265,7 @@ struct LambdaSpinCorrelation {
       return {0, 0, false}; // Fails selection
     }
 
-    const auto netav = 70;
+    const auto netav = 0.8;
     if (std::abs(v0.eta()) > netav) {
       return {0, 0, false}; // Fails selection
     }
