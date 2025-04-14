@@ -25,30 +25,31 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-struct eventConverter1 {
-  Produces<aod::EMEvents_001> event_001;
+struct eventConverter2 {
+  Produces<aod::EMEvents_002> event_002;
 
-  void process(aod::EMEvents_000 const& collisions)
+  void process(aod::EMEvents_001 const& collisions)
   {
     for (auto& collision : collisions) {
-      event_001(
+      event_002(
         collision.globalIndex(),
         collision.runNumber(),
         collision.globalBC(),
         collision.alias_raw(),
         collision.selection_raw(),
+        0,
         collision.timestamp(),
         collision.posX(),
         collision.posY(),
         collision.posZ(),
         collision.numContrib(),
         collision.trackOccupancyInTimeRange(),
-        -1.f);
+        collision.ft0cOccupancyInTimeRange());
     } // end of collision loop
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<eventConverter1>(cfgc, TaskName{"event-converter1"})};
+  return WorkflowSpec{adaptAnalysisTask<eventConverter2>(cfgc, TaskName{"event-converter2"})};
 }
