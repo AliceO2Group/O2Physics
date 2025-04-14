@@ -37,6 +37,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 
 using namespace o2;
@@ -47,8 +48,6 @@ namespace
 {
 
 static constexpr int nNuclei{3};
-static constexpr int nHyperNuclei{1};
-static constexpr int nITStriggers{2};
 static constexpr int nCutsPID{5};
 static constexpr std::array<float, nNuclei> masses{
   constants::physics::MassDeuteron, constants::physics::MassTriton,
@@ -57,7 +56,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
-static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
+static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), o2::aod::filtering::He::columnLabel(), o2::aod::filtering::HeV0::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::Tracked3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -160,9 +159,9 @@ struct nucleiFilter {
   } trgH3L3Body;
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + nITStriggers + 1, -0.5, nNuclei + nHyperNuclei + nITStriggers + 0.5)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", kNtriggers + 1, -0.5, kNtriggers + 0.5)};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     std::vector<double> ptBinning = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5.};
 
@@ -313,26 +312,39 @@ struct nucleiFilter {
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
+  enum {
+    kH2 = 0,
+    kHe,
+    kHeV0,
+    kH3L3Body,
+    kTracked3Body,
+    kITSmildIonisation,
+    kITSextremeIonisation,
+    kNtriggers
+  } TriggerType;
   // void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   using ColWithEvTime = soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
-  void process(ColWithEvTime::iterator const& collision, aod::Decay3Bodys const& decay3bodys, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void process(ColWithEvTime::iterator const& collision, aod::Decay3Bodys const& decay3bodys, TrackCandidates const& tracks, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::V0s const& v0s, aod::BCsWithTimestamps const&)
   {
     // collision process loop
-    bool keepEvent[nNuclei + nHyperNuclei + nITStriggers]{false};
+    std::array<bool, kNtriggers> keepEvent{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
     hProcessedEvents->Fill(0);
     //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
       return;
     }
+
     //
     const double bgScalings[nNuclei][2]{
       {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},
       {charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / masses[1], charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / masses[1]},
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
+    constexpr int nucleusIndex[nNuclei]{kH2, -1, kHe}; /// remap for nuclei triggers
+    std::vector<int> he3indices;
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() >= cfgCutNclusExtremeIonisationITS) {
         double avgClsSize{0.};
@@ -342,8 +354,8 @@ struct nucleiFilter {
         }
         avgClsSize = avgClsSize * cosL / track.itsNCls();
         qaHists.fill(HIST("fExtremeIonisationITS"), track.itsNCls(), avgClsSize, track.p());
-        keepEvent[4] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeMildIonisation;
-        keepEvent[5] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeExtremeIonisation;
+        keepEvent[kITSmildIonisation] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeMildIonisation;
+        keepEvent[kITSextremeIonisation] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeExtremeIonisation;
       }
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC) {
@@ -354,10 +366,8 @@ struct nucleiFilter {
         qaHists.fill(HIST("fDeuTOFNsigma"), track.p() * track.sign(), track.tofNSigmaDe());
       }
 
-      if (track.sign() > 0 && (std::abs(track.dcaXY()) > cfgCutDCAxy ||
-                               std::abs(track.dcaZ()) > cfgCutDCAz)) {
-        continue;
-      }
+      bool passesDCAselection{(track.sign() < 0 || (std::abs(track.dcaXY()) < cfgCutDCAxy &&
+                               std::abs(track.dcaZ()) < cfgCutDCAz))};
 
       float nSigmaTPC[nNuclei]{
         track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
@@ -388,9 +398,27 @@ struct nucleiFilter {
         if (track.p() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
           continue;
         }
-        keepEvent[iN] = true;
-        if (keepEvent[iN]) {
+        if (nucleusIndex[iN] < 0) {
+          continue;
+        }
+        keepEvent[nucleusIndex[iN]] = passesDCAselection;
+        if (keepEvent[nucleusIndex[iN]]) {
           h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
+        }
+        if (iN == 2) {
+          he3indices.push_back(track.globalIndex());
+        }
+      }
+
+      for (const auto& v0 : v0s) {
+        for (const auto& he3 : he3indices) {
+          if (v0.posTrackId() == he3 || v0.negTrackId() == he3) {
+            keepEvent[kHeV0] = true;
+            break;
+          }
+        }
+        if (keepEvent[kHeV0]) {
+          break;
         }
       }
 
@@ -531,7 +559,7 @@ struct nucleiFilter {
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
           qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
           qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
-          keepEvent[3] = true;
+          keepEvent[kH3L3Body] = true;
         }
       }
       if (invmassAntiH3L >= trgH3L3Body.h3LMassLowerlimit && invmassAntiH3L <= trgH3L3Body.h3LMassUpperlimit) {
@@ -541,17 +569,20 @@ struct nucleiFilter {
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
           qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
           qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
-          keepEvent[3] = true;
+          keepEvent[kH3L3Body] = true;
         }
       }
     }
 
-    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei + nITStriggers; ++iDecision) {
+    keepEvent[kTracked3Body] = tracked3Bodys.size() > 0;
+
+    for (int iDecision{0}; iDecision < kNtriggers; ++iDecision) {
       if (keepEvent[iDecision]) {
         hProcessedEvents->Fill(iDecision + 1);
       }
     }
-    tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+
+    tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
   }
 };
 
