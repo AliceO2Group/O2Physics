@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDplusHadrons.cxx
+/// \brief D+-Hadrons correlator task - data-like, MC-reco and MC-Gen analyses
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
 #include <vector>
