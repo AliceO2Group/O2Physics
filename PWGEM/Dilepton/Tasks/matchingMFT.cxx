@@ -69,6 +69,7 @@ struct matchingMFT {
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 1e+10, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+6, "max. chi2 for standalone muon"};
   Configurable<float> maxChi2GL{"maxChi2GL", 1e+6, "max. chi2 for global muon"};
+  Configurable<int> minNclustersMFT{"minNclustersMFT", 5, "min nclusters MFT"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<bool> requireTrueAssociation{"requireTrueAssociation", false, "flag to require true mc collision association"};
 
@@ -233,6 +234,10 @@ struct matchingMFT {
     }
 
     if (fwdtrack.rAtAbsorberEnd() < minRabs || maxRabs < fwdtrack.rAtAbsorberEnd()) {
+      return;
+    }
+
+    if (mfttrack.nClusters() < minNclustersMFT) {
       return;
     }
 
