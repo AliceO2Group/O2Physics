@@ -108,7 +108,7 @@ struct nucleiFilter {
   Configurable<LabeledArray<double>> cfgMinTPCmom{"cfgMinTPCmom", {minTPCmom[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum TPC p/Z for nuclei PID"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
-  Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
+  Configurable<bool> cfgFixTPCinnerParam{"cfgFixTPCinnerParam", false, "Fix TPC inner param"};
 
   // variable/tool for hypertriton 3body decay
   int mRunNumber;
@@ -348,9 +348,17 @@ struct nucleiFilter {
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
     constexpr int nucleusIndex[nNuclei]{kH2, -1, kHe}; /// remap for nuclei triggers
-    std::vector<int> h3indices, he3indices;
+    std::vector<int> h3indices;
     std::vector<ROOT::Math::PtEtaPhiMVector> h3vectors;
-    for (auto& track : tracks) { // start loop over tracks
+
+    auto getNsigma = [&](const auto& track, int iN, int iC) {
+      float fixTPCrigidity{(cfgFixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+      double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
+      return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+    };
+
+    for (const auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() >= cfgCutNclusExtremeIonisationITS) {
         double avgClsSize{0.};
         double cosL{std::sqrt(1. / (1. + track.tgl() * track.tgl()))};
@@ -380,7 +388,7 @@ struct nucleiFilter {
         track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
       const int iC{track.sign() < 0};
 
-      float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+      float fixTPCrigidity{(cfgFixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
 
       // fill QA hist: dEdx for all charged tracks
       qaHists.fill(HIST("fTPCsignalAll"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
@@ -392,9 +400,7 @@ struct nucleiFilter {
         }
 
         if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
-          double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
-          nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+          nSigmaTPC[iN] = getNsigma(track, iN, iC);
         }
         h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
@@ -406,9 +412,6 @@ struct nucleiFilter {
         if (iN == 1 && passesDCAselection) {
           h3indices.push_back(track.globalIndex());
           h3vectors.emplace_back(track.pt(), track.eta(), track.phi(), masses[iN]);
-        }
-        if (iN == 2) {
-          he3indices.push_back(track.globalIndex());
         }
         if (nucleusIndex[iN] < 0) {
           continue;
@@ -424,7 +427,7 @@ struct nucleiFilter {
             track.tpcNClsFound() < cfgCutNclusTPC ||
             std::abs(track.dcaXY()) > cfgCutDCAxy ||
             std::abs(track.dcaZ()) > cfgCutDCAz ||
-            std::abs(track.eta()) > 0.9) {
+            std::abs(track.eta()) > cfgCutEta) {
           continue;
         }
         const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
@@ -445,13 +448,18 @@ struct nucleiFilter {
       }
 
       for (const auto& v0 : v0s) {
-        for (const auto& he3 : he3indices) {
-          if (v0.posTrackId() == he3 || v0.negTrackId() == he3) {
-            keepEvent[kHeV0] = true;
-            break;
-          }
+        const auto& posTrack = tracks.rawIteratorAt(v0.posTrackId());
+        const auto& negTrack = tracks.rawIteratorAt(v0.negTrackId());
+        if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
+            (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
+          continue;
         }
-        if (keepEvent[kHeV0]) {
+        float nSigmas[2]{
+          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
+          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
+        if ((nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u)) ||
+            (nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u))) {
+          keepEvent[kHeV0] = true;
           break;
         }
       }
