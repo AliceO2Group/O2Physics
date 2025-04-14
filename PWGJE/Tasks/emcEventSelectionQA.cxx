@@ -22,16 +22,20 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "PWGJE/Core/utilsBcSelEMC.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::emc_evsel;
 
 using BCEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using FilteredCells = o2::soa::Filtered<aod::Calos>;
 
 struct EmcEventSelectionQA {
+
+  EMCEventSelection emcEvSel; // event selection and monitoring
   o2::framework::HistogramRegistry mHistManager{"EMCALEventSelectionQAHistograms"};
 
   // Require EMCAL cells (CALO type 1)
@@ -96,6 +100,8 @@ struct EmcEventSelectionQA {
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDJ1")).get());
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingEJ2")).get());
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingDJ2")).get());
+
+    emcEvSel.addHistograms(mHistManager); // collision monitoring
   }
 
   PresliceUnsorted<CollEventSels> perFoundBC = aod::evsel::foundBCId;
@@ -120,6 +126,11 @@ struct EmcEventSelectionQA {
       bool isEMCALreadout = false;
       auto bcID = bc.globalBC() % 3564;
 
+      // get bitmask with bc selection info
+      const auto rejectionMask = emcEvSel.getEMCCollisionRejectionMask<true, BCEvSels::iterator>(bc);
+      // monitor the satisfied event selections
+      emcEvSel.fillHistograms(bc, rejectionMask);
+
       if (bc.runNumber() > mRun3MinNumber) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
@@ -132,6 +143,11 @@ struct EmcEventSelectionQA {
         if (bc.alias_bit(kINT7) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2)) {
           isEMCALreadout = true;
         }
+      }
+
+      if (rejectionMask != 0) {
+        // at least one event selection not satisfied --> reject the candidate
+        continue;
       }
 
       // Monitoring BCs with EMCAL trigger / readout / FIT trigger
