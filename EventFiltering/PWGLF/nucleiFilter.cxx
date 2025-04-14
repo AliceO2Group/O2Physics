@@ -162,7 +162,7 @@ struct nucleiFilter {
   } trgH3L3Body;
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", kNtriggers + 1, -0.5, kNtriggers + 0.5)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", kNtriggers + 1, -0.5, static_cast<double>(kNtriggers) + 0.5)};
 
   void init(InitContext&)
   {
