@@ -689,7 +689,7 @@ struct HfTaskSigmac {
         continue;
       }
       /// rapidity selection on Σc0,++
-      if (yCandMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandMax) {
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandRecoMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandRecoMax) {
         continue;
       }
 
