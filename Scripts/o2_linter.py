@@ -1598,10 +1598,11 @@ def main():
     len_max = max(len(name) for name in test_names)
     print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files")
     for test in tests:
-        print(
-            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
-            f"\t\t{n_files_bad[test.name]}"
-        )
+        if any(n > 0 for n in (test.n_issues, test.n_disabled, n_files_bad[test.name])):
+            print(
+                f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
+                f"\t\t{n_files_bad[test.name]}"
+            )
 
     # Report global result.
     title_result = "O2 linter result"
