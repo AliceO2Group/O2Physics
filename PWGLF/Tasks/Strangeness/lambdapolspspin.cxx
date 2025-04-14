@@ -65,31 +65,31 @@ struct Lambdapolspspin {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
 
   // Configs for V0
-  Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
-  Configurable<float> confV0Rap{"confV0Rap", 0.8f, "Rapidity range of V0"};
-  Configurable<double> confV0DCADaughMax{"confV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
-  Configurable<double> confV0CPAMin{"confV0CPAMin", 0.9998f, "Minimum CPA of V0"};
-  Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
-  Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 100.f, "Maximum transverse radius"};
+  Configurable<float> confV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
+  Configurable<float> confV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
+  Configurable<double> confV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
+  Configurable<double> confV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
+  Configurable<float> confV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
+  Configurable<float> confV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<double> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<double> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   // config for V0 daughters
-  Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
+  Configurable<float> confDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.4, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
-  Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<double> confDaughDCAMin{"confDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+  Configurable<float> confDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
+  Configurable<double> confDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
+  Configurable<float> confDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
 
   Configurable<int> iMNbins{"iMNbins", 100, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
   Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
 
   ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
-  ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configthnAxisPt{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
 
   SliceCache cache;
@@ -101,13 +101,13 @@ struct Lambdapolspspin {
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
 
-    histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
-    histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
-    histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxispT, configthnAxispT}, true);
+    histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxisPt, configthnAxisPt}, true);
+    histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxisPt, configthnAxisPt}, true);
+    histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, configthnAxisPt, configthnAxisPt}, true);
   }
 
   template <typename Collision, typename V0>
-  bool selectionV0(Collision const& collision, V0 const& candidate)
+  bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
     if (std::abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
@@ -117,7 +117,7 @@ struct Lambdapolspspin {
     const float dcaDaughv0 = std::abs(candidate.dcaV0daughters());
     const float cpav0 = candidate.v0cosPA();
 
-    float ctauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
+    float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
 
     if (pT < confV0PtMin) {
       return false;
@@ -134,7 +134,7 @@ struct Lambdapolspspin {
     if (tranRad > confV0TranRadV0Max) {
       return false;
     }
-    if (std::abs(ctauLambda) > cMaxV0LifeTime) {
+    if (std::abs(CtauLambda) > cMaxV0LifeTime) {
       return false;
     }
     if (std::abs(candidate.yLambda()) > confV0Rap) {
@@ -143,16 +143,19 @@ struct Lambdapolspspin {
     return true;
   }
   template <typename V0, typename T>
-  bool isselectedV0Daughter(V0 const& candidate, T const& track, int pid)
+  bool isSelectedV0Daughter(V0 const& candidate, T const& track, int pid)
   {
     const auto tpcNClsF = track.tpcNClsFound();
-    if (track.tpcNClsCrossedRows() < 70) {
+    const auto ncr = 70;
+    const auto ncrfc = 0.8;
+
+    if (track.tpcNClsCrossedRows() < ncr) {
       return false;
     }
     if (tpcNClsF < confDaughTPCnclsMin) {
       return false;
     }
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (track.tpcCrossedRowsOverFindableCls() < ncrfc) {
       return false;
     }
 
@@ -182,13 +185,13 @@ struct Lambdapolspspin {
     return true;
   }
 
-  bool shouldReject(bool LambdaTag, bool aLambdaTag,
+  bool shouldReject(bool lambdaTag, bool aLambdaTag,
                     const ROOT::Math::PxPyPzMVector& Lambdadummy,
                     const ROOT::Math::PxPyPzMVector& AntiLambdadummy)
   {
     const double minMass = 1.105;
     const double maxMass = 1.125;
-    return (LambdaTag && aLambdaTag &&
+    return (lambdaTag && aLambdaTag &&
             (Lambdadummy.M() > minMass && Lambdadummy.M() < maxMass) &&
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
   }
@@ -201,25 +204,25 @@ struct Lambdapolspspin {
 
     ROOT::Math::Boost boostPairToCM{particlepair.BoostToCM()}; // boosting vector for pair CM
     // Boosting both Lambdas to Lambda-Lambda pair rest frame
-    auto lambda1_CM = boostPairToCM(particle1);
-    auto lambda2_CM = boostPairToCM(particle2);
+    auto lambda1CM = boostPairToCM(particle1);
+    auto lambda2CM = boostPairToCM(particle2);
 
     // Step 2: Boost Each Lambda to its Own Rest Frame
-    ROOT::Math::Boost boostLambda1ToCM{lambda1_CM.BoostToCM()};
-    ROOT::Math::Boost boostLambda2ToCM{lambda2_CM.BoostToCM()};
+    ROOT::Math::Boost boostLambda1ToCM{lambda1CM.BoostToCM()};
+    ROOT::Math::Boost boostLambda2ToCM{lambda2CM.BoostToCM()};
 
     // Also boost the daughter protons to the same frame
-    auto proton1_pairCM = boostPairToCM(daughpart1); // proton1 to pair CM
-    auto proton2_pairCM = boostPairToCM(daughpart2); // proton2 to pair CM
+    auto proton1pairCM = boostPairToCM(daughpart1); // proton1 to pair CM
+    auto proton2pairCM = boostPairToCM(daughpart2); // proton2 to pair CM
 
     // Boost protons into their respective Lambda rest frames
-    auto proton1_LambdaRF = boostLambda1ToCM(proton1_pairCM);
-    auto proton2_LambdaRF = boostLambda2ToCM(proton2_pairCM);
+    auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
+    auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
     // Method2
-    ROOT::Math::XYZVector quantizationAxis = lambda1_CM.Vect().Unit(); // Unit vector along Lambda1's direction in pair rest frame
-    double cosTheta1 = proton1_LambdaRF.Vect().Unit().Dot(quantizationAxis);
-    double cosTheta2 = proton2_LambdaRF.Vect().Unit().Dot(-quantizationAxis); // Opposite for Lambda2
+    ROOT::Math::XYZVector quantizationAxis = lambda1CM.Vect().Unit(); // Unit vector along Lambda1's direction in pair rest frame
+    double cosTheta1 = proton1LambdaRF.Vect().Unit().Dot(quantizationAxis);
+    double cosTheta2 = proton2LambdaRF.Vect().Unit().Dot(-quantizationAxis); // Opposite for Lambda2
 
     double theta1 = std::acos(cosTheta1); // angle in radians
     double theta2 = std::acos(cosTheta2); // angle in radians
@@ -244,7 +247,7 @@ struct Lambdapolspspin {
     auto postrack = v0.template posTrack_as<AllTrackCandidates>();
     auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
 
-    int LambdaTag = 0;
+    int lambdaTag = 0;
     int aLambdaTag = 0;
 
     const auto signpos = postrack.sign();
@@ -254,31 +257,32 @@ struct Lambdapolspspin {
       return {0, 0, false}; // Invalid candidate
     }
 
-    if (isselectedV0Daughter(v0, postrack, 0) && isselectedV0Daughter(v0, negtrack, 1)) {
-      LambdaTag = 1;
+    if (isSelectedV0Daughter(v0, postrack, 0) && isSelectedV0Daughter(v0, negtrack, 1)) {
+      lambdaTag = 1;
     }
-    if (isselectedV0Daughter(v0, negtrack, 0) && isselectedV0Daughter(v0, postrack, 1)) {
+    if (isSelectedV0Daughter(v0, negtrack, 0) && isSelectedV0Daughter(v0, postrack, 1)) {
       aLambdaTag = 1;
     }
 
-    if (!LambdaTag && !aLambdaTag) {
+    if (!lambdaTag && !aLambdaTag) {
       return {0, 0, false}; // No valid tags
     }
 
-    if (!selectionV0(collision, v0)) {
+    if (!SelectionV0(collision, v0)) {
       return {0, 0, false}; // Fails selection
     }
 
-    if (std::abs(v0.eta()) > 0.8) {
+    const auto netav = 70;
+    if (std::abs(v0.eta()) > netav) {
       return {0, 0, false}; // Fails selection
     }
 
-    return {LambdaTag, aLambdaTag, true}; // Valid candidate
+    return {lambdaTag, aLambdaTag, true}; // Valid candidate
   }
 
-  ROOT::Math::PxPyPzMVector Lambda, AntiLambda, Lambdadummy, AntiLambdadummy, Proton, Pion, AntiProton, AntiPion, fourVecDauCM;
-  ROOT::Math::PxPyPzMVector Lambda2, AntiLambda2, Lambdadummy2, AntiLambdadummy2, Proton2, Pion2, AntiProton2, AntiPion2;
-  ROOT::Math::PxPyPzMVector LambdaLambdapair, LambdaAntiLambdapair, AntiLambdaAntiLambdapair;
+  ROOT::Math::PxPyPzMVector lambda, antiLambda, lambdadummy, antiLambdadummy, proton, pion, antiProton, antiPion, fourVecDauCM;
+  ROOT::Math::PxPyPzMVector lambda2, antiLambda2, lambdadummy2, antiLambdadummy2, proton2, pion2, antiProton2, antiPion2;
+  ROOT::Math::PxPyPzMVector lambdaLambdapair, lambdaAntiLambdapair, antiLambdaAntiLambdapair;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   double massLambda = o2::constants::physics::MassLambda;
   double massPr = o2::constants::physics::MassProton;
@@ -314,26 +318,26 @@ struct Lambdapolspspin {
 
     for (const auto& v0 : V0s) {
 
-      auto [LambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
+      auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
       if (!isValid)
         continue;
 
-      if (LambdaTag) {
-        Proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
-        AntiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
-        Lambdadummy = Proton + AntiPion;
+      if (lambdaTag) {
+        proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
+        antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
+        lambdadummy = proton + antiPion;
       }
       if (aLambdaTag) {
-        AntiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
-        Pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
-        AntiLambdadummy = AntiProton + Pion;
+        antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
+        pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);
+        antiLambdadummy = antiProton + pion;
       }
 
-      if (shouldReject(LambdaTag, aLambdaTag, Lambdadummy, AntiLambdadummy)) {
+      if (shouldReject(lambdaTag, aLambdaTag, lambdadummy, antiLambdadummy)) {
         continue;
       }
 
-      int taga = LambdaTag;
+      int taga = lambdaTag;
       int tagb = aLambdaTag;
 
       // 2nd loop for combination of lambda lambda
@@ -342,55 +346,55 @@ struct Lambdapolspspin {
         if (v0.v0Id() >= v02.v0Id())
           continue;
 
-        auto [LambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(v02, collision);
+        auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(v02, collision);
         if (!isValid2)
           continue;
 
-        if (LambdaTag2) {
-          Proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPr);
-          AntiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPi);
-          Lambdadummy2 = Proton2 + AntiPion2;
+        if (lambdaTag2) {
+          proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPr);
+          antiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPi);
+          lambdadummy2 = proton2 + antiPion2;
         }
         if (aLambdaTag2) {
-          AntiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPr);
-          Pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPi);
-          AntiLambdadummy2 = AntiProton2 + Pion2;
+          antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPr);
+          pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPi);
+          antiLambdadummy2 = antiProton2 + pion2;
         }
 
-        if (shouldReject(LambdaTag2, aLambdaTag2, Lambdadummy2, AntiLambdadummy2)) {
+        if (shouldReject(lambdaTag2, aLambdaTag2, lambdadummy2, antiLambdadummy2)) {
           continue;
         }
 
-        int taga2 = LambdaTag2;
+        int taga2 = lambdaTag2;
         int tagb2 = aLambdaTag2;
 
-        if (LambdaTag && LambdaTag2) {
-          LambdaLambdapair = Lambdadummy + Lambdadummy2;
+        if (lambdaTag && lambdaTag2) {
+          lambdaLambdapair = lambdadummy + lambdadummy2;
           tagb = 0;
           tagb2 = 0;
           // fillHistograms(taga, tagb, taga2, tagb2, LambdaLambdapair, Lambdadummy, Lambdadummy2, Proton, Proton2, centrality, LambdaLambdapair.M(), LambdaLambdapair.Pt());
-          fillHistograms(taga, tagb, taga2, tagb2, LambdaLambdapair, Lambdadummy, Lambdadummy2, Proton, Proton2, centrality);
+          fillHistograms(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality);
         }
 
         tagb2 = aLambdaTag2;
 
-        if (LambdaTag && aLambdaTag2) {
-          LambdaAntiLambdapair = Lambdadummy + AntiLambdadummy2;
+        if (lambdaTag && aLambdaTag2) {
+          lambdaAntiLambdapair = lambdadummy + antiLambdadummy2;
           tagb = 0;
           taga2 = 0;
           // fillHistograms(taga, tagb, taga2, tagb2, LambdaAntiLambdapair, Lambdadummy, AntiLambdadummy2, Proton, AntiProton2, centrality, LambdaAntiLambdapair.M(), LambdaAntiLambdapair.Pt());
-          fillHistograms(taga, tagb, taga2, tagb2, LambdaAntiLambdapair, Lambdadummy, AntiLambdadummy2, Proton, AntiProton2, centrality);
+          fillHistograms(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality);
         }
 
         tagb = aLambdaTag;
-        taga2 = LambdaTag2;
+        taga2 = lambdaTag2;
 
         if (aLambdaTag && aLambdaTag2) {
-          AntiLambdaAntiLambdapair = AntiLambdadummy + AntiLambdadummy2;
+          antiLambdaAntiLambdapair = antiLambdadummy + antiLambdadummy2;
           taga = 0;
           taga2 = 0;
           // fillHistograms(taga, tagb, taga2, tagb2, AntiLambdaAntiLambdapair, AntiLambdadummy, AntiLambdadummy2, AntiProton, AntiProton2, centrality, AntiLambdaAntiLambdapair.M(), AntiLambdaAntiLambdapair.Pt());
-          fillHistograms(taga, tagb, taga2, tagb2, AntiLambdaAntiLambdapair, AntiLambdadummy, AntiLambdadummy2, AntiProton, AntiProton2, centrality);
+          fillHistograms(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality);
         }
       }
     }
@@ -399,6 +403,7 @@ struct Lambdapolspspin {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<Lambdapolspspin>(cfgc, TaskName{"Lambdapolspspin"})};
+  // return WorkflowSpec{
+  // adaptAnalysisTask<Lambdapolspspin>(cfgc, TaskName{"Lambdapolspspin"})};
+  return WorkflowSpec{adaptAnalysisTask<Lambdapolspspin>(cfgc)};
 }
