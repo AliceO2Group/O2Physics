@@ -37,13 +37,12 @@ struct HfTaskSigmac {
   /// Properly normalize your results to provide a cross section
   /// OR
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
-  Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "Maximum gen Sc rapidity"};
-  Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "Maximum Sc candidate rapidity"};
+  Configurable<float> yCandGenMax{"yCandGenMax", -1, "Maximum generated Sc rapidity"};
+  Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
 
   /// THn for candidate Λc+ and Σc0,++ cut variation
   Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {16, 0, 16}, ""};
-  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {800, 0, 80}, "Candidate beauty mother pTB bins"};
   ConfigurableAxis thnConfigAxisGenPt{"thnConfigAxisGenPt", {240, 0, 24}, "Gen pt prompt"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {800, 0, 80}, "Gen pt non-prompt"};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
@@ -249,9 +248,7 @@ struct HfTaskSigmac {
     if (enableTHn) {
       const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtLambdaCBMother{thnConfigAxisPtB, "#it{p}_{T}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
       const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtSigmaCBmother{thnConfigAxisPtB, "#it{p}_{T}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
       const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
@@ -261,20 +258,36 @@ struct HfTaskSigmac {
       const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
       const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
       const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
-      const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
-      if (doprocessDataWithMl || doprocessMcWithMl) {
-        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtLambdaCBMother});
-        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC, thnAxisPtSigmaCBmother});
+      const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+      const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+      const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
+      const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
+      std::vector<AxisSpec> axesLambdaCWithMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel};
+      std::vector<AxisSpec> axesSigmaCWithMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
+      std::vector<AxisSpec> axesLambdaCWoMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel};
+      std::vector<AxisSpec> axesSigmaCWoMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
+      if (isMc) {
+        registry.add("hnLambdaCGen", "THn for Lambdac gen", HistType::kTHnSparseF, {thnAxisGenPtLambdaC, thnAxisGenPtLambdaCBMother, thnAxisOriginMc, thnAxisChannel});
+        registry.add("hnSigmaCGen", "THn for Sigmac gen", HistType::kTHnSparseF, {thnAxisGenPtSigmaC, thnAxisGenPtSigmaCBMother, thnAxisOriginMc, thnAxisChannel, thnAxisGenPtLambdaC, thnAxisChargeSigmaC});
         if (doprocessMcWithMl) {
-          registry.add("hnLambdaCGen", "THn for Lambdac gen", HistType::kTHnSparseD, {thnAxisGenPtLambdaC, thnAxisGenPtLambdaCBMother, thnAxisOriginMc, thnAxisChannel});
-          registry.add("hnSigmaCGen", "THn for Sigmac gen", HistType::kTHnSparseD, {thnAxisGenPtSigmaC, thnAxisGenPtSigmaCBMother, thnAxisOriginMc, thnAxisChannel, thnAxisGenPtLambdaC, thnAxisChargeSigmaC});
+          axesLambdaCWithMl.push_back(thnAxisGenPtLambdaCBMother);
+          axesSigmaCWithMl.push_back(thnAxisGenPtSigmaCBMother);
+          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+        } else {
+          axesLambdaCWoMl.push_back(thnAxisGenPtLambdaCBMother);
+          axesSigmaCWoMl.push_back(thnAxisGenPtSigmaCBMother);
+          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
+          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
         }
       } else {
-        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtLambdaCBMother});
-        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC, thnAxisPtSigmaCBmother});
+        if (doprocessDataWithMl) {
+          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWithMl);
+          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWithMl);
+        } else {
+          registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, axesLambdaCWoMl);
+          registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, axesSigmaCWoMl);
+        }
       }
     }
 
@@ -466,10 +479,10 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc), 0);
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc), 0);
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
             }
           }
         }
@@ -496,10 +509,10 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0, 0);
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
             } else {
               /// fill w/o BDT information
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, 0);
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
             }
           }
           if (candidateLc.isSelLcToPiKP() >= 1) {
@@ -512,10 +525,10 @@ struct HfTaskSigmac {
                 outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
                 outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
               }
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0, 0);
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
             } else {
               /// fill w/o BDT information
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, 0);
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
             }
           }
         }
@@ -536,7 +549,7 @@ struct HfTaskSigmac {
                     aod::TracksWMc const&)
   {
 
-    /// MC generated particles of Sc
+    /// loop over Sc generated particles
     for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
@@ -653,16 +666,16 @@ struct HfTaskSigmac {
         registry.fill(HIST("MC/generated/hEtaGenLcFromSc0PlusPlusSig"), etaGenLc, origin, channel);
         registry.fill(HIST("MC/generated/hPhiGenLcFromSc0PlusPlusSig"), phiGenLc, origin, channel); /// Generated Λc+ ← Σc0,++ signal
         if (origin == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 1);
+          registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 2);
         } else {
           ptGenScBMother = mcParticlesSc.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 1);
+          registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 2);
         }
       }
 
     } /// end loop over Sc generated particles
 
-    /// MC generated particles of Lc
+    /// loop over Lc generated particles
     for (const auto& particle : mcParticlesLc) {
       if (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         continue;
