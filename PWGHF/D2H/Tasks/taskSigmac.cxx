@@ -668,7 +668,7 @@ struct HfTaskSigmac {
         continue;
       }
       if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandGenMax) {
-          continue;
+        continue;
       }
       double ptGenLc(-1.), ptGenLcBMother(-1.);
       int origin = particle.originMcGen();
