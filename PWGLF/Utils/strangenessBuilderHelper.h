@@ -83,7 +83,7 @@ template <typename T>
 std::vector<V0group> groupDuplicates(const T& V0s)
 {
   std::vector<V0group> v0table;
-  if(V0s.size()==0){
+  if (V0s.size() == 0) {
     return v0table;
   }
   V0group thisV0;
