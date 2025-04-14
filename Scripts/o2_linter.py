@@ -1611,7 +1611,7 @@ def main():
         if github_mode:
             print(f"::notice title={title_result}::{msg_result}")
         else:
-            print(f"{title_result}: {msg_result}")
+            print(f"\n{title_result}: {msg_result}")
     else:
         msg_result = "Issues have been found."
         msg_disable = (
