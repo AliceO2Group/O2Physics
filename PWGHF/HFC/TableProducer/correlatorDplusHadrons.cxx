@@ -197,7 +197,7 @@ struct HfCorrelatorDplusHadrons {
   HfHelper hfHelper;
   SliceCache cache;
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
-  int idxBdtScore = 1; // Index BDTScore 1 for Prompt and 2 for FD Analysis  
+  int idxBdtScore = 1; // Index BDTScore 1 for Prompt and 2 for FD Analysis
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
   using SelCollisionsWithDplusMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection, aod::MultsExtraMC>>; // collisionFilter applied
@@ -292,12 +292,11 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hPhiMcGen", "D+,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     registry.add("hMultFT0AMcGen", "D+,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
-    if (isPromptAnalysis){
+    if (isPromptAnalysis) {
       idxBdtScore = 1;
-    } 
-    else{
+    } else {
       idxBdtScore = 2;
-    }    
+    }
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -352,7 +351,7 @@ struct HfCorrelatorDplusHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-        entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[idxBdtScore]); // 0: BkgBDTScore, 1:PromptBDTScore; 2:FDBDTScore 
+        entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[idxBdtScore]); // 0: BkgBDTScore, 1:PromptBDTScore; 2:FDBDTScore
         entryDplus(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDplusToPiKPi(candidate), poolBin, gCollisionId, timeStamp);
 
         // Dplus-Hadron correlation dedicated section
