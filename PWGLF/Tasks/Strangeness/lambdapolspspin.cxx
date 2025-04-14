@@ -65,24 +65,24 @@ struct Lambdapolspspin {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
 
   // Configs for V0
-  Configurable<float> confV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
-  Configurable<float> confV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
-  Configurable<double> confV0DCADaughMax{"ConfV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
-  Configurable<double> confV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
-  Configurable<float> confV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
-  Configurable<float> confV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
+  Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
+  Configurable<float> confV0Rap{"confV0Rap", 0.8f, "Rapidity range of V0"};
+  Configurable<double> confV0DCADaughMax{"confV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
+  Configurable<double> confV0CPAMin{"confV0CPAMin", 0.9998f, "Minimum CPA of V0"};
+  Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
+  Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 100.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
   Configurable<double> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
   Configurable<double> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   // config for V0 daughters
-  Configurable<float> confDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
+  Configurable<float> confDaughEta{"confDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.4, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
-  Configurable<float> confDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<double> confDaughDCAMin{"ConfDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<float> confDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
+  Configurable<float> confDaughTPCnclsMin{"confDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
+  Configurable<double> confDaughDCAMin{"confDaughDCAMin", 0.08f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
+  Configurable<float> confDaughPIDCuts{"confDaughPIDCuts", 3, "PID selections for Lambda daughters"};
 
   Configurable<int> iMNbins{"iMNbins", 100, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
@@ -107,7 +107,7 @@ struct Lambdapolspspin {
   }
 
   template <typename Collision, typename V0>
-  bool SelectionV0(Collision const& collision, V0 const& candidate)
+  bool selectionV0(Collision const& collision, V0 const& candidate)
   {
     if (std::abs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
@@ -117,7 +117,7 @@ struct Lambdapolspspin {
     const float dcaDaughv0 = std::abs(candidate.dcaV0daughters());
     const float cpav0 = candidate.v0cosPA();
 
-    float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
+    float ctauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
 
     if (pT < confV0PtMin) {
       return false;
@@ -134,7 +134,7 @@ struct Lambdapolspspin {
     if (tranRad > confV0TranRadV0Max) {
       return false;
     }
-    if (std::abs(CtauLambda) > cMaxV0LifeTime) {
+    if (std::abs(ctauLambda) > cMaxV0LifeTime) {
       return false;
     }
     if (std::abs(candidate.yLambda()) > confV0Rap) {
@@ -268,7 +268,7 @@ struct Lambdapolspspin {
       return {0, 0, false}; // No valid tags
     }
 
-    if (!SelectionV0(collision, v0)) {
+    if (!selectionV0(collision, v0)) {
       return {0, 0, false}; // Fails selection
     }
 
