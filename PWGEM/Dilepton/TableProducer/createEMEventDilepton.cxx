@@ -144,8 +144,9 @@ struct CreateEMEventDilepton {
   {
     for (const auto& bc : bcs) {
       if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
-        embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
+        // const auto& collisions_perBC = collisions.sliceBy(perBC, bc.globalIndex());
+        // embc(bc.selection_bit(o2::aod::evsel::kIsTriggerTVX), bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder), bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder), static_cast<bool>(collisions_perBC.size() > 0)); // TVX is fired.
+        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
       }
     } // end of bc loop
 
@@ -160,15 +161,19 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
-      } else {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      if (!collision.isSelected()) { // minimal cut for MB
+        continue;
       }
 
-      if (!collision.isSelected() || !collision.isEoI()) {
+      if constexpr (eventtype == EMEventType::kEvent) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+      } else {
+        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      }
+
+      if (!collision.isEoI()) { // events with at least 1 lepton for data reduction.
         continue;
       }
 
