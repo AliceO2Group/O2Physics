@@ -355,7 +355,7 @@ struct HeavyNeutralMeson {
     mHistManager.add("TrackCuts/HMN/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
     if (ConfDoEMCShift.value) {
-      for (unsigned short iSM = 0; iSM < 20; iSM++) {
+      for (int iSM = 0; iSM < 20; iSM++) {
         EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
         EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
         LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];

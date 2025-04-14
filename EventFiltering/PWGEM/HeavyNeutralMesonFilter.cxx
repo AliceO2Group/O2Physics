@@ -772,7 +772,7 @@ struct HeavyNeutralMesonFilter {
     mHistManager.add("etaprimep/fAntiProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
 
     if (ConfDoEMCShift.value) {
-      for (unsigned short iSM = 0; iSM < 20; iSM++) {
+      for (int iSM = 0; iSM < 20; iSM++) {
         EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
         EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
         LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];
