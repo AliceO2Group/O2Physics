@@ -144,17 +144,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(EP4BNeg, ep4bneg, [](float q4x, float q4y) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(EP4BTot, ep4btot, [](float q4x, float q4y) -> float { return std::atan2(q4y, q4x) / 4.0; });
 } // namespace emevent
 
-DECLARE_SOA_TABLE(EMEvents_000, "AOD", "EMEVENT", //!   Main event information table
-                  o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp,
-                  collision::PosX, collision::PosY, collision::PosZ,
-                  collision::NumContrib, evsel::NumTracksInTimeRange, emevent::Sel8<evsel::Selection>);
-
 DECLARE_SOA_TABLE_VERSIONED(EMEvents_001, "AOD", "EMEVENT", 1, //!   Main event information table
                             o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp,
                             collision::PosX, collision::PosY, collision::PosZ,
                             collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
 
-using EMEvents = EMEvents_001;
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_002, "AOD", "EMEVENT", 2, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, evsel::Rct, timestamp::Timestamp,
+                            collision::PosX, collision::PosY, collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
+
+using EMEvents = EMEvents_002;
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
