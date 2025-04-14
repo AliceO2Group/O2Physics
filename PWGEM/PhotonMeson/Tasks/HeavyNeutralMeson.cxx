@@ -243,9 +243,13 @@ struct HeavyNeutralMeson {
     mHistManager.add("GG/invMassVsPt_PCMEMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
     mHistManager.add("GG/invMassVsPt_EMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
 
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_PCM", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_PCMEMC", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_EMC", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_PCM", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_PCMEMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_EMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+
+    mHistManager.add("EtaPrime/invMassVsPt_PCM", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
+    mHistManager.add("EtaPrime/invMassVsPt_PCMEMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
+    mHistManager.add("EtaPrime/invMassVsPt_EMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
 
     // event cuts
     mHistManager.add("EventCuts/fMultiplicityBefore", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
@@ -322,35 +326,36 @@ struct HeavyNeutralMeson {
     // HNM
     // omega QA
     // daughter pos before
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fInvMass", "Invariant mass HMN Pos Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fPt", "Transverse momentum HMN Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fEta", "HMN Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fPhi", "Azimuthal angle of HMN Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/PosDaughter/fInvMass", "Invariant mass HMN Pos Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
+    mHistManager.add("TrackCuts/HMN/PosDaughter/fPt", "Transverse momentum HMN Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/PosDaughter/fEta", "HMN Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/PosDaughter/fPhi", "Azimuthal angle of HMN Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     // daughter neg before
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fInvMass", "Invariant mass HMN Neg Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fPt", "Transverse momentum HMN Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fEta", "HMN Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fPhi", "Azimuthal angle of HMN Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/NegDaughter/fInvMass", "Invariant mass HMN Neg Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
+    mHistManager.add("TrackCuts/HMN/NegDaughter/fPt", "Transverse momentum HMN Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/NegDaughter/fEta", "HMN Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/NegDaughter/fPhi", "Azimuthal angle of HMN Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     // HMNCand tracks before
-    mHistManager.add("TrackCuts/HMN/Before/fInvMass_tracks", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/fPt_tracks", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/fEta_tracks", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/fPhi_tracks", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/fInvMass_tracks", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    mHistManager.add("TrackCuts/HMN/fInvMassPt_tracks", "Invariant mass HMNCand;M_{#pi^{+}#pi^{-}};pT_{#pi^{+}#pi^{-}}", HistType::kTH2F, {{5000, 0, 5}, {500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/fPt_tracks", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/fEta_tracks", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/fPhi_tracks", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/PCM/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    mHistManager.add("TrackCuts/HMN/PCM/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/PCM/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/PCM/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/EMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    mHistManager.add("TrackCuts/HMN/EMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/EMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/EMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    mHistManager.add("TrackCuts/HMN/PCMEMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
+    mHistManager.add("TrackCuts/HMN/PCMEMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/HMN/PCMEMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/HMN/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
 
     if (ConfDoEMCShift.value) {
-      for (unsigned short iSM = 0; iSM < 20; iSM++) {
+      for (int iSM = 0; iSM < 20; iSM++) {
         EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
         EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
         LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];
@@ -488,20 +493,20 @@ struct HeavyNeutralMeson {
 
         ROOT::Math::PtEtaPhiMVector temp = posPion + negPion;
 
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fInvMass_tracks"), temp.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fPt_tracks"), temp.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fEta_tracks"), temp.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fPhi_tracks"), translatePhi(temp.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/fInvMass_tracks"), temp.M());
+        mHistManager.fill(HIST("TrackCuts/HMN/fPt_tracks"), temp.pt());
+        mHistManager.fill(HIST("TrackCuts/HMN/fEta_tracks"), temp.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/fPhi_tracks"), translatePhi(temp.phi()));
 
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fInvMass"), posPion.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fPt"), posPion.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fEta"), posPion.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fPhi"), translatePhi(posPion.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/PosDaughter/fInvMass"), posPion.M());
+        mHistManager.fill(HIST("TrackCuts/HMN/PosDaughter/fPt"), posPion.pt());
+        mHistManager.fill(HIST("TrackCuts/HMN/PosDaughter/fEta"), posPion.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/PosDaughter/fPhi"), translatePhi(posPion.phi()));
 
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fInvMass"), negPion.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fPt"), negPion.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fEta"), negPion.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fPhi"), translatePhi(negPion.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/NegDaughter/fInvMass"), negPion.M());
+        mHistManager.fill(HIST("TrackCuts/HMN/NegDaughter/fPt"), negPion.pt());
+        mHistManager.fill(HIST("TrackCuts/HMN/NegDaughter/fEta"), negPion.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/NegDaughter/fPhi"), translatePhi(negPion.phi()));
       }
     }
 
@@ -544,26 +549,35 @@ struct HeavyNeutralMeson {
 
       float massHNM = heavyNeutralMeson.m(cfgHNMMassCorrection);
       if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
         // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/PCM/fInvMass"), massHNM);
+        mHistManager.fill(HIST("TrackCuts/HMN/PCM/fPt"), heavyNeutralMeson.pT());
+        mHistManager.fill(HIST("TrackCuts/HMN/PCM/fEta"), heavyNeutralMeson.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
       } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
         // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/EMC/fInvMass"), massHNM);
+        mHistManager.fill(HIST("TrackCuts/HMN/EMC/fPt"), heavyNeutralMeson.pT());
+        mHistManager.fill(HIST("TrackCuts/HMN/EMC/fEta"), heavyNeutralMeson.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
       } else {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
         // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        mHistManager.fill(HIST("TrackCuts/HMN/PCMEMC/fInvMass"), massHNM);
+        mHistManager.fill(HIST("TrackCuts/HMN/PCMEMC/fPt"), heavyNeutralMeson.pT());
+        mHistManager.fill(HIST("TrackCuts/HMN/PCMEMC/fEta"), heavyNeutralMeson.eta());
+        mHistManager.fill(HIST("TrackCuts/HMN/PCMEMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
       }
     }
     mHistManager.fill(HIST("Event/nHeavyNeutralMesons"), nHNMsBeforeMassCuts, vHNMs.size());
