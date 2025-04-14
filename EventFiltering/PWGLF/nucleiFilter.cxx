@@ -56,7 +56,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
-static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), o2::aod::filtering::He::columnLabel(), o2::aod::filtering::HeV0::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::Tracked3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
+static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), o2::aod::filtering::He::columnLabel(), o2::aod::filtering::HeV0::columnLabel(), o2::aod::filtering::TritonFemto::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::Tracked3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -316,6 +316,7 @@ struct nucleiFilter {
     kH2 = 0,
     kHe,
     kHeV0,
+    kTritonFemto,
     kH3L3Body,
     kTracked3Body,
     kITSmildIonisation,
@@ -333,7 +334,7 @@ struct nucleiFilter {
     hProcessedEvents->Fill(0);
     //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
+      tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kTritonFemto], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
       return;
     }
 
@@ -344,7 +345,8 @@ struct nucleiFilter {
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
     constexpr int nucleusIndex[nNuclei]{kH2, -1, kHe}; /// remap for nuclei triggers
-    std::vector<int> he3indices;
+    std::vector<int> h3indices, he3indices;
+    std::vector<ROOT::Math::PtEtaPhiMVector> h3vectors;
     for (auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() >= cfgCutNclusExtremeIonisationITS) {
         double avgClsSize{0.};
@@ -398,6 +400,13 @@ struct nucleiFilter {
         if (track.p() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
           continue;
         }
+        if (iN == 1 && passesDCAselection) {
+          h3indices.push_back(track.globalIndex());
+          h3vectors.emplace_back(track.pt(), track.eta(), track.phi(), masses[iN]);
+        }
+        if (iN == 2) {
+          he3indices.push_back(track.globalIndex());
+        }
         if (nucleusIndex[iN] < 0) {
           continue;
         }
@@ -405,8 +414,30 @@ struct nucleiFilter {
         if (keepEvent[nucleusIndex[iN]]) {
           h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
-        if (iN == 2) {
-          he3indices.push_back(track.globalIndex());
+      }
+
+      for (const auto& track : tracks) {
+        if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC ||
+          std::abs(track.dcaXY()) > cfgCutDCAxy ||
+          std::abs(track.dcaZ()) > cfgCutDCAz ||
+          std::abs(track.eta()) > 0.9) {
+          continue;
+        }
+        const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
+        for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
+          if (h3indices[iH3] == track.globalIndex()) {
+            continue;
+          }
+          const auto& h3vector = h3vectors[iH3];
+          auto pivector = trackVector;
+          auto cm = h3vector + trackVector;
+          const ROOT::Math::Boost boost(cm.BoostToCM());
+          boost(pivector);
+          if (pivector.p() < cfgCutKstar) {
+            keepEvent[kTritonFemto] = true;
+            break;
+          }
         }
       }
 
@@ -582,7 +613,7 @@ struct nucleiFilter {
       }
     }
 
-    tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
+    tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kTritonFemto], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
   }
 };
 
