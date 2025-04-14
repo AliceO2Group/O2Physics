@@ -367,7 +367,7 @@ struct nucleiFilter {
       }
 
       bool passesDCAselection{(track.sign() < 0 || (std::abs(track.dcaXY()) < cfgCutDCAxy &&
-                               std::abs(track.dcaZ()) < cfgCutDCAz))};
+                                                    std::abs(track.dcaZ()) < cfgCutDCAz))};
 
       float nSigmaTPC[nNuclei]{
         track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
