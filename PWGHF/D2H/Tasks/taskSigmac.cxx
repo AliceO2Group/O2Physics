@@ -266,15 +266,15 @@ struct HfTaskSigmac {
       const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
       const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
       if (doprocessDataWithMl || doprocessMcWithMl) {
-        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel});
-        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC});
+        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtLambdaCBMother});
+        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC, thnAxisPtSigmaCBmother});
         if (doprocessMcWithMl) {
           registry.add("hnLambdaCGen", "THn for Lambdac gen", HistType::kTHnSparseD, {thnAxisGenPtLambdaC, thnAxisGenPtLambdaCBMother, thnAxisOriginMc, thnAxisChannel});
           registry.add("hnSigmaCGen", "THn for Sigmac gen", HistType::kTHnSparseD, {thnAxisGenPtSigmaC, thnAxisGenPtSigmaCBMother, thnAxisOriginMc, thnAxisChannel, thnAxisGenPtLambdaC, thnAxisChargeSigmaC});
         }
       } else {
-        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel});
-        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC});
+        registry.add("hnLambdaC", "THn for Lambdac", HistType::kTHnSparseF, {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtLambdaCBMother});
+        registry.add("hnSigmaC", "THn for Sigmac", HistType::kTHnSparseF, {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC, thnAxisPtSigmaCBmother});
       }
     }
 
