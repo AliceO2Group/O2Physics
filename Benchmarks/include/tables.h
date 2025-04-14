@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef O2PHYSICS_BENCHMARKS_INCLUDE_TABLES_H_
+#define O2PHYSICS_BENCHMARKS_INCLUDE_TABLES_H_
 #include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
@@ -34,3 +36,4 @@ DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksE, TracksIU, "TRKE", extensions::E
 using TracksD = soa::Join<TracksIU, ExtTracksD>;
 using TracksID = soa::Join<TracksIU, ExtTracksID>;
 } // namespace o2::aod
+#endif
