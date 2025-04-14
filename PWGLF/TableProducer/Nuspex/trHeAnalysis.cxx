@@ -386,7 +386,7 @@ struct TrHeAnalysis {
               continue;
             }
             if (track.mass() < cfgCutMinTofMassH3 || track.mass() > cfgCutMaxTofMassH3) {
-              histos.fill(HIST("histogram/cuts"), 13); 
+              histos.fill(HIST("histogram/cuts"), 13);
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
@@ -539,7 +539,7 @@ struct TrHeAnalysis {
               continue;
             }
             if (track.mass() < cfgCutMinTofMassH3 || track.mass() > cfgCutMaxTofMassH3) {
-              histos.fill(HIST("histogram/cuts"), 13); 
+              histos.fill(HIST("histogram/cuts"), 13);
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
