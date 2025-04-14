@@ -26,7 +26,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-// using namespace o2::aod::rctsel;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
@@ -41,11 +40,12 @@ struct EMEventSelection {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
+  // for RCT
+  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
   Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
   Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
-
-  // Configurable<std::vector<RCTSelectionFlags>> cfgRCTFlags{"cfgRCTFlags", std::vector<RCTSelectionFlags>{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kTOFBad}, "see O2Physics/Common/CCDB/RCTSelectionFlags.h for bit information"};
 
   Configurable<float> cfgZvtxMin{"cfgZvtxMin", -1e+10, "min. Zvtx"};
   Configurable<float> cfgZvtxMax{"cfgZvtxMax", 1e+10, "max. Zvtx"};
@@ -65,7 +65,6 @@ struct EMEventSelection {
 
   void init(InitContext&)
   {
-    // rctChecker = o2::aod::rctsel::RCTFlagsChecker(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
     rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
   }
 
@@ -121,7 +120,7 @@ struct EMEventSelection {
       }
     }
 
-    if (!rctChecker.checkTable(collision)) {
+    if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
       // LOGF(info, "rejected by RCT flag");
       return false;
     }

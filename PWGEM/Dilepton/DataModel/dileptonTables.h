@@ -55,18 +55,18 @@ const std::unordered_map<std::string, int> aliasLabels = {
 };
 } // namespace pwgem::dilepton::swt
 
-namespace embc
-{
-DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);                 //! kIsTriggerTVX
-DECLARE_SOA_COLUMN(IsNoTimeFrameBorder, isNoTimeFrameBorder, bool);   //! kIsNoTimeFrameBorder
-DECLARE_SOA_COLUMN(IsNoITSROFrameBorder, isNoITSROFrameBorder, bool); //! kNoITSROFrameBorder
-DECLARE_SOA_COLUMN(IsCollisionFound, isCollisionFound, bool);         //! at least 1 collision is found in this BC.
-} // namespace embc
-DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-                  o2::soa::Index<>, embc::IsTriggerTVX, embc::IsNoTimeFrameBorder, embc::IsNoITSROFrameBorder, embc::IsCollisionFound);
-
+// namespace embc
+// {
+// DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);                 //! kIsTriggerTVX
+// DECLARE_SOA_COLUMN(IsNoTimeFrameBorder, isNoTimeFrameBorder, bool);   //! kIsNoTimeFrameBorder
+// DECLARE_SOA_COLUMN(IsNoITSROFrameBorder, isNoITSROFrameBorder, bool); //! kNoITSROFrameBorder
+// DECLARE_SOA_COLUMN(IsCollisionFound, isCollisionFound, bool);         //! at least 1 collision is found in this BC.
+// } // namespace embc
 // DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-//                   o2::soa::Index<>, evsel::Alias, evsel::Selection, embc::IsCollisionFound);
+//                  o2::soa::Index<>, embc::IsTriggerTVX, embc::IsNoTimeFrameBorder, embc::IsNoITSROFrameBorder, embc::IsCollisionFound);
+
+DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct);
 using EMBC = EMBCs::iterator;
 
 namespace emevent
@@ -226,7 +226,7 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct, emevent::PosZint16, cent::CentFT0C, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
