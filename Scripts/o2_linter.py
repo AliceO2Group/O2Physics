@@ -21,11 +21,44 @@ import argparse
 import os
 import re
 import sys
-from abc import ABC
+from enum import Enum
 from typing import Union
 
 github_mode = False  # GitHub mode
 prefix_disable = "o2-linter: disable="  # prefix for disabling tests
+
+
+class Reference(Enum):
+    O2 = 1
+    ISO_CPP = 2
+    LLVM = 3
+    GOOGLE = 4
+    LINTER = 5
+    PWG_HF = 6
+    PY_ZEN = 7
+    PY_PEP8 = 8
+
+
+references_list: "list[tuple[Reference, str, str]]" = [
+    (Reference.O2, "ALICE O2 Coding Guidelines", "https://github.com/AliceO2Group/CodingGuidelines"),
+    (Reference.ISO_CPP, "C++ Core Guidelines", "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines"),
+    (Reference.LLVM, "LLVM Coding Standards", "https://llvm.org/docs/CodingStandards.html"),
+    (Reference.GOOGLE, "Google C++ Style Guide", "https://google.github.io/styleguide/cppguide.html"),
+    (
+        Reference.LINTER,
+        "Proposal of the O2 linter",
+        "https://indico.cern.ch/event/1482467/#29-development-of-the-o2-linte",
+    ),
+    (
+        Reference.PWG_HF,
+        "PWG-HF guidelines",
+        "https://aliceo2group.github.io/analysis-framework/docs/advanced-specifics/pwghf.html#contribute",
+    ),
+    (Reference.PY_ZEN, "The Zen of Python", "https://peps.python.org/pep-0020/"),
+    (Reference.PY_PEP8, "Style Guide for Python Code", "https://peps.python.org/pep-0008/"),
+]
+
+references: "dict[Reference, dict]" = {name: {"title": title, "url": url} for name, title, url in references_list}
 
 
 def is_camel_case(name: str) -> bool:
@@ -120,7 +153,7 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     """Get list of index ranges of longest blocks opened with char_open and closed with char_close."""
     # print(f"Looking for {char_open}{char_close} blocks in \"{line}\".")
     # print(line)
-    list_ranges: "list[list[int]]" = []
+    list_ranges: list[list[int]] = []
     if not all((line, len(char_open) == 1, len(char_close) == 1)):
         return list_ranges
 
@@ -155,15 +188,17 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     return list_ranges
 
 
-class TestSpec(ABC):
+class TestSpec:
     """Prototype of a test class"""
 
-    name = "test-template"  # short name of the test
-    message = "Test failed"  # error message
+    name: str = "test-template"  # short name of the test
+    message: str = "Test failed"  # error message
+    rationale: str = "Rationale missing"  # brief rationale explanation
+    references: "list[Reference]" = []  # list of references relevant for this rule
     suffixes: "list[str]" = []  # suffixes of files to test
-    per_line = True  # Test lines separately one by one.
-    n_issues = 0  # issue counter
-    n_disabled = 0  # counter of disabled issues
+    per_line: bool = True  # Test lines separately one by one.
+    n_issues: int = 0  # issue counter
+    n_disabled: int = 0  # counter of disabled issues
 
     def file_matches(self, path: str) -> bool:
         """Test whether the path matches the pattern for files to test."""
@@ -199,7 +234,7 @@ class TestSpec(ABC):
         # print(f"Running test {self.name} for {path} with {len(content)} lines")
         if self.per_line:
             for i, line in enumerate(content):
-                if not isinstance(self, TestUsingDirectives):  # Keep the indentation if needed.
+                if not isinstance(self, TestUsingDirective):  # Keep the indentation if needed.
                     line = line.strip()
                 if not line:
                     continue
@@ -225,11 +260,13 @@ class TestSpec(ABC):
 # Bad practice
 
 
-class TestIOStream(TestSpec):
+class TestIoStream(TestSpec):
     """Detect included iostream."""
 
     name = "include-iostream"
     message = "Do not include iostream. Use O2 logging instead."
+    rationale = "Performance. Avoid injection of static constructors. Consistent logging."
+    references = [Reference.LLVM, Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -243,6 +280,8 @@ class TestUsingStd(TestSpec):
 
     name = "import-std-name"
     message = "Do not import names from the std namespace in headers."
+    rationale = "Code safety. Avoid namespace pollution with common names."
+    references = [Reference.LINTER]
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -251,11 +290,13 @@ class TestUsingStd(TestSpec):
         return not line.startswith("using std::")
 
 
-class TestUsingDirectives(TestSpec):
+class TestUsingDirective(TestSpec):
     """Detect using directives in headers."""
 
     name = "using-directive"
     message = "Do not put using directives at global scope in headers."
+    rationale = "Code safety. Avoid namespace pollution."
+    references = [Reference.O2, Reference.ISO_CPP, Reference.LLVM, Reference.GOOGLE, Reference.LINTER]
     suffixes = [".h"]
 
     def test_line(self, line: str) -> bool:
@@ -269,6 +310,8 @@ class TestStdPrefix(TestSpec):
 
     name = "std-prefix"
     message = "Use std:: prefix for names from the std namespace."
+    rationale = "Code clarity, safety and portability. Avoid ambiguity (e.g. abs)."
+    references = [Reference.LLVM, Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
     prefix_bad = r"[^\w:\.\"]"
     patterns = [
@@ -301,18 +344,18 @@ class TestStdPrefix(TestSpec):
             # Ignore matches inside strings.
             for match in matches:
                 n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
-                if n_quotes_before % 2:  # If odd, we are inside a string and we should ignore this match.
-                    continue
-                # We are not inside a string and this match is valid.
-                return False
+                if not n_quotes_before % 2:  # If even, we are not inside a string and this match is valid.
+                    return False
         return True
 
 
-class TestROOT(TestSpec):
+class TestRootEntity(TestSpec):
     """Detect unnecessary use of ROOT entities."""
 
-    name = "root-entity"
+    name = "root/entity"
     message = "Replace ROOT entities with equivalents from standard C++ or from O2."
+    rationale = "Code simplicity and maintainability. O2 is not a ROOT code."
+    references = [Reference.ISO_CPP, Reference.LINTER, Reference.PY_ZEN]
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -329,11 +372,32 @@ class TestROOT(TestSpec):
         return re.search(pattern, line) is None
 
 
+class TestRootLorentzVector(TestSpec):
+    """Detect use of TLorentzVector."""
+
+    name = "root/lorentz-vector"
+    message = (
+        "Do not use the TLorentzVector legacy class. "
+        "Use std::array with RecoDecay methods or the ROOT::Math::LorentzVector template instead."
+    )
+    rationale = "Performance. Use up-to-date tools."
+    references = []
+    suffixes = [".h", ".cxx"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        return "TLorentzVector" not in line
+
+
 class TestPi(TestSpec):
     """Detect use of external pi."""
 
     name = "external-pi"
     message = "Use the PI constant (and its multiples and fractions) defined in o2::constants::math."
+    rationale = "Code maintainability."
+    references = [Reference.LINTER, Reference.PY_ZEN]
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -352,6 +416,8 @@ class TestTwoPiAddSubtract(TestSpec):
 
     name = "two-pi-add-subtract"
     message = "Use RecoDecay::constrainAngle to restrict angle to a given range."
+    rationale = "Code maintainability and safety. Use existing tools."
+    references = [Reference.ISO_CPP, Reference.LINTER, Reference.PY_ZEN]
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -371,6 +437,8 @@ class TestPiMultipleFraction(TestSpec):
 
     name = "pi-multiple-fraction"
     message = "Use multiples/fractions of PI defined in o2::constants::math."
+    rationale = "Code maintainability."
+    references = [Reference.LINTER, Reference.PY_ZEN]
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -392,6 +460,8 @@ class TestPdgDatabase(TestSpec):
         "Do not use TDatabasePDG directly. "
         "Use o2::constants::physics::Mass... or Service<o2::framework::O2DatabasePDG> instead."
     )
+    rationale = "Performance."
+    references = [Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -404,11 +474,13 @@ class TestPdgDatabase(TestSpec):
         return "TDatabasePDG" not in line
 
 
-class TestPdgCode(TestSpec):
-    """Detect use of hard-coded PDG codes."""
+class TestPdgExplicitCode(TestSpec):
+    """Detect hard-coded PDG codes."""
 
     name = "pdg/explicit-code"
-    message = "Avoid using hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
+    message = "Avoid hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
+    rationale = "Code comprehensibility, readability, maintainability and safety."
+    references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -425,11 +497,57 @@ class TestPdgCode(TestSpec):
         return True
 
 
-class TestPdgMass(TestSpec):
+class TestPdgExplicitMass(TestSpec):
+    """Detect hard-coded particle masses."""
+
+    name = "pdg/explicit-mass"
+    message = "Avoid hard-coded particle masses. Use o2::constants::physics::Mass... instead."
+    rationale = "Code comprehensibility, readability, maintainability and safety."
+    references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
+    suffixes = [".h", ".cxx"]
+    masses: "list[str]" = []  # list of mass values to detect
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # List of masses of commonly used particles
+        self.masses.append(r"0\.000511")  # e
+        self.masses.append(r"0\.105")  # μ
+        self.masses.append(r"0\.139")  # π+
+        self.masses.append(r"0\.493")  # K+
+        self.masses.append(r"0\.497")  # K0
+        self.masses.append(r"0\.938")  # p
+        self.masses.append(r"0\.939")  # n
+        self.masses.append(r"1\.115")  # Λ
+        self.masses.append(r"1\.864")  # D0
+        self.masses.append(r"2\.286")  # Λc
+        self.masses.append(r"3\.096")  # J/ψ
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        iterators = re.finditer(rf"(^|\D)({'|'.join(self.masses)})", line)
+        matches = [(it.start(), it.group(2)) for it in iterators]
+        if not matches:
+            return True
+        if '"' not in line:  # Found a match which cannot be inside a string.
+            return False
+        # Ignore matches inside strings.
+        for match in matches:
+            n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
+            if not n_quotes_before % 2:  # If even, we are not inside a string and this match is valid.
+                return False
+        return True
+
+
+class TestPdgKnownMass(TestSpec):
     """Detect unnecessary call of Mass() for a known PDG code."""
 
     name = "pdg/known-mass"
     message = "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
+    rationale = "Performance."
+    references = [Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -439,9 +557,7 @@ class TestPdgMass(TestSpec):
         pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
         if re.search(rf"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
             return False
-        if re.search(rf"->Mass\({pattern_pdg_code}\)", line):
-            return False
-        return True
+        return not re.search(rf"->Mass\({pattern_pdg_code}\)", line)
 
 
 class TestLogging(TestSpec):
@@ -449,6 +565,8 @@ class TestLogging(TestSpec):
 
     name = "logging"
     message = "Use O2 logging (LOG, LOGF, LOGP)."
+    rationale = "Logs easy to read and process."
+    references = [Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -467,6 +585,8 @@ class TestConstRefInForLoop(TestSpec):
 
     name = "const-ref-in-for-loop"
     message = "Use constant references for non-modified iterators in range-based for loops."
+    rationale = "Performance, code comprehensibility and safety."
+    references = [Reference.O2, Reference.ISO_CPP, Reference.LLVM]
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -486,6 +606,8 @@ class TestConstRefInSubscription(TestSpec):
 
     name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
+    rationale = "Performance, code comprehensibility and safety."
+    references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
 
@@ -563,6 +685,8 @@ class TestWorkflowOptions(TestSpec):
         "Do not use workflow options to customise workflow topology composition in defineDataProcessing. "
         "Use process function switches or metadata instead."
     )
+    rationale = "Not supported on AliHyperloop."
+    references = [Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
 
@@ -597,17 +721,33 @@ class TestMagicNumber(TestSpec):
 
     name = "magic-number"
     message = "Avoid magic numbers in expressions. Assign the value to a clearly named variable or constant."
+    rationale = "Code comprehensibility, maintainability and safety."
+    references = [Reference.O2, Reference.ISO_CPP]
     suffixes = [".h", ".cxx", ".C"]
+    pattern_compare = r"([<>]=?|[!=]=)"
+    pattern_number = r"[\+-]?([\d\.]+)f?"
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        if not (match := re.search(r" ([<>]=?|[!=]=) [\+-]?([\d\.]+)", line)):
+        iterators = re.finditer(
+            rf" {self.pattern_compare} {self.pattern_number}|\W{self.pattern_number} {self.pattern_compare} ", line
+        )
+        matches = [(it.start(), it.group(2), it.group(3)) for it in iterators]
+        if not matches:
             return True
-        number = match.group(2)
-        # Accept only 0 or 1 (int or float).
-        return re.match(r"[01](\.0?)?$", number) is not None
+        # Ignore matches inside strings.
+        for match in matches:
+            n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
+            if n_quotes_before % 2:  # If odd, we are inside a string and we should ignore this match.
+                continue
+            # We are not inside a string and this match is valid.
+            for match_n in (match[1], match[2]):
+                # Accept only 0 or 1 (int or float).
+                if (match_n is not None) and (re.match(r"[01](\.0?)?$", match_n) is None):
+                    return False
+        return True
 
 
 # Documentation
@@ -619,6 +759,8 @@ class TestDocumentationFile(TestSpec):
 
     name = "doc/file"
     message = "Provide mandatory file documentation."
+    rationale = "Code comprehensibility. Collaboration."
+    references = [Reference.O2, Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
     per_line = False
 
@@ -662,6 +804,9 @@ class TestDocumentationFile(TestSpec):
 # Naming conventions
 # Reference: https://rawgit.com/AliceO2Group/CodingGuidelines/master/naming_formatting.html
 
+rationale_names = "Code readability, comprehensibility and searchability."
+references_names = [Reference.O2, Reference.LINTER]
+
 
 class TestNameFunctionVariable(TestSpec):
     """Test names of functions and of most variables.
@@ -674,6 +819,8 @@ class TestNameFunctionVariable(TestSpec):
 
     name = "name/function-variable"
     message = "Use lowerCamelCase for names of functions and variables."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -765,6 +912,8 @@ class TestNameMacro(TestSpec):
 
     name = "name/macro"
     message = "Use SCREAMING_SNAKE_CASE for names of macros. Leading and double underscores are not allowed."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -791,6 +940,8 @@ class TestNameConstant(TestSpec):
     message = (
         'Use UpperCamelCase for names of constexpr constants. Names of special constants may be prefixed with "k".'
     )
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -827,6 +978,8 @@ class TestNameColumn(TestSpec):
 
     name = "name/o2-column"
     message = "Use UpperCamelCase for names of O2 columns and matching lowerCamelCase names for their getters."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -863,6 +1016,8 @@ class TestNameTable(TestSpec):
 
     name = "name/o2-table"
     message = "Use UpperCamelCase for names of O2 tables."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
@@ -897,6 +1052,8 @@ class TestNameNamespace(TestSpec):
 
     name = "name/namespace"
     message = "Use snake_case for names of namespaces. Double underscores are not allowed."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -919,6 +1076,8 @@ class TestNameType(TestSpec):
 
     name = "name/type"
     message = "Use UpperCamelCase for names of defined types (including concepts)."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -938,6 +1097,8 @@ class TestNameUpperCamelCase(TestSpec):
     keyword = "key"
     name = f"name/{keyword}"
     message = f"Use UpperCamelCase for names of {keyword}."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
     def test_line(self, line: str) -> bool:
@@ -985,6 +1146,8 @@ class TestNameFileCpp(TestSpec):
 
     name = "name/file-cpp"
     message = "Use lowerCamelCase or UpperCamelCase for names of C++ files. See the O2 naming conventions for details."
+    rationale = rationale_names
+    references = references_names
     suffixes = [".h", ".cxx", ".C"]
     per_line = False
 
@@ -1007,6 +1170,8 @@ class TestNameFilePython(TestSpec):
 
     name = "name/file-python"
     message = "Use snake_case for names of Python files."
+    rationale = rationale_names
+    references = [Reference.LINTER, Reference.PY_PEP8]
     suffixes = [".py", ".ipynb"]
     per_line = False
 
@@ -1020,6 +1185,8 @@ class TestNameWorkflow(TestSpec):
 
     name = "name/o2-workflow"
     message = "Use kebab-case for names of workflows and match the name of the workflow file."
+    rationale = f"{rationale_names} Correspondence workflow ↔ file."
+    references = references_names
     suffixes = ["CMakeLists.txt"]
     per_line = False
 
@@ -1066,6 +1233,8 @@ class TestNameTask(TestSpec):
 
     name = "name/o2-task"
     message = "Specify task name only when it cannot be derived from the struct name. Only append to the default name."
+    rationale = f"{rationale_names} Correspondence struct ↔ device."
+    references = [Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
 
@@ -1214,6 +1383,8 @@ class TestNameFileWorkflow(TestSpec):
         "Name of a workflow file must match the name of the main struct in it (without the PWG prefix). "
         '(Class implementation files should be in "Core" directories.)'
     )
+    rationale = f"{rationale_names} Correspondence file ↔ struct."
+    references = [Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
 
@@ -1221,7 +1392,7 @@ class TestNameFileWorkflow(TestSpec):
         return super().file_matches(path) and "/Core/" not in path
 
     def test_file(self, path: str, content) -> bool:
-        file_name = os.path.basename(path).rstrip(".cxx")
+        file_name = os.path.basename(path)[:-4]  # file name without suffix
         base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
         if match := re.search("PWG([A-Z]{2})/", path):
             name_pwg = match.group(1)
@@ -1244,10 +1415,7 @@ class TestNameFileWorkflow(TestSpec):
             struct_name = words[1]
             struct_names.append(struct_name)
         # print(f"Found structs: {struct_names}.")
-        for struct_name in struct_names:
-            if re.match(base_struct_name, struct_name):
-                return True
-        return False
+        return any(re.match(base_struct_name, struct_name) for struct_name in struct_names)
 
 
 class TestNameConfigurable(TestSpec):
@@ -1258,6 +1426,8 @@ class TestNameConfigurable(TestSpec):
         "Use lowerCamelCase for names of configurables and use the same name "
         "for the struct member as for the JSON string. (Declare the type and names on the same line.)"
     )
+    rationale = f"{rationale_names} Correspondence C++ code ↔ JSON."
+    references = [Reference.O2, Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -1292,12 +1462,16 @@ class TestNameConfigurable(TestSpec):
 
 # PWG-HF
 
+references_hf = [Reference.LINTER, Reference.PWG_HF]
+
 
 class TestHfNameStructClass(TestSpec):
     """PWGHF: Test names of structs and classes."""
 
     name = "pwghf/name/struct-class"
     message = 'Names of PWGHF structs and classes must start with "Hf".'
+    rationale = f"{rationale_names} Correspondence device ↔ workflow."
+    references = references_hf
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
@@ -1323,6 +1497,8 @@ class TestHfNameFileTask(TestSpec):
 
     name = "pwghf/name/task-file"
     message = 'Name of a PWGHF task workflow file must start with "task".'
+    rationale = rationale_names
+    references = references_hf
     suffixes = [".cxx"]
     per_line = False
 
@@ -1331,9 +1507,7 @@ class TestHfNameFileTask(TestSpec):
 
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path)
-        if "/Tasks/" in path and not file_name.startswith("task"):
-            return False
-        return True
+        return not ("/Tasks/" in path and not file_name.startswith("task"))
 
 
 class TestHfStructMembers(TestSpec):
@@ -1342,6 +1516,8 @@ class TestHfStructMembers(TestSpec):
 
     name = "pwghf/struct-member-order"
     message = "Declare struct members in the conventional order. See the PWGHF coding guidelines."
+    rationale = rationale_names
+    references = references_hf
     suffixes = [".cxx"]
     per_line = False
     member_order = [
@@ -1430,7 +1606,7 @@ def main():
     )
     args = parser.parse_args()
     if args.github:
-        global github_mode  # pylint: disable=global-statement
+        global github_mode  # pylint: disable=global-statement  # noqa: PLW0603
         github_mode = True
 
     tests = []  # list of activated tests
@@ -1438,17 +1614,19 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        tests.append(TestIOStream())
+        tests.append(TestIoStream())
         tests.append(TestUsingStd())
-        tests.append(TestUsingDirectives())
+        tests.append(TestUsingDirective())
         tests.append(TestStdPrefix())
-        tests.append(TestROOT())
+        tests.append(TestRootEntity())
+        tests.append(TestRootLorentzVector())
         tests.append(TestPi())
         tests.append(TestTwoPiAddSubtract())
         tests.append(TestPiMultipleFraction())
         tests.append(TestPdgDatabase())
-        tests.append(TestPdgCode())
-        tests.append(TestPdgMass())
+        tests.append(TestPdgExplicitCode())
+        tests.append(TestPdgExplicitMass())
+        tests.append(TestPdgKnownMass())
         tests.append(TestLogging())
         tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
@@ -1490,7 +1668,7 @@ def main():
     test_names = [t.name for t in tests]  # short names of activated tests
     suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
     passed = True  # global result of all tests
-    n_files_bad = {name: 0 for name in test_names}  # counter of files with issues
+    n_files_bad = dict.fromkeys(test_names, 0)  # counter of files with issues
 
     # Report overview before running.
     print(f"Testing {len(args.paths)} files.")
@@ -1507,7 +1685,7 @@ def main():
             # print(f"Skipping path \"{path}\".")
             continue
         try:
-            with open(path, "r", encoding="utf-8") as file:
+            with open(path, encoding="utf-8") as file:
                 content = file.readlines()
                 for test in tests:
                     result = test.run(path, content)
@@ -1515,19 +1693,30 @@ def main():
                         n_files_bad[test.name] += 1
                         passed = False
                     # print(f"File \"{path}\" {'passed' if result else 'failed'} the test {test.name}.")
-        except IOError:
+        except OSError:
             print(f'Failed to open file "{path}".')
             sys.exit(1)
 
-    # Report results per test.
-    print("\nResults per test")
-    len_max = max(len(name) for name in test_names)
-    print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files")
-    for test in tests:
-        print(
-            f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
-            f"\t\t{n_files_bad[test.name]}"
-        )
+    # Report results for tests that failed or were disabled.
+    if not passed or any(n > 0 for n in (test.n_disabled for test in tests)):
+        print("\nResults for failed and disabled tests")
+        len_max = max(len(name) for name in test_names)
+        print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files\trationale")
+        ref_names = []
+        for test in tests:
+            if any(n > 0 for n in (test.n_issues, test.n_disabled, n_files_bad[test.name])):
+                ref_ids = [ref.value for ref in test.references]
+                ref_names += test.references
+                print(
+                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
+                    f"\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
+                )
+        # Print list of references for listed tests.
+        print("\nReferences")
+        ref_names = list(dict.fromkeys(ref_names))
+        for ref_name, data in references.items():
+            if ref_name in ref_names:
+                print(f"[{ref_name.value}]\t{data['title']}. <{data['url']}>.")
 
     # Report global result.
     title_result = "O2 linter result"
@@ -1536,7 +1725,7 @@ def main():
         if github_mode:
             print(f"::notice title={title_result}::{msg_result}")
         else:
-            print(f"{title_result}: {msg_result}")
+            print(f"\n{title_result}: {msg_result}")
     else:
         msg_result = "Issues have been found."
         msg_disable = (
