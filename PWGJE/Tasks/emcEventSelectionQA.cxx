@@ -85,6 +85,8 @@ struct EmcEventSelectionQA {
     mHistManager.add("hBCCollisionCounter_TVX", "Number of BCs with a certain number of rec. colls", O2HistType::kTH2F, {bcAxis, matchingAxis});
     mHistManager.add("hBCEMCalReadoutAndEmcalCellContent", "Bunch crossings with EMCAL trigger from CTP and non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCNotEMCalReadoutButEmcalCellContent", "Bunch crossings without EMCAL trigger from CTP but with non-0 EMCAL cell content", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCNotAcceptedButEMCalReadout", "Bunch crossings with EMCAL trigger from CTP but not accpeted due to BC selection", O2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCNotAcceptedButEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content but not accpeted due to BC selection", O2HistType::kTH1F, {bcAxis});
     mHistManager.add("hAmplitudevsCellTimeNoReadout", "Amplitude vs cell time for bunch crossings without EMCAL trigger from CTP but with non-0 EMCAL cell content", O2HistType::kTH2D, {timeAxisLarge, amplitudeAxisLarge});
 
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
@@ -145,9 +147,23 @@ struct EmcEventSelectionQA {
         }
       }
 
+      // lookup number of cells for global BC of this BC
+      // avoid iteration over cell table for speed reason
+      auto found = cellGlobalBCs.find(bc.globalBC());
+
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject the candidate
         continue;
+      } else {
+        if (isEMCALreadout) {
+          mHistManager.fill(HIST("hBCNotAcceptedButEMCalReadout"), bcID);
+        }
+        if (found != cellGlobalBCs.end()) {
+          // require at least 1 cell for global BC
+          if (found->second > 0) {
+            mHistManager.fill(HIST("hBCNotAcceptedButEmcalCellContent"), bcID);
+          }
+        }
       }
 
       // Monitoring BCs with EMCAL trigger / readout / FIT trigger
@@ -191,7 +207,6 @@ struct EmcEventSelectionQA {
 
       // lookup number of cells for global BC of this BC
       // avoid iteration over cell table for speed reason
-      auto found = cellGlobalBCs.find(bc.globalBC());
       if (found != cellGlobalBCs.end()) {
         // require at least 1 cell for global BC
         if (found->second > 0) {
