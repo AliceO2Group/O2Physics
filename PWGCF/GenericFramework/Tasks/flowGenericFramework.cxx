@@ -939,7 +939,7 @@ struct FlowGenericFramework {
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
-    processCollision<kGen>(mcCollision, particles, centrality, -999, 0);
+    processCollision<kGen>(mcCollision, particles, centrality, 0);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
