@@ -643,7 +643,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field, const int& run)
+  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -662,14 +662,14 @@ struct FlowGenericFramework {
     fFCpt->clearVector();
     float lRandom = fRndm->Rndm();
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, field, run);
+      processTrack(track, vtxz, run);
     }
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& field, const int& run)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& run)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -901,8 +901,7 @@ struct FlowGenericFramework {
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
 
@@ -927,8 +926,7 @@ struct FlowGenericFramework {
 
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
@@ -959,8 +957,7 @@ struct FlowGenericFramework {
     const auto centrality = collision.centRun2V0M();
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };
