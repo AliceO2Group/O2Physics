@@ -807,14 +807,18 @@ struct FlowGenericFramework {
     } else { // Analysing only integrated flow
       bool withinPtRef = (track.pt() > ptreflow && track.pt() < ptrefup);
       bool withinPtPOI = (track.pt() > ptpoilow && track.pt() < ptpoiup);
-      if(!withinPtPOI && !withinPtRef) return;
+      if (!withinPtPOI && !withinPtRef)
+        return;
       double weff = (dt == kGen) ? 1. : getEfficiency(track);
       if (weff < 0)
         return;
       double wacc = (dt == kGen) ? 1. : getAcceptance(track, vtxz, 0);
-      if(withinPtRef) fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
-      if(withinPtPOI) fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
-      if(withinPtRef && withinPtPOI) fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
+      if (withinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      if (withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
+      if (withinPtRef && withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
     }
     return;
   }
@@ -850,7 +854,7 @@ struct FlowGenericFramework {
   }
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
+  Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
 
   void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
