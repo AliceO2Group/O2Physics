@@ -365,9 +365,9 @@ struct QaPidMl {
     if (useCcdb) {
       ccdbApi.init(ccdbUrl);
     } else {
-      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 211, 0.5f, PSwitchValue[0]);
-      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 2211, 0.5f, PSwitchValue[1]);
-      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, 321, 0.5f, PSwitchValue[2]);
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kPiPlus, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kProton, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kKPlus, 0.5f, PSwitchValue[2]);
     }
   }
 
@@ -375,9 +375,9 @@ struct QaPidMl {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (useCcdb && bc.runNumber() != currentRunNumber) {
-      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 211, 0.5f, PSwitchValue[0]);
-      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 2211, 0.5f, PSwitchValue[1]);
-      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), 321, 0.5f, PSwitchValue[2]);
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kPiPlus, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kProton, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kKPlus, 0.5f, PSwitchValue[2]);
     }
 
     for (const auto& track : tracks) {
