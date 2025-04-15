@@ -65,7 +65,6 @@ DECLARE_SOA_TABLE(PidTracksDataMl, "AOD", "PIDTRACKSDATAML", //! Data tracks for
                   aod::track::DcaXY,
                   aod::track::DcaZ);
 DECLARE_SOA_TABLE(PidTracksData, "AOD", "PIDTRACKSDATA", //! Data tracks for comparative analysis
-                  aod::cent::CentRun2V0M,
                   aod::mult::MultFV0A, aod::mult::MultFV0C, pidtracks::MultFV0M,
                   aod::mult::MultFT0A, aod::mult::MultFT0C, pidtracks::MultFT0M,
                   aod::mult::MultZNA, aod::mult::MultZNC,
@@ -142,7 +141,6 @@ DECLARE_SOA_TABLE(PidTracksMcMl, "AOD", "PIDTRACKSMCML", //! MC tracks for train
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for comparative analysis
-                  aod::cent::CentRun2V0M,
                   aod::mult::MultFV0A, aod::mult::MultFV0C, pidtracks::MultFV0M,
                   aod::mult::MultFT0A, aod::mult::MultFT0C, pidtracks::MultFT0M,
                   aod::mult::MultZNA, aod::mult::MultZNC,

@@ -54,7 +54,7 @@ struct PidMlProducer {
   using BigTracksMC = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::pidTPCFullEl, aod::pidTOFFullEl, aod::pidTPCFullMu, aod::pidTOFFullMu, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels>>;
 
   using MyCollisionML = aod::Collisions::iterator;
-  using MyCollision = soa::Join<aod::Collisions, aod::CentRun2V0Ms, aod::Mults>::iterator;
+  using MyCollision = soa::Join<aod::Collisions, aod::Mults>::iterator;
 
   static constexpr uint32_t NCharges = 2;
 
@@ -236,8 +236,7 @@ struct PidMlProducer {
   void processDataAll(MyCollision const& collision, BigTracksData const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTableData(collision.centRun2V0M(),
-                         collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+      pidTracksTableData(collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
                          collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                          collision.multZNA(), collision.multZNC(),
                          collision.multTracklets(), collision.multTPC(),
@@ -302,8 +301,7 @@ struct PidMlProducer {
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = static_cast<uint8_t>(mcParticle.isPhysicalPrimary());
       uint32_t pdgCode = mcParticle.pdgCode();
-      pidTracksTableMC(collision.centRun2V0M(),
-                       collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
+      pidTracksTableMC(collision.multFV0A(), collision.multFV0C(), collision.multFV0M(),
                        collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                        collision.multZNA(), collision.multZNC(),
                        collision.multTracklets(), collision.multTPC(),
