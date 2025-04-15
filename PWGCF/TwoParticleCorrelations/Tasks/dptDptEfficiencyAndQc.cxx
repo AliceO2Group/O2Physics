@@ -95,7 +95,7 @@ float widthNSigmaBin = 0.1f;
 int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
 /* the pT bins of interest for the relative separation within TPC sectors data collection */
-std::vector<int> ptBinsOfInterest{1, 2, 3};
+std::vector<int> ptBinsOfInterest{};
 
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
@@ -1114,7 +1114,11 @@ struct DptDptEfficiencyAndQc {
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
       /* configure the pT bins of interest */
-      ptBinsOfInterest = cfgPtBinsOfInterest.value;
+      TAxis ptAxis{ptbins, ptlow, ptup};
+      for (const int& bin : cfgPtBinsOfInterest.value) {
+        ptBinsOfInterest.push_back(bin);
+        LOGF(info, "Inserted pT bin %d: %.2f < pT < %.2f GeV/c", bin, ptAxis.GetBinLowEdge(bin), ptAxis.GetBinUpEdge(bin));
+      }
 
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored || doprocessGeneratorLevelNotStored;
       bool doExtraAnalysis = doprocessExtraDetectorLevelNotStored || doprocessExtraReconstructedNotStored || doprocessExtraGeneratorLevelNotStored;
