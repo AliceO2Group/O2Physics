@@ -174,8 +174,6 @@ struct femtoUniverseProducerMCTruthTask {
             pass = true;
           } else if (pdgCode == 411) { // D+ meson
             pass = true;
-          } else if (pdgCode == -411) { // D- meson
-            pass = true;
           } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (particle.isPhysicalPrimary())
               pass = true;
