@@ -103,6 +103,7 @@ struct ResonanceInitializer {
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
+
   struct : ConfigurableGroup {
     Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
@@ -118,7 +119,12 @@ struct ResonanceInitializer {
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
     Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 AliEventCuts"};
     Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INELgtZERO"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } EventCuts;
+  RCTFlagsChecker myChecker(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -1287,6 +1293,8 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1310,6 +1318,8 @@ struct ResonanceInitializer {
     // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
+      return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
       return;
     colCuts.fillQARun2(collision);
 
@@ -1336,6 +1346,8 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1360,6 +1372,8 @@ struct ResonanceInitializer {
     initCCDB(bc);
     // Default event selection
     if (!colCuts.isSelected(collision))
+      return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1415,6 +1429,8 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1467,6 +1483,8 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1497,6 +1515,8 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1552,6 +1572,8 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
@@ -1612,6 +1634,8 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+      return;
     colCuts.fillQA(collision);
 
     resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
