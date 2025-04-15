@@ -31,6 +31,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct JFlucEfficiencyTask {
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -70,7 +71,12 @@ struct JFlucEfficiencyTask {
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
     Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 Ali event cuts"};
     Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INEL>0 event cuts"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } EventCuts;
+  RCTFlagsChecker rctChecker;
 
   // Track selections
   struct : ConfigurableGroup {
@@ -158,6 +164,8 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
     colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
+
+    rctChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     if (doprocessDerivedMC || doprocessMC || doprocessMCRun2) {
       registry.add("hPtGen", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
@@ -349,6 +357,9 @@ struct JFlucEfficiencyTask {
     for (const auto& collision : collisions) { // Anayway only 1 collision per mcCollision will be selected
       if (!colCuts.isSelected(collision))      // Default event selection
         return;
+      if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+        return;
+      }
       colCuts.fillQA(collision);
       centrality = collision.centFT0C();
     }
@@ -478,6 +489,9 @@ struct JFlucEfficiencyTask {
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
     colCuts.fillQA(collision);
     auto centrality = collision.centFT0C();
     if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
