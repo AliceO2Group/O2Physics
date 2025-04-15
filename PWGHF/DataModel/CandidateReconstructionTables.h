@@ -2064,7 +2064,9 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 
 // mapping of decay types
 enum DecayType { Sc0ToPKPiPi = 0,
-                 ScplusplusToPKPiPi };
+                 ScplusplusToPKPiPi,
+                 ScStar0ToPKPiPi,
+                 ScStarPlusPlusToPKPiPi };
 } // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table
