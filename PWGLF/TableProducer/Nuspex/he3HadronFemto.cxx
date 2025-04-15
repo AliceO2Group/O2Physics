@@ -140,6 +140,8 @@ struct he3HadCandidate {
 
   uint8_t NClsITSHe3 = 0u;
   uint8_t NClsITSHad = 0u;
+  float Chi2NClITSHe3 = -10.f;
+  float Chi2NClITSHad = -10.f;
 
   bool isBkgUS = false; // unlike sign
   bool isBkgEM = false; // event mixing
@@ -178,12 +180,14 @@ struct he3hadronfemto {
   Configurable<float> setting_cutPtMinhe3Had{"setting_cutPtMinhe3Had", 0.0f, "Minimum PT cut on he3Had4"};
   Configurable<float> setting_cutClSizeItsHe3{"setting_cutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
   Configurable<float> setting_cutNCls{"setting_cutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
+  Configurable<float> setting_cutChi2NClITS{"setting_cutChi2NClITS", 36.f, "Maximum ITS Chi2 for tracks"};
   Configurable<float> setting_cutNsigmaTPC{"setting_cutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
   Configurable<float> setting_cutNsigmaITS{"setting_cutNsigmaITS", -1.5f, "Value of the TPC Nsigma cut"};
   Configurable<float> setting_cutPtMinTOFHad{"setting_cutPtMinTOFHad", 0.4f, "Minimum pT to apply the TOF cut on hadrons"};
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
+  Configurable<bool> setting_enableDCAfitter{"setting_enableDCAfitter", false, "Enable DCA fitter"};
   Configurable<bool> setting_saveUSandLS{"setting_saveUSandLS", true, "Save All Pairs"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
   Configurable<bool> setting_fillMultiplicity{"setting_fillMultiplicity", false, "Fill multiplicity table"};
@@ -241,10 +245,12 @@ struct he3hadronfemto {
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hNClsHe3ITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
       {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+      {"hChi2NClHe3ITS", ";Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
+      {"hChi2NClHadITS", ";Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
@@ -389,7 +395,7 @@ struct he3hadronfemto {
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > 4.f ||
         candidate.tpcChi2NCl() < setting_cutChi2tpcLow ||
-        candidate.itsChi2NCl() > 36.f) {
+        candidate.itsChi2NCl() > setting_cutChi2NClITS) {
       return false;
     }
 
@@ -531,6 +537,7 @@ struct he3hadronfemto {
         return false;
       }
       he3Hadcand.collisionID = collIdxMin;
+
     } else {
       he3Hadcand.collisionID = collBracket.getMin();
     }
@@ -559,11 +566,21 @@ struct he3hadronfemto {
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
 
-    he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
+    gpu::gpustd::array<float, 2> dcaInfo;
+    if (setting_enableDCAfitter) {
+      auto trackCovHe3 = getTrackParCov(trackHe3);
+      auto trackCovHad = getTrackParCov(trackHad);
+      auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackCovHe3, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.DCAxyHe3 = dcaInfo[0];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackCovHad, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.DCAxyHad = dcaInfo[0];
+    } else {
+      he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
+      he3Hadcand.DCAxyHad = trackHad.dcaXY();
+    }
     he3Hadcand.DCAzHe3 = trackHe3.dcaZ();
-    he3Hadcand.DCAxyHad = trackHad.dcaXY();
     he3Hadcand.DCAzHad = trackHad.dcaZ();
-
     he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
@@ -586,6 +603,8 @@ struct he3hadronfemto {
 
     he3Hadcand.NClsITSHe3 = trackHe3.itsNCls();
     he3Hadcand.NClsITSHad = trackHad.itsNCls();
+    he3Hadcand.Chi2NClITSHe3 = trackHe3.itsChi2NCl();
+    he3Hadcand.Chi2NClITSHad = trackHad.itsChi2NCl();
 
     he3Hadcand.sharedClustersHe3 = trackHe3.tpcNClsShared();
     he3Hadcand.sharedClustersHad = trackHad.tpcNClsShared();
@@ -761,6 +780,8 @@ struct he3hadronfemto {
     m_qaRegistry.fill(HIST("hDCAzHe3"), he3Hadcand.DCAzHe3);
     m_qaRegistry.fill(HIST("hNClsHe3ITS"), he3Hadcand.NClsITSHe3);
     m_qaRegistry.fill(HIST("hNClsHadITS"), he3Hadcand.NClsITSHad);
+    m_qaRegistry.fill(HIST("hChi2NClHe3ITS"), he3Hadcand.Chi2NClITSHe3);
+    m_qaRegistry.fill(HIST("hChi2NClHadITS"), he3Hadcand.Chi2NClITSHad);
   }
 
   // ==================================================================================================================

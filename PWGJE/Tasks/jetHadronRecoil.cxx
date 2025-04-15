@@ -53,6 +53,7 @@ struct JetHadronRecoil {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
+  Configurable<float> maxLeadingTrackPt{"maxLeadingTrackPt", 1000.0, "maximum acceptance for leading track in jets"};
   Configurable<float> centralityMin{"centralityMin", -999.0, "minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
@@ -183,6 +184,7 @@ struct JetHadronRecoil {
     double phiTT = 0;
     int trigNumber = 0;
     int nTT = 0;
+    double leadingPT = 0;
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     float rhoReference = rho + rhoReferenceShift;
 
@@ -230,7 +232,15 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      for (const auto& constituent : jet.template tracks_as<U>()) {
+        if (constituent.pt() > leadingPT) {
+          leadingPT = constituent.pt();
+        }
+      }
       if (jet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
+      if (leadingPT > maxLeadingTrackPt) {
         continue;
       }
       registry.fill(HIST("hJetPt"), jet.pt() - (rho * jet.area()), weight);

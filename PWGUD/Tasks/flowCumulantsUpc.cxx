@@ -706,8 +706,24 @@ struct FlowCumulantsUpc {
   }
 
   // void process(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
-  void process(UDCollisionsFull::iterator const& collision, aod::BCsWithTimestamps const&, UdTracksFull const& tracks)
+  void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
+
+    // Runnumber loading test
+    // accept only selected run numbers
+    // int run = collision.runNumber();
+
+    // extract bc pattern from CCDB for data or anchored MC only
+    // if (run != lastRun && run >= 500000) {
+    //   LOGF(info, "Updating bcPattern %d ...", run);
+    //   auto tss = ccdb->getRunDuration(run);
+    //   auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", tss.first);
+    //   bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+    //   lastRun = run;
+    //   LOGF(info, "done!");
+    // }
+
+    // auto bcnum = collision.globalBC();
 
     registry.fill(HIST("hEventCount"), 0.5);
     int gapSide = collision.gapSide();
@@ -717,7 +733,7 @@ struct FlowCumulantsUpc {
 
     int trueGapSide = sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
     gapSide = trueGapSide;
-    if (gapSide == 2) {
+    if (gapSide == cfgGapSideSelection) {
       return;
     }
 

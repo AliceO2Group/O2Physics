@@ -13,7 +13,6 @@
 /// \brief Task for cascade correlations and QA
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
-// o2-linter: disable=name/workflow-file
 
 #include <vector>
 #include "Framework/AnalysisTask.h"
@@ -38,7 +37,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
-struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/struct
+struct femtoUniversePairTaskTrackCascadeExtended {
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
   SliceCache cache;
@@ -79,9 +78,10 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
   Configurable<float> confHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
   Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
   Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < Confmom"};
-  Configurable<float> confNsigmaTOFParticle{"ConfNsigmaTOFParticle", 3.0, "TOF Sigma for particle momentum > Confmom"};
-  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
+  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < Confmom"};
+  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle (track) momentum > Confmom"};
+  Configurable<float> confNsigmaTPCParticleChild{"ConfNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < Confmom"};
+  Configurable<float> confNsigmaTOFParticleChild{"ConfNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
 
   ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis confMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -154,7 +154,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle) {
+    if (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticleChild) {
       return true;
     } else {
       return false;
@@ -163,9 +163,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
 
   bool isNSigmaTOF(float mom, float nsigmaTOFParticle, float hasTOF)
   {
-    // Cut only on tracks, that have TOF signal
+    // Cut only on daughter and bachelor tracks, that have TOF signal
     if (mom > confmom && hasTOF == 1) {
-      if (std::abs(nsigmaTOFParticle) < confNsigmaTOFParticle) {
+      if (std::abs(nsigmaTOFParticle) < confNsigmaTOFParticleChild) {
         return true;
       } else {
         return false;
@@ -180,7 +180,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
     } else {
-      return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle); // o2-linter: disable=root-entity
+      return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
     }
   }
 
@@ -237,6 +237,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
     rXiQA.add("hDcaNegtoPV", "hDcaNegtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
+    rXiQA.add("hInvMpT", "hInvMpT", kTH2F, {{ptAxis}, {aXiMassAxis}});
 
     eventHisto.init(&qaRegistry);
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -339,6 +340,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       rXiQA.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
       rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
       rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
+      rXiQA.fill(HIST("hInvMpT"), casc.pt(), casc.mLambda());
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);
@@ -412,6 +414,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
       const auto& bachelor = parts.iteratorAt(p2.index() - 1);
       /// Child particles must pass this condition to be selected
       if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
+        continue;
+      if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
         continue;
 
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
@@ -525,6 +529,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // o2-linter: disable=name/st
         /// Child particles must pass this condition to be selected
         if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
           continue;
+        if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
+          continue;
+
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;

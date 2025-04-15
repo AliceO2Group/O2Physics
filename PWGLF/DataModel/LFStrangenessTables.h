@@ -226,11 +226,14 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             // stracollision::EnergyCommonZNC<mult::MultZNC>,
                             stracollision::IsUPC<udcollision::GapSide>);
 
-DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",        //! debug information
-                  evsel::Sel8, evsel::Sel7, evsel::Selection,     //! event selection: sel8
-                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+DECLARE_SOA_TABLE(StraEvSelsRun2, "AOD", "STRAEVSELSRUN2",    //! debug information
+                  evsel::Sel8, evsel::Sel7, evsel::Selection, //! event selection: sel8
+                  mult::MultFT0A, mult::MultFT0C,             // FIT detectors
+                  mult::MultFV0A, mult::MultFV0C,
                   mult::MultFDDA, mult::MultFDDC,
+                  run2::SPDClustersL0, run2::SPDClustersL1,     // SPD detectors
                   mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                  mult::MultTracklets,                          // multiplicity with tracklets (only Run2)
                   mult::MultPVTotalContributors,                // number of PV contribs total
                   mult::MultNTracksGlobal,                      // global track multiplicities
                   mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
@@ -535,7 +538,7 @@ DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 da
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
 DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);         //! DCA negative prong to PV
 DECLARE_SOA_COLUMN(V0CosPA, v0cosPA, float);               //! V0 CosPA
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV
+DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);           //! DCA V0 to PV (3D)
 
 // Type of V0 from the svertexer (photon, regular, from cascade)
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
