@@ -52,7 +52,7 @@ void setEventRejectionLabels(Histo& hRejection)
 {
   // Puts labels on the bc monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Sel8");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITS ROF border");
