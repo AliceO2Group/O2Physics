@@ -146,10 +146,8 @@ struct EMCEventSelection : o2::framework::ConfigurableGroup {
   }
 
   /// \brief Fills histograms for monitoring event selections satisfied by the bc.
-  /// \param bc analysed bc
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the bc
-  template <typename Bc>
-  void fillHistograms(Bc const& bc, const uint16_t rejectionMask)
+  void fillHistograms(const uint16_t rejectionMask)
   {
     hBCs->Fill(EventRejection::None);
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
@@ -168,22 +166,6 @@ struct EMCEventSelectionMc {
   bool useTimeFrameBorderCut{true}; // Apply TF border cut
   bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
 
-  // histogram names
-  static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
-  std::shared_ptr<TH1> hNSplitVertices;
-  static constexpr char NameHistParticles[] = "hParticles";
-  std::shared_ptr<TH1> hParticles;
-
-  /// \brief Adds bc monitoring histograms in the histogram registry.
-  /// \param registry reference to the histogram registry
-  void addHistograms(o2::framework::HistogramRegistry& registry)
-  {
-    hNSplitVertices = registry.add<TH1>(NameHistNSplitVertices, "EMC split vertices counter;;# of reconstructed collisions per mc bc", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
-    hParticles = registry.add<TH1>(NameHistParticles, "EMC particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
-    // Puts labels on the bc monitoring histogram.
-    setEventRejectionLabels(hParticles);
-  }
-
   void configureFromDevice(const o2::framework::DeviceSpec& device)
   {
     for (const auto& option : device.options) {
@@ -196,52 +178,6 @@ struct EMCEventSelectionMc {
       } else if (option.name.compare("emcEvSel.useItsRofBorderCut") == 0) {
         useItsRofBorderCut = option.defaultValue.get<bool>();
       }
-    }
-  }
-
-  /// \brief Function to apply event selections to generated MC collisions
-  /// \param mcCollision MC bc to test against the selection criteria
-  /// \param collSlice collection of reconstructed collisions
-  /// \return a bitmask with the event selections not satisfied by the analysed bc
-  template <typename TBc, typename CCs, typename TMcColl>
-  uint16_t getEMCMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice)
-  {
-    uint16_t rejectionMask{0};
-    float zPv = mcCollision.posZ();
-    auto bc = mcCollision.template bc_as<TBc>();
-
-    /// Sel8 trigger selection
-    if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-      SETBIT(rejectionMask, EventRejection::Trigger);
-    }
-    /// TVX trigger selection
-    if (useTvxTrigger && !bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-      SETBIT(rejectionMask, EventRejection::TvxTrigger);
-    }
-    /// time frame border cut
-    if (useTimeFrameBorderCut && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(rejectionMask, EventRejection::TimeFrameBorderCut);
-    }
-    /// ITS RO frame border cut
-    if (useItsRofBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      SETBIT(rejectionMask, EventRejection::ItsRofBorderCut);
-    }
-    return rejectionMask;
-  }
-
-  /// \brief Fills histogram for monitoring event selections satisfied by the bc.
-  /// \param bc analysed bc
-  /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the bc
-  template <typename Bc>
-  void fillHistograms(Bc const& mcCollision, const uint16_t rejectionMask, int nSplitColl = 0)
-  {
-    hParticles->Fill(EventRejection::None);
-
-    for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
-      if (TESTBIT(rejectionMask, reason)) {
-        return;
-      }
-      hParticles->Fill(reason);
     }
   }
 };

@@ -129,7 +129,7 @@ struct EmcEventSelectionQA {
       // get bitmask with bc selection info
       const auto rejectionMask = emcEvSel.getEMCCollisionRejectionMask<true, BCEvSels::iterator>(bc);
       // monitor the satisfied event selections
-      emcEvSel.fillHistograms(bc, rejectionMask);
+      emcEvSel.fillHistograms(rejectionMask);
 
       if (bc.runNumber() > mRun3MinNumber) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
