@@ -310,7 +310,7 @@ class TestStdPrefix(TestSpec):
 
     name = "std-prefix"
     message = "Use std:: prefix for names from the std namespace."
-    rationale = "Code clarity and portability. Avoid ambiguity (e.g. abs)."
+    rationale = "Code clarity, safety and portability. Avoid ambiguity (e.g. abs)."
     references = [Reference.LLVM, Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
     prefix_bad = r"[^\w:\.\"]"
