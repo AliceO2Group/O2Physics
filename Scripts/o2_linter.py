@@ -381,6 +381,7 @@ class TestRootLorentzVector(TestSpec):
         "Use std::array with RecoDecay methods or the ROOT::Math::LorentzVector template instead."
     )
     rationale = "Performance. Use up-to-date tools."
+    references = []
     suffixes = [".h", ".cxx"]
 
     def test_line(self, line: str) -> bool:
