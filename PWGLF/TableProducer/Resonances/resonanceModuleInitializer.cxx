@@ -112,7 +112,7 @@ struct ResonanceModuleInitializer {
   Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
   Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
   Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
-  RCTFlagsChecker myChecker;
+  RCTFlagsChecker rctChecker;
 
   // Spherocity configuration
   Configurable<int> cfgTrackSphMin{"cfgTrackSphMin", 10, "Number of tracks for Spherocity Calculation"};
@@ -175,7 +175,7 @@ struct ResonanceModuleInitializer {
     colCuts.setApplyRun2AliEventCuts(cfgEvtRun2AliEventCuts);
     colCuts.setApplyRun2INELgtZERO(cfgEvtRun2INELgtZERO);
 
-    myChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    rctChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     // Configure CCDB access if not bypassed
     if (!cfgBypassCCDB) {
@@ -539,7 +539,7 @@ struct ResonanceModuleInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
     centrality = centEst(collision);
@@ -584,7 +584,7 @@ struct ResonanceModuleInitializer {
   void processRun3MC(soa::Filtered<aod::ResoCollisionCandidatesMC>::iterator const& collision,
                      aod::McParticles const& mcParticles, GenMCCollisions const&)
   {
-    if (cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     fillMCCollision<false>(collision, mcParticles);
   }

@@ -125,7 +125,7 @@ struct ResonanceInitializer {
     Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } EventCuts;
-  RCTFlagsChecker myChecker;
+  RCTFlagsChecker rctChecker;
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -1210,7 +1210,7 @@ struct ResonanceInitializer {
     colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
 
-    myChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+    rctChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     if (!cfgBypassCCDB) {
       ccdb->setURL(ccdbURL.value);
@@ -1297,7 +1297,7 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1323,7 +1323,7 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQARun2(collision);
 
@@ -1350,7 +1350,7 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1377,7 +1377,7 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1433,7 +1433,7 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1487,7 +1487,7 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1519,7 +1519,7 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1576,7 +1576,7 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
@@ -1638,7 +1638,7 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !myChecker(*collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
       return;
     colCuts.fillQA(collision);
 
