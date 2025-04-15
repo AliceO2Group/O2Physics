@@ -23,6 +23,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
+#include <TPDGCode.h>
 #include "Tools/PIDML/pidOnnxModel.h"
 
 using namespace o2;
@@ -134,110 +135,110 @@ struct QaPidMl {
   void fillContaminationRegistry(int i, int pdgCode, double pt)
   {
     if (i == 0) {
-      if (pdgCode == 211) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in211"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in211"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in211"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in211"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in211"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in211"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in211"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in211"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in211"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in211"), pt);
       }
 
     } else if (i == 1) {
-      if (pdgCode == 211) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in2212"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in2212"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in2212"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in2212"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in2212"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in2212"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in2212"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in2212"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in2212"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in2212"), pt);
       }
 
     } else if (i == 2) {
-      if (pdgCode == 211) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in321"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in321"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in321"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in321"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in321"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in321"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in321"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in321"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in321"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in321"), pt);
       }
     }
@@ -246,34 +247,34 @@ struct QaPidMl {
   template <typename T>
   void fillMcHistos(const T& track, const int pdgCode)
   {
-    if (pdgCode == 211) {
+    if (pdgCode == PDG_t::kPiPlus) {
       // pions
       histReg.fill(HIST("MC/211"), track.pt());
-    } else if (pdgCode == -211) {
+    } else if (pdgCode == PDG_t::kPiMinus) {
       // antipions
       histReg.fill(HIST("MC/0211"), track.pt());
-    } else if (pdgCode == 2212) {
+    } else if (pdgCode == PDG_t::kProton) {
       // protons
       histReg.fill(HIST("MC/2212"), track.pt());
-    } else if (pdgCode == -2212) {
+    } else if (pdgCode == PDG_t::kProtonBar) {
       // antiprotons
       histReg.fill(HIST("MC/02212"), track.pt());
-    } else if (pdgCode == 321) {
+    } else if (pdgCode == PDG_t::kKPlus) {
       // kaons
       histReg.fill(HIST("MC/321"), track.pt());
-    } else if (pdgCode == -321) {
+    } else if (pdgCode == PDG_t::kKMinus) {
       // antikaons
       histReg.fill(HIST("MC/0321"), track.pt());
-    } else if (pdgCode == 11) {
+    } else if (pdgCode == PDG_t::kElectron) {
       // electrons
       histReg.fill(HIST("MC/11"), track.pt());
-    } else if (pdgCode == -11) {
+    } else if (pdgCode == PDG_t::kPositron) {
       // positrons
       histReg.fill(HIST("MC/011"), track.pt());
-    } else if (pdgCode == 13) {
+    } else if (pdgCode == PDG_t::kMuonMinus) {
       // muons
       histReg.fill(HIST("MC/13"), track.pt());
-    } else if (pdgCode == -13) {
+    } else if (pdgCode == PDG_t::kMuonPlus) {
       // antimuons
       histReg.fill(HIST("MC/013"), track.pt());
     } else {
