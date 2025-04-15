@@ -40,27 +40,26 @@ class Reference(Enum):
     PY_PEP8 = 8
 
 
-def make_reference(name: str, url: str) -> dict:
-    return {"name": name, "url": url}
-
-
-references: "dict[Reference, dict]" = {
-    Reference.O2: make_reference("ALICE O2 Coding Guidelines", "https://github.com/AliceO2Group/CodingGuidelines"),
-    Reference.ISO_CPP: make_reference(
-        "C++ Core Guidelines", "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines"
+references_list: "list[tuple[Reference, str, str]]" = [
+    (Reference.O2, "ALICE O2 Coding Guidelines", "https://github.com/AliceO2Group/CodingGuidelines"),
+    (Reference.ISO_CPP, "C++ Core Guidelines", "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines"),
+    (Reference.LLVM, "LLVM Coding Standards", "https://llvm.org/docs/CodingStandards.html"),
+    (Reference.GOOGLE, "Google C++ Style Guide", "https://google.github.io/styleguide/cppguide.html"),
+    (
+        Reference.LINTER,
+        "Proposal of the O2 linter",
+        "https://indico.cern.ch/event/1482467/#29-development-of-the-o2-linte",
     ),
-    Reference.LLVM: make_reference("LLVM Coding Standards", "https://llvm.org/docs/CodingStandards.html"),
-    Reference.GOOGLE: make_reference("Google C++ Style Guide", "https://google.github.io/styleguide/cppguide.html"),
-    Reference.LINTER: make_reference(
-        "Proposal of the O2 linter", "https://indico.cern.ch/event/1482467/#29-development-of-the-o2-linte"
-    ),
-    Reference.PWG_HF: make_reference(
+    (
+        Reference.PWG_HF,
         "PWG-HF guidelines",
         "https://aliceo2group.github.io/analysis-framework/docs/advanced-specifics/pwghf.html#contribute",
     ),
-    Reference.PY_ZEN: make_reference("The Zen of Python", "https://peps.python.org/pep-0020/"),
-    Reference.PY_PEP8: make_reference("Style Guide for Python Code", "https://peps.python.org/pep-0008/"),
-}
+    (Reference.PY_ZEN, "The Zen of Python", "https://peps.python.org/pep-0020/"),
+    (Reference.PY_PEP8, "Style Guide for Python Code", "https://peps.python.org/pep-0008/"),
+]
+
+references: "dict[Reference, dict]" = {name: {"title": title, "url": url} for name, title, url in references_list}
 
 
 def is_camel_case(name: str) -> bool:
@@ -1725,7 +1724,7 @@ def main():
         ref_names = list(dict.fromkeys(ref_names))
         for ref_name, data in references.items():
             if ref_name in ref_names:
-                print(f"[{ref_name.value}]\t{data['name']}. <{data['url']}>.")
+                print(f"[{ref_name.value}]\t{data['title']}. <{data['url']}>.")
 
     # Report global result.
     title_result = "O2 linter result"
