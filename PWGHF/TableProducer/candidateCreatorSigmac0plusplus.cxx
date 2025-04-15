@@ -39,6 +39,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -387,26 +388,31 @@ struct HfCandidateSigmac0plusplusMc {
   Produces<aod::HfCandScMcRec> rowMCMatchScRec;
   Produces<aod::HfCandScMcGen> rowMCMatchScGen;
 
+  o2::hf_evsel::HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
-  float zPvPosMax{1000.f};
+  PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+
+  HistogramRegistry registry{"registry"};
 
   /// @brief init function
   void init(InitContext& initContext)
   {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+      // here we assume that the hf-candidate-creator-3prong is in the workflow
+      // configure the ev. sel from that workflow
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        hfEvSelMc.configureFromDevice(device);
         break;
       }
     }
+
+    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// @brief dummy process function, to be run on data
@@ -419,7 +425,9 @@ struct HfCandidateSigmac0plusplusMc {
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
                  LambdacMc const& candsLc /*, const LambdacMcGen&*/,
-                 aod::McCollisions const&)
+                 McCollisionsNoCents const& collInfos,
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
 
     // Match reconstructed candidates.
@@ -459,15 +467,15 @@ struct HfCandidateSigmac0plusplusMc {
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
-        
-        /// look for Σc0(2455) 
+
+        /// look for Σc0(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaC0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
 
         /// look for Σc0(2520)
-        if(flag == 0) {
+        if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStar0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
@@ -481,14 +489,14 @@ struct HfCandidateSigmac0plusplusMc {
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
 
-        /// look for Σc++(2455) 
+        /// look for Σc++(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
 
         /// look for Σc++(2520)
-        if(flag == 0) {
+        if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStarPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
@@ -516,9 +524,16 @@ struct HfCandidateSigmac0plusplusMc {
       origin = 0;
       std::vector<int> idxBhadMothers{};
 
+      /// MC ev. selection done w/o centrality estimator
+      /// In case of need, readapt the code templetizing the function
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+      float centrality{-1.f};
+      uint16_t rejectionMask{0};
+      const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
+      hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
+      if (rejectionMask != 0) {
+        // at least one event selection not satisfied --> reject gen particles from this collision
         rowMCMatchScGen(flag, origin, -1);
         continue;
       }
@@ -595,6 +610,12 @@ struct HfCandidateSigmac0plusplusMc {
       } else {
         rowMCMatchScGen(flag, origin, -1);
       }
+
+      // debug
+      // if(origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+      //  LOG(info) << "   --> origin " << static_cast<int>(origin) << ", flag " << static_cast<int>(flag);
+      //}
+
     } /// end loop over mcParticles
   } /// end processMc
   PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);

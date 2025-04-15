@@ -487,7 +487,7 @@ struct HfTaskSigmac {
           }
         }
       } /// end candidate Λc+ → π+K-p (and charge conjugate)
-    }   /// end loop over the candidate Σc0,++
+    } /// end loop over the candidate Σc0,++
 
     /// THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
     if (enableTHn) {
@@ -534,7 +534,7 @@ struct HfTaskSigmac {
         }
       }
     } /// end THn for candidate Λc+ cut variation w/o Σc0,++ mass-window cut
-  };  /// end fillHistosData
+  }; /// end fillHistosData
 
   /// @brief function to fill the histograms needed in analysis (MC)
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
@@ -644,6 +644,13 @@ struct HfTaskSigmac {
           ptGenScBMother = mcParticlesSc.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 0);
         }
+
+        // debug -- uncomment if needed
+        // it should be solved after the implementation of ev. selection for generated SigmaC particles
+        // if(origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+        //  LOG(info) << "   --> (Sc0 gen) origin " << static_cast<int>(origin) << ", particle.originMcGen() " << static_cast<int>(particle.originMcGen()) << ", particle.flagMcMatchGen() " << static_cast<int>(particle.flagMcMatchGen()) << ", pdg " << particle.pdgCode();
+        //}
+
       } else if (isScPlusPlusGen) {
         /// Generated Σc++ and Λc+ ← Σc++ signals
         registry.fill(HIST("MC/generated/hPtGenScPlusPlusSig"), ptGenSc, origin, channel);
@@ -671,6 +678,12 @@ struct HfTaskSigmac {
           ptGenScBMother = mcParticlesSc.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hnSigmaCGen"), ptGenSc, ptGenScBMother, origin, channel, ptGenLc, 2);
         }
+
+        // debug -- uncomment if needed
+        // it should be solved after the implementation of ev. selection for generated SigmaC particles
+        // if(origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+        //  LOG(info) << "   --> (Sc++ gen) origin " << static_cast<int>(origin) << ", particle.originMcGen() " << static_cast<int>(particle.originMcGen()) << ", particle.flagMcMatchGen() " << static_cast<int>(particle.flagMcMatchGen()) << ", pdg " << particle.pdgCode();
+        //}
       }
 
     } /// end loop over Sc generated particles
@@ -1063,7 +1076,7 @@ struct HfTaskSigmac {
           }
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
-      }   /// end reconstructed Σc++ signal
+      } /// end reconstructed Σc++ signal
 
     } /// end loop on reconstructed Σc0,++
 
