@@ -21,9 +21,8 @@ import argparse
 import os
 import re
 import sys
-from abc import ABC
-from typing import Union
 from enum import Enum
+from typing import Union
 
 github_mode = False  # GitHub mode
 prefix_disable = "o2-linter: disable="  # prefix for disabling tests
@@ -154,7 +153,7 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     """Get list of index ranges of longest blocks opened with char_open and closed with char_close."""
     # print(f"Looking for {char_open}{char_close} blocks in \"{line}\".")
     # print(line)
-    list_ranges: "list[list[int]]" = []
+    list_ranges: list[list[int]] = []
     if not all((line, len(char_open) == 1, len(char_close) == 1)):
         return list_ranges
 
@@ -189,7 +188,7 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     return list_ranges
 
 
-class TestSpec(ABC):
+class TestSpec:
     """Prototype of a test class"""
 
     name: str = "test-template"  # short name of the test
@@ -558,9 +557,7 @@ class TestPdgKnownMass(TestSpec):
         pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
         if re.search(rf"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
             return False
-        if re.search(rf"->Mass\({pattern_pdg_code}\)", line):
-            return False
-        return True
+        return not re.search(rf"->Mass\({pattern_pdg_code}\)", line)
 
 
 class TestLogging(TestSpec):
@@ -1395,7 +1392,7 @@ class TestNameFileWorkflow(TestSpec):
         return super().file_matches(path) and "/Core/" not in path
 
     def test_file(self, path: str, content) -> bool:
-        file_name = os.path.basename(path).rstrip(".cxx")
+        file_name = os.path.basename(path)[:-4]  # file name without suffix
         base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
         if match := re.search("PWG([A-Z]{2})/", path):
             name_pwg = match.group(1)
@@ -1418,10 +1415,7 @@ class TestNameFileWorkflow(TestSpec):
             struct_name = words[1]
             struct_names.append(struct_name)
         # print(f"Found structs: {struct_names}.")
-        for struct_name in struct_names:
-            if re.match(base_struct_name, struct_name):
-                return True
-        return False
+        return any(re.match(base_struct_name, struct_name) for struct_name in struct_names)
 
 
 class TestNameConfigurable(TestSpec):
@@ -1513,9 +1507,7 @@ class TestHfNameFileTask(TestSpec):
 
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path)
-        if "/Tasks/" in path and not file_name.startswith("task"):
-            return False
-        return True
+        return not ("/Tasks/" in path and not file_name.startswith("task"))
 
 
 class TestHfStructMembers(TestSpec):
@@ -1614,7 +1606,7 @@ def main():
     )
     args = parser.parse_args()
     if args.github:
-        global github_mode  # pylint: disable=global-statement
+        global github_mode  # pylint: disable=global-statement  # noqa: PLW0603
         github_mode = True
 
     tests = []  # list of activated tests
@@ -1676,7 +1668,7 @@ def main():
     test_names = [t.name for t in tests]  # short names of activated tests
     suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
     passed = True  # global result of all tests
-    n_files_bad = {name: 0 for name in test_names}  # counter of files with issues
+    n_files_bad = dict.fromkeys(test_names, 0)  # counter of files with issues
 
     # Report overview before running.
     print(f"Testing {len(args.paths)} files.")
@@ -1693,7 +1685,7 @@ def main():
             # print(f"Skipping path \"{path}\".")
             continue
         try:
-            with open(path, "r", encoding="utf-8") as file:
+            with open(path, encoding="utf-8") as file:
                 content = file.readlines()
                 for test in tests:
                     result = test.run(path, content)
@@ -1701,7 +1693,7 @@ def main():
                         n_files_bad[test.name] += 1
                         passed = False
                     # print(f"File \"{path}\" {'passed' if result else 'failed'} the test {test.name}.")
-        except IOError:
+        except OSError:
             print(f'Failed to open file "{path}".')
             sys.exit(1)
 
