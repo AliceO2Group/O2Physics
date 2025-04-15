@@ -234,7 +234,7 @@ class TestSpec:
         # print(f"Running test {self.name} for {path} with {len(content)} lines")
         if self.per_line:
             for i, line in enumerate(content):
-                if not isinstance(self, TestUsingDirectives):  # Keep the indentation if needed.
+                if not isinstance(self, TestUsingDirective):  # Keep the indentation if needed.
                     line = line.strip()
                 if not line:
                     continue
@@ -260,12 +260,12 @@ class TestSpec:
 # Bad practice
 
 
-class TestIOStream(TestSpec):
+class TestIoStream(TestSpec):
     """Detect included iostream."""
 
     name = "include-iostream"
     message = "Do not include iostream. Use O2 logging instead."
-    rationale = "Avoid injection of static constructors. Use common logging framework."
+    rationale = "Performance. Avoid injection of static constructors. Consistent logging."
     references = [Reference.LLVM, Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
@@ -280,7 +280,7 @@ class TestUsingStd(TestSpec):
 
     name = "import-std-name"
     message = "Do not import names from the std namespace in headers."
-    rationale = "Avoid namespace pollution with common names."
+    rationale = "Code safety. Avoid namespace pollution with common names."
     references = [Reference.LINTER]
     suffixes = [".h"]
 
@@ -290,12 +290,12 @@ class TestUsingStd(TestSpec):
         return not line.startswith("using std::")
 
 
-class TestUsingDirectives(TestSpec):
+class TestUsingDirective(TestSpec):
     """Detect using directives in headers."""
 
     name = "using-directive"
     message = "Do not put using directives at global scope in headers."
-    rationale = "Avoid namespace pollution."
+    rationale = "Code safety. Avoid namespace pollution."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LLVM, Reference.GOOGLE, Reference.LINTER]
     suffixes = [".h"]
 
@@ -565,7 +565,7 @@ class TestLogging(TestSpec):
 
     name = "logging"
     message = "Use O2 logging (LOG, LOGF, LOGP)."
-    rationale = "Logs easier to read and process."
+    rationale = "Logs easy to read and process."
     references = [Reference.LINTER]
     suffixes = [".h", ".cxx"]
 
@@ -585,7 +585,7 @@ class TestConstRefInForLoop(TestSpec):
 
     name = "const-ref-in-for-loop"
     message = "Use constant references for non-modified iterators in range-based for loops."
-    rationale = "Performance, code safety."
+    rationale = "Performance, code comprehensibility and safety."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LLVM]
     suffixes = [".h", ".cxx", ".C"]
 
@@ -606,7 +606,7 @@ class TestConstRefInSubscription(TestSpec):
 
     name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
-    rationale = "Performance, code safety."
+    rationale = "Performance, code comprehensibility and safety."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
@@ -1614,9 +1614,9 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        tests.append(TestIOStream())
+        tests.append(TestIoStream())
         tests.append(TestUsingStd())
-        tests.append(TestUsingDirectives())
+        tests.append(TestUsingDirective())
         tests.append(TestStdPrefix())
         tests.append(TestRootEntity())
         tests.append(TestRootLorentzVector())
