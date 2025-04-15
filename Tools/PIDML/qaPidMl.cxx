@@ -132,9 +132,15 @@ struct QaPidMl {
      {"TOFPidFalse/2212", "PID false p;p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}},
      {"TOFPidFalse/321", "PID false K^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
+  enum ContaminationIn {
+    kPion,
+    kProton,
+    kKaon
+  };
+
   void fillContaminationRegistry(int i, int pdgCode, double pt)
   {
-    if (i == 0) {
+    if (i == ContaminationIn::kPion) {
       if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in211"), pt);
       }
@@ -170,7 +176,7 @@ struct QaPidMl {
         histReg.fill(HIST("contamination/013in211"), pt);
       }
 
-    } else if (i == 1) {
+    } else if (i == ContaminationIn::kProton) {
       if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in2212"), pt);
       }
@@ -206,7 +212,7 @@ struct QaPidMl {
         histReg.fill(HIST("contamination/013in2212"), pt);
       }
 
-    } else if (i == 2) {
+    } else if (i == ContaminationIn::kKaon) {
       if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in321"), pt);
       }

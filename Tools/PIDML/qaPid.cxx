@@ -504,6 +504,13 @@ struct QaPid {
   Filter trackFilter = requireGlobalTrackInFilter();
   using PidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
 
+  enum PIDStrategy {
+    kSimple = 1,
+    kMin = 2,
+    kExclusive = 3,
+    kBayes = 4
+  };
+
   void process(PidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
   {
     for (const auto& track : tracks) {
@@ -517,22 +524,22 @@ struct QaPid {
       const float tpcNSigmas[numParticles] = {track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaEl(), track.tpcNSigmaMu()};
       const float tofNSigmas[numParticles] = {track.tofNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaEl(), track.tofNSigmaMu()};
 
-      if (strategy.value == 1) {
+      if (strategy.value == PIDStrategy::kSimple) {
         // Simplest strategy. PID with Nsigma method only
         static_for<0, 9>([&](auto i) {
           pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 2) {
+      } else if (strategy.value == PIDStrategy::kMin) {
         // PID with Nsigma method and additional condition. Selected particle's Nsigma value must be the lowest in order to count particle
         static_for<0, 9>([&](auto i) {
           pidMinStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 3) {
+      } else if (strategy.value == PIDStrategy::kExclusive) {
         // Particle is counted only if one can satisfy the PID NSigma condition
         static_for<0, 9>([&](auto i) {
           pidExclusiveStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 4) {
+      } else if (strategy.value == PIDStrategy::kBayes) {
         int bayesPdg = getPdgFromPid(track);
         static_for<0, 9>([&](auto i) {
           pidBayes<i>(track, pdgCode, bayesPdg);
