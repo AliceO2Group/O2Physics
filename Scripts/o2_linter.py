@@ -475,10 +475,10 @@ class TestPdgDatabase(TestSpec):
 
 
 class TestPdgExplicitCode(TestSpec):
-    """Detect use of hard-coded PDG codes."""
+    """Detect hard-coded PDG codes."""
 
     name = "pdg/explicit-code"
-    message = "Avoid using hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
+    message = "Avoid hard-coded PDG codes. Use named values from PDG_t or o2::constants::physics::Pdg instead."
     rationale = "Code comprehensibility, readability, maintainability and safety."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
     suffixes = [".h", ".cxx", ".C"]
@@ -494,27 +494,6 @@ class TestPdgExplicitCode(TestSpec):
             code = match.group(1)
             if code not in ("0", "1", "999"):
                 return False
-        return True
-
-
-class TestPdgKnownMass(TestSpec):
-    """Detect unnecessary call of Mass() for a known PDG code."""
-
-    name = "pdg/known-mass"
-    message = "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
-    rationale = "Performance."
-    references = [Reference.LINTER]
-    suffixes = [".h", ".cxx", ".C"]
-
-    def test_line(self, line: str) -> bool:
-        if is_comment_cpp(line):
-            return True
-        line = remove_comment_cpp(line)
-        pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
-        if re.search(rf"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
-            return False
-        if re.search(rf"->Mass\({pattern_pdg_code}\)", line):
-            return False
         return True
 
 
@@ -563,6 +542,27 @@ class TestPdgExplicitMass(TestSpec):
         return True
 
 
+class TestPdgKnownMass(TestSpec):
+    """Detect unnecessary call of Mass() for a known PDG code."""
+
+    name = "pdg/known-mass"
+    message = "Use o2::constants::physics::Mass... instead of calling a database method for a known PDG code."
+    rationale = "Performance."
+    references = [Reference.LINTER]
+    suffixes = [".h", ".cxx", ".C"]
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        line = remove_comment_cpp(line)
+        pattern_pdg_code = r"[+-]?(k[A-Z][a-zA-Z0-9]*|[0-9]+)"
+        if re.search(rf"->GetParticle\({pattern_pdg_code}\)->Mass\(\)", line):
+            return False
+        if re.search(rf"->Mass\({pattern_pdg_code}\)", line):
+            return False
+        return True
+
+
 class TestLogging(TestSpec):
     """Detect non-O2 logging."""
 
@@ -588,7 +588,7 @@ class TestConstRefInForLoop(TestSpec):
 
     name = "const-ref-in-for-loop"
     message = "Use constant references for non-modified iterators in range-based for loops."
-    rationale = "Peformance, code safety."
+    rationale = "Performance, code safety."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LLVM]
     suffixes = [".h", ".cxx", ".C"]
 
@@ -609,7 +609,7 @@ class TestConstRefInSubscription(TestSpec):
 
     name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
-    rationale = "Peformance, code safety."
+    rationale = "Performance, code safety."
     references = [Reference.O2, Reference.ISO_CPP, Reference.LINTER]
     suffixes = [".cxx"]
     per_line = False
@@ -1633,8 +1633,8 @@ def main():
         tests.append(TestPiMultipleFraction())
         tests.append(TestPdgDatabase())
         tests.append(TestPdgExplicitCode())
-        tests.append(TestPdgKnownMass())
         tests.append(TestPdgExplicitMass())
+        tests.append(TestPdgKnownMass())
         tests.append(TestLogging())
         tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
