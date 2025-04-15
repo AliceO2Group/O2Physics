@@ -15,6 +15,7 @@
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -26,6 +27,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -176,7 +178,7 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
                   full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -197,7 +199,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -211,7 +213,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
+                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -225,8 +227,12 @@ struct HfTreeCreatorOmegacToOmegaPi {
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
   Configurable<bool> keepOnlyMcSignal{"keepOnlyMcSignal", true, "Fill MC tree only with signal candidates"};
 
-  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
-  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using Colls = soa::Join<aod::Collisions, aod::EvSels>;
+  using CandKfSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi>>;
+  using CascKfMcSel = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>>;
+
+  Filter filterOmegaCToOmegaPiFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) != static_cast<uint8_t>(0);
 
   void init(InitContext const&)
   {
@@ -247,8 +253,8 @@ struct HfTreeCreatorOmegacToOmegaPi {
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
-        candidate.template collision_as<MyEventTable>().numContrib(),
-        candidate.template collision_as<MyEventTable>().chi2(),
+        candidate.template collision_as<Colls>().numContrib(),
+        candidate.template collision_as<Colls>().chi2(),
         candidate.xDecayVtxCharmBaryon(),
         candidate.yDecayVtxCharmBaryon(),
         candidate.zDecayVtxCharmBaryon(),
@@ -294,8 +300,8 @@ struct HfTreeCreatorOmegacToOmegaPi {
         candidate.errorDecayLengthCharmBaryon(),
         candidate.impactParCascXY() / candidate.errImpactParCascXY(),
         candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
-        candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
-        candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
+        candidate.template bachelorFromCharmBaryon_as<Tracks>().isGlobalTrackWoDCA(),
+        candidate.template bachelorFromCharmBaryon_as<Tracks>().itsNCls(),
         candidate.pidTpcInfoStored(),
         candidate.pidTofInfoStored(),
         candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -308,7 +314,8 @@ struct HfTreeCreatorOmegacToOmegaPi {
         candidate.tofNSigmaPrFromLambda(),
         flagMc,
         originMc,
-        collisionMatched);
+        collisionMatched,
+        candidate.hfflag());
     }
   }
 
@@ -376,7 +383,8 @@ struct HfTreeCreatorOmegacToOmegaPi {
         candidate.cascRejectInvmass(),
         flagMc,
         originMc,
-        collisionMatched);
+        collisionMatched,
+        candidate.hfflag());
     }
   }
 
@@ -418,12 +426,13 @@ struct HfTreeCreatorOmegacToOmegaPi {
         candidate.cascRejectInvmass(),
         flagMc,
         originMc,
-        collisionMatched);
+        collisionMatched,
+        candidate.hfflag());
     }
   } // fillKfCandidateLite end
 
-  void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi> const& candidates)
+  void processDataLite(Colls const& collisions, Tracks const&,
+                       soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -439,8 +448,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processDataLite, "Process data", true);
 
-  void processKfDataFull(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
+  void processKfDataFull(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -456,8 +464,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataFull, "Process KF data", false);
 
-  void processKfDataLite(MyEventTable const& collisions, MyTrackTable const&,
-                         soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi> const& candidates)
+  void processKfDataLite(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -473,8 +480,8 @@ struct HfTreeCreatorOmegacToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataLite, "Process KF data Lite", false);
 
-  void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
-                     soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
+  void processMcLite(Colls const& collisions, Tracks const&,
+                     soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>> const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -490,8 +497,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processMcLite, "Process MC", false);
 
-  void processKFMcFull(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
+  void processKFMcFull(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
@@ -513,8 +519,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKFMcFull, "Process KF MC", false);
 
-  void processKFMcLite(MyEventTable const& collisions, MyTrackTable const&,
-                       soa::Join<aod::HfCandToOmegaPi, aod::HfOmegacKf, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec> const& candidates)
+  void processKFMcLite(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
   {
     // Filling event properties
     rowEv.reserve(collisions.size());
