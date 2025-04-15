@@ -86,8 +86,8 @@ struct JFlucEfficiencyTask {
     Configurable<float> cfgEtaMax{"cfgEtaMax", 1.0f, "Maximum pseudorapidity"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", false, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
-    Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-    Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
+    Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};                        // kGoldenChi2 | kDCAxy | kDCAz
+    Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};           // PV Contriuibutor
     Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", false, "pT-dependent DCAxy cut"};
     Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
     Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
