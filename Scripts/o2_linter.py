@@ -536,7 +536,6 @@ class TestPdgExplicitMass(TestSpec):
         for match in matches:
             n_quotes_before = line.count('"', 0, match[0])  # Count quotation marks before the match.
             if not n_quotes_before % 2:  # If even, we are not inside a string and this match is valid.
-                print(match[1])
                 return False
         return True
 
