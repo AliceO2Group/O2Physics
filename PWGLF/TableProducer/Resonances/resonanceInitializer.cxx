@@ -47,6 +47,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
+using namespace o2::aod::rctsel;
 
 /// Initializer for the resonance candidate producers
 struct ResonanceInitializer {
