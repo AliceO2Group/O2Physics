@@ -309,7 +309,7 @@ struct QaPidMl {
     }
   }
 
-  constexpr float certaintyThreshold = 0.5f;
+  constexpr float kCertaintyThreshold = 0.5f;
 
   int getParticlePdg(float pidCertainties[])
   {
@@ -327,7 +327,7 @@ struct QaPidMl {
     }
 
     // return 0 if certainty with index 'index' is below 0.5 or two indexes have the same value, else map index to particle pdgCode
-    if ((pidCertainties[index] < certaintyThreshold) | ((pidCertainties[index] == pidCertainties[smallerIndex]) & (smallerIndex != 0))) {
+    if ((pidCertainties[index] < kCertaintyThreshold) | ((pidCertainties[index] == pidCertainties[smallerIndex]) & (smallerIndex != 0))) {
       return 0;
     } else {
       return ParticlesPdgCode[index];
