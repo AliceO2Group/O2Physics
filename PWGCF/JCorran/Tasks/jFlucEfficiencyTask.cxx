@@ -15,6 +15,7 @@
 /// \since March 2024
 
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
