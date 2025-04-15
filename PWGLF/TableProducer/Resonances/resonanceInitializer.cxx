@@ -1209,6 +1209,9 @@ struct ResonanceInitializer {
     colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
     colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
+
+    myChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     if (!cfgBypassCCDB) {
       ccdb->setURL(ccdbURL.value);
       ccdb->setCaching(true);

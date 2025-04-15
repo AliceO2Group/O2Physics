@@ -175,6 +175,8 @@ struct ResonanceModuleInitializer {
     colCuts.setApplyRun2AliEventCuts(cfgEvtRun2AliEventCuts);
     colCuts.setApplyRun2INELgtZERO(cfgEvtRun2INELgtZERO);
 
+    myChecker.init(cfgEvtRCTFlagCheckerLabel, cfgEvtRCTFlagCheckerZDCCheck, cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     // Configure CCDB access if not bypassed
     if (!cfgBypassCCDB) {
       ccdb->setURL(ccdbURL.value);
