@@ -186,8 +186,6 @@ struct lambdalambda {
     histos.add("h_InvMass_mixed_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
     histos.add("h_InvMass_rot_sel", "", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, combAxis}});
 
-
-
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
       histos.add("QA/PVzDist", "", {HistType::kTH1F, {PVzQaAxis}});
