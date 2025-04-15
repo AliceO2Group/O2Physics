@@ -141,7 +141,7 @@ namespace hf_correlation_lc_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Lc and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Lc and Hadrons
-DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                             //! DeltaY between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                 //! DeltaY between Lc and Hadrons
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
