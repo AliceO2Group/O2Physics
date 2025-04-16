@@ -610,20 +610,20 @@ struct FlowGfwOmegaXi {
     if (correctionsLoaded)
       return;
     int nspecies = 5;
-    if (cfgAcceptance.size() == (unsigned long)nspecies) {
+    if (cfgAcceptance.size() == (uint64_t)nspecies) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
-      if (mAcceptance.size() == (unsigned long)nspecies)
+      if (mAcceptance.size() == (uint64_t)nspecies)
         LOGF(info, "Loaded acceptance weights");
       else
         LOGF(warning, "Could not load acceptance weights");
     }
-    if (cfgEfficiency.size() == (unsigned long)nspecies) {
+    if (cfgEfficiency.size() == (uint64_t)nspecies) {
       for (int i = 0; i <= nspecies - 1; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
       }
-      if (mEfficiency.size() == (unsigned long)nspecies)
+      if (mEfficiency.size() == (uint64_t)nspecies)
         LOGF(info, "Loaded efficiency histogram");
       else
         LOGF(fatal, "Could not load efficiency histogram");
@@ -636,14 +636,14 @@ struct FlowGfwOmegaXi {
   {
     float eff = 1.;
     int nspecies = 5;
-    if (mEfficiency.size() == (unsigned long)nspecies)
+    if (mEfficiency.size() == (uint64_t)nspecies)
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (mAcceptance.size() == (unsigned long)nspecies)
+    if (mAcceptance.size() == (uint64_t)nspecies)
       weight_nua = mAcceptance[ispecies]->getNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
