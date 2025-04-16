@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 #include <experimental/type_traits>
 #include <vector>
+#include <string>
+#include <memory>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -24,6 +26,8 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include <TFormula.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -35,6 +39,15 @@ using namespace o2::math_utils::detail;
 struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
+  //
+  O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
+  O2_DEFINE_CONFIGURABLE(cfgImPart2Mass, float, o2::constants::physics::MassKMinus, "Daughter particle 2 mass in GeV")
+  O2_DEFINE_CONFIGURABLE(cfgImPart1PID, float, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
+  O2_DEFINE_CONFIGURABLE(cfgImPart2PID, float, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
+  O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
+  O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass (GeV)")
+  O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass (GeV)")
+  O2_DEFINE_CONFIGURABLE(cfgImSigmaFormula, std::string, "(z < 0.5 && x < 3.0) || (z >= 0.5 && x < 2.5 && y < 3.0)", "pT dependent daughter track sigma pass condition (x = TPC sigma, y = TOF sigma, z = pT)")
 
   HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
@@ -50,6 +63,14 @@ struct Filter2Prong {
 
   template <class T>
   using HasMLProb = decltype(std::declval<T&>().mlProbD0());
+
+  std::unique_ptr<TFormula> sigmaFormula;
+
+  void init(InitContext&)
+  {
+    if (doprocessDataInvMass)
+      sigmaFormula = std::make_unique<TFormula>("sigmaFormula", cfgImSigmaFormula.value.c_str());
+  }
 
   template <class HFCandidatesType>
   void processDataT(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidatesType const& candidates)
@@ -142,6 +163,40 @@ struct Filter2Prong {
     }
   }
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
+
+  // Generic 2-prong invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
+  using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
+  void processDataInvMass(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, PIDTrack const& tracks)
+  {
+    if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
+      return; // rejected collision
+    for (auto& cftrack1 : cftracks) {
+      auto p1 = tracks.iteratorAt(cftrack1.trackId());
+      if (p1.sign() != 1)
+        continue;
+      if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart1PID, p1), o2::aod::pidutils::tofNSigma(cfgImPart1PID, p1)) <= 0.0f)
+        continue;
+      for (auto& cftrack2 : cftracks) {
+        if (cftrack2.globalIndex() == cftrack1.globalIndex())
+          continue;
+        auto p2 = tracks.iteratorAt(cftrack2.trackId());
+        if (p2.sign() != -1)
+          continue;
+        if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart2PID, p2), o2::aod::pidutils::tofNSigma(cfgImPart2PID, p2)) <= 0.0f)
+          continue;
+        ROOT::Math::PtEtaPhiMVector vec1(p1.pt(), p1.eta(), p1.phi(), cfgImPart1Mass);
+        ROOT::Math::PtEtaPhiMVector vec2(p2.pt(), p2.eta(), p2.phi(), cfgImPart2Mass);
+        ROOT::Math::PtEtaPhiMVector s = vec1 + vec2;
+        if (s.pt() < cfgImCutPt || s.M() < cfgImMinInvMass || s.M() > cfgImMaxInvMass)
+          continue;
+
+        float phi = RecoDecay::constrainAngle(s.Phi(), 0.0f);
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           cftrack1.globalIndex(), cftrack2.globalIndex(), s.pt(), s.eta(), phi, s.M(), aod::cf2prongtrack::Generic2Prong);
+      }
+    }
+  }
+  PROCESS_SWITCH(Filter2Prong, processDataInvMass, "Process data generic 2-prong candidates with invariant mass method", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
