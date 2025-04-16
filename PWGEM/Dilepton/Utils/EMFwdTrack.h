@@ -22,7 +22,7 @@ namespace o2::aod::pwgem::dilepton::utils
 class EMFwdTrack
 {
  public:
-  EMFwdTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, std::vector<int> amb_muon_self_ids, float cXX, float cXY, float cYY)
+  EMFwdTrack(int dfId, int globalId, int collisionId, int trackId, float pt, float eta, float phi, float mass, int8_t charge, float dcaX, float dcaY, float cXX, float cXY, float cYY, std::vector<int> amb_muon_self_ids)
   {
     fDFId = dfId;
     fGlobalId = globalId;
@@ -90,12 +90,12 @@ class EMFwdTrack
   int8_t fCharge;
   float fDCAx;
   float fDCAy;
-  float fPairDCAXYinSigmaOTF;
-  bool fIsAmbiguous;
-  std::vector<int> fAmbMuonSelfIds;
   float fCXX;
   float fCXY;
   float fCYY;
+  float fPairDCAXYinSigmaOTF;
+  bool fIsAmbiguous;
+  std::vector<int> fAmbMuonSelfIds;
 };
 
 } // namespace o2::aod::pwgem::dilepton::utils
