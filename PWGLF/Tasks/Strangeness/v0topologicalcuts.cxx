@@ -504,7 +504,6 @@ struct v0topologicalcuts {
       rV0ParametersData.fill(HIST("hVertexZRec"), collision.posZ());
       rV0ParametersData.fill(HIST("hK0shEtaPosDau"), v0.posTrack_as<DaughterTracks>().eta());
       rV0ParametersData.fill(HIST("hK0shEtaNegDau"), v0.negTrack_as<DaughterTracks>().eta());
-
       if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
         rV0ParametersData.fill(HIST("hMassK0ShortAfterEtaCut"), v0.mK0Short());
         rV0ParametersData.fill(HIST("hMassLambdaAfterEtaCut"), v0.mLambda());
