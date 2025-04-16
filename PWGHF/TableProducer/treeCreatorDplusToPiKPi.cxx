@@ -16,6 +16,8 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -254,7 +256,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<std::vector<int>> classMl{"classMlindexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
+  Configurable<std::vector<int>> classMlIndexes{"classMlIndexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
 
   HfHelper hfHelper;
 
@@ -304,8 +306,8 @@ struct HfTreeCreatorDplusToPiKPi {
 
     std::vector<float> outputMl = {-999., -999.};
     if constexpr (doMl) {
-      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
-        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+      for (unsigned int iclass = 0; iclass < classMlIndexes->size(); iclass++) {
+        outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMlIndexes->at(iclass)];
       }
       rowCandidateMl(
         outputMl[0],
@@ -513,7 +515,7 @@ struct HfTreeCreatorDplusToPiKPi {
       }
       for (const auto& candidate : reconstructedCandSigMl) {
         if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
             continue;
           }
