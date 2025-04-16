@@ -1113,21 +1113,25 @@ struct FlowGfwOmegaXi {
       if (mcParticle.has_tracks()) {
         auto const& tracks = mcParticle.tracks_as<AodTracks>();
         for (const auto& track : tracks) {
-          if (track.pt() < cfgCutPtPOIMin || track.pt() > cfgCutPtPOIMax)
+          if (track.pt() < cfgCutPtPOIMin || track.pt() > cfgCutPtPOIMax) {
             continue;
-          if (std::fabs(track.eta()) > 0.8)
-            continue;
-          if (!(track.hasTPC() && track.hasITS()))
-            continue;
-          if (track.tpcChi2NCl() > cfgCutChi2prTPCcls)
-            continue;
-          int ptbin = fPtAxis->FindBin(track.pt()) - 1;
-          if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
-            fGFW->Fill(track.eta(), ptbin, track.phi(), 1, 64); //(eta, ptbin, phi, wacc*weff, bitmask)
           }
-          if ((track.pt() > cfgCutPtPOIMin) && (track.pt() < cfgCutPtPOIMax)) {
-            hLocalDensity->Fill(track.phi(), 1);
-            hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), 1);
+          if (std::fabs(track.eta()) > 0.8) {
+            continue;
+          }
+          if (!(track.isGlobalTrack())) {
+            continue;
+          }
+          if (track.tpcChi2NCl() > cfgCutChi2prTPCcls) {
+            continue;
+          }
+          int ptbin = fPtAxis->FindBin(mcParticle.pt()) - 1;
+          if ((mcParticle.pt() > cfgCutPtMin) && (mcParticle.pt() < cfgCutPtMax)) {
+            fGFW->Fill(mcParticle.eta(), ptbin, mcParticle.phi(), 1, 64); //(eta, ptbin, phi, wacc*weff, bitmask)
+          }
+          if ((mcParticle.pt() > cfgCutPtPOIMin) && (mcParticle.pt() < cfgCutPtPOIMax)) {
+            hLocalDensity->Fill(mcParticle.phi(), 1);
+            hLocalDensity->Fill(RecoDecay::constrainAngle(mcParticle.phi(), -constants::math::TwoPI), 1);
             nch++;
           }
         }
@@ -1192,7 +1196,7 @@ struct FlowGfwOmegaXi {
   }
   PROCESS_SWITCH(FlowGfwOmegaXi, processMCGen, "", true);
 
-  void processMCRec(AodCollisions::iterator const& collision, AodTracks const& tracks, aod::BCsWithTimestamps const&, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades, DaughterTracks const&, aod::McParticles const&)
+  void processMCRec(AodCollisions::iterator const& collision, soa::Join<AodTracks, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const&, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades, DaughterTracks const&, aod::McParticles const&)
   {
     fGFW->Clear();
     const auto cent = collision.centFT0C();
@@ -1213,6 +1217,17 @@ struct FlowGfwOmegaXi {
     double nch = 0;
 
     for (const auto& track : tracks) {
+      if (!track.has_mcParticle())
+        continue;
+      if (track.pt() < cfgCutPtPOIMin || track.pt() > cfgCutPtPOIMax)
+        continue;
+      if (std::fabs(track.eta()) > 0.8)
+        continue;
+      if (!(track.isGlobalTrack()))
+        continue;
+      if (track.tpcChi2NCl() > cfgCutChi2prTPCcls)
+        continue;
+      auto mcParticle = track.mcParticle_as<aod::McParticles>();
       if (cfgDoAccEffCorr) {
         if (!setCurrentParticleWeights(weff, wacc, track, vtxz, 0))
           continue;
@@ -1229,12 +1244,13 @@ struct FlowGfwOmegaXi {
       if ((track.pt() > cfgCutPtPOIMin) && (track.pt() < cfgCutPtPOIMax)) {
         fGFW->Fill(track.eta(), ptbin, track.phi(), wacc * weff, 32);
         if (cfgDoLocDenCorr) {
-          hLocalDensity->Fill(track.phi(), wacc * weff);
-          hLocalDensity->Fill(RecoDecay::constrainAngle(track.phi(), -constants::math::TwoPI), wacc * weff);
+          hLocalDensity->Fill(mcParticle.phi(), wacc * weff);
+          hLocalDensity->Fill(RecoDecay::constrainAngle(mcParticle.phi(), -constants::math::TwoPI), wacc * weff);
           nch += wacc * weff;
         }
       }
     }
+
     if (cfgDoLocDenCorr) {
       registry.fill(HIST("hCentvsNch"), cent, nch);
     }
@@ -1293,8 +1309,8 @@ struct FlowGfwOmegaXi {
       // Omega and antiOmega
       int pdgCode{cascMC.pdgCode()};
       double cascPt{cascMC.pt()};
-      double cascPhi{casc.phi()};
-      double cascEta{casc.eta()};
+      double cascPhi{cascMC.phi()};
+      double cascEta{cascMC.eta()};
       if (std::abs(pdgCode) == kOmegaMinus) {
         if (casc.sign() < 0 && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71) && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
             (!cfgcheckDauTPC || (std::fabs(bachelor.tpcNSigmaKa()) < cfgNSigma[2] && std::fabs(posdau.tpcNSigmaPr()) < cfgNSigma[1] && std::fabs(negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
