@@ -894,7 +894,7 @@ struct FlowGfwOmegaXi {
           setCurrentLocalDensityWeights(wloc, v0, density, 2);
           if (cfgOutputLocDenWeights)
             registry.fill(HIST("MC/densityMCRecLambda"), v0.pt(), nch, density, v0.mLambda());
-      }
+        }
         candNum[1] = candNum[1] + 1;
         registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz, wacc);
@@ -1320,12 +1320,10 @@ struct FlowGfwOmegaXi {
           if (cfgDoLocDenCorr) {
             int phibin = -999;
             phibin = hLocalDensity->FindBin(RecoDecay::constrainAngle(cascPhi, -constants::math::PI));
-            if (phibin > -900) {
-              double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
-              setCurrentLocalDensityWeights(wloc, casc, density, 4);
-              if (cfgOutputLocDenWeights)
-                registry.fill(HIST("MC/densityMCRecOmega"), cascPt, nch, density, casc.mOmega());
-            }
+            double density = hLocalDensity->Integral(phibin - cfgDeltaPhiLocDen, phibin + cfgDeltaPhiLocDen);
+            setCurrentLocalDensityWeights(wloc, casc, density, 4);
+            if (cfgOutputLocDenWeights)
+              registry.fill(HIST("MC/densityMCRecOmega"), cascPt, nch, density, casc.mOmega());
           }
           fGFW->Fill(cascEta, fXiPtAxis->FindBin(cascPt) - 1, cascPhi, wacc * weff * wloc, 4);
         } else if (casc.sign() > 0 && std::fabs(casc.yOmega()) < cfgCasc_rapidity &&
@@ -1428,7 +1426,7 @@ struct FlowGfwOmegaXi {
       double v0Eta{v0MC.eta()};
       // K0short
       if (std::abs(pdgCode) == kK0Short) {
-        if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.y()) < 0.5 && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
+        if (v0.qtarm() / std::fabs(v0.alpha()) > cfgv0_ArmPodocut && std::fabs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow &&
             (!cfgcheckDauTPC || (std::fabs(v0posdau.tpcNSigmaPi()) < cfgNSigma[0] && std::fabs(v0negdau.tpcNSigmaPi()) < cfgNSigma[0]))) {
           if (cfgDoAccEffCorr)
             setCurrentParticleWeights(weff, wacc, v0, vtxz, 1);
