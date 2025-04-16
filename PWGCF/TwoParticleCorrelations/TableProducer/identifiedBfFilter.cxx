@@ -1165,10 +1165,10 @@ struct IdentifiedBfFilterTracks {
         if (!(pid < 0)) {
           naccepted++;
           /* update charged multiplicities */
-          if (pid % 2 == 0) {
+          if (pid % 2 == trackTypes[0]) {
             trkMultPos[kIdBfCharged]++;
           }
-          if (pid % 2 == 1) {
+          if (pid % 2 == trackTypes[1]) {
             trkMultNeg[kIdBfCharged]++;
           }
           if (fullDerivedData) {
