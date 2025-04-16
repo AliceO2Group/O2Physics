@@ -40,6 +40,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/DataModel/UDIndex.h" // for UDMcParticles2UDTracks table
 #include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
@@ -193,6 +194,10 @@ struct TauEventTableProducer {
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
   using FullSGUDCollision = FullSGUDCollisions::iterator;
+	using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
+	using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
+	using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
+	using UDMcParticlesWithUDTracks = soa::Join<aod::McParticles, aod::UDMcParticlesToUDTracks>;
 
   // init
   void init(InitContext&)
@@ -471,9 +476,19 @@ struct TauEventTableProducer {
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
     }
 
-  } // end processDataSG
+  }
+	PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
-  PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+	void processMonteCarlo(FullMCSGUDCollision const& mccollision,
+												 FullSGUDCollisions const& collisions,
+												 FullUDTracks const& tracks,
+												 UDMcParticlesWithUDTracks const& particles)
+	{
+
+
+	}
+	PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
