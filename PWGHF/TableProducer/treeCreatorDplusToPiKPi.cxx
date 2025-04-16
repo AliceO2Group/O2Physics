@@ -21,12 +21,14 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_centrality;
 
 namespace o2::aod
 {
@@ -50,6 +52,7 @@ DECLARE_SOA_COLUMN(Y, y, float);                                                
 DECLARE_SOA_COLUMN(Eta, eta, float);                                               //! Pseudorapidity of candidate
 DECLARE_SOA_COLUMN(Phi, phi, float);                                               //! Azimuth angle of candidate
 DECLARE_SOA_COLUMN(E, e, float);                                                   //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(Centrality, centrality, float);                                 //! Collision centrality
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                                 //! TPC Nsigma separation for prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                                 //! TPC Nsigma separation for prong0 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                                 //! TOF Nsigma separation for prong0 with pion mass hypothesis
@@ -129,6 +132,7 @@ DECLARE_SOA_TABLE(HfCandDpLites, "AOD", "HFCANDDPLITE",
                   full::Eta,
                   full::Phi,
                   full::Y,
+                  full::Centrality,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec)
@@ -210,6 +214,7 @@ DECLARE_SOA_TABLE(HfCandDpFulls, "AOD", "HFCANDDPFULL",
                   full::Phi,
                   full::Y,
                   full::E,
+                  full::Centrality,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec);
@@ -258,6 +263,9 @@ struct HfTreeCreatorDplusToPiKPi {
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
+  using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+  using McRecoCollisionsCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>;
+
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
 
@@ -283,7 +291,7 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   template <bool doMc = false, bool doMl = false, typename T>
-  void fillCandidateTable(const T& candidate)
+  void fillCandidateTable(const T& candidate, float cent)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
@@ -351,6 +359,7 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.eta(),
         candidate.phi(),
         hfHelper.yDplus(candidate),
+        cent,
         flagMc,
         originMc,
         channelMc);
@@ -432,13 +441,14 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.phi(),
         hfHelper.yDplus(candidate),
         hfHelper.eDplus(candidate),
+        cent,
         flagMc,
         originMc,
         channelMc);
     }
   }
 
-  void processData(aod::Collisions const& collisions,
+  void processData(CollisionsCent const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
                    TracksWPid const&)
   {
@@ -461,13 +471,15 @@ struct HfTreeCreatorDplusToPiKPi {
           continue;
         }
       }
-      fillCandidateTable(candidate);
+      auto coll = candidate.template collision_as<CollisionsCent>();
+      float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
+      fillCandidateTable(candidate, cent);
     }
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
-  void processMc(aod::Collisions const& collisions,
+  void processMc(McRecoCollisionsCent const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
@@ -488,7 +500,9 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(reconstructedCandSig.size());
       }
       for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<true>(candidate);
+        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
+        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
+        fillCandidateTable<true>(candidate, cent);
       }
     } else if (fillOnlySignalMl) {
       rowCandidateMl.reserve(reconstructedCandSigMl.size());
@@ -504,7 +518,9 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        fillCandidateTable<true, true>(candidate);
+        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
+        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
+        fillCandidateTable<true, true>(candidate, cent);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -519,7 +535,9 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        fillCandidateTable<true>(candidate);
+        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
+        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
+        fillCandidateTable<true>(candidate, cent);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -528,7 +546,9 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true>(candidate);
+        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
+        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
+        fillCandidateTable<true>(candidate, cent);
       }
     }
 
