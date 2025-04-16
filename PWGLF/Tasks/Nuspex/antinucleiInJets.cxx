@@ -1239,7 +1239,7 @@ struct AntinucleiInJets {
             registryMC.fill(HIST("antiproton_jet_tpc_rec_vs_generatedptjet"), track.pt(), jetPtGen);
             if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF())
               registryMC.fill(HIST("antiproton_jet_rec_tof"), track.pt(), nsigmaTOFPr);
-              registryMC.fill(HIST("antiproton_jet_tof_rec_vs_generatedptjet"), track.pt(), jetPtGen);
+            registryMC.fill(HIST("antiproton_jet_tof_rec_vs_generatedptjet"), track.pt(), jetPtGen);
           }
         }
 
