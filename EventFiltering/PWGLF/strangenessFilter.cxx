@@ -15,6 +15,7 @@
 /// \since June 1, 2021
 
 #include <cmath>
+#include "TVector3.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -25,6 +26,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -73,9 +75,20 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 16, -1., 15.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 17, -1., 16.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
+
+  // Dedicated selection criteria for lambda-lambda
+  Configurable<float> cfgPIDPi{"cfgPIDPi", 3.0, "pion PID selection"};
+  Configurable<float> cfgPIDPr{"cfgPIDPr", 3.0, "proton PID selection"};
+  Configurable<float> cfgLambdaMassWindow{"cfgLambdaMassWindow", 0.01, "window for lambda mass selection"};
+  Configurable<float> cfgCompV0Rej{"cfgCompV0Rej", 0.01, "competing V0 rejection"};
+
+  Configurable<float> cfgMinCPAV0V0{"cfgMinCPAV0V0", 0.8, "minimum CPA of v0v0"};
+  Configurable<float> cfgMaxRadiusV0V0{"cfgMaxRadiusV0V0", 10.0, "maximum radius of v0v0"};
+  Configurable<float> cfgMaxDistanceV0V0{"cfgMaxDistanceV0V0", 5.0, "maximum distance of v0v0"};
+  Configurable<float> cfgMaxDCAV0V0{"cfgMaxDCAV0V0", 5.0, "maximum DCA of v0v0"};
 
   // Selection criteria for cascades
   Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
@@ -177,6 +190,50 @@ struct strangenessFilter {
   {
     return track.pt() > hMinPt && std::abs(track.eta()) < hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
+  /// lambda-lambda analysis dedicated selections
+  float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  {
+    TVector3 posdiff = v02pos - v01pos;
+    TVector3 cross = v01mom.Cross(v02mom);
+    TVector3 dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
+    return dcaVec.Mag();
+  }
+  float getV0V0CPA(TVector3 v01mom, TVector3 v02mom)
+  {
+    return v01mom.Dot(v02mom) / (v01mom.Mag() * v02mom.Mag());
+  }
+  float getV0V0Distance(TVector3 v01pos, TVector3 v02pos)
+  {
+    TVector3 posdiff = v02pos - v01pos;
+    return posdiff.Mag();
+  }
+  float getV0V0Radius(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  {
+    TVector3 posdiff = v02pos - v01pos;
+    v01mom *= 1./v01mom.Mag();
+    v02mom *= 1./v02mom.Mag();
+    float dd = 1. - TMath::Power(v01mom.Dot(v02mom), 2);
+    if (dd < 1e-5)
+      return 999;
+    float tt = posdiff.Dot(v01mom - v01mom.Dot(v02mom) * v02mom) / dd;
+    float ss = -posdiff.Dot(v02mom - v01mom.Dot(v02mom) * v01mom) / dd;
+    TVector3 radVec = v01pos + v02pos + tt * v01mom + ss * v02mom;
+    radVec *= 0.5;
+    return radVec.Mag();
+  }
+  bool isSelectedV0V0(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
+  {
+    if (getV0V0DCA(v01pos, v01mom, v02pos, v02mom) > cfgMaxDCAV0V0)
+      return false;
+    if (getV0V0CPA(v01mom, v02mom) < cfgMinCPAV0V0)
+      return false;
+    if (getV0V0Distance(v01pos, v02pos) > cfgMaxDistanceV0V0)
+      return false;
+    if (getV0V0Radius(v01pos, v01mom, v02pos, v02mom) > cfgMaxRadiusV0V0)
+      return false;
+
+    return true;
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -223,6 +280,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(14, aod::filtering::OmegaHighMult::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(15, aod::filtering::DoubleOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(17, "LL");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -447,14 +505,14 @@ struct strangenessFilter {
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11], keepEvent[12]);
   }
 
-  void process(CollisionCandidates const& collision, TrackCandidates const& tracks, aod::Cascades const& cascadesBase, aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCs const&, aod::FT0s const& /*ft0s*/)
+  void process(CollisionCandidates const& collision, TrackCandidates const& tracks, aod::Cascades const& cascadesBase, aod::AssignedTrackedCascades const& trackedCascades, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const& v0Base, aod::BCs const&, aod::FT0s const& /*ft0s*/)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
-    bool keepEvent[12]{}; // explicitly zero-initialised
+    bool keepEvent[13]{}; // explicitly zero-initialised
     std::vector<std::array<int64_t, 2>> v0sFromOmegaID;
     std::vector<std::array<int64_t, 2>> v0sFromXiID;
 
@@ -570,6 +628,70 @@ struct strangenessFilter {
     // strangeness tracking selection
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterTrk;
+
+    for (auto& v00 : v0Base) { // loop over v0
+      hCandidate->Fill(0.5); // All candidates
+
+      const auto posTrack0 = v00.posTrack_as<TrackCandidates>();
+      const auto negTrack0 = v00.negTrack_as<TrackCandidates>();
+
+      auto trackParPos0 = getTrackParCov(posTrack0);
+      auto trackParNeg0 = getTrackParCov(negTrack0);
+
+      if (!mStraHelper.buildV0Candidate(v00.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack0, negTrack0, trackParPos0, trackParNeg0)) {
+        continue;
+      }
+      int Tag = 0;
+      if (cfgPIDPi > std::fabs(negTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(posTrack0.tpcNSigmaPr())) {
+        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+          Tag++;
+        }
+      }
+      if (cfgPIDPi > std::fabs(posTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(negTrack0.tpcNSigmaPr())) {
+        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+          Tag++;
+        }
+      }
+      if (Tag != 1) { // Select when only one option is satisfied
+        continue;
+      }
+      TVector3 v00pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
+      TVector3 v00mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
+
+      for (auto& v01 : v0Base) {
+        if (v00.globalIndex() <= v01.globalIndex()) {
+          continue;
+        }
+
+        const auto posTrack1 = v01.posTrack_as<TrackCandidates>();
+        const auto negTrack1 = v01.negTrack_as<TrackCandidates>();
+
+        auto trackParPos1 = getTrackParCov(posTrack1);
+        auto trackParNeg1 = getTrackParCov(negTrack1);
+
+        if (!mStraHelper.buildV0Candidate(v01.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack1, negTrack1, trackParPos1, trackParNeg1)) {
+          continue;
+        }
+        Tag = 0;
+        if (cfgPIDPi > std::fabs(negTrack1.tpcNSigmaPi()) && cfgPIDPr > std::fabs(posTrack1.tpcNSigmaPr())) {
+          if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
+        }
+        if (cfgPIDPi > std::fabs(posTrack1.tpcNSigmaPi()) && cfgPIDPr > std::fabs(negTrack1.tpcNSigmaPr())) {
+          if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
+        }
+        if (posTrack0.globalIndex() == posTrack1.globalIndex() || posTrack0.globalIndex() == negTrack1.globalIndex() || negTrack0.globalIndex() == posTrack1.globalIndex() || negTrack0.globalIndex() == negTrack1.globalIndex()) {
+          continue;
+        }
+        TVector3 v01pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
+        TVector3 v01mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
+
+        keepEvent[12] = true;
+      }
+    }
 
     for (auto& casc : cascadesBase) { // loop over cascades
       hCandidate->Fill(0.5); // All candidates
@@ -1121,7 +1243,9 @@ struct strangenessFilter {
     if (keepEvent[11]) {
       hProcessedEvents->Fill(14.5);
     }
-
+    if (keepEvent[12]) {
+      hProcessedEvents->Fill(15.5);
+    }
     // Filling the table
     fillTriggerTable(keepEvent);
   }
