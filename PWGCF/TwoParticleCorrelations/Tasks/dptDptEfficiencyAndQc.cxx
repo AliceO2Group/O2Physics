@@ -392,8 +392,8 @@ struct QADataCollectingEngine {
     using namespace analysis::dptdptfilter;
     using namespace o2::aod::track;
 
-    constexpr int kFiftyPerCent = 50.0f;
-    constexpr int kHundredPerCent = 100.0f;
+    constexpr float kFiftyPerCent = 50.0f;
+    constexpr float kHundredPerCent = 100.0f;
 
     fhPtB[kindOfData]->Fill(track.pt());
     fhPtVsEtaB[kindOfData]->Fill(track.eta(), track.pt());
@@ -695,7 +695,7 @@ struct PidDataCollectingEngine {
   uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
   uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
-  const uint kNoOfSteps = 2; /* Before and after track selection */
+  constexpr static uint kNoOfSteps = 2; /* Before and after track selection */
 
   /* PID histograms */
   /* before and after */
@@ -720,7 +720,7 @@ struct PidDataCollectingEngine {
     if constexpr (kindOfData == kReco) {
       /* PID histograms */
       std::vector<std::string> whenname{"Before", "After"};
-      char whenprefix[kNoOfSteps]{'B', 'A'};
+      constexpr char whenprefix[kNoOfSteps]{'B', 'A'};
       std::vector<std::string> whentitle{"before", ""};
       for (uint ix = 0; ix < kNoOfSteps; ++ix) {
         fhTPCdEdxSignalVsP[ix] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
