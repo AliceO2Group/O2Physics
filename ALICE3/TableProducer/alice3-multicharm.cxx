@@ -147,9 +147,9 @@ struct alice3multicharm {
 
   // partitions for Xi daughters
   Partition<alice3tracks> tracksPiFromXiC =
-    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCPt && nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiC_dcaZconstant + piFromXiC_dcaZpTdep* nabs(aod::track::signed1Pt);
+    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCPt&& nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiC_dcaZconstant + piFromXiC_dcaZpTdep* nabs(aod::track::signed1Pt);
 
-  Partition<alice3tracks> tracksPiFromXiCC = ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f  && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt && nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
+  Partition<alice3tracks> tracksPiFromXiCC = ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
   struct {
@@ -413,10 +413,10 @@ struct alice3multicharm {
 
     histos.add("hDCAxyXiC", "hDCAxyXiC", kTH1D, {axisDCA});
     histos.add("hDCAzXiC", "hDCAzXiC", kTH1D, {axisDCA});
-    
+
     histos.add("hDCAxyXiCC", "hDCAxyXiCC", kTH1D, {axisDCA});
     histos.add("hDCAzXiCC", "hDCAzXiCC", kTH1D, {axisDCA});
-    
+
     histos.add("hPi1cPt", "hPi1cPt", kTH1D, {axisPt});
     histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
     histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
@@ -513,8 +513,6 @@ struct alice3multicharm {
         if (pi1c.pt() < minPiCPt)
           continue;
 
-
-
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
 
@@ -526,7 +524,6 @@ struct alice3multicharm {
             continue; // avoid using any track that was already used
           if (pi2c.pt() < minPiCPt)
             continue;
-
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
@@ -551,19 +548,20 @@ struct alice3multicharm {
             continue; // do not take if radius too small, likely a primary combination
 
           o2::dataformats::DCA dcaInfo;
-          float xicdcaXY = 1e+10, xicdcaZ = 1e+10;;
+          float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
+          ;
           o2::track::TrackParCov xicTrackCopy(xicTrack); // paranoia
           o2::vertexing::PVertex primaryVertex;
           primaryVertex.setXYZ(collision.posX(), collision.posY(), collision.posZ());
-          
+
           if (xicTrackCopy.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
             xicdcaXY = dcaInfo.getY();
             xicdcaZ = dcaInfo.getZ();
           }
-          
+
           if (std::fabs(xicdcaXY) < xiCFromXiCC_dcaXY || std::fabs(xicdcaZ) < xiCFromXiCC_dcaZ)
             continue;
-          
+
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
 
           // attempt XiCC finding
@@ -593,14 +591,14 @@ struct alice3multicharm {
               continue; // do not take if radius too small, likely a primary combination
 
             double totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
-            double xicProperLength = std::fabs(std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1], thisXiCcandidate.xyz[2])  - std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1], thisXiCCcandidate.xyz[2]) * totalMomentumC) / (std::fabs(totalMomentumC) * thisXiCcandidate.mass);
+            double xicProperLength = std::fabs(std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1], thisXiCcandidate.xyz[2]) - std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1], thisXiCCcandidate.xyz[2]) * totalMomentumC) / (std::fabs(totalMomentumC) * thisXiCcandidate.mass);
             if (xicProperLength < xicMinProperLength || xicProperLength > xicMaxProperLength)
               continue;
 
             double totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
             double xiccProperLength = std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1], thisXiCCcandidate.xyz[2]) * totalMomentumCC) / (std::fabs(totalMomentumCC) * thisXiCCcandidate.mass);
             if (xiccProperLength < xiccMinProperLength || xiccProperLength > xicMaxProperLength)
-                continue;
+              continue;
 
             float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
             if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
