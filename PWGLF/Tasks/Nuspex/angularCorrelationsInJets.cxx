@@ -574,8 +574,8 @@ struct AngularCorrelationsInJets {
     for (int i = 0; i < static_cast<int>(buffer.size()); i++) { // loop over tracks in buffer
       if (std::isnan(buffer.at(i).first))
         continue;
-      if (buffer.at(i).first > constants::math::TwoPI || buffer.at(i).first < constants::math::TwoPI) {
-        registryData.fill(HIST("trackProtocol"), 13); // # buffer tracks failed with phi > 2 pi
+      if (buffer.at(i).first > constants::math::TwoPI || buffer.at(i).first < -constants::math::TwoPI) {
+        registryData.fill(HIST("trackProtocol"), 13); // # buffer tracks failed with |phi| > 2 pi
         continue;
       }
 
