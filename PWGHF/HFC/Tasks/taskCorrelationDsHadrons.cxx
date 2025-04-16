@@ -86,9 +86,6 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
 
-  const int comingFromCharm = 1;
-  const int comingFromBeauty = 2;
-
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
@@ -419,9 +416,9 @@ struct HfTaskCorrelationDsHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == comingFromCharm) {
+            if (statusDsPrompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == comingFromBeauty) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
@@ -461,12 +458,12 @@ struct HfTaskCorrelationDsHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDsPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == comingFromCharm) {
+        if (statusPromptHadron == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptDsPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == comingFromBeauty) {
+        if (statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       }
@@ -612,9 +609,9 @@ struct HfTaskCorrelationDsHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == comingFromCharm) {
+            if (statusDsPrompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == comingFromBeauty) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
@@ -901,9 +898,9 @@ struct HfTaskCorrelationDsHadrons {
                 }
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == comingFromCharm) { // charm orgin
+                  if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
-                  } else if (trackOrigin == comingFromBeauty) { // beauty origin
+                  } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
                   }
                 }
@@ -942,9 +939,9 @@ struct HfTaskCorrelationDsHadrons {
                 // check track origin
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == comingFromCharm) { // charm orgin
+                  if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
-                  } else if (trackOrigin == comingFromBeauty) { // beauty origin
+                  } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
                   }
                 }
