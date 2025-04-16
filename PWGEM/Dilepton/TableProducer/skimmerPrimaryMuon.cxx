@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \brief write relevant information for dalitz ee analysis to an AO2D.root file. This file is then the only necessary input to perform pcm analysis.
+/// \brief write relevant information for muons.
 /// \author daiki.sekihata@cern.ch
 
 #include <string>
@@ -336,7 +336,9 @@ struct associateSameMFT {
           if (global_muon.globalIndex() == muon.globalIndex()) { // don't store myself.
             continue;
           }
-          self_Ids.emplace_back(global_muon.globalIndex());
+          if (global_muon.collisionId() == muon.collisionId()) {
+            self_Ids.emplace_back(global_muon.globalIndex());
+          }
         }
         em_same_mft_ids(self_Ids);
         self_Ids.clear();

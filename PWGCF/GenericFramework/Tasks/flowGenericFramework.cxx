@@ -91,7 +91,6 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
@@ -111,11 +110,11 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
-  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
-  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.0, "pt cut on TOF for PID");
+  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
@@ -207,7 +206,6 @@ struct FlowGenericFramework {
     cfgGFWBinning->Print();
 
     AxisSpec phiAxis = {phibins, philow, phiup, "#phi"};
-    AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
     AxisSpec etaAxis = {etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
@@ -242,7 +240,6 @@ struct FlowGenericFramework {
     if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registry.add("trackQA/before/pt_phi", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
       registry.addClone("trackQA/before/", "trackQA/after/");
       registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, ptreflow, ptrefup}}});
       registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, ptpoilow, ptpoiup}}});
@@ -310,20 +307,6 @@ struct FlowGenericFramework {
     fFCpt->initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
     // Event selection - Alex
     if (cfgUseAdditionalEventCut) {
-      /*
-      //22s cuts
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-      */
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -333,11 +316,6 @@ struct FlowGenericFramework {
       fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
-    }
-
-    if (cfgUseAdditionalTrackCut) {
-      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
   }
 
@@ -543,42 +521,7 @@ struct FlowGenericFramework {
       if (cfgRunByRun)
         th1sList[run][hEventSel]->Fill(9.5);
     }
-
-    /* 22s
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-      return 0;
-    */
     return 1;
-  }
-
-  template <typename TTrack>
-  bool trackSelected(TTrack track, const int& field)
-  {
-    double phimodn = track.phi();
-    if (field < 0) // for negative polarity field
-      phimodn = TwoPI - phimodn;
-    if (track.sign() < 0) // for negative charge
-      phimodn = TwoPI - phimodn;
-    if (phimodn < 0)
-      LOGF(warning, "phi < 0: %g", phimodn);
-
-    phimodn += PI / 18.0; // to center gap in the middle
-    phimodn = fmod(phimodn, PI / 9.0);
-    if (cfgFillQA)
-      registry.fill(HIST("trackQA/before/pt_phi"), track.pt(), phimodn);
-    if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
-      return false; // reject track
-    if (cfgFillQA)
-      registry.fill(HIST("trackQA/after/pt_phi"), track.pt(), phimodn);
-    return true;
   }
 
   enum DataType {
@@ -700,7 +643,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field, const int& run)
+  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -719,14 +662,14 @@ struct FlowGenericFramework {
     fFCpt->clearVector();
     float lRandom = fRndm->Rndm();
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, field, run);
+      processTrack(track, vtxz, run);
     }
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& field, const int& run)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& run)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -739,9 +682,6 @@ struct FlowGenericFramework {
         fillTrackQA<kReco, kBefore>(track, vtxz);
 
       if (mcParticle.eta() < etalow || mcParticle.eta() > etaup || mcParticle.pt() < ptlow || mcParticle.pt() > ptup || track.tpcNClsFound() < cfgNcls)
-        return;
-
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
       int pidIndex = 0;
@@ -797,9 +737,6 @@ struct FlowGenericFramework {
       if (cfgFillQA)
         fillTrackQA<kReco, kBefore>(track, vtxz);
       if (track.tpcNClsFound() < cfgNcls)
-        return;
-
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
       int pidIndex = 0;
@@ -868,11 +805,20 @@ struct FlowGenericFramework {
       if (withinPtNch && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, 32);
     } else { // Analysing only integrated flow
+      bool withinPtRef = (track.pt() > ptreflow && track.pt() < ptrefup);
+      bool withinPtPOI = (track.pt() > ptpoilow && track.pt() < ptpoiup);
+      if (!withinPtPOI && !withinPtRef)
+        return;
       double weff = (dt == kGen) ? 1. : getEfficiency(track);
       if (weff < 0)
         return;
       double wacc = (dt == kGen) ? 1. : getAcceptance(track, vtxz, 0);
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      if (withinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      if (withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
+      if (withinPtRef && withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
     }
     return;
   }
@@ -955,8 +901,7 @@ struct FlowGenericFramework {
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
 
@@ -981,8 +926,7 @@ struct FlowGenericFramework {
 
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
@@ -995,7 +939,7 @@ struct FlowGenericFramework {
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
-    processCollision<kGen>(mcCollision, particles, centrality, -999, 0);
+    processCollision<kGen>(mcCollision, particles, centrality, 0);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
@@ -1013,8 +957,7 @@ struct FlowGenericFramework {
     const auto centrality = collision.centRun2V0M();
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };
