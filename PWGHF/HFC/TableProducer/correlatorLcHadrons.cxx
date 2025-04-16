@@ -210,6 +210,7 @@ struct HfCorrelatorLcHadrons {
   Service<o2::framework::O2DatabasePDG> pdg;
   int leadingIndex = 0;
   bool correlationStatus = false;
+  static constexpr size_t nDaughters{3u};
   TRandom3* rnd = new TRandom3(0);
 
   // Event Mixing for the Data Mode
@@ -799,12 +800,12 @@ struct HfCorrelatorLcHadrons {
 
       // prompt and non-prompt division
       std::vector<int> listDaughters{};
-      std::array<int, 3> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
-      std::array<int, 3> prongsId;
+      std::array<int, nDaughters> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
+      std::array<int, nDaughters> prongsId;
       listDaughters.clear();
       RecoDecay::getDaughters(particle, &listDaughters, arrDaughLcPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() == 3) {
+      if (listDaughters.size() == nDaughters) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
