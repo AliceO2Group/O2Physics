@@ -1658,7 +1658,13 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
       }
 
       if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-        MatchRecoGenSpecies sp = identifyParticle(particle);
+        MatchRecoGenSpecies sp = 0;
+        if (recoIdMethod == recoIdMethods[0]) {
+          sp = kIdBfCharged;
+        }
+        if (recoIdMethod == recoIdMethods[1]) {
+          sp = identifyParticle(particle);
+        } 
         if (sp != kWrongSpecies) {
           if (sp != kIdBfCharged) {
             /* fill the charged particle histograms */
