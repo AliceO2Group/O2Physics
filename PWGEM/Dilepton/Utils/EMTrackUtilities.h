@@ -18,25 +18,43 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
+//_______________________________________________________________________
+template <typename T>
+float sigmaDca3D(T const& track)
+{
+  float cYY = track.cYY();                              // in cm^2
+  float cZZ = track.cZZ();                              // in cm^2
+  float cZY = track.cZY();                              // in cm^2
+  float dcaXY = track.dcaXY();                          // in cm
+  float dcaZ = track.dcaZ();                            // in cm
+  float dca3d = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ); // in cm
+  float dFdxy = 2.f * dcaXY / dca3d;
+  float dFdz = 2.f * dcaZ / dca3d;
+  return std::sqrt(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2.f * cZY * dFdxy * dFdz);
+}
+//_______________________________________________________________________
 template <typename T>
 float dca3DinSigma(T const& track)
 {
-  float cYY = track.cYY();
-  float cZZ = track.cZZ();
-  float cZY = track.cZY();
-  float dcaXY = track.dcaXY(); // in cm
-  float dcaZ = track.dcaZ();   // in cm
+  return std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) / sigmaDca3D(track);
 
-  float det = cYY * cZZ - cZY * cZY; // determinant
-  if (det < 0) {
-    return 999.f;
-  } else {
-    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
-  }
+  // float cYY = track.cYY();
+  // float cZZ = track.cZZ();
+  // float cZY = track.cZY();
+  // float dcaXY = track.dcaXY(); // in cm
+  // float dcaZ = track.dcaZ();   // in cm
+
+  // float det = cYY * cZZ - cZY * cZY; // determinant
+  // if (det < 0) {
+  //   return 999.f;
+  // } else {
+  //   return std::sqrt(std::fabs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  // }
 }
 //_______________________________________________________________________
 template <typename T>
@@ -52,19 +70,56 @@ float dcaZinSigma(T const& track)
 }
 //_______________________________________________________________________
 template <typename T>
+float sigmaFwdDcaXY(T const& track)
+{
+  float cXX = track.cXXatDCA();                       // in cm^2
+  float cYY = track.cYYatDCA();                       // in cm^2
+  float cXY = track.cXYatDCA();                       // in cm^2
+  float dcaX = track.fwdDcaX();                       // in cm
+  float dcaY = track.fwdDcaY();                       // in cm
+  float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY); // in cm
+  float dFdx = 2.f * dcaX / dcaXY;
+  float dFdy = 2.f * dcaY / dcaXY;
+  return std::sqrt(cXX * dFdx * dFdx + cYY * dFdy * dFdy + 2.f * cXY * dFdx * dFdy);
+}
+//_______________________________________________________________________
+template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXX();
-  float cYY = track.cYY();
-  float cXY = track.cXY();
-  float dcaX = track.fwdDcaX(); // in cm
-  float dcaY = track.fwdDcaY(); // in cm
+  return std::sqrt(track.fwdDcaX() * track.fwdDcaX() + track.fwdDcaY() * track.fwdDcaY()) / sigmaFwdDcaXY(track);
 
-  float det = cXX * cYY - cXY * cXY; // determinant
-  if (det < 0) {
-    return 999.f;
+  // float det = cXX * cYY - cXY * cXY; // determinant
+  // if (det < 0) {
+  //   return 999.f;
+  // } else {
+  //   return std::sqrt(std::fabs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+  // }
+}
+//_______________________________________________________________________
+template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
+bool isBestMatch(TTrack const& track, TCut const& cut, TTracks const& tracks)
+{
+  // this is only for muon at forward rapidity
+  if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+    std::map<int64_t, float> map_chi2MCHMFT;
+    map_chi2MCHMFT[track.globalIndex()] = track.chi2MatchMCHMFT(); // add myself
+    for (const auto& glmuonId : track.globalMuonsWithSameMFTIds()) {
+      const auto& candidate = tracks.rawIteratorAt(glmuonId);
+      if (candidate.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) {
+        if (cut.template IsSelectedTrack<is_wo_acc>(candidate)) {
+          map_chi2MCHMFT[candidate.globalIndex()] = candidate.chi2MatchMCHMFT();
+        }
+      }
+    }
+    if (map_chi2MCHMFT.begin()->first == track.globalIndex()) { // search for minimum matching-chi2
+      map_chi2MCHMFT.clear();
+      return true;
+    } else {
+      map_chi2MCHMFT.clear();
+      return false;
+    }
   } else {
-    return std::sqrt(std::abs((dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2. * dcaX * dcaY * cXY) / det / 2.)); // dca xy in sigma
+    return true;
   }
 }
 //_______________________________________________________________________

@@ -82,8 +82,8 @@ struct alice3multicharm {
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> doDCAplots{"doDCAplots", true, "do daughter prong DCA plots for D mesons"};
   Configurable<bool> mcSameMotherCheck{"mcSameMotherCheck", true, "check if tracks come from the same MC mother"};
-  Configurable<float> dcaXiCDaughtersSelection{"dcaXiCDaughtersSelection", 200.0f, "DCA between XiC daughters (cm)"};
-  Configurable<float> dcaXiCCDaughtersSelection{"dcaXiCCDaughtersSelection", 200.0f, "DCA between XiCC daughters (cm)"};
+  Configurable<float> dcaXiCDaughtersSelection{"dcaXiCDaughtersSelection", 0.002f, "DCA between XiC daughters (cm)"};
+  Configurable<float> dcaXiCCDaughtersSelection{"dcaXiCCDaughtersSelection", 0.002f, "DCA between XiCC daughters (cm)"};
 
   Configurable<float> piFromXiC_dcaXYconstant{"piFromXiC_dcaXYconstant", 0.001f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromXiC_dcaXYpTdep{"piFromXiC_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -94,6 +94,7 @@ struct alice3multicharm {
 
   Configurable<float> minPiCPt{"minPiCPt", 0.15, "Minimum pT for XiC pions"};
   Configurable<float> minPiCCPt{"minPiCCPt", 0.3, "Minimum pT for XiCC pions"};
+  Configurable<float> minNTracks{"minNTracks", -1, "Minimum number of tracks"};
 
   Configurable<float> minXiCRadius{"minXiCRadius", 0.001, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak"};
@@ -107,8 +108,9 @@ struct alice3multicharm {
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
 
-  ConfigurableAxis axisDCAXiCDaughters{"axisDCAXiCDaughters", {200, 0, 100}, "DCA (cm)"};
-  ConfigurableAxis axisDCAXiCCDaughters{"axisDCAXiCCDaughters", {200, 0, 100}, "DCA (cm)"};
+  ConfigurableAxis axisDCAXi{"axisDCAXi", {200, 0, 200}, "DCA (mum)"};
+  ConfigurableAxis axisDCAXiCDaughters{"axisDCAXiCDaughters", {200, 0, 100}, "DCA (mum)"};
+  ConfigurableAxis axisDCAXiCCDaughters{"axisDCAXiCCDaughters", {200, 0, 100}, "DCA (mum)"};
 
   ConfigurableAxis axisNConsidered{"axisNConsidered", {200, -0.5f, 199.5f}, "Number of considered track combinations"};
 
@@ -389,12 +391,18 @@ struct alice3multicharm {
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {axisDCAXiCCDaughters});
+    histos.add("hDCAXi", "hDCAXi", kTH1D, {axisDCAXi});
+    histos.add("hPi1cPt", "hPi1cPt", kTH1D, {axisPt});
+    histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
+    histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
 
     // These histograms bookkeep the exact number of combinations attempted
     // CombinationsXiC: triplets Xi-pi-pi considered per Xi
     // CombinationsXiCC: doublets XiC-pi considered per XiC
     histos.add("hCombinationsXiC", "hCombinationsXiC", kTH1D, {axisNConsidered});
     histos.add("hCombinationsXiCC", "hCombinationsXiCC", kTH1D, {axisNConsidered});
+    histos.add("hNCollisions", "hNCollisions", kTH1D, {{2, 0.5, 2.5}});
+    histos.add("hNTracks", "hNTracks", kTH1D, {{500, 0, 5000}});
 
     if (doDCAplots) {
       histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA});
@@ -419,6 +427,14 @@ struct alice3multicharm {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   void processFindXiCC(aod::Collision const& collision, alice3tracks const& tracks, aod::McParticles const&, aod::UpgradeCascades const& cascades)
   {
+    histos.fill(HIST("hNCollisions"), 1);
+    histos.fill(HIST("hNTracks"), tracks.size());
+
+    if (tracks.size() < minNTracks)
+      return;
+
+    histos.fill(HIST("hNCollisions"), 2);
+
     // group with this collision
     // n.b. cascades do not need to be grouped, being used directly in iterator-grouping
     auto tracksPiFromXiCgrouped = tracksPiFromXiC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -448,13 +464,18 @@ struct alice3multicharm {
         continue; // out of mass region
 
       uint32_t nCombinationsC = 0;
-      auto xi = xiCand.cascadeTrack_as<alice3tracks>(); // de-reference cascade track
+      auto xi = xiCand.cascadeTrack_as<alice3tracks>();    // de-reference cascade track
       auto piFromXi = xiCand.bachTrack_as<alice3tracks>(); // de-reference bach track
       auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
       auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
 
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
+
+      if (xi.dcaXY() < xiFromXiC_dcaXYconstant)
+        continue;
+
+      histos.fill(HIST("hDCAXi"), xi.dcaXY() * 1e+4);
 
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
@@ -463,6 +484,8 @@ struct alice3multicharm {
           continue; // avoid using any track that was already used
         if (pi1c.pt() < minPiCPt)
           continue;
+
+        histos.fill(HIST("hPi1cPt"), pi1c.pt());
 
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
@@ -476,12 +499,14 @@ struct alice3multicharm {
           if (pi2c.pt() < minPiCPt)
             continue;
 
+          histos.fill(HIST("hPi2cPt"), pi2c.pt());
+
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
 
           nCombinationsC++;
           histos.fill(HIST("hCharmBuilding"), 0.0f);
-          if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, 1.32171, 0.139570, 0.139570))
+          if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, o2::constants::physics::MassXiMinus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged))
             continue; // failed at building candidate
 
           if (std::abs(thisXiCcandidate.mass - o2::constants::physics::MassXiCPlus) > massWindowXiC)
@@ -510,30 +535,33 @@ struct alice3multicharm {
           }
 
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
-          histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca);
+          histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca * 1e+4);
 
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
 
+            if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
+              continue;
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
               continue; // avoid using any track that was already used
             if (picc.pt() < minPiCCPt)
               continue;
-            if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
-              continue;
+
+            histos.fill(HIST("hPiccPt"), picc.pt());
+
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
             histos.fill(HIST("hCharmBuilding"), 2.0f);
-            if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, 2.46793, 0.139570))
+            if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, o2::constants::physics::MassXiCPlus, o2::constants::physics::MassPionCharged))
               continue; // failed at building candidate
-            histos.fill(HIST("hCharmBuilding"), 3.0f);
 
+            histos.fill(HIST("hCharmBuilding"), 3.0f);
             histos.fill(HIST("hMassXiCC"), thisXiCCcandidate.mass);
             histos.fill(HIST("hPtXiCC"), thisXiCCcandidate.pt);
             histos.fill(HIST("hEtaXiCC"), thisXiCCcandidate.eta);
             histos.fill(HIST("h3dMassXiCC"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
-            histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca);
+            histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca * 1e+4);
 
             const std::array<float, 3> momentumCC = {
               thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],

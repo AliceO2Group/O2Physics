@@ -40,6 +40,7 @@ using namespace o2::framework::expressions;
 
 struct myAnalysis {
   Produces<o2::aod::MyTable> myTable;
+  Produces<o2::aod::MyTableAnti> myTableanti;
   Produces<o2::aod::MyTableJet> myTableJet;
   Produces<o2::aod::MyCollision> outputCollisions;
   Produces<o2::aod::MyCollisionV0s> outputCollisionsV0;
@@ -57,7 +58,6 @@ struct myAnalysis {
   Configurable<bool> cfgDataHists{"cfgDataHists", true, "Enables DataHists"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   // Others configure
-  Configurable<int> cDebugLevel{"cDebugLevel", 1, "Resolution of Debug"};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0, "V_z cut selection"};
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<float> cfgjetR{"cfgjetR", 0.4, "jet resolution parameter"};
@@ -84,16 +84,10 @@ struct myAnalysis {
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
+  Configurable<float> minTpcNcrossedRowsOverFindable{"minTpcNcrossedRowsOverFindable", 0.8, "crossed rows/findable"};
   Configurable<float> etaMin{"etaMin", -0.8f, "eta min track"};
   Configurable<float> etaMax{"etaMax", +0.8f, "eta max track"};
-  Configurable<float> ptMin_V0_proton{"ptMin_V0_proton", 0.3f, "pt min of proton from V0"};
-  Configurable<float> ptMax_V0_proton{"ptMax_V0_proton", 10.0f, "pt max of proton from V0"};
-  Configurable<float> ptMin_V0_pion{"ptMin_V0_pion", 0.1f, "pt min of pion from V0"};
-  Configurable<float> ptMax_V0_pion{"ptMax_V0_pion", 1.5f, "pt max of pion from V0"};
-  Configurable<float> ptMin_K0_pion{"ptMin_K0_pion", 0.3f, "pt min of pion from K0"};
-  Configurable<float> ptMax_K0_pion{"ptMax_K0_pion", 10.0f, "pt max of pion from K0"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.2f, "Minimum V0 Radius"};
-  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
   Configurable<float> nsigmaTPCmin{"nsigmaTPCmin", -5.0f, "Minimum nsigma TPC"};
   Configurable<float> nsigmaTPCmax{"nsigmaTPCmax", +5.0f, "Maximum nsigma TPC"};
   Configurable<float> nsigmaTOFmin{"nsigmaTOFmin", -5.0f, "Minimum nsigma TOF"};
@@ -102,6 +96,9 @@ struct myAnalysis {
   Configurable<float> yMax{"yMax", +0.5f, "maximum y"};
   Configurable<float> v0rejLambda{"v0rejLambda", 0.01, "V0 rej K0s"};
   Configurable<float> CtauLambda{"ctauLambda", 30, "C tau Lambda (cm)"};
+  Configurable<bool> ifpasslambda{"passedLambdaSelection", 1, "passedLambdaSelection"};
+  Configurable<bool> ifpassantilambda{"passedAntiLambdaSelection", 1, "passedAntiLambdaSelection"};
+  Configurable<bool> ifinitpasslambda{"ifinitpasslambda", 0, "ifinitpasslambda"};
   // Event Selection/////////////////////////////////
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
@@ -115,6 +112,7 @@ struct myAnalysis {
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "DCA V0 Daughters"};
   Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
+  Configurable<bool> doDrawPicture{"doDrawPicture", 0, "do Draw Picture"};
   // CONFIG DONE
   /////////////////////////////////////////  //INIT////////////////////////////////////////////////////////////////////
   // int eventSelection = -1;
@@ -200,8 +198,6 @@ struct myAnalysis {
       JEhistos.add("jetpx", "jetpx", kTH1F, {axisPx});
       JEhistos.add("jetpy", "jetpy", kTH1F, {axisPy});
       JEhistos.add("jetpz", "jetpz", kTH1F, {axisPz});
-      JEhistos.add("hV0Lambda", "V0Lambda",
-                   {HistType::kTHnSparseF, {eventAxis, axisPx, axisPy, axisPz, massAxis, axisPx, axisPy, axisPz}});
       JEhistos.add("EventIndexselection", "EventIndexselection", {HistType::kTH1F, {{1000000, 0.5f, 1000000.5f}}});
     }
     JEhistos.add("hKaonplusCounts", "hKaonplusCounts", {HistType::kTH1F, {{1, -0.5, 0.5f}}});
@@ -314,7 +310,11 @@ struct myAnalysis {
       return false;
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
       return false;
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < minTpcNcrossedRowsOverFindable)
+      return false;
     if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.itsChi2NCl() > maxChi2ITS)
       return false;
     if (track.eta() < etaMin || track.eta() > etaMax)
       return false;
@@ -322,6 +322,30 @@ struct myAnalysis {
       return false;
     return true;
   }
+
+  // init Selection
+  template <typename Lambda, typename TrackPos, typename TrackNeg>
+  bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
+  {
+    if (v0.v0radius() < minimumV0Radius || v0.v0cosPA() < v0cospa ||
+        TMath::Abs(ptrack.eta()) > etaMax ||
+        TMath::Abs(ntrack.eta()) > etaMax) {
+      return false;
+    }
+    if (v0.dcaV0daughters() > dcav0dau) {
+      return false;
+    }
+
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtopv) {
+      return false;
+    }
+
+    if (TMath::Abs(v0.dcapostopv()) < dcapostopv) {
+      return false;
+    }
+    return true;
+  }
+
   // Lambda Selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
   bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
@@ -496,28 +520,31 @@ struct myAnalysis {
     for (auto const& track : tracks) {
 
       auto originalTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCPr, aod::pidTOFPr>>();
-      JEhistos.fill(HIST("hDCArToPv"), originalTrack.dcaXY());
-      JEhistos.fill(HIST("hDCAzToPv"), originalTrack.dcaZ());
-      JEhistos.fill(HIST("rawpT"), originalTrack.pt());
-      JEhistos.fill(HIST("rawDpT"), track.pt(), track.pt() - originalTrack.pt());
-      JEhistos.fill(HIST("hIsPrim"), originalTrack.isPrimaryTrack());
-      JEhistos.fill(HIST("hIsGood"), originalTrack.isGlobalTrackWoDCA());
-      JEhistos.fill(HIST("hIsPrimCont"), originalTrack.isPVContributor());
-      JEhistos.fill(HIST("hFindableTPCClusters"), originalTrack.tpcNClsFindable());
-      JEhistos.fill(HIST("hFindableTPCRows"), originalTrack.tpcNClsCrossedRows());
-      JEhistos.fill(HIST("hClustersVsRows"), originalTrack.tpcCrossedRowsOverFindableCls());
-      JEhistos.fill(HIST("hTPCChi2"), originalTrack.tpcChi2NCl());
-      JEhistos.fill(HIST("hITSChi2"), originalTrack.itsChi2NCl());
-      JEhistos.fill(HIST("h_track_pt"), track.pt());
-      JEhistos.fill(HIST("h_track_eta"), track.eta());
-      JEhistos.fill(HIST("h_track_phi"), track.phi());
-
+      if (doDrawPicture) {
+        JEhistos.fill(HIST("hDCArToPv"), originalTrack.dcaXY());
+        JEhistos.fill(HIST("hDCAzToPv"), originalTrack.dcaZ());
+        JEhistos.fill(HIST("rawpT"), originalTrack.pt());
+        JEhistos.fill(HIST("rawDpT"), track.pt(), track.pt() - originalTrack.pt());
+        JEhistos.fill(HIST("hIsPrim"), originalTrack.isPrimaryTrack());
+        JEhistos.fill(HIST("hIsGood"), originalTrack.isGlobalTrackWoDCA());
+        JEhistos.fill(HIST("hIsPrimCont"), originalTrack.isPVContributor());
+        JEhistos.fill(HIST("hFindableTPCClusters"), originalTrack.tpcNClsFindable());
+        JEhistos.fill(HIST("hFindableTPCRows"), originalTrack.tpcNClsCrossedRows());
+        JEhistos.fill(HIST("hClustersVsRows"), originalTrack.tpcCrossedRowsOverFindableCls());
+        JEhistos.fill(HIST("hTPCChi2"), originalTrack.tpcChi2NCl());
+        JEhistos.fill(HIST("hITSChi2"), originalTrack.itsChi2NCl());
+        JEhistos.fill(HIST("h_track_pt"), track.pt());
+        JEhistos.fill(HIST("h_track_eta"), track.eta());
+        JEhistos.fill(HIST("h_track_phi"), track.phi());
+      }
       if (track.pt() < cfgtrkMinPt && std::abs(track.eta()) > cfgtrkMaxEta) {
         continue;
       }
-      JEhistos.fill(HIST("ptHistogram"), track.pt());
-      JEhistos.fill(HIST("etaHistogram"), track.eta());
-      JEhistos.fill(HIST("phiHistogram"), track.phi());
+      if (doDrawPicture) {
+        JEhistos.fill(HIST("ptHistogram"), track.pt());
+        JEhistos.fill(HIST("etaHistogram"), track.eta());
+        JEhistos.fill(HIST("phiHistogram"), track.phi());
+      }
     }
     int nJets = 0;
     int lastindex = 0;
@@ -575,39 +602,76 @@ struct myAnalysis {
       const auto& pos = v0.posTrack_as<TrackCandidates>();
       const auto& neg = v0.negTrack_as<TrackCandidates>();
       V0NumbersPerEvent = V0NumbersPerEvent + 1;
-      if (passedLambdaSelection(v0, pos, neg) && ctauLambda < CtauLambda) {
-        JEhistos.fill(HIST("hPt"), v0.pt());
-        JEhistos.fill(HIST("V0Radius"), v0.v0radius());
-        JEhistos.fill(HIST("CosPA"), v0.v0cosPA());
-        JEhistos.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
-        JEhistos.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
-        JEhistos.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
+      if (passedLambdaSelection(v0, pos, neg) && ctauLambda < CtauLambda && ifpasslambda) {
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("hPt"), v0.pt());
+          JEhistos.fill(HIST("V0Radius"), v0.v0radius());
+          JEhistos.fill(HIST("CosPA"), v0.v0cosPA());
+          JEhistos.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
+          JEhistos.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
+          JEhistos.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
+        }
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("hPt"), v0.pt());
+          JEhistos.fill(HIST("V0Radius"), v0.v0radius());
+          JEhistos.fill(HIST("CosPA"), v0.v0cosPA());
+          JEhistos.fill(HIST("V0DCANegToPV"), v0.dcanegtopv());
+          JEhistos.fill(HIST("V0DCAPosToPV"), v0.dcapostopv());
+          JEhistos.fill(HIST("V0DCAV0Daughters"), v0.dcaV0daughters());
+        }
       }
-      if (passedLambdaSelection(v0, pos, neg) && ctauAntiLambda < CtauLambda) {
+      if (passedLambdaSelection(v0, pos, neg) && ctauAntiLambda < CtauLambda && ifpasslambda) {
 
         V0LambdaNumbers = V0LambdaNumbers + 1;
         JEhistos.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
         JEhistos.fill(HIST("hMassLambda"), v0.mLambda());
-        JEhistos.fill(HIST("TPCNSigmaPosPr"), pos.tpcNSigmaPr());
-        JEhistos.fill(HIST("TPCNSigmaNegPi"), neg.tpcNSigmaPi());
 
-        JEhistos.fill(HIST("v0Lambdapx"), v0.px());
-        JEhistos.fill(HIST("v0Lambdapy"), v0.py());
-        JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("TPCNSigmaPosPr"), pos.tpcNSigmaPr());
+          JEhistos.fill(HIST("TPCNSigmaNegPi"), neg.tpcNSigmaPi());
+          JEhistos.fill(HIST("v0Lambdapx"), v0.px());
+          JEhistos.fill(HIST("v0Lambdapy"), v0.py());
+          JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
+        }
         myTable(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
-        JEhistos.fill(HIST("hV0Lambda"), nEventsV0, v0.px(), v0.py(), v0.pz(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
+        V0LambdaNumbers = V0LambdaNumbers + 1;
+        JEhistos.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
+        JEhistos.fill(HIST("hMassLambda"), v0.mLambda());
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("TPCNSigmaPosPr"), pos.tpcNSigmaPr());
+          JEhistos.fill(HIST("TPCNSigmaNegPi"), neg.tpcNSigmaPi());
+          JEhistos.fill(HIST("v0Lambdapx"), v0.px());
+          JEhistos.fill(HIST("v0Lambdapy"), v0.py());
+          JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
+        }
+        myTable(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mLambda(), pos.px(), pos.py(), pos.pz());
       }
-
-      if (passedAntiLambdaSelection(v0, pos, neg)) {
-
+      if (passedAntiLambdaSelection(v0, pos, neg) && ifpassantilambda) {
         JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
-        JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
-        JEhistos.fill(HIST("TPCNSigmaNegPr"), neg.tpcNSigmaPr());
 
-        JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
-        JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
-        JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
+          JEhistos.fill(HIST("TPCNSigmaNegPr"), neg.tpcNSigmaPr());
+          JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
+          JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
+          JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
+        }
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), neg.px(), neg.py(), neg.pz());
+      } else if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
+        JEhistos.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
+        JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
+
+        if (doDrawPicture) {
+          JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
+          JEhistos.fill(HIST("TPCNSigmaNegPr"), neg.tpcNSigmaPr());
+          JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
+          JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
+          JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
+        }
+        myTableanti(outputCollisionsV0.lastIndex(), v0.collisionId(), v0.px(), v0.py(), v0.pz(), v0.pt(), v0.mAntiLambda(), neg.px(), neg.py(), neg.pz());
       }
     }
     JEhistos.fill(HIST("V0Counts"), V0NumbersPerEvent);

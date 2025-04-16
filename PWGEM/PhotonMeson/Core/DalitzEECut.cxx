@@ -81,6 +81,11 @@ void DalitzEECut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "DalitzEE Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
+void DalitzEECut::SetMaxFracSharedClustersTPC(float max)
+{
+  mMaxFracSharedClustersTPC = max;
+  LOG(info) << "Dalitz EE Cut, set max fraction of shared clusters in  TPC: " << mMaxFracSharedClustersTPC;
+}
 void DalitzEECut::SetChi2PerClusterTPC(float min, float max)
 {
   mMinChi2PerClusterTPC = min;
@@ -105,6 +110,12 @@ void DalitzEECut::SetMeanClusterSizeITS(float min, float max)
   mMinMeanClusterSizeITS = min;
   mMaxMeanClusterSizeITS = max;
   LOG(info) << "DalitzEE Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
+}
+void DalitzEECut::SetTrackDca3DRange(float min, float max)
+{
+  mMinDca3D = min;
+  mMaxDca3D = max;
+  LOG(info) << "DalitzEE Cut, set DCA 3D range in sigma: " << mMinDca3D << " - " << mMaxDca3D;
 }
 void DalitzEECut::SetMaxDcaXY(float maxDcaXY)
 {

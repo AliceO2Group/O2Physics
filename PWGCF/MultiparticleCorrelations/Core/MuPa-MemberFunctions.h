@@ -100,6 +100,8 @@ void BookBaseList()
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichSpecificCuts, Form("WhichSpecificCuts = %s", tc.fWhichSpecificCuts.Data()));
 
+  fBasePro->GetXaxis()->SetBinLabel(eSkipTheseRuns, Form("SkipTheseRuns = %s", tc.fSkipTheseRuns.Data()));
+
   fBaseList->Add(fBasePro);
 
   if (tc.fVerbose) {
@@ -164,6 +166,7 @@ void DefaultConfiguration()
   tc.fProcess[eProcessRecSim_Run1] = doprocessRecSim_Run1;
   tc.fProcess[eProcessSim_Run1] = doprocessSim_Run1;
   tc.fProcess[eProcessTest] = doprocessTest;
+  tc.fProcess[eProcessQA] = doprocessQA;
 
   // Temporarary bailout protection against cases which are not implemented/validated yet:
   if (tc.fProcess[eProcessSim]) {
@@ -187,7 +190,7 @@ void DefaultConfiguration()
   }
 
   // Set automatically generic flags, from above individual flags:
-  tc.fProcess[eGenericRec] = tc.fProcess[eProcessRec] || tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessTest];
+  tc.fProcess[eGenericRec] = tc.fProcess[eProcessRec] || tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessTest] || tc.fProcess[eProcessQA];
   tc.fProcess[eGenericRecSim] = tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessRecSim_Run1];
   tc.fProcess[eGenericSim] = tc.fProcess[eProcessSim] || tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessSim_Run1];
 
@@ -212,6 +215,8 @@ void DefaultConfiguration()
     tc.fWhichProcess = "ProcessSim_Run1";
   } else if (tc.fProcess[eProcessTest]) {
     tc.fWhichProcess = "ProcessTest";
+  } else if (tc.fProcess[eProcessQA]) {
+    tc.fWhichProcess = "ProcessQA";
   }
 
   tc.fRandomSeed = cf_tc.cfRandomSeed;
@@ -222,6 +227,7 @@ void DefaultConfiguration()
   tc.fSequentialBailout = cf_tc.cfSequentialBailout;
   tc.fUseSpecificCuts = cf_tc.cfUseSpecificCuts;
   tc.fWhichSpecificCuts = cf_tc.cfWhichSpecificCuts;
+  tc.fSkipTheseRuns = cf_tc.cfSkipTheseRuns;
 
   // *) Event histograms (for QA see below):
   eh.fEventHistogramsName[eNumberOfEvents] = "NumberOfEvents";
@@ -229,9 +235,9 @@ void DefaultConfiguration()
   eh.fEventHistogramsName[eMultiplicity] = "Multiplicity";
   eh.fEventHistogramsName[eReferenceMultiplicity] = "ReferenceMultiplicity";
   eh.fEventHistogramsName[eCentrality] = "Centrality";
-  eh.fEventHistogramsName[eVertex_x] = "Vertex_x";
-  eh.fEventHistogramsName[eVertex_y] = "Vertex_y";
-  eh.fEventHistogramsName[eVertex_z] = "Vertex_z";
+  eh.fEventHistogramsName[eVertexX] = "VertexX";
+  eh.fEventHistogramsName[eVertexY] = "VertexY";
+  eh.fEventHistogramsName[eVertexZ] = "VertexZ";
   eh.fEventHistogramsName[eNContributors] = "NContributors";
   eh.fEventHistogramsName[eImpactParameter] = "ImpactParameter";
   eh.fEventHistogramsName[eEventPlaneAngle] = "EventPlaneAngle";
@@ -257,9 +263,9 @@ void DefaultConfiguration()
   ec.fEventCutName[eMultiplicity] = "Multiplicity";
   ec.fEventCutName[eReferenceMultiplicity] = "ReferenceMultiplicity";
   ec.fEventCutName[eCentrality] = "Centrality";
-  ec.fEventCutName[eVertex_x] = "Vertex_x";
-  ec.fEventCutName[eVertex_y] = "Vertex_y";
-  ec.fEventCutName[eVertex_z] = "Vertex_z";
+  ec.fEventCutName[eVertexX] = "VertexX";
+  ec.fEventCutName[eVertexY] = "VertexY";
+  ec.fEventCutName[eVertexZ] = "VertexZ";
   ec.fEventCutName[eNContributors] = "NContributors";
   ec.fEventCutName[eImpactParameter] = "ImpactParameter";
   ec.fEventCutName[eEventPlaneAngle] = "EventPlaneAngle";
@@ -289,6 +295,12 @@ void DefaultConfiguration()
   ec.fEventCutName[eIsGoodITSLayersAll] = "IsGoodITSLayersAll";
   ec.fEventCutName[eOccupancyEstimator] = "OccupancyEstimator";
   ec.fEventCutName[eMinVertexDistanceFromIP] = "MinVertexDistanceFromIP";
+  ec.fEventCutName[eNoPileupTPC] = "NoPileupTPC";
+  ec.fEventCutName[eNoPileupFromSPD] = "NoPileupFromSPD";
+  ec.fEventCutName[eNoSPDOnVsOfPileup] = "NoSPDOnVsOfPileup";
+  ec.fEventCutName[eRefMultVsNContrUp] = "RefMultVsNContrUp";
+  ec.fEventCutName[eRefMultVsNContrLow] = "RefMultVsNContrLow";
+  ec.fEventCutName[eCentralityCorrelationsCut] = "CentralityCorrelationsCut";
   ec.fEventCutName[eCentralityWeights] = "CentralityWeights";
   for (int t = 0; t < eEventCuts_N; t++) {
     if (ec.fEventCutName[t].EqualTo("")) {
@@ -426,8 +438,8 @@ void DefaultConfiguration()
       pw.fUseDiffPhiWeights[wPhiChargeAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
     } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wCentrality")) {
       pw.fUseDiffPhiWeights[wPhiCentralityAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
-    } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wVertex_z")) {
-      pw.fUseDiffPhiWeights[wPhiVertex_zAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
+    } else if (TString(lWhichDiffPhiWeights[dpw]).Contains("wVertexZ") || TString(lWhichDiffPhiWeights[dpw]).Contains("wVertex_z")) { // TBI 20250402 I keep "wVertex_z" here just in case I still have somewhere dependency on it, remove eventually
+      pw.fUseDiffPhiWeights[wPhiVertexZAxis] = Alright(lWhichDiffPhiWeights[dpw]) && pw.fUseDiffPhiWeights[wPhiPhiAxis];
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d : The setting %s in configurable cfWhichDiffPhiWeights is not supported yet. See enum eDiffPhiWeights . \n \033[0m", __FUNCTION__, __LINE__, TString(lWhichDiffPhiWeights[dpw]).Data());
     }
@@ -481,7 +493,7 @@ void DefaultConfiguration()
   // ...
 
   // *) Toy NUA:
-  auto lApplyNUAPDF = (vector<int>)cf_nua.cfApplyNUAPDF;
+  auto lApplyNUAPDF = (std::vector<int>)cf_nua.cfApplyNUAPDF;
   if (lApplyNUAPDF.size() != eNUAPDF_N) {
     LOGF(info, "\033[1;31m lApplyNUAPDF.size() = %d\033[0m", lApplyNUAPDF.size());
     LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -494,7 +506,7 @@ void DefaultConfiguration()
   // **) Execute the lines below, only if toy NUA (either default or custom) is requested for at least one kine variable:
   if (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF]) {
 
-    auto lUseDefaultNUAPDF = (vector<int>)cf_nua.cfUseDefaultNUAPDF;
+    auto lUseDefaultNUAPDF = (std::vector<int>)cf_nua.cfUseDefaultNUAPDF;
     if (lUseDefaultNUAPDF.size() != eNUAPDF_N) {
       LOGF(info, "\033[1;31m lUseDefaultNUAPDF.size() = %d\033[0m", lUseDefaultNUAPDF.size());
       LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -515,7 +527,7 @@ void DefaultConfiguration()
       nua.fFileWithCustomNUA = TString(cf_nua.cfFileWithCustomNUA);
 
       // *) histogram names with custom NUA distributions in that file + get those histograms immediately here:
-      auto lCustomNUAPDFHistNames = (vector<string>)cf_nua.cfCustomNUAPDFHistNames;
+      auto lCustomNUAPDFHistNames = (std::vector<std::string>)cf_nua.cfCustomNUAPDFHistNames;
       // TBI 20241115 For some reason, the default values of configurable "cfCustomNUAPDFHistNames" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
       if (lCustomNUAPDFHistNames.size() != eNUAPDF_N) {
         LOGF(info, "\033[1;31m lCustomNUAPDFHistNames.size() = %d\033[0m", lCustomNUAPDFHistNames.size());
@@ -612,19 +624,26 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eMultiplicity_vs_ReferenceMultiplicity] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eReferenceMultiplicity].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eMultiplicity_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
+  qa.fEventHistogramsName2D[eMultiplicity_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eOccupancy].Data());
+  qa.fEventHistogramsName2D[eReferenceMultiplicity_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eReferenceMultiplicity].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Centrality] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eCentrality].Data());
-  qa.fEventHistogramsName2D[eNContributors_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eNContributors_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eNContributors_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eOccupancy].Data());
-  qa.fEventHistogramsName2D[eCentrality_vs_Vertex_z] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eVertex_z].Data());
+  qa.fEventHistogramsName2D[eNContributors_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eNContributors].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
+  qa.fEventHistogramsName2D[eCentrality_vs_VertexZ] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eVertexZ].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eOccupancy].Data());
   qa.fEventHistogramsName2D[eCentrality_vs_ImpactParameter] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eImpactParameter].Data());
-  qa.fEventHistogramsName2D[eVertex_z_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertex_z].Data(), eh.fEventHistogramsName[eOccupancy].Data());
+  qa.fEventHistogramsName2D[eCentrality_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eCentrality].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
+  qa.fEventHistogramsName2D[eVertexZ_vs_Occupancy] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertexZ].Data(), eh.fEventHistogramsName[eOccupancy].Data());
+  qa.fEventHistogramsName2D[eVertexZ_vs_InteractionRate] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertexZ].Data(), eh.fEventHistogramsName[eInteractionRate].Data());
+  qa.fEventHistogramsName2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultiplicity].Data(), "FT0CAmplitudeOnFoundBC"); // TBI 20250331 hardwired string
+  qa.fEventHistogramsName2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), "FT0CAmplitudeOnFoundBC");     // TBI 20250331 hardwired string
   qa.fEventHistogramsName2D[eMultNTracksPV_vs_MultNTracksGlobal] = Form("%s_vs_%s", qa.fReferenceMultiplicityEstimatorName[eMultNTracksPV].Data(), qa.fReferenceMultiplicityEstimatorName[eMultNTracksGlobal].Data());
   qa.fEventHistogramsName2D[eCentFT0C_vs_CentFT0CVariant1] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), qa.fCentralityEstimatorName[eCentFT0CVariant1].Data());
   qa.fEventHistogramsName2D[eCentFT0C_vs_CentFT0M] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0C].Data(), qa.fCentralityEstimatorName[eCentFT0M].Data());
@@ -680,12 +699,49 @@ void DefaultConfiguration()
   qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanPhi] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[ePhi].Data()).Data();
   qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanPt] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[ePt].Data()).Data();
   qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanEta] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[eEta].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanCharge] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[eCharge].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcNClsFindable] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcNClsFindable].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcNClsShared] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcNClsShared].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanitsChi2NCl] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[eitsChi2NCl].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcNClsFound] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcNClsFound].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcNClsCrossedRows] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcNClsCrossedRows].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanitsNCls] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[eitsNCls].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeanitsNClsInnerBarrel] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[eitsNClsInnerBarrel].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcCrossedRowsOverFindableCls].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcFoundOverFindableCls] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcFoundOverFindableCls].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcFractionSharedCls] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcFractionSharedCls].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeantpcChi2NCl] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[etpcChi2NCl].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeandcaXY] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[edcaXY].Data()).Data();
+  qa.fQACorrelationsVsHistogramsName2D[eCorrelations_vs_MeandcaZ] = TString::Format("%s_vs_%s", "Correlations", ph.fParticleHistogramsName[edcaZ].Data()).Data();
+
   // ...
 
   // ***) Quick insanity check that all names are set:
   for (int t = 0; t < eQACorrelationsVsHistograms2D_N; t++) {
     if (qa.fQACorrelationsVsHistogramsName2D[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : qa.fQACorrelationsVsHistogramsName2D[%d] is not set, check corresponding enum eQACorrelationsVsHistograms2D \033[0m", __FUNCTION__, __LINE__, t);
+    }
+  }
+
+  // **) Names of QA 2D "correlations vs. IR vs. " profiles:
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eCurrentRunDuration].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_Multiplicity] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eMultiplicity].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eReferenceMultiplicity].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_Centrality] = TString::Format("%s_vs_%s", "CorrVsIR", eh.fEventHistogramsName[eCentrality].Data()).Data();
+  // ...
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanPhi] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[ePhi].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[ePhi].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanPt] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[ePt].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[ePt].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_MeanEta] = TString::Format("%s_vs_Mean%s", "CorrVsIR", ph.fParticleHistogramsName[eEta].Data()).Data();
+  qa.fQACorrelationsVsInteractionRateVsProfilesName2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = TString::Format("%s_vs_SigmaMean%s", "CorrVsIR", ph.fParticleHistogramsName[eEta].Data()).Data();
+
+  // ...
+
+  // ***) Quick insanity check that all names are set:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) {
+    if (qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : qa.fQACorrelationsVsInteractionRateVsProfilesName2D[%d] is not set, check corresponding enum eQACorrelationsVsInteractionRateVsProfiles2D \033[0m", __FUNCTION__, __LINE__, t);
     }
   }
 
@@ -838,9 +894,9 @@ void DefaultBooking()
   eh.fBookEventHistograms[eMultiplicity] = Alright(lBookEventHistograms[eMultiplicity]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eReferenceMultiplicity] = Alright(lBookEventHistograms[eReferenceMultiplicity]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eCentrality] = Alright(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_x] = Alright(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_y] = Alright(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_z] = Alright(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexX] = Alright(lBookEventHistograms[eVertexX]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexY] = Alright(lBookEventHistograms[eVertexY]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eVertexZ] = Alright(lBookEventHistograms[eVertexZ]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eNContributors] = Alright(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eImpactParameter] = Alright(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eEventPlaneAngle] = Alright(lBookEventHistograms[eEventPlaneAngle]) && eh.fFillEventHistograms;
@@ -981,19 +1037,26 @@ void DefaultBooking()
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eMultiplicity_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eMultiplicity_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eNContributors_vs_Centrality] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eNContributors_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eNContributors_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eNContributors_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eNContributors_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentrality_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eNContributors_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eNContributors_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eCentrality_vs_VertexZ] = Alright(lBookQAEventHistograms2D[eCentrality_vs_VertexZ]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentrality_vs_ImpactParameter] = Alright(lBookQAEventHistograms2D[eCentrality_vs_ImpactParameter]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eVertex_z_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertex_z_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eCentrality_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eCentrality_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eVertexZ_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertexZ_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eVertexZ_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eVertexZ_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal] = Alright(lBookQAEventHistograms2D[eMultNTracksPV_vs_MultNTracksGlobal]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0M] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentFT0M]) && qa.fFillQAEventHistograms2D;
@@ -1091,6 +1154,20 @@ void DefaultBooking()
   qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi]) && qa.fFillQACorrelationsVsHistograms2D;
   qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt]) && qa.fFillQACorrelationsVsHistograms2D;
   qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanCharge] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanCharge]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFindable] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFindable]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsShared] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsShared]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsChi2NCl] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsChi2NCl]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFound] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFound]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsCrossedRows] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsCrossedRows]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNCls] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNCls]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNClsInnerBarrel] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNClsInnerBarrel]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFoundOverFindableCls] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFoundOverFindableCls]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFractionSharedCls] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFractionSharedCls]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcChi2NCl] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcChi2NCl]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaXY] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaXY]) && qa.fFillQACorrelationsVsHistograms2D;
+  qa.fBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaZ] = Alright(lBookQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaZ]) && qa.fFillQACorrelationsVsHistograms2D;
   // .....
 
   // *) min and max harmonics for which this series of histograms will be booked:
@@ -1098,8 +1175,53 @@ void DefaultBooking()
   qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMin] = lQACorrelationsVsHistogramsMinMaxHarmonic[eMin];
   qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMax] = lQACorrelationsVsHistogramsMinMaxHarmonic[eMax];
   // **) insanity check:
-  if (!(qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMin] < qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMax])) {
+  if (!(qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMin] <= qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMax])) {
     LOGF(fatal, "\033[1;31m%s at line %d : wrong setting for min and max harmonics: min = %d, max = %d \033[0m", __FUNCTION__, __LINE__, qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMin], qa.fQACorrelationsVsHistogramsMinMaxHarmonic[eMax]);
+  }
+
+  // **) QA 2D "correlations vs. IR vs. " profiles:
+  qa.fFillQACorrelationsVsInteractionRateVsProfiles2D = cf_qa.cfFillQACorrelationsVsInteractionRateVsProfiles2D;
+
+  // *) If you do not want particular 2D correlations vs. IR vs. " profile to be booked, use configurable array cfBookQACorrelationsVsInteractionRateVsProfiles2D, where you can specify flags 1 (book) or 0 (do not book).
+  // Ordering of the flags in that array is interpreted through ordering of enums in enum eQACorrelationsVsInteractionRateVsProfiles2D.
+  auto lBookQACorrelationsVsInteractionRateVsProfiles2D = cf_qa.cfBookQACorrelationsVsInteractionRateVsProfiles2D.value; // this is now the local version of that string array from configurable
+  if (lBookQACorrelationsVsInteractionRateVsProfiles2D.size() != eQACorrelationsVsInteractionRateVsProfiles2D_N) {
+    LOGF(info, "\033[1;31m lBookQACorrelationsVsInteractionRateVsProfiles2D.size() = %d\033[0m", lBookQACorrelationsVsInteractionRateVsProfiles2D.size());
+    LOGF(info, "\033[1;31m eQACorrelationsVsInteractionRateVsProfiles2D_N = %d\033[0m", static_cast<int>(eQACorrelationsVsInteractionRateVsProfiles2D_N));
+    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D, and number of entries in enum eCorrelationsVsInteractionRateVsProfiles2D \n \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // *) Insanity check on the content and ordering of QA 2D "correlations vs. IR vs. " profiles in the initialization in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D:
+  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+  for (int name = 0; name < eQACorrelationsVsInteractionRateVsProfiles2D_N; name++) {
+    // TBI 20240518 I could implement even a strickter EqualTo instead of EndsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+    if (!TString(lBookQACorrelationsVsInteractionRateVsProfiles2D[name]).EndsWith(qa.fQACorrelationsVsInteractionRateVsProfilesName2D[name].Data())) {
+      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D => name = %d, lBookQACorrelationsVsInteractionRateVsProfiles2D[name] = \"%s\", qa.fCorrelationsVsInteractionRateVsProfilesName2D[name] = \"%s\" \n Check if you are using an up to date tag. \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQACorrelationsVsInteractionRateVsProfiles2D[name]).Data(), qa.fQACorrelationsVsInteractionRateVsProfilesName2D[name].Data());
+    }
+  }
+
+  // I append "&& qa.fFillQACorrelationsVsInteractionRateVsProfiles2D" below, to switch off booking of all 2D "correlations vs. IR vs. " profiles with one common flag:
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  // .....
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+  qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = Alright(lBookQACorrelationsVsInteractionRateVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta]) && qa.fFillQACorrelationsVsInteractionRateVsProfiles2D;
+
+  // .....
+
+  // *) min and max harmonics for which this series of histograms will be booked:
+  auto lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic = cf_qa.cfQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic.value;
+  qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] = lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin];
+  qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax] = lQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax];
+  // **) insanity check:
+  if (!(qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] < qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax])) {
+    LOGF(fatal, "\033[1;31m%s at line %d : wrong setting for min and max harmonics: min = %d, max = %d \033[0m", __FUNCTION__, __LINE__, qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin], qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax]);
   }
 
   // ...
@@ -1139,33 +1261,33 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eTotalMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eTotalMultiplicity][2] = 100000.;
 
-  eh.fEventHistogramsBins[eMultiplicity][0] = 2000.;
+  eh.fEventHistogramsBins[eMultiplicity][0] = 500.;
   eh.fEventHistogramsBins[eMultiplicity][1] = 0.;
-  eh.fEventHistogramsBins[eMultiplicity][2] = 20000.;
+  eh.fEventHistogramsBins[eMultiplicity][2] = 5000.;
 
-  eh.fEventHistogramsBins[eReferenceMultiplicity][0] = 6000.;
+  eh.fEventHistogramsBins[eReferenceMultiplicity][0] = 700.; // bin width is 100
   eh.fEventHistogramsBins[eReferenceMultiplicity][1] = 0.;
-  eh.fEventHistogramsBins[eReferenceMultiplicity][2] = 60000.;
+  eh.fEventHistogramsBins[eReferenceMultiplicity][2] = 70000.;
 
   eh.fEventHistogramsBins[eCentrality][0] = 110; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
   eh.fEventHistogramsBins[eCentrality][1] = 0.;
   eh.fEventHistogramsBins[eCentrality][2] = 110.;
 
-  eh.fEventHistogramsBins[eVertex_x][0] = 1600;
-  eh.fEventHistogramsBins[eVertex_x][1] = -0.8;
-  eh.fEventHistogramsBins[eVertex_x][2] = 0.8;
+  eh.fEventHistogramsBins[eVertexX][0] = 1600;
+  eh.fEventHistogramsBins[eVertexX][1] = -0.8;
+  eh.fEventHistogramsBins[eVertexX][2] = 0.8;
 
-  eh.fEventHistogramsBins[eVertex_y][0] = 1600;
-  eh.fEventHistogramsBins[eVertex_y][1] = -0.8;
-  eh.fEventHistogramsBins[eVertex_y][2] = 0.8;
+  eh.fEventHistogramsBins[eVertexY][0] = 1600;
+  eh.fEventHistogramsBins[eVertexY][1] = -0.8;
+  eh.fEventHistogramsBins[eVertexY][2] = 0.8;
 
-  eh.fEventHistogramsBins[eVertex_z][0] = 800;
-  eh.fEventHistogramsBins[eVertex_z][1] = -40.;
-  eh.fEventHistogramsBins[eVertex_z][2] = 40.;
+  eh.fEventHistogramsBins[eVertexZ][0] = 800;
+  eh.fEventHistogramsBins[eVertexZ][1] = -40.;
+  eh.fEventHistogramsBins[eVertexZ][2] = 40.;
 
-  eh.fEventHistogramsBins[eNContributors][0] = 1000.;
+  eh.fEventHistogramsBins[eNContributors][0] = 600.; // bin width is 20
   eh.fEventHistogramsBins[eNContributors][1] = 0.;
-  eh.fEventHistogramsBins[eNContributors][2] = 10000.;
+  eh.fEventHistogramsBins[eNContributors][2] = 12000.;
 
   eh.fEventHistogramsBins[eImpactParameter][0] = 1000;
   eh.fEventHistogramsBins[eImpactParameter][1] = 0.;
@@ -1352,37 +1474,46 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
   }
 
   // Common local vector for all fixed-length bins:
-  vector<float> lFixedLength_bins;
+  std::vector<float> lFixedLength_bins;
 
   switch (AFO) {
-    case AFO_MULTIPLICITY:
+    case AFO_MULTIPLICITY: {
       lFixedLength_bins = cf_res.cfFixedLength_mult_bins.value;
       break;
-    case AFO_CENTRALITY:
+    }
+    case AFO_CENTRALITY: {
       lFixedLength_bins = cf_res.cfFixedLength_cent_bins.value;
       break;
-    case AFO_PT:
+    }
+    case AFO_PT: {
       lFixedLength_bins = cf_res.cfFixedLength_pt_bins.value;
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       lFixedLength_bins = cf_res.cfFixedLength_eta_bins.value;
       break;
-    case AFO_OCCUPANCY:
+    }
+    case AFO_OCCUPANCY: {
       lFixedLength_bins = cf_res.cfFixedLength_occu_bins.value;
       break;
-    case AFO_INTERACTIONRATE:
+    }
+    case AFO_INTERACTIONRATE: {
       lFixedLength_bins = cf_res.cfFixedLength_ir_bins.value;
       break;
-    case AFO_CURRENTRUNDURATION:
+    }
+    case AFO_CURRENTRUNDURATION: {
       lFixedLength_bins = cf_res.cfFixedLength_crd_bins.value;
       break;
-    case AFO_VZ:
+    }
+    case AFO_VZ: {
       lFixedLength_bins = cf_res.cfFixedLength_vz_bins.value;
       break;
+    }
     // ...
-    default:
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
       break;
+    }
   } // switch(AFO)
 
   // From this point onward, the code is the same for any AFO variable:
@@ -1415,37 +1546,46 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
   }
 
   // Common local vector for all variable-length bins:
-  vector<float> lVariableLength_bins;
+  std::vector<float> lVariableLength_bins;
 
   switch (AFO) {
-    case AFO_MULTIPLICITY:
+    case AFO_MULTIPLICITY: {
       lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
       break;
-    case AFO_CENTRALITY:
+    }
+    case AFO_CENTRALITY: {
       lVariableLength_bins = cf_res.cfVariableLength_cent_bins.value;
       break;
-    case AFO_PT:
+    }
+    case AFO_PT: {
       lVariableLength_bins = cf_res.cfVariableLength_pt_bins.value;
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
       break;
-    case AFO_OCCUPANCY:
+    }
+    case AFO_OCCUPANCY: {
       lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
       break;
-    case AFO_INTERACTIONRATE:
+    }
+    case AFO_INTERACTIONRATE: {
       lVariableLength_bins = cf_res.cfVariableLength_ir_bins.value;
       break;
-    case AFO_CURRENTRUNDURATION:
+    }
+    case AFO_CURRENTRUNDURATION: {
       lVariableLength_bins = cf_res.cfVariableLength_crd_bins.value;
       break;
-    case AFO_VZ:
+    }
+    case AFO_VZ: {
       lVariableLength_bins = cf_res.cfVariableLength_vz_bins.value;
       break;
+    }
     // ...
-    default:
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
       break;
+    }
   } // switch(AFO)
 
   // From this point onward, the code is the same for any AFO variable:
@@ -1523,7 +1663,7 @@ void DefaultCuts()
 
   // *) Use or do not use a cut enumerated in eEventHistograms + eEventCuts.
   //    Default cuts are set in configurable cfUseEventCuts
-  auto lUseEventCuts = (vector<string>)cf_ec.cfUseEventCuts;
+  auto lUseEventCuts = (std::vector<std::string>)cf_ec.cfUseEventCuts;
   if (lUseEventCuts.size() != eEventCuts_N) {
     LOGF(info, "\033[1;31m lUseEventCuts.size() = %d\033[0m", lUseEventCuts.size());
     LOGF(info, "\033[1;31m eEventCuts_N = %d\033[0m", static_cast<int>(eEventCuts_N));
@@ -1545,9 +1685,9 @@ void DefaultCuts()
   ec.fUseEventCuts[eMultiplicity] = Alright(lUseEventCuts[eMultiplicity]);
   ec.fUseEventCuts[eReferenceMultiplicity] = Alright(lUseEventCuts[eReferenceMultiplicity]);
   ec.fUseEventCuts[eCentrality] = Alright(lUseEventCuts[eCentrality]);
-  ec.fUseEventCuts[eVertex_x] = Alright(lUseEventCuts[eVertex_x]);
-  ec.fUseEventCuts[eVertex_y] = Alright(lUseEventCuts[eVertex_y]);
-  ec.fUseEventCuts[eVertex_z] = Alright(lUseEventCuts[eVertex_z]);
+  ec.fUseEventCuts[eVertexX] = Alright(lUseEventCuts[eVertexX]);
+  ec.fUseEventCuts[eVertexY] = Alright(lUseEventCuts[eVertexY]);
+  ec.fUseEventCuts[eVertexZ] = Alright(lUseEventCuts[eVertexZ]);
   ec.fUseEventCuts[eNContributors] = Alright(lUseEventCuts[eNContributors]);
   ec.fUseEventCuts[eImpactParameter] = Alright(lUseEventCuts[eImpactParameter]);
   ec.fUseEventCuts[eEventPlaneAngle] = Alright(lUseEventCuts[eEventPlaneAngle]);
@@ -1579,6 +1719,12 @@ void DefaultCuts()
   ec.fUseEventCuts[eIsGoodITSLayersAll] = Alright(lUseEventCuts[eIsGoodITSLayersAll]);
   ec.fUseEventCuts[eOccupancyEstimator] = Alright(lUseEventCuts[eOccupancyEstimator]);
   ec.fUseEventCuts[eMinVertexDistanceFromIP] = Alright(lUseEventCuts[eMinVertexDistanceFromIP]);
+  ec.fUseEventCuts[eNoPileupTPC] = Alright(lUseEventCuts[eNoPileupTPC]);
+  ec.fUseEventCuts[eNoPileupFromSPD] = Alright(lUseEventCuts[eNoPileupFromSPD]);
+  ec.fUseEventCuts[eNoSPDOnVsOfPileup] = Alright(lUseEventCuts[eNoSPDOnVsOfPileup]);
+  ec.fUseEventCuts[eRefMultVsNContrUp] = Alright(lUseEventCuts[eRefMultVsNContrUp]);
+  ec.fUseEventCuts[eRefMultVsNContrLow] = Alright(lUseEventCuts[eRefMultVsNContrLow]);
+  ec.fUseEventCuts[eCentralityCorrelationsCut] = Alright(lUseEventCuts[eCentralityCorrelationsCut]);
   ec.fUseEventCuts[eCentralityWeights] = Alright(lUseEventCuts[eCentralityWeights]);
 
   // **) event cuts defined via booleans:
@@ -1597,6 +1743,9 @@ void DefaultCuts()
   ec.fUseEventCuts[eIsGoodITSLayer3] = ec.fUseEventCuts[eIsGoodITSLayer3] && cf_ec.cfUseIsGoodITSLayer3;
   ec.fUseEventCuts[eIsGoodITSLayer0123] = ec.fUseEventCuts[eIsGoodITSLayer0123] && cf_ec.cfUseIsGoodITSLayer0123;
   ec.fUseEventCuts[eIsGoodITSLayersAll] = ec.fUseEventCuts[eIsGoodITSLayersAll] && cf_ec.cfUseIsGoodITSLayersAll;
+  ec.fUseEventCuts[eNoPileupTPC] = ec.fUseEventCuts[eNoPileupTPC] && cf_ec.cfUseNoPileupTPC;
+  ec.fUseEventCuts[eNoPileupFromSPD] = ec.fUseEventCuts[eNoPileupFromSPD] && cf_ec.cfUseNoPileupFromSPD;
+  ec.fUseEventCuts[eNoSPDOnVsOfPileup] = ec.fUseEventCuts[eNoSPDOnVsOfPileup] && cf_ec.cfUseNoSPDOnVsOfPileup;
   ec.fUseEventCuts[eCentralityWeights] = ec.fUseEventCuts[eCentralityWeights] && cf_cw.cfUseCentralityWeights;
 
   // **) event cuts defined via [min, max):
@@ -1613,6 +1762,10 @@ void DefaultCuts()
   auto lMultiplicity = (std::vector<float>)cf_ec.cfMultiplicity;
   ec.fdEventCuts[eMultiplicity][eMin] = lMultiplicity[eMin];
   ec.fdEventCuts[eMultiplicity][eMax] = lMultiplicity[eMax];
+  // If I have requested fFixedNumberOfRandomlySelectedTracks, then I do not care about events with smaller number of particles:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0) {
+    ec.fdEventCuts[eMultiplicity][eMin] = tc.fFixedNumberOfRandomlySelectedTracks;
+  }
 
   auto lReferenceMultiplicity = (std::vector<float>)cf_ec.cfReferenceMultiplicity;
   ec.fdEventCuts[eReferenceMultiplicity][eMin] = lReferenceMultiplicity[eMin];
@@ -1622,17 +1775,17 @@ void DefaultCuts()
   ec.fdEventCuts[eCentrality][eMin] = lCentrality[eMin];
   ec.fdEventCuts[eCentrality][eMax] = lCentrality[eMax];
 
-  auto lVertex_x = (std::vector<float>)cf_ec.cfVertex_x;
-  ec.fdEventCuts[eVertex_x][eMin] = lVertex_x[eMin];
-  ec.fdEventCuts[eVertex_x][eMax] = lVertex_x[eMax];
+  auto lVertexX = (std::vector<float>)cf_ec.cfVertexX;
+  ec.fdEventCuts[eVertexX][eMin] = lVertexX[eMin];
+  ec.fdEventCuts[eVertexX][eMax] = lVertexX[eMax];
 
-  auto lVertex_y = (std::vector<float>)cf_ec.cfVertex_y;
-  ec.fdEventCuts[eVertex_y][eMin] = lVertex_y[eMin];
-  ec.fdEventCuts[eVertex_y][eMax] = lVertex_y[eMax];
+  auto lVertexY = (std::vector<float>)cf_ec.cfVertexY;
+  ec.fdEventCuts[eVertexY][eMin] = lVertexY[eMin];
+  ec.fdEventCuts[eVertexY][eMax] = lVertexY[eMax];
 
-  auto lVertex_z = (std::vector<float>)cf_ec.cfVertex_z;
-  ec.fdEventCuts[eVertex_z][eMin] = lVertex_z[eMin];
-  ec.fdEventCuts[eVertex_z][eMax] = lVertex_z[eMax];
+  auto lVertexZ = (std::vector<float>)cf_ec.cfVertexZ;
+  ec.fdEventCuts[eVertexZ][eMin] = lVertexZ[eMin];
+  ec.fdEventCuts[eVertexZ][eMax] = lVertexZ[eMax];
 
   auto lNContributors = (std::vector<int>)cf_ec.cfNContributors;
   ec.fdEventCuts[eNContributors][eMin] = lNContributors[eMin];
@@ -1667,7 +1820,7 @@ void DefaultCuts()
   ec.fdEventCuts[eSelectedEvents][eMax] = lSelectedEvents[eMax];
 
   ec.fdEventCuts[eMinVertexDistanceFromIP][eMin] = cf_ec.cfMinVertexDistanceFromIP; // if vertex is closer to IP than this value, the event is rejected
-  ec.fdEventCuts[eMinVertexDistanceFromIP][eMax] = -1;                              // // this value is never checked in any case
+  ec.fdEventCuts[eMinVertexDistanceFromIP][eMax] = -1;                              // this value is never checked in any case
 
   // **) event cuts defined via string:
   ec.fsEventCuts[eMultiplicityEstimator] = cf_ec.cfMultiplicityEstimator;
@@ -1675,6 +1828,13 @@ void DefaultCuts()
   ec.fsEventCuts[eCentralityEstimator] = cf_ec.cfCentralityEstimator;
   ec.fsEventCuts[eTrigger] = cf_ec.cfTrigger;
   ec.fsEventCuts[eOccupancyEstimator] = cf_ec.cfOccupancyEstimator;
+  ec.fsEventCuts[eRefMultVsNContrUp] = cf_ec.cfRefMultVsNContrUp;
+  ec.fsEventCuts[eRefMultVsNContrLow] = cf_ec.cfRefMultVsNContrLow;
+  ec.fsEventCuts[eCentralityCorrelationsCut] = cf_ec.cfCentralityCorrelationsCut;
+
+  // **) additional info for some specific event cuts, which I didn't enumerate in enum eEventCuts, to trim down bookeeping:
+  ec.fCentralityCorrelationsCutTreshold = cf_ec.cfCentralityCorrelationsCutTreshold;
+  ec.fCentralityCorrelationsCutVersion = cf_ec.cfCentralityCorrelationsCutVersion;
 
   // ----------------------------------------------------------------------
 
@@ -1682,7 +1842,7 @@ void DefaultCuts()
 
   // *) Use or do not use a cut enumerated in eParticleHistograms + eParticleCuts.
   //    Default cuts are set in configurable cfUseParticleCuts
-  auto lUseParticleCuts = (std::vector<string>)cf_pc.cfUseParticleCuts;
+  auto lUseParticleCuts = (std::vector<std::string>)cf_pc.cfUseParticleCuts;
   if (lUseParticleCuts.size() != eParticleCuts_N) {
     LOGF(info, "\033[1;31m lUseParticleCuts.size() = %d\033[0m", lUseParticleCuts.size());
     LOGF(info, "\033[1;31m eParticleCuts_N = %d\033[0m", static_cast<int>(eParticleCuts_N));
@@ -1847,6 +2007,8 @@ void SpecificCuts(TString whichSpecificCuts)
     specificCuts = eLHC24as;
   } else if (whichSpecificCuts.EqualTo("LHC15o")) {
     specificCuts = eLHC15o;
+  } else if (whichSpecificCuts.EqualTo("Test")) {
+    specificCuts = eTestCuts;
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : whichSpecificCuts = %s is not supported \033[0m", __FUNCTION__, __LINE__, whichSpecificCuts.Data());
   }
@@ -1860,7 +2022,7 @@ void SpecificCuts(TString whichSpecificCuts)
   //    Remark #3: Most up-to-date documentation of each cut is in enum file.
   switch (specificCuts) {
 
-    case eLHC23zzh:
+    case eLHC23zzh: {
 
       // In this branch I implement default cuts and settings for PbPb Run 3 datasets collected in 2023.
       // If I change some cut here, keep in sync. with other branches (e.g. for 2024 data).
@@ -1874,6 +2036,26 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fUseEventCuts[eNoCollInTimeRangeStrict] = false;
       ec.fUseEventCuts[eNoCollInRofStandard] = true;
       ec.fUseEventCuts[eNoCollInRofStrict] = false;
+      ec.fUseEventCuts[eNoPileupTPC] = false;       // Run 2
+      ec.fUseEventCuts[eNoPileupFromSPD] = false;   // Run 2
+      ec.fUseEventCuts[eNoSPDOnVsOfPileup] = false; // Run 2
+
+      ec.fUseEventCuts[eInteractionRate] = true;
+      ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
+      ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
+
+      ec.fUseEventCuts[eRefMultVsNContrUp] = true;
+      ec.fUseEventCuts[eRefMultVsNContrLow] = true;
+      if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFT0C")) {
+        ec.fsEventCuts[eRefMultVsNContrUp] = "1200. + 0.20*x";  // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrLow] = "-650. + 0.08*x"; // TBI 20250401 not fine-tune, just an example
+        // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
+      }
+
+      ec.fUseEventCuts[eCentralityCorrelationsCut] = true;
+      ec.fsEventCuts[eCentralityCorrelationsCut] = "CentFT0C_CentFT0M";
+      ec.fCentralityCorrelationsCutTreshold = 10.0;
+      ec.fCentralityCorrelationsCutVersion = "Absolute";
 
       // Particle cuts:
       pc.fUseParticleCuts[eitsNCls] = true;
@@ -1905,21 +2087,22 @@ void SpecificCuts(TString whichSpecificCuts)
       pc.fdParticleCuts[etpcChi2NCl][eMax] = 4.0;
 
       pc.fUseParticleCuts[edcaXY] = true;
-      pc.fdParticleCuts[edcaXY][eMin] = -2.4;
-      pc.fdParticleCuts[edcaXY][eMax] = 2.4;
+      pc.fdParticleCuts[edcaXY][eMin] = -2.4; // TBI 20250401 check further
+      pc.fdParticleCuts[edcaXY][eMax] = 2.4;  // TBI 20250401 check further
 
       pc.fUseParticleCuts[edcaZ] = true;
-      pc.fdParticleCuts[edcaZ][eMin] = -3.2;
-      pc.fdParticleCuts[edcaZ][eMax] = 3.2;
+      pc.fdParticleCuts[edcaZ][eMin] = -3.2; // TBI 20250401 check further
+      pc.fdParticleCuts[edcaZ][eMax] = 3.2;  // TBI 20250401 check further
 
       pc.fUseParticleCuts[eisInAcceptanceTrack] = false; // see enum
       pc.fUseParticleCuts[eisGlobalTrack] = false;       // only for Run 2
       pc.fUseParticleCuts[eisPVContributor] = true;
 
       break;
+    }
 
     case eLHC24ar:
-    case eLHC24as:
+    case eLHC24as: {
 
       // In this branch I implement default cuts and settings for PbPb Run 3 datasets collected in 2024:
       // If I change some cut here, keep in sync. with other branches (e.g. for 2023 data).
@@ -1936,6 +2119,26 @@ void SpecificCuts(TString whichSpecificCuts)
       ec.fUseEventCuts[eNoCollInRofStrict] = false;
       ec.fUseEventCuts[eIsGoodZvtxFT0vsPV] = false;       // diff commpared to 2023
       ec.fUseEventCuts[eNoHighMultCollInPrevRof] = false; // diff commpared to 2023
+      ec.fUseEventCuts[eNoPileupTPC] = false;             // Run 2
+      ec.fUseEventCuts[eNoPileupFromSPD] = false;         // Run 2
+      ec.fUseEventCuts[eNoSPDOnVsOfPileup] = false;       // Run 2
+
+      ec.fUseEventCuts[eInteractionRate] = true;
+      ec.fdEventCuts[eInteractionRate][eMin] = 0.1; // there are some pathological non-physical events with IR = 0. See eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity
+      ec.fdEventCuts[eInteractionRate][eMax] = 1000000000.;
+
+      ec.fUseEventCuts[eRefMultVsNContrUp] = false;  // TBI 20250331 set to true only when I fine-tune
+      ec.fUseEventCuts[eRefMultVsNContrLow] = false; // TBI 20250331 set to true only when I fine-tune
+      if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFT0C")) {
+        ec.fsEventCuts[eRefMultVsNContrUp] = "...";  // TBI 20250329 I need to tune and validate for this dataset, and estimator
+        ec.fsEventCuts[eRefMultVsNContrLow] = "..."; // TBI 20250329 I need to tune and validate for this dataset, and estimator
+        // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
+      }
+
+      ec.fUseEventCuts[eCentralityCorrelationsCut] = false; // TBI 20250104 yes, because in 2024 I can use only FT0C at the moment
+      ec.fsEventCuts[eCentralityCorrelationsCut] = "CentFT0C_CentFT0M";
+      ec.fCentralityCorrelationsCutTreshold = 10.0;
+      ec.fCentralityCorrelationsCutVersion = "Absolute";
 
       // Particle cuts:
       pc.fUseParticleCuts[eitsNCls] = true;
@@ -1967,22 +2170,120 @@ void SpecificCuts(TString whichSpecificCuts)
       pc.fdParticleCuts[etpcChi2NCl][eMax] = 4.0;
 
       pc.fUseParticleCuts[edcaXY] = true;
-      pc.fdParticleCuts[edcaXY][eMin] = -2.4;
-      pc.fdParticleCuts[edcaXY][eMax] = 2.4;
+      pc.fdParticleCuts[edcaXY][eMin] = -2.4; // TBI 20250401 check further
+      pc.fdParticleCuts[edcaXY][eMax] = 2.4;  // TBI 20250401 check further
 
       pc.fUseParticleCuts[edcaZ] = true;
-      pc.fdParticleCuts[edcaZ][eMin] = -3.2;
-      pc.fdParticleCuts[edcaZ][eMax] = 3.2;
+      pc.fdParticleCuts[edcaZ][eMin] = -3.2; // TBI 20250401 check further
+      pc.fdParticleCuts[edcaZ][eMax] = 3.2;  // TBI 20250401 check further
 
       pc.fUseParticleCuts[eisInAcceptanceTrack] = false; // see enum
       pc.fUseParticleCuts[eisGlobalTrack] = false;       // only for Run 2
       pc.fUseParticleCuts[eisPVContributor] = true;
 
       break;
+    }
 
-    case eLHC15o:
+    case eLHC15o: {
 
       // In this branch I implement default cuts and settings for Run 2 datasets:
+
+      // Event cuts:
+      ec.fUseEventCuts[eOccupancy] = false;
+      ec.fUseEventCuts[eInteractionRate] = false;
+      ec.fUseEventCuts[eCurrentRunDuration] = false;
+      // ec.fUseEventCuts[eSel7] = true; // TBI 20250115 ehen i procees in "Rec" some converted Run 2 MC, it removes 99% of events, see enum
+      ec.fUseEventCuts[eSel8] = false;
+      ec.fUseEventCuts[eNoSameBunchPileup] = false;
+      ec.fUseEventCuts[eIsGoodZvtxFT0vsPV] = false;
+      ec.fUseEventCuts[eIsVertexITSTPC] = false;
+      ec.fUseEventCuts[eNoCollInTimeRangeStrict] = false;
+      ec.fUseEventCuts[eNoCollInRofStrict] = false;
+      ec.fUseEventCuts[eNoHighMultCollInPrevRof] = false;
+      ec.fUseEventCuts[eNoCollInTimeRangeStandard] = false;
+      ec.fUseEventCuts[eNoCollInRofStrict] = false;
+      ec.fUseEventCuts[eNoCollInRofStandard] = false;
+      ec.fUseEventCuts[eNoCollInRofStandard] = false;
+      ec.fUseEventCuts[eIsGoodITSLayer3] = false;
+      ec.fUseEventCuts[eIsGoodITSLayer0123] = false;
+      ec.fUseEventCuts[eIsGoodITSLayersAll] = false;
+
+      ec.fUseEventCuts[eTrigger] = true;
+      ec.fsEventCuts[eTrigger] = "kINT7"; // TBI 20250115 remember that it cannot be used when i procees in "Rec" some converted Run 2 MC, see enum
+
+      ec.fsEventCuts[eReferenceMultiplicityEstimator] = "MultTracklets"; // default ref. mult. estimator in Run 2
+      ec.fsEventCuts[eCentralityEstimator] = "CentRun2V0M";              // default centrality estimator in Run 2
+
+      ec.fUseEventCuts[eRefMultVsNContrUp] = true;
+      ec.fUseEventCuts[eRefMultVsNContrLow] = true;
+      if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultTracklets")) {
+        ec.fsEventCuts[eRefMultVsNContrUp] = "700. + 0.95*x";  // TBI 20250401 not fine-tune, just an example
+        ec.fsEventCuts[eRefMultVsNContrLow] = "-400. + 0.5*x"; // TBI 20250401 not fine-tune, just an example
+        // TBI 20250331 fine-tune this cut in the same spirit for other ref. mult. estimators
+      }
+
+      ec.fUseEventCuts[eCentralityCorrelationsCut] = true;
+      ec.fsEventCuts[eCentralityCorrelationsCut] = "CentRun2V0M_vs_CentRun2SPDTracklets";
+      ec.fCentralityCorrelationsCutTreshold = 10.0;
+      ec.fCentralityCorrelationsCutVersion = "Absolute";
+
+      // ...
+
+      // Particle cuts:
+      pc.fUseParticleCuts[eisInAcceptanceTrack] = false; // see enum
+      pc.fUseParticleCuts[etrackCutFlagFb1] = false;     // only for Run 3
+      pc.fUseParticleCuts[etrackCutFlagFb2] = false;     // only for Run 3
+      pc.fUseParticleCuts[eisPVContributor] = false;     // only for Run 3
+
+      // ...
+
+      // The rest:
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_OCCUPANCY] = false;
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE] = false;
+      mupa.fCalculateCorrelationsAsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = false;
+      t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] = false;
+      t0.fCalculateTest0AsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_OCCUPANCY] = false;
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_INTERACTIONRATE] = false;
+      es.fCalculateEtaSeparationsAsFunctionOf[AFO_CURRENTRUNDURATION] = false;
+
+      eh.fBookEventHistograms[eOccupancy] = false;
+      eh.fBookEventHistograms[eInteractionRate] = false;
+      eh.fBookEventHistograms[eCurrentRunDuration] = false;
+
+      qa.fBookQAEventHistograms2D[eMultiplicity_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eMultiplicity_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eNContributors_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eNContributors_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eCentrality_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eVertexZ_vs_Occupancy] = false;
+      qa.fBookQAEventHistograms2D[eVertexZ_vs_InteractionRate] = false;
+      qa.fBookQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0CVariant1] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFT0M] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentFV0A] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentNTPV] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentNGlobal] = false;
+      qa.fBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV] = false;
+      qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = false;
+
+      // ...
+
+      break;
+    }
+
+      // ...
+
+    case eTestCuts: {
+
+      // In this branch I implement default cuts and settings for minimal subscription, "processTest": "true in JSON
 
       // Event cuts:
       // ec.fUseEventCuts[eSel7] = true; // TBI 20250115 ehen i procees in "Rec" some converted Run 2 MC, it removes 99% of events, see enum
@@ -2030,13 +2331,13 @@ void SpecificCuts(TString whichSpecificCuts)
       // ...
 
       break;
+    }
 
-      // ...
-
-    default:
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : specificCuts = %d is not supported yet \033[0m", __FUNCTION__, __LINE__, static_cast<int>(specificCuts));
       break;
-  } // switch((specificCuts))
+    }
+  } // switch (specificCuts)
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -2186,9 +2487,14 @@ void InsanityChecksBeforeBooking()
     }
   }
 
-  // **) Enforce that if fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
+  // **) Enforce that if the fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
   if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
-    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m : Did you forget to enable Fisher-Yates algorithm?", __FUNCTION__, __LINE__);
+  }
+
+  // **) Enforce that if the fixed number of randomly selected tracks is used that Toy NUA is disabled:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && (nua.fApplyNUAPDF[ePhiNUAPDF] || nua.fApplyNUAPDF[ePtNUAPDF] || nua.fApplyNUAPDF[eEtaNUAPDF])) {
+    LOGF(fatal, "\033[1;31m%s at line %d : Not supported at the moment: use FixedNumberOfRandomlySelectedTracks + Toy NUA enabled.\nI cannot in an easy way ensure that ParticleCuts behave exactly the same in the Main and Banishment loops, because e.g. I call consequtively for same partcile gRandom->Uniform(...) in ParticleCuts, and that can't work.\033[0m", __FUNCTION__, __LINE__);
   }
 
   // **) When it comes to DCAxy cut, ensure that either flat or pt-dependent cut is used, but not both:
@@ -2294,7 +2600,7 @@ void InsanityChecksBeforeBooking()
   // **) Supported reference multiplicity estimators for Run 1 and 2 are enlisted here:
   if (tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessRecSim_Run1]) {
     if (!(ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultTracklets", TString::kIgnoreCase))) {
-      LOGF(fatal, "\033[1;31m%s at line %d : reference multiplicity  estimator = %s is not supported yet for Run 1 and 2 analysis.\nUse \"MultTracklets\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eReferenceMultiplicityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : reference multiplicity  estimator = %s is not supported for Run 1 and 2 analysis.\nUse \"MultTracklets\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eReferenceMultiplicityEstimator].Data());
     }
   } else if (tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessSim_Run1]) {
     LOGF(fatal, "\033[1;31m%s at line %d : eProcessSim is not validated yet \033[0m", __FUNCTION__, __LINE__);
@@ -2304,7 +2610,7 @@ void InsanityChecksBeforeBooking()
   if (tc.fProcess[eProcessRec_Run2] || tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessSim_Run2] || tc.fProcess[eProcessRec_Run1] || tc.fProcess[eProcessRecSim_Run1] || tc.fProcess[eProcessSim_Run1]) {
     if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2V0M", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centRun2SPDTracklets", TString::kIgnoreCase))) {
-      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for converted Run 2 and Run 1 analysis.\nUse either \"centRun2V0M\" or \"centRun2SPDTracklets\" (case sensitive!) \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported for converted Run 2 and Run 1 analysis.\nUse either \"centRun2V0M\" or \"centRun2SPDTracklets\" (case sensitive!) \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -2321,96 +2627,131 @@ void InsanityChecksBeforeBooking()
     }
   }
 
+  // **) Print a warning if kINT7 trigger is not used in reconstructed Run 2:
+  //     TBI 20250318 shall I expand the check also to Run 1? In 2011 there were dedicated kCentral and kSemiCentral triggers only...
+  //     TBI 20250318 shall I make it fatal instead? Without this trigger, a lot of histos are just meaningles (e.g. nContributores vs centrality, etc.)
+  if (tc.fProcess[eProcessRec_Run2]) {
+    if (!(ec.fUseEventCuts[eTrigger] && ec.fsEventCuts[eTrigger].EqualTo("kINT7"))) {
+      LOGF(warning, "\033[1;31m%s at line %d : kINT7 trigger in Run 2 is not selected - by default it should be used.\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  // **) Bail out if kINT7 trigger is used in Run 2 Monte Carlo:
+  //     TBI 20250318 shall I expand the check also to Run 1? In 2011 there were dedicated kCentral and kSemiCentral triggers only...
+  if (tc.fProcess[eProcessRecSim_Run2] || tc.fProcess[eProcessSim_Run2]) {
+    if (ec.fUseEventCuts[eTrigger] && ec.fsEventCuts[eTrigger].EqualTo("kINT7")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : kINT7 trigger in Run 2 Monte Carlo is not validated - use it at your own peril.\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eNoPileupTPC]) {
+    if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
+      LOGF(fatal, "\033[1;31m%s at line %d : cannot use NoPileupTPC in Run 3\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eNoPileupFromSPD]) {
+    if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
+      LOGF(fatal, "\033[1;31m%s at line %d : cannot use NoPileupFromSPD in Run 3\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  if (ec.fUseEventCuts[eNoSPDOnVsOfPileup]) {
+    if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
+      LOGF(fatal, "\033[1;31m%s at line %d : cannot use NoSPDOnVsOfPileup in Run 3\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
   // ...
 
   // c) Ensure that Run 3 specific cuts and flags are used only in Run 3 (both data and sim):
   // **) Ensure that eSel8 is used only in Run 3 (both data and sim):
   if (ec.fUseEventCuts[eSel8]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eSel8 only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoSameBunchPileup]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoSameBunchPileup only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsGoodZvtxFT0vsPV]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodZvtxFT0vsPV only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsVertexITSTPC]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsVertexITSTPC only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsVertexTOFmatched]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsVertexTOFmatched only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsVertexTRDmatched]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsVertexTRDmatched only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoCollInTimeRangeStrict]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoCollInTimeRangeStrict only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoCollInTimeRangeStandard]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoCollInTimeRangeStandard only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoCollInRofStrict]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoCollInRofStrict only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoCollInRofStandard]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoCollInRofStandard only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eNoHighMultCollInPrevRof]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eNoHighMultCollInPrevRof only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsGoodITSLayer3]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayer3 only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsGoodITSLayer0123]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayer0123 only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseEventCuts[eIsGoodITSLayersAll]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : use eIsGoodITSLayersAll only for Run 3 data and MC\033[0m", __FUNCTION__, __LINE__);
     }
   }
 
   // **) Supported reference multiplicity estimators for Run 3 are enlisted here:
-  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim]) {
+  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessQA]) {
     if (!(ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultTPC", TString::kIgnoreCase) ||
           ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFV0M", TString::kIgnoreCase) ||
           ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("MultFT0C", TString::kIgnoreCase) ||
@@ -2423,7 +2764,7 @@ void InsanityChecksBeforeBooking()
   }
 
   // **) Supported centrality estimators for Run 3 are enlisted here:
-  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim]) {
+  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessQA]) {
     if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0CVariant1", TString::kIgnoreCase) ||
           ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase) ||
@@ -2437,7 +2778,7 @@ void InsanityChecksBeforeBooking()
   }
 
   // **) Supported occupancy estimators for Run 3 are enlisted here:
-  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim]) {
+  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessQA]) {
     if (!(ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase) ||
           ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase))) {
       LOGF(fatal, "\033[1;31m%s at line %d : occupancy estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eOccupancyEstimator].Data());
@@ -2445,7 +2786,7 @@ void InsanityChecksBeforeBooking()
   }
 
   // **) Protection against particle cuts which are available, but not yet validated, or are meaningless, in Run 3:
-  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
+  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA]) {
     if (pc.fUseParticleCuts[etrackCutFlag]) {
       LOGF(fatal, "\033[1;31m%s at line %d : particle cut trackCutFlag is not validated in Run 3 as of 20250113 => it has no effect\033[0m", __FUNCTION__, __LINE__);
     }
@@ -2465,10 +2806,22 @@ void InsanityChecksBeforeBooking()
 
   // isPVContributor:
   if (pc.fUseParticleCuts[eisPVContributor]) {
-    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
+    if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
       LOGF(fatal, "\033[1;31m%s at line %d : particle cut isPVContributor can be used only in Run 3\033[0m", __FUNCTION__, __LINE__);
     }
   }
+
+  // **) Protection for histograms which are meaningfull only in Run 3:
+  // ***) interaction rate is available only in Run 3:
+  if (!(tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim] || tc.fProcess[eProcessQA])) {
+    if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) {
+      LOGF(fatal, "\033[1;31m%s at line %d : fFillQACorrelationsVsInteractionRateVsProfiles2D can be used only in Run 3, because only there ir is available.\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (qa.fFillQAParticleEventHistograms2D) {
+      LOGF(fatal, "\033[1;31m%s at line %d : qa.fFillQAParticleEventHistograms2D can be used only in Run 3, because only there crd is available.\033[0m", __FUNCTION__, __LINE__);
+    }
+    // ...
+  } // if (! (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim])) {
 
   // ...
 
@@ -2627,6 +2980,8 @@ void BookAndNestAllLists()
   //  **) QA event histograms;
   //  **) QA particle histograms;
   //  **) QA particle event histograms;
+  //  **) QA "correlations vs." histograms:
+  //  **) QA "correlations vs. IR vs. " profiles;
   // *) Control event histograms;
   // *) Control particle histograms;
   // *) Correlations;
@@ -2650,7 +3005,7 @@ void BookAndNestAllLists()
   qa.fQAList->SetOwner(true);
   fBaseList->Add(qa.fQAList);
 
-  //  **) QA event histograms;
+  //  **) QA event histograms:
   if (qa.fFillQAEventHistograms2D) {
     qa.fQAEventList = new TList();
     qa.fQAEventList->SetName("QAEvent");
@@ -2658,7 +3013,7 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAEventList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA particle histograms;
+  //  **) QA particle histograms:
   if (qa.fFillQAParticleHistograms2D) {
     qa.fQAParticleList = new TList();
     qa.fQAParticleList->SetName("QAParticle");
@@ -2666,7 +3021,7 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAParticleList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA particle event histograms;
+  //  **) QA particle event histograms:
   if (qa.fFillQAParticleEventHistograms2D) {
     qa.fQAParticleEventList = new TList();
     qa.fQAParticleEventList->SetName("QAParticleEvent");
@@ -2674,12 +3029,20 @@ void BookAndNestAllLists()
     qa.fQAList->Add(qa.fQAParticleEventList); // yes, this one is nested within base QA TList
   }
 
-  //  **) QA "correlations vs." histograms;
+  //  **) QA "correlations vs." histograms:
   if (qa.fFillQACorrelationsVsHistograms2D) {
     qa.fQACorrelationsVsList = new TList();
     qa.fQACorrelationsVsList->SetName("QACorrelationsVs");
     qa.fQACorrelationsVsList->SetOwner(true);
     qa.fQAList->Add(qa.fQACorrelationsVsList); // yes, this one is nested within base QA TList
+  }
+
+  //  **) QA "correlations vs. IR vs. " profiles:
+  if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) {
+    qa.fQACorrelationsVsInteractionRateVsList = new TList();
+    qa.fQACorrelationsVsInteractionRateVsList->SetName("QACorrelationsVsInteractionRateVsList");
+    qa.fQACorrelationsVsInteractionRateVsList->SetOwner(true);
+    qa.fQAList->Add(qa.fQACorrelationsVsInteractionRateVsList); // yes, this one is nested within base QA TList
   }
 
   // *) Event cuts:
@@ -2785,7 +3148,8 @@ void BookQAHistograms()
   // c) Book specific QA 2D event histograms;
   // d) Book specific QA 2D particle histograms;
   // e) Book specific QA 2D particle event histograms;
-  // f) Book specific QA 2D "correlations vs." histograms.
+  // f) Book specific QA 2D "correlations vs." histograms;
+  // g) Book specific QA 2D "correlations vs. IR vs. " profiles.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -2804,7 +3168,7 @@ void BookQAHistograms()
   }
 
   // a) Book the profile holding flags:
-  qa.fQAHistogramsPro = new TProfile("fQAHistogramsPro", "flags for QA histograms", 6, 0., 6.);
+  qa.fQAHistogramsPro = new TProfile("fQAHistogramsPro", "flags for QA histograms", 7, 0., 7.);
   qa.fQAHistogramsPro->SetStats(false);
   qa.fQAHistogramsPro->SetLineColor(eColor);
   qa.fQAHistogramsPro->SetFillColor(eFillColor);
@@ -2818,8 +3182,10 @@ void BookQAHistograms()
   qa.fQAHistogramsPro->Fill(3.5, static_cast<int>(qa.fFillQAParticleEventHistograms2D));
   qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(5, "fFillQACorrelationsVsHistograms2D");
   qa.fQAHistogramsPro->Fill(4.5, static_cast<int>(qa.fFillQACorrelationsVsHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fRebin");
-  qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fRebin));
+  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fFillQACorrelationsVsInteractionRateVsProfiles2D");
+  qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fFillQACorrelationsVsInteractionRateVsProfiles2D));
+  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(7, "fRebin");
+  qa.fQAHistogramsPro->Fill(6.5, static_cast<int>(qa.fRebin));
 
   // ...
 
@@ -2869,15 +3235,15 @@ void BookQAHistograms()
   max_y_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "Multiplicity_vs_Vertex_z":
-  nBins_x_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
-  min_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][1];
-  max_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][2];
-  title_x_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "Multiplicity_vs_VertexZ":
+  nBins_x_Event[eMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  min_x_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_x_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_x_Event[eMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+  nBins_y_Event[eMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "Multiplicity_vs_Occupancy":
   nBins_x_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
@@ -2889,12 +3255,22 @@ void BookQAHistograms()
   max_y_Event[eMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
-  // *) "ReferenceMultiplicity_vs_NContributors":
-  nBins_x_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  // *) "Multiplicity_vs_InteractionRate":
+  nBins_x_Event[eMultiplicity_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  min_x_Event[eMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_x_Event[eMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_x_Event[eMultiplicity_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+  nBins_y_Event[eMultiplicity_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eMultiplicity_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
+
+  // *) "ReferenceMultiplicity_vs_NContributors": // TBI 20250401 I use this one to calculate quantiles for HMO cut, therefore I keep it refined for the time being
+  nBins_x_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]);
   min_x_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_x_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_x_Event[eReferenceMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
+  nBins_y_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]);
   min_y_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][1];
   max_y_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][2];
   title_y_Event[eReferenceMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
@@ -2909,15 +3285,15 @@ void BookQAHistograms()
   max_y_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eReferenceMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "ReferenceMultiplicity_vs_Vertex_z":
-  nBins_x_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
-  min_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
-  max_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
-  title_x_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "ReferenceMultiplicity_vs_VertexZ":
+  nBins_x_Event[eReferenceMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  min_x_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
+  max_x_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
+  title_x_Event[eReferenceMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
+  nBins_y_Event[eReferenceMultiplicity_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eReferenceMultiplicity_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eReferenceMultiplicity_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "ReferenceMultiplicity_vs_Occupancy":
   nBins_x_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
@@ -2929,6 +3305,16 @@ void BookQAHistograms()
   max_y_Event[eReferenceMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eReferenceMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
+  // *) "ReferenceMultiplicity_vs_InteractionRate":
+  nBins_x_Event[eReferenceMultiplicity_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  min_x_Event[eReferenceMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
+  max_x_Event[eReferenceMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
+  title_x_Event[eReferenceMultiplicity_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
+  nBins_y_Event[eReferenceMultiplicity_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eReferenceMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eReferenceMultiplicity_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eReferenceMultiplicity_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
+
   // *) "NContributors_vs_Centrality":
   nBins_x_Event[eNContributors_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_x_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eNContributors][1];
@@ -2939,15 +3325,15 @@ void BookQAHistograms()
   max_y_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eNContributors_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
-  // *) "NContributors_vs_Vertex_z":
-  nBins_x_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
-  min_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][1];
-  max_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][2];
-  title_x_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
-  nBins_y_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "NContributors_vs_VertexZ":
+  nBins_x_Event[eNContributors_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
+  min_x_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eNContributors][1];
+  max_x_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eNContributors][2];
+  title_x_Event[eNContributors_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
+  nBins_y_Event[eNContributors_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eNContributors_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eNContributors_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "NContributors_vs_Occupancy":
   nBins_x_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
@@ -2959,15 +3345,25 @@ void BookQAHistograms()
   max_y_Event[eNContributors_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eNContributors_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
-  // *) "Centrality_vs_Vertex_z":
-  nBins_x_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
-  min_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][1];
-  max_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][2];
-  title_x_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
-  nBins_y_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_y_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
+  // *) "NContributors_vs_InteractionRate":
+  nBins_x_Event[eNContributors_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
+  min_x_Event[eNContributors_vs_InteractionRate] = eh.fEventHistogramsBins[eNContributors][1];
+  max_x_Event[eNContributors_vs_InteractionRate] = eh.fEventHistogramsBins[eNContributors][2];
+  title_x_Event[eNContributors_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
+  nBins_y_Event[eNContributors_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eNContributors_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eNContributors_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eNContributors_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
+
+  // *) "Centrality_vs_VertexZ":
+  nBins_x_Event[eCentrality_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
+  min_x_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eCentrality][1];
+  max_x_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eCentrality][2];
+  title_x_Event[eCentrality_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+  nBins_y_Event[eCentrality_vs_VertexZ] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_y_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_y_Event[eCentrality_vs_VertexZ] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_y_Event[eCentrality_vs_VertexZ] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
 
   // *) "Centrality_vs_Occupancy":
   nBins_x_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
@@ -2989,17 +3385,58 @@ void BookQAHistograms()
   max_y_Event[eCentrality_vs_ImpactParameter] = eh.fEventHistogramsBins[eImpactParameter][2];
   title_y_Event[eCentrality_vs_ImpactParameter] = FancyFormatting(eh.fEventHistogramsName[eImpactParameter].Data());
 
-  // *) "Vertex_z_vs_Occupancy":
-  nBins_x_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
-  min_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][1];
-  max_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][2];
-  title_x_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
-  nBins_y_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
-  min_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
-  max_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
-  title_y_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
+  // *) "Centrality_vs_InteractionRate":
+  nBins_x_Event[eCentrality_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
+  min_x_Event[eCentrality_vs_InteractionRate] = eh.fEventHistogramsBins[eCentrality][1];
+  max_x_Event[eCentrality_vs_InteractionRate] = eh.fEventHistogramsBins[eCentrality][2];
+  title_x_Event[eCentrality_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+  nBins_y_Event[eCentrality_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eCentrality_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eCentrality_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eCentrality_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
 
-  // *) "eMultNTracksPV_vs_MultNTracksGlobal":
+  // *) "VertexZ_vs_Occupancy":
+  nBins_x_Event[eVertexZ_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_x_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_x_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_x_Event[eVertexZ_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
+  nBins_y_Event[eVertexZ_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
+  min_y_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
+  max_y_Event[eVertexZ_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
+  title_y_Event[eVertexZ_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
+
+  // *) "VertexZ_vs_InteractionRate":
+  nBins_x_Event[eVertexZ_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eVertexZ][0]);
+  min_x_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eVertexZ][1];
+  max_x_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eVertexZ][2];
+  title_x_Event[eVertexZ_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eVertexZ].Data());
+  nBins_y_Event[eVertexZ_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eVertexZ_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eVertexZ_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
+
+  // *) "Multiplicity_vs_FT0CAmplitudeOnFoundBC":
+  // nBins_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]);
+  nBins_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = 2000.; // TBI 20250331 hardwired value
+  min_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_x_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+  nBins_y_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = 1000;                     // TBI 20250331 hardwired value
+  min_y_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = 0.;                         // TBI 20250331 hardwired value
+  max_y_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = 100000.;                    // TBI 20250331 hardwired value
+  title_y_Event[eMultiplicity_vs_FT0CAmplitudeOnFoundBC] = "FT0CAmplitudeOnFoundBC"; // TBI 20250331 hardwired string
+
+  // *) "CentFT0C_vs_FT0CAmplitudeOnFoundBC":
+  nBins_x_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = eh.fEventHistogramsBins[eCentrality][0]; // yes, eCentrality, not eCentFT0C, just think of it !
+  min_x_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = eh.fEventHistogramsBins[eCentrality][1];
+  max_x_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = eh.fEventHistogramsBins[eCentrality][2];
+  title_x_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = FancyFormatting(qa.fCentralityEstimatorName[eCentFT0C].Data());
+  nBins_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = 1000;                     // TBI 20250331 hardwired value
+  min_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = 0.;                         // TBI 20250331 hardwired value
+  max_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = 100000.;                    // TBI 20250331 hardwired value
+  title_y_Event[eCentFT0C_vs_FT0CAmplitudeOnFoundBC] = "FT0CAmplitudeOnFoundBC"; // TBI 20250331 hardwired string
+
+  // *) "MultNTracksPV_vs_MultNTracksGlobal":
   nBins_x_Event[eMultNTracksPV_vs_MultNTracksGlobal] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultNTracksPV_vs_MultNTracksGlobal] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultNTracksPV_vs_MultNTracksGlobal] = eh.fEventHistogramsBins[eMultiplicity][2];
@@ -3009,7 +3446,7 @@ void BookQAHistograms()
   max_y_Event[eMultNTracksPV_vs_MultNTracksGlobal] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_y_Event[eMultNTracksPV_vs_MultNTracksGlobal] = FancyFormatting(qa.fReferenceMultiplicityEstimatorName[eMultNTracksGlobal].Data());
 
-  // *) "eCentFT0C_vs_CentFT0CVariant1":
+  // *) "CentFT0C_vs_CentFT0CVariant1":
   nBins_x_Event[eCentFT0C_vs_CentFT0CVariant1] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0C_vs_CentFT0CVariant1] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0C_vs_CentFT0CVariant1] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3019,7 +3456,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0C_vs_CentFT0CVariant1] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0C_vs_CentFT0CVariant1] = FancyFormatting(qa.fCentralityEstimatorName[eCentFT0CVariant1].Data());
 
-  // *) "eCentFT0C_vs_CentFT0M":
+  // *) "CentFT0C_vs_CentFT0M":
   nBins_x_Event[eCentFT0C_vs_CentFT0M] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0C_vs_CentFT0M] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0C_vs_CentFT0M] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3029,7 +3466,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0C_vs_CentFT0M] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0C_vs_CentFT0M] = FancyFormatting(qa.fCentralityEstimatorName[eCentFT0M].Data());
 
-  // *) "eCentFT0C_vs_CentFV0A":
+  // *) "CentFT0C_vs_CentFV0A":
   nBins_x_Event[eCentFT0C_vs_CentFV0A] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0C_vs_CentFV0A] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0C_vs_CentFV0A] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3039,7 +3476,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0C_vs_CentFV0A] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0C_vs_CentFV0A] = FancyFormatting(qa.fCentralityEstimatorName[eCentFV0A].Data());
 
-  // *) "eCentFT0C_vs_CentNTPV":
+  // *) "CentFT0C_vs_CentNTPV":
   nBins_x_Event[eCentFT0C_vs_CentNTPV] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0C_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0C_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3049,7 +3486,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0C_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0C_vs_CentNTPV] = FancyFormatting(qa.fCentralityEstimatorName[eCentNTPV].Data());
 
-  // *) "eCentFT0C_vs_CentNGlobal":
+  // *) "CentFT0C_vs_CentNGlobal":
   nBins_x_Event[eCentFT0C_vs_CentNGlobal] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0C_vs_CentNGlobal] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0C_vs_CentNGlobal] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3059,7 +3496,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0C_vs_CentNGlobal] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0C_vs_CentNGlobal] = FancyFormatting(qa.fCentralityEstimatorName[eCentNGlobal].Data());
 
-  // *) "eCentFT0M_vs_CentNTPV":
+  // *) "CentFT0M_vs_CentNTPV":
   nBins_x_Event[eCentFT0M_vs_CentNTPV] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentFT0M_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentFT0M_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3069,7 +3506,7 @@ void BookQAHistograms()
   max_y_Event[eCentFT0M_vs_CentNTPV] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentFT0M_vs_CentNTPV] = FancyFormatting(qa.fCentralityEstimatorName[eCentNTPV].Data());
 
-  // *) "eCentRun2V0M_vs_CentRun2SPDTracklets":
+  // *) "CentRun2V0M_vs_CentRun2SPDTracklets":
   nBins_x_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = eh.fEventHistogramsBins[eCentrality][2];
@@ -3079,7 +3516,7 @@ void BookQAHistograms()
   max_y_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = FancyFormatting(qa.fCentralityEstimatorName[eCentRun2SPDTracklets].Data());
 
-  // *) "eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange":
+  // *) "TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange":
   nBins_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][1];
   max_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
@@ -3089,7 +3526,7 @@ void BookQAHistograms()
   max_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = FancyFormatting(qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
 
-  // *) "eCurrentRunDuration_vs_InteractionRate":
+  // *) "CurrentRunDuration_vs_InteractionRate":
   nBins_x_Event[eCurrentRunDuration_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eCurrentRunDuration][0] / qa.fRebin);
   min_x_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eCurrentRunDuration][1];
   max_x_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eCurrentRunDuration][2];
@@ -3148,6 +3585,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~9.8 MiB (Last check: 20250315)
         qa.fQAEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAEventHistograms2D[%s][%s][%s]", qa.fEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3212,6 +3650,7 @@ void BookQAHistograms()
 
       for (int ba = 0; ba < 2; ba++) // before/after cuts
       {
+        // valgrind --tool=massif => ~30.6 MiB (Last check: 20250315)
         qa.fQAParticleHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleHistograms2D[%s][%s][%s]", qa.fParticleHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3372,6 +3811,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~70.2 MiB (Last check: 20250315)
         qa.fQAParticleEventHistograms2D[t][rs][ba] = new TH2F(
           TString::Format("fQAParticleEventHistograms2D[%s][%s][%s]", qa.fQAParticleEventHistogramsName2D[t].Data(), gc.srs[rs].Data(), gc.sba[ba].Data()),
           TString::Format("%s, %s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3433,13 +3873,13 @@ void BookQAHistograms()
   TString title_y_CorrelationsVs[eQACorrelationsVsHistograms2D_N] = {""};
 
   // *) "eCorrelations_vs_Multiplicity":
-  nBins_y_CorrelationsVs[eCorrelations_vs_Multiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  nBins_y_CorrelationsVs[eCorrelations_vs_Multiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / 10); // TBI 20250331 here I have temporarily hardwired rebin value
   min_y_CorrelationsVs[eCorrelations_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_y_CorrelationsVs[eCorrelations_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_y_CorrelationsVs[eCorrelations_vs_Multiplicity] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
 
   // *) "eCorrelations_vs_ReferenceMultiplicity":
-  nBins_y_CorrelationsVs[eCorrelations_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  nBins_y_CorrelationsVs[eCorrelations_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / 10); // TBI 20250331 here I have temporarily hardwired rebin value
   min_y_CorrelationsVs[eCorrelations_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_y_CorrelationsVs[eCorrelations_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_y_CorrelationsVs[eCorrelations_vs_ReferenceMultiplicity] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
@@ -3459,16 +3899,100 @@ void BookQAHistograms()
   title_y_CorrelationsVs[eCorrelations_vs_MeanPhi] = FancyFormatting(ph.fParticleHistogramsName[ePhi].Data());
 
   // *) "eCorrelations_vs_MeanPt":
-  nBins_y_CorrelationsVs[eCorrelations_vs_MeanPt] = 200;
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanPt] = 100;
   min_y_CorrelationsVs[eCorrelations_vs_MeanPt] = 0.0;
   max_y_CorrelationsVs[eCorrelations_vs_MeanPt] = 2.0;
   title_y_CorrelationsVs[eCorrelations_vs_MeanPt] = FancyFormatting(ph.fParticleHistogramsName[ePt].Data());
 
   // *) "eCorrelations_vs_MeanEta":
-  nBins_y_CorrelationsVs[eCorrelations_vs_MeanEta] = 600;
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanEta] = 200;
   min_y_CorrelationsVs[eCorrelations_vs_MeanEta] = -0.3;
   max_y_CorrelationsVs[eCorrelations_vs_MeanEta] = 0.3;
   title_y_CorrelationsVs[eCorrelations_vs_MeanEta] = FancyFormatting(ph.fParticleHistogramsName[eEta].Data());
+
+  // *) "eCorrelations_vs_MeanCharge":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanCharge] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeanCharge] = -1.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeanCharge] = 1.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeanCharge] = FancyFormatting(ph.fParticleHistogramsName[eCharge].Data());
+
+  // *) "eCorrelations_vs_MeantpcNClsFindable":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFindable] = 400;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFindable] = 50.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFindable] = 250.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFindable] = FancyFormatting(ph.fParticleHistogramsName[etpcNClsFindable].Data());
+
+  // *) "eCorrelations_vs_MeantpcNClsShared":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsShared] = 500;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsShared] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsShared] = 100.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsShared] = FancyFormatting(ph.fParticleHistogramsName[etpcNClsShared].Data());
+
+  // *) "eCorrelations_vs_MeanitsChi2NCl":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanitsChi2NCl] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeanitsChi2NCl] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeanitsChi2NCl] = 4.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeanitsChi2NCl] = FancyFormatting(ph.fParticleHistogramsName[eitsChi2NCl].Data());
+
+  // *) "eCorrelations_vs_MeantpcNClsFound":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFound] = 400;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFound] = 50.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFound] = 250.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsFound] = FancyFormatting(ph.fParticleHistogramsName[etpcNClsFound].Data());
+
+  // *) "eCorrelations_vs_MeantpcNClsCrossedRows":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsCrossedRows] = 400;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsCrossedRows] = 50.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsCrossedRows] = 250.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcNClsCrossedRows] = FancyFormatting(ph.fParticleHistogramsName[etpcNClsCrossedRows].Data());
+
+  // *) "eCorrelations_vs_MeanitsNCls":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanitsNCls] = 500;
+  min_y_CorrelationsVs[eCorrelations_vs_MeanitsNCls] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeanitsNCls] = 10.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeanitsNCls] = FancyFormatting(ph.fParticleHistogramsName[eitsNCls].Data());
+
+  // *) "eCorrelations_vs_MeanitsNClsInnerBarrel":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeanitsNClsInnerBarrel] = 400;
+  min_y_CorrelationsVs[eCorrelations_vs_MeanitsNClsInnerBarrel] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeanitsNClsInnerBarrel] = 4.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeanitsNClsInnerBarrel] = FancyFormatting(ph.fParticleHistogramsName[eitsNClsInnerBarrel].Data());
+
+  // *) "eCorrelations_vs_MeantpcCrossedRowsOverFindableCls":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = 2.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls] = FancyFormatting(ph.fParticleHistogramsName[etpcCrossedRowsOverFindableCls].Data());
+
+  // *) "eCorrelations_vs_MeantpcFoundOverFindableCls":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcFoundOverFindableCls] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcFoundOverFindableCls] = 0.8;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcFoundOverFindableCls] = 1.2;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcFoundOverFindableCls] = FancyFormatting(ph.fParticleHistogramsName[etpcFoundOverFindableCls].Data());
+
+  // *) "eCorrelations_vs_MeantpcFractionSharedCls":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcFractionSharedCls] = 500;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcFractionSharedCls] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcFractionSharedCls] = 1.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcFractionSharedCls] = FancyFormatting(ph.fParticleHistogramsName[etpcFractionSharedCls].Data());
+
+  // *) "eCorrelations_vs_MeantpcChi2NCl":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeantpcChi2NCl] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeantpcChi2NCl] = 0.;
+  max_y_CorrelationsVs[eCorrelations_vs_MeantpcChi2NCl] = 2.;
+  title_y_CorrelationsVs[eCorrelations_vs_MeantpcChi2NCl] = FancyFormatting(ph.fParticleHistogramsName[etpcChi2NCl].Data());
+
+  // *) "eCorrelations_vs_MeandcaXY":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeandcaXY] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeandcaXY] = -0.2;
+  max_y_CorrelationsVs[eCorrelations_vs_MeandcaXY] = 0.2;
+  title_y_CorrelationsVs[eCorrelations_vs_MeandcaXY] = FancyFormatting(ph.fParticleHistogramsName[edcaXY].Data());
+
+  // *) "eCorrelations_vs_MeandcaZ":
+  nBins_y_CorrelationsVs[eCorrelations_vs_MeandcaZ] = 200;
+  min_y_CorrelationsVs[eCorrelations_vs_MeandcaZ] = -0.2;
+  max_y_CorrelationsVs[eCorrelations_vs_MeandcaZ] = 0.2;
+  title_y_CorrelationsVs[eCorrelations_vs_MeandcaZ] = FancyFormatting(ph.fParticleHistogramsName[edcaZ].Data());
 
   // .....
 
@@ -3502,6 +4026,7 @@ void BookQAHistograms()
           continue;
         }
 
+        // valgrind --tool=massif => ~58.7 MiB (Last check: 20250315)
         qa.fQACorrelationsVsHistograms2D[t][h][rs] = new TH2F(
           TString::Format("fQACorrelationsVsHistograms2D[%s][%d][%s]", qa.fQACorrelationsVsHistogramsName2D[t].Data(), h, gc.srs[rs].Data()),
           TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
@@ -3518,6 +4043,133 @@ void BookQAHistograms()
     } // for (int h = 0; h < gMaxHarmonic; h++) {
 
   } // for(int t=0;t<eQACorrelationsVsHistograms2D_N;t++) // type, see enum eCorrelationsVsHistograms2D
+
+  // g) Book specific QA 2D "correlations vs. IR vs. " profiles:
+
+  // Binning of 2D"correlations vs. IR vs. " profiles:
+  // Remark: I use the same binning for x axis (it's interaction rate) for all 2D QA profiles in this category, therefore here implementation in shorter.
+  int nBins_x_CorrelationsVsInteractionRateVs = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  double min_x_CorrelationsVsInteractionRateVs = eh.fEventHistogramsBins[eInteractionRate][1];
+  double max_x_CorrelationsVsInteractionRateVs = eh.fEventHistogramsBins[eInteractionRate][2];
+  TString title_x_CorrelationsVsInteractionRateVs = "interaction rate";
+  int nBins_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0};
+  double min_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0.};
+  double max_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {0.};
+  TString title_y_CorrelationsVsInteractionRateVs[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {""};
+
+  // *) "eCorrelationsVsInteractionRate_vs_CurrentRunDuration":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = static_cast<int>(eh.fEventHistogramsBins[eCurrentRunDuration][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = eh.fEventHistogramsBins[eCurrentRunDuration][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = eh.fEventHistogramsBins[eCurrentRunDuration][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_CurrentRunDuration] = FancyFormatting(eh.fEventHistogramsName[eCurrentRunDuration].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_Multiplicity":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = eh.fEventHistogramsBins[eMultiplicity][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Multiplicity] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_Centrality":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][1];
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
+
+  // .....
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanPhi":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = o2::constants::math::TwoPI;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPhi] = FancyFormatting(ph.fParticleHistogramsName[ePhi].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanPhi":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[ePhi].Data()));
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanPt":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 0.0;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = 2.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanPt] = FancyFormatting(ph.fParticleHistogramsName[ePt].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanPt":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanPt] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[ePt].Data()));
+
+  // *) "eCorrelationsVsInteractionRate_vs_MeanEta":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = 600;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = -0.5;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = 0.5;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_MeanEta] = FancyFormatting(ph.fParticleHistogramsName[eEta].Data());
+
+  // *) "eCorrelationsVsInteractionRate_vs_SigmaMeanEta":
+  nBins_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 200;
+  min_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 0.;
+  max_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = 1.0;
+  title_y_CorrelationsVsInteractionRateVs[eCorrelationsVsInteractionRate_vs_SigmaMeanEta] = TString::Format("#sigma_{%s}", FancyFormatting(ph.fParticleHistogramsName[eEta].Data()));
+
+  // .....
+
+  // *) Quick insanity check on title_x_CorrelationsVsInteractionRateVs and title_y_CorrelationsVsInteractionRateVs:
+  if (title_x_CorrelationsVsInteractionRateVs.EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : title_x_CorrelationsVsInteractionRateVs is not set, check corresponding enum \033[0m", __FUNCTION__, __LINE__);
+  }
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) {
+    if (title_y_CorrelationsVsInteractionRateVs[t].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : title_y_CorrelationsVsInteractionRateVs[%d] is not set, check corresponding enum  \033[0m", __FUNCTION__, __LINE__, t);
+    }
+  }
+
+  // Okay, let's book 'em all:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eQACorrelationsVsInteractionRateVsProfiles2D
+  {
+    if (!qa.fBookQACorrelationsVsInteractionRateVsProfiles2D[t]) {
+      continue;
+    }
+
+    for (int h = 0; h < gMaxHarmonic; h++) {
+
+      if (h + 1 < qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMin] || h + 1 >= qa.fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[eMax]) {
+        continue;
+      }
+
+      for (int rs = 0; rs < 2; rs++) // reco/sim
+      {
+
+        if (Skip(rs)) {
+          continue;
+        }
+
+        // TBI 20250317 documet here the output of profiling using valgrind --tool=massif
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs] = new TProfile2D(
+          TString::Format("fQACorrVsIRVsProfiles2D[%s][%d][%s]", qa.fQACorrelationsVsInteractionRateVsProfilesName2D[t].Data(), h, gc.srs[rs].Data()),
+          TString::Format("%s, %s", "__RUN_NUMBER__", gc.srs_long[rs].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
+          nBins_x_CorrelationsVsInteractionRateVs, min_x_CorrelationsVsInteractionRateVs, max_x_CorrelationsVsInteractionRateVs, nBins_y_CorrelationsVsInteractionRateVs[t], min_y_CorrelationsVsInteractionRateVs[t], max_y_CorrelationsVsInteractionRateVs[t]);
+
+        TString tmp = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle(); // translating e.g. "544114, reconstructed" into "<<2>> (harmonic = 2), 544114, reconstructed"
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetTitle(TString::Format("#LT#LT2#GT#GT (harmonic = %d), %s", h + 1, tmp.Data()));
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetXaxis()->SetTitle(title_x_CorrelationsVsInteractionRateVs.Data());
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetYaxis()->SetTitle(title_y_CorrelationsVsInteractionRateVs[t].Data());
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetLineColor(ec.fBeforeAfterColor[eAfter]);
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetFillColor(ec.fBeforeAfterColor[eAfter] - 10);
+        qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetOption("col");
+        qa.fQACorrelationsVsInteractionRateVsList->Add(qa.fQACorrVsIRVsProfiles2D[t][h][rs]);
+      } // for(int rs=0;rs<2;rs++) // reco/sim
+
+    } // for (int h = 0; h < gMaxHarmonic; h++) {
+
+  } // for(int t=0;t<eQACorrelationsVsInteractionRateVsProfiles2D_N;t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
 
   // ...
 
@@ -3601,7 +4253,8 @@ void BookEventCutsHistograms()
 
   // a) Book the profile holding event cuts flags;
   // b) Book event cut counter maps;
-  // c) Book event cut counter histograms.
+  // c) Book event cut counter histograms;
+  // d) Book the formulas for all event cuts defined via mathematical expressions.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -3617,7 +4270,7 @@ void BookEventCutsHistograms()
   ec.fEventCutsPro->SetStats(false);
   ec.fEventCutsPro->SetLineColor(eColor);
   ec.fEventCutsPro->SetFillColor(eFillColor);
-  ec.fEventCutsPro->GetXaxis()->SetLabelSize(0.025);
+  ec.fEventCutsPro->GetXaxis()->SetLabelSize(0.020);
   for (int cut = 0; cut < eEventCuts_N; cut++) {
     ec.fEventCutsPro->GetXaxis()->SetBinLabel(1 + cut, ec.fEventCutName[cut].Data()); // Remark: check always if bin labels here correspond to ordering in enum eEventCuts
     ec.fEventCutsPro->Fill(cut, static_cast<int>(ec.fUseEventCuts[cut]));
@@ -3651,7 +4304,7 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1I(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
+      ec.fEventCutCounterHist[rs][cc] = new TH1F(TString::Format("fEventCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects. And yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(false);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -3663,6 +4316,26 @@ void BookEventCutsHistograms()
     } // for (int cc = 0; cc < eCutCounter_N; cc++) // enum eCutCounter
 
   } // for (int rs = 0; rs < 2; rs++) // reco/sim
+
+  // d) Book the formulas for all event cuts defined via mathematical expressions:
+
+  //  **) eRefMultVsNContrUp:
+  if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
+    ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula] = new TFormula("RefMultVsNContrUp_Formula", ec.fsEventCuts[eRefMultVsNContrUp].Data());
+    // As a quick insanity check, try immediately to evaluate something from this formula:
+    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(1.44))) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
+
+  //  **) eRefMultVsNContrLow:
+  if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
+    ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula] = new TFormula("RefMultVsNContrLow_Formula", ec.fsEventCuts[eRefMultVsNContrLow].Data());
+    // As a quick insanity check, try immediately to evaluate something from this formula:
+    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(1.44))) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+  }
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -3876,16 +4549,16 @@ void BookParticleHistograms()
   // delete lAxis; // I do not need to delete here, only when new TAxis(...)
   ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiCentralityAxis] = "Centrality"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator] is still not fetched and set from configurable. Re-think how to proceed for this specific case.
 
-  // ***) vertex_z-axis for diff phi weights: I re-use binning from results histograms
-  ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertex_zAxis] = res.fResultsPro[AFO_VZ]->GetNbinsX();
+  // ***) VertexZ-axis for diff phi weights: I re-use binning from results histograms
+  ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertexZAxis] = res.fResultsPro[AFO_VZ]->GetNbinsX();
   lAxis = res.fResultsPro[AFO_VZ]->GetXaxis();
-  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertex_zAxis]);
+  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis] = new TArrayD(1 + ph.fParticleSparseHistogramsNBins[eDWPhi][wPhiVertexZAxis]);
   for (int bin = 1; bin <= lAxis->GetNbins(); bin++) {
-    ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
+    ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis]->AddAt(lAxis->GetBinLowEdge(bin), bin - 1);
   }
-  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertex_zAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
+  ph.fParticleSparseHistogramsBinEdges[eDWPhi][wPhiVertexZAxis]->AddAt(lAxis->GetBinLowEdge(1 + lAxis->GetNbins()), lAxis->GetNbins()); // special treatment for last bin
   // delete lAxis; // I do not need to delete here, only when new TAxis(...)
-  ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiVertex_zAxis] = "Vertex_z"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator]
+  ph.fParticleSparseHistogramsAxisTitle[eDWPhi][wPhiVertexZAxis] = "VertexZ"; // TBI 20250222 I cannot call here FancyFormatting for "Centrality", because ec.fsEventCuts[eCentralityEstimator]
 
   // ...
 
@@ -4124,7 +4797,7 @@ void BookQvectorHistograms()
     TString sEtaSep[2] = {"A", "B"}; // A <=> -eta , B <=> + eta
     TString sEtaSep_long[2] = {TString::Format("%.2f < #eta <", pc.fdParticleCuts[eEta][eMin]), TString::Format("< #eta < %.2f", pc.fdParticleCuts[eEta][eMax])};
     // yes, here I define first the part of intervals as etaCutMin < eta < "subevent boundary", and "subevent" boundary < eta < etaCutMax
-    // Then below in the loop, I inject for "subevent boundary" the corresponding fEtaSeparationsValues (devided by 2, becaus it's symmetric round 0)
+    // Then below in the loop, I inject for "subevent boundary" the corresponding fEtaSeparationsValues (divided by 2, becaus it's symmetric round 0)
     for (int ab = 0; ab < 2; ab++) {   // ab = 0 <=> -eta , ab = 1 <=> + eta
       for (int rs = 0; rs < 2; rs++) { // reco/sim
         if (Skip(rs)) {
@@ -4297,7 +4970,7 @@ void BookWeightsHistograms()
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(8, "(w_{#varphi})_{#eta axis (sparse)}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(9, "(w_{#varphi})_{charge axis (sparse)}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(10, "(w_{#varphi})_{centrality axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{vertex_z axis (sparse)}");
+  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{VertexZ axis (sparse)}");
 
   // **) differential pt weights using sparse:
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(12, "(w_{p_{T}})_{pt axis (sparse)}");
@@ -4336,7 +5009,7 @@ void BookWeightsHistograms()
   if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
     pw.fWeightsFlagsPro->Fill(9.5, 1.);
   }
-  if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+  if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
     pw.fWeightsFlagsPro->Fill(10.5, 1.);
   }
 
@@ -4705,7 +5378,7 @@ void BookInternalValidationHistograms()
 
   // b) Book and fill container vn amplitudes:
   iv.fInternalValidationVnPsin[eVn] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationAmplitudes = (vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
+  auto lInternalValidationAmplitudes = (std::vector<float>)cf_iv.cfInternalValidationAmplitudes; // this is now the local version of that array from configurable
   if (lInternalValidationAmplitudes.size() < 1) {
     LOGF(fatal, "\033[1;31m%s at line %d : set at least one vn amplitude in array cfInternalValidationAmplitudes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -4718,7 +5391,7 @@ void BookInternalValidationHistograms()
 
   // c) Book and fill container for Psin planes:
   iv.fInternalValidationVnPsin[ePsin] = new TArrayD(gMaxHarmonic);
-  auto lInternalValidationPlanes = (vector<float>)cf_iv.cfInternalValidationPlanes;
+  auto lInternalValidationPlanes = (std::vector<float>)cf_iv.cfInternalValidationPlanes;
   if (lInternalValidationPlanes.size() < 1) {
     LOGF(fatal, "\033[1;31m%s at line : %d set at least one Psi plane in array cfInternalValidationPlanes\n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -4733,7 +5406,7 @@ void BookInternalValidationHistograms()
   }
 
   // d) Handle multiplicity for internal validation:
-  auto lMultRangeInternalValidation = (vector<int>)cf_iv.cfMultRangeInternalValidation;
+  auto lMultRangeInternalValidation = (std::vector<int>)cf_iv.cfMultRangeInternalValidation;
   iv.fMultRangeInternalValidation[eMin] = lMultRangeInternalValidation[eMin];
   iv.fMultRangeInternalValidation[eMax] = lMultRangeInternalValidation[eMax];
   if (iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax]) {
@@ -4942,11 +5615,12 @@ void InternalValidation()
       fPhiPDF->SetParameter(3, fReactionPlane);
     } // Remark: I do not need here anything for option "persistent", because RP is not used for that case. See below how 3 symmetry planes are introduced with persistent correlation
 
-    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));           // this is perfectly fine for this exercise
-    ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.));          // this is perfectly fine for this exercise
-    ebye.fInteractionRate = static_cast<float>(gRandom->Uniform(0., 10000.));    // this is perfectly fine for this exercise
-    ebye.fCurrentRunDuration = static_cast<float>(gRandom->Uniform(0., 86400.)); // this is perfectly fine for this exercise
-    ebye.fVz = static_cast<float>(gRandom->Uniform(-20., 20.));                  // this is perfectly fine for this exercise
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));                // this is perfectly fine for this exercise
+    ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.));               // this is perfectly fine for this exercise
+    ebye.fInteractionRate = static_cast<float>(gRandom->Uniform(0., 10000.));         // this is perfectly fine for this exercise
+    ebye.fCurrentRunDuration = static_cast<float>(gRandom->Uniform(0., 86400.));      // this is perfectly fine for this exercise
+    ebye.fVz = static_cast<float>(gRandom->Uniform(-20., 20.));                       // this is perfectly fine for this exercise
+    ebye.fFT0CAmplitudeOnFoundBC = static_cast<float>(gRandom->Uniform(0., 100000.)); // this is perfectly fine for this exercise
 
     //    b2) Fill event histograms before cuts:
     if (eh.fFillEventHistograms) {
@@ -4956,7 +5630,7 @@ void InternalValidation()
       !eh.fEventHistograms[eOccupancy][eSim][eBefore] ? true : eh.fEventHistograms[eOccupancy][eSim][eBefore]->Fill(ebye.fOccupancy);
       !eh.fEventHistograms[eInteractionRate][eSim][eBefore] ? true : eh.fEventHistograms[eInteractionRate][eSim][eBefore]->Fill(ebye.fInteractionRate);
       !eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore]->Fill(ebye.fCurrentRunDuration);
-      !eh.fEventHistograms[eVertex_z][eSim][eBefore] ? true : eh.fEventHistograms[eVertex_z][eSim][eBefore]->Fill(ebye.fVz);
+      !eh.fEventHistograms[eVertexZ][eSim][eBefore] ? true : eh.fEventHistograms[eVertexZ][eSim][eBefore]->Fill(ebye.fVz);
       !eh.fEventHistograms[eEventPlaneAngle][eSim][eBefore] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][eBefore]->Fill(fReactionPlane);
     }
 
@@ -5102,7 +5776,7 @@ void InternalValidation()
       !eh.fEventHistograms[eOccupancy][eSim][eAfter] ? true : eh.fEventHistograms[eOccupancy][eSim][eAfter]->Fill(ebye.fOccupancy);
       !eh.fEventHistograms[eInteractionRate][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fInteractionRate);
       !eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter]->Fill(ebye.fCurrentRunDuration);
-      !eh.fEventHistograms[eVertex_z][eSim][eAfter] ? true : eh.fEventHistograms[eVertex_z][eSim][eAfter]->Fill(ebye.fVz);
+      !eh.fEventHistograms[eVertexZ][eSim][eAfter] ? true : eh.fEventHistograms[eVertexZ][eSim][eAfter]->Fill(ebye.fVz);
       !eh.fEventHistograms[eEventPlaneAngle][eSim][eAfter] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][eAfter]->Fill(fReactionPlane);
     }
 
@@ -5507,6 +6181,17 @@ void Preprocess(T1 const& collision, T2 const& bcs)
     CheckCurrentRunNumber<rs>(collision, bcs);
   }
 
+  // *) Check whether this run shall be skipped later from further processing in Steer():
+  if (!tc.fSkipTheseRuns.EqualTo("")) {
+    // If tc.fSkipTheseRuns is not empty, that means it holds comma-separated list of runs to be skipped. Let's check it out...
+    SkipThisRun(); // I set inside the data member tc.fSkipRun , which serves then as a switch later all over the place
+    if (tc.fSkipRun) {
+      return; // yes, I bail out immediately from Preprocess, so that I do not waste time on fetching weights for this run
+    }
+    // TBI 20250316 Same comment here: At the moment I can access run number info only in process(...), but not in init(...)
+    // Once I can access run number info in init(...), this function shall be called in init(...), not in process(...)
+  } // if (!tc.fSkipTheseRuns.EqualTo(""))
+
   // *) Fetch the weights for this particular run number. Do it only once.
   //    TBI 20231012 If eventualy I can access programatically run number in init(...) at run time, this shall go there.
   if (!pw.fParticleWeightsAreFetched) {
@@ -5561,8 +6246,8 @@ void DetermineRunNumber(T1 const& collision, T2 const&)
     StartFunction(__FUNCTION__);
   }
 
-  // a) Determine run number for Run 3 real data:
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2) {
+  // a) Determine run number for Run 3 and Run 2 real data;
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eQA) {
 
     // **) Determine run number:
     // Get start timestamp and end timemstamp for this run in miliseconds, and convert both of them in seconds:
@@ -5591,8 +6276,12 @@ void DetermineRunNumber(T1 const& collision, T2 const&)
       LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunTime[eDurationInSec] = %d is not positive\033[0m", __FUNCTION__, __LINE__, tc.fRunTime[eDurationInSec]);
     }
 
+  } else if constexpr (rs == eTest) {
+    LOGF(warning, "\033[1;33m%s at line %d : RunNumber cannot be determined for eTest mode, due to minimal subscription. Setting run number manually to some dummy value. If you do not like this, extend subscription to more tables.\033[0m", __FUNCTION__, __LINE__);
+    tc.fRunNumber = "123456";
   } else {
-    // b) Determine run number for the rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim.
+    // b) Determine run number for the rest.
+    //    TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim.
     LOGF(fatal, "\033[1;31m%s at line %d : bc.runNumber() is not validated yet for this case\033[0m", __FUNCTION__, __LINE__);
   }
   tc.fRunNumberIsDetermined = true;
@@ -5750,6 +6439,24 @@ void PropagateRunNumber()
     } // for (int h = 0; h < gMaxHarmonic; h++)
   } // for (int t = 0; t < eQACorrelationsVsHistograms2D_N; t++) // type, see enum eCorrelationsVsHistograms2D
 
+  // *) "correlations vs. IR vs. " profiles 2D:
+  for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
+  {
+    for (int h = 0; h < gMaxHarmonic; h++) {
+      for (int rs = 0; rs < 2; rs++) // reco/sim
+      {
+        if (!qa.fQACorrVsIRVsProfiles2D[t][h][rs]) {
+          continue;
+        }
+        histTitle = qa.fQACorrVsIRVsProfiles2D[t][h][rs]->GetTitle();
+        if (histTitle.Contains("__RUN_NUMBER__")) {
+          histTitle.ReplaceAll("__RUN_NUMBER__", tc.fRunNumber.Data()); // it replaces in-place
+          qa.fQACorrVsIRVsProfiles2D[t][h][rs]->SetTitle(histTitle.Data());
+        }
+      } // for(int rs=0;rs<2;rs++) // reco/sim
+    } // for (int h = 0; h < gMaxHarmonic; h++)
+  } // for (int t = 0; t < eQACorrelationsVsInteractionRateVsProfiles2D_N; t++) // type, see enum eCorrelationsVsInteractionRateVsProfiles2D
+
   // *) particle cuts:
   for (int rs = 0; rs < 2; rs++) // reco/sim
   {
@@ -5846,7 +6553,7 @@ void CheckCurrentRunNumber(T1 const& collision, T2 const&)
   // a) Support for Run 3 and Run 2 real data:
   //    TBI 20250112 enable other cases, after validating them
   //    TBI 20250112 Remember that I can get total run duration in converted data, but not current run duration.
-  if constexpr (rs == eRec || rs == eRec_Run2) {
+  if constexpr (rs == eRec || rs == eRec_Run2 || rs == eQA) {
 
     // **) Check run number:
     auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
@@ -5879,6 +6586,8 @@ void CheckCurrentRunNumber(T1 const& collision, T2 const&)
       LOGF(fatal, "tc.fRunTime[eDurationInSec] = %d, durationInSec = %d", tc.fRunTime[eDurationInSec], durationInSec);
     }
 
+  } else if constexpr (rs == eTest) {
+    LOGF(warning, "\033[1;33m%s at line %d : RunNumber cannot be checked in eTest mode, due to minimal subscription. Simply skipping this check. If you do not like this, extend subscription to more tables.\033[0m", __FUNCTION__, __LINE__);
   } else {
     // b) The rest:
 
@@ -5920,6 +6629,7 @@ void ResetEventByEventQuantities()
   ebye.fInteractionRate = 0.;
   ebye.fCurrentRunDuration = 0.;
   ebye.fVz = 0.;
+  ebye.fFT0CAmplitudeOnFoundBC = 0.;
 
   // b) Q-vectors:
   if (qv.fCalculateQvectors) {
@@ -6144,14 +6854,16 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
   // d) Event cuts on simulated (Run 3 specific);
   // e) Event cuts on reconstructed, and corresponding MC truth simulated (Run 1 and 2 specific); // In case there is some corner case between Run 1 and Run 2, simply branch further this one
   // f) Event cuts on simulated (Run 1 and 2 specific); // In case there is some corner case between Run 1 and Run 2, simply branch further this one
-  // *) Event cuts on Test case.
+  // *) Event cuts for Test case.
+
+  // 44:EventCuts
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
   }
 
   // a) Event cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ...
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eQA) {
 
     //   *) NumberOfEvents: => this event cut is implemented directly in Steer(...)
 
@@ -6231,34 +6943,34 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) Vertex_x:
-    if (ec.fUseEventCuts[eVertex_x]) {
+    //   *) VertexX:
+    if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_x, cutModus)) {
+        EventCut(eRec, eVertexX, eCutCounterBinning);
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexX, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_y:
-    if (ec.fUseEventCuts[eVertex_y]) {
+    //   *) VertexY:
+    if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_y, cutModus)) {
+        EventCut(eRec, eVertexY, eCutCounterBinning);
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexY, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eRec, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eRec, eVertex_z, cutModus)) {
+        EventCut(eRec, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -6281,6 +6993,39 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
         EventCut(eRec, eNContributors, eCutCounterBinning);
       } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax] || TMath::Abs(collision.numContrib() - ec.fdEventCuts[eNContributors][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eNContributors, cutModus)) {
+          return false;
+        }
+      }
+    }
+
+    //   *) RefMultVsNContrUp:
+    if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eRefMultVsNContrUp, eCutCounterBinning);
+      } else if (collision.numContrib() > ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+        if (!EventCut(eRec, eRefMultVsNContrUp, cutModus)) {
+          return false;
+        }
+      }
+    }
+
+    //   *) RefMultVsNContrLow:
+    if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eRefMultVsNContrLow, eCutCounterBinning);
+      } else if (collision.numContrib() < ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+        if (!EventCut(eRec, eRefMultVsNContrLow, cutModus)) {
+          return false;
+        }
+      }
+    }
+
+    //   *) CentralityCorrelationsCut:
+    if (ec.fUseEventCuts[eCentralityCorrelationsCut]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eCentralityCorrelationsCut, eCutCounterBinning);
+      } else if (!CentralityCorrelationCut()) {
+        if (!EventCut(eRec, eCentralityCorrelationsCut, cutModus)) {
           return false;
         }
       }
@@ -6345,34 +7090,34 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 
     //   *) Centrality: this is related to eImpactParameter. TBI 20240509 How do I proceed here? Shall i calculate it in void DetermineCentrality( ... ), from IP, and store it in ebye.fCentrality?
 
-    //   *) Vertex_x:
-    if (ec.fUseEventCuts[eVertex_x]) {
+    //   *) VertexX:
+    if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_x, cutModus)) {
+        EventCut(eSim, eVertexX, eCutCounterBinning);
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexX, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_y:
-    if (ec.fUseEventCuts[eVertex_y]) {
+    //   *) VertexY:
+    if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_y, cutModus)) {
+        EventCut(eSim, eVertexY, eCutCounterBinning);
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexY, cutModus)) {
           return false;
         }
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_z, cutModus)) {
+        EventCut(eSim, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eSim, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -6401,7 +7146,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 
   // c) Event cuts on reconstructed, and corresponding MC truth simulated (Run 3 specific):
   //    Remark: I implement here only the event cuts which are not already in group a) above, and which make sense only for Run 3 data.
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
 
     // For Run 3 multiplicities, I subscribe to o2::aod::Mults
     // See how it is defined as Joined table at https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html#o2-analysis-multiplicity-table
@@ -6441,7 +7186,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoSameBunchPileup: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoSameBunchPileup: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoSameBunchPileup]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoSameBunchPileup, eCutCounterBinning);
@@ -6452,7 +7197,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsGoodZvtxFT0vsPV: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsGoodZvtxFT0vsPV: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsGoodZvtxFT0vsPV]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsGoodZvtxFT0vsPV, eCutCounterBinning);
@@ -6463,7 +7208,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsVertexITSTPC: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsVertexITSTPC: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsVertexITSTPC]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsVertexITSTPC, eCutCounterBinning);
@@ -6474,7 +7219,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsVertexTOFmatched: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsVertexTOFmatched: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsVertexTOFmatched]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsVertexTOFmatched, eCutCounterBinning);
@@ -6485,7 +7230,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsVertexTRDmatched: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsVertexTRDmatched: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsVertexTRDmatched]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsVertexTRDmatched, eCutCounterBinning);
@@ -6496,7 +7241,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoCollInTimeRangeStrict: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoCollInTimeRangeStrict: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoCollInTimeRangeStrict]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoCollInTimeRangeStrict, eCutCounterBinning);
@@ -6507,7 +7252,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoCollInTimeRangeStandard: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoCollInTimeRangeStandard: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoCollInTimeRangeStandard]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoCollInTimeRangeStandard, eCutCounterBinning);
@@ -6518,7 +7263,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoCollInRofStrict: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoCollInRofStrict: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoCollInRofStrict]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoCollInRofStrict, eCutCounterBinning);
@@ -6529,7 +7274,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoCollInRofStandard: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoCollInRofStandard: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoCollInRofStandard]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoCollInRofStandard, eCutCounterBinning);
@@ -6540,7 +7285,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) NoHighMultCollInPrevRof: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) NoHighMultCollInPrevRof: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eNoHighMultCollInPrevRof]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNoHighMultCollInPrevRof, eCutCounterBinning);
@@ -6551,7 +7296,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsGoodITSLayer3: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsGoodITSLayer3: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsGoodITSLayer3]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsGoodITSLayer3, eCutCounterBinning);
@@ -6562,7 +7307,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsGoodITSLayer0123: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsGoodITSLayer0123: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsGoodITSLayer0123]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsGoodITSLayer0123, eCutCounterBinning);
@@ -6573,7 +7318,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) IsGoodITSLayersAll: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
+    //   *) IsGoodITSLayersAll: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
     if (ec.fUseEventCuts[eIsGoodITSLayersAll]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eIsGoodITSLayersAll, eCutCounterBinning);
@@ -6650,6 +7395,39 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
+    //   *) NoPileupTPC: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
+    if (ec.fUseEventCuts[eNoPileupTPC]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eNoPileupTPC, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kNoPileupTPC)) {
+        if (!EventCut(eRec, eNoPileupTPC, cutModus)) {
+          return false;
+        }
+      }
+    }
+
+    //   *) NoPileupFromSPD: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
+    if (ec.fUseEventCuts[eNoPileupFromSPD]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eNoPileupFromSPD, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kNoPileupFromSPD)) {
+        if (!EventCut(eRec, eNoPileupFromSPD, cutModus)) {
+          return false;
+        }
+      }
+    }
+
+    //   *) NoSPDOnVsOfPileup: // see O2Physics/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
+    if (ec.fUseEventCuts[eNoSPDOnVsOfPileup]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eNoSPDOnVsOfPileup, eCutCounterBinning);
+      } else if (!collision.selection_bit(o2::aod::evsel::kNoSPDOnVsOfPileup)) {
+        if (!EventCut(eRec, eNoSPDOnVsOfPileup, cutModus)) {
+          return false;
+        }
+      }
+    }
+
     // ...
 
     //  *) Centrality weights (flattening):
@@ -6717,12 +7495,12 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
-    //   *) Vertex_z:
-    if (ec.fUseEventCuts[eVertex_z]) {
+    //   *) VertexZ:
+    if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
-        EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
-        if (!EventCut(eSim, eVertex_z, cutModus)) {
+        EventCut(eRec, eVertexZ, eCutCounterBinning);
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
       }
@@ -6768,29 +7546,34 @@ bool EventCut(int rs, int eventCut, eCutModus cutModus)
 
   // *) Do the thing:
   switch (cutModus) {
-    case eCut:
+    case eCut: {
       if (tc.fVerboseEventCut) {
         LOGF(info, "\033[1;31mEvent didn't survive the cut: %s\033[0m", ec.fEventCutName[eventCut].Data());
       }
       return false;
       break;
-    case eCutCounterBinning:
+    }
+    case eCutCounterBinning: {
       ec.fEventCutCounterMap[rs]->Add(ec.fEventCutCounterBinNumber[rs], eventCut);
       ec.fEventCutCounterMapInverse[rs]->Add(eventCut, ec.fEventCutCounterBinNumber[rs]);
       ec.fEventCutCounterBinNumber[rs]++; // yes
       return true;
       break;
-    case eCutCounterAbsolute:
+    }
+    case eCutCounterAbsolute: {
       ec.fEventCutCounterHist[rs][eAbsolute]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
       return true; // yes, so that I can proceed with another cut in EventCuts
       break;
-    case eCutCounterSequential:
+    }
+    case eCutCounterSequential: {
       ec.fEventCutCounterHist[rs][eSequential]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
       return false; // yes, so that I bail out from EventCuts
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
       break;
+    }
   } // switch(cutModus)
 
   return false; // obsolete, but it suppresses the warning...
@@ -6858,7 +7641,7 @@ void FillSubeventMultiplicities()
   }
 
   // a) Fill reconstructed (common to Run 3, Run 2 and Run 1 + Test mode):
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eTest) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eTest || rs == eQA) {
     for (int ab = 0; ab < 2; ab++) {                       // ab = 0 <=> -eta , ab = 1 <=> + eta
       for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
         !qv.fMabDist[ab][eRec][eAfter][e] ? true : qv.fMabDist[ab][eRec][eAfter][e]->Fill(qv.fMab[ab][e]);
@@ -6903,12 +7686,12 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   }
 
   // a) Fill reconstructed ... (common to Run 3, Run 2 and Run 1):
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eQA) {
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5); // basically, if histogram is not booked, do nothing. 'true' is a placeholder, for the time being
-      !eh.fEventHistograms[eVertex_x][eRec][ba] ? true : eh.fEventHistograms[eVertex_x][eRec][ba]->Fill(collision.posX());
-      !eh.fEventHistograms[eVertex_y][eRec][ba] ? true : eh.fEventHistograms[eVertex_y][eRec][ba]->Fill(collision.posY());
-      !eh.fEventHistograms[eVertex_z][eRec][ba] ? true : eh.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
+      !eh.fEventHistograms[eVertexX][eRec][ba] ? true : eh.fEventHistograms[eVertexX][eRec][ba]->Fill(collision.posX());
+      !eh.fEventHistograms[eVertexY][eRec][ba] ? true : eh.fEventHistograms[eVertexY][eRec][ba]->Fill(collision.posY());
+      !eh.fEventHistograms[eVertexZ][eRec][ba] ? true : eh.fEventHistograms[eVertexZ][eRec][ba]->Fill(collision.posZ());
       !eh.fEventHistograms[eNContributors][eRec][ba] ? true : eh.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
       !eh.fEventHistograms[eTotalMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size()); // TBI 20231106 check and validate further
       !eh.fEventHistograms[eMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eMultiplicity][eRec][ba]->Fill(ebye.fMultiplicity);
@@ -6921,13 +7704,13 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !qa.fQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fReferenceMultiplicity);
       !qa.fQAEventHistograms2D[eMultiplicity_vs_NContributors][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_NContributors][eRec][ba]->Fill(ebye.fMultiplicity, collision.numContrib());
       !qa.fQAEventHistograms2D[eMultiplicity_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_Centrality][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eMultiplicity_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_Vertex_z][eRec][ba]->Fill(ebye.fMultiplicity, collision.posZ());
+      !qa.fQAEventHistograms2D[eMultiplicity_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_VertexZ][eRec][ba]->Fill(ebye.fMultiplicity, collision.posZ());
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.numContrib());
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.posZ());
+      !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_VertexZ][eRec][ba]->Fill(ebye.fReferenceMultiplicity, collision.posZ());
       !qa.fQAEventHistograms2D[eNContributors_vs_Centrality][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Centrality][eRec][ba]->Fill(collision.numContrib(), ebye.fCentrality);
-      !qa.fQAEventHistograms2D[eNContributors_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Vertex_z][eRec][ba]->Fill(collision.numContrib(), collision.posZ());
-      !qa.fQAEventHistograms2D[eCentrality_vs_Vertex_z][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_Vertex_z][eRec][ba]->Fill(ebye.fCentrality, collision.posZ());
+      !qa.fQAEventHistograms2D[eNContributors_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_VertexZ][eRec][ba]->Fill(collision.numContrib(), collision.posZ());
+      !qa.fQAEventHistograms2D[eCentrality_vs_VertexZ][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_VertexZ][eRec][ba]->Fill(ebye.fCentrality, collision.posZ());
     }
 
     if (qa.fFillQACorrelationsVsHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) { // fill only for eAfter, because I do not calculate Q-vectors before cuts
@@ -6950,25 +7733,39 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
         // double twoS = two.Im(); // sin
         double wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
                                       // 20220809 add support for other weights
-        if (wTwo > 0.0) {
-          twoC /= wTwo;
-        } else {
-          LOGF(fatal, "In function \033[1;31m%s at line %d, wTwo = %f <=0. ebye.fSelectedTracks = %d\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
+        if (!(wTwo > 0.0)) {
+          LOGF(fatal, "In function \033[1;31m%s at line %d : wTwo = %f <=0. ebye.fSelectedTracks = %d.\nDid you forget to enable fCalculateQvectors = true?\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
         }
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec]->Fill(twoC, ebye.fMultiplicity);
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec]->Fill(twoC, ebye.fReferenceMultiplicity);
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec]->Fill(twoC, ebye.fCentrality);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Multiplicity][h - 1][eRec]->Fill(twoC / wTwo, ebye.fMultiplicity, wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_ReferenceMultiplicity][h - 1][eRec]->Fill(twoC / wTwo, ebye.fReferenceMultiplicity, wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_Centrality][h - 1][eRec]->Fill(twoC / wTwo, ebye.fCentrality, wTwo);
         // .....
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi][h - 1][eRec]->Fill(twoC, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPhi));
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt][h - 1][eRec]->Fill(twoC, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPt));
-        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta][h - 1][eRec]->Fill(twoC, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanEta));
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPhi][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPhi), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanPt][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPt), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanEta][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanEta), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanCharge][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanCharge][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanCharge), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFindable][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFindable][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcNClsFindable), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsShared][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsShared][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcNClsShared), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsChi2NCl][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsChi2NCl][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanitsChi2NCl), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFound][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsFound][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcNClsFound), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsCrossedRows][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcNClsCrossedRows][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcNClsCrossedRows), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNCls][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNCls][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanitsNCls), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNClsInnerBarrel][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeanitsNClsInnerBarrel][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanitsNClsInnerBarrel), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcCrossedRowsOverFindableCls][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcCrossedRowsOverFindableCls), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFoundOverFindableCls][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFoundOverFindableCls][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcFoundOverFindableCls), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFractionSharedCls][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcFractionSharedCls][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcFractionSharedCls), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcChi2NCl][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeantpcChi2NCl][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeantpcChi2NCl), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaXY][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaXY][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeandcaXY), wTwo);
+        !qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaZ][h - 1][eRec] ? true : qa.fQACorrelationsVsHistograms2D[eCorrelations_vs_MeandcaZ][h - 1][eRec]->Fill(twoC / wTwo, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeandcaZ), wTwo);
         // .....
       }
 
       // Flush the generic Q-vectors:
       ResetQ();
 
-    } // if (qa.fFillQACorrelationsVsHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) {
+    } // if (qa.fFillQACorrelationsVsHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter)
+
+    // ...
 
     // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim || rs == eRecAndSim_Run2 || rs == eRecAndSim_Run1) {
@@ -6978,9 +7775,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       }
       if (eh.fFillEventHistograms) {
         !eh.fEventHistograms[eNumberOfEvents][eSim][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][ba]->Fill(0.5);
-        !eh.fEventHistograms[eVertex_x][eSim][ba] ? true : eh.fEventHistograms[eVertex_x][eSim][ba]->Fill(collision.mcCollision().posX());
-        !eh.fEventHistograms[eVertex_y][eSim][ba] ? true : eh.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.mcCollision().posY());
-        !eh.fEventHistograms[eVertex_z][eSim][ba] ? true : eh.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
+        !eh.fEventHistograms[eVertexX][eSim][ba] ? true : eh.fEventHistograms[eVertexX][eSim][ba]->Fill(collision.mcCollision().posX());
+        !eh.fEventHistograms[eVertexY][eSim][ba] ? true : eh.fEventHistograms[eVertexY][eSim][ba]->Fill(collision.mcCollision().posY());
+        !eh.fEventHistograms[eVertexZ][eSim][ba] ? true : eh.fEventHistograms[eVertexZ][eSim][ba]->Fill(collision.mcCollision().posZ());
         !eh.fEventHistograms[eImpactParameter][eSim][ba] ? true : eh.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.mcCollision().impactParameter());
         !eh.fEventHistograms[eEventPlaneAngle][eSim][ba] ? true : eh.fEventHistograms[eEventPlaneAngle][eSim][ba]->Fill(collision.mcCollision().eventPlaneAngle());
         // eh.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
@@ -7023,7 +7820,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   // -----------------------------------------------------------------------------
 
   // c) Fill reconstructed (Run 3 specific):
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eOccupancy][eRec][ba] ? true : eh.fEventHistograms[eOccupancy][eRec][ba]->Fill(ebye.fOccupancy);
       !eh.fEventHistograms[eInteractionRate][eRec][ba] ? true : eh.fEventHistograms[eInteractionRate][eRec][ba]->Fill(ebye.fInteractionRate);
@@ -7032,11 +7829,25 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // QA:
     if (qa.fFillQAEventHistograms2D) {
       // General (estimators can be chosen via configurables):
+
+      // **) vs occupancy:
       !qa.fQAEventHistograms2D[eMultiplicity_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_Occupancy][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fOccupancy);
       !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fOccupancy);
       !qa.fQAEventHistograms2D[eNContributors_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_Occupancy][eRec][ba]->Fill(collision.numContrib(), ebye.fOccupancy);
       !qa.fQAEventHistograms2D[eCentrality_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_Occupancy][eRec][ba]->Fill(ebye.fCentrality, ebye.fOccupancy);
-      !qa.fQAEventHistograms2D[eVertex_z_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertex_z_vs_Occupancy][eRec][ba]->Fill(collision.posZ(), ebye.fOccupancy);
+      !qa.fQAEventHistograms2D[eVertexZ_vs_Occupancy][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertexZ_vs_Occupancy][eRec][ba]->Fill(collision.posZ(), ebye.fOccupancy);
+
+      // **) vs interaction rate:
+      !qa.fQAEventHistograms2D[eMultiplicity_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_InteractionRate][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fInteractionRate);
+      !qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eReferenceMultiplicity_vs_InteractionRate][eRec][ba]->Fill(ebye.fReferenceMultiplicity, ebye.fInteractionRate);
+      !qa.fQAEventHistograms2D[eNContributors_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eNContributors_vs_InteractionRate][eRec][ba]->Fill(collision.numContrib(), ebye.fInteractionRate);
+      !qa.fQAEventHistograms2D[eCentrality_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentrality_vs_InteractionRate][eRec][ba]->Fill(ebye.fCentrality, ebye.fInteractionRate);
+      !qa.fQAEventHistograms2D[eVertexZ_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eVertexZ_vs_InteractionRate][eRec][ba]->Fill(collision.posZ(), ebye.fInteractionRate);
+
+      // **) unsorted TBI 20250331 sort at some point
+      !qa.fQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC][eRec][ba] ? true : qa.fQAEventHistograms2D[eMultiplicity_vs_FT0CAmplitudeOnFoundBC][eRec][ba]->Fill(ebye.fMultiplicity, ebye.fFT0CAmplitudeOnFoundBC);
+      !qa.fQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC][eRec][ba] ? true : qa.fQAEventHistograms2D[eCentFT0C_vs_FT0CAmplitudeOnFoundBC][eRec][ba]->Fill(qa.fCentrality[eCentFT0C], ebye.fFT0CAmplitudeOnFoundBC);
+
       // ...
 
       // Specific (estimators are hardwired):
@@ -7064,10 +7875,52 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       !qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt0005EbyE][eRec][ba] ? true : qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt0005EbyE][eRec][ba]->Fill(ebye.fCurrentRunDuration, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(ePt0005EbyE), qa.fQAParticleEventProEbyE[eRec][ba]->GetBinEntries(ePt0005EbyE));
       !qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt0510EbyE][eRec][ba] ? true : qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt0510EbyE][eRec][ba]->Fill(ebye.fCurrentRunDuration, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(ePt0510EbyE), qa.fQAParticleEventProEbyE[eRec][ba]->GetBinEntries(ePt0510EbyE));
       !qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt1050EbyE][eRec][ba] ? true : qa.fQAParticleEventHistograms2D[eCurrentRunDuration_vs_Pt1050EbyE][eRec][ba]->Fill(ebye.fCurrentRunDuration, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(ePt1050EbyE), qa.fQAParticleEventProEbyE[eRec][ba]->GetBinEntries(ePt1050EbyE));
-
-      // ...
-
     } // if (qa.fFillQAParticleEventHistograms2D && qa.fQAParticleEventProEbyE[eRec][ba]) {
+
+    if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) { // fill only for eAfter, because I do not calculate Q-vectors before cuts
+
+      // Calculate quickly 2-p correlation in harmonic h for this event: TBI 20250114 shall I add this also to some EbyE variable? There is no really much of a code bloat for the time being...
+
+      // Flush 'n' fill the generic Q-vectors:
+      ResetQ();
+      int lMaxCorrelator = 2; // used only here locally
+      for (int h = 0; h < gMaxHarmonic * lMaxCorrelator + 1; h++) {
+        for (int wp = 0; wp < lMaxCorrelator + 1; wp++) // weight power
+        {
+          qv.fQ[h][wp] = qv.fQvector[h][wp];
+        }
+      }
+
+      for (int h = 1; h <= gMaxHarmonic; h++) {
+        TComplex two = Two(h, -h);
+        double twoC = two.Re(); // cos
+        // double twoS = two.Im(); // sin
+        double wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
+                                      // 20220809 add support for other weights
+        if (!(wTwo > 0.0)) {
+          LOGF(fatal, "In function \033[1;31m%s at line %d : wTwo = %f <=0. ebye.fSelectedTracks = %d.\nDid you forget to enable fCalculateQvectors = true?\033[0m", __FUNCTION__, __LINE__, wTwo, ebye.fSelectedTracks);
+        }
+
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_CurrentRunDuration][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fCurrentRunDuration, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Multiplicity][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fMultiplicity, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_ReferenceMultiplicity][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fReferenceMultiplicity, twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_Centrality][h - 1][eRec]->Fill(ebye.fInteractionRate, ebye.fCentrality, twoC / wTwo, wTwo);
+        // .....
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPhi][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPhi), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPhi][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanPhi), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanPt][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanPt), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanPt][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanPt), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_MeanEta][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinContent(eMeanEta), twoC / wTwo, wTwo);
+        !qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta][h - 1][eRec] ? true : qa.fQACorrVsIRVsProfiles2D[eCorrelationsVsInteractionRate_vs_SigmaMeanEta][h - 1][eRec]->Fill(ebye.fInteractionRate, qa.fQAParticleEventProEbyE[eRec][ba]->GetBinError(eMeanEta), twoC / wTwo, wTwo);
+        // .....
+      }
+
+      // Flush the generic Q-vectors:
+      ResetQ();
+
+    } // if (qa.fFillQACorrelationsVsInteractionRateVsProfiles2D && qa.fQAParticleEventProEbyE[eRec][ba] && ba == eAfter) {
+
+    // ...
 
     // ... and corresponding MC truth simulated (Run 3 specific)
     // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -7130,7 +7983,8 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     // TBI 20240223 for the time being, eTest fills only eRec histos:
     // A few example histograms, just to check if I access corresponding tables:
     if (eh.fFillEventHistograms) {
-      !eh.fEventHistograms[eVertex_z][eRec][ba] ? true : eh.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
+      !eh.fEventHistograms[eNumberOfEvents][eRec][ba] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][ba]->Fill(0.5);
+      !eh.fEventHistograms[eVertexZ][eRec][ba] ? true : eh.fEventHistograms[eVertexZ][eRec][ba]->Fill(collision.posZ());
       !eh.fEventHistograms[eTotalMultiplicity][eRec][ba] ? true : eh.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size());
       !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality);
     }
@@ -7370,7 +8224,7 @@ bool ValidTrack(T const& track)
 
   // a) Validity checks for tracks in Run 3:
   // *) Ensure that I am taking into account propagated tracks (and not e.g. track evaluated at innermost update):
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     if (!(track.trackType() == o2::aod::track::TrackTypeEnum::Track)) {
       if (tc.fVerboseForEachParticle) {
         LOGF(info, "\033[1;31m%s track.trackType() == o2::aod::track::TrackTypeEnum::Trac\033[0m", __FUNCTION__);
@@ -7416,6 +8270,109 @@ bool ValidTrack(T const& track)
   return true;
 
 } // template <eRecSim rs, typename T> bool ValidTrack(T const& track)
+
+//============================================================
+
+float GetCentralityPercentile(TString ce)
+{
+  // Helper function for CentralityCorrelationCut(), to reduce the code bloat there.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // TBI 20250331 shall I add some insanity check on centrality estimator "ce"
+
+  float centralityPercentile = -1.;
+
+  // Run 3:
+  if (ce.EqualTo("centFT0C", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentFT0C];
+  } else if (ce.EqualTo("centFT0CVariant1", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentFT0CVariant1];
+  } else if (ce.EqualTo("centFT0M", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentFT0M];
+  } else if (ce.EqualTo("centFV0A", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentFV0A];
+  } else if (ce.EqualTo("centNTPV", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentNTPV];
+  } else if (ce.EqualTo("centNGlobal", TString::kIgnoreCase)) {
+    // centralityPercentile = qa.fCentrality[eCentNGlobal]; // TBI 20250331 enable eventually
+
+    // ... ctd here with Run 3 estimators ...
+
+    // Run 1 and Run 2:
+  } else if (ce.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentRun2V0M];
+  } else if (ce.EqualTo("centRun2SPDTracklets", TString::kIgnoreCase)) {
+    centralityPercentile = qa.fCentrality[eCentRun2SPDTracklets];
+
+    // ... ctd here with Run 1 and Run 2 estimators ...
+
+  } else {
+    LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, ce.Data());
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+  return centralityPercentile;
+
+} // float GetCentralityPercentile(TString ce)
+
+//============================================================
+
+bool CentralityCorrelationCut()
+{
+  // If centrality correlation cut was requested, in this function i decide whether the current event survives it or not.
+  // This function is called only in EventCuts(...). I implemented it here separately merely to keep code in EventCuts(...) as clean as possible.
+  // If makes sense to call this function, only if in DetermineCentrality(...) I have filled in qa.Centrality .
+
+  // TBI 20250331 There is a bit of performance loss, because I need 2 centrality estimators to calculate correlation cut, and I fill in qa.Centrality values
+  // for all centrality estimators. But this way I can chain several centrality correlation cuts in the future with AND condition, if necessary.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  bool alright = true; // this local variable holds the return value for this function
+
+  // Algorithm: I extract e.g. from "CentFT0C_CentFT0M" that the first estimator is "CentFT0C" and second "CentFT0M", and for each estimator I fetch the corresponding centrality percentile:
+  TObjArray* oa = ec.fsEventCuts[eCentralityCorrelationsCut].Tokenize("_"); // TBI 20250331 let's see for how long I can use "_" safely as IFS ...
+  if (!oa) {
+    LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL , s = %s. Example format is e.g. \"CentFT0C_CentFT0M\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityCorrelationsCut].Data());
+  }
+  ec.fCentralityValues[0] = GetCentralityPercentile(oa->At(0)->GetName());
+  ec.fCentralityValues[1] = GetCentralityPercentile(oa->At(1)->GetName());
+  delete oa; // yes
+
+  // Okay, do the thing:
+  // *) "Relative" <=> |(firstEstimator-secondEstimator)/(firstEstimator+secondEstimator)| > treshold => reject the event => alright = false
+  // *) "Absolute" <=> |firstEstimator-secondEstimator| > treshold => reject the event => alright = false
+  // *) ...
+  if (ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.) {
+    if (ec.fCentralityCorrelationsCutVersion.EqualTo("Relative")) {
+      if (TMath::Abs((ec.fCentralityValues[0] - ec.fCentralityValues[1]) / (ec.fCentralityValues[0] + ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
+        alright = false;
+      }
+    } else if (ec.fCentralityCorrelationsCutVersion.EqualTo("Absolute")) {
+      if (TMath::Abs((ec.fCentralityValues[0] - ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
+        alright = false;
+      }
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+  } // if(ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.)
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;33m%s at line %d : %f, %f, %f, %d \033[0m", __FUNCTION__, __LINE__, ec.fCentralityValues[0], ec.fCentralityValues[1], ec.fCentralityCorrelationsCutTreshold, static_cast<int>(alright));
+    ExitFunction(__FUNCTION__);
+  }
+
+  return alright;
+
+} // bool CentralityCorrelationCut()
 
 //============================================================
 
@@ -7500,12 +8457,14 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
   // *) Particle cuts on Test case;
   // *) Toy NUA.
 
+  // 44:ParticleCuts
+
   if (tc.fVerboseForEachParticle) {
     StartFunction(__FUNCTION__);
   }
 
   // a) Particle cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ...
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eQA) {
 
     // *) Phi:
     if (pc.fUseParticleCuts[ePhi]) {
@@ -7907,7 +8866,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
 
   // c) Particle cuts on reconstructed, and corresponding MC truth simulated (Run 3 specific):
   //    Remark: I implement here only the particle cuts which are not already in group a) above, and which make sense only for Run 3 data.
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
 
     // ...
 
@@ -8107,29 +9066,34 @@ bool ParticleCut(int rs, int particleCut, eCutModus cutModus)
   // Remark: Remember that as a second argument I cannot use enum eParticleCuts, because here in one go I take both enum eParticleCuts and enum eParticleHistograms .
 
   switch (cutModus) {
-    case eCut:
+    case eCut: {
       if (tc.fVerboseForEachParticle) {
         LOGF(info, "\033[1;31mParticle didn't pass the cut: %s\033[0m", pc.fParticleCutName[particleCut].Data());
       }
       return false;
       break;
-    case eCutCounterBinning:
+    }
+    case eCutCounterBinning: {
       pc.fParticleCutCounterMap[rs]->Add(pc.fParticleCutCounterBinNumber[rs], particleCut);
       pc.fParticleCutCounterMapInverse[rs]->Add(particleCut, pc.fParticleCutCounterBinNumber[rs]);
       pc.fParticleCutCounterBinNumber[rs]++; // yes
       return true;
       break;
-    case eCutCounterAbsolute:
+    }
+    case eCutCounterAbsolute: {
       pc.fParticleCutCounterHist[rs][eAbsolute]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
       return true; // yes, so that I can proceed with another cut in ParticleCuts
       break;
-    case eCutCounterSequential:
+    }
+    case eCutCounterSequential: {
       pc.fParticleCutCounterHist[rs][eSequential]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
       return false; // yes, so that I bail out from ParticleCuts
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
       break;
+    }
   } // switch(cutModus)
 
   return false; // obsolete, but it suppresses the warning...
@@ -8171,7 +9135,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
   }
 
   // a) Fill reconstructed ... (common to Run 3, Run 2 and Run 1):
-  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1 || rs == eQA) {
     // Remark: Remember to use only eRec and eSim as array indices in histos, also for rs == eRecAndSim, etc. TBI 20240504 shall I introduce generic enum egRec and egSim for this sake?
     // TBI 20240414 also here have to hardcode 'eRec', because 'rs' spans over all enums in eRecSim => I definitely need 'generic Rec' case, perhaps via TExMap ?
     //              But I have already tc.fProcess[eGenericRec] and tc.fProcess[eGenericRecSim], available, shall I simply re-use them?
@@ -8235,7 +9199,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
     if (qa.fFillQAParticleHistograms2D) {
       !qa.fQAParticleHistograms2D[ePt_vs_dcaXY][eRec][ba] ? true : qa.fQAParticleHistograms2D[ePt_vs_dcaXY][eRec][ba]->Fill(track.pt(), track.dcaXY(), weight);
     }
-    if ((qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D) && qa.fQAParticleEventProEbyE[eRec][ba]) {
+    if ((qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) && qa.fQAParticleEventProEbyE[eRec][ba]) {
       // Here I only fill the helper profile to get average of requested particle variable for current event:
       qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eitsNClsEbyE) - 0.5, track.itsNCls(), weight);
 
@@ -8271,6 +9235,48 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
 
       // eMeanEta:
       qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeanEta) - 0.5, track.eta(), weight);
+
+      // eMeanCharge:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeanCharge) - 0.5, track.sign(), weight);
+
+      // eMeantpcNClsFindable:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcNClsFindable) - 0.5, track.tpcNClsFindable(), weight);
+
+      // eMeantpcNClsShared:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcNClsShared) - 0.5, track.tpcNClsShared(), weight);
+
+      // eMeanitsChi2NCl:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeanitsChi2NCl) - 0.5, track.itsChi2NCl(), weight);
+
+      // eMeantpcNClsFound:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcNClsFound) - 0.5, track.tpcNClsFound(), weight);
+
+      // eMeantpcNClsCrossedRow:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcNClsCrossedRows) - 0.5, track.tpcNClsCrossedRows(), weight);
+
+      // eMeanitsNCls:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeanitsNCls) - 0.5, track.itsNCls(), weight);
+
+      // eMeanitsNClsInnerBarrel:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeanitsNClsInnerBarrel) - 0.5, track.itsNClsInnerBarrel(), weight);
+
+      // eMeantpcCrossedRowsOverFindableCl:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcCrossedRowsOverFindableCls) - 0.5, track.tpcCrossedRowsOverFindableCls(), weight);
+
+      // eMeantpcFoundOverFindableCl:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcFoundOverFindableCls) - 0.5, track.tpcFoundOverFindableCls(), weight);
+
+      // eMeantpcFractionSharedCls:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcFractionSharedCls) - 0.5, track.tpcFractionSharedCls(), weight);
+
+      // eMeantpcChi2NCl:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeantpcChi2NCl) - 0.5, track.tpcChi2NCl(), weight);
+
+      // eMeandcaXY:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeandcaXY) - 0.5, track.dcaXY(), weight);
+
+      // eMeandcaZ:
+      qa.fQAParticleEventProEbyE[eRec][ba]->Fill(static_cast<float>(eMeandcaZ) - 0.5, track.dcaZ(), weight);
 
       // ...
 
@@ -8355,7 +9361,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
   // -----------------------------------------------------------------------------
 
   // c) Fill reconstructed ... (Run 3 specific):
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     // TBI 20240511 check If I can use them for Run 2 and Run 1, but extending TracksRecSim_Run2 to Tracks_extra, etc.
     // Remark: Remember to use only eRec and eSim as array indices in histos, also for rs == eRecAndSim, etc. TBI 20240504 shall I introduce generic enum egRec and egSim for this sake?
 
@@ -8777,17 +9783,20 @@ void CalculateKineCorrelations(eAsFunctionOf AFO_variable)
   // int nBins = -1; // TBI 20241111 temporarily commented out just to suppress warnings
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       // nBins = res.fResultsPro[AFO_PT]->GetNbinsX(); // TBI 20241111 temporarily commented out just to suppress warnings
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       // nBins = res.fResultsPro[AFO_ETA]->GetNbinsX(); // TBI 20241111 temporarily commented out just to suppress warnings
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -9058,17 +10067,20 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
   int nBins = -1;
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       nBins = res.fResultsPro[AFO_ETA]->GetNbinsX();
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -9348,16 +10360,19 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
   int nBins = -1;
 
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       nBins = res.fResultsPro[AFO_PT]->GetNbinsX();
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       LOGF(fatal, "\033[1;31m%s at line %d : It doesn't make sense (i.e. AFO_ETA cannot be used here). \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break; // obsolete, but it supresses the warning
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -10118,7 +11133,7 @@ void SetWeightsHist(TH1D* const hist, eWeights whichWeight)
 
   // Finally:
   hist->SetDirectory(0);
-  pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist);
 
   if (!pw.fWeightsHist[whichWeight]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10163,7 +11178,7 @@ void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, int bin)
 
   // Finally:
   hist->SetDirectory(0);
-  pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist->Clone());
+  pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist);
 
   if (!pw.fDiffWeightsHist[whichDiffWeight][bin]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10208,7 +11223,7 @@ void SetDiffWeightsSparse(THnSparseF* const sparse, eDiffWeightCategory dwc)
 
   // Finally:
   // sparse->SetDirectory(0); I cannot use this for sparse
-  pw.fDiffWeightsSparse[dwc] = reinterpret_cast<THnSparseF*>(sparse->Clone());
+  pw.fDiffWeightsSparse[dwc] = reinterpret_cast<THnSparseF*>(sparse);
 
   if (!pw.fDiffWeightsSparse[dwc]) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10265,7 +11280,7 @@ void SetCentralityWeightsHist(TH1D* const hist)
 
   // Finally:
   hist->SetDirectory(0);
-  cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist->Clone());
+  cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist);
 
   if (!cw.fCentralityWeightsHist) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10338,7 +11353,8 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with weights.
+  // g) The final touch on histogram with weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -10555,7 +11571,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       AFO = AFO_ETA;
       lVariableName = FancyFormatting("Eta");
     } else {
-      LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<string>(variable));
+      LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<std::string>(variable));
     }
 
     // Get min and max value for bin, stored locally:
@@ -10585,11 +11601,16 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // TBI 20241021 if I need to split hist title across two lines, use this technique:
   // hist->SetTitle(Form("#splitline{#scale[0.6]{%s}}{#scale[0.4]{%s}}",hist->GetTitle(),filePath));
 
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  TH1D* histClone = reinterpret_cast<TH1D*>(hist->Clone());
+  delete baseList; // release back the memory
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
-  return hist;
+  return histClone;
 
 } // TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const char* variable, int bin = -1)
 
@@ -10623,7 +11644,8 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with weights.
+  // g) The final touch on sparse histogram with weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -10830,7 +11852,7 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
         AFO = AFO_ETA;
         lVariableName = FancyFormatting("Eta");
       } else {
-        LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<string>(variable));
+        LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<std::string>(variable));
       }
 
       // Get min and max value for bin, stored locally:
@@ -10859,11 +11881,16 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
   // TBI 20241021 if I need to split hist title across two lines, use this technique:
   // hist->SetTitle(Form("#splitline{#scale[0.6]{%s}}{#scale[0.4]{%s}}",hist->GetTitle(),filePath));
 
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  THnSparseF* sparseHistClone = reinterpret_cast<THnSparseF*>(sparseHist->Clone());
+  delete baseList; // release back the memory
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
-  return sparseHist;
+  return sparseHistClone;
 
 } // THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runNumber, const char* whichCategory, const char* whichDimensions)
 
@@ -10884,7 +11911,8 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch on histogram with centrality weights.
+  // g) The final touch on histogram with centrality weights;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -11079,7 +12107,12 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
     ExitFunction(__FUNCTION__);
   }
 
-  return hist;
+  // h) Clone histogram and delete baseList (realising back the memory):
+  //    Remark: Yes, I have to clone here.
+  TH1D* histClone = reinterpret_cast<TH1D*>(hist->Clone());
+  delete baseList; // release back the memory
+
+  return histClone;
 
 } // TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNumber)
 
@@ -11318,7 +12351,8 @@ void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
   // d) Handle the AliEn case;
   // e) Handle the CCDB case;
   // f) Handle the local case;
-  // g) The final touch.
+  // g) The final touch;
+  // h) Clone histogram and delete baseList (realising back the memory).
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -11428,9 +12462,14 @@ void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
     LOGF(info, "\033[1;31m nua.fCustomNUAPDFHistNames[variable]->Data() = %s\033[0m", nua.fCustomNUAPDFHistNames[variable]->Data());
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  // h) Clone histogram and delete baseList (realising back the memory).
+  //    TBI 20250315 here I did it a bit differently than e.g. in GetHistogramWithWeights or in GetSparseHistogramWithWeights .
+  //                 If it's failing here, redo it in exactly the same way as I did it there.
   hist->SetDirectory(0);
   nua.fCustomNUAPDF[variable] = reinterpret_cast<TH1D*>(hist->Clone());
   nua.fCustomNUAPDF[variable]->SetTitle(Form("%s", filePath));
+  delete baseList;
 
   // TBI 20240501 if additional cosmetics is needed, it can be implemented here
 
@@ -11450,7 +12489,7 @@ void StoreLabelsInPlaceholder()
   // b) Fetch TObjArray with labels from an external file;
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels;
   // d) Finally, store the labels from external source into placeholder;
-  // e) Insantity check on labels.
+  // e) Insanity check on labels.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -11508,7 +12547,7 @@ void StoreLabelsInPlaceholder()
     // cout<<oa->GetEntries()<<endl;
   } // for(int e=0; e<nLabels; e++)
 
-  // e) Insantity check on labels:
+  // e) Insanity check on labels:
   //    Here I am merely checking that harmonic larget than gMaxHarmonic was not requested.
   for (int b = 1; b <= t0.fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
     TObjArray* temp = TString(t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)).Tokenize(" ");
@@ -11695,7 +12734,7 @@ double WeightFromSparse(const double& dPhi, const double& dPt, const double& dEt
       if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
         pw.fFindBinVector[dwc]->AddAt(ebye.fCentrality, dim++);
       }
-      if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+      if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
         pw.fFindBinVector[dwc]->AddAt(ebye.fVz, dim++);
       }
       // ...
@@ -11968,8 +13007,8 @@ void GetParticleWeights()
     if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
       whichDimensions += "_centrality";
     }
-    if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
-      whichDimensions += "_vertex_z";
+    if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
+      whichDimensions += "_vertexZ";
     }
     // ...
 
@@ -12138,20 +13177,23 @@ bool MaxNumberOfEvents(eBeforeAfter ba)
 
   // *) Okay, do the thing:
   switch (ba) {
-    case eBefore:
+    case eBefore: {
       if (eh.fEventHistograms[eNumberOfEvents][rs][eBefore] && eh.fEventHistograms[eNumberOfEvents][rs][eBefore]->GetBinContent(1) == ec.fdEventCuts[eNumberOfEvents][eMax]) {
         reachedMaxNumberOfEvents = true;
       }
       break;
-    case eAfter:
+    }
+    case eAfter: {
       if (eh.fEventHistograms[eNumberOfEvents][rs][eAfter] && eh.fEventHistograms[eNumberOfEvents][rs][eAfter]->GetBinContent(1) == ec.fdEventCuts[eSelectedEvents][eMax]) {
         reachedMaxNumberOfEvents = true;
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum ba = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ba));
       break;
-  }
+    }
+  } // switch (ba)
 
   // *) Hasta la vista:
   if (tc.fVerbose) {
@@ -12174,24 +13216,27 @@ void PrintEventCounter(eBeforeAfter ba)
 
   // *) Print or die:
   switch (ba) {
-    case eBefore:
+    case eBefore: {
       if (!tc.fPlainPrintout) {
         LOGF(info, "\033[1;32m%s : processing event %d ....\033[0m", __FUNCTION__, eh.fEventCounter[eTotal]);
       } else {
         LOGF(info, "%s : processing event %d ....", __FUNCTION__, eh.fEventCounter[eTotal]);
       }
       break;
-    case eAfter:
+    }
+    case eAfter: {
       if (!tc.fPlainPrintout) {
         LOGF(info, "\033[1;32m%s : event passed all cuts %d/%d\033[0m", __FUNCTION__, eh.fEventCounter[eProcessed], eh.fEventCounter[eTotal]);
       } else {
         LOGF(info, "%s : event passed all cuts %d/%d", __FUNCTION__, eh.fEventCounter[eProcessed], eh.fEventCounter[eTotal]);
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum ba = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ba));
       break;
-  }
+    }
+  } // switch (ba)
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
@@ -12216,12 +13261,13 @@ void EventCounterForDryRun(eEventCounterForDryRun eVar)
   }
 
   switch (eVar) {
-    case eFill:
+    case eFill: {
       // Fill event counter:
       !eh.fEventHistograms[eNumberOfEvents][eRec][eAfter] ? true : eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->Fill(0.5);
       !eh.fEventHistograms[eNumberOfEvents][eSim][eAfter] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->Fill(0.5);
       break;
-    case ePrint:
+    }
+    case ePrint: {
       // Print current status of event counter:
       // Remark: if I am processing RecSim, the counter is corresponding to Rec.
       if (eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
@@ -12230,9 +13276,11 @@ void EventCounterForDryRun(eEventCounterForDryRun eVar)
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->GetBinContent(1)));
       }
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : enum eVar = %d is not supported yet in eEventCounter. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(eVar));
       break;
+    }
   } // switch(eVar)
 
   if (tc.fVerbose) {
@@ -12267,11 +13315,11 @@ const char* FancyFormatting(const char* name)
     fancyFormatting = "p_{T}";
   } else if (TString(name).EqualTo("Eta", TString::kIgnoreCase)) {
     fancyFormatting = "#eta";
-  } else if (TString(name).EqualTo("Vertex_x")) {
+  } else if (TString(name).EqualTo("VertexX")) {
     fancyFormatting = "V_{x}";
-  } else if (TString(name).EqualTo("Vertex_y")) {
+  } else if (TString(name).EqualTo("VertexY")) {
     fancyFormatting = "V_{y}";
-  } else if (TString(name).EqualTo("Vertex_z")) {
+  } else if (TString(name).EqualTo("VertexZ")) {
     fancyFormatting = "V_{z}";
   } else if (TString(name).EqualTo("TotalMultiplicity")) {
     fancyFormatting = "TotalMultiplicity (tracks.size())";
@@ -12547,17 +13595,20 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
   eqvectorKine qvKine = eqvectorKine_N; // which component of q-vector
   TString kineVarName = "";
   switch (AFO_variable) {
-    case AFO_PT:
+    case AFO_PT: {
       qvKine = PTq;
       kineVarName = "pt";
       break;
-    case AFO_ETA:
+    }
+    case AFO_ETA: {
       qvKine = ETAq;
       kineVarName = "eta";
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
+    }
   } // switch(AFO_variable)
 
   // *) Insanity checks on above settings:
@@ -12815,7 +13866,7 @@ void DetermineReferenceMultiplicity(T const& collision)
   }
 
   // a) Determine reference multiplicity for real Run 3 data:
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     // Local convention for name of reference multiplicity estimator: use the same name as the getter, case insensitive.
     if (ec.fsEventCuts[eReferenceMultiplicityEstimator].EqualTo("multTPC", TString::kIgnoreCase)) {
       ebye.fReferenceMultiplicity = collision.multTPC();
@@ -12906,7 +13957,7 @@ void DetermineCentrality(T const& collision)
   }
 
   // a) For real data, determine centrality from default centrality estimator:
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     // Local convention for name of centrality estimator: use the same name as the getter, case insensitive.
     if (ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C", TString::kIgnoreCase)) {
       ebye.fCentrality = collision.centFT0C();
@@ -12924,7 +13975,7 @@ void DetermineCentrality(T const& collision)
       LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // QA:
-    if (qa.fFillQAEventHistograms2D) {
+    if (qa.fFillQAEventHistograms2D || ec.fUseEventCuts[eCentralityCorrelationsCut]) { // TBI 20250331 I re-use here qa.fCentrality for CentralityCorrelationsCut, why not...
       qa.fCentrality[eCentFT0C] = collision.centFT0C();
       qa.fCentrality[eCentFT0CVariant1] = collision.centFT0CVariant1();
       qa.fCentrality[eCentFT0M] = collision.centFT0M();
@@ -12934,7 +13985,8 @@ void DetermineCentrality(T const& collision)
     }
 
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
-  }
+
+  } // if constexpr (rs == eRec || rs == eRecAndSim)
 
   // b) For simulated data, determine centrality directly from impact parameter:
   if constexpr (rs == eSim) {
@@ -12951,7 +14003,7 @@ void DetermineCentrality(T const& collision)
       LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
     // QA:
-    if (qa.fFillQAEventHistograms2D) { // TBI 20240515 this flag is too general here, I need to make it more specific
+    if (qa.fFillQAEventHistograms2D || ec.fUseEventCuts[eCentralityCorrelationsCut]) { // TBI 20250331 I re-use here qa.fCentrality for CentralityCorrelationsCut, why not...
       qa.fCentrality[eCentRun2V0M] = collision.centRun2V0M();
       qa.fCentrality[eCentRun2SPDTracklets] = collision.centRun2SPDTracklets();
     }
@@ -13010,7 +14062,7 @@ void DetermineOccupancy(T const& collision)
   }
 
   // a) Determine occupancy from default occupancy estimator, only for eRec and eRecAndSim:
-  if constexpr (rs == eRec || rs == eRecAndSim) {
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eQA) {
     if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase)) {
       ebye.fOccupancy = collision.trackOccupancyInTimeRange();
     } else if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase)) {
@@ -13062,7 +14114,7 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
   }
 
   // a1) Determine interaction rate only for eRec:
-  if constexpr (rs == eRec) {                      // TBI 20250112 check still eRecSim mode here
+  if constexpr (rs == eRec || rs == eQA) {         // TBI 20250112 check still eRecSim mode here
     auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
     double hadronicRate = mRateFetcher.fetch(ccdb.service, static_cast<uint64_t>(bc.timestamp()), static_cast<int>(bc.runNumber()), "ZNC hadronic") * 1.e-3;
     if (hadronicRate > 0.) {
@@ -13079,10 +14131,12 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
     if (ebye.fCurrentRunDuration > tc.fRunTime[eDurationInSec]) {
       LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than tc.fRunTime[eDurationInSec] = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(tc.fRunTime[eDurationInSec]));
     }
+
   } else {
     // b) For all other cases, set interaction rate to -1:
     ebye.fInteractionRate = -1.;
     ebye.fCurrentRunDuration = -1.;
+    ebye.fFT0CAmplitudeOnFoundBC = -1.;
   }
 
   // c) Print interaction rate and run duration for the audience...:
@@ -13094,7 +14148,7 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
     ExitFunction(__FUNCTION__);
   }
 
-} // template <eRecSim rs, typename T1, typename T2> void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const& bcs)
+} // template <eRecSim rs, typename T1, typename T2> void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const&)
 
 //============================================================
 
@@ -13116,6 +14170,49 @@ void DetermineVertexZ(T const& collision)
   }
 
 } // void DetermineVertexZ(T const& collision)
+
+//============================================================
+
+template <eRecSim rs, typename T1, typename T2>
+void DetermineQAThingies(T1 const& collision, T2 const&)
+{
+  // Remark: I implement ideally here only the getters for which the subscription to additional non-standard tables was needed for QA purposes.
+  //         Support only for Run 3 data is provided, because in the "processQA" switch the starting point are tables used in "processRec", and I join to them
+  //         some non-standard tables only for QA purposes.
+
+  // a) Determine FT0CAmplitudeOnFoundBC;
+  // ...
+  // *) Print something for the audience... .
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  if constexpr (rs == eQA) {
+    auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
+
+    // a) Determine FT0CAmplitudeOnFoundBC;
+    if (bc.has_foundFT0()) {
+      ebye.fFT0CAmplitudeOnFoundBC = bc.foundFT0().sumAmpC(); // see more details in rofOccupancyQa.cxx
+    }
+
+    // ...
+
+    // *) Print something for the audience...:
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;32m ebye.fFT0CAmplitudeOnFoundBC = %f\033[0m", ebye.fFT0CAmplitudeOnFoundBC);
+    } // if (tc.fVerbose) {
+
+  } else {
+    // For all other cases, set all QA-specific variables calculated here to -1. TBI 20250401 shall I really do it this way, in a sense that for all other cases, this function should never be called?
+    ebye.fFT0CAmplitudeOnFoundBC = -1.;
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  } // if (tc.fVerbose) {
+
+} // template <eRecSim rs, typename T1, typename T2> void DetermineQAThingies(T1 const& collision, T2 const&)
 
 //============================================================
 
@@ -13258,7 +14355,7 @@ void BanishmentLoopOverParticles(T const& tracks)
 
   // *) Quick insanity checks (mandatory!):
   if (lSelectedTracks != ebye.fSelectedTracks) {
-    LOGF(fatal, "\033[1;31m%s at line %d : lSelectedTracks != ebye.fSelectedTracks , lSelectedTracks = %d, ebye.fSelectedTracks = %d \033[0m", __FUNCTION__, __LINE__, lSelectedTracks, ebye.fSelectedTracks);
+    LOGF(fatal, "\033[1;31m%s at line %d : lSelectedTracks != ebye.fSelectedTracks , lSelectedTracks = %d, ebye.fSelectedTracks = %d\nDid you accidentally enable Toy NUA? \033[0m", __FUNCTION__, __LINE__, lSelectedTracks, ebye.fSelectedTracks);
   }
 
   if (tc.fVerbose) {
@@ -13579,7 +14676,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
       if (pw.fUseDiffPhiWeights[wPhiCentralityAxis]) {
         LOGF(fatal, "ebye.Centrality = %f", ebye.fCentrality);
       }
-      if (pw.fUseDiffPhiWeights[wPhiVertex_zAxis]) {
+      if (pw.fUseDiffPhiWeights[wPhiVertexZAxis]) {
         LOGF(fatal, "ebye.Vz = %f", ebye.fVz);
       }
       LOGF(fatal, "Multidimensional weight for enabled dimensions is wPhi = %f", wPhi);
@@ -13683,19 +14780,22 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
   eWeights AFO_weight = eWeights_N;             // this local variable determines the enum "eWeights" which corresponds to enum "eqvectorKine"
   eDiffWeights AFO_diffWeight = eDiffWeights_N; // this local variable determines the enum "eDiffWeights" which corresponds to enum "eqvectorKine"
   switch (kineVarChoice) {
-    case PTq:
+    case PTq: {
       AFO_var = AFO_PT;
       AFO_weight = wPT;
       AFO_diffWeight = wPHIPT;
       break;
-    case ETAq:
+    }
+    case ETAq: {
       AFO_var = AFO_ETA;
       AFO_weight = wETA;
       AFO_diffWeight = wPHIETA;
       break;
-    default:
+    }
+    default: {
       LOGF(fatal, "\033[1;31m%s at line %d : this kineVarChoice = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(kineVarChoice));
       break;
+    }
   } // switch(kineVarChoice)
 
   // *) Insanity checks on above settings:
@@ -13871,6 +14971,40 @@ void CalculateEverything()
 
 //============================================================
 
+void SkipThisRun()
+{
+  // Skip or not the current run from furher processing.
+
+  // a) Insanity checks;
+  // b) Do the check.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+  // a) Insanity checks:
+  if (tc.fRunNumber.EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunNumber is empty. In case you are running something on-the-fly, empty the string fSkipTheseRuns .\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // TBI 20250516 Shall I implement some insanity check on fSkipTheseRuns? I commented in configurable that the format is comma-separated list of runs,
+  //              but I am nowhere really enforcing that...
+
+  // b) Do the check:
+  if (tc.fSkipTheseRuns.Contains(tc.fRunNumber.Data())) {
+    // TBI 20250316 I think this check is safe enough. If not, tokenize fSkipTheseRuns with respect to "," etc.
+    tc.fSkipRun = true;
+  } else {
+    tc.fSkipRun = false;
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void SkipThisRun()
+
+//============================================================
+
 template <eRecSim rs, typename T>
 void MainLoopOverParticles(T const& tracks)
 {
@@ -13886,6 +15020,9 @@ void MainLoopOverParticles(T const& tracks)
 
   // Remark #3:
   // *) There is also processTest(...), to process data with minimum subscription to the tables. To use it, set field "processTest": "true" in json config
+
+  // Remark #4:
+  // *) There is also processQA(...), to process data with maximum subscription to the tables (use for Run 3 only). To use it, set field "processQA: "true" in json config
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -14061,6 +15198,12 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
   // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (both total and selected), fetch the run number, etc.):
   Preprocess<rs>(collision, bcs);
 
+  // *) It was explicitly requested, skip this particular run:
+  if (tc.fSkipRun) {
+    LOGF(info, "\033[1;33mPer exlicit request via configurable cfSkipTheseRuns, skipping run %s from further processing.\033[0m", tc.fRunNumber.Data());
+    return;
+  }
+
   // *) Determine collision reference multiplicity:
   DetermineReferenceMultiplicity<rs>(collision);
 
@@ -14075,6 +15218,12 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
 
   // *) Determine vertex z position:
   DetermineVertexZ<rs>(collision);
+
+  // *) Determine additional QA thingies:
+  if (qa.fFillQAEventHistograms2D || qa.fFillQAParticleHistograms2D || qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) {
+    // Remark: I implement ideally here only the getters for which the subsription to additional non-standard tables was needed for QA purposes.
+    DetermineQAThingies<rs>(collision, bcs);
+  }
 
   // *) Fill event histograms before event cuts:
   if (eh.fFillEventHistograms || qa.fFillQAEventHistograms2D || qa.fFillQAParticleEventHistograms2D) {

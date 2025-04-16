@@ -12,6 +12,7 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <string>
+#include <vector>
 // #include <iostream>
 
 #include <TPDGCode.h>
@@ -125,9 +126,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
   }
-  if (!nameStr.compare("Helium3")) {
+  if (!nameStr.compare("Helium3Primary")) {
     MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
-    signal = new MCSignal(name, "Helium3", {prong}, {-1});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Helium3Primary", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Helium3FromTransport")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kProducedInTransport);
+    signal = new MCSignal(name, "Helium3FromTransport", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("nonPromptJpsi")) {
@@ -205,8 +213,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("allBeautyHadronsFS")) {
+    MCProng prong(1, {503}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("allOpenBeautyHadrons")) {
     MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("allOpenBeautyHadronsFS")) {
+    MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
     return signal;
   }
@@ -236,8 +256,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("everythingFromBeautyFS")) {
+    MCProng prong(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(1, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("everythingFromEverythingFromBeauty")) {
     MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("everythingFromEverythingFromBeautyFS")) {
+    MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    prong.SetSourceBit(2, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
     return signal;
   }
@@ -324,6 +356,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "electron from a photon conversion", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("PowhegDYMuon1")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});        // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                   // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon singles", {prong}, {-1}); // define a signal with 1-prong
+    return signal;
+  }
 
   // 2-prong signals
   if (!nameStr.compare("dielectron")) {
@@ -355,6 +393,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("dielectronPCPi0")) {
     MCProng prong(3, {11, 22, 111}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "dielectron from a photon conversion from a pi0", {prong, prong}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("PowhegDYMuon2")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});                // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                           // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon pair", {prong, prong}, {-1, -1}); // define a signal with 2-prong
     return signal;
   }
 
@@ -559,6 +603,39 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open charmed hadron decays with b hadron in decay history", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromPromptLM")) {
+    MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from light mesons without B/D in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromHbtoLM")) {
+    MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from light mesons with B hadron in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromHctoLM")) {
+    MCProng prong(2, {11, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon1S")) {
+    MCProng prong(2, {11, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon1S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon2S")) {
+    MCProng prong(2, {11, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon2S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon3S")) {
+    MCProng prong(2, {11, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon3S decays", {prong}, {-1});
+    return signal;
+  }
 
   // muon signals with mother X: mu from mother X
   if (!nameStr.compare("muFromJpsi")) {
@@ -569,6 +646,64 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("muFromPsi2S")) {
     MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "muons from psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHb")) {
+    MCProng prong(2, {13, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from b->mu", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromPromptHc")) {
+    MCProng prong(2, {13, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from c->mu, without beauty in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHbtoHc")) {
+    MCProng prong(3, {13, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from b->c->mu", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("secondaryMuon")) {
+    MCProng prong(1);
+    prong.SetPDGcode(0, 13, true);
+    prong.SetSourceBit(0, MCProng::kProducedInTransport);
+    signal = new MCSignal(name, "muons produced during transport in detector", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromPromptLM")) {
+    MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from light mesons without B/D in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHbtoLM")) {
+    MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from light mesons with B hadron in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHctoLM")) {
+    MCProng prong(2, {13, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "muons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon1S")) {
+    MCProng prong(2, {13, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon1S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon2S")) {
+    MCProng prong(2, {13, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon2S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon3S")) {
+    MCProng prong(2, {13, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon3S decays", {prong}, {-1});
     return signal;
   }
 
@@ -1120,6 +1255,33 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  if (!nameStr.compare("kaonFromBplusHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {521}, {false});
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonPrimaryFromBplusHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {521}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonPrimaryFromBplusFS")) {
+    MCProng prong(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prong.SetSourceBit(1, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonFromAnyBHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {503}, {false});
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
   if (!nameStr.compare("JpsiFromBplus")) {
     MCProng prong(2, {443, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Jpsi from B+ decays", {prong}, {1});
@@ -1129,6 +1291,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromJpsiFromBplus")) {
     MCProng prong(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electrons from Jpsi from B+ decays", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("electronFromJpsiFromBplus")) {
+    MCProng prong(3, {11, 443, 521}, {false, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from Jpsi from B+ decays", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("positronFromJpsiFromBplus")) {
+    MCProng prong(3, {-11, 443, 521}, {false, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Positrons from Jpsi from B+ decays", {prong}, {1});
     return signal;
   }
 
@@ -1142,6 +1316,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiKaonAny")) {
+    MCProng pronge(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongKaon(1, {321}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Kaon and electron pair", {pronge, pronge, prongKaon}, {-1, -1, -1});
     return signal;
   }
 
@@ -1245,6 +1426,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "B+", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("BplusFS")) {
+    MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "B+", {prong}, {-1});
     return signal;
   }
@@ -1945,9 +2133,9 @@ MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongNa
     for (auto& s : itgen) {
       bool exclude = (hasExclude ? excludeVec[is] : false);
       if (s != MCProng::kNothing) {
-        sBits |= (uint64_t(1) << s);
+        sBits |= (static_cast<uint64_t>(1) << s);
         if (exclude) {
-          sBitsExclude |= (uint64_t(1) << s);
+          sBitsExclude |= (static_cast<uint64_t>(1) << s);
         }
       }
       is++;
