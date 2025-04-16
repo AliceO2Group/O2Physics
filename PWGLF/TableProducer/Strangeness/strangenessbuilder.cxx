@@ -39,6 +39,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/EventSelection.h"
 #include "TableHelper.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
@@ -50,6 +51,8 @@
 
 using namespace o2;
 using namespace o2::framework;
+
+using namespace o2::aod::rctsel;
 
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
@@ -345,6 +348,15 @@ struct StrangenessBuilder {
     Configurable<bool> mc_findableDetachedCascade{"mc_findableDetachedCascade", false, "if true, generate findable cascades that have collisionId -1. Caution advised."};
   } cascadeBuilderOpts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "rctConfigurations"; // JSON group name
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  } rctConfigurations;
+
+  RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
+
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -568,6 +580,8 @@ struct StrangenessBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
+
     // set V0 parameters in the helper
     straHelper.v0selections.minCrossedRows = v0BuilderOpts.minCrossedRows;
     straHelper.v0selections.dcanegtopv = v0BuilderOpts.dcanegtopv;
@@ -585,6 +599,16 @@ struct StrangenessBuilder {
     straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
     straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
     straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
+  }
+
+  // for sorting
+  template <typename TCollision>
+  bool isEventAccepted(const TCollision &collision)
+  {
+    if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision))
+      return false;
+
+    return true;
   }
 
   // for sorting
@@ -742,6 +766,9 @@ struct StrangenessBuilder {
 
         // single loop over double loop at a small cost in memory for extra array
         for (const auto& collision : collisions) {
+          if (!isEventAccepted(collision)) {
+            continue;
+          }
           if (collision.has_mcCollision()) {
             if (collision.numContrib() > bestCollisionNContribsArray[collision.mcCollisionId()]) {
               bestCollisionArray[collision.mcCollisionId()] = collision.globalIndex();
@@ -794,6 +821,10 @@ struct StrangenessBuilder {
             auto posTrackPar = getTrackParCov(pTrack);
             auto negTrackPar = getTrackParCov(nTrack);
             auto const& collision = collisions.rawIteratorAt(v0tableGrouped[iV0].collisionIds[ic]);
+
+            if (!isEventAccepted(collision)) {
+              continue;
+            }
 
             // handle TPC-only tracks properly (photon conversions)
             if (v0BuilderOpts.moveTPCOnlyTracks) {
@@ -1260,6 +1291,10 @@ struct StrangenessBuilder {
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+
+        if (!isEventAccepted(collision)) {
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(v0.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(v0.negTrackId);
@@ -1722,6 +1757,10 @@ struct StrangenessBuilder {
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+
+        if (!isEventAccepted(collision)) {
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -2060,6 +2099,10 @@ struct StrangenessBuilder {
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+
+        if (!isEventAccepted(collision)) {
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -2157,6 +2200,10 @@ struct StrangenessBuilder {
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+
+        if (!isEventAccepted(collision)) {
+          continue;
+        }
       }
       auto const& cascade = cascadeTrack.cascade();
       auto const& v0 = cascade.v0();
