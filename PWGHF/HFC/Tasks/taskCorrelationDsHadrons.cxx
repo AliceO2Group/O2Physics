@@ -66,7 +66,8 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
-  Configurable<std::vector<double>> mlOutputPrompt{"mlOutputPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputPromptMin{"mlOutputPromptMin", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputPromptMax{"mlOutputPromptMax", {1.0, 1.0, 1.0, 1.0}, "Machine learning scores for prompt"};
   Configurable<std::vector<double>> mlOutputBkg{"mlOutputBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for D-meson efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
@@ -276,7 +277,7 @@ struct HfTaskCorrelationDsHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -306,7 +307,7 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -354,7 +355,7 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isDsPrompt = candidate.isPrompt();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -393,7 +394,7 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -487,7 +488,7 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -586,7 +587,7 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -720,7 +721,7 @@ struct HfTaskCorrelationDsHadrons {
               outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
           }
-          if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+          if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
             continue;
           }
 
@@ -802,7 +803,7 @@ struct HfTaskCorrelationDsHadrons {
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
       }
-      if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+      if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] < mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
         continue;
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
