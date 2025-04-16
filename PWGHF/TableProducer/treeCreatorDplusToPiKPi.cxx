@@ -293,7 +293,7 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   template <bool doMc = false, bool doMl = false, typename T>
-  void fillCandidateTable(const T& candidate, float cent)
+  void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
@@ -317,6 +317,7 @@ struct HfTreeCreatorDplusToPiKPi {
     auto prong0 = candidate.template prong0_as<TracksWPid>();
     auto prong1 = candidate.template prong1_as<TracksWPid>();
     auto prong2 = candidate.template prong2_as<TracksWPid>();
+    auto coll = candidate.template collision_as<CollisionsCent>();
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -361,14 +362,14 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.eta(),
         candidate.phi(),
         hfHelper.yDplus(candidate),
-        cent,
+        getCentralityColl(coll, CentralityEstimator::FT0C),
         flagMc,
         originMc,
         channelMc);
     } else {
       rowCandidateFull(
-        candidate.collision().bcId(),
-        candidate.collision().numContrib(),
+        coll.bcId(),
+        coll.numContrib(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -443,7 +444,7 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.phi(),
         hfHelper.yDplus(candidate),
         hfHelper.eDplus(candidate),
-        cent,
+        getCentralityColl(coll, CentralityEstimator::FT0C),
         flagMc,
         originMc,
         channelMc);
@@ -473,15 +474,13 @@ struct HfTreeCreatorDplusToPiKPi {
           continue;
         }
       }
-      auto coll = candidate.template collision_as<CollisionsCent>();
-      float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
-      fillCandidateTable(candidate, cent);
+      fillCandidateTable(candidate);
     }
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
-  void processMc(McRecoCollisionsCent const& collisions,
+  void processMc(CollisionsCent const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
@@ -502,9 +501,7 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(reconstructedCandSig.size());
       }
       for (const auto& candidate : reconstructedCandSig) {
-        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
-        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
-        fillCandidateTable<true>(candidate, cent);
+        fillCandidateTable<true>(candidate);
       }
     } else if (fillOnlySignalMl) {
       rowCandidateMl.reserve(reconstructedCandSigMl.size());
@@ -520,9 +517,7 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
-        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
-        fillCandidateTable<true, true>(candidate, cent);
+        fillCandidateTable<true, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -537,9 +532,7 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
-        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
-        fillCandidateTable<true>(candidate, cent);
+        fillCandidateTable<true>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -548,9 +541,7 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        auto coll = candidate.template collision_as<McRecoCollisionsCent>();
-        float cent = getCentralityColl(coll, CentralityEstimator::FT0C);
-        fillCandidateTable<true>(candidate, cent);
+        fillCandidateTable<true>(candidate);
       }
     }
 
