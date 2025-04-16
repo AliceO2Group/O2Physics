@@ -603,7 +603,7 @@ struct StrangenessBuilder {
 
   // for sorting
   template <typename TCollision>
-  bool isEventAccepted(const TCollision &collision)
+  bool isEventAccepted(const TCollision& collision)
   {
     if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision))
       return false;
