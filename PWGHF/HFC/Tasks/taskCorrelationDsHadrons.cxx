@@ -86,6 +86,9 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
 
+  const int comingFromCharm = 1;
+  const int comingFromBeauty = 2;
+
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
 
@@ -416,9 +419,9 @@ struct HfTaskCorrelationDsHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
+            if (statusDsPrompt == 1 && statusPromptHadron == comingFromCharm) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == comingFromBeauty) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
@@ -458,12 +461,12 @@ struct HfTaskCorrelationDsHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDsPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 1) {
+        if (statusPromptHadron == comingFromCharm) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptDsPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 2) {
+        if (statusPromptHadron == comingFromBeauty) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       }
@@ -609,9 +612,9 @@ struct HfTaskCorrelationDsHadrons {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
             registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
+            if (statusDsPrompt == 1 && statusPromptHadron == comingFromCharm) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
+            } else if (statusDsPrompt == 0 && statusPromptHadron == comingFromBeauty) {
               registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
             }
           }
@@ -898,9 +901,9 @@ struct HfTaskCorrelationDsHadrons {
                 }
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == 1) { // charm orgin
+                  if (trackOrigin == comingFromCharm) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
-                  } else if (trackOrigin == 2) { // beauty origin
+                  } else if (trackOrigin == comingFromBeauty) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
                   }
                 }
@@ -939,9 +942,9 @@ struct HfTaskCorrelationDsHadrons {
                 // check track origin
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == 1) { // charm orgin
+                  if (trackOrigin == comingFromCharm) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
-                  } else if (trackOrigin == 2) { // beauty origin
+                  } else if (trackOrigin == comingFromBeauty) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
                   }
                 }
