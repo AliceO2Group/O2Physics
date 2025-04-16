@@ -593,7 +593,7 @@ struct v0topologicalcuts {
                   cuthistoslambda::v0radiusCut[j]->Fill(v0.mLambda());
                 }
               }
-              for (uint32_t j = 0; j < cuthistoslambda::dcanegtopvcuts.size(); j++) {
+              for (uint32_t j = 0; j < cuthistoslambda::dcapostopvcuts.size(); j++) {
                 std::string dcapostopcutlambda = cuthistoslambda::dcapostopvcuts[j];
                 size_t pos = dcapostopcutlambda.find("_");
                 dcapostopcutlambda[pos] = '.';
