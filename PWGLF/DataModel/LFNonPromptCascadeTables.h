@@ -40,7 +40,6 @@ DECLARE_SOA_COLUMN(PvY, pvY, float);
 DECLARE_SOA_COLUMN(PvZ, pvZ, float);
 DECLARE_SOA_COLUMN(CascPVContribs, cascPVContribs, uint8_t);
 
-
 DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
 DECLARE_SOA_COLUMN(CascPhi, cascPhi, float);
