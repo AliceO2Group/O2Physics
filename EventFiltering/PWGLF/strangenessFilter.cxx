@@ -629,7 +629,8 @@ struct strangenessFilter {
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterTrk;
 
-    for (auto& v00 : v0Base) { // loop over v0
+    std::vector<int> v0sLambdaSel;
+    for (auto& v00 : v0Base) { // loop over v0 for pre selection
       hCandidate->Fill(0.5); // All candidates
 
       const auto posTrack0 = v00.posTrack_as<TrackCandidates>();
@@ -643,22 +644,47 @@ struct strangenessFilter {
       }
       int Tag = 0;
       if (cfgPIDPi > std::fabs(negTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(posTrack0.tpcNSigmaPr())) {
-        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-          Tag++;
+        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0)) {
+          if (cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
         }
       }
       if (cfgPIDPi > std::fabs(posTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(negTrack0.tpcNSigmaPr())) {
-        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-          Tag++;
+        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0)) {
+          if (cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
         }
       }
       if (Tag != 1) { // Select when only one option is satisfied
         continue;
       }
+      v0sLambdaSel.push_back(v00.globalIndex());
+    }
+
+    for (auto& v00 : v0Base) { // loop over lambda using previous selection
+      if (std::find(v0sLambdaSel.begin(), v0sLambdaSel.end(), v00.globalIndex()) == v0sLambdaSel.end() ) {
+        continue;
+      }
+
+      const auto posTrack0 = v00.posTrack_as<TrackCandidates>();
+      const auto negTrack0 = v00.negTrack_as<TrackCandidates>();
+
+      auto trackParPos0 = getTrackParCov(posTrack0);
+      auto trackParNeg0 = getTrackParCov(negTrack0);
+
+      if (!mStraHelper.buildV0Candidate(v00.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack0, negTrack0, trackParPos0, trackParNeg0)) {
+        continue;
+      }
+
       TVector3 v00pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
       TVector3 v00mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
 
       for (auto& v01 : v0Base) {
+        if (std::find(v0sLambdaSel.begin(), v0sLambdaSel.end(), v01.globalIndex()) == v0sLambdaSel.end() ) {
+          continue;
+        }
         if (v00.globalIndex() <= v01.globalIndex()) {
           continue;
         }
@@ -672,24 +698,17 @@ struct strangenessFilter {
         if (!mStraHelper.buildV0Candidate(v01.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack1, negTrack1, trackParPos1, trackParNeg1)) {
           continue;
         }
-        Tag = 0;
-        if (cfgPIDPi > std::fabs(negTrack1.tpcNSigmaPi()) && cfgPIDPr > std::fabs(posTrack1.tpcNSigmaPr())) {
-          if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-            Tag++;
-          }
-        }
-        if (cfgPIDPi > std::fabs(posTrack1.tpcNSigmaPi()) && cfgPIDPr > std::fabs(negTrack1.tpcNSigmaPr())) {
-          if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0) || cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-            Tag++;
-          }
-        }
+
         if (posTrack0.globalIndex() == posTrack1.globalIndex() || posTrack0.globalIndex() == negTrack1.globalIndex() || negTrack0.globalIndex() == posTrack1.globalIndex() || negTrack0.globalIndex() == negTrack1.globalIndex()) {
           continue;
         }
+
         TVector3 v01pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
         TVector3 v01mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
 
-        keepEvent[12] = true;
+        if (isSelectedV0V0(v00pos, v00mom, v01pos, v01mom)) {
+          keepEvent[12] = true;
+        }
       }
     }
 
