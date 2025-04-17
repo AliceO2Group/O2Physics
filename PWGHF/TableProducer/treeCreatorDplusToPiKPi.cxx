@@ -567,8 +567,8 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
 
   void processDataWCent(CollisionsCent const& collisions,
-                   soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
-                   TracksWPid const&)
+                        soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+                        TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -596,11 +596,11 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
   void processMcWCent(CollisionsCent const& collisions,
-                 aod::McCollisions const&,
-                 SelectedCandidatesMc const& candidates,
-                 MatchedGenCandidatesMc const& particles,
-                 SelectedCandidatesMcWithMl const&,
-                 TracksWPid const&)
+                      aod::McCollisions const&,
+                      SelectedCandidatesMc const& candidates,
+                      MatchedGenCandidatesMc const& particles,
+                      SelectedCandidatesMcWithMl const&,
+                      TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
