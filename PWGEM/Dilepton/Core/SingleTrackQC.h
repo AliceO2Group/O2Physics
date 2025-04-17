@@ -33,6 +33,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Tools/ML/MlResponse.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
@@ -108,6 +109,11 @@ struct SingleTrackQC {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    // for RCT
+    Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -196,6 +202,7 @@ struct SingleTrackQC {
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } dimuoncuts;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -226,8 +233,9 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
       fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-      fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
-      fRegistry.add("Track/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
+      fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
+      fRegistry.add("Track/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 400}}, false);
+      fRegistry.add("Track/positive/hDCA3dRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0., 500}}, false);
       fRegistry.add("Track/positive/hNclsTPC", "number of TPC clusters;TPC N_{cls}", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/positive/hNcrTPC", "number of TPC crossed rows;TPC N_{CR}", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/positive/hChi2TPC", "chi2/number of TPC clusters;TPC #chi^{2}/N_{CR}", kTH1F, {{100, 0, 10}}, false);
@@ -277,8 +285,9 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hTrackType", "track type", kTH1F, {{6, -0.5f, 5.5}}, false);
       fRegistry.add("Track/positive/hDCAxy", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.5f, 0.5f}, {200, -0.5f, 0.5f}}, false);
       fRegistry.add("Track/positive/hDCAxySigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
-      fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{100, 0, 10}, {500, 0, 500}}, false);
-      fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{100, 0, 10}, {500, 0, 500}}, false);
+      fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+      fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
+      fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {500, 0, 500}}, false);
       fRegistry.add("Track/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
       fRegistry.add("Track/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
       fRegistry.add("Track/positive/hPDCA", "pDCA;R at absorber end (cm);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 100}, {100, 0.0f, 1000}}, false);
@@ -297,6 +306,7 @@ struct SingleTrackQC {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+    rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
     DefineEMEventCut();
     DefineDielectronCut();
@@ -311,11 +321,13 @@ struct SingleTrackQC {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
     if (doprocessBC) {
-      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{4, -0.5f, 3.5f}});
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
       hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
       hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
       hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
-      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && NoTFB && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && GoodRCT");
+      hTVXCounter->GetXaxis()->SetBinLabel(5, "TVX && NoTFB && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(6, "TVX && NoTFB && NoITSROFB && GoodRCT");
     }
   }
 
@@ -463,6 +475,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/positive/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/positive/hDCA3dRes_Pt"), track.pt(), sigmaDca3D(track) * 1e+4);      // convert cm to um
       fRegistry.fill(HIST("Track/positive/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/positive/hNclsTPC"), track.tpcNClsFound());
       fRegistry.fill(HIST("Track/positive/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -502,6 +515,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / std::sqrt(track.cYY()), track.dcaZ() / std::sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/negative/hDCAzRes_Pt"), track.pt(), std::sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/negative/hDCA3dRes_Pt"), track.pt(), sigmaDca3D(track) * 1e+4);      // convert cm to um
       fRegistry.fill(HIST("Track/negative/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/negative/hNclsTPC"), track.tpcNClsFound());
       fRegistry.fill(HIST("Track/negative/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -554,6 +568,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
       fRegistry.fill(HIST("Track/positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
+      fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/positive/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/positive/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -570,6 +585,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXXatDCA()), track.fwdDcaY() / std::sqrt(track.cYYatDCA()));
       fRegistry.fill(HIST("Track/negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXXatDCA()) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYYatDCA()) * 1e+4);
+      fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sigmaFwdDcaXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/negative/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/negative/hPDCA"), track.rAtAbsorberEnd(), track.pDca());
@@ -597,6 +613,9 @@ struct SingleTrackQC {
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<0, -1>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
@@ -652,6 +671,9 @@ struct SingleTrackQC {
       }
 
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
 
@@ -831,6 +853,9 @@ struct SingleTrackQC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
@@ -839,16 +864,23 @@ struct SingleTrackQC {
   void processBC(aod::EMBCs const& bcs)
   {
     for (const auto& bc : bcs) {
-      if (bc.isTriggerTVX()) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
-        if (bc.isNoTimeFrameBorder()) {
+
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
         }
-        if (bc.isNoITSROFrameBorder()) {
+        if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
         }
-        if (bc.isNoTimeFrameBorder() && bc.isNoITSROFrameBorder()) {
+        if (rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 4.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && rctChecker(bc)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 5.f);
         }
       }
     }

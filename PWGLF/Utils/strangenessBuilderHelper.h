@@ -83,6 +83,9 @@ template <typename T>
 std::vector<V0group> groupDuplicates(const T& V0s)
 {
   std::vector<V0group> v0table;
+  if (V0s.size() == 0) {
+    return v0table;
+  }
   V0group thisV0;
   thisV0.V0Ids.push_back(-1);        // create one single element
   thisV0.collisionIds.push_back(-1); // create one single element

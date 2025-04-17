@@ -23,21 +23,38 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 {
+//_______________________________________________________________________
+template <typename T>
+float sigmaDca3D(T const& track)
+{
+  float cYY = track.cYY();                              // in cm^2
+  float cZZ = track.cZZ();                              // in cm^2
+  float cZY = track.cZY();                              // in cm^2
+  float dcaXY = track.dcaXY();                          // in cm
+  float dcaZ = track.dcaZ();                            // in cm
+  float dca3d = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ); // in cm
+  float dFdxy = 2.f * dcaXY / dca3d;
+  float dFdz = 2.f * dcaZ / dca3d;
+  return std::sqrt(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2.f * cZY * dFdxy * dFdz);
+}
+//_______________________________________________________________________
 template <typename T>
 float dca3DinSigma(T const& track)
 {
-  float cYY = track.cYY();
-  float cZZ = track.cZZ();
-  float cZY = track.cZY();
-  float dcaXY = track.dcaXY(); // in cm
-  float dcaZ = track.dcaZ();   // in cm
+  return std::sqrt(track.dcaXY() * track.dcaXY() + track.dcaZ() * track.dcaZ()) / sigmaDca3D(track);
 
-  float det = cYY * cZZ - cZY * cZY; // determinant
-  if (det < 0) {
-    return 999.f;
-  } else {
-    return std::sqrt(std::fabs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
-  }
+  // float cYY = track.cYY();
+  // float cZZ = track.cZZ();
+  // float cZY = track.cZY();
+  // float dcaXY = track.dcaXY(); // in cm
+  // float dcaZ = track.dcaZ();   // in cm
+
+  // float det = cYY * cZZ - cZY * cZY; // determinant
+  // if (det < 0) {
+  //   return 999.f;
+  // } else {
+  //   return std::sqrt(std::fabs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  // }
 }
 //_______________________________________________________________________
 template <typename T>
@@ -53,18 +70,23 @@ float dcaZinSigma(T const& track)
 }
 //_______________________________________________________________________
 template <typename T>
-float fwdDcaXYinSigma(T const& track)
+float sigmaFwdDcaXY(T const& track)
 {
-  float cXX = track.cXXatDCA();
-  float cYY = track.cYYatDCA();
-  float cXY = track.cXYatDCA();
-  float dcaX = track.fwdDcaX(); // in cm
-  float dcaY = track.fwdDcaY(); // in cm
-  float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+  float cXX = track.cXXatDCA();                       // in cm^2
+  float cYY = track.cYYatDCA();                       // in cm^2
+  float cXY = track.cXYatDCA();                       // in cm^2
+  float dcaX = track.fwdDcaX();                       // in cm
+  float dcaY = track.fwdDcaY();                       // in cm
+  float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY); // in cm
   float dFdx = 2.f * dcaX / dcaXY;
   float dFdy = 2.f * dcaY / dcaXY;
-  float sigma_dcaXY = std::sqrt(cXX * dFdx * dFdx + cYY * dFdy * dFdy + 2.f * cXY * dFdx * dFdy);
-  return dcaXY / sigma_dcaXY;
+  return std::sqrt(cXX * dFdx * dFdx + cYY * dFdy * dFdy + 2.f * cXY * dFdx * dFdy);
+}
+//_______________________________________________________________________
+template <typename T>
+float fwdDcaXYinSigma(T const& track)
+{
+  return std::sqrt(track.fwdDcaX() * track.fwdDcaX() + track.fwdDcaY() * track.fwdDcaY()) / sigmaFwdDcaXY(track);
 
   // float det = cXX * cYY - cXY * cXY; // determinant
   // if (det < 0) {

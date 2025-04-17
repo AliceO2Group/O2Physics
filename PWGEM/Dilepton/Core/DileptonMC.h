@@ -37,6 +37,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Tools/ML/MlResponse.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -144,6 +145,11 @@ struct DileptonMC {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    // for RCT
+    Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -268,6 +274,7 @@ struct DileptonMC {
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
   } dimuoncuts;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -445,11 +452,11 @@ struct DileptonMC {
     }
 
     // for correlated bkg due to mis-identified hadrons, and true combinatorial bkg
-    fRegistry.add("Pair/corr_bkg_eh/uls/hs", "rec. bkg", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
-    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lspp/");
-    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lsmm/");
-    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/corr_bkg_hh/");
-    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/comb_bkg/");
+    fRegistry.add("Pair/corr_bkg_lh/uls/hs", "rec. bkg", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lspp/");
+    fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lsmm/");
+    fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/corr_bkg_hh/");
+    fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/comb_bkg/");
 
     if (cfgFillUnfolding) {
       // for 2D unfolding
@@ -493,6 +500,7 @@ struct DileptonMC {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+    rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
     DefineEMEventCut();
     addhistograms();
@@ -512,11 +520,13 @@ struct DileptonMC {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     }
     if (doprocessBC) {
-      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{4, -0.5f, 3.5f}});
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
       hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
       hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
       hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
-      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && NoTFB && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && GoodRCT");
+      hTVXCounter->GetXaxis()->SetBinLabel(5, "TVX && NoTFB && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(6, "TVX && NoTFB && NoITSROFB && GoodRCT");
     }
   }
 
@@ -903,7 +913,7 @@ struct DileptonMC {
     o2::math_utils::bringToPMPi(phiCS);
 
     if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF(t1mc, t2mc, mcparticles) > 0) && is_pair_from_same_mcevent) { // for bkg study
-      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                        // hh or eh correlated bkg
+      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                        // hh or lh correlated bkg
         if (std::abs(t1mc.pdgCode()) != pdg_lepton && std::abs(t2mc.pdgCode()) != pdg_lepton) {                                      // hh correlated bkg
           if (t1.sign() * t2.sign() < 0) {                                                                                           // ULS
             fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
@@ -912,13 +922,13 @@ struct DileptonMC {
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
             fRegistry.fill(HIST("Pair/corr_bkg_hh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           }
-        } else {                           // eh correlated bkg
+        } else {                           // lh correlated bkg
           if (t1.sign() * t2.sign() < 0) { // ULS
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           }
         }
       }
@@ -1213,6 +1223,9 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
@@ -1255,6 +1268,9 @@ struct DileptonMC {
       }
       fRegistry.fill(HIST("MCEvent/before/hZvtx_rec"), mccollision.posZ());
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
@@ -1859,6 +1875,9 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
 
       // auto mccollision = collision.template emmcevent_as<TMCCollisions>();
       // if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -1998,6 +2017,9 @@ struct DileptonMC {
       }
 
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
 
@@ -2374,6 +2396,9 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       auto mccollision = collision.template emmcevent_as<MyMCCollisions>();
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
@@ -2473,6 +2498,9 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
@@ -2481,16 +2509,23 @@ struct DileptonMC {
   void processBC(aod::EMBCs const& bcs)
   {
     for (const auto& bc : bcs) {
-      if (bc.isTriggerTVX()) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
-        if (bc.isNoTimeFrameBorder()) {
+
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
         }
-        if (bc.isNoITSROFrameBorder()) {
+        if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
         }
-        if (bc.isNoTimeFrameBorder() && bc.isNoITSROFrameBorder()) {
+        if (rctChecker(bc)) {
           fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 4.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && rctChecker(bc)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 5.f);
         }
       }
     }
