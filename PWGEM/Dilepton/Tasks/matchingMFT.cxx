@@ -69,6 +69,7 @@ struct matchingMFT {
   Configurable<float> maxMatchingChi2MCHMFT{"maxMatchingChi2MCHMFT", 1e+10, "max. chi2 for MCH-MFT matching"};
   Configurable<float> maxChi2SA{"maxChi2SA", 1e+6, "max. chi2 for standalone muon"};
   Configurable<float> maxChi2GL{"maxChi2GL", 1e+6, "max. chi2 for global muon"};
+  // Configurable<float> maxChi2MFT{"maxChi2MFT", 1e+6, "max. chi2/ndf for MFT track in global muon"};
   Configurable<int> minNclustersMFT{"minNclustersMFT", 5, "min nclusters MFT"};
   Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
   Configurable<bool> requireTrueAssociation{"requireTrueAssociation", false, "flag to require true mc collision association"};
@@ -157,6 +158,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hChi2MatchMCHMID", "chi2 match MCH-MID;chi2", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hChi2MatchMCHMFT", "chi2 match MCH-MFT;chi2", kTH1F, {{100, 0.0f, 100}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxy2D", "DCA x vs. y;DCA_{x} (cm);DCA_{y} (cm)", kTH2F, {{200, -0.5, 0.5}, {200, -0.5, +0.5}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hDCAz", "DCA z;DCA_{z} (cm);", kTH1F, {{1000, 0, 10}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxy2DinSigma", "DCA x vs. y in sigma;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10, 10}, {200, -10, +10}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxy", "DCAxy;DCA_{xy} (cm);", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyinSigma", "DCAxy in sigma;DCA_{xy} (#sigma);", kTH1F, {{100, 0, 10}}, false);
@@ -269,6 +271,7 @@ struct matchingMFT {
     float dcaY = propmuonAtDCA.getY() - collision.posY();
     float rAtAbsorberEnd = fwdtrack.rAtAbsorberEnd(); // this works only for GlobalMuonTrack
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+    float dcaZ = -dcaXY * std::sinh(eta);
 
     float dFdx = 2.f * dcaX / dcaXY;
     float dFdy = 2.f * dcaY / dcaXY;
@@ -285,7 +288,11 @@ struct matchingMFT {
     float dcaXY_Matched = std::sqrt(dcaX_Matched * dcaX_Matched + dcaY_Matched * dcaY_Matched);
     float pDCA = mchtrack.p() * dcaXY_Matched;
     int nClustersMFT = mfttrack.nClusters();
+    // float chi2mft = mfttrack.chi2()/(2.f * nClustersMFT - 5.f);
     float chi2mft = mfttrack.chi2();
+    // if (chi2mft < 0.f || maxChi2MFT < chi2mft) {
+    //   return;
+    // }
 
     if (refitGlobalMuon) {
       eta = mfttrack.eta();
@@ -315,6 +322,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy2D"), dcaX, dcaY);
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAz"), dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxy"), dcaXY);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyinSigma"), dcaXY / sigma_dcaXY);
@@ -345,6 +353,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy2D"), dcaX, dcaY);
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAz"), dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxy"), dcaXY);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyinSigma"), dcaXY / sigma_dcaXY);
@@ -376,6 +385,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy2D"), dcaX, dcaY);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAz"), dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxy"), dcaXY);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyinSigma"), dcaXY / sigma_dcaXY);
@@ -405,6 +415,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hChi2MatchMCHMID"), fwdtrack.chi2MatchMCHMID());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hChi2MatchMCHMFT"), fwdtrack.chi2MatchMCHMFT());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy2D"), dcaX, dcaY);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAz"), dcaZ);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy2DinSigma"), dcaX / std::sqrt(cXXatDCA), dcaY / std::sqrt(cYYatDCA));
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxy"), dcaXY);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyinSigma"), dcaXY / sigma_dcaXY);
