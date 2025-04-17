@@ -589,13 +589,31 @@ struct QAExtraDataCollectingEngine {
   // The QA output objects
   //===================================================
   /* pairs histograms */
+  constexpr static size_t kNoOfOverflowBins = 2;
+  constexpr static int kBinNotTracked = -1;
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhN2VsDeltaEtaVsDeltaPhi{2, {nsp, {nsp, nullptr}}};
   TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
-  std::vector<int> ptOfInterestBinMap{analysis::dptdptfilter::ptbins + 1, -1};
+  std::vector<int> ptOfInterestBinMap;
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
+
+  QAExtraDataCollectingEngine()
+  {
+    using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    /* it is done once for both reco and gen */
+    ptOfInterestBinMap = std::vector(static_cast<size_t>(ptbins + kNoOfOverflowBins), kBinNotTracked);
+    LOGF(info, "Configuring the pT bins of interest on a map of length %d", ptOfInterestBinMap.size());
+    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
+      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
+      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
+      LOGF(info, "  Added pT bin %d as internal axis value %d", ptBinsOfInterest[ix], ptOfInterestBinMap[ptBinsOfInterest[ix]]);
+    }
+  }
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -611,20 +629,23 @@ struct QAExtraDataCollectingEngine {
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
     AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
 
+    /* the reconstructed and generated levels histograms */
+    std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
+
     /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
-    LOGF(info, "Configuring the pT bins of interest");
+    LOGF(info, "Configured at %s level the pT bins of interest on a map of length %d", recogen.c_str(), ptOfInterestBinMap.size());
     std::string hPtRangesOfInterestTitle;
-    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
-      TString ptRange = TString::Format("%s%.2f-%.2f", ix == 0 ? "" : ",", ptAxis.GetBinLowEdge(ptBinsOfInterest[ix]), ptAxis.GetBinUpEdge(ptBinsOfInterest[ix]));
-      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
-      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
-      hPtRangesOfInterestTitle += ptRange.Data();
-      LOGF(info, "  Added pT bin %d as internal axis value %d", ptBinsOfInterest[ix], ix + 1);
+    bool firstRange = true;
+    for (size_t ix = 0; ix < ptOfInterestBinMap.size(); ++ix) {
+      if (ptOfInterestBinMap[ix] != kBinNotTracked) {
+        TString ptRange = TString::Format("%s%.2f-%.2f", firstRange ? "" : ",", ptAxis.GetBinLowEdge(ix), ptAxis.GetBinUpEdge(ix));
+        hPtRangesOfInterestTitle += ptRange.Data();
+        LOGF(info, "  Tracking pT bin %d as internal axis value %d", ix, ptOfInterestBinMap[ix]);
+        firstRange = false;
+      }
     }
     LOGF(info, " Final pT bins tilte: %s", hPtRangesOfInterestTitle.c_str());
 
-    /* the reconstructed and generated levels histograms */
-    std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
     for (uint isp = 0; isp < nsp; ++isp) {
       for (uint jsp = 0; jsp < nsp; ++jsp) {
         fhPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("PhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
@@ -656,7 +677,7 @@ struct QAExtraDataCollectingEngine {
         return ptOfInterestBinMap[ptAxis.FindFixBin(track.pt())];
       };
       int ptBin1 = binForPt(track1);
-      if (ptBin1 > 0) {
+      if (ptBin1 != kBinNotTracked) {
         float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
         for (auto const& track2 : tracks2) {
           /* checking the same track id condition */
@@ -665,7 +686,7 @@ struct QAExtraDataCollectingEngine {
             continue;
           }
           int ptBin2 = binForPt(track2);
-          if (ptBin2 > 0) {
+          if (ptBin2 != kBinNotTracked) {
             float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi());
             float deltaEta = track1.eta() - track2.eta();
             float preWeight = 1 - std::abs(deltaEta) / deltaEtaSpan;
@@ -862,6 +883,7 @@ struct PidExtraDataCollectingEngine {
     const AxisSpec dEdxAxis{200, 0.0, 200.0, "dE/dx (au)"};
     AxisSpec pidPAxis{150, 0.1, 5.0, "#it{p} (GeV/#it{c})"};
     pidPAxis.makeLogarithmic();
+    constexpr int kEvenOddBase = 2;
 
     if constexpr (kindOfData == kReco) {
       /* PID histograms */
@@ -884,7 +906,7 @@ struct PidExtraDataCollectingEngine {
                                                    kTProfile2D, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
         for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
           /* only the same charge makes any sense */
-          if (isp % 2 == imainsp % 2) {
+          if (isp % kEvenOddBase == imainsp % kEvenOddBase) {
             fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                                            HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
                                                            HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
@@ -1152,32 +1174,38 @@ struct DptDptEfficiencyAndQc {
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool genlevel) {
+        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool reclevel, bool genlevel) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
-          dce->template init<kReco>(registry, name.Data());
+          if (reclevel) {
+            dce->template init<kReco>(registry, name.Data());
+          }
           if (genlevel) {
             dce->template init<kGen>(registry, name.Data());
           }
         };
         auto buildQACEInstance = [&](float min, float max) {
           auto* dce = new QADataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i],
+                               doprocessReconstructedNotStored || doprocessDetectorLevelNotStored, doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildQACEExtraInstance = [&](float min, float max) {
           auto* dce = new QAExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i], doprocessExtraGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i],
+                               doprocessExtraReconstructedNotStored || doprocessExtraDetectorLevelNotStored, doprocessExtraGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidCEInstance = [&](float min, float max) {
           auto* dce = new PidDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i],
+                               doprocessReconstructedNotStoredPID || doprocessDetectorLevelNotStoredPID || doprocessDetectorLevelNotStoredTunedOnDataPID, doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidExtraCEInstance = [&](float min, float max) {
           auto* dce = new PidExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i],
+                               doprocessReconstructedNotStoredPIDExtra || doprocessDetectorLevelNotStoredPIDExtra || doprocessDetectorLevelNotStoredTunedOnDataPIDExtra, doprocessGeneratorLevelNotStored);
           return dce;
         };
         /* in reverse order for proper order in results file */
