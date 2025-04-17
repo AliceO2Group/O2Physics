@@ -65,7 +65,6 @@ struct UDMcCollisions2UDCollisions {
     udmcc2udc(collisionIds);
   }
   PROCESS_SWITCH(UDMcCollisions2UDCollisions, processIndexingCentral, "Create reverse index from mccollisions to collision", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

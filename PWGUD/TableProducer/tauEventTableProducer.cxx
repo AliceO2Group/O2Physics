@@ -194,12 +194,12 @@ struct TauEventTableProducer {
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDZdcsReduced>;
   using FullSGUDCollision = FullSGUDCollisions::iterator;
-	using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
-	using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
-	using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
-	using UDMcParticlesWithUDTracks = soa::Join<aod::UDMcParticles, aod::UDMcParticlesToUDTracks>;
-	using UDMcCollisionsWithUDCollisions = soa::Join<aod::UDMcCollisions, aod::UDMcCollisionsToUDCollisions>;
-	using UDMcCollisionsWithUDCollision = UDMcCollisionsWithUDCollisions::iterator;
+  using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
+  using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
+  using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
+  using UDMcParticlesWithUDTracks = soa::Join<aod::UDMcParticles, aod::UDMcParticlesToUDTracks>;
+  using UDMcCollisionsWithUDCollisions = soa::Join<aod::UDMcCollisions, aod::UDMcCollisionsToUDCollisions>;
+  using UDMcCollisionsWithUDCollision = UDMcCollisionsWithUDCollisions::iterator;
 
   // init
   void init(InitContext&)
@@ -477,25 +477,22 @@ struct TauEventTableProducer {
                    tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
                    tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP);
     }
-
   }
-	PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
-	void processMonteCarlo(UDMcCollisionsWithUDCollision const& mccollision,
-	                       FullMCSGUDCollisions const&,
-												 FullUDTracks const&,
-												 UDMcParticlesWithUDTracks const&)
-	{
-		LOGF(info,"mccollision idx %i",mccollision.globalIndex());
-//		LOGF(info,"mccollision idx %i, related collision idx %i",mccollision.globalIndex(),mccollision.udcollisionIds());
-		if (mccollision.has_udcollisions()){
-			auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
-			LOGF(info,"collision size %i ",collFromMcColl.size());
-		}
-
-	}
-	PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
-
+  void processMonteCarlo(UDMcCollisionsWithUDCollision const& mccollision,
+                         FullMCSGUDCollisions const&,
+                         FullUDTracks const&,
+                         UDMcParticlesWithUDTracks const&)
+  {
+    LOGF(info, "mccollision idx %i", mccollision.globalIndex());
+    //		LOGF(info,"mccollision idx %i, related collision idx %i",mccollision.globalIndex(),mccollision.udcollisionIds());
+    if (mccollision.has_udcollisions()) {
+      auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
+      LOGF(info, "collision size %i ", collFromMcColl.size());
+    }
+  }
+  PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
