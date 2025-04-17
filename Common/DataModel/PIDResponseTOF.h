@@ -27,7 +27,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
-#include "PID/PIDTOF.h"
+#include "Common/Core/PID/PIDTOF.h"
 
 namespace o2::aod
 {
@@ -334,6 +334,8 @@ struct TOFResponse {
   static o2::pid::tof::TOFResoParamsV3 parameters;
 };
 
+o2::pid::tof::TOFResoParamsV3 TOFResponse::parameters;
+
 //! Expected resolution with the TOF detector for electron (computed on the fly)
 #define PERSPECIES_TOF_SIGMA_COLUMN(name, id)                                                                                   \
   DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSigma##name##Imp, tofExpSigma##name,                                                         \
@@ -354,7 +356,7 @@ struct TOFResponse {
                                                   TOFResponse::parameters[4] * TOFResponse::parameters[4] +                     \
                                                   tofEvTimeErr * tofEvTimeErr);                                                 \
                                }                                                                                                \
-                               constexpr float massSquared = o2::track::pid_constants::sMasses2[o2::track::PID::Electron];      \
+                               constexpr float massSquared = o2::track::pid_constants::sMasses2[id];                            \
                                const float dpp = TOFResponse::parameters[0] +                                                   \
                                                  TOFResponse::parameters[1] * momentum +                                        \
                                                  TOFResponse::parameters[2] * o2::constants::physics::MassElectron / momentum;  \
@@ -376,34 +378,45 @@ PERSPECIES_TOF_SIGMA_COLUMN(He, o2::track::PID::Helium3);
 PERSPECIES_TOF_SIGMA_COLUMN(Al, o2::track::PID::Alpha);
 #undef PERSPECIES_TOF_SIGMA_COLUMN
 
-#define PERSPECIES_TOF_SEPARATION_COLUMN(name, id)                                                                              \
-  DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma##name##Imp, tofNSigma##name,                                                             \
-                             [](const uint8_t detectorMap,                                                                      \
-                                const float tofSignal,                                                                          \
-                                const float momentum,                                                                           \
-                                const float eta,                                                                                \
-                                const float tofEvTimeErr) -> float {                                                            \
-                               if (!(detectorMap & o2::aod::track::TOF)) {                                                      \
-                                 return o2::pid::tof::defaultReturnValue;                                                       \
-                               }                                                                                                \
-                               if (momentum <= 0) {                                                                             \
-                                 return o2::pid::tof::defaultReturnValue;                                                       \
-                               }                                                                                                \
-                               const float reso = TOFResponse::parameters.getResolution<0>(momentum, eta);                      \
-                               if (reso > 0) {                                                                                  \
-                                 return std::sqrt(reso * reso +                                                                 \
-                                                  TOFResponse::parameters[4] * TOFResponse::parameters[4] +                     \
-                                                  tofEvTimeErr * tofEvTimeErr);                                                 \
-                               }                                                                                                \
-                               constexpr float massSquared = o2::track::pid_constants::sMasses2[o2::track::PID::Electron];      \
-                               const float dpp = TOFResponse::parameters[0] +                                                   \
-                                                 TOFResponse::parameters[1] * momentum +                                        \
-                                                 TOFResponse::parameters[2] * o2::constants::physics::MassElectron / momentum;  \
-                               const float sigma = dpp * tofSignal / (1. + momentum * momentum / (massSquared));                \
-                               return std::sqrt(sigma * sigma +                                                                 \
-                                                TOFResponse::parameters[3] * TOFResponse::parameters[3] / momentum / momentum + \
-                                                TOFResponse::parameters[4] * TOFResponse::parameters[4] +                       \
-                                                tofEvTimeErr * tofEvTimeErr);                                                   \
+#define PERSPECIES_TOF_SEPARATION_COLUMN(name, id)                                                                                      \
+  DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma##name##Imp, tofNSigma##name,                                                                     \
+                             [](const uint8_t detectorMap,                                                                              \
+                                const float tofSignal,                                                                                  \
+                                const float length,                                                                                     \
+                                const float tofExpMom,                                                                                  \
+                                const float momentum,                                                                                   \
+                                const float eta,                                                                                        \
+                                const float tofEvTime,                                                                                  \
+                                const float tofEvTimeErr) -> float {                                                                    \
+                               if (!(detectorMap & o2::aod::track::TOF)) {                                                              \
+                                 return o2::pid::tof::defaultReturnValue;                                                               \
+                               }                                                                                                        \
+                               if (momentum <= 0) {                                                                                     \
+                                 return o2::pid::tof::defaultReturnValue;                                                               \
+                               }                                                                                                        \
+                               const float reso = TOFResponse::parameters.getResolution<0>(momentum, eta);                              \
+                               float resolution = 1.0f;                                                                                 \
+                               if (reso > 0) {                                                                                          \
+                                 resolution = std::sqrt(reso * reso +                                                                   \
+                                                        TOFResponse::parameters[4] * TOFResponse::parameters[4] +                       \
+                                                        tofEvTimeErr * tofEvTimeErr);                                                   \
+                               } else {                                                                                                 \
+                                 constexpr float massSquared = o2::track::pid_constants::sMasses2[id];                                  \
+                                 const float dpp = TOFResponse::parameters[0] +                                                         \
+                                                   TOFResponse::parameters[1] * momentum +                                              \
+                                                   TOFResponse::parameters[2] * o2::constants::physics::MassElectron / momentum;        \
+                                 const float sigma = dpp * tofSignal / (1. + momentum * momentum / (massSquared));                      \
+                                 resolution = std::sqrt(sigma * sigma +                                                                 \
+                                                        TOFResponse::parameters[3] * TOFResponse::parameters[3] / momentum / momentum + \
+                                                        TOFResponse::parameters[4] * TOFResponse::parameters[4] +                       \
+                                                        tofEvTimeErr * tofEvTimeErr);                                                   \
+                               }                                                                                                        \
+                               const float expTime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length,                          \
+                                                                                            o2::track::pid_constants::sMasses2[id]);    \
+                               const float delta = tofSignal -                                                                          \
+                                                   tofEvTime -                                                                          \
+                                                   expTime;                                                                             \
+                               return delta / resolution;                                                                               \
                              });
 
 PERSPECIES_TOF_SEPARATION_COLUMN(El, o2::track::PID::Electron);
@@ -419,25 +432,25 @@ PERSPECIES_TOF_SEPARATION_COLUMN(Al, o2::track::PID::Alpha);
 
 } // namespace pidtof
 
-using TOFExpSigmaEl = pidtof::TOFExpSigmaElImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaMu = pidtof::TOFExpSigmaMuImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaPi = pidtof::TOFExpSigmaPiImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaKa = pidtof::TOFExpSigmaKaImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaPr = pidtof::TOFExpSigmaPrImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaDe = pidtof::TOFExpSigmaDeImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaTr = pidtof::TOFExpSigmaTrImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaHe = pidtof::TOFExpSigmaHeImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFExpSigmaAl = pidtof::TOFExpSigmaAlImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaEl = pidtof::TOFExpSigmaElImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaMu = pidtof::TOFExpSigmaMuImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaPi = pidtof::TOFExpSigmaPiImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaKa = pidtof::TOFExpSigmaKaImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaPr = pidtof::TOFExpSigmaPrImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaDe = pidtof::TOFExpSigmaDeImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaTr = pidtof::TOFExpSigmaTrImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaHe = pidtof::TOFExpSigmaHeImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFExpSigmaAl = pidtof::TOFExpSigmaAlImp<track::DetectorMap, pidtofsignal::TOFSignal, track::P, track::Eta, pidtofevtime::TOFEvTimeErr>;
 
-using TOFNSigmaEl = pidtof::TOFNSigmaElImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaMu = pidtof::TOFNSigmaMuImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaPi = pidtof::TOFNSigmaPiImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaKa = pidtof::TOFNSigmaKaImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaPr = pidtof::TOFNSigmaPrImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaDe = pidtof::TOFNSigmaDeImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaTr = pidtof::TOFNSigmaTrImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaHe = pidtof::TOFNSigmaHeImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
-using TOFNSigmaAl = pidtof::TOFNSigmaAlImp<o2::aod::track::DetectorMap, pidtofsignal::TOFSignal, o2::aod::track::P, o2::aod::track::Eta, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaEl = pidtof::TOFNSigmaElImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaMu = pidtof::TOFNSigmaMuImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaPi = pidtof::TOFNSigmaPiImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaKa = pidtof::TOFNSigmaKaImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaPr = pidtof::TOFNSigmaPrImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaDe = pidtof::TOFNSigmaDeImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaTr = pidtof::TOFNSigmaTrImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaHe = pidtof::TOFNSigmaHeImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
+using TOFNSigmaAl = pidtof::TOFNSigmaAlImp<track::DetectorMap, pidtofsignal::TOFSignal, track::Length, track::TOFExpMom, track::P, track::Eta, pidtofevtime::TOFEvTime, pidtofevtime::TOFEvTimeErr>;
 
 namespace pidtof_tiny
 {
