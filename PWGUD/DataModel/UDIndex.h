@@ -9,6 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+///
+/// \file   UDIndex.h
+/// \author Roman Lavička
+/// \since  2025-04-15
+/// \brief  A table to store indices for association of MC truth to MC reco
+///
+
 #ifndef PWGUD_DATAMODEL_UDINDEX_H_
 #define PWGUD_DATAMODEL_UDINDEX_H_
 

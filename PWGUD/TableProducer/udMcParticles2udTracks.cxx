@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   udParticles2udTracks.cxx
+/// \file   udMcParticles2udTracks.cxx
 /// \author Roman Lavička
 /// \since  2025-04-15
 /// \brief  A task to create a reverse index from UDMcParticles to UDTracks
@@ -46,11 +46,11 @@ struct UDMcParticlesToUDTracks {
   {
     // faster version, but will use more memory due to pre-allocation
     std::vector<std::vector<int>> part2track(mcParticles.size());
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.has_udMcParticle())
         part2track[track.udMcParticleId()].push_back(track.globalIndex());
     }
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       udp2udt(part2track[mcParticle.globalIndex()]);
     }
   }
@@ -59,7 +59,7 @@ struct UDMcParticlesToUDTracks {
   void processIndexingCentral(aod::UDMcParticles const&, soa::SmallGroups<LabeledTracks> const& tracks)
   {
     trackIds.clear();
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       trackIds.push_back(track.globalIndex());
     }
     udp2udt(trackIds);

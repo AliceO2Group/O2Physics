@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   udParticles2udTracks.cxx
+/// \file   udMcCollisions2udCollisions.cxx
 /// \author Roman Lavička
 /// \since  2025-04-15
 /// \brief  A task to create a reverse index from UDMcCollisions to UDCollisions
@@ -46,11 +46,11 @@ struct UDMcCollisions2UDCollisions {
   {
     // faster version, but will use more memory due to pre-allocation
     std::vector<std::vector<int>> mccoll2coll(mcCollisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if (collision.has_udMcCollision())
         mccoll2coll[collision.udMcCollisionId()].push_back(collision.globalIndex());
     }
-    for (auto& mcCollision : mcCollisions) {
+    for (const auto& mcCollision : mcCollisions) {
       udmcc2udc(mccoll2coll[mcCollision.globalIndex()]);
     }
   }
@@ -59,7 +59,7 @@ struct UDMcCollisions2UDCollisions {
   void processIndexingCentral(aod::UDMcCollisions const&, soa::SmallGroups<LabeledCollisions> const& collisions)
   {
     collisionIds.clear();
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       collisionIds.push_back(collision.globalIndex());
     }
     udmcc2udc(collisionIds);
