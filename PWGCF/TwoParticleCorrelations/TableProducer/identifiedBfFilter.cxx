@@ -78,6 +78,7 @@ bool loadfromccdb = false;
 
 std::vector<int> recoIdMethods = {0, 1, 2}; // Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
 std::vector<int> trackTypes = {0, 1, 2, 3};
+int two = 2;
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -1163,10 +1164,10 @@ struct IdentifiedBfFilterTracks {
         if (!(pid < 0)) {
           naccepted++;
           /* update charged multiplicities */
-          if (pid % 2 == trackTypes[0]) {
+          if (pid % two == trackTypes[0]) {
             trkMultPos[kIdBfCharged]++;
           }
-          if (pid % 2 == trackTypes[1]) {
+          if (pid % two == trackTypes[1]) {
             trkMultNeg[kIdBfCharged]++;
           }
           if (fullDerivedData) {
