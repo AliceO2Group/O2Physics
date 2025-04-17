@@ -225,7 +225,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
-    hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
+    hCandidate->GetXaxis()->SetBinLabel(2, "PassBuilderSel");
     hCandidate->GetXaxis()->SetBinLabel(3, "DCA_meson");
     hCandidate->GetXaxis()->SetBinLabel(4, "DCA_baryon");
     hCandidate->GetXaxis()->SetBinLabel(5, "TPCNsigma_pion");
@@ -243,6 +243,7 @@ struct strangenessFilter {
     hCandidate->GetXaxis()->SetBinLabel(17, "CascCosPA");
     hCandidate->GetXaxis()->SetBinLabel(18, "DCAV0ToPV");
     hCandidate->GetXaxis()->SetBinLabel(19, "ProperLifeTime");
+    hCandidate->GetXaxis()->SetBinLabel(20, "Rapidity");
 
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
