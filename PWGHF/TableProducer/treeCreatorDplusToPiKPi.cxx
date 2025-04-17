@@ -257,6 +257,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<std::vector<int>> classMlIndexes{"classMlIndexes", {0, 2}, "Indexes of ML bkg and non-prompt scores."};
+  Configurable<int> centEstimator{"centEstimator", 0, "Centrality estimation (None: 0, FT0C: 2, FT0M: 3)"};
 
   HfHelper hfHelper;
 
@@ -265,7 +266,7 @@ struct HfTreeCreatorDplusToPiKPi {
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+  using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
@@ -291,7 +292,7 @@ struct HfTreeCreatorDplusToPiKPi {
       runNumber);
   }
 
-  template <bool doMc = false, bool doMl = false, typename T>
+  template <typename Coll, bool doMc = false, bool doMl = false, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
@@ -316,7 +317,12 @@ struct HfTreeCreatorDplusToPiKPi {
     auto prong0 = candidate.template prong0_as<TracksWPid>();
     auto prong1 = candidate.template prong1_as<TracksWPid>();
     auto prong2 = candidate.template prong2_as<TracksWPid>();
-    auto coll = candidate.template collision_as<CollisionsCent>();
+
+    float cent{-1.};
+    auto coll = candidate.template collision_as<Coll>();
+    if (std::is_same_v<Coll, CollisionsCent> && centEstimator != CentralityEstimator::None) {
+      cent = getCentralityColl(coll, centEstimator);
+    }
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -361,7 +367,7 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.eta(),
         candidate.phi(),
         hfHelper.yDplus(candidate),
-        getCentralityColl(coll, CentralityEstimator::FT0C),
+        cent,
         flagMc,
         originMc,
         channelMc);
@@ -443,14 +449,14 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.phi(),
         hfHelper.yDplus(candidate),
         hfHelper.eDplus(candidate),
-        getCentralityColl(coll, CentralityEstimator::FT0C),
+        cent,
         flagMc,
         originMc,
         channelMc);
     }
   }
 
-  void processData(CollisionsCent const& collisions,
+  void processData(aod::Collisions const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
                    TracksWPid const&)
   {
@@ -473,13 +479,13 @@ struct HfTreeCreatorDplusToPiKPi {
           continue;
         }
       }
-      fillCandidateTable(candidate);
+      fillCandidateTable<aod::Collisions>(candidate);
     }
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
-  void processMc(CollisionsCent const& collisions,
+  void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
                  MatchedGenCandidatesMc const& particles,
@@ -500,7 +506,7 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(reconstructedCandSig.size());
       }
       for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<aod::Collisions, true>(candidate);
       }
     } else if (fillOnlySignalMl) {
       rowCandidateMl.reserve(reconstructedCandSigMl.size());
@@ -516,7 +522,7 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        fillCandidateTable<true, true>(candidate);
+        fillCandidateTable<aod::Collisions, true, true>(candidate);
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -531,7 +537,7 @@ struct HfTreeCreatorDplusToPiKPi {
             continue;
           }
         }
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<aod::Collisions, true>(candidate);
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -540,7 +546,7 @@ struct HfTreeCreatorDplusToPiKPi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<aod::Collisions, true>(candidate);
       }
     }
 
@@ -558,7 +564,116 @@ struct HfTreeCreatorDplusToPiKPi {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
+  void processDataWCent(CollisionsCent const& collisions,
+                   soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+                   TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
+    } else {
+      rowCandidateFull.reserve(candidates.size());
+    }
+    for (const auto& candidate : candidates) {
+      if (downSampleBkgFactor < 1.) {
+        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
+      }
+      fillCandidateTable<CollisionsCent>(candidate);
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", true);
+
+  void processMcWCent(CollisionsCent const& collisions,
+                 aod::McCollisions const&,
+                 SelectedCandidatesMc const& candidates,
+                 MatchedGenCandidatesMc const& particles,
+                 SelectedCandidatesMcWithMl const&,
+                 TracksWPid const&)
+  {
+    // Filling event properties
+    rowCandidateFullEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision, 0, 1);
+    }
+
+    // Filling candidate properties
+    if (fillOnlySignal) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandSig.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandSig.size());
+      }
+      for (const auto& candidate : reconstructedCandSig) {
+        fillCandidateTable<CollisionsCent, true>(candidate);
+      }
+    } else if (fillOnlySignalMl) {
+      rowCandidateMl.reserve(reconstructedCandSigMl.size());
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandSigMl.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandSigMl.size());
+      }
+      for (const auto& candidate : reconstructedCandSigMl) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        fillCandidateTable<CollisionsCent, true, true>(candidate);
+      }
+    } else if (fillOnlyBackground) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(reconstructedCandBkg.size());
+      } else {
+        rowCandidateFull.reserve(reconstructedCandBkg.size());
+      }
+      for (const auto& candidate : reconstructedCandBkg) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        fillCandidateTable<CollisionsCent, true>(candidate);
+      }
+    } else {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
+      }
+      for (const auto& candidate : candidates) {
+        fillCandidateTable<CollisionsCent, true>(candidate);
+      }
+    }
+
+    // Filling particle properties
+    rowCandidateFullParticles.reserve(particles.size());
+    for (const auto& particle : particles) {
+      rowCandidateFullParticles(
+        particle.mcCollision().bcId(),
+        particle.pt(),
+        particle.eta(),
+        particle.phi(),
+        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus),
+        particle.flagMcMatchGen(),
+        particle.originMcGen());
+    }
+  }
+
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
