@@ -674,7 +674,6 @@ struct HfTreeCreatorDplusToPiKPi {
     }
   }
 
-  
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
 };
 
