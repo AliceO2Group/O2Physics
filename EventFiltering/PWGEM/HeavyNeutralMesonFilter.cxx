@@ -208,6 +208,12 @@ struct HeavyNeutralMesonFilter {
     false,
     "Evt sel: check for offline selection"};
 
+  Configurable<bool> ConfDoEMCShift{"ConfDoEMCShift", false, "Apply SM-wise shift in eta and phi to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> ConfEMCEtaShift{"ConfEMCEtaShift", {0.f}, "values for SM-wise shift in eta to be added to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> ConfEMCPhiShift{"ConfEMCPhiShift", {0.f}, "values for SM-wise shift in phi to be added to EMCal clusters to align with TPC tracks"};
+  std::array<float, 20> EMCEtaShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<float, 20> EMCPhiShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
   template <typename T>
   bool isSelectedTrack(T const& track, CFTrigger::FemtoPartners partSpecies)
   {
@@ -426,9 +432,13 @@ struct HeavyNeutralMesonFilter {
     mHistManager.add("GG/invMassVsPt_PCMEMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
     mHistManager.add("GG/invMassVsPt_EMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
 
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_PCM", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_PCMEMC", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
-    mHistManager.add("HeavyNeutralMeson/invMassVsPt_EMC", "Invariant mass and pT of HNM candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_PCM", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_PCMEMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+    mHistManager.add("Omega/invMassVsPt_EMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
+
+    mHistManager.add("EtaPrime/invMassVsPt_PCM", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
+    mHistManager.add("EtaPrime/invMassVsPt_PCMEMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
+    mHistManager.add("EtaPrime/invMassVsPt_EMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
 
     // include all femto histograms
     mHistManager.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{15, -0.5, 14.5}});
@@ -760,6 +770,14 @@ struct HeavyNeutralMesonFilter {
     mHistManager.add("etaprimep/fetaprimePtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
     mHistManager.add("etaprimep/fProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
     mHistManager.add("etaprimep/fAntiProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
+
+    if (ConfDoEMCShift.value) {
+      for (int iSM = 0; iSM < 20; iSM++) {
+        EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
+        EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
+        LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];
+      }
+    }
   }
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
@@ -817,10 +835,11 @@ struct HeavyNeutralMesonFilter {
     mHistManager.fill(HIST("Event/nClustersVsV0s"), clustersInThisCollision.size(), v0sInThisCollision.size());
     mHistManager.fill(HIST("Event/nTracks"), tracksWithItsPid.size());
 
-    hnmutilities::reconstructGGs(clustersInThisCollision, v0sInThisCollision, vGGs);
+    std::vector<hnmutilities::Photon> vGammas;
+    hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, EMCEtaShift, EMCPhiShift);
+    hnmutilities::reconstructGGs(vGammas, vGGs);
+    vGammas.clear();
     processGGs(vGGs);
-    // hnmutilities::reconstructHeavyNeutralMesons(tracks, vGGs, vHNMs);
-    // processHNMs(vHNMs);
 
     bool isProton = false;
     bool isDeuteron = false;
@@ -1483,21 +1502,30 @@ struct HeavyNeutralMesonFilter {
 
       float massHNM = heavyNeutralMeson.m(cfgHNMMassCorrection);
       if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
         // QA
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fInvMass"), massHNM);
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPt"), heavyNeutralMeson.pT());
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fEta"), heavyNeutralMeson.eta());
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
       } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
         // QA
         mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fInvMass"), massHNM);
         mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPt"), heavyNeutralMeson.pT());
         mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fEta"), heavyNeutralMeson.eta());
         mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
       } else {
-        mHistManager.fill(HIST("HeavyNeutralMeson/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
+        if (heavyNeutralMeson.gg->isPi0)
+          mHistManager.fill(HIST("Omega/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
+        else if (heavyNeutralMeson.gg->isEta)
+          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
         // QA
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fInvMass"), massHNM);
         mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fPt"), heavyNeutralMeson.pT());
