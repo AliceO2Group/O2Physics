@@ -309,7 +309,7 @@ struct QaPidMl {
     }
   }
 
-  constexpr float kCertaintyThreshold = 0.5f;
+  static constexpr float kCertaintyThreshold = 0.5f;
 
   int getParticlePdg(float pidCertainties[])
   {
