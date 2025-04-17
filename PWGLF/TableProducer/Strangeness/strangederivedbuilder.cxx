@@ -1070,8 +1070,8 @@ struct strangederivedbuilder {
         }
 
         if (std::abs(mcPart.pdgCode()) == kNeutron) { // check if it is a neutron or anti-neutron
-          if (std::abs(mcPart.eta()) > 8.7) { // check if it is within ZDC acceptance
-            zdcNeutrons(mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(), 
+          if (std::abs(mcPart.eta()) > 8.7) {         // check if it is within ZDC acceptance
+            zdcNeutrons(mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(),
                         mcPart.vx(), mcPart.vy(), mcPart.vz(), mcPart.vt(),
                         mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
 

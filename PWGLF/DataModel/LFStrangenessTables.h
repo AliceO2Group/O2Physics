@@ -1740,11 +1740,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! neutron phi in the range [0, 2pi)
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! neutron pseudorapidity
                            [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! neutron rapidity
-                           [](float pz, float e) -> float { return std::atanh(pz/e); });
+                           [](float pz, float e) -> float { return std::atanh(pz / e); });
 } // namespace zdcneutrons
 
 DECLARE_SOA_TABLE(ZDCNeutrons, "AOD", "ZDCNEUTRON", //! MC properties of the neutrons within ZDC acceptance (for UPC analysis)
-                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags, 
+                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
                   mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
                   // Dynamic columns for manipulating information
