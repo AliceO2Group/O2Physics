@@ -863,6 +863,7 @@ class TestNameFunctionVariable(TestSpec):
             "class",
             "explicit",
             "concept",
+            "throw",
         ):
             return True
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
