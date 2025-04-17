@@ -669,8 +669,8 @@ struct strangenessFilter {
         }
         hCandidate->Fill(5.5);
       }
-      hCandidate->Fill(6.5); //OLD: eta dau (selection now applied in strangeness helper)
-      hCandidate->Fill(7.5); //OLD: bachtopv (selection now applied in strangeness helper)
+      hCandidate->Fill(6.5); // OLD: eta dau (selection now applied in strangeness helper)
+      hCandidate->Fill(7.5); // OLD: bachtopv (selection now applied in strangeness helper)
 
       // not striclty needed as selection are applied beforehand - just as QA (no change in number expected)
       if (Cascv0radius < v0radius) {
@@ -680,7 +680,7 @@ struct strangenessFilter {
       if (Casccascradius < cascradius) {
         continue;
       }
-      hCandidate->Fill(9.5); 
+      hCandidate->Fill(9.5);
       if (v0DauCPA < v0cospa) {
         continue;
       }
@@ -690,11 +690,11 @@ struct strangenessFilter {
       }
       hCandidate->Fill(11.5);
       if (mStraHelper.cascade.cascadeDaughterDCA > dcacascdau) {
-	continue;
+        continue;
       }
       hCandidate->Fill(12.5);
       if (std::fabs(LambdaMass - constants::physics::MassLambda) > masslambdalimit) {
-	continue;
+        continue;
       }
       hCandidate->Fill(13.5);
       if (std::fabs(etaCasc) > eta) {
@@ -711,16 +711,16 @@ struct strangenessFilter {
 
       // Fill selections QA for Xi
       if (cascCPA > casccospaxi) {
-	hCandidate->Fill(16.5);
-	if (cascCPA > dcav0topv) {
-	  hCandidate->Fill(17.5);
-	  if (xiproperlifetime < properlifetimefactor * ctauxi) {
-	    hCandidate->Fill(18.5);
-	    if (std::fabs(yXi) < rapidity) {
-	      hCandidate->Fill(19.5);
-	    }
-	  }
-	}
+        hCandidate->Fill(16.5);
+        if (cascCPA > dcav0topv) {
+          hCandidate->Fill(17.5);
+          if (xiproperlifetime < properlifetimefactor * ctauxi) {
+            hCandidate->Fill(18.5);
+            if (std::fabs(yXi) < rapidity) {
+              hCandidate->Fill(19.5);
+            }
+          }
+        }
       }
 
       const auto deltaMassXi = useSigmaBasedMassCutXi ? getMassWindow(stfilter::species::Xi, ptCasc) : ximasswindow;
