@@ -16,6 +16,8 @@
 /// \brief  A task to create a reverse index from UDMcCollisions to UDCollisions
 ///
 
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
