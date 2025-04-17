@@ -650,14 +650,14 @@ struct tofPidQaImp {
   PROCESS_SWITCH(tofPidQaImp, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
   makeProcessFunction(aod::TOFNSigmaEl, Electron);
-  // makeProcessFunction(aod::TOFNSigmaMu, Muon);
-  // makeProcessFunction(aod::TOFNSigmaPi, Pion);
-  // makeProcessFunction(aod::TOFNSigmaKa, Kaon);
-  // makeProcessFunction(aod::TOFNSigmaPr, Proton);
-  // makeProcessFunction(aod::TOFNSigmaDe, Deuteron);
-  // makeProcessFunction(aod::TOFNSigmaTr, Triton);
-  // makeProcessFunction(aod::TOFNSigmaHe, Helium3);
-  // makeProcessFunction(aod::TOFNSigmaAl, Alpha);
+  makeProcessFunction(aod::TOFNSigmaMu, Muon);
+  makeProcessFunction(aod::TOFNSigmaPi, Pion);
+  makeProcessFunction(aod::TOFNSigmaKa, Kaon);
+  makeProcessFunction(aod::TOFNSigmaPr, Proton);
+  makeProcessFunction(aod::TOFNSigmaDe, Deuteron);
+  makeProcessFunction(aod::TOFNSigmaTr, Triton);
+  makeProcessFunction(aod::TOFNSigmaHe, Helium3);
+  makeProcessFunction(aod::TOFNSigmaAl, Alpha);
 #undef makeProcessFunction
 
 // QA of full tables
@@ -671,14 +671,14 @@ struct tofPidQaImp {
   PROCESS_SWITCH(tofPidQaImp, processFull##particleId, Form("Process for the %s hypothesis for full TOF PID QA", #particleId), false);
 
   makeProcessFunction(El, Electron);
-  // makeProcessFunction(Mu, Muon);
-  // makeProcessFunction(Pi, Pion);
-  // makeProcessFunction(Ka, Kaon);
-  // makeProcessFunction(Pr, Proton);
-  // makeProcessFunction(De, Deuteron);
-  // makeProcessFunction(Tr, Triton);
-  // makeProcessFunction(He, Helium3);
-  // makeProcessFunction(Al, Alpha);
+  makeProcessFunction(Mu, Muon);
+  makeProcessFunction(Pi, Pion);
+  makeProcessFunction(Ka, Kaon);
+  makeProcessFunction(Pr, Proton);
+  makeProcessFunction(De, Deuteron);
+  makeProcessFunction(Tr, Triton);
+  makeProcessFunction(He, Helium3);
+  makeProcessFunction(Al, Alpha);
 #undef makeProcessFunction
 };
 
