@@ -65,7 +65,6 @@ struct UDMcParticlesToUDTracks {
     udp2udt(trackIds);
   }
   PROCESS_SWITCH(UDMcParticlesToUDTracks, processIndexingCentral, "Create reverse index from particles to tracks", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
