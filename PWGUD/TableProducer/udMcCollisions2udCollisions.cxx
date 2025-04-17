@@ -47,8 +47,8 @@ struct UDMcCollisions2UDCollisions {
     // faster version, but will use more memory due to pre-allocation
     std::vector<std::vector<int>> mccoll2coll(mcCollisions.size());
     for (auto& collision : collisions) {
-      if (collision.has_mcCollision())
-        mccoll2coll[collision.mcCollisionId()].push_back(collision.globalIndex());
+      if (collision.has_udMcCollision())
+        mccoll2coll[collision.udMcCollisionId()].push_back(collision.globalIndex());
     }
     for (auto& mcCollision : mcCollisions) {
       udmcc2udc(mccoll2coll[mcCollision.globalIndex()]);

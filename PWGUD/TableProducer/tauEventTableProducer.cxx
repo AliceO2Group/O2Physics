@@ -145,7 +145,7 @@ struct TauEventTableProducer {
     Configurable<bool> useNumContribs{"useNumContribs", false, {"Use coll.numContribs as event cut"}};
     Configurable<int> cutRecoFlag{"cutRecoFlag", 1, {"0 = std mode, 1 = upc mode"}};
     Configurable<bool> useRecoFlag{"useRecoFlag", false, {"Use coll.flags as event cut"}};
-    Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", -1, "FV0A threshold for SG selector"};
+    Configurable<float> cutTrueGapSideFV0{"cutTrueGapSideFV0", 180000, "FV0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0A{"cutTrueGapSideFT0A", 150., "FT0A threshold for SG selector"};
     Configurable<float> cutTrueGapSideFT0C{"cutTrueGapSideFT0C", 50., "FT0C threshold for SG selector"};
     Configurable<float> cutTrueGapSideZDC{"cutTrueGapSideZDC", 10000., "ZDC threshold for SG selector. 0 is <1n, 4.2 is <2n, 6.7 is <3n, 9.5 is <4n, 12.5 is <5n"};
@@ -197,7 +197,9 @@ struct TauEventTableProducer {
 	using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
 	using FullMCSGUDCollisions = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::SGCollisions, aod::UDMcCollsLabels>;
 	using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
-	using UDMcParticlesWithUDTracks = soa::Join<aod::McParticles, aod::UDMcParticlesToUDTracks>;
+	using UDMcParticlesWithUDTracks = soa::Join<aod::UDMcParticles, aod::UDMcParticlesToUDTracks>;
+	using UDMcCollisionsWithUDCollisions = soa::Join<aod::UDMcCollisions, aod::UDMcCollisionsToUDCollisions>;
+	using UDMcCollisionsWithUDCollision = UDMcCollisionsWithUDCollisions::iterator;
 
   // init
   void init(InitContext&)
@@ -479,12 +481,17 @@ struct TauEventTableProducer {
   }
 	PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
-	void processMonteCarlo(FullMCSGUDCollision const& mccollision,
-												 FullSGUDCollisions const& collisions,
-												 FullUDTracks const& tracks,
-												 UDMcParticlesWithUDTracks const& particles)
+	void processMonteCarlo(UDMcCollisionsWithUDCollision const& mccollision,
+	                       FullMCSGUDCollisions const&,
+												 FullUDTracks const&,
+												 UDMcParticlesWithUDTracks const&)
 	{
-
+		LOGF(info,"mccollision idx %i",mccollision.globalIndex());
+//		LOGF(info,"mccollision idx %i, related collision idx %i",mccollision.globalIndex(),mccollision.udcollisionIds());
+		if (mccollision.has_udcollisions()){
+			auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
+			LOGF(info,"collision size %i ",collFromMcColl.size());
+		}
 
 	}
 	PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);

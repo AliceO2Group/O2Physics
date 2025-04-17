@@ -47,8 +47,8 @@ struct UDMcParticlesToUDTracks {
     // faster version, but will use more memory due to pre-allocation
     std::vector<std::vector<int>> part2track(mcParticles.size());
     for (auto& track : tracks) {
-      if (track.has_mcParticle())
-        part2track[track.mcParticleId()].push_back(track.globalIndex());
+      if (track.has_udMcParticle())
+        part2track[track.udMcParticleId()].push_back(track.globalIndex());
     }
     for (auto& mcParticle : mcParticles) {
       udp2udt(part2track[mcParticle.globalIndex()]);

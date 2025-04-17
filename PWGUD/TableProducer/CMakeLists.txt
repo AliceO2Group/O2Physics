@@ -45,3 +45,8 @@ o2physics_add_dpl_workflow(udmcparticles-to-udtracks
                            SOURCES udMcParticles2udTracks.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(udmccollisions-to-udcollisions
+                           SOURCES udMcCollisions2udCollisions.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
