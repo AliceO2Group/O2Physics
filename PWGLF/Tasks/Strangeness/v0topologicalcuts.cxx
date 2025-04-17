@@ -292,8 +292,6 @@ struct v0topologicalcuts {
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
                     aod::McParticles const&)
   {
-    double mK0shPDG = o2::constants::physics::MassK0Short;   // Kaon mass for comp mass cut
-    double mLambdaPDG = o2::constants::physics::MassLambda0; // Lambda mass for comp mass cut
     for (const auto& v0 : V0s) {
       if (std::abs(v0.y()) < rapidityCut) {
         if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
@@ -309,8 +307,8 @@ struct v0topologicalcuts {
           // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
           if (v0.has_mcParticle()) {
             auto v0mcParticle = v0.mcParticle();
-            if (v0mcParticle.pdgCode() == kK0Short) {                                                                               // kzero matched
-              if (std::abs(v0.mLambda() - mLambdaPDG) > compv0masscut && std::abs(v0.mAntiLambda() - mLambdaPDG) > compv0masscut) { // Kzero competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
+            if (v0mcParticle.pdgCode() == kK0Short) {                                                                                                                                 // kzero matched
+              if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > compv0masscut && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > compv0masscut) { // Kzero competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
                 rV0ParametersMCK0Smatch.fill(HIST("hDCAV0Daughters_KzeroMC_Match"), v0.dcaV0daughters());
                 rV0ParametersMCK0Smatch.fill(HIST("hV0CosPA_KzeroMC_Match"), v0.v0cosPA());
                 rV0ParametersMCK0Smatch.fill(HIST("hV0Radius_KzeroMC_Match"), v0.v0radius());
@@ -364,8 +362,8 @@ struct v0topologicalcuts {
                 }
               }
             }
-            if (v0mcParticle.pdgCode() == kLambda0) {                   // lambda matched
-              if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
+            if (v0mcParticle.pdgCode() == kLambda0) {                                              // lambda matched
+              if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
                 rV0ParametersMCLambdamatch.fill(HIST("hDCAV0Daughters_LambdaMC_Match"), v0.dcaV0daughters());
                 rV0ParametersMCLambdamatch.fill(HIST("hV0CosPA_LambdaMC_Match"), v0.v0cosPA());
                 rV0ParametersMCLambdamatch.fill(HIST("hV0Radius_LambdaMC_Match"), v0.v0radius());
@@ -420,8 +418,8 @@ struct v0topologicalcuts {
                 }
               }
             }
-            if (v0mcParticle.pdgCode() == kLambda0Bar) {                // antilambda matched
-              if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
+            if (v0mcParticle.pdgCode() == kLambda0Bar) {                                           // antilambda matched
+              if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Kaons)
                 rV0ParametersMCAntiLambdamatch.fill(HIST("hDCAV0Daughters_AntiLambdaMC_Match"), v0.dcaV0daughters());
                 rV0ParametersMCAntiLambdamatch.fill(HIST("hV0CosPA_AntiLambdaMC_Match"), v0.v0cosPA());
                 rV0ParametersMCAntiLambdamatch.fill(HIST("hV0Radius_AntiLambdaMC_Match"), v0.v0radius());
@@ -486,8 +484,6 @@ struct v0topologicalcuts {
                    DaughterTracks const&)
   {
     // filling histograms with the different V0 parameters
-    double mK0shPDG = o2::constants::physics::MassK0Short;   // Kaon mass for comp mass cut
-    double mLambdaPDG = o2::constants::physics::MassLambda0; // Lambda mass for comp mass cut
     for (const auto& v0 : V0s) {
       const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
       const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
@@ -505,8 +501,8 @@ struct v0topologicalcuts {
           rV0ParametersData.fill(HIST("hVertexZRec"), collision.posZ());
           rV0ParametersData.fill(HIST("hV0Eta"), v0.posTrack_as<DaughterTracks>().eta());
           rV0ParametersData.fill(HIST("hV0Eta"), v0.negTrack_as<DaughterTracks>().eta());
-          if (std::abs(v0.mLambda() - mLambdaPDG) > compv0masscut && std::abs(v0.mAntiLambda() - mLambdaPDG) > compv0masscut) {         // antilambda competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
-            if (std::abs(posDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) { // TPC PID on daughter pions
+          if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > compv0masscut && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > compv0masscut) { // antilambda competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
+            if (std::abs(posDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) {                                           // TPC PID on daughter pions
               rV0ParametersData.fill(HIST("hMassK0ShortAfterAllCuts"), v0.mK0Short());
               rV0ParametersData.fill(HIST("hNSigmaPosPiFromK0s"), posDaughterTrack.tpcNSigmaPi(), posDaughterTrack.tpcInnerParam());
               rV0ParametersData.fill(HIST("hNSigmaNegPiFromK0s"), negDaughterTrack.tpcNSigmaPi(), negDaughterTrack.tpcInnerParam());
@@ -558,7 +554,7 @@ struct v0topologicalcuts {
               }
             }
           }
-          if (std::abs(v0.mK0Short() - mK0shPDG) > compv0masscut) { // lambda competitive v0 mass cut (cut out Kaons)
+          if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > compv0masscut) { // lambda competitive v0 mass cut (cut out Kaons)
             rV0ParametersData.fill(HIST("hMassLambdaAfterCompmassCut"), v0.mLambda());
             rV0ParametersData.fill(HIST("hMassAntiLambdaAfterCompmassCut"), v0.mAntiLambda());
             if (std::abs(posDaughterTrack.tpcNSigmaPr()) < nSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) < nSigmaTPCPion) { // TPC PID on daughter pion and proton for Lambda
