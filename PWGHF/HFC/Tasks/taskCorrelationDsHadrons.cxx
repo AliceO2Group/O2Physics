@@ -277,6 +277,10 @@ struct HfTaskCorrelationDsHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
+      if (ptBinD == -1) {
+        continue;
+      }
+
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
@@ -306,6 +310,10 @@ struct HfTaskCorrelationDsHadrons {
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+
+      if (ptBinD == -1) {
+        continue;
+      }
 
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
@@ -355,6 +363,10 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isDsPrompt = candidate.isPrompt();
 
+      if (ptBinD == -1) {
+        continue;
+      }
+
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
       }
@@ -393,6 +405,10 @@ struct HfTaskCorrelationDsHadrons {
       int statusPromptHadron = pairEntry.trackOrigin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+
+      if (ptBinD == -1) {
+        continue;
+      }
 
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
@@ -487,6 +503,10 @@ struct HfTaskCorrelationDsHadrons {
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+
+      if (ptBinD == -1) {
+        continue;
+      }
 
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
@@ -586,6 +606,10 @@ struct HfTaskCorrelationDsHadrons {
       int statusPromptHadron = pairEntry.trackOrigin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+
+      if (ptBinD == -1) {
+        continue;
+      }
 
       if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
         continue;
