@@ -280,7 +280,7 @@ struct IdentifiedbfTask {
         } else {
           fhN1VsZEtaPhiPtSecondary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
         }
-      }else if constexpr(framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>){
+      } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
         if (isPrimaryCheck(track)) {
           fhN1VsZEtaPhiPtPrimary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
         } else {
