@@ -280,8 +280,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           if (applyMSE) {
             hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
-          } else
-            hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
+          } else hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCand);
@@ -306,8 +305,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           if (applyMSE) {
             hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
-          } else
-            hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
+          } else hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
         }
         continue;
       }
@@ -322,8 +320,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           if (applyMSE) {
             hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
-          } else
-            hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
+          } else hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
         }
         continue;
       }
@@ -392,8 +389,7 @@ struct HfCandidateSelectorXicToPKPi {
         if (applyMl) {
           if (applyMSE) {
             hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
-          } else
-            hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
+          } else hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
         }
         continue;
       }
@@ -430,8 +426,7 @@ struct HfCandidateSelectorXicToPKPi {
         // Temporary filling replacement of the ML candidate
         if (applyMSE) {
           hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
-        } else
-          hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
+        } else hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
 
         if (!isSelectedMlXicToPKPi && !isSelectedMlXicToPiKP) {
           hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);
