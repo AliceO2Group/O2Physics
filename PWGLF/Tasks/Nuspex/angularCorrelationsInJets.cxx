@@ -574,8 +574,8 @@ struct AngularCorrelationsInJets {
     for (int i = 0; i < static_cast<int>(buffer.size()); i++) { // loop over tracks in buffer
       if (std::isnan(buffer.at(i).first))
         continue;
-      if (buffer.at(i).first > constants::math::TwoPI || buffer.at(i).first < constants::math::TwoPI) {
-        registryData.fill(HIST("trackProtocol"), 13); // # buffer tracks failed with phi > 2 pi
+      if (buffer.at(i).first > constants::math::TwoPI || buffer.at(i).first < -constants::math::TwoPI) {
+        registryData.fill(HIST("trackProtocol"), 13); // # buffer tracks failed with |phi| > 2 pi
         continue;
       }
 
@@ -999,7 +999,6 @@ struct AngularCorrelationsInJets {
         continue;
 
       registryData.fill(HIST("trackProtocol"), 1); // # tracks selected for jet reconstruction
-      double mass = 0.139;
 
       if (track.tpcNClsFindable() != 0) {
         registryQC.fill(HIST("ratioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
@@ -1019,7 +1018,7 @@ struct AngularCorrelationsInJets {
         registryQC.fill(HIST("etaFullEvent"), track.eta());
         registryQC.fill(HIST("etaPtFullEvent"), track.pt(), track.eta());
       }
-      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(mass));
+      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
       inputPseudoJet.set_user_index(index);
       particles[index] = track;
       particlesForCF.emplace_back(track);
@@ -1052,8 +1051,10 @@ struct AngularCorrelationsInJets {
     registryData.fill(HIST("numJetsInEvent"), jetCounter);
 
     TVector3 hardestJetAxis(jets.at(0).px(), jets.at(0).py(), jets.at(0).pz()); // for full event, use hardest jet as orientation
-    doCorrelations(particlesForCF, fBufferFull, fTempBufferFull, -1, hardestJetAxis);
-    setTrackBuffer(fTempBufferFull, fBufferFull);
+    if (doFullCorrelations) {
+      doCorrelations(particlesForCF, fBufferFull, fTempBufferFull, -1, hardestJetAxis);
+      setTrackBuffer(fTempBufferFull, fBufferFull);
+    }
   }
 
   template <typename U>
@@ -1064,7 +1065,6 @@ struct AngularCorrelationsInJets {
     jetInput.clear();
     particles.clear();
     int index = 0;
-    double mass = 0.139; // pion mass for input because 80% is pions anyway
 
     for (const auto& track : tracks) {
       if (track.tpcNClsFindable() != 0) {
@@ -1083,7 +1083,7 @@ struct AngularCorrelationsInJets {
       registryQC.fill(HIST("etaFullEvent"), track.eta());
       registryQC.fill(HIST("etaPtFullEvent"), track.pt(), track.eta());
 
-      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(mass));
+      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
       inputPseudoJet.set_user_index(index);
       particles[index] = track;
       jetInput.emplace_back(inputPseudoJet);
