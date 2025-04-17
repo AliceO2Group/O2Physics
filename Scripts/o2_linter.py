@@ -254,10 +254,7 @@ class TestSpec:
         print(f"{path}:{line}: {message_levels[self.severity_current]}: {message} [{self.name}]")
         if github_mode and not self.tolerated:  # Annotate only not tolerated issues.
             # GitHub annotation format
-            print(
-                f"::{message_levels[self.severity_current]} "
-                f"file={path},line={line},title=[{self.name}]::{message} [{self.name}]"
-            )
+            print(f"::{message_levels[self.severity_current]} file={path},line={line},title=[{self.name}]::{message}")
 
     def test_line(self, line: str) -> bool:
         """Test a line."""
