@@ -486,7 +486,6 @@ struct TauEventTableProducer {
                          UDMcParticlesWithUDTracks const&)
   {
     LOGF(info, "mccollision idx %i", mccollision.globalIndex());
-    //		LOGF(info,"mccollision idx %i, related collision idx %i",mccollision.globalIndex(),mccollision.udcollisionIds());
     if (mccollision.has_udcollisions()) {
       auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
       LOGF(info, "collision size %i ", collFromMcColl.size());
