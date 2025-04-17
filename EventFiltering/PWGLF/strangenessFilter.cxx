@@ -668,13 +668,18 @@ struct strangenessFilter {
         }
         hCandidate->Fill(5.5);
       }
-      hCandidate->Fill(7.5);
+      hCandidate->Fill(6.5); //OLD: eta dau (selection now applied in strangeness helper)
+      hCandidate->Fill(7.5); //OLD: bachtopv (selection now applied in strangeness helper)
 
       // not striclty needed as selection are applied beforehand - just as QA (no change in number expected)
       if (Cascv0radius < v0radius) {
         continue;
       }
       hCandidate->Fill(8.5);
+      if (Casccascradius < cascradius) {
+        continue;
+      }
+      hCandidate->Fill(9.5); 
       if (v0DauCPA < v0cospa) {
         continue;
       }
@@ -683,7 +688,14 @@ struct strangenessFilter {
         continue;
       }
       hCandidate->Fill(11.5);
-
+      if (mStraHelper.cascade.cascadeDaughterDCA > dcacascdau) {
+	continue;
+      }
+      hCandidate->Fill(12.5);
+      if (std::fabs(LambdaMass - constants::physics::MassLambda) > masslambdalimit) {
+	continue;
+      }
+      hCandidate->Fill(13.5);
       if (std::fabs(etaCasc) > eta) {
         continue;
       }
@@ -695,6 +707,20 @@ struct strangenessFilter {
         continue;
       }
       hCandidate->Fill(15.5);
+
+      // Fill selections QA for Xi
+      if (cascCPA > casccospaxi) {
+	hCandidate->Fill(16.5);
+	if (cascCPA > dcav0topv) {
+	  hCandidate->Fill(17.5);
+	  if (xiproperlifetime < properlifetimefactor * ctauxi) {
+	    hCandidate->Fill(18.5);
+	    if (std::fabs(yXi) < rapidity) {
+	      hCandidate->Fill(19.5);
+	    }
+	  }
+	}
+      }
 
       const auto deltaMassXi = useSigmaBasedMassCutXi ? getMassWindow(stfilter::species::Xi, ptCasc) : ximasswindow;
       const auto deltaMassOmega = useSigmaBasedMassCutOmega ? getMassWindow(stfilter::species::Omega, ptCasc) : omegamasswindow;
