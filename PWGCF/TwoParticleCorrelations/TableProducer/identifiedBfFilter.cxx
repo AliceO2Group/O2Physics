@@ -78,7 +78,7 @@ bool loadfromccdb = false;
 
 std::vector<int> recoIdMethods = {0, 1, 2}; // Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
 std::vector<int> trackTypes = {0, 1, 2, 3};
-int two = 2;
+const int twoDenom = 2; // Used to test if a value is even or odd
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -1164,10 +1164,10 @@ struct IdentifiedBfFilterTracks {
         if (!(pid < 0)) {
           naccepted++;
           /* update charged multiplicities */
-          if (pid % two == trackTypes[0]) {
+          if (pid % twoDenom == trackTypes[0]) {
             trkMultPos[kIdBfCharged]++;
           }
-          if (pid % two == trackTypes[1]) {
+          if (pid % twoDenom == trackTypes[1]) {
             trkMultNeg[kIdBfCharged]++;
           }
           if (fullDerivedData) {
