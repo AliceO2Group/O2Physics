@@ -397,7 +397,7 @@ struct HfCandidateSelectorXicToPKPi {
             hfMlXicToPKPiCandidate(outputMSEXicToPKPi, outputMSEXicToPiKP);
           } else {
             hfMlXicToPKPiCandidate(outputMlXicToPKPi, outputMlXicToPiKP);
-          }  
+          }
         }
         continue;
       }
