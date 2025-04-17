@@ -221,7 +221,7 @@ class TestSpec:
     severity_current: Severity = Severity.DEFAULT
     suffixes: "list[str]" = []  # suffixes of files to test
     per_line: bool = True  # Test lines separately one by one.
-    tolerated: bool = False  # Flag for tolerating issues.
+    tolerated: bool = False  # flag for tolerating issues
     n_issues: int = 0  # issue counter
     n_disabled: int = 0  # counter of disabled issues
     n_tolerated: int = 0  # counter of tolerated issues
