@@ -287,7 +287,7 @@ struct v0topologicalcuts {
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCPr>;
 
   // This is the Process for the MC reconstructed Data
-  void recMCProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+  void RecMCProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
                     aod::McParticles const&)
@@ -295,7 +295,7 @@ struct v0topologicalcuts {
     double mK0shPDG = o2::constants::physics::MassK0Short;   // Kaon mass for comp mass cut
     double mLambdaPDG = o2::constants::physics::MassLambda0; // Lambda mass for comp mass cut
     for (const auto& v0 : V0s) {
-      if (std::abs(v0mcParticle.y()) < rapidityCut) {
+      if (std::abs(v0.y()) < rapidityCut) {
         if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
           // filling histograms with V0 values
           rV0ParametersMCV0match.fill(HIST("hDCAV0Daughters_V0_Match"), v0.dcaV0daughters());
@@ -481,17 +481,17 @@ struct v0topologicalcuts {
     }
   }
   // This is the process for Real Data
-  void dataProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
+  void DataProcess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision,
                    aod::V0Datas const& V0s,
                    DaughterTracks const&)
   {
     // filling histograms with the different V0 parameters
     double mK0shPDG = o2::constants::physics::MassK0Short;   // Kaon mass for comp mass cut
     double mLambdaPDG = o2::constants::physics::MassLambda0; // Lambda mass for comp mass cut
+    for (const auto& v0 : V0s) {
     const auto& posDaughterTrack = v0.posTrack_as<DaughterTracks>();
     const auto& negDaughterTrack = v0.negTrack_as<DaughterTracks>();
-    for (const auto& v0 : V0s) {
-      if (std::abs(v0mcParticle.y()) < rapidityCut) {
+      if (std::abs(v0.y()) < rapidityCut) {
         if (std::abs(v0.posTrack_as<DaughterTracks>().eta()) < etadau && std::abs(v0.negTrack_as<DaughterTracks>().eta()) < etadau) { // daughters pseudorapidity cut
           rV0ParametersData.fill(HIST("hMassK0ShortNoCuts_V0Data"), v0.mK0Short());
           rV0ParametersData.fill(HIST("hMassLambdaNoCuts_V0Data"), v0.mLambda());
@@ -668,8 +668,8 @@ struct v0topologicalcuts {
       }
     }
   }
-  PROCESS_SWITCH(v0topologicalcuts, recMCProcess, "Process Run 3 MC:Reconstructed", true);
-  PROCESS_SWITCH(v0topologicalcuts, dataProcess, "Process Run 3 Data,", false);
+  PROCESS_SWITCH(v0topologicalcuts, RecMCProcess, "Process Run 3 MC:Reconstructed", true);
+  PROCESS_SWITCH(v0topologicalcuts, DataProcess, "Process Run 3 Data,", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
