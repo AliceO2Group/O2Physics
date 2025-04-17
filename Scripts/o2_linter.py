@@ -22,21 +22,24 @@ import os
 import re
 import sys
 from enum import Enum
-from typing import Union
 from pathlib import Path
+from typing import Union
 
 github_mode = False  # GitHub mode
 prefix_disable = "o2-linter: disable="  # prefix for disabling tests
 file_tolerated_tests = "o2linter"  # name of file with a list of tests whose failures should be tolerated
-# If this file exists in the path of the tested file, failures of tests listed in this file will not make the linter fail.
+# If this file exists in the path of the tested file,
+# failures of tests listed in this file will not make the linter fail.
 
 
+# issue severity levels
 class Severity(Enum):
     WARNING = 1
     ERROR = 2
     DEFAULT = ERROR
 
 
+# strings for error messages
 message_levels = {
     Severity.WARNING: "warning",
     Severity.ERROR: "error",
@@ -200,8 +203,8 @@ def get_tolerated_tests(path: str) -> "list[str]":
     Starts in the test file directory and iterates through parents.
     """
     tests: list[str] = []
-    for dir in Path(path).resolve().parents:
-        path_tests = dir / file_tolerated_tests
+    for directory in Path(path).resolve().parents:
+        path_tests = directory / file_tolerated_tests
         if path_tests.is_file():
             with path_tests.open() as content:
                 tests = [line.strip() for line in content.readlines() if line.strip()]
@@ -252,7 +255,8 @@ class TestSpec:
         if github_mode and not self.tolerated:  # Annotate only not tolerated issues.
             # GitHub annotation format
             print(
-                f"::{message_levels[self.severity_current]} file={path},line={line},title=[{self.name}]::{message} [{self.name}]"
+                f"::{message_levels[self.severity_current]} "
+                f"file={path},line={line},title=[{self.name}]::{message} [{self.name}]"
             )
 
     def test_line(self, line: str) -> bool:
@@ -736,7 +740,7 @@ class TestWorkflowOptions(TestSpec):
 
     def test_file(self, path: str, content) -> bool:
         is_inside_define = False  # Are we inside defineDataProcessing?
-        for i, line in enumerate(content):  # pylint: disable=unused-variable
+        for _i, line in enumerate(content):  # pylint: disable=unused-variable
             if not line.strip():
                 continue
             if self.is_disabled(line):
@@ -1746,8 +1750,8 @@ def main():
                 ref_ids = [ref.value for ref in test.references]
                 ref_names += test.references
                 print(
-                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}\t\t{test.n_tolerated}"
-                    f"\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
+                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
+                    f"\t\t{test.n_tolerated}\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
                 )
         # Print list of references for listed tests.
         print("\nReferences")
