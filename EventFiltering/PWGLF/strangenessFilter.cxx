@@ -740,9 +740,9 @@ struct strangenessFilter {
         QAHistosTopologicalVariables.fill(HIST("hDCAV0ToPVXi"), DCAV0ToPV);
         QAHistosTopologicalVariables.fill(HIST("hDCAV0DaughtersXi"), mStraHelper.cascade.v0DaughterDCA);
         QAHistosTopologicalVariables.fill(HIST("hDCACascDaughtersXi"), mStraHelper.cascade.cascadeDaughterDCA);
-        QAHistosTopologicalVariables.fill(HIST("hDCABachToPVXi"), mStraHelper.cascade.bachelorDCAxy);
-        QAHistosTopologicalVariables.fill(HIST("hDCAPosToPVXi"), mStraHelper.cascade.positiveDCAxy);
-        QAHistosTopologicalVariables.fill(HIST("hDCANegToPVXi"), mStraHelper.cascade.negativeDCAxy);
+        QAHistosTopologicalVariables.fill(HIST("hDCABachToPVXi"), std::fabs(mStraHelper.cascade.bachelorDCAxy));
+        QAHistosTopologicalVariables.fill(HIST("hDCAPosToPVXi"), std::fabs(mStraHelper.cascade.positiveDCAxy));
+        QAHistosTopologicalVariables.fill(HIST("hDCANegToPVXi"), std::fabs(mStraHelper.cascade.negativeDCAxy));
         QAHistosTopologicalVariables.fill(HIST("hInvMassLambdaXi"), LambdaMass);
 
         if (doextraQA) {
