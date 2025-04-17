@@ -564,6 +564,8 @@ struct HfTreeCreatorDplusToPiKPi {
     }
   }
 
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
+
   void processDataWCent(CollisionsCent const& collisions,
                    soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
                    TracksWPid const&)
@@ -591,7 +593,7 @@ struct HfTreeCreatorDplusToPiKPi {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", true);
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
   void processMcWCent(CollisionsCent const& collisions,
                  aod::McCollisions const&,
@@ -671,7 +673,6 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.originMcGen());
     }
   }
-
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
 };
