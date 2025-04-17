@@ -65,6 +65,7 @@ struct NPCascCandidate {
   bool isFromBeauty;
   bool isFromCharm;
   uint16_t pvContributors;
+  uint8_t cascPVContribs;
   float pvTimeResolution;
   float pvX;
   float pvY;
@@ -286,6 +287,12 @@ struct NonPromptCascadeTask {
       const auto& protonTrack = bachelor.sign() > 0 ? ntrack : ptrack;
       const auto& pionTrack = bachelor.sign() > 0 ? ptrack : ntrack;
 
+      // first bit for the strange track, second for pos v0, third for neg v0, fourth for bachelor
+      uint8_t cascPVContribs = 0;
+      cascPVContribs |= ptrack.isPVContributor() << 1;
+      cascPVContribs |= ntrack.isPVContributor() << 2;
+      cascPVContribs |= bachelor.isPVContributor() << 3;
+
       mRegistry.fill(HIST("h_PIDcutsXi"), 0, 1.322);
       mRegistry.fill(HIST("h_PIDcutsOmega"), 0, 1.675);
 
@@ -422,6 +429,7 @@ struct NonPromptCascadeTask {
       int trackedCascGlobalIndex{-1}, itsTrackGlobalIndex{-1}, cascITSclusters{-1};
       if constexpr (requires { candidate.track(); }) {
         const auto& track = candidate.template track_as<TrackType>();
+        cascPVContribs |= track.isPVContributor() << 0;
         const auto& ITStrack = candidate.template itsTrack_as<TrackType>();
         auto trackTrkParCov = getTrackParCov(track);
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackTrkParCov, mBz, 2.f, matCorr, &motherDCA);
@@ -447,7 +455,7 @@ struct NonPromptCascadeTask {
       float mc = collision.multFT0C();
       float ma = collision.multFT0A();
       candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, cascITSclsSize, hasReassociatedClusters, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
-                                              collision.numContrib(), collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
+                                              collision.numContrib(), cascPVContribs, collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
                                               motherDCA.getY(), motherDCA.getZ(), protonDCA.getY(), protonDCA.getZ(), pionDCA.getY(), pionDCA.getZ(), bachDCA.getY(), bachDCA.getZ(),
@@ -465,7 +473,7 @@ struct NonPromptCascadeTask {
   {
     for (const auto& c : candidates) {
       getDataTable<CascadeType>()(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster,
-                                  c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
+                                  c.pvContributors, c.cascPVContribs, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ,
                                   c.cascPt, c.cascEta, c.cascPhi,
                                   c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                   c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
@@ -492,7 +500,7 @@ struct NonPromptCascadeTask {
       auto recCollision = collisions.iteratorAt(c.collisionID);
 
       getMCtable<CascadeType>()(c.matchingChi2, c.deltaPt, c.itsClusSize, c.hasReassociatedCluster, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
-                                c.pvContributors, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ, c.cascPt, c.cascEta, c.cascPhi,
+                                c.pvContributors, c.cascPVContribs, c.pvTimeResolution, c.pvX, c.pvY, c.pvZ, c.cascPt, c.cascEta, c.cascPhi,
                                 c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
                                 c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
                                 c.casccosPA, c.v0cosPA, c.massXi, c.massOmega, c.massV0, c.cascRadius, c.v0radius, c.cascLength, c.v0length,

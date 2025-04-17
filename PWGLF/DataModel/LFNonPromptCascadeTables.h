@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
 DECLARE_SOA_COLUMN(PvZ, pvZ, float);
+DECLARE_SOA_COLUMN(CascPVContribs, cascPVContribs, uint8_t);
 
 DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
@@ -115,6 +116,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -173,6 +175,7 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -237,6 +240,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -309,6 +313,7 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
