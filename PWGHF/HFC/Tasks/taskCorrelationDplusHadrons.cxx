@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskCorrelationDplusHadrons.cxx
+/// \brief D+-Hadrons azimuthal correlations analysis task - data-like, MC-reco and MC-Gen analyses
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 #include <memory> // std::shared_ptr
 #include <string>
