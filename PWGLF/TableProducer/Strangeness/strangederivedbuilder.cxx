@@ -38,7 +38,6 @@
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -57,8 +56,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-
-using namespace o2::aod::rctsel;
 
 using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal>;
 using TracksCompleteIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::McTrackLabels>;
@@ -200,15 +197,6 @@ struct strangederivedbuilder {
     ConfigurableAxis axisZNA{"ZNAamplitude", {100, 0.0f, 250.0f}, "ZNAamplitude"};
     ConfigurableAxis axisZNC{"ZNCamplitude", {100, 0.0f, 250.0f}, "ZNCamplitude"};
   } axisDetectors;
-
-  struct : ConfigurableGroup {
-    std::string prefix = "rctConfigurations"; // JSON group name
-    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
-    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
-    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
-  } rctConfigurations;
-
-  RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
 
   // For manual sliceBy
   Preslice<aod::V0Datas> V0perCollision = o2::aod::v0data::collisionId;
@@ -373,8 +361,6 @@ struct strangederivedbuilder {
     }
     LOGF(info, "==================================================================");
 
-    rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
-
     // setup map for fast checking if enabled
     static_for<0, nSpecies - 1>([&](auto i) {
       constexpr int index = i.value;
@@ -435,9 +421,6 @@ struct strangederivedbuilder {
 
     // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     for (const auto& collision : collisions) {
-      if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision))
-        continue;
-
       const uint64_t collIdx = collision.globalIndex();
 
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
