@@ -147,6 +147,6 @@ o2physics_add_dpl_workflow(lambdajetpolarization
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hstrangecorrelationpbpb
-    SOURCES hstrangecorrelationPbPb.cxx
+    SOURCES hStrangeCorrelationPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
