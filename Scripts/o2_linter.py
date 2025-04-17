@@ -23,9 +23,24 @@ import re
 import sys
 from enum import Enum
 from typing import Union
+from pathlib import Path
 
 github_mode = False  # GitHub mode
 prefix_disable = "o2-linter: disable="  # prefix for disabling tests
+file_tolerated_tests = "o2linter"  # name of file with a list of tests whose failures should be tolerated
+# If this file exists in the path of the tested file, failures of tests listed in this file will not make the linter fail.
+
+
+class Severity(Enum):
+    WARNING = 1
+    ERROR = 2
+    DEFAULT = ERROR
+
+
+message_levels = {
+    Severity.WARNING: "warning",
+    Severity.ERROR: "error",
+}
 
 
 class Reference(Enum):
@@ -126,16 +141,6 @@ def camel_case_to_kebab_case(line: str) -> str:
     return "".join(new_line)
 
 
-def print_error(path: str, line: Union[int, None], title: str, message: str):
-    """Format and print error message."""
-    # return # Use to suppress error messages.
-    str_line = "" if line is None else f"{line}:"
-    print(f"{path}:{str_line} {message} [{title}]")  # terminal format
-    if github_mode:
-        str_line = "" if line is None else f",line={line}"
-        print(f"::warning file={path}{str_line},title=[{title}]::{message}")  # GitHub annotation format
-
-
 def is_comment_cpp(line: str) -> bool:
     """Test whether a line is a C++ comment."""
     return line.strip().startswith(("//", "/*"))
@@ -188,6 +193,23 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
     return list_ranges
 
 
+def get_tolerated_tests(path: str) -> "list[str]":
+    """Get the list of tolerated tests.
+
+    Looks for file_tolerated_tests.
+    Starts in the test file directory and iterates through parents.
+    """
+    tests: list[str] = []
+    for dir in Path(path).resolve().parents:
+        path_tests = dir / file_tolerated_tests
+        if path_tests.is_file():
+            with path_tests.open() as content:
+                tests = [line.strip() for line in content.readlines() if line.strip()]
+                print(f"{path}:0: info: Tolerating tests from {path_tests}. {tests}")
+            break
+    return tests
+
+
 class TestSpec:
     """Prototype of a test class"""
 
@@ -195,10 +217,14 @@ class TestSpec:
     message: str = "Test failed"  # error message
     rationale: str = "Rationale missing"  # brief rationale explanation
     references: "list[Reference]" = []  # list of references relevant for this rule
+    severity_default: Severity = Severity.DEFAULT
+    severity_current: Severity = Severity.DEFAULT
     suffixes: "list[str]" = []  # suffixes of files to test
     per_line: bool = True  # Test lines separately one by one.
+    tolerated: bool = False  # Flag for tolerating issues.
     n_issues: int = 0  # issue counter
     n_disabled: int = 0  # counter of disabled issues
+    n_tolerated: int = 0  # counter of tolerated issues
 
     def file_matches(self, path: str) -> bool:
         """Test whether the path matches the pattern for files to test."""
@@ -217,6 +243,18 @@ class TestSpec:
                 return True
         return False
 
+    def print_error(self, path: str, line: Union[int, None], message: str):
+        """Format and print error message."""
+        # return # Use to suppress error messages.
+        line = line or 0
+        # terminal format
+        print(f"{path}:{line}: {message_levels[self.severity_current]}: {message} [{self.name}]")
+        if github_mode and not self.tolerated:  # Annotate only not tolerated issues.
+            # GitHub annotation format
+            print(
+                f"::{message_levels[self.severity_current]} file={path},line={line},title=[{self.name}]::{message} [{self.name}]"
+            )
+
     def test_line(self, line: str) -> bool:
         """Test a line."""
         raise NotImplementedError()
@@ -225,10 +263,11 @@ class TestSpec:
         """Test a file in a way that cannot be done line by line."""
         raise NotImplementedError()
 
-    def run(self, path: str, content) -> bool:
+    def run(self, path: str, content: "list[str]") -> bool:
         """Run the test."""
         # print(content)
         passed = True
+        self.severity_current = Severity.WARNING if self.tolerated else self.severity_default
         if not self.file_matches(path):
             return passed
         # print(f"Running test {self.name} for {path} with {len(content)} lines")
@@ -243,14 +282,20 @@ class TestSpec:
                     continue
                 if not self.test_line(line):
                     passed = False
-                    self.n_issues += 1
-                    print_error(path, i + 1, self.name, self.message)
+                    if self.tolerated:
+                        self.n_tolerated += 1
+                    else:
+                        self.n_issues += 1
+                    self.print_error(path, i + 1, self.message)
         else:
             passed = self.test_file(path, content)
             if not passed:
-                self.n_issues += 1
-                print_error(path, None, self.name, self.message)
-        return passed
+                if self.tolerated:
+                    self.n_tolerated += 1
+                else:
+                    self.n_issues += 1
+                self.print_error(path, None, self.message)
+        return passed or self.tolerated
 
 
 ##########################
@@ -627,15 +672,14 @@ class TestConstRefInSubscription(TestSpec):
             words = line.split()
             if len(words) < 2:
                 passed = False
-                print_error(
+                self.print_error(
                     path,
                     i + 1,
-                    self.name,
                     "Failed to get the process function name. Keep it on the same line as the switch.",
                 )
                 continue
             names_functions.append(words[1][:-1])  # Remove the trailing comma.
-            # print_error(path, i + 1, self.name, f"Got process function name {words[1][:-1]}.")
+            # self.print_error(path, i + 1, f"Got process function name {words[1][:-1]}.")
         # Test process functions.
         for i, line in enumerate(content):
             line = line.strip()
@@ -672,7 +716,7 @@ class TestConstRefInSubscription(TestSpec):
                 for arg in words:
                     if not re.search(r"([\w>] const|const [\w<>:]+)&", arg):
                         passed = False
-                        print_error(path, i + 1, self.name, f"Argument {arg} is not const&.")
+                        self.print_error(path, i + 1, f"Argument {arg} is not const&.")
                 line_process = 0
         return passed
 
@@ -784,7 +828,7 @@ class TestDocumentationFile(TestSpec):
             for item in doc_items:
                 if re.search(rf"^{doc_prefix} [\\@]{item['keyword']} +{item['pattern']}", line):
                     item["found"] = True
-                    # print_error(path, i + 1, self.name, f"Found \{item['keyword']}.")
+                    # self.print_error(path, i + 1, f"Found \{item['keyword']}.")
                     break
             if all(item["found"] for item in doc_items):  # All items have been found.
                 passed = True
@@ -792,10 +836,9 @@ class TestDocumentationFile(TestSpec):
         if not passed:
             for item in doc_items:
                 if not item["found"]:
-                    print_error(
+                    self.print_error(
                         path,
                         last_doc_line,
-                        self.name,
                         f"Documentation for \\{item['keyword']} is missing, incorrect or misplaced.",
                     )
         return passed
@@ -1202,14 +1245,14 @@ class TestNameWorkflow(TestSpec):
             workflow_name = line.strip().split("(")[1].split()[0]
             if not is_kebab_case(workflow_name):
                 passed = False
-                print_error(path, i + 1, self.name, f"Invalid workflow name: {workflow_name}.")
+                self.print_error(path, i + 1, f"Invalid workflow name: {workflow_name}.")
                 continue
             # Extract workflow file name.
             next_line = content[i + 1].strip()
             words = next_line.split()
             if words[0] != "SOURCES":
                 passed = False
-                print_error(path, i + 2, self.name, f"Did not find sources for workflow: {workflow_name}.")
+                self.print_error(path, i + 2, f"Did not find sources for workflow: {workflow_name}.")
                 continue
             workflow_file_name = os.path.basename(words[1])  # the actual file name
             # Generate the file name matching the workflow name.
@@ -1217,10 +1260,9 @@ class TestNameWorkflow(TestSpec):
             # Compare the actual and expected file names.
             if expected_workflow_file_name != workflow_file_name:
                 passed = False
-                print_error(
+                self.print_error(
                     path,
                     i + 1,
-                    self.name,
                     f"Workflow name {workflow_name} does not match its file name {workflow_file_name}. "
                     f"(Matches {expected_workflow_file_name}.)",
                 )
@@ -1272,7 +1314,7 @@ class TestNameTask(TestSpec):
                 line = line[(index + len("adaptAnalysisTask<")) :]
                 # Extract struct name.
                 if not (match := re.match(r"([^>]+)", line)):
-                    print_error(path, i + 1, self.name, f'Failed to extract struct name from "{line}".')
+                    self.print_error(path, i + 1, f'Failed to extract struct name from "{line}".')
                     return False
                 struct_name = match.group(1)
                 if (index := struct_name.find("<")) > -1:
@@ -1293,7 +1335,7 @@ class TestNameTask(TestSpec):
                 passed = False
                 # Extract explicit task name.
                 if not (match := re.search(r"TaskName\{\"([^\}]+)\"\}", line)):
-                    print_error(path, i + 1, self.name, f'Failed to extract explicit task name from "{line}".')
+                    self.print_error(path, i + 1, f'Failed to extract explicit task name from "{line}".')
                     return False
                 task_name = match.group(1)
                 # print(f"{i + 1}: Got struct \"{struct_name}\" with task name \"{task_name}\".")
@@ -1308,10 +1350,9 @@ class TestNameTask(TestSpec):
                     device_name_from_task_name
                 )  # struct name matching the TaskName
                 if not is_kebab_case(device_name_from_task_name):
-                    print_error(
+                    self.print_error(
                         path,
                         i + 1,
-                        self.name,
                         f"Specified task name {task_name} produces an invalid device name "
                         f"{device_name_from_task_name}.",
                     )
@@ -1319,10 +1360,9 @@ class TestNameTask(TestSpec):
                 elif device_name_from_struct_name == device_name_from_task_name:
                     # If the task name results in the same device name as the struct name would,
                     # TaskName is redundant and should be removed.
-                    print_error(
+                    self.print_error(
                         path,
                         i + 1,
-                        self.name,
                         f"Specified task name {task_name} and the struct name {struct_name} produce "
                         f"the same device name {device_name_from_struct_name}. TaskName is redundant.",
                     )
@@ -1331,10 +1371,9 @@ class TestNameTask(TestSpec):
                     # If the device names generated from the task name and from the struct name differ in hyphenation,
                     # capitalisation of the struct name should be fixed and TaskName should be removed.
                     # (special cases: alice3-, -2prong)
-                    print_error(
+                    self.print_error(
                         path,
                         i + 1,
-                        self.name,
                         f"Device names {device_name_from_task_name} and {device_name_from_struct_name} generated "
                         f"from the specified task name {task_name} and from the struct name {struct_name}, "
                         f"respectively, differ in hyphenation. Consider fixing capitalisation of the struct name "
@@ -1346,10 +1385,9 @@ class TestNameTask(TestSpec):
                     # from the struct name, accept it if the struct is templated. If the struct is not templated,
                     # extension is acceptable if adaptAnalysisTask is called multiple times for the same struct.
                     if not struct_templated:
-                        print_error(
+                        self.print_error(
                             path,
                             i + 1,
-                            self.name,
                             f"Device name {device_name_from_task_name} from the specified task name "
                             f"{task_name} is an extension of the device name {device_name_from_struct_name} "
                             f"from the struct name {struct_name} but the struct is not templated. "
@@ -1357,16 +1395,15 @@ class TestNameTask(TestSpec):
                         )
                         passed = False
                     # else:
-                    #     print_error(path, i + 1, self.name, f"Device name {device_name_from_task_name} from
+                    #     self.print_error(path, i + 1, f"Device name {device_name_from_task_name} from
                     # the specified task name {task_name} is an extension of the device name
                     # {device_name_from_struct_name} from the struct name {struct_name} and the struct is templated.
                     # All good")
                 else:
                     # Other cases should be rejected.
-                    print_error(
+                    self.print_error(
                         path,
                         i + 1,
-                        self.name,
                         f"Specified task name {task_name} produces device name {device_name_from_task_name} "
                         f"which does not match the device name {device_name_from_struct_name} from "
                         f"the struct name {struct_name}. (Matching struct name {struct_name_from_device_name})",
@@ -1579,10 +1616,9 @@ class TestHfStructMembers(TestSpec):
                     first_line < last_line_last_member
                 ):  # The current category starts before the end of the previous category.
                     passed = False
-                    print_error(
+                    self.print_error(
                         path,
                         first_line,
-                        self.name,
                         f"{struct_name}: {member.strip()} appears too early "
                         f"(before end of {self.member_order[index_last_member].strip()}).",
                     )
@@ -1609,7 +1645,7 @@ def main():
         global github_mode  # pylint: disable=global-statement  # noqa: PLW0603
         github_mode = True
 
-    tests = []  # list of activated tests
+    tests: list[TestSpec] = []  # list of activated tests
 
     # Bad practice
     enable_bad_practice = True
@@ -1686,8 +1722,10 @@ def main():
             continue
         try:
             with open(path, encoding="utf-8") as file:
+                tolerated_tests = get_tolerated_tests(path)
                 content = file.readlines()
                 for test in tests:
+                    test.tolerated = test.name in tolerated_tests
                     result = test.run(path, content)
                     if not result:
                         n_files_bad[test.name] += 1
@@ -1697,18 +1735,18 @@ def main():
             print(f'Failed to open file "{path}".')
             sys.exit(1)
 
-    # Report results for tests that failed or were disabled.
-    if not passed or any(n > 0 for n in (test.n_disabled for test in tests)):
-        print("\nResults for failed and disabled tests")
+    # Report results for tests that failed or were disabled or were tolerated.
+    if not passed or any(n > 0 for n in (test.n_disabled + test.n_tolerated for test in tests)):
+        print("\nResults for failed, disabled and tolerated tests")
         len_max = max(len(name) for name in test_names)
-        print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\tbad files\trationale")
+        print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\ttolerated\tbad files\trationale")
         ref_names = []
         for test in tests:
-            if any(n > 0 for n in (test.n_issues, test.n_disabled, n_files_bad[test.name])):
+            if any(n > 0 for n in (test.n_issues, test.n_disabled, test.n_tolerated, n_files_bad[test.name])):
                 ref_ids = [ref.value for ref in test.references]
                 ref_names += test.references
                 print(
-                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
+                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}\t\t{test.n_tolerated}"
                     f"\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
                 )
         # Print list of references for listed tests.
@@ -1732,12 +1770,17 @@ def main():
             f'Exceptionally, you can disable a test for a line by adding a comment with "{prefix_disable}"'
             " followed by the name of the test and parentheses with a reason for the exception."
         )
+        msg_tolerate = (
+            f'To tolerate certain issues in a directory, add a line with the test name in "{file_tolerated_tests}".'
+        )
         if github_mode:
             print(f"\n::error title={title_result}::{msg_result}")
             print(f"::notice::{msg_disable}")
+            print(f"::notice::{msg_tolerate}")
         else:
             print(f"\n{title_result}: {msg_result}")
             print(msg_disable)
+            print(msg_tolerate)
     # Print tips.
     print("\nTip: You can run the O2 linter locally with: python3 Scripts/o2_linter.py <files>")
     if not passed:
