@@ -276,7 +276,7 @@ struct HfTaskCorrelationDplusHadrons {
     }
     auto effD = isPromptAnalysis ? mEfficiencyPrompt : mEfficiencyFD;
     idxBdtScore = isPromptAnalysis ? 1 : 2;
-    
+
     if (activateQA) {
       const int regionLimits = 6;
       std::string labels[regionLimits] = {"SigReg Left", "SigReg Right", "Left SB Low", "Left SB Up", "Right SB Low", "Right SB Up"};
@@ -305,7 +305,7 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScoreFd = candidate.mlScoreFd();
       float bdtScoreBkg = candidate.mlScoreBkg();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
-      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt: bdtScoreFd;
+      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt : bdtScoreFd;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
@@ -344,8 +344,7 @@ struct HfTaskCorrelationDplusHadrons {
       double massD = pairEntry.mD();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt: bdtScoreFd;
-
+      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt : bdtScoreFd;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
@@ -409,8 +408,7 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       bool isDplusPrompt = candidate.isPrompt();
-      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt: bdtScoreFd;
-
+      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt : bdtScoreFd;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
@@ -453,7 +451,7 @@ struct HfTaskCorrelationDplusHadrons {
       float ptHadron = pairEntry.ptHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreFd = pairEntry.mlScoreFd();      
+      float bdtScoreFd = pairEntry.mlScoreFd();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
       float trackDcaXY = pairEntry.trackDcaXY();
@@ -464,8 +462,7 @@ struct HfTaskCorrelationDplusHadrons {
       int poolBin = pairEntry.poolBin();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt: bdtScoreFd;
-
+      float bdtScorePromptorFd = isPromptAnalysis ? bdtScorePrompt : bdtScoreFd;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
