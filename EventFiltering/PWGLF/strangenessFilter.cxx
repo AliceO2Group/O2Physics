@@ -419,6 +419,7 @@ struct strangenessFilter {
       mDCAFitter.setMinParamChange(minParamChange);
       mDCAFitter.setMinRelChi2Change(minRelChi2Change);
       mDCAFitter.setUseAbsDCA(useAbsDCA);
+      mStraHelper.fitter.setBz(mBz);
     }
     if (!mStraHelper.lut) { /// done only once
       ccdb->setURL(ccdbUrl);
