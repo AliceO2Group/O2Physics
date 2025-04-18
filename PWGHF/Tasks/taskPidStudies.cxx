@@ -320,7 +320,7 @@ struct HfTaskPidStudies {
     if (posTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
       return false;
     }
-    if (abs(posTrack.eta()) > o2::aod::pid_studies::maxEta || abs(negTrack.eta()) > o2::aod::pid_studies::maxEta) {
+    if (std::abs(posTrack.eta()) > o2::aod::pid_studies::maxEta || std::abs(negTrack.eta()) > o2::aod::pid_studies::maxEta) {
       return false;
     }
     if (posTrack.pt() < o2::aod::pid_studies::minPt || negTrack.pt() < o2::aod::pid_studies::minPt) {
@@ -337,7 +337,7 @@ struct HfTaskPidStudies {
       if (bachTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
         return false;
       }
-      if (abs(bachTrack.eta()) > o2::aod::pid_studies::maxEta) {
+      if (std::abs(bachTrack.eta()) > o2::aod::pid_studies::maxEta) {
         return false;
       }
       if (bachTrack.pt() < o2::aod::pid_studies::minPt) {
