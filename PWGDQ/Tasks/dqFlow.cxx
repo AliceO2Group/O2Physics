@@ -16,11 +16,13 @@
 ///       o2-analysis-timestamp --aod-file AO2D.root -b | o2-analysis-event-selection -b | o2-analysis-multiplicity-table -b | o2-analysis-centrality-table -b | o2-analysis-fdd-converter -b | o2-analysis-trackselection -b | o2-analysis-trackextension -b | o2-analysis-pid-tpc-full -b | o2-analysis-pid-tof-full -b | o2-analysis-pid-tof-base -b | o2-analysis-pid-tof-beta -b | o2-analysis-dq-flow -b
 ///       tested (June 2, 2022) on AO2D.root files from train production 242
 
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
 #include <TH1F.h>
 #include <THashList.h>
 #include <TString.h>
-#include <iostream>
-#include <vector>
 #include <TRandom3.h>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"

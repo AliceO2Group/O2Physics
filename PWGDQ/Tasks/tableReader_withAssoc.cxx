@@ -23,6 +23,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <utility>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
@@ -520,7 +521,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back((AnalysisCompositeCut*)t);
+        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -765,7 +766,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto& t : addCuts) {
-        fMuonCuts.push_back((AnalysisCompositeCut*)t);
+        fMuonCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -2139,7 +2140,7 @@ struct AnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (auto& t : addPairCuts) {
-        fPairCuts.push_back((AnalysisCompositeCut*)t);
+        fPairCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -2923,7 +2924,7 @@ struct AnalysisDileptonTrack {
       }
       for (int icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); icut++) {
         if (cfgDileptonTrack_objArrayTrackCuts->FindObject(cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName())) {
-          fTrackCutBitMap |= (uint32_t(1) << icut);
+          fTrackCutBitMap |= (static_cast<uint32_t>(1) << icut);
         }
       }
       fNCuts = fTrackCutNames.size();
@@ -2990,7 +2991,7 @@ struct AnalysisDileptonTrack {
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
           // here we check that this track cut is one of those required to associate with the dileptons
-          if (!(fTrackCutBitMap & (uint32_t(1) << iCutTrack))) {
+          if (!(fTrackCutBitMap & (static_cast<uint32_t>(1) << iCutTrack))) {
             continue;
           }
 
@@ -3169,7 +3170,7 @@ struct AnalysisDileptonTrack {
           // loop over specified track cuts (the tracks to be combined with the dileptons)
           for (int iTrackCut = 0; iTrackCut < fNCuts; iTrackCut++) {
 
-            if (!(trackSelection & (uint32_t(1) << iTrackCut))) {
+            if (!(trackSelection & (static_cast<uint32_t>(1) << iTrackCut))) {
               continue;
             }
             fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
@@ -3314,7 +3315,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (trackSelection & (uint32_t(1) << iTrackCut)) {
+              if (trackSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), VarManager::fgValues);
               }
             }
@@ -3359,7 +3360,7 @@ struct AnalysisDileptonTrack {
               continue;
             }
             for (uint32_t iTrackCut = 0; iTrackCut < fTrackCutNames.size(); iTrackCut++) {
-              if (muonSelection & (uint32_t(1) << iTrackCut)) {
+              if (muonSelection & (static_cast<uint32_t>(1) << iTrackCut)) {
                 fHistMan->FillHistClass(Form("DileptonTrackME_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), VarManager::fgValues);
               }
             }
