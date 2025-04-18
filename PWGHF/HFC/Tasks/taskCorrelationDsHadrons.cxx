@@ -267,6 +267,16 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
 
+  bool isSelectedCandidate(const int& ptBinD, const float& bdtScorePrompt, const float& bdtScoreBkg)
+  {
+
+    if (ptBinD == -1 || bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   void processData(DsHadronPairWithMl const& pairEntries,
                    aod::DsCandRecoInfo const& candidates)
   {
@@ -277,13 +287,10 @@ struct HfTaskCorrelationDsHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
@@ -311,13 +318,10 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
@@ -363,13 +367,10 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isDsPrompt = candidate.isPrompt();
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       double efficiencyWeightD = 1.;
       if (applyEfficiency) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
@@ -406,13 +407,10 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
@@ -504,13 +502,10 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
@@ -607,13 +602,10 @@ struct HfTaskCorrelationDsHadrons {
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (ptBinD == -1) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
 
-      if (bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-        continue;
-      }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
