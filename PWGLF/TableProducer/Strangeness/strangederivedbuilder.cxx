@@ -113,7 +113,7 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // UPC specific information
-  Produces<aod::ZDCNeutrons> zdcNeutrons;                    // Primary neutrons within ZDC acceptance
+  Produces<aod::ZDCNeutrons> zdcNeutrons;              // Primary neutrons within ZDC acceptance
   Produces<aod::ZDCNMCCollRefs> zdcNeutronsMCCollRefs; // references collisions from ZDCNeutrons
 
   //__________________________________________________
