@@ -273,8 +273,8 @@ struct matchingMFT {
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
     float dcaZ = -dcaXY * std::sinh(eta);
 
-    float dFdx = 2.f * dcaX / dcaXY;
-    float dFdy = 2.f * dcaY / dcaXY;
+    float dFdx = dcaX / dcaXY;
+    float dFdy = dcaY / dcaXY;
     float sigma_dcaXY = std::sqrt(cXXatDCA * dFdx * dFdx + cYYatDCA * dFdy * dFdy + 2.f * cXYatDCA * dFdx * dFdy);
 
     o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
