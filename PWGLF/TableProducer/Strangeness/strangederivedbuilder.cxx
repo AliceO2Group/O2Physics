@@ -114,7 +114,7 @@ struct strangederivedbuilder {
   //__________________________________________________
   // UPC specific information
   Produces<aod::ZDCNeutrons> zdcNeutrons;                    // Primary neutrons within ZDC acceptance
-  Produces<aod::ZDCNeutronMCCollRefs> zdcNeutronsMCCollRefs; // references collisions from ZDCNeutrons
+  Produces<aod::ZDCNMCCollRefs> zdcNeutronsMCCollRefs; // references collisions from ZDCNeutrons
 
   //__________________________________________________
   // Q-vectors
@@ -1065,10 +1065,6 @@ struct strangederivedbuilder {
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
 
       for (const auto& mcPart : mcParticles) {
-        if (!mcPart.isPhysicalPrimary()) {
-          continue;
-        }
-
         if (std::abs(mcPart.pdgCode()) == kNeutron) { // check if it is a neutron or anti-neutron
           if (std::abs(mcPart.eta()) > 8.7) {         // check if it is within ZDC acceptance
             zdcNeutrons(mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(),

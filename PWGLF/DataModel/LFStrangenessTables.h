@@ -1754,7 +1754,7 @@ DECLARE_SOA_TABLE(ZDCNeutrons, "AOD", "ZDCNEUTRON", //! MC properties of the neu
                   zdcneutrons::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
                   zdcneutrons::Y<mcparticle::Pz, mcparticle::E>);
 
-DECLARE_SOA_TABLE(ZDCNeutronMCCollRefs, "AOD", "ZDCNEUTRONMCCOLLREF", //! refers MC candidate back to proper MC Collision
+DECLARE_SOA_TABLE(ZDCNMCCollRefs, "AOD", "ZDCNMCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, zdcneutrons::StraMCCollisionId, o2::soa::Marker<4>);
 
 } // namespace o2::aod
