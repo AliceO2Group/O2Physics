@@ -225,7 +225,7 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
-    hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
+    hCandidate->GetXaxis()->SetBinLabel(2, "PassBuilderSel");
     hCandidate->GetXaxis()->SetBinLabel(3, "DCA_meson");
     hCandidate->GetXaxis()->SetBinLabel(4, "DCA_baryon");
     hCandidate->GetXaxis()->SetBinLabel(5, "TPCNsigma_pion");
@@ -243,6 +243,7 @@ struct strangenessFilter {
     hCandidate->GetXaxis()->SetBinLabel(17, "CascCosPA");
     hCandidate->GetXaxis()->SetBinLabel(18, "DCAV0ToPV");
     hCandidate->GetXaxis()->SetBinLabel(19, "ProperLifeTime");
+    hCandidate->GetXaxis()->SetBinLabel(20, "Rapidity");
 
     std::vector<double> centBinning = {0., 1., 5., 10., 20., 30., 40., 50., 70., 100.};
     AxisSpec multAxisNTPV = {100, 0.0f, 100.0f, "N. tracks PV estimator"};
@@ -419,6 +420,7 @@ struct strangenessFilter {
       mDCAFitter.setMinParamChange(minParamChange);
       mDCAFitter.setMinRelChi2Change(minRelChi2Change);
       mDCAFitter.setUseAbsDCA(useAbsDCA);
+      mStraHelper.fitter.setBz(mBz);
     }
     if (!mStraHelper.lut) { /// done only once
       ccdb->setURL(ccdbUrl);
@@ -667,13 +669,18 @@ struct strangenessFilter {
         }
         hCandidate->Fill(5.5);
       }
-      hCandidate->Fill(7.5);
+      hCandidate->Fill(6.5); // OLD: eta dau (selection now applied in strangeness helper)
+      hCandidate->Fill(7.5); // OLD: bachtopv (selection now applied in strangeness helper)
 
       // not striclty needed as selection are applied beforehand - just as QA (no change in number expected)
       if (Cascv0radius < v0radius) {
         continue;
       }
       hCandidate->Fill(8.5);
+      if (Casccascradius < cascradius) {
+        continue;
+      }
+      hCandidate->Fill(9.5);
       if (v0DauCPA < v0cospa) {
         continue;
       }
@@ -682,7 +689,14 @@ struct strangenessFilter {
         continue;
       }
       hCandidate->Fill(11.5);
-
+      if (mStraHelper.cascade.cascadeDaughterDCA > dcacascdau) {
+        continue;
+      }
+      hCandidate->Fill(12.5);
+      if (std::fabs(LambdaMass - constants::physics::MassLambda) > masslambdalimit) {
+        continue;
+      }
+      hCandidate->Fill(13.5);
       if (std::fabs(etaCasc) > eta) {
         continue;
       }
@@ -694,6 +708,20 @@ struct strangenessFilter {
         continue;
       }
       hCandidate->Fill(15.5);
+
+      // Fill selections QA for Xi
+      if (cascCPA > casccospaxi) {
+        hCandidate->Fill(16.5);
+        if (cascCPA > dcav0topv) {
+          hCandidate->Fill(17.5);
+          if (xiproperlifetime < properlifetimefactor * ctauxi) {
+            hCandidate->Fill(18.5);
+            if (std::fabs(yXi) < rapidity) {
+              hCandidate->Fill(19.5);
+            }
+          }
+        }
+      }
 
       const auto deltaMassXi = useSigmaBasedMassCutXi ? getMassWindow(stfilter::species::Xi, ptCasc) : ximasswindow;
       const auto deltaMassOmega = useSigmaBasedMassCutOmega ? getMassWindow(stfilter::species::Omega, ptCasc) : omegamasswindow;
@@ -740,9 +768,9 @@ struct strangenessFilter {
         QAHistosTopologicalVariables.fill(HIST("hDCAV0ToPVXi"), DCAV0ToPV);
         QAHistosTopologicalVariables.fill(HIST("hDCAV0DaughtersXi"), mStraHelper.cascade.v0DaughterDCA);
         QAHistosTopologicalVariables.fill(HIST("hDCACascDaughtersXi"), mStraHelper.cascade.cascadeDaughterDCA);
-        QAHistosTopologicalVariables.fill(HIST("hDCABachToPVXi"), mStraHelper.cascade.bachelorDCAxy);
-        QAHistosTopologicalVariables.fill(HIST("hDCAPosToPVXi"), mStraHelper.cascade.positiveDCAxy);
-        QAHistosTopologicalVariables.fill(HIST("hDCANegToPVXi"), mStraHelper.cascade.negativeDCAxy);
+        QAHistosTopologicalVariables.fill(HIST("hDCABachToPVXi"), std::fabs(mStraHelper.cascade.bachelorDCAxy));
+        QAHistosTopologicalVariables.fill(HIST("hDCAPosToPVXi"), std::fabs(mStraHelper.cascade.positiveDCAxy));
+        QAHistosTopologicalVariables.fill(HIST("hDCANegToPVXi"), std::fabs(mStraHelper.cascade.negativeDCAxy));
         QAHistosTopologicalVariables.fill(HIST("hInvMassLambdaXi"), LambdaMass);
 
         if (doextraQA) {
