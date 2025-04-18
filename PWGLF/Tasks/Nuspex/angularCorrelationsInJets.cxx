@@ -774,7 +774,7 @@ struct AngularCorrelationsInJets {
 
     if (constituents.size() <= 1)
       return jetCounter;
-    
+
     jetCounter++;
 
     registryData.fill(HIST("eventProtocol"), 5);
