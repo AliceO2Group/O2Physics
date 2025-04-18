@@ -294,12 +294,12 @@ class strangenessBuilderHelper
         v0 = {};
         return false;
       }
-      if(!acceptTPCOnly && !positiveTrack.hasITS()){ 
-        v0 = {}; 
+      if (!acceptTPCOnly && !positiveTrack.hasITS()) {
+        v0 = {};
         return false;
       }
-      if(!acceptTPCOnly && !negativeTrack.hasITS()){ 
-        v0 = {}; 
+      if (!acceptTPCOnly && !negativeTrack.hasITS()) {
+        v0 = {};
         return false;
       }
     }
