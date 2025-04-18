@@ -818,7 +818,7 @@ struct StrangenessBuilder {
             // process candidate with helper, generate properties for consulting
             // <false>: do not apply selections: do as much as possible to preserve
             // candidate at this level and do not select with topo selections
-            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)) {
+            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true)) {
               // candidate built, check pointing angle
               if (straHelper.v0.pointingAngle < bestPointingAngle) {
                 bestPointingAngle = straHelper.v0.pointingAngle;
@@ -1294,7 +1294,7 @@ struct StrangenessBuilder {
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs], true)) {
         products.v0dataLink(-1, -1);
         continue;
       }
