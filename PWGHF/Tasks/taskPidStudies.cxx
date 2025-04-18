@@ -17,10 +17,14 @@
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Luca Aglietta <luca.aglietta@unito.it>, Università and INFN Torino
 
+#include <string>
+
 #include "TPDGCode.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -29,10 +33,14 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_evsel;
+using namespace o2::hf_centrality;
 
 namespace o2::aod
 {
@@ -83,6 +91,12 @@ DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);     //! Occupancy from IT
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); //! Centrality from FT0C
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); //! Centrality from FT0M
 DECLARE_SOA_COLUMN(CandFlag, candFlag, int);               //! Flag for MC matching
+
+const int minTpcNClsCrossedRows = 70; // Minimum number of crossed rows in TPC
+const float maxEta = 0.8;             // Maximum pseudorapidity
+const float minPt = 0.1;              // Minimum transverse momentum
+const float maxTpcChi2NCl = 4;        // Maximum TPC chi2 per number of TPC clusters
+const float maxItsChi2NCl = 36;       // Maximum ITS chi2 per number of ITS clusters
 } // namespace pid_studies
 
 DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
@@ -139,6 +153,8 @@ struct HfTaskPidStudies {
   Produces<o2::aod::PidV0s> pidV0;
   Produces<o2::aod::PidCascades> pidCascade;
 
+  Configurable<bool> applyEvSels{"applyEvSels", true, "Apply event selections"};
+  Configurable<bool> applyTrackSels{"applyTrackSels", true, "Apply track selections"};
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
   Configurable<float> massLambdaMin{"massLambdaMin", 1.0, "Minimum mass for lambda"};
@@ -154,22 +170,34 @@ struct HfTaskPidStudies {
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   using PidTracks = soa::Join<aod::Tracks, aod::TracksExtra,
                               aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                               aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
+
+  HfEventSelection hfEvSel;
+  HfEventSelectionMc hfEvSelMc;
+
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
     if ((doprocessV0Mc && doprocessV0Data) || (doprocessCascMc && doprocessCascData)) {
       LOGP(fatal, "Both data and MC process functions were enabled! Please check your configuration!");
     }
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    hfEvSel.addHistograms(registry);
   }
 
-  template <bool isV0, typename Cand>
+  template <bool isV0, typename Coll, typename Cand>
   void fillTree(Cand const& candidate, const int flag)
   {
     float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
@@ -177,7 +205,7 @@ struct HfTaskPidStudies {
       return;
     }
 
-    const auto& coll = candidate.template collision_as<CollSels>();
+    const auto& coll = candidate.template collision_as<Coll>();
     if constexpr (isV0) {
       const auto& posTrack = candidate.template posTrack_as<PidTracks>();
       const auto& negTrack = candidate.template negTrack_as<PidTracks>();
@@ -274,6 +302,57 @@ struct HfTaskPidStudies {
     return aod::pid_studies::Particle::NotMatched;
   }
 
+  template <typename Coll>
+  bool isCollSelected(const Coll& coll)
+  {
+    float cent{-1.f};
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, registry);
+    /// monitor the satisfied event selections
+    hfEvSel.fillHistograms(coll, rejectionMask, cent);
+    return rejectionMask == 0;
+  }
+
+  template <bool isV0, typename T1>
+  bool isTrackSelected(const T1& candidate)
+  {
+    const auto& posTrack = candidate.template posTrack_as<PidTracks>();
+    const auto& negTrack = candidate.template negTrack_as<PidTracks>();
+    if (posTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
+      return false;
+    }
+    if (std::abs(posTrack.eta()) > o2::aod::pid_studies::maxEta || std::abs(negTrack.eta()) > o2::aod::pid_studies::maxEta) {
+      return false;
+    }
+    if (posTrack.pt() < o2::aod::pid_studies::minPt || negTrack.pt() < o2::aod::pid_studies::minPt) {
+      return false;
+    }
+    if (posTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl || negTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl) {
+      return false;
+    }
+    if (posTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl || negTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl) {
+      return false;
+    }
+    if constexpr (!isV0) {
+      const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
+      if (bachTrack.tpcNClsCrossedRows() < o2::aod::pid_studies::minTpcNClsCrossedRows) {
+        return false;
+      }
+      if (std::abs(bachTrack.eta()) > o2::aod::pid_studies::maxEta) {
+        return false;
+      }
+      if (bachTrack.pt() < o2::aod::pid_studies::minPt) {
+        return false;
+      }
+      if (bachTrack.tpcChi2NCl() > o2::aod::pid_studies::maxTpcChi2NCl) {
+        return false;
+      }
+      if (bachTrack.itsChi2NCl() > o2::aod::pid_studies::maxItsChi2NCl) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   template <typename V0Cand>
   bool isSelectedV0AsK0s(const V0Cand& v0)
   {
@@ -323,7 +402,7 @@ struct HfTaskPidStudies {
     return true;
   }
 
-  template <typename CascCand>
+  template <typename Coll, typename CascCand>
   bool isSelectedCascAsOmega(const CascCand& casc)
   {
     if (casc.mOmega() < massOmegaMin || casc.mOmega() > massOmegaMax) {
@@ -335,7 +414,7 @@ struct HfTaskPidStudies {
     if (casc.cascradius() > radiusMax) {
       return false;
     }
-    const auto& coll = casc.template collision_as<CollSels>();
+    const auto& coll = casc.template collision_as<Coll>();
     if (casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()) < cosPaMin) {
       return false;
     }
@@ -351,16 +430,24 @@ struct HfTaskPidStudies {
     return true;
   }
 
-  void processV0Mc(V0sMcRec const& V0s,
+  void processV0Mc(CollisionsMc const& /*mcCollisions*/,
+                   V0sMcRec const& V0s,
                    aod::V0MCCores const&,
-                   CollSels const&,
-                   PidTracks const&)
+                   aod::McParticles const& /*particlesMc*/,
+                   PidTracks const& /*tracks*/,
+                   aod::BCsWithTimestamps const&)
   {
     for (const auto& v0 : V0s) {
+      if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
+        return;
+      }
+      if (applyTrackSels && !isTrackSelected<true>(v0)) {
+        return;
+      }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
         int matched = isMatched(v0);
         if (matched != aod::pid_studies::Particle::NotMatched) {
-          fillTree<true>(v0, matched);
+          fillTree<true, CollisionsMc>(v0, matched);
         }
       }
     }
@@ -368,27 +455,42 @@ struct HfTaskPidStudies {
   PROCESS_SWITCH(HfTaskPidStudies, processV0Mc, "Process MC", true);
 
   void processV0Data(aod::V0Datas const& V0s,
-                     CollSels const&,
-                     PidTracks const&)
+                     PidTracks const&,
+                     aod::BCsWithTimestamps const&,
+                     CollSels const&)
   {
     for (const auto& v0 : V0s) {
+      if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
+        return;
+      }
+      if (applyTrackSels && !isTrackSelected<true>(v0)) {
+        return;
+      }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
-        fillTree<true>(v0, aod::pid_studies::Particle::NotMatched);
+        fillTree<true, CollSels>(v0, aod::pid_studies::Particle::NotMatched);
       }
     }
   }
   PROCESS_SWITCH(HfTaskPidStudies, processV0Data, "Process data", false);
 
-  void processCascMc(CascsMcRec const& cascades,
+  void processCascMc(CollisionsMc const& /*mcCollisions*/,
+                     CascsMcRec const& cascades,
                      aod::CascMCCores const&,
-                     CollSels const&,
-                     PidTracks const&)
+                     aod::McParticles const& /*particlesMc*/,
+                     PidTracks const&,
+                     aod::BCsWithTimestamps const&)
   {
     for (const auto& casc : cascades) {
-      if (isSelectedCascAsOmega(casc)) {
+      if (applyEvSels && !isCollSelected(casc.collision_as<CollisionsMc>())) {
+        return;
+      }
+      if (applyTrackSels && !isTrackSelected<false>(casc)) {
+        return;
+      }
+      if (isSelectedCascAsOmega<CollisionsMc>(casc)) {
         int matched = isMatched(casc);
         if (matched != aod::pid_studies::Particle::NotMatched) {
-          fillTree<false>(casc, matched);
+          fillTree<false, CollisionsMc>(casc, matched);
         }
       }
     }
@@ -396,12 +498,19 @@ struct HfTaskPidStudies {
   PROCESS_SWITCH(HfTaskPidStudies, processCascMc, "Process MC", true);
 
   void processCascData(aod::CascDatas const& cascades,
-                       CollSels const&,
-                       PidTracks const&)
+                       PidTracks const&,
+                       aod::BCsWithTimestamps const&,
+                       CollSels const&)
   {
     for (const auto& casc : cascades) {
-      if (isSelectedCascAsOmega(casc)) {
-        fillTree<false>(casc, aod::pid_studies::Particle::NotMatched);
+      if (applyEvSels && !isCollSelected(casc.collision_as<CollSels>())) {
+        return;
+      }
+      if (applyTrackSels && !isTrackSelected<false>(casc)) {
+        return;
+      }
+      if (isSelectedCascAsOmega<CollSels>(casc)) {
+        fillTree<false, CollSels>(casc, aod::pid_studies::Particle::NotMatched);
       }
     }
   }
