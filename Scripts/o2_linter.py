@@ -863,6 +863,7 @@ class TestNameFunctionVariable(TestSpec):
             "class",
             "explicit",
             "concept",
+            "throw",
         ):
             return True
         if len(words) > 2 and words[1] in ("typename", "class", "struct"):
@@ -1723,7 +1724,7 @@ def main():
     if passed:
         msg_result = "All tests passed."
         if github_mode:
-            print(f"::notice title={title_result}::{msg_result}")
+            print(f"\n::notice title={title_result}::{msg_result}")
         else:
             print(f"\n{title_result}: {msg_result}")
     else:
@@ -1733,7 +1734,7 @@ def main():
             " followed by the name of the test and parentheses with a reason for the exception."
         )
         if github_mode:
-            print(f"::error title={title_result}::{msg_result}")
+            print(f"\n::error title={title_result}::{msg_result}")
             print(f"::notice::{msg_disable}")
         else:
             print(f"\n{title_result}: {msg_result}")

@@ -46,6 +46,7 @@ struct doublephimeson {
   Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
   Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selection"};
+  Configurable<bool> isDeep{"isDeep", true, "Store deep angle"};
   Configurable<float> cutMinNsigmaTPC{"cutMinNsigmaTPC", -2.5, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTPC{"cutNsigmaTPC", 3.0, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTOF{"cutNsigmaTOF", 3.0, "nsigma cut TOF"};
@@ -61,7 +62,7 @@ struct doublephimeson {
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {40, 0.0, 20.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisDeltaR{"configThnAxisDeltaR", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {100, -1.0, 1.0}, "cos #theta{*}"};
+  ConfigurableAxis configThnAxisCosTheta{"configThnAxisCosTheta", {160, 0.0, 3.2}, "cos #theta{*}"};
   ConfigurableAxis configThnAxisNumPhi{"configThnAxisNumPhi", {101, -0.5, 100.5}, "cos #theta{*}"};
 
   // Initialize the ananlysis task
@@ -104,6 +105,20 @@ struct doublephimeson {
     // const TLorentzVector trackRelK = PartOneCMS - PartTwoCMS;
     trackRelK = PartOneCMS - PartTwoCMS;
     return 0.5 * trackRelK.P();
+  }
+
+  float deepangle(const TLorentzVector candidate1,
+                  const TLorentzVector candidate2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = candidate1.Pt();
+    pt2 = candidate2.Pt();
+    pz1 = candidate1.Pz();
+    pz2 = candidate2.Pz();
+    p1 = candidate1.P();
+    p2 = candidate2.P();
+    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    return angle;
   }
 
   // get cosTheta
@@ -217,7 +232,12 @@ struct doublephimeson {
         // auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
         auto costheta = (Phid1.Px() * Phid2.Px() + Phid1.Py() * Phid2.Py() + Phid1.Pz() * Phid2.Pz()) / (Phid1.P() * Phid2.P());
-        histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+        if (!isDeep) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+        }
+        if (isDeep) {
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M(), phimult);
+        }
       }
     }
   }
@@ -263,7 +283,12 @@ struct doublephimeson {
         exotic = Phid1 + Phid2;
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
         auto costheta = (Phid1.Px() * Phid2.Px() + Phid1.Py() * Phid2.Py() + Phid1.Pz() * Phid2.Pz()) / (Phid1.P() * Phid2.P());
-        histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+        if (!isDeep) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+        }
+        if (isDeep) {
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M(), phimult);
+        }
       }
     }
   }
