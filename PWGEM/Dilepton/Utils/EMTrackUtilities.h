@@ -44,8 +44,8 @@ float dca3DinSigma(T const& track)
 template <typename T>
 float sigmaDca3D(T const& track)
 {
-  float dcaXY = track.dcaXY(); // in cm
-  float dcaZ = track.dcaZ();   // in cm
+  float dcaXY = track.dcaXY();                          // in cm
+  float dcaZ = track.dcaZ();                            // in cm
   float dca3d = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ); // in cm
   return dca3d / dca3DinSigma(track);
 }
@@ -70,7 +70,7 @@ float fwdDcaXYinSigma(T const& track)
   float cXY = track.cXYatDCA();                       // in cm^2
   float dcaX = track.fwdDcaX();                       // in cm
   float dcaY = track.fwdDcaY();                       // in cm
-  float det = cXX * cYY - cXY * cXY; // determinant
+  float det = cXX * cYY - cXY * cXY;                  // determinant
 
   if (det < 0) {
     return 999.f;
