@@ -141,7 +141,7 @@ struct JetFinderQATask {
     AxisSpec intRateAxis = {intRateNBins, 0., intRateMax, "int. rate (kHz)"};
 
     if (doprocessJetsData || doprocessJetsMCD || doprocessJetsMCDWeighted) {
-      
+
       registry.add("h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {jetPtAxis}});
       registry.add("h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {jetEtaAxis}});
       registry.add("h_jet_phi", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
@@ -165,7 +165,6 @@ struct JetFinderQATask {
       registry.add("h_jet_phat_weighted", "jet #hat{p};#hat{p} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0, 1000}}});
       registry.add("h3_centrality_occupancy_jet_pt", "centrality; occupancy; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH3F, {{120, -10.0, 110.0}, {60, 0, 30000}, jetPtAxis}});
       registry.add("h2_intrate_jet_pt", "int. rate vs #it{p}_{T,jet}; int. rate (kHz); #it{p}_{T,jet} (GeV/#it{c});", {HistType::kTH2F, {intRateAxis, jetPtAxis}});
-
     }
 
     if (doprocessJetsRhoAreaSubData || doprocessJetsRhoAreaSubMCD) {
