@@ -125,7 +125,7 @@ struct HfTaskCorrelationDplusHadrons {
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
   std::shared_ptr<TH1> effD = nullptr;
   int idxBdtScore = 1; // Index BDTScore 1 for Prompt and 2 for FD Analysis
-                                      
+
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenDplusToPiKPi,
                        kCandidateStepMcCandInAcceptance,
@@ -149,7 +149,7 @@ struct HfTaskCorrelationDplusHadrons {
   ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-                                      
+
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
