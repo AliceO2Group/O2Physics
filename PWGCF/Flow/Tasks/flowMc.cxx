@@ -65,6 +65,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgFlowEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgCentVsIPTruth, std::string, "", "CCDB path to centrality vs IP truth")
   O2_DEFINE_CONFIGURABLE(cfgIsGlobalTrack, bool, false, "Use global tracks instead of hasTPC&&hasITS")
+  O2_DEFINE_CONFIGURABLE(cfgK0Lambda0Enabled, bool, false, "Add K0 and Lambda0")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowCumulantNbootstrap, int, 30, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
@@ -143,6 +144,16 @@ struct FlowMc {
     histos.add<TH2>("hEPVsPhi", "hEPVsPhi;Event Plane Angle; #varphi", HistType::kTH2D, {axisPhi, axisPhi});
     histos.add<TH2>("hPtNchGenerated", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH2>("hPtNchGlobal", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedPion", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalPion", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedKaon", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalKaon", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedProton", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalProton", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedK0", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalK0", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGeneratedLambda", "Reco production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
+    histos.add<TH2>("hPtNchGlobalLambda", "Global production; pT (GeV/c); multiplicity", HistType::kTH2D, {axisPt, axisNch});
     histos.add<TH1>("hPtMCGen", "Monte Carlo Truth; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH1>("hPtMCGlobal", "Monte Carlo Global; pT (GeV/c);", {HistType::kTH1D, {axisPt}});
     histos.add<TH1>("hPhiWeightedTrDen", "corrected #phi distribution, considering track density", {HistType::kTH1D, {axisPhi}});
@@ -388,7 +399,11 @@ struct FlowMc {
       for (auto const& mcParticle : mcParticles) {
         // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        bool extraPDGType = true;
+        if (cfgK0Lambda0Enabled) {
+          extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
+        }
+        if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
           continue;
 
         if (!mcParticle.isPhysicalPrimary())
@@ -402,6 +417,16 @@ struct FlowMc {
         histos.fill(HIST("hBVsPtVsPhiGenerated"), imp, deltaPhi, mcParticle.pt());
         histos.fill(HIST("hPtNchGenerated"), mcParticle.pt(), nChGlobal);
         histos.fill(HIST("hPtMCGen"), mcParticle.pt());
+        if (pdgCode == PDG_t::kPiPlus)
+          histos.fill(HIST("hPtNchGeneratedPion"), mcParticle.pt(), nChGlobal);
+        if (pdgCode == PDG_t::kKPlus)
+          histos.fill(HIST("hPtNchGeneratedKaon"), mcParticle.pt(), nChGlobal);
+        if (pdgCode == PDG_t::kProton)
+          histos.fill(HIST("hPtNchGeneratedProton"), mcParticle.pt(), nChGlobal);
+        if (pdgCode == PDG_t::kK0Short)
+          histos.fill(HIST("hPtNchGeneratedK0"), mcParticle.pt(), nChGlobal);
+        if (pdgCode == PDG_t::kLambda0)
+          histos.fill(HIST("hPtNchGeneratedLambda"), mcParticle.pt(), nChGlobal);
 
         nCh++;
 
@@ -493,6 +518,16 @@ struct FlowMc {
           histos.fill(HIST("hBVsPtVsPhiGlobal"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
           histos.fill(HIST("hPtNchGlobal"), mcParticle.pt(), nChGlobal);
           histos.fill(HIST("hPtMCGlobal"), mcParticle.pt());
+          if (pdgCode == PDG_t::kPiPlus)
+            histos.fill(HIST("hPtNchGlobalPion"), mcParticle.pt(), nChGlobal);
+          if (pdgCode == PDG_t::kKPlus)
+            histos.fill(HIST("hPtNchGlobalKaon"), mcParticle.pt(), nChGlobal);
+          if (pdgCode == PDG_t::kProton)
+            histos.fill(HIST("hPtNchGlobalProton"), mcParticle.pt(), nChGlobal);
+          if (pdgCode == PDG_t::kK0Short)
+            histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
+          if (pdgCode == PDG_t::kLambda0)
+            histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
         }
         // if any track present, fill
         if (validTrack)
