@@ -558,7 +558,8 @@ struct HfCorrelatorDplusHadrons {
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() == 3) {
+      int nDaughters = listDaughters.size();
+      if (nDaughters == 3) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
