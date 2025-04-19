@@ -163,10 +163,6 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
 
-  HfHelper hfHelper;
-  SliceCache cache;
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
-
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
   using SelCollisionsWithDplusMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection, aod::MultsExtraMC>>; // collisionFilter applied
@@ -216,7 +212,10 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
-
+                                       
+  HfHelper hfHelper;
+  SliceCache cache;
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
