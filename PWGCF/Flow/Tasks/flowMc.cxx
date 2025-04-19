@@ -72,6 +72,7 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrSlopeFactor, float, 1.0f, "A factor to scale the track density efficiency slope")
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.6003720411, 0.6152630970, 0.6288860646, 0.6360694031, 0.6409494798, 0.6450540203, 0.6482117301, 0.6512592056, 0.6640008690, 0.6862631416, 0.7005738691, 0.7106567432, 0.7170728333}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-1.007592e-05, -8.932635e-06, -9.114538e-06, -1.054818e-05, -1.220212e-05, -1.312304e-05, -1.376433e-05, -1.412813e-05, -1.289562e-05, -1.050065e-05, -8.635725e-06, -7.380821e-06, -6.201250e-06}, "parameter 1 for track density efficiency correction"};
+  float maxEta = 0.8;
 
   ConfigurableAxis axisB{"axisB", {100, 0.0f, 20.0f}, ""};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
@@ -359,7 +360,7 @@ struct FlowMc {
           continue;
         if (!mcParticle.isPhysicalPrimary())
           continue;
-        if (std::fabs(mcParticle.eta()) > 0.8) // main acceptance
+        if (std::fabs(mcParticle.eta()) > maxEta) // main acceptance
           continue;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<RecoTracks>();
@@ -408,7 +409,7 @@ struct FlowMc {
 
         if (!mcParticle.isPhysicalPrimary())
           continue;
-        if (std::fabs(mcParticle.eta()) > 0.8) // main acceptance
+        if (std::fabs(mcParticle.eta()) > maxEta) // main acceptance
           continue;
 
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
