@@ -389,7 +389,6 @@ struct F0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-
     TLorentzVector pion1, pion2, pion2Rot, reco, recoRot;
     for (const auto& trk1 : dTracks) {
       if (!trackSelected(trk1)) {
