@@ -46,22 +46,25 @@ const TString stringMCRecoDPrompt = "MC reco, prompt D+;";
 const TString stringMCGenDPrompt = "MC gen, prompt D+;";
 const TString stringMCRecoDFd = "MC reco, non-prompt D+;";
 const TString stringMCGenDFd = "MC gen, non-prompt D+;";
+constexpr int kPrompt = 1;
+constexpr int kNonPrompt = 2;
+constexpr int kFromB = 0; // 0 means from Beauty (non-prompt D+)
 
 const int npTBinsCorrelations = 8;
 const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
-auto pTBinsCorrelations_v = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
+auto ptBinsCorrelationsVec = std::vector<double>{pTBinsCorrelations, pTBinsCorrelations + npTBinsCorrelations + 1};
 const double signalRegionInnerDefault[npTBinsCorrelations] = {1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490};
 const double signalRegionOuterDefault[npTBinsCorrelations] = {1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890};
 const double sidebandLeftOuterDefault[npTBinsCorrelations] = {1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690};
 const double sidebandLeftInnerDefault[npTBinsCorrelations] = {1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250};
 const double sidebandRightInnerDefault[npTBinsCorrelations] = {1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130};
 const double sidebandRightOuterDefault[npTBinsCorrelations] = {1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690};
-auto signalRegionInner_v = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
-auto signalRegionOuter_v = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
-auto sidebandLeftInner_v = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
-auto sidebandLeftOuter_v = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
-auto sidebandRightInner_v = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
-auto sidebandRightOuter_v = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
+auto signalRegionInnerVec = std::vector<double>{signalRegionInnerDefault, signalRegionInnerDefault + npTBinsCorrelations};
+auto signalRegionOuterVec = std::vector<double>{signalRegionOuterDefault, signalRegionOuterDefault + npTBinsCorrelations};
+auto sidebandLeftInnerVec = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + npTBinsCorrelations};
+auto sidebandLeftOuterVec = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + npTBinsCorrelations};
+auto sidebandRightInnerVec = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + npTBinsCorrelations};
+auto sidebandRightOuterVec = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + npTBinsCorrelations};
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::NBinsPt;
 std::vector<double> efficiencyDmeson(npTBinsEfficiency + 1);
 
@@ -77,10 +80,10 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D+"}; // 7 corresponds to topo+PID cuts
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
-  Configurable<std::vector<double>> mlOutputPromptorNonPrompt{"mlScorePromptorNonPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt or Feed-down"};
-  Configurable<std::vector<double>> mlOutputBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
+  Configurable<std::vector<double>> mlScorePromptorNonPrompt{"mlScorePromptorNonPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt or Feed-down"};
+  Configurable<std::vector<double>> mlScoreBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{pTBinsCorrelations_v}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{ptBinsCorrelationsVec}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
@@ -88,12 +91,12 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<std::vector<float>> efficiencyFdD{"efficiencyFdD", {1., 1., 1., 1., 1., 1.}, "efficiency values for beauty feed-down D+ meson"};
   Configurable<std::vector<float>> efficiencyHad{"efficiencyHad", {1., 1., 1., 1., 1., 1.}, "efficiency values for associated particles"};
   // signal and sideband region edges, to be defined via json file (initialised to empty)
-  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInner_v}, "Inner values of signal region vs pT"};
-  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuter_v}, "Outer values of signal region vs pT"};
-  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInner_v}, "Inner values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuter_v}, "Outer values of left sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInner_v}, "Inner values of right sideband vs pT"};
-  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuter_v}, "Outer values of right sideband vs pT"};
+  Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", std::vector<double>{signalRegionInnerVec}, "Inner values of signal region vs pT"};
+  Configurable<std::vector<double>> signalRegionOuter{"signalRegionOuter", std::vector<double>{signalRegionOuterVec}, "Outer values of signal region vs pT"};
+  Configurable<std::vector<double>> sidebandLeftInner{"sidebandLeftInner", std::vector<double>{sidebandLeftInnerVec}, "Inner values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandLeftOuter{"sidebandLeftOuter", std::vector<double>{sidebandLeftOuterVec}, "Outer values of left sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{sidebandRightInnerVec}, "Inner values of right sideband vs pT"};
+  Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{sidebandRightOuterVec}, "Outer values of right sideband vs pT"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -313,7 +316,7 @@ struct HfTaskCorrelationDplusHadrons {
         continue;
       }
 
-      if (bdtScorePromptorNonPrompt < mlOutputPromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
+      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -352,7 +355,7 @@ struct HfTaskCorrelationDplusHadrons {
         continue;
       }
 
-      if (bdtScorePromptorNonPrompt < mlOutputPromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
+      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -415,7 +418,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
         continue;
 
-      if (bdtScorePromptorNonPrompt < mlOutputPromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
+      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -469,7 +472,7 @@ struct HfTaskCorrelationDplusHadrons {
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
         continue;
 
-      if (bdtScorePromptorNonPrompt < mlOutputPromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlOutputBkg->at(effBinD)) {
+      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -508,9 +511,9 @@ struct HfTaskCorrelationDplusHadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
           registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDplusPrompt, poolBin, efficiencyWeight);
-          if (statusDplusPrompt == 1 && statusPromptHadron == 1) {
+          if (statusDplusPrompt == kPrompt && statusPromptHadron == kPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDplusPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-          } else if (statusDplusPrompt == 0 && statusPromptHadron == 2) {
+          } else if (statusDplusPrompt == kFromB && statusPromptHadron == kNonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
         }
@@ -557,12 +560,12 @@ struct HfTaskCorrelationDplusHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDplusPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 1) {
+        if (statusPromptHadron == kPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptDPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 2) {
+        if (statusPromptHadron == kNonPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       }
@@ -626,7 +629,7 @@ struct HfTaskCorrelationDplusHadrons {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
       }
-      if (outputMl[0] > mlOutputBkg->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt())) || outputMl[idxBdtScore] < mlOutputPromptorNonPrompt->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()))) {
+      if (outputMl[0] > mlScoreBkg->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt())) || outputMl[idxBdtScore] < mlScorePromptorNonPrompt->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()))) {
         continue;
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
