@@ -162,6 +162,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::TrkRecInfoDplus> entryTrackRecoInfo;
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
+  HfHelper hfHelper;
   SliceCache cache;
 
   // Event Mixing for the Data Mode
@@ -214,7 +215,6 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
                                        
-  HfHelper hfHelper;
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
