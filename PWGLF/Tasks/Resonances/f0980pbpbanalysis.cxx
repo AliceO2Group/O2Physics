@@ -121,7 +121,7 @@ struct F0980pbpbanalysis {
   Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
-  Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
+  Configurable<bool> cfgRotBkgSel{"cfgRotBkgSel", true, "flag to construct rotational backgrounds"};
   Configurable<int> cfgRotBkgNum{"cfgRotBkgNum", 10, "the number of rotational backgrounds"};
 
   // for phi test
@@ -445,7 +445,7 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(), centrality, relPhi);
         }
 
-        if (cfgRotBkg && trk1.sign() * trk2.sign() < 0) {
+        if (cfgRotBkgSel && trk1.sign() * trk2.sign() < 0) {
           for (int nr = 0; nr < cfgRotBkgNum; nr++) {
             auto randomPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
             randomPhi += pion2.Phi();
