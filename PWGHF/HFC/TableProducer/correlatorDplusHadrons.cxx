@@ -186,7 +186,6 @@ struct HfCorrelatorDplusHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
@@ -216,6 +215,7 @@ struct HfCorrelatorDplusHadrons {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};                                   
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -559,7 +559,7 @@ struct HfCorrelatorDplusHadrons {
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
       int nDplusDaughters = 3;
-      if (listDaughters.size() == nDplusDaughters) {
+      if (listDaughters.size() == static_cast<size_t>(nDplusDaughters)) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
