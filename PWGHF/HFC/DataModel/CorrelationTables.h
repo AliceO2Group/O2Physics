@@ -468,6 +468,30 @@ DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in 
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
 // Note: definition of columns and tables for Electron Hadron correlation pairs
+// definition of columns and tables for electron properties
+namespace hf_electron
+{
+DECLARE_SOA_COLUMN(Phi, phi, float);                   //! Phi of electron
+DECLARE_SOA_COLUMN(Eta, eta, float);                   //! Eta of electron
+DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);     //! Transverse momentum of electron
+DECLARE_SOA_COLUMN(IsLSElectron, isLSElectron, int);   //! like sign Electron
+DECLARE_SOA_COLUMN(IsULSElectron, isULSElectron, int); //! unLike sign Electron
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);             //! Pool Bin of event defined using zvtx and multiplicity
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);         //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);     //! Timestamp for the collision
+
+} // namespace hf_electron
+
+DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
+                  aod::hf_electron::Phi,
+                  aod::hf_electron::Eta,
+                  aod::hf_electron::PtElectron,
+                  aod::hf_electron::IsLSElectron,
+                  aod::hf_electron::IsULSElectron,
+                  aod::hf_electron::PoolBin,
+                  aod::hf_electron::GIndexCol,
+                  aod::hf_electron::TimeStamp);
+
 namespace hf_correlation_electron_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);     //! DeltaPhi between Electron and Hadrons
