@@ -238,3 +238,13 @@ o2physics_add_dpl_workflow(decaytree-analyzer
                            SOURCES decayTreeAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UDGoodRunSelector O2Physics::decayTree
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-cumulants-upc
+                           SOURCES flowCumulantsUpc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-correlations-upc
+                           SOURCES flowCorrelationsUpc.cxx
+			   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)

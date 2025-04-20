@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
 DECLARE_SOA_COLUMN(PvZ, pvZ, float);
+DECLARE_SOA_COLUMN(CascPVContribs, cascPVContribs, uint8_t);
 
 DECLARE_SOA_COLUMN(CascPt, cascPt, float);
 DECLARE_SOA_COLUMN(CascEta, cascEta, float);
@@ -104,6 +105,10 @@ DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
 DECLARE_SOA_COLUMN(DCAzMC, dcaZmc, float);
 DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
 
+DECLARE_SOA_COLUMN(Sel8, sel8, bool);
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::MatchingChi2,
@@ -111,6 +116,7 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -158,7 +164,10 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::ProtonTOFNSigma,
                   NPCascadeTable::PionTOFNSigma,
                   NPCascadeTable::BachKaonTOFNSigma,
-                  NPCascadeTable::BachPionTOFNSigma)
+                  NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A)
 
 DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MatchingChi2,
@@ -166,6 +175,7 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::HasReassociatedCluster,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -213,7 +223,10 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::ProtonTOFNSigma,
                   NPCascadeTable::PionTOFNSigma,
                   NPCascadeTable::BachKaonTOFNSigma,
-                  NPCascadeTable::BachPionTOFNSigma)
+                  NPCascadeTable::BachPionTOFNSigma,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
@@ -227,6 +240,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -282,7 +296,10 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
-                  NPCascadeTable::MCcollisionMatch)
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A)
 
 DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::MatchingChi2,
@@ -296,6 +313,7 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   aod::collision::NumContrib,
+                  NPCascadeTable::CascPVContribs,
                   aod::collision::CollisionTimeRes,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
@@ -351,7 +369,10 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
-                  NPCascadeTable::MCcollisionMatch)
+                  NPCascadeTable::MCcollisionMatch,
+                  NPCascadeTable::Sel8,
+                  NPCascadeTable::MultFT0C,
+                  NPCascadeTable::MultFT0A)
 
 DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
                   NPCascadeTable::gPt,

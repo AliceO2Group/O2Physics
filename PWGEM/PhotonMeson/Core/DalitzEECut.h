@@ -53,9 +53,11 @@ class DalitzEECut : public TNamed
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
+    kTPCFracSharedClusters,
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaPi,
+    kDCA3Dsigma,
     kDCAxy,
     kDCAz,
     kITSNCls,
@@ -124,6 +126,9 @@ class DalitzEECut : public TNamed
     if (!IsSelectedTrack(track, DalitzEECuts::kTrackEtaRange)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DalitzEECuts::kDCA3Dsigma)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, DalitzEECuts::kDCAxy)) {
       return false;
     }
@@ -164,6 +169,9 @@ class DalitzEECut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DalitzEECuts::kTPCFracSharedClusters)) {
       return false;
     }
     if (!IsSelectedTrack(track, DalitzEECuts::kTPCChi2NDF)) {
@@ -232,8 +240,14 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCCrossedRowsOverNCls:
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
+      case DalitzEECuts::kTPCFracSharedClusters:
+        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
+
+      case DalitzEECuts::kDCA3Dsigma:
+        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
 
       case DalitzEECuts::kDCAxy:
         return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
@@ -267,6 +281,7 @@ class DalitzEECut : public TNamed
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
+  void SetMaxFracSharedClustersTPC(float max);
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
@@ -280,8 +295,9 @@ class DalitzEECut : public TNamed
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetMaxDcaXY(float maxDcaXY); // in cm
-  void SetMaxDcaZ(float maxDcaZ);   // in cm
+  void SetTrackDca3DRange(float min, float max); // in sigma
+  void SetMaxDcaXY(float maxDcaXY);              // in cm
+  void SetMaxDcaZ(float maxDcaZ);                // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
@@ -309,12 +325,15 @@ class DalitzEECut : public TNamed
   int mMinNCrossedRowsTPC{0};                                        // min number of crossed rows in TPC
   float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f}; // max tpc fit chi2 per TPC cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
+  float mMaxFracSharedClustersTPC{999.f};                            // max ratio shared clusters / clusters in TPC
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
 
+  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
+  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT

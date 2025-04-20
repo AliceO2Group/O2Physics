@@ -141,6 +141,7 @@ namespace hf_correlation_lc_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Lc and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                 //! DeltaY between Lc and Hadrons
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
@@ -212,7 +213,8 @@ DECLARE_SOA_TABLE(TrkRecInfoLc, "AOD", "TRKRECINFOLC", //! Tracks Reconstructed 
                   aod::hf_correlation_lc_hadron::TrackDcaXY,
                   aod::hf_correlation_lc_hadron::TrackDcaZ,
                   aod::hf_correlation_lc_hadron::TrackTPCNClsCrossedRows);
-
+DECLARE_SOA_TABLE(LcHadronPairY, "AOD", "LCHPAIRY", //! Lc candidates Generated Information
+                  aod::hf_correlation_lc_hadron::DeltaY);
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {

@@ -166,6 +166,9 @@ bool isDaughterTrack(T& track, U& candidate, V const& tracks)
 template <typename T>
 bool isDaughterParticle(const T& particle, int globalIndex)
 {
+  if (!particle.has_daughters()) {
+    return false;
+  }
   for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
@@ -232,24 +235,6 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
     return jethfutilities::slicedPerHFCandidate(table, candidate, perD0Candidate, perDplusCandidate, perLcCandidate, perBplusCandidate);
   } else if constexpr (jetdqutilities::isDielectronCandidate<U>()) {
     return jetdqutilities::slicedPerDielectronCandidate(table, candidate, perDielectronCandidate);
-  } else {
-    return table;
-  }
-}
-
-/**
- * returns a slice of the table depending on the type of the candidate and index of the collision
- *
- * @param candidate candidate that is being checked
- * @param table the table to be sliced
- */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q>
-auto slicedPerCandidateCollision(T const& table, U const& candidates, V const& collision, M const& D0CollisionPerCollision, N const& DplusCollisionPerCollision, O const& LcCollisionPerCollision, P const& BplusCollisionPerCollision, Q const& DielectronCollisionPerCollision)
-{
-  if constexpr (jethfutilities::isHFTable<U>() || jethfutilities::isHFMcTable<U>()) {
-    return jethfutilities::slicedPerHFCollision(table, candidates, collision, D0CollisionPerCollision, DplusCollisionPerCollision, LcCollisionPerCollision, BplusCollisionPerCollision);
-  } else if constexpr (jetdqutilities::isDielectronTable<U>() || jetdqutilities::isDielectronMcTable<U>()) {
-    return jetdqutilities::slicedPerDielectronCollision(table, candidates, collision, DielectronCollisionPerCollision);
   } else {
     return table;
   }
