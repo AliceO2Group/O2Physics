@@ -51,7 +51,6 @@ DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi matched track 
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);              //! electron information with Emcal
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_sel_electron::CollisionId,
                   hf_sel_electron::TrackId,
                   hf_sel_electron::EtaTrack,
@@ -89,7 +88,6 @@ DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron info
 } // namespace hf_corr_sel_electron
 
 DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_corr_sel_electron::CollisionId,
                   hf_corr_sel_electron::TrackId,
                   hf_corr_sel_electron::EtaTrack,
@@ -114,7 +112,6 @@ DECLARE_SOA_COLUMN(IsNonHfeMc, isNonHfeMc, bool);   //! Non-Heavy flavour  elect
 } // namespace hf_mcgen_sel_electron
 
 DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_mcgen_sel_electron::McCollisionId,
                   hf_mcgen_sel_electron::TrackId,
                   hf_mcgen_sel_electron::EtaTrackMc,
