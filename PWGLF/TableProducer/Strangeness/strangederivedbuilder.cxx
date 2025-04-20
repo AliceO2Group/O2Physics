@@ -516,7 +516,8 @@ struct strangederivedbuilder {
                         energyCommonZNA, energyCommonZNC,
                         // Collision flags
                         collision.flags(),
-                        collision.alias_raw());
+                        collision.alias_raw(),
+                        collision.rct_raw());
         } else { // We are in Run 2
           strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
                            collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
