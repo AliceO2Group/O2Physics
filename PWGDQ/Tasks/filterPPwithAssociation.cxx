@@ -1063,15 +1063,6 @@ struct DQFilterPPTask {
     fFiltersMap.clear();
     fCEFPfilters.clear();
 
-    uint64_t barrelMask = 0;
-    for (int i = 0; i < fNBarrelCuts; i++) {
-      barrelMask |= (static_cast<uint64_t>(1) << i);
-    }
-    uint64_t muonMask = 0;
-    for (int i = fNBarrelCuts; i < fNBarrelCuts + fNMuonCuts; i++) {
-      muonMask |= (static_cast<uint64_t>(1) << i);
-    }
-
     // Loop over collisions
     int eventsFired = 0;
     for (const auto& collision : collisions) {
