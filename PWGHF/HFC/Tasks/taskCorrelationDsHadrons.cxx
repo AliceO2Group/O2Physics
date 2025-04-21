@@ -267,7 +267,7 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
 
-  bool isSelectedCandidate(const int& ptBinD, const float& bdtScorePrompt, const float& bdtScoreBkg)
+  bool isSelectedCandidate(const int ptBinD, const float bdtScorePrompt, const float bdtScoreBkg)
   {
 
     if (ptBinD == -1 || bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
