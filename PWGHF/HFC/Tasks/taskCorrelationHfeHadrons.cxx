@@ -31,7 +31,7 @@ struct HfTaskCorrelationHfeHadrons {
   // Deltaphi binning
   Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 32, "Bins for #Delta#varphi bins"};
 
-  ConfigurableAxis binDeltaEta{"binsDeltaEta", {30, -1.8, 1.8}, "#it{#Delta#eta}"};
+  ConfigurableAxis binsDeltaEta{"binsDeltaEta", {30, -1.8, 1.8}, "#it{#Delta#eta}"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "#it{#Delta#varphi}"};
   ConfigurableAxis binsPt{"binsPt", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
 
@@ -41,7 +41,7 @@ struct HfTaskCorrelationHfeHadrons {
 
   void init(InitContext&)
   {
-    AxisSpec axisDeltaEta = {binDeltaEta, "#Delta #eta = #eta_{Electron}- #eta_{Hadron}"};
+    AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta #eta = #eta_{Electron}- #eta_{Hadron}"};
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{Electron}- #varphi_{Hadron}"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
 
