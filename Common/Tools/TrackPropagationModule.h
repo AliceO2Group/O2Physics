@@ -127,10 +127,10 @@ class TrackPropagationModule
 
     // Histograms for track tuner
     o2::framework::AxisSpec axisBinsDCA = {600, -0.15f, 0.15f, "#it{dca}_{xy} (cm)"};
-    registry.template add("hDCAxyVsPtRec", "hDCAxyVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add("hDCAxyVsPtMC", "hDCAxyVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add("hDCAzVsPtRec", "hDCAzVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
-    registry.template add("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAxyVsPtRec", "hDCAxyVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAxyVsPtMC", "hDCAxyVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAzVsPtRec", "hDCAzVsPtRec", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
+    registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
   }
 
   template <bool isMc, typename TTracks, typename TOutputGroup, typename THistoRegistry>
