@@ -99,19 +99,12 @@ struct UccZdc {
   Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
   Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
   Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
-  ConfigurableAxis binsPt{
-    "binsPt",
-    {VARIABLE_WIDTH, 0.0, 0.1, 0.12},
-    "pT binning"};
-  ConfigurableAxis binsCent{
-    "binsCent",
-    {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.},
-    "T0C binning"};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
+  ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
-  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy",
-                                               false, "T0C Occu cut?"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isAmpZDC{"isAmpZDC", false, "Use amplitude ZDC?"};
   Configurable<bool> isCommPMT{"isCommPMT", false, "Use common PMT ZDC?"};
   Configurable<bool> isSumTowers{"isSumTowers", false, "Use sum of Tow ZDC?"};
@@ -352,7 +345,6 @@ struct UccZdc {
     if (!efficiency) {
       LOGF(fatal, "Efficiency object not found!");
     }
-    std::cout << "Nbins=" << efficiency->GetNbinsX() << '\n';
   }
 
   template <typename CheckCol>
