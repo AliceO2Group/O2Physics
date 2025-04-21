@@ -256,18 +256,10 @@ struct UccZdc {
                    {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
       registry.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F,
                    {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
-      registry.add("NchVsFT0C", ";T0C (#times 1/100);#it{N}_{ch} (|#eta|<0.8);",
-                   kTH2F,
-                   {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0M",
-                   ";T0A+T0C (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTH2F,
-                   {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
-      registry.add(
-        "NchVsFT0A", ";T0A (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTH2F,
-        {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
-      registry.add(
-        "NchVsFV0A", ";V0A (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTH2F,
-        {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0C", ";T0C (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFT0, 0., 950.}});
+      registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFT0, 0., 3000.}});
+      registry.add("NchVsFT0A", ";T0A (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
+      registry.add("NchVsFV0A", ";V0A (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFV0, 0., maxAmpFV0}});
       registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);#LT ITS+TPC tracks #GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;#LTITS+TPC tracks#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F,
@@ -408,7 +400,7 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::NoHighMultCollInPrevRof);
     }
 
-    // To used in combination with FT0C-based occupancy
+    // To be used in combination with FT0C-based occupancy
     if (isNoCollInTimeRangeNarrow) {
       if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         return false;
