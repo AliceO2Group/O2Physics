@@ -102,6 +102,12 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurable event selectiond and flags ZDC
+  Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
+  Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
+  Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "isNoCollInRofStandard?"};
+  Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "isNoHighMultCollInPrevRof?"};
+  Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", false, "isNoCollInTimeRangeNarrow?"};
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isAmpZDC{"isAmpZDC", false, "Use amplitude ZDC?"};
@@ -123,7 +129,12 @@ struct UccZdc {
     SelEigth,
     NoSameBunchPileup,
     IsGoodZvtxFT0vsPV,
+    NoCollInTimeRangeStrict,
     NoCollInTimeRangeStandard,
+    NoCollInRofStrict,
+    NoCollInRofStandard,
+    NoHighMultCollInPrevRof,
+    NoCollInTimeRangeNarrow,
     OccuCut,
     Centrality,
     VtxZ,
@@ -141,12 +152,9 @@ struct UccZdc {
     ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(4)}]#GT;"};
 
   // Filters
-  // Filter collFilter = (nabs(aod::collision::posZ) < posZcut);
-  // Filter trackFilter = (requireGlobalTrackInFilter());
-  Filter trackFilter =
-    ((aod::track::eta > minEta) && (aod::track::eta < maxEta) &&
-     (aod::track::pt > minPt) && (aod::track::pt < maxPt) &&
-     requireGlobalTrackInFilter());
+  // Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt) && requireGlobalTrackInFilter());
+  // Remove the GlobalTrack filter to count also ITS tracks
+  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt));
 
   // Apply Filters
   // using TheFilteredCollisions = soa::Filtered<o2::aod::ColEvSels>;
@@ -177,7 +185,7 @@ struct UccZdc {
   {
     // define axes you want to use
     const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
-    const AxisSpec axisEvent{14, 0.5, 14.5, ""};
+    const AxisSpec axisEvent{18, 0.5, 18.5, ""};
     const AxisSpec axisEta{30, -1.05, +1.05, "#eta"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisDeltaPt{100, -1.0, +1.0, "#Delta(p_{T})"};
@@ -192,15 +200,20 @@ struct UccZdc {
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "SelEigth");
     x->SetBinLabel(3, "NoSameBunchPileup");
-    x->SetBinLabel(4, "IsGoodZvtxFT0vsPV");
-    x->SetBinLabel(5, "NoCollInTimeRangeStandard");
-    x->SetBinLabel(6, "Occupancy Cut");
-    x->SetBinLabel(7, "Cent. Sel.");
-    x->SetBinLabel(8, "VtxZ cut");
-    x->SetBinLabel(9, "has ZDC?");
-    x->SetBinLabel(10, "has T0?");
-    x->SetBinLabel(11, "Within TDC cut?");
-    x->SetBinLabel(12, "Within ZEM cut?");
+    x->SetBinLabel(4, "GoodZvtxFT0vsPV");
+    x->SetBinLabel(5, "NoCollInTimeRangeStrict");
+    x->SetBinLabel(6, "NoCollInTimeRangeStandard");
+    x->SetBinLabel(7, "NoCollInRofStrict");
+    x->SetBinLabel(8, "NoCollInRofStandard");
+    x->SetBinLabel(9, "NoHighMultCollInPrevRof");
+    x->SetBinLabel(10, "NoCollInTimeRangeNarrow");
+    x->SetBinLabel(11, "Occupancy Cut");
+    x->SetBinLabel(12, "Cent. Sel.");
+    x->SetBinLabel(13, "VtxZ cut");
+    x->SetBinLabel(14, "has ZDC?");
+    x->SetBinLabel(15, "has T0?");
+    x->SetBinLabel(16, "Within TDC cut?");
+    x->SetBinLabel(17, "Within ZEM cut?");
 
     //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
@@ -255,9 +268,8 @@ struct UccZdc {
       registry.add(
         "NchVsFV0A", ";V0A (#times 1/100);#it{N}_{ch} (|#eta|<0.8);", kTH2F,
         {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsNPV",
-                   ";#it{N}_{PV} (|#eta|<1);#it{N}_{ch} (|#eta|<0.8);", kTH2F,
-                   {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);#LT ITS+TPC tracks #GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
+      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;#LTITS+TPC tracks#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F,
                    {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
       registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F,
@@ -361,10 +373,48 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::IsGoodZvtxFT0vsPV);
 
-    if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return false;
+    if (isNoCollInTimeRangeStrict) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeStrict);
     }
-    registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeStandard);
+
+    if (isNoCollInTimeRangeStandard) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeStandard);
+    }
+
+    if (isNoCollInRofStrict) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInRofStrict);
+    }
+
+    if (isNoCollInRofStandard) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInRofStandard);
+    }
+
+    if (isNoHighMultCollInPrevRof) {
+      if (!col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoHighMultCollInPrevRof);
+    }
+
+    // To used in combination with FT0C-based occupancy
+    if (isNoCollInTimeRangeNarrow) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        return false;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeNarrow);
+    }
 
     if (isOccupancyCut) {
       auto occuValue{isApplyFT0CbasedOccupancy
@@ -527,9 +577,13 @@ struct UccZdc {
 
     std::vector<float> pTs;
     std::vector<float> wIs;
+    float itsTracks{0.};
 
     // Calculates the event weight, W_k
     for (const auto& track : tracks) {
+      if (track.hasITS() && track.itsNCls() >= 5) {
+        itsTracks++;
+      }
       // Track Selection
       if (!track.isGlobalTrack()) {
         continue;
@@ -562,6 +616,7 @@ struct UccZdc {
     registry.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
     registry.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
     registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), nch);
+    registry.fill(HIST("NchVsITStracks"), itsTracks, nch);
     registry.fill(HIST("ZNAVsNch"), nch, znA);
     registry.fill(HIST("ZNCVsNch"), nch, znC);
     registry.fill(HIST("ZNVsNch"), nch, sumZNs);
