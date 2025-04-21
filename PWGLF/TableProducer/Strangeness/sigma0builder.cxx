@@ -289,6 +289,7 @@ struct sigma0builder {
     if (fGetIR){
       histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
       histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
+      histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {axisCentrality, axisIRBinning});
     }
 
     if (doAssocStudy && doprocessMonteCarlo){
@@ -922,7 +923,8 @@ struct sigma0builder {
       if (interactionRate<0)          
           histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
 
-      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);      
+      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);  
+      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);    
     }
     
     std::vector<int> bestGammasArray;
@@ -1112,7 +1114,8 @@ struct sigma0builder {
       if (interactionRate<0)          
           histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
 
-      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);      
+      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
+      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);      
     }
     
     std::vector<int> bestGammasArray;
