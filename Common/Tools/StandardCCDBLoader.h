@@ -18,9 +18,9 @@
 #include "Framework/AnalysisDataModel.h"
 
 //__________________________________________
-// Standard class to load stuff  
+// Standard class to load stuff
 // such as matLUT, B and mean Vertex
-// partial requests possible. 
+// partial requests possible.
 
 class StandardCCDBLoader
 {
@@ -53,7 +53,8 @@ class StandardCCDBLoader
 
   // takes a configurableGroup and reads in necessary configs
   template <typename TConfigurableGroup>
-  void readConfiguration(TConfigurableGroup const& cGroup){ 
+  void readConfiguration(TConfigurableGroup const& cGroup)
+  {
     ccdburl = cGroup.ccdburl.value;
     lutPath = cGroup.lutPath.value;
     geoPath = cGroup.geoPath.value;
@@ -65,11 +66,11 @@ class StandardCCDBLoader
   template <typename TCCDB, typename TBCs>
   void initCCDBfromBCs(TCCDB& ccdb, TBCs& bcs, bool getMeanVertex = true)
   {
-    // instant load from BCs table. Bonus: protect also against empty bcs 
+    // instant load from BCs table. Bonus: protect also against empty bcs
     if (bcs.size() == 0) {
       return;
     }
-    auto bc = bcs.begin(); 
+    auto bc = bcs.begin();
     initCCDB(ccdb, bc.runNumber(), getMeanVertex);
   }
 
@@ -93,10 +94,10 @@ class StandardCCDBLoader
     o2::base::Propagator::initFieldFromGRP(grpmag);
     LOG(info) << "Setting global propagator material propagation LUT";
     o2::base::Propagator::Instance()->setMatLUT(lut);
-    if(getMeanVertex){
+    if (getMeanVertex) {
       // only try this if explicitly requested
       mMeanVtx = ccdb->template getForRun<o2::dataformats::MeanVertexObject>(mVtxPath, currentRunNumber);
-    }else{ 
+    } else {
       mMeanVtx = nullptr;
     }
 

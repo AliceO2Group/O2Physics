@@ -11,10 +11,10 @@
 
 //===============================================================
 //
-// Experimental version of the track propagation task 
+// Experimental version of the track propagation task
 // this utilizes an analysis task module that can be employed elsewhere
-// and allows for the re-utilization of a material LUT 
-// 
+// and allows for the re-utilization of a material LUT
+//
 // candidate approach for core service approach
 //
 //===============================================================
@@ -75,12 +75,12 @@ struct TrackPropagationTester {
   StandardCCDBLoader ccdbLoader;
   TrackPropagationModule trackPropagationMod;
 
-  // registry 
+  // registry
   HistogramRegistry registry{"registry"};
 
   void init(o2::framework::InitContext& initContext)
   {
-    // configure ccdb 
+    // configure ccdb
     ccdb->setURL(ccdbConfigurables.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -90,7 +90,7 @@ struct TrackPropagationTester {
     trackPropagationMod.initHistograms(registry, trackPropagationConfigurables);
   }
 
-  void processReal(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra>  const& tracks, aod::Collisions const&, aod::BCs const& bcs)
+  void processReal(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(ccdb, bcs);
     trackPropagationMod.getFromCCDBLoader(ccdbLoader);
@@ -118,3 +118,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{adaptAnalysisTask<TrackPropagationTester>(cfgc)};
   return workflow;
 }
+ 
