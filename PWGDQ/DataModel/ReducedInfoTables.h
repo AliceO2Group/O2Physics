@@ -1020,7 +1020,6 @@ DECLARE_SOA_COLUMN(V0Bit, v0bit, int64_t); //!
 DECLARE_SOA_TABLE(V0MapID, "AOD", "V0MAPID", //!
                   v0mapID::V0Bit);
 
-
 namespace DalBits
 {
 DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!

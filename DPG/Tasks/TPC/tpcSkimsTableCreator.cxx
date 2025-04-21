@@ -20,6 +20,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
+#include <string>
 /// ROOT
 #include "TRandom3.h"
 /// O2
