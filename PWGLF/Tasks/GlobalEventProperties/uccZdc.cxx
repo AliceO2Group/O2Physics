@@ -22,7 +22,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -111,8 +110,8 @@ struct UccZdc {
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
   Configurable<bool> isZNbasedSel{"isZNbasedSel", false, "Use ZN based Sel."};
-  Configurable<bool> isZNAbasedSel{"isZNA", false, "Use ZNA based Sel."};
-  Configurable<bool> isZNCbasedSel{"isZNC", false, "Use ZNC based Sel."};
+  Configurable<bool> isZNAbasedSel{"isZNAbasedSel", false, "Use ZNA based Sel."};
+  Configurable<bool> isZNCbasedSel{"isZNCbasedSel", false, "Use ZNC based Sel."};
   Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
   Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
@@ -167,13 +166,9 @@ struct UccZdc {
     true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency",
-                                 "base path to the ccdb object"};
-  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch",
-                                "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThan{
-    "noLaterThan", 1740173636328,
-    "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
