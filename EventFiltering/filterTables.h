@@ -48,6 +48,8 @@ namespace filtering
 {
 DECLARE_SOA_COLUMN(H2, hasH2, bool);                                     //! deuteron trigger for the helium normalisation (to be downscaled)
 DECLARE_SOA_COLUMN(He, hasHe, bool);                                     //! helium
+DECLARE_SOA_COLUMN(HeV0, hasHeV0, bool);                                 //! V0 containing a V0
+DECLARE_SOA_COLUMN(TritonFemto, hasTritonFemto, bool);                   //! Triton hadron femtoscopy
 DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool);                         //! hypertriton 3body
 DECLARE_SOA_COLUMN(ITSextremeIonisation, hasITSextremeIonisation, bool); //! ITS extreme ionisation
 DECLARE_SOA_COLUMN(ITSmildIonisation, hasITSmildIonisation, bool);       //! ITS mild ionisation (normalisation of the extreme ionisation), to be downscaled
@@ -184,6 +186,11 @@ DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson
 DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PPOmega, hasPPOmega, bool);                   //! PPomega meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PPEtaPrime, hasPPEtaPrime, bool);             //! PPEta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(Omegad, hasOmegad, bool);                     //! Omegad' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);               //! Eta'd meson candidate (3pi) in the collision
+
 } // namespace filtering
 
 namespace decision
@@ -210,7 +217,7 @@ DECLARE_SOA_COLUMN(BCend, hasBCend, uint64_t);     //! CEFP bcrange
 
 // nuclei
 DECLARE_SOA_TABLE(NucleiFilters, "AOD", "NucleiFilters", //!
-                  filtering::H2, filtering::He, filtering::H3L3Body, filtering::ITSmildIonisation,
+                  filtering::H2, filtering::He, filtering::HeV0, filtering::TritonFemto, filtering::H3L3Body, filtering::Tracked3Body, filtering::ITSmildIonisation,
                   filtering::ITSextremeIonisation);
 using NucleiFilter = NucleiFilters::iterator;
 
@@ -317,7 +324,9 @@ using PhotonFilter = PhotonFilters::iterator;
 // heavy mesons
 DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
                   filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
-                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson);
+                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson,
+                  filtering::PPOmega, filtering::PPEtaPrime,
+                  filtering::Omegad, filtering::EtaPrimed);
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 

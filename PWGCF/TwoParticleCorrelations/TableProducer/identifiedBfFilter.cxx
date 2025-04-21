@@ -36,6 +36,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include <TROOT.h>
 #include <TParameter.h>
+#include <TPDGCode.h>
 #include <TList.h>
 #include <TDirectory.h>
 #include <TFolder.h>
@@ -74,6 +75,10 @@ bool fullDerivedData = false; /* produce full derived data for its external stor
 
 TList* ccdblst = nullptr;
 bool loadfromccdb = false;
+
+std::vector<int> recoIdMethods = {0, 1, 2}; // Reconstructed PID Methods, 0 is no PID, 1 is calculated PID, 2 is MC PID
+std::vector<int> trackTypes = {0, 1, 2, 3};
+const int twoDenom = 2; // Used to test if a value is even or odd
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -132,6 +137,8 @@ TH2F* fhdEdxB = nullptr;
 TH2F* fhdEdxIPTPCB = nullptr;
 TH2F* fhdEdxA[kIdBfNoOfSpecies + 2] = {nullptr};
 TH2F* fhdEdxIPTPCA[kIdBfNoOfSpecies + 2] = {nullptr};
+TH2F* fhTrackTimeA[kIdBfNoOfSpecies + 2] = {nullptr};
+TH2F* fhTrackBetaA[kIdBfNoOfSpecies + 2] = {nullptr};
 
 TH1F* fhMassB = nullptr;
 TH1F* fhMassA[kIdBfNoOfSpecies + 1] = {nullptr};
@@ -176,6 +183,9 @@ TH1F* fhTruePtNegB = nullptr;
 TH1F* fhTruePtNegA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH2F* fhTrueNPosNegA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH1F* fhTrueDeltaNA[kIdBfNoOfSpecies + 1] = {nullptr};
+
+TH2F* fhTruedEdx[kIdBfNoOfSpecies + 1] = {nullptr};
+TH2F* fhTrueTrackTime[kIdBfNoOfSpecies + 1] = {nullptr};
 
 TH2F* fhTruePtEtaPosA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH2F* fhTruePtEtaNegA[kIdBfNoOfSpecies + 1] = {nullptr};
@@ -421,7 +431,7 @@ void IdentifiedBfFilter::processReconstructed(CollisionObject const& collision, 
   fhVertexZB->Fill(collision.posZ());
   uint8_t acceptedevent = uint8_t(false);
   float centormult = tentativecentmult;
-  if (IsEvtSelected(collision, centormult)) {
+  if (isEvtSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
     fhMultA->Fill(mult);
@@ -535,7 +545,7 @@ void IdentifiedBfFilter::processGenerated(CollisionObject const& mccollision, Pa
   using namespace identifiedbffilter;
 
   uint8_t acceptedevent = uint8_t(false);
-  if (IsEvtSelected(mccollision, centormult)) {
+  if (isEvtSelected(mccollision, centormult)) {
     acceptedevent = uint8_t(true);
   }
   if (fullDerivedData) {
@@ -565,7 +575,7 @@ void IdentifiedBfFilter::processGeneratorLevel(aod::McCollision const& mccollisi
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
-        if (IsEvtSelected(collision, defaultcent)) {
+        if (isEvtSelected(collision, defaultcent)) {
           fhTrueVertexZAA->Fill(mccollision.posZ());
           processGenerated(mccollision, mcparticles, defaultcent);
           processed = true;
@@ -609,7 +619,7 @@ void IdentifiedBfFilter::processVertexGenerated(aod::McCollisions const& mccolli
     fhTrueVertexZB->Fill(mccollision.posZ());
     /* we assign a default value */
     float centmult = 50.0f;
-    if (IsEvtSelected(mccollision, centmult)) {
+    if (isEvtSelected(mccollision, centmult)) {
       fhTrueVertexZA->Fill((mccollision.posZ()));
     }
   }
@@ -658,6 +668,7 @@ struct IdentifiedBfFilterTracks {
     return lst;
   }
 
+  Service<o2::framework::O2DatabasePDG> fPDG;
   Produces<aod::ScannedTracks> scannedtracks;
   Produces<aod::IdentifiedBfCFTracksInfo> tracksinfo;
   Produces<aod::ScannedTrueTracks> scannedgentracks;
@@ -689,6 +700,7 @@ struct IdentifiedBfFilterTracks {
   Configurable<float> maxRejectSigma{"maxRejectSigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
   Configurable<float> tofCut{"tofCut", 0.8, "Momentum under which we don't use TOF PID data"};
+  Configurable<bool> makeNSigmaPlots{"makeNSigmaPlots", false, "Produce the N Sigma Plots for external storage. Default false"};
 
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   bool checkAmbiguousTracks = false;
@@ -769,7 +781,6 @@ struct IdentifiedBfFilterTracks {
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     fSystem = getSystemType(cfgSystem);
     fDataType = getDataType(cfgDataType);
-    fPDG = o2::O2DatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
     if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous) {
@@ -852,7 +863,6 @@ struct IdentifiedBfFilterTracks {
                                          48, -6, 6,
                                          ptbins, ptlow, ptup);
       }
-      LOGF(info, "Making histos");
 
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fhPA[sp] = new TH1F(TString::Format("fHistPA_%s", speciesName[sp]).Data(),
@@ -887,6 +897,12 @@ struct IdentifiedBfFilterTracks {
         fhdEdxIPTPCA[sp] = new TH2F(TString::Format("fhdEdxIPTPCA_%s", speciesName[sp]).Data(),
                                     TString::Format("dE/dx vs P_{IP} reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+        fhTrackTimeA[sp] = new TH2F(TString::Format("fhTrackTimeA_%s", speciesName[sp]).Data(),
+                                    TString::Format("Track Time vs P_{IP} reconstructed %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+        fhTrackBetaA[sp] = new TH2F(TString::Format("fhTrackBetaA_%s", speciesName[sp]).Data(),
+                                    TString::Format("1/#Beta vs P_{IP} reconstructed %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       }
       fhdEdxA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
                                                TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
@@ -894,6 +910,13 @@ struct IdentifiedBfFilterTracks {
       fhdEdxIPTPCA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxIPTPCA_WrongSpecies").Data(),
                                                     TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
                                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+      fhTrackTimeA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackTimeA_WrongSpecies").Data(),
+                                                    TString::Format("Track Time vs P_{IP} reconstructed Wrong Species; P (GeV/c); Track Time(ns)").Data(),
+                                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+      fhTrackBetaA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackBetaA_WrongSpecies").Data(),
+                                                    TString::Format("1/#Beta vs P_{IP} reconstructed Wrong Species; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+
       /* add the hstograms to the output list */
       fOutputList->Add(fhXYB);
       fOutputList->Add(fhYZB);
@@ -944,7 +967,6 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhNSigmaTPCIdTrks[sp]);
       }
 
-      LOGF(info, "Adding Histos to list");
       for (int sp = 0; sp < kIdBfNoOfSpecies + 1; ++sp) {
         fOutputList->Add(fhPA[sp]);
         fOutputList->Add(fhPtA[sp]);
@@ -956,11 +978,13 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhDeltaNA[sp]);
         fOutputList->Add(fhdEdxA[sp]);
         fOutputList->Add(fhdEdxIPTPCA[sp]);
+        fOutputList->Add(fhTrackTimeA[sp]);
+        fOutputList->Add(fhTrackBetaA[sp]);
       }
-      LOGF(info, "Adding Additional Histos to list");
       fOutputList->Add(fhdEdxA[kIdBfNoOfSpecies + 1]);
       fOutputList->Add(fhdEdxIPTPCA[kIdBfNoOfSpecies + 1]);
-      LOGF(info, "Added additional histos to list ");
+      fOutputList->Add(fhTrackTimeA[kIdBfNoOfSpecies + 1]);
+      fOutputList->Add(fhTrackBetaA[kIdBfNoOfSpecies + 1]);
     }
 
     if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
@@ -1025,18 +1049,19 @@ struct IdentifiedBfFilterTracks {
                                      TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution (truth);N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                      79, -39.5, 39.5);
       }
+      if (makeNSigmaPlots) {
+        for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
+          for (int sp2 = 0; sp2 < kIdBfNoOfSpecies; ++sp2) {
+            fhTrueNSigmaTPC[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTPC%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
+                                                 TString::Format("N #sigma %s from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                                 48, -6, 6,
+                                                 ptbins, ptlow, ptup);
 
-      for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
-        for (int sp2 = 0; sp2 < kIdBfNoOfSpecies; ++sp2) {
-          fhTrueNSigmaTPC[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTPC%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                               TString::Format("N #sigma %s from TPC vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                               48, -6, 6,
-                                               ptbins, ptlow, ptup);
-
-          fhTrueNSigmaTOF[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTOF%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                               TString::Format("N #sigma %s from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                               48, -6, 6,
-                                               ptbins, ptlow, ptup);
+            fhTrueNSigmaTOF[sp1][sp2] = new TH2F(TString::Format("fhTrueNSigmaTOF%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
+                                                 TString::Format("N #sigma %s from TOF vs P for generated %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                                 48, -6, 6,
+                                                 ptbins, ptlow, ptup);
+          }
         }
       }
 
@@ -1076,10 +1101,12 @@ struct IdentifiedBfFilterTracks {
         fOutputList->Add(fhTrueNPosNegA[sp]);
         fOutputList->Add(fhTrueDeltaNA[sp]);
       }
-      for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
-        for (int sp2 = 0; sp2 < kIdBfNoOfSpecies; ++sp2) {
-          fOutputList->Add(fhTrueNSigmaTPC[sp1][sp2]);
-          fOutputList->Add(fhTrueNSigmaTOF[sp1][sp2]);
+      if (makeNSigmaPlots) {
+        for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
+          for (int sp2 = 0; sp2 < kIdBfNoOfSpecies; ++sp2) {
+            fOutputList->Add(fhTrueNSigmaTPC[sp1][sp2]);
+            fOutputList->Add(fhTrueNSigmaTOF[sp1][sp2]);
+          }
         }
       }
     }
@@ -1137,10 +1164,10 @@ struct IdentifiedBfFilterTracks {
         if (!(pid < 0)) {
           naccepted++;
           /* update charged multiplicities */
-          if (pid % 2 == 0) {
+          if (pid % twoDenom == trackTypes[0]) {
             trkMultPos[kIdBfCharged]++;
           }
-          if (pid % 2 == 1) {
+          if (pid % twoDenom == trackTypes[1]) {
             trkMultNeg[kIdBfCharged]++;
           }
           if (fullDerivedData) {
@@ -1321,17 +1348,17 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyParticle(ParticleOb
   int pdgcode = std::fabs(particle.pdgCode());
 
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       return kIdBfElectron;
       break;
 
-    case pdgcodePi:
+    case kPiPlus:
       return kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       return kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       return kIdBfProton;
       break;
 
@@ -1351,16 +1378,16 @@ inline void IdentifiedBfFilterTracks::identifyPIDMismatch(ParticleObject const& 
   int pdgcode = std::fabs(particle.pdgCode());
 
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       realPID = kIdBfElectron;
       break;
-    case pdgcodePi:
+    case kPiPlus:
       realPID = kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       realPID = kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       realPID = kIdBfProton;
       break;
     default:
@@ -1386,16 +1413,16 @@ inline void IdentifiedBfFilterTracks::identifyRealNSigma(ParticleObject const& p
   MatchRecoGenSpecies realPID = kWrongSpecies;
   int pdgcode = std::fabs(particle.pdgCode());
   switch (pdgcode) {
-    case pdgcodeEl:
+    case kPositron:
       realPID = kIdBfElectron;
       break;
-    case pdgcodePi:
+    case kPiPlus:
       realPID = kIdBfPion;
       break;
-    case pdgcodeKa:
+    case kKPlus:
       realPID = kIdBfKaon;
       break;
-    case pdgcodePr:
+    case kProton:
       realPID = kIdBfProton;
       break;
     default:
@@ -1486,7 +1513,9 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   float nsigmas[kIdBfNoOfSpecies];
 
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-    identifyRealNSigma(track.template mcParticle_as<aod::McParticles>(), actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+    if (makeNSigmaPlots) {
+      identifyRealNSigma(track.template mcParticle_as<aod::McParticles>(), actualTPCNSigma, actualTOFNSigma, track.tpcInnerParam());
+    }
   }
 
   if (loadfromccdb) {
@@ -1495,7 +1524,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
     }
   }
 
-  if (track.tpcInnerParam() < tofCut && !reqTOF && !onlyTOF) {
+  if (track.tpcInnerParam() < tofCut && !onlyTOF) {
 
     for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
       nsigmas[iSp] = actualTPCNSigma[iSp];
@@ -1507,7 +1536,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
         nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
       }
-    } else if (!reqTOF || !onlyTOF) {
+    } else if (!track.hasTOF() && !reqTOF && !onlyTOF) {
       for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
         nsigmas[iSp] = actualTPCNSigma[iSp];
       }
@@ -1557,6 +1586,8 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       fhWrongTrackID->Fill(track.p());
       fhdEdxA[kIdBfNoOfSpecies]->Fill(track.p(), track.tpcSignal());
       fhdEdxIPTPCA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), track.tpcSignal());
+      fhTrackTimeA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), track.trackTime());
+      fhTrackBetaA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), track.trackTime() / track.length());
       fhDoublePID->Fill(spMinNSigma, spDouble);
       return kWrongSpecies; // Return wrong species value
     } else {
@@ -1592,15 +1623,15 @@ inline int8_t IdentifiedBfFilterTracks::acceptTrack(TrackObject const& track)
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
       fillTrackHistosAfterSelection(track, kIdBfCharged);
       MatchRecoGenSpecies sp = kWrongSpecies;
-      if (recoIdMethod == 0) {
+      if (recoIdMethod == recoIdMethods[0]) {
         sp = kIdBfCharged;
-      } else if (recoIdMethod == 1) {
+      } else if (recoIdMethod == recoIdMethods[1]) {
         if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
           sp = identifyTrack(track);
         } else {
           LOGF(fatal, "Track identification required but PID information not present");
         }
-      } else if (recoIdMethod == 2) {
+      } else if (recoIdMethod == recoIdMethods[2]) {
         if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
           sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
         } else {
@@ -1648,7 +1679,13 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
       }
 
       if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-        MatchRecoGenSpecies sp = identifyParticle(particle);
+        MatchRecoGenSpecies sp;
+        if (recoIdMethod == recoIdMethods[0]) {
+          sp = kIdBfCharged;
+        }
+        if (recoIdMethod == recoIdMethods[1]) {
+          sp = identifyParticle(particle);
+        }
         if (sp != kWrongSpecies) {
           if (sp != kIdBfCharged) {
             /* fill the charged particle histograms */
@@ -1728,7 +1765,7 @@ int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects cons
     fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
     fhAmbiguousTrackPt->Fill(track.pt(), multiplicityclass);
     fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityclass);
-    if (tracktype == 2) {
+    if (tracktype == trackTypes[2]) {
       fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityclass);
     } else {
       fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityclass);
@@ -1799,6 +1836,8 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   fhPtA[sp]->Fill(track.pt());
   fhdEdxA[sp]->Fill(track.p(), track.tpcSignal());
   fhdEdxIPTPCA[sp]->Fill(track.tpcInnerParam(), track.tpcSignal());
+  fhTrackTimeA[sp]->Fill(track.tpcInnerParam(), track.trackTime());
+  fhTrackBetaA[sp]->Fill(track.tpcInnerParam(), track.trackTime() / track.length());
   if (track.sign() > 0) {
     fhPtPosA[sp]->Fill(track.pt());
     fhPtEtaPosA[sp]->Fill(track.pt(), track.eta());

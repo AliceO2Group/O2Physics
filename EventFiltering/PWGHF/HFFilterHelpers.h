@@ -104,6 +104,7 @@ enum charmParticles {
 enum beautyParticles {
   kBplus = 0,
   kB0toDStar,
+  kBc,
   kB0,
   kBs,
   kLb,
@@ -233,7 +234,7 @@ struct CascCand {
 
 static const std::array<std::string, kNCharmParticles> charmParticleNames{"D0", "Dplus", "Ds", "Lc", "Xic"};
 static const int nTotBeautyParts = static_cast<int>(kNBeautyParticles) + static_cast<int>(kNBeautyParticlesToJPsi);
-static const std::array<std::string, nTotBeautyParts> beautyParticleNames{"Bplus", "B0toDStar", "B0", "Bs", "Lb", "Xib", "BplusToJPsi", "B0ToJPsi", "BsToJPsi", "LbToJPsi", "BcToJPsi"};
+static const std::array<std::string, nTotBeautyParts> beautyParticleNames{"Bplus", "B0toDStar", "Bc", "B0", "Bs", "Lb", "Xib", "BplusToJPsi", "B0ToJPsi", "BsToJPsi", "LbToJPsi", "BcToJPsi"};
 static const std::array<int, kNCharmParticles> pdgCodesCharm{421, 411, 431, 4122, 4232};
 static const std::array<std::string, 2> eventTitles = {"all", "rejected"};
 static const std::vector<std::string> hfTriggerNames{filtering::HfHighPt2P::columnLabel(), filtering::HfHighPt3P::columnLabel(), filtering::HfBeauty3P::columnLabel(), filtering::HfBeauty4P::columnLabel(), filtering::HfFemto2P::columnLabel(), filtering::HfFemto3P::columnLabel(), filtering::HfDoubleCharm2P::columnLabel(), filtering::HfDoubleCharm3P::columnLabel(), filtering::HfDoubleCharmMix::columnLabel(), filtering::HfV0Charm2P::columnLabel(), filtering::HfV0Charm3P::columnLabel(), filtering::HfCharmBarToXiBach::columnLabel(), filtering::HfSigmaCPPK::columnLabel(), filtering::HfSigmaC0K0::columnLabel(), filtering::HfPhotonCharm2P::columnLabel(), filtering::HfPhotonCharm3P::columnLabel(), filtering::HfSingleCharm2P::columnLabel(), filtering::HfSingleCharm3P::columnLabel(), filtering::HfSingleNonPromptCharm2P::columnLabel(), filtering::HfSingleNonPromptCharm3P::columnLabel(), filtering::HfCharmBarToXi2Bach::columnLabel(), filtering::HfPrCharm2P::columnLabel(), filtering::HfBtoJPsiKa::columnLabel(), filtering::HfBtoJPsiKstar::columnLabel(), filtering::HfBtoJPsiPhi::columnLabel(), filtering::HfBtoJPsiPrKa::columnLabel(), filtering::HfBtoJPsiPi::columnLabel()};
@@ -285,7 +286,7 @@ static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
 static const std::array<o2::framework::AxisSpec, kNCharmParticles + 23> massAxisC = {o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.65f, 2.15f}, o2::framework::AxisSpec{250, 1.75f, 2.25f}, o2::framework::AxisSpec{250, 2.05f, 2.55f}, o2::framework::AxisSpec{250, 2.25f, 2.75f}, o2::framework::AxisSpec{200, 0.139f, 0.159f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{250, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{200, 1.1f, 1.4f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{170, 0.13f, 0.3f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{200, 0.4f, 0.8f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{350, 2.3f, 3.0f}, o2::framework::AxisSpec{240, 2.4f, 3.6f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}, o2::framework::AxisSpec{300, 0.7f, 1.3f}};
-static const std::array<o2::framework::AxisSpec, nTotBeautyParts> massAxisB = {o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.4f, 6.4f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{240, 5.8f, 7.0f}};
+static const std::array<o2::framework::AxisSpec, nTotBeautyParts> massAxisB = {o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 5.4f, 7.4f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.4f, 6.4f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{500, 4.2f, 6.2f}, o2::framework::AxisSpec{400, 5.0f, 6.6f}, o2::framework::AxisSpec{240, 5.8f, 7.0f}};
 
 // default values for configurables
 // channels to trigger on for femto
@@ -320,7 +321,7 @@ namespace hf_trigger_cuts_presel_beauty
 {
 static constexpr int nBinsPt = 2;
 static constexpr int nCutVars = 4;
-static constexpr int nCutVarsBtoJPsi = 4;
+static constexpr int nCutVarsBtoJPsi = 6;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // common for any beauty candidate
 constexpr double binsPt[nBinsPt + 1] = {
@@ -332,14 +333,14 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 constexpr double cuts[nBinsPt][nCutVars] = {{0.4, -1, -1, 10.},  /* 0 < pt < 5 */
                                             {0.4, -1, -1, 10.}}; /* 5 < pt < 1000 */
 
-constexpr double cutsBtoJPsi[nBinsPt][nCutVarsBtoJPsi] = {{1., 0.6, 0.9, 0.02},  /* 0 < pt < 5 */
-                                                          {1., 0.8, 0.9, 0.02}}; /* 5 < pt < 1000 */
+constexpr double cutsBtoJPsi[nBinsPt][nCutVarsBtoJPsi] = {{1., 0.6, 0.9, 0.02, 0.02, 0.1},  /* 0 < pt < 5 */
+                                                          {1., 0.8, 0.9, 0.02, 0.02, 0.1}}; /* 5 < pt < 1000 */
 
 // row labels
 static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsColumnsTopolBeauty = {"DeltaMassB", "minCPA", "minDecayLength", "maxImpParProd"};
-static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuon", "DeltaMassB", "minCPA", "minDecayLength"};
+static const std::vector<std::string> labelsColumnsCutsBeautyToJPsi = {"minPtMuon", "DeltaMassB", "minCPA", "minDecayLength", "DeltaMassKK", "DeltaMassKPi"};
 
 } // namespace hf_trigger_cuts_presel_beauty
 
@@ -349,11 +350,12 @@ static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"Doubl
 static const std::vector<std::string> labelsRowsDoubleCharmChannels = {"", "KeepNonprompt"};
 
 // charm resonances
-constexpr float cutsCharmReso[3][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
+constexpr float cutsCharmReso[4][13] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.0, 0.00, 0.21, 0.21, 0.0, 0.7, 0.7},
                                         {0.155, 0.3, 0.3, 0.88, 0.88, 1.35, 0.18, 0.18, 0.25, 0.25, 0.8, 1.3, 1.3},
-                                        {0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0, 0.0, 6.0, 0.0, 0.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC, Lc*->D0P, Lc*->D*+P
+                                        {0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0, 0.0, 6.0, 0.0, 0.0, 0.0},
+                                        {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC, Lc*->D0P, Lc*->D*+P
 static const std::vector<std::string> labelsColumnsDeltaMassCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicResoToD", "SigmaC0", "SigmaCPlusPlus", "SigmaC02520", "SigmaCPlusPlus2520", "XicResoToSigmaC", "LcResoToD0Pr", "ThetaC"};
-static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin"};
+static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin", "ptMinCharmDaugh"};
 // V0s for charm resonances
 constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGamma, cosPaK0sLambda, radiusK0sLambda, nSigmaPrLambda, deltaMassK0S, deltaMassLambda
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
@@ -408,10 +410,11 @@ class HfFilterHelper
     mCutsSingleTrackBeauty4Prong = cutsSingleTrack4P;
     mCutsSingleTrackBeautyToJPsi = cutsSingleToJPsi;
   }
-  void setCutsBhadrons(o2::framework::LabeledArray<double> cutsBplus, o2::framework::LabeledArray<double> cutsB0toDstar, o2::framework::LabeledArray<double> cutsB0, o2::framework::LabeledArray<double> cutsBs, o2::framework::LabeledArray<double> cutsLb, o2::framework::LabeledArray<double> cutsXib)
+  void setCutsBhadrons(o2::framework::LabeledArray<double> cutsBplus, o2::framework::LabeledArray<double> cutsB0toDstar, o2::framework::LabeledArray<double> cutsBc, o2::framework::LabeledArray<double> cutsB0, o2::framework::LabeledArray<double> cutsBs, o2::framework::LabeledArray<double> cutsLb, o2::framework::LabeledArray<double> cutsXib)
   {
     mCutsBhad[kBplus] = cutsBplus;
     mCutsBhad[kB0toDStar] = cutsB0toDstar;
+    mCutsBhad[kBc] = cutsBc;
     mCutsBhad[kB0] = cutsB0;
     mCutsBhad[kBs] = cutsBs;
     mCutsBhad[kLb] = cutsLb;
@@ -2057,6 +2060,10 @@ inline bool HfFilterHelper::isSelectedBhadronInMassRange(T1 const& ptCand, T2 co
       massBhad = massBs;
       break;
     }
+    case kBc: {
+      massBhad = massBc;
+      break;
+    }
     case kLb: {
       massBhad = massLb;
       break;
@@ -2154,7 +2161,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     bool isSecondProton = isSelectedProton4CharmOrBeautyBaryons<true>(tracksDauNoMu[1]);
     auto massKaKa = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massKa, massKa});
     if (isFirstKaon && isSeconKaon) {
-      if (std::fabs(massKaKa - massPhi) < 0.02f) {
+      if (std::fabs(massKaKa - massPhi) < mCutsBhadToJPsi.get(binPtB, 4u)) {
         auto massJPsiKaKa = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massKa, massKa});
         if (std::fabs(massJPsiKaKa - massBs) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kBsToJPsi);
@@ -2166,7 +2173,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isFirstKaon) {
       auto massKaPi = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massKa, massPi});
-      if (std::fabs(massKaPi - massPhi) < 0.1f) {
+      if (std::fabs(massKaPi - massK0Star892) < mCutsBhadToJPsi.get(binPtB, 5u)) {
         auto massJPsiKaPi = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massKa, massPi});
         if (std::fabs(massJPsiKaPi - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);
@@ -2178,7 +2185,7 @@ inline int8_t HfFilterHelper::isSelectedBhadronToJPsi(std::array<T1, Nprongs> pV
     }
     if (isSeconKaon) {
       auto massPiKa = RecoDecay::m(std::array{pVecDauTracks[2], pVecDauTracks[3]}, std::array{massPi, massKa});
-      if (std::fabs(massPiKa - massPhi) < 0.1f) {
+      if (std::fabs(massPiKa - massK0Star892) < mCutsBhadToJPsi.get(binPtB, 5u)) {
         auto massJPsiPiKa = RecoDecay::m(std::array{pVecJPsi, pVecDauTracks[2], pVecDauTracks[3]}, std::array{massJPsi, massPi, massKa});
         if (std::fabs(massJPsiPiKa - massB0) < mCutsBhadToJPsi.get(binPtB, 1u)) {
           SETBIT(isSelected, kB0ToJPsi);

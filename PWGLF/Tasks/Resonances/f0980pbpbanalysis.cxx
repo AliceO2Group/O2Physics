@@ -60,13 +60,17 @@
 #include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
 
+// from phi
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "Common/DataModel/PIDResponseITS.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct f0980pbpbanalysis {
+struct F0980pbpbanalysis {
   HistogramRegistry histos{
     "histos",
     {},
@@ -108,7 +112,8 @@ struct f0980pbpbanalysis {
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionS{"cMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
   Configurable<bool> cfgUSETOF{"cfgUSETOF", false, "TPC usage"};
-  Configurable<int> cfgSelectType{"cfgSelectType", 0, "PID selection type"};
+  Configurable<int> cfgSelectPID{"cfgSelectPID", 0, "PID selection type"};
+  Configurable<int> cfgSelectPtl{"cfgSelectPtl", 0, "Particle selection type"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
@@ -119,6 +124,16 @@ struct f0980pbpbanalysis {
 
   Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
   Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
+
+  // for phi test
+  Configurable<bool> cfgTPCFinableClsSel{"cfgTPCFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
+  Configurable<bool> cfgITSClsSel{"cfgITSClsSel", false, "ITS cluster selection flag"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<bool> cfgpTDepPID{"cfgpTDepPID", false, "pT dependent PID"};
+  Configurable<bool> cfgBetaCutSel{"cfgBetaCutSel", false, "TOF beta cut selection flag"};
+  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
+  Configurable<bool> isDeepAngle{"isDeepAngle", true, "Deep Angle cut"};
+  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
@@ -144,15 +159,37 @@ struct f0980pbpbanalysis {
   // double massPi = o2::constants::physics::MassPionCharged;
   double massPtl;
 
+  enum CentEstList {
+    FT0C = 0,
+    FT0M = 1,
+  };
+
+  enum PIDList {
+    PIDRun3 = 0,
+    PIDRun2 = 1,
+    PIDTest = 2,
+  };
+
+  enum PtlList {
+    PtlPion = 0,
+    PtlKaon = 1,
+  };
+
   TRandom* rn = new TRandom();
   // float theta2;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
   Filter cutDCAFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
+  // from phi
+  //  Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCentSel;
+  //  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < cMaxTPCnSigmaPion;
+  //  Filter PIDcutFilter = nabs(aod::pidTPCFullKa::tpcNSigmaKa) < cMaxTPCnSigmaPion;
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::EPCalibrationTables>>;
+  // aod::EPCalibrationTables 추가됨
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>>;
+  // aod::pidTOFbeta 추가됨
 
   template <typename T>
   int getDetId(const T& name)
@@ -199,7 +236,7 @@ struct f0980pbpbanalysis {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4)) {
+    if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
       return 0;
     }
     if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
@@ -211,7 +248,6 @@ struct f0980pbpbanalysis {
     if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
       return 0;
     }
-
     return 1;
   } // event selection
 
@@ -230,9 +266,6 @@ struct f0980pbpbanalysis {
     if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut) {
       return 0;
     }
-    if (track.tpcNClsFound() < cfgTPCcluster) {
-      return 0;
-    }
     if (cfgPVContributor && !track.isPVContributor()) {
       return 0;
     }
@@ -242,17 +275,22 @@ struct f0980pbpbanalysis {
     if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return 0;
     }
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
+    if (track.tpcNClsFound() < cfgTPCcluster) {
       return 0;
     }
-
+    if (cfgTPCFinableClsSel && track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
+      return 0;
+    }
+    if (cfgITSClsSel && track.itsNCls() < cfgITScluster) {
+      return 0;
+    }
     return 1;
   }
 
   template <typename TrackType>
   bool selectionPID(const TrackType track)
   {
-    if (cfgSelectType == 0) {
+    if (cfgSelectPID == PIDList::PIDRun3) {
       if (cfgUSETOF) {
         if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
           return 0;
@@ -264,7 +302,7 @@ struct f0980pbpbanalysis {
       if (std::fabs(track.tpcNSigmaPi()) > cMaxTPCnSigmaPionS) {
         return 0;
       }
-    } else if (cfgSelectType == 1) {
+    } else if (cfgSelectPID == PIDList::PIDRun2) {
       if (cfgUSETOF) {
         if (track.hasTOF()) {
           if (std::fabs(track.tofNSigmaPi()) > cMaxTOFnSigmaPion) {
@@ -283,22 +321,16 @@ struct f0980pbpbanalysis {
           return 0;
         }
       }
-    } else if (cfgSelectType == 2) {
-      if (cfgUSETOF) {
-        if (track.hasTOF()) {
-          if (std::fabs(track.tofNSigmaKa()) > 3) {
-            return 0;
-          }
-          if (std::fabs(track.tpcNSigmaKa()) > 3) {
-            return 0;
-          }
-        } else {
-          if (std::fabs(track.tpcNSigmaKa()) > 3) {
-            return 0;
-          }
+    } else if (cfgSelectPID == PIDList::PIDTest) {
+      if (track.hasTOF()) {
+        if (std::fabs(getTofNSigma(track)) > cMaxTOFnSigmaPion) {
+          return 0;
+        }
+        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPion) {
+          return 0;
         }
       } else {
-        if (std::fabs(track.tpcNSigmaKa()) > 3) {
+        if (std::fabs(getTpcNSigma(track)) > cMaxTPCnSigmaPionS) {
           return 0;
         }
       }
@@ -306,23 +338,40 @@ struct f0980pbpbanalysis {
     return 1;
   }
 
+  template <typename TrackType1, typename TrackType2>
+  bool selectionPair(const TrackType1 track1, const TrackType2 track2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = track1.pt();
+    pt2 = track2.pt();
+    pz1 = track1.pz();
+    pz2 = track2.pz();
+    p1 = track1.p();
+    p2 = track2.p();
+    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (isDeepAngle && angle < cfgDeepAngle) {
+      return 0;
+    }
+    return 1;
+  }
+
   template <typename TrackType>
   float getTpcNSigma(const TrackType track)
   {
-    if (cfgSelectType == 2) {
-      return track.tpcNSigmaKa();
-    } else {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       return track.tpcNSigmaPi();
+    } else {
+      return track.tpcNSigmaKa();
     }
   }
 
   template <typename TrackType>
   float getTofNSigma(const TrackType track)
   {
-    if (cfgSelectType == 2) {
-      return track.tofNSigmaKa();
-    } else {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       return track.tofNSigmaPi();
+    } else {
+      return track.tofNSigmaKa();
     }
   }
 
@@ -373,6 +422,14 @@ struct f0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
+        if (cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() == trk1.globalIndex()) {
+          continue;
+        }
+
+        if (cfgSelectPID == PIDList::PIDTest && !selectionPair(trk1, trk2)) {
+          continue;
+        }
+
         pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPtl);
         pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPtl);
         reco = pion1 + pion2;
@@ -407,7 +464,7 @@ struct f0980pbpbanalysis {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec epAxis = {6, 0.0, 2.0 * o2::constants::math::PI};
+    AxisSpec epAxis = {6, 0.0, o2::constants::math::TwoPI};
     AxisSpec qaCentAxis = {110, 0, 110};
     AxisSpec qaVzAxis = {100, -20, 20};
     AxisSpec qaPIDAxis = {100, -10, 10};
@@ -455,10 +512,10 @@ struct f0980pbpbanalysis {
       refBId = 5;
     }
 
-    if (cfgSelectType == 2) {
-      massPtl = o2::constants::physics::MassKaonCharged;
-    } else {
+    if (cfgSelectPtl == PtlList::PtlPion) {
       massPtl = o2::constants::physics::MassPionCharged;
+    } else if (cfgSelectPtl == PtlList::PtlKaon) {
+      massPtl = o2::constants::physics::MassKaonCharged;
     }
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -476,9 +533,9 @@ struct f0980pbpbanalysis {
   void processData(EventCandidates::iterator const& collision,
                    TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == CentEstList::FT0C) {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == CentEstList::FT0M) {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision)) {
@@ -488,12 +545,12 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/Vz"), collision.posZ(), 1.0);
 
     fillHistograms<false>(collision, tracks, 2); // second order
-  }
-  PROCESS_SWITCH(f0980pbpbanalysis, processData, "Process Event for data", true);
+  };
+  PROCESS_SWITCH(F0980pbpbanalysis, processData, "Process Event for data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<f0980pbpbanalysis>(cfgc, TaskName{"lf-f0980pbpbanalysis"})};
+    adaptAnalysisTask<F0980pbpbanalysis>(cfgc)};
 }

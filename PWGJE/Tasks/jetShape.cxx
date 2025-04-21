@@ -41,12 +41,12 @@ using namespace o2::framework::expressions;
 
 struct JetShapeTask {
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTH3F, {{401, -10.025f, 10.025f}, {401, -10.025f, 10.025f}, {100, 0, 5}}}},
-                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPi", "tofPi", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tpcTofPr", "tpcTofPr", {HistType::kTH3F, {{401, -10.025f, 10.025f}, {401, -10.025f, 10.025f}, {100, 0, 5}}}},
-                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
-                              {"tofPr", "tofPr", {HistType::kTH2F, {{500, 0, 5}, {401, -10.025f, 10.025f}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
+                              {"tpcPi", "tpcPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tofPi", "tofPi", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{101, -10.1f, 10.1f}, {20, -10, 10}, {25, 0, 5}, {14, 0, 7}}}},
+                              {"tpcPr", "tpcPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
+                              {"tofPr", "tofPr", {HistType::kTH2F, {{100, 0, 5}, {401, -10.025f, 10.025f}}}},
                               {"tpcDedx", "tpcDedx", {HistType::kTH2F, {{500, 0, 5}, {1000, 0, 1000}}}},
                               {"tofBeta", "tofBeta", {HistType::kTH2F, {{500, 0, 5}, {450, 0.2, 1.1}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{3000, 0, 3}}}},
@@ -99,7 +99,8 @@ struct JetShapeTask {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-    if (jetAreaFractionMin > -98.0) {
+    static constexpr double kJetAreaFractionMinValue = -98.0;
+    if (jetAreaFractionMin > kJetAreaFractionMinValue) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
@@ -107,9 +108,11 @@ struct JetShapeTask {
         return false;
       }
     }
+    static constexpr double kLeadingConstituentPtMinValue = 5.0;
+    static constexpr double kLeadingConstituentPtMaxValue = 9998.0;
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > 5);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > kLeadingConstituentPtMinValue);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < kLeadingConstituentPtMaxValue);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -256,10 +259,8 @@ struct JetShapeTask {
         registry.fill(HIST("tofMass"), track.mass());
 
         // for calculate purity
-        registry.fill(HIST("tpcTofPi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt());
         registry.fill(HIST("tpcPi"), track.pt(), track.tpcNSigmaPi());
         registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
-        registry.fill(HIST("tpcTofPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt());
         registry.fill(HIST("tpcPr"), track.pt(), track.tpcNSigmaPr());
         registry.fill(HIST("tofPr"), track.pt(), track.tofNSigmaPr());
 
@@ -272,6 +273,8 @@ struct JetShapeTask {
         float distance = std::sqrt(deltaEta * deltaEta + deltaPhi1 * deltaPhi1);
 
         registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
+        registry.fill(HIST("tpcTofPi"), track.tpcNSigmaPi(), track.tofNSigmaPi(), track.pt(), distance);
+        registry.fill(HIST("tpcTofPr"), track.tpcNSigmaPr(), track.tofNSigmaPr(), track.pt(), distance);
       }
     }
   }

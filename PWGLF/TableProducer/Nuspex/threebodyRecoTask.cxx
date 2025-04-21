@@ -47,6 +47,25 @@ using ReducedCols = soa::Join<aod::RedCollisions, aod::RedCentFT0Cs>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
+std::vector<std::string> triggerLabels = {
+  "fTriggerEventF1Proton", "fTrackedOmega", "fTrackedXi", "fOmegaLargeRadius",
+  "fDoubleOmega", "fOmegaHighMult", "fSingleXiYN", "fQuadrupleXi", "fDoubleXi",
+  "fhadronOmega", "fOmegaXi", "fTripleXi", "fOmega", "fGammaVeryLowPtEMCAL",
+  "fGammaVeryLowPtDCAL", "fGammaHighPtEMCAL", "fGammaLowPtEMCAL", "fGammaVeryHighPtDCAL",
+  "fGammaVeryHighPtEMCAL", "fGammaLowPtDCAL", "fJetNeutralLowPt", "fJetNeutralHighPt",
+  "fGammaHighPtDCAL", "fJetFullLowPt", "fJetFullHighPt", "fEMCALReadout", "fPCMandEE",
+  "fPHOSnbar", "fPCMHighPtPhoton", "fPHOSPhoton", "fLD", "fPPPHI", "fPD", "fLLL", "fPLL",
+  "fPPL", "fPPP", "fLeadingPtTrack", "fHighFt0cFv0Flat", "fHighFt0cFv0Mult", "fHighFt0Flat",
+  "fHighFt0Mult", "fHighMultFv0", "fHighTrackMult", "fHfSingleNonPromptCharm3P",
+  "fHfSingleNonPromptCharm2P", "fHfSingleCharm3P", "fHfPhotonCharm3P", "fHfHighPt2P",
+  "fHfSigmaC0K0", "fHfDoubleCharm2P", "fHfBeauty3P", "fHfFemto3P", "fHfFemto2P",
+  "fHfHighPt3P", "fHfSigmaCPPK", "fHfDoubleCharm3P", "fHfDoubleCharmMix",
+  "fHfPhotonCharm2P", "fHfV0Charm2P", "fHfBeauty4P", "fHfV0Charm3P", "fHfSingleCharm2P",
+  "fHfCharmBarToXiBach", "fSingleMuHigh", "fSingleMuLow", "fLMeeHMR", "fDiMuon",
+  "fDiElectron", "fLMeeIMR", "fSingleE", "fTrackHighPt", "fTrackLowPt", "fJetChHighPt",
+  "fJetChLowPt", "fUDdiffLarge", "fUDdiffSmall", "fITSextremeIonisation",
+  "fITSmildIonisation", "fH3L3Body", "fHe", "fH2"};
+
 struct Candidate3body {
   // Index
   int mcmotherId;
@@ -102,8 +121,9 @@ struct ThreebodyRecoTask {
   PresliceUnsorted<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
 
   // Configurable for trigger selection
-  Configurable<std::string> triggerList{"triggerList", "fH3L3Body", "List of triggers used to select events"};
+  Configurable<std::string> triggerList{"triggerList", "fTriggerEventF1Proton, fTrackedOmega, fTrackedXi, fOmegaLargeRadius, fDoubleOmega, fOmegaHighMult, fSingleXiYN, fQuadrupleXi, fDoubleXi, fhadronOmega, fOmegaXi, fTripleXi, fOmega, fGammaVeryLowPtEMCAL, fGammaVeryLowPtDCAL, fGammaHighPtEMCAL, fGammaLowPtEMCAL, fGammaVeryHighPtDCAL, fGammaVeryHighPtEMCAL, fGammaLowPtDCAL, fJetNeutralLowPt, fJetNeutralHighPt, fGammaHighPtDCAL, fJetFullLowPt, fJetFullHighPt, fEMCALReadout, fPCMandEE, fPHOSnbar, fPCMHighPtPhoton, fPHOSPhoton, fLD, fPPPHI, fPD, fLLL, fPLL, fPPL, fPPP, fLeadingPtTrack, fHighFt0cFv0Flat, fHighFt0cFv0Mult, fHighFt0Flat, fHighFt0Mult, fHighMultFv0, fHighTrackMult, fHfSingleNonPromptCharm3P, fHfSingleNonPromptCharm2P, fHfSingleCharm3P, fHfPhotonCharm3P, fHfHighPt2P, fHfSigmaC0K0, fHfDoubleCharm2P, fHfBeauty3P, fHfFemto3P, fHfFemto2P, fHfHighPt3P, fHfSigmaCPPK, fHfDoubleCharm3P, fHfDoubleCharmMix, fHfPhotonCharm2P, fHfV0Charm2P, fHfBeauty4P, fHfV0Charm3P, fHfSingleCharm2P, fHfCharmBarToXiBach, fSingleMuHigh, fSingleMuLow, fLMeeHMR, fDiMuon, fDiElectron, fLMeeIMR, fSingleE, fTrackHighPt, fTrackLowPt, fJetChHighPt, fJetChLowPt, fUDdiffLarge, fUDdiffSmall, fITSextremeIonisation, fITSmildIonisation, fH3L3Body, fHe, fH2", "List of triggers used to select events"};
   Configurable<bool> cfgOnlyKeepInterestedTrigger{"cfgOnlyKeepInterestedTrigger", false, "Flag to keep only interested trigger"};
+  Configurable<int> bcTolerance{"bcTolerance", 100, "Tolerance for BC in Zorro"};
   // Configuration to enable like-sign analysis
   Configurable<bool> cfgLikeSignAnalysis{"cfgLikeSignAnalysis", false, "Enable like-sign analysis"};
   // Selection criteria
@@ -224,6 +244,7 @@ struct ThreebodyRecoTask {
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
+
     mRunNumber = 0;
 
     ccdb->setURL(ccdbUrl);
@@ -242,6 +263,13 @@ struct ThreebodyRecoTask {
     registry.add("hDiffRVtxPion", "hDiffRVtxPion", HistType::kTH1F, {{100, -10, 10}});         // difference between the radius of decay vertex and minR of pion
     registry.add("hDiffRVtxDeuteron", "hDiffRVtxDeuteron", HistType::kTH1F, {{100, -10, 10}}); // difference between the radius of decay vertex and minR of deuteron
     registry.add("hDiffDaughterR", "hDiffDaughterR", HistType::kTH1F, {{10000, -100, 100}});   // difference between minR of pion&proton and R of deuteron(bachelor)
+
+    // Check triggers
+    auto hEventTriggerCount = registry.add<TH1>("hEventTriggerCount", "hEventTriggerCount", HistType::kTH1F, {{static_cast<int>(triggerLabels.size() + 1), 0, static_cast<double>(triggerLabels.size() + 1)}});
+    for (size_t i = 0; i < triggerLabels.size(); i++) {
+      hEventTriggerCount->GetXaxis()->SetBinLabel(i + 1, triggerLabels[i].c_str());
+    }
+    hEventTriggerCount->GetXaxis()->SetBinLabel(triggerLabels.size() + 1, "NoTrigger");
 
     if (cfgLikeSignAnalysis) {
       registry.add("hInvMassCorrectSign", "hInvMassCorrectSign", HistType::kTH1F, {{80, 2.96f, 3.04f}}); // check if there are contamination of possible signals which are caused by unexpected PID
@@ -282,6 +310,7 @@ struct ThreebodyRecoTask {
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
 
+    LOGF(info, "Initializing CCDB for run %d", bc.runNumber());
     mRunNumber = bc.runNumber();
   }
 
@@ -296,13 +325,13 @@ struct ThreebodyRecoTask {
     bool haveProton = false, havePion = false, haveBachelor = false;
     bool haveAntiProton = false, haveAntiPion = false, haveAntiBachelor = false;
     for (const auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
-      if (mcparticleDaughter.pdgCode() == 2212)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kProton)
         haveProton = true;
-      if (mcparticleDaughter.pdgCode() == -2212)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar)
         haveAntiProton = true;
-      if (mcparticleDaughter.pdgCode() == 211)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus)
         havePion = true;
-      if (mcparticleDaughter.pdgCode() == -211)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kPiMinus)
         haveAntiPion = true;
       if (mcparticleDaughter.pdgCode() == bachelorPdgCode)
         haveBachelor = true;
@@ -642,13 +671,13 @@ struct ThreebodyRecoTask {
       bool haveAntiProton = false, havePionMinus = false, haveAntiDeuteron = false;
       double mcLifetime = -1;
       for (const auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
-        if (mcparticleDaughter.pdgCode() == 2212)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kProton)
           haveProton = true;
-        if (mcparticleDaughter.pdgCode() == -2212)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar)
           haveAntiProton = true;
-        if (mcparticleDaughter.pdgCode() == 211)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus)
           havePionPlus = true;
-        if (mcparticleDaughter.pdgCode() == -211)
+        if (mcparticleDaughter.pdgCode() == -PDG_t::kPiPlus)
           havePionMinus = true;
         if (mcparticleDaughter.pdgCode() == bachelorPdgCode) {
           haveDeuteron = true;
@@ -695,8 +724,20 @@ struct ThreebodyRecoTask {
           candidateAnalysis<FullTracksExtIU>(collision, vtx, ifHasCandidate);
         }
       }
-      if (ifHasCandidate)
+
+      if (ifHasCandidate) {
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        auto triggerSelection = zorro.getTriggerOfInterestResults(bc.globalBC(), bcTolerance);
+        for (size_t i = 0; i < triggerSelection.size(); i++) {
+          if (triggerSelection[i]) {
+            registry.fill(HIST("hEventTriggerCount"), i + 0.5);
+          }
+        }
+        if (zorro.isNotSelectedByAny(bc.globalBC(), bcTolerance)) {
+          registry.fill(HIST("hEventTriggerCount"), triggerLabels.size() + 0.5);
+        }
         registry.fill(HIST("hEventCounter"), 4.5);
+      }
       fillHistos();
       resetHistos();
 
@@ -712,6 +753,8 @@ struct ThreebodyRecoTask {
   void processReducedData(ReducedCols const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::RedIUTracks const& tracks)
   {
     candidates3body.clear();
+
+    registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
 
     for (const auto& vtx : vtx3bodydatas) {
       const auto& collision = collisions.iteratorAt(vtx.collisionId());
@@ -784,8 +827,8 @@ struct ThreebodyRecoTask {
                   if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
                     lLabel = lMother0.globalIndex();
                     lPDG = lMother0.pdgCode();
-                    if ((lPDG == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) ||
-                        (lPDG == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
+                    if ((lPDG == motherPdgCode && lMCTrack0.pdgCode() == PDG_t::kProton && lMCTrack1.pdgCode() == PDG_t::kPiMinus && lMCTrack2.pdgCode() == bachelorPdgCode) ||
+                        (lPDG == -motherPdgCode && lMCTrack0.pdgCode() == PDG_t::kPiPlus && lMCTrack1.pdgCode() == PDG_t::kProtonBar && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
                       isTrueCand = true;
                       mcLifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
                       lmother.SetXYZM(lMother0.px(), lMother0.py(), lMother0.pz(), o2::constants::physics::MassHyperTriton);
