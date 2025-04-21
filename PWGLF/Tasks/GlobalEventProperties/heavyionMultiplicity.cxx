@@ -111,12 +111,12 @@ AxisSpec axisSpecies = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.
 AxisSpec axisMassK0s = {200, 0.4, 0.6, "K0sMass", "K0sMass"};
 AxisSpec axisMassLambda = {200, 1.07, 1.17, "Lambda/AntiLamda Mass", "Lambda/AntiLamda Mass"};
 AxisSpec axisTracks{9, 0.5, 9.5, "#tracks", "TrackAxis"};
-auto static constexpr mincharge = 3.f;
-auto static constexpr minptcut = 0.1f;
-auto static constexpr minCent = 0.0f;
-auto static constexpr maxCent = 100.0f;
-auto static constexpr etainelgt0 = 1.0f;
-auto static constexpr nitslayers = 7;
+auto static constexpr kMinCharge = 3.f;
+auto static constexpr kMinpTcut = 0.1f;
+auto static constexpr kMinCent = 0.0f;
+auto static constexpr kMaxCent = 100.0f;
+auto static constexpr kEtaInelgt0 = 1.0f;
+auto static constexpr kNItslayers = 7;
 
 struct HeavyionMultiplicity {
 
@@ -219,7 +219,7 @@ struct HeavyionMultiplicity {
       auto* x2 = htrack->GetAxis(1);
       x2->SetBinLabel(1, "All tracks");
       x2->SetBinLabel(2, "Non-fake tracks");
-      for (int i = 0; i < nitslayers; i++) {
+      for (int i = 0; i < kNItslayers; i++) {
         x2->SetBinLabel(i + 3, Form("layer %d", i));
       }
     }
@@ -275,7 +275,7 @@ struct HeavyionMultiplicity {
     }
     histos.fill(HIST("EventHist"), 4);
 
-    if (selColCent(col) < minCent || selColCent(col) > maxCent) {
+    if (selColCent(col) < kMinCent || selColCent(col) > kMaxCent) {
       return false;
     }
     histos.fill(HIST("EventHist"), 5);
@@ -356,7 +356,7 @@ struct HeavyionMultiplicity {
     if (pdgTrack == nullptr) {
       return false;
     }
-    if (std::abs(pdgTrack->Charge()) < mincharge) {
+    if (std::abs(pdgTrack->Charge()) < kMinCharge) {
       return false;
     }
     if (std::abs(track.eta()) >= etaRange) {
@@ -490,7 +490,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-        if (particle.pt() < minptcut) {
+        if (particle.pt() < kMinpTcut) {
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -555,7 +555,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kNoGenpTVar);
-        if (particle.pt() < minptcut) {
+        if (particle.pt() < kMinpTcut) {
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -590,7 +590,7 @@ struct HeavyionMultiplicity {
         }
         histos.fill(HIST("hTracksCount"), selColCent(RecCol), 1);
         bool isFakeItsTracks = false;
-        for (int i = 0; i < nitslayers; i++) {
+        for (int i = 0; i < kNItslayers; i++) {
           if (Rectrack.mcMask() & 1 << i) {
             isFakeItsTracks = true;
             histos.fill(HIST("hTracksCount"), selColCent(RecCol), i + 3);
@@ -661,7 +661,7 @@ struct HeavyionMultiplicity {
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (track.eta() < etainelgt0) {
+      if (track.eta() < kEtaInelgt0) {
         nTrks++;
       }
     } // track loop
@@ -703,7 +703,7 @@ struct HeavyionMultiplicity {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-        if (Rectrack.eta() < etainelgt0) {
+        if (Rectrack.eta() < kEtaInelgt0) {
           nTrks++;
         }
       }
@@ -770,7 +770,7 @@ struct HeavyionMultiplicity {
         if (!isGenTrackSelected(particle)) {
           continue;
         }
-        if (particle.eta() < etainelgt0) {
+        if (particle.eta() < kEtaInelgt0) {
           npart++;
         }
       } // particle loop
@@ -781,7 +781,7 @@ struct HeavyionMultiplicity {
             continue;
           }
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-          if (particle.pt() < minptcut) {
+          if (particle.pt() < kMinpTcut) {
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
           } else {
