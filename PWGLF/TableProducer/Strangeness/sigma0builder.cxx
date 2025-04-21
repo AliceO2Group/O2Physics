@@ -38,6 +38,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
@@ -59,6 +60,9 @@ using V0DerivedMCDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras,
 using V0StandardDerivedDatas = soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas, aod::V0LambdaMLScores, aod::V0AntiLambdaMLScores, aod::V0GammaMLScores>;
 
 struct sigma0builder {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher rateFetcher;
+
   SliceCache cache;
 
   Produces<aod::Sigma0Cores> sigma0cores;             // save sigma0 candidates for analysis
@@ -84,9 +88,13 @@ struct sigma0builder {
   Configurable<bool> fillQAhistos{"fillQAhistos", false, "if true, fill QA histograms"};
   Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study"};
   Configurable<bool> doPi0QA{"doPi0QA", true, "Flag to fill QA histos for pi0 rejection study."};
+  Configurable<bool> doAssocStudy{"doAssocStudy", false, "Do v0 to collision association study."};
 
-  // Event selection
+  // Event level
   Configurable<bool> doPPAnalysis{"doPPAnalysis", true, "if in pp, set to true"};
+  Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
+  Configurable<bool> fIRCrashOnNull{"fIRCrashOnNull", false, "Flag to avoid CTP RateFetcher crash."};  
+  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
@@ -157,9 +165,7 @@ struct sigma0builder {
   // Axis
   // base properties
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};
-  ConfigurableAxis axisInvPt{"axisInvPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
-  ConfigurableAxis axisDeltaPt{"axisDeltaPt", {200, -500.0, 500.0}, ""};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Centrality"};  
 
   // Invariant Mass
   ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
@@ -180,13 +186,20 @@ struct sigma0builder {
   ConfigurableAxis axisXY{"axisXY", {120, -120.0f, 120.0f}, "XY axis"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
+  ConfigurableAxis axisPA{"axisPA", {100, 0.0f, 1}, "Pointing angle"};
   ConfigurableAxis axisRapidity{"axisRapidity", {100, -2.0f, 2.0f}, "Rapidity"};
   ConfigurableAxis axisCandSel{"axisCandSel", {7, 0.5f, +7.5f}, "Candidate Selection"};
   ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
+  ConfigurableAxis axisIRBinning{"axisIRBinning", {150, 0, 1500}, "Binning for the interaction rate (kHz)"};
 
   int nSigmaCandidates = 0;
   void init(InitContext const&)
   {
+    // setting CCDB service
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
+
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1D, {{19, -0.5f, +18.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -271,6 +284,23 @@ struct sigma0builder {
       histos.add("GeneralQA/h2dMassLambdaVsK0SAfterMassSel", "h2dMassLambdaVsK0SAfterMassSel", kTH2D, {axisLambdaMass, axisK0SMass});
       histos.add("GeneralQA/h2dMassGammaVsLambdaAfterMassSel", "h2dMassGammaVsLambdaAfterMassSel", kTH2D, {axisPhotonMass, axisLambdaMass});
       histos.add("GeneralQA/h2dV0XY", "h2dV0XY", kTH2F, {axisXY, axisXY});
+    }
+
+    if (fGetIR){
+      histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
+      histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
+    }
+
+    if (doAssocStudy && doprocessMonteCarlo){
+      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma", "h2dIRVsPt_TrueGamma", kTH2F, {axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma", "h3dPAVsIRVsPt_TrueGamma", kTH3F, {axisPA, axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueGamma_BadCollAssig", "h2dIRVsPt_TrueGamma_BadCollAssig", kTH2F, {axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueGamma_BadCollAssig", "h3dPAVsIRVsPt_TrueGamma_BadCollAssig", kTH3F, {axisPA, axisIRBinning, axisPt});
+
+      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda", "h2dIRVsPt_TrueLambda", kTH2F, {axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda", "h3dPAVsIRVsPt_TrueLambda", kTH3F, {axisPA, axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h2dIRVsPt_TrueLambda_BadCollAssig", "h2dIRVsPt_TrueLambda_BadCollAssig", kTH2F, {axisIRBinning, axisPt});
+      histos.add("V0AssoQA/h3dPAVsIRVsPt_TrueLambda_BadCollAssig", "h3dPAVsIRVsPt_TrueLambda_BadCollAssig", kTH3F, {axisPA, axisIRBinning, axisPt});
     }
     
     // MC
@@ -449,6 +479,39 @@ struct sigma0builder {
     }    
   }
 
+  template <typename TCollision, typename TV0Object>
+  void analyzeV0CollAssoc(TCollision const& collision, TV0Object const& fullv0s, std::vector<int> selV0Indices, double IR)
+  {            
+    auto v0MCCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+
+    for (size_t i = 0; i < selV0Indices.size(); ++i) {      
+      auto v0 = fullv0s.rawIteratorAt(selV0Indices[i]);
+      auto v0MC = v0.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); 
+      
+      float V0MCpT = RecoDecay::pt(array<float, 2>{v0MC.pxMC(), v0MC.pyMC()});
+      float V0PA = TMath::ACos(v0.v0cosPA());
+      bool fIsV0CorrectlyAssigned = (v0MC.straMCCollisionId() == v0MCCollision.globalIndex());
+      
+      if (v0MC.pdgCode() == 22) { // True Gamma
+        histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueGamma"), IR, V0MCpT);
+        histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueGamma"), V0PA, IR, V0MCpT);
+
+        if (!fIsV0CorrectlyAssigned){
+          histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueGamma_BadCollAssig"), IR, V0MCpT);
+          histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueGamma_BadCollAssig"), V0PA, IR, V0MCpT);          
+        }
+      }
+      if (v0MC.pdgCode() == 3122) { // True Lambda
+        histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueLambda"), IR, V0MCpT);
+        histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueLambda"), V0PA, IR, V0MCpT);
+
+        if (!fIsV0CorrectlyAssigned){
+          histos.fill(HIST("V0AssoQA/h2dIRVsPt_TrueLambda_BadCollAssig"), IR, V0MCpT);
+          histos.fill(HIST("V0AssoQA/h3dPAVsIRVsPt_TrueLambda_BadCollAssig"), V0PA, IR, V0MCpT);          
+        }
+      }
+    }        
+  }
   template <typename TV0Object>
   void runPi0QA(TV0Object const& gamma1, TV0Object const& gamma2)
   {    
@@ -636,7 +699,7 @@ struct sigma0builder {
   ///////////
   // Process sigma candidate and store properties in object
   template <typename TV0Object>
-  bool processSigmaCandidate(TV0Object const& lambda, TV0Object const& gamma)
+  bool buildSigma0(TV0Object const& lambda, TV0Object const& gamma)
   {    
     // Checking if both V0s are made of the very same tracks
     if (gamma.posTrackExtraId() == lambda.posTrackExtraId() ||
@@ -849,20 +912,31 @@ struct sigma0builder {
     bool fhasMCColl=false;
     if (coll.has_straMCCollision())
       fhasMCColl=true;
+    
+    //_______________________________________________
+    // Retrieving IR info
+    double interactionRate = -1;
+    if (fGetIR){
+      interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+      
+      if (interactionRate<0)          
+          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
 
+      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);      
+    }
+    
     std::vector<int> bestGammasArray;
     std::vector<int> bestLambdasArray;
     int v0TableOffset = V0s.offset();
 
     //_______________________________________________
-    // Photon-only loop
-    for (auto& gamma : V0s) { // selecting photons from Sigma0
-      
+    // Photon-only loop    
+    for (auto& gamma : V0s) { // selecting photons from Sigma0      
       if (!gamma.has_v0MCCore())
         continue;
 
       auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-
+      
       if (gammaMC.pdgCode() == 22) {
         histos.fill(HIST("MC/h2dGammaXYConversion"), gamma.x(), gamma.y());
         float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
@@ -912,6 +986,13 @@ struct sigma0builder {
           runPi0QA(gamma1, gamma2);
         }
       }
+    }
+    
+    //_______________________________________________
+    // Wrongly collision association study
+    if (doAssocStudy && fhasMCColl){
+      analyzeV0CollAssoc(coll, V0s, bestGammasArray, interactionRate); // Gamma     
+      analyzeV0CollAssoc(coll, V0s, bestLambdasArray, interactionRate); // Lambda   
     }
     
     //_______________________________________________
@@ -984,11 +1065,11 @@ struct sigma0builder {
 
         histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
         
-        // Selecting sigma0 candidate
-        if (!processSigmaCandidate(lambda, gamma)) 
+        // Build sigma0 candidate, please
+        if (!buildSigma0(lambda, gamma)) 
           continue;
 
-        // Calculating properties and filling histos
+        // Filling histos and tables
         histos.fill(HIST("SigmaSel/h3dMassSigma0AfterSel"), centrality, SigmapT, SigmaMass);
 
         if (SigmaY < 0.5){
@@ -1022,10 +1103,21 @@ struct sigma0builder {
     
     float centrality = coll.centFT0C();
     histos.fill(HIST("hEventCentrality"), centrality);
+
+    //_______________________________________________
+    // Retrieving IR info
+    if (fGetIR){
+      interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+      
+      if (interactionRate<0)          
+          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+
+      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);      
+    }
     
     std::vector<int> bestGammasArray;
     std::vector<int> bestLambdasArray;
-    int v0TableOffset = V0s.offset();
+    int v0TableOffset = V0s.offset(); // We need this because we're dealing with a "grouped table"
 
     //_______________________________________________
     // Photon-only loop
@@ -1076,8 +1168,8 @@ struct sigma0builder {
 
         histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
 
-        // Selecting sigma0 candidate
-        if (!processSigmaCandidate(lambda, gamma)) 
+        // Building sigma0 candidate
+        if (!buildSigma0(lambda, gamma)) 
           continue;
 
         fillTables(lambda, gamma, coll); // filling tables with accepted candidates
