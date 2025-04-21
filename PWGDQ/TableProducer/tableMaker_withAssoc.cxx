@@ -95,6 +95,12 @@ using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, ao
                                                aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::DalitzBits>;
+using MyBarrelTracksWithCovWithEMCal = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
+                                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                                 aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                                 aod::EMCALClusters>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
@@ -127,6 +133,7 @@ constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::B
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkTrackFillMapWithV0BitsNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackTPCPID;
+constexpr static uint32_t gkTrackFillMapWithEMCal = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackEMCal;
 // constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
@@ -159,6 +166,7 @@ struct TableMaker {
   Produces<ReducedTracksBarrel> trackBarrel;
   Produces<ReducedTracksBarrelCov> trackBarrelCov;
   Produces<ReducedTracksBarrelPID> trackBarrelPID;
+  Produces<ReducedTracksBarrelEMCal> trackBarrelEMCal;
   Produces<ReducedTracksAssoc> trackBarrelAssoc;
   Produces<ReducedMuons> muonBasic;
   Produces<ReducedMuonsExtra> muonExtra;
@@ -1081,6 +1089,22 @@ struct TableMaker {
                        -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
                        -999.0);
       }
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
+        const auto& emcal = static_cast<o2::aod::EMCALCluster const&>(track);
+        trackBarrelEMCal(emcal.energy(),
+                         emcal.coreEnergy(),
+                         emcal.rawEnergy(),
+                         emcal.eta(),
+                         emcal.phi(),
+                         emcal.m02(),
+                         emcal.m20(),
+                         emcal.nCells(),
+                         emcal.time(),
+                         emcal.isExotic(),
+                         emcal.distanceToBadChannel(),
+                         emcal.nlm(),
+                         emcal.definition());
+      }
 
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
 
@@ -1316,6 +1340,7 @@ struct TableMaker {
       trackBarrel.reserve(tracksBarrel.size());
       trackBarrelCov.reserve(tracksBarrel.size());
       trackBarrelPID.reserve(tracksBarrel.size());
+      trackBarrelEMCal.reserve(tracksBarrel.size());
       trackBarrelAssoc.reserve(tracksBarrel.size());
     }
 
@@ -1405,6 +1430,14 @@ struct TableMaker {
                            TrackAssoc const& trackAssocs)
   {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+  }
+
+  // produce the barrel+EMCal DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
+  void processPPBarrelWithEMCal(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+                                MyBarrelTracksWithCovWithEMCal const& tracksBarrel,
+                                TrackAssoc const& trackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithEMCal, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
   // produce the barrel-only DQ skimmed barrel data model, with V0 tagged tracks
