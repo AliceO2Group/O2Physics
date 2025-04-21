@@ -111,6 +111,12 @@ AxisSpec axisSpecies = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.
 AxisSpec axisMassK0s = {200, 0.4, 0.6, "K0sMass", "K0sMass"};
 AxisSpec axisMassLambda = {200, 1.07, 1.17, "Lambda/AntiLamda Mass", "Lambda/AntiLamda Mass"};
 AxisSpec axisTracks{9, 0.5, 9.5, "#tracks", "TrackAxis"};
+auto static constexpr mincharge = 3.f;
+auto static constexpr minptcut = 0.1f;
+auto static constexpr minCent = 0.0f;
+auto static constexpr maxCent = 100.0f;
+auto static constexpr etainelgt0 = 1.0f;
+auto static constexpr nitslayers = 7;
 
 struct HeavyionMultiplicity {
 
@@ -128,6 +134,11 @@ struct HeavyionMultiplicity {
   Configurable<float> dcav0daughtercut{"dcav0daughtercut", 1.0f, "dcav0daughtercut"};
   Configurable<float> minTPCnClsCut{"minTPCnClsCut", 50.0f, "minTPCnClsCut"};
   Configurable<float> nSigmaTpcCut{"nSigmaTpcCut", 5.0f, "nSigmaTpcCut"};
+  Configurable<float> v0etaCut{"v0etaCut", 0.9f, "v0etaCut"};
+  Configurable<float> extraphicut1{"extraphicut1", 3.07666f, "Extra Phi cut 1"};
+  Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
+  Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
+  Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
   ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis pvHistBin{"pvHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis fv0aMultHistBin{"fv0aMultHistBin", {501, -0.5, 500.5}, ""};
@@ -208,7 +219,7 @@ struct HeavyionMultiplicity {
       auto* x2 = htrack->GetAxis(1);
       x2->SetBinLabel(1, "All tracks");
       x2->SetBinLabel(2, "Non-fake tracks");
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < nitslayers; i++) {
         x2->SetBinLabel(i + 3, Form("layer %d", i));
       }
     }
@@ -264,7 +275,7 @@ struct HeavyionMultiplicity {
     }
     histos.fill(HIST("EventHist"), 4);
 
-    if (selColCent(col) < 0. || selColCent(col) > 100.) {
+    if (selColCent(col) < minCent || selColCent(col) > maxCent) {
       return false;
     }
     histos.fill(HIST("EventHist"), 5);
@@ -326,7 +337,7 @@ struct HeavyionMultiplicity {
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
-    if (isApplyExtraPhiCut && ((track.phi() > 3.07666 && track.phi() < 3.12661) || track.phi() <= 0.03 || track.phi() >= 6.253)) {
+    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     return true;
@@ -345,13 +356,13 @@ struct HeavyionMultiplicity {
     if (pdgTrack == nullptr) {
       return false;
     }
-    if (std::abs(pdgTrack->Charge()) < 3) {
+    if (std::abs(pdgTrack->Charge()) < mincharge) {
       return false;
     }
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
-    if (isApplyExtraPhiCut && ((track.phi() > 3.07666 && track.phi() < 3.12661) || track.phi() <= 0.03 || track.phi() >= 6.253)) {
+    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     return true;
@@ -442,13 +453,13 @@ struct HeavyionMultiplicity {
           auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
           if (mcpart.isPhysicalPrimary()) {
             switch (std::abs(mcpart.pdgCode())) {
-              case 211:
+              case PDG_t::kPiPlus:
                 pid = kSpPion;
                 break;
-              case 321:
+              case PDG_t::kKPlus:
                 pid = kSpKaon;
                 break;
-              case 2212:
+              case PDG_t::kProton:
                 pid = kSpProton;
                 break;
               default:
@@ -460,7 +471,7 @@ struct HeavyionMultiplicity {
           }
           if (mcpart.has_mothers()) {
             auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-            if (mcpartMother.pdgCode() == 310 || std::abs(mcpartMother.pdgCode()) == 3122) {
+            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
               pid = kSpStrangeDecay;
             }
           }
@@ -479,7 +490,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-        if (particle.pt() < 0.1) {
+        if (particle.pt() < minptcut) {
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -489,13 +500,13 @@ struct HeavyionMultiplicity {
 
         int pid = 0;
         switch (std::abs(particle.pdgCode())) {
-          case 211:
+          case PDG_t::kPiPlus:
             pid = kSpPion;
             break;
-          case 321:
+          case PDG_t::kKPlus:
             pid = kSpKaon;
             break;
-          case 2212:
+          case PDG_t::kProton:
             pid = kSpProton;
             break;
           default:
@@ -544,7 +555,7 @@ struct HeavyionMultiplicity {
           continue;
         }
         histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kNoGenpTVar);
-        if (particle.pt() < 0.1) {
+        if (particle.pt() < minptcut) {
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hmcgendndpt"), selColCent(RecCol), particle.pt(), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -579,7 +590,7 @@ struct HeavyionMultiplicity {
         }
         histos.fill(HIST("hTracksCount"), selColCent(RecCol), 1);
         bool isFakeItsTracks = false;
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < nitslayers; i++) {
           if (Rectrack.mcMask() & 1 << i) {
             isFakeItsTracks = true;
             histos.fill(HIST("hTracksCount"), selColCent(RecCol), i + 3);
@@ -607,7 +618,7 @@ struct HeavyionMultiplicity {
     for (const auto& v0track : v0data) {
       auto v0pTrack = v0track.template posTrack_as<V0TrackCandidates>();
       auto v0nTrack = v0track.template negTrack_as<V0TrackCandidates>();
-      if (std::abs(v0pTrack.eta()) > 0.9 || std::abs(v0nTrack.eta()) > 0.9) {
+      if (std::abs(v0pTrack.eta()) > v0etaCut || std::abs(v0nTrack.eta()) > v0etaCut) {
         continue;
       }
       if (v0pTrack.tpcNClsFound() < minTPCnClsCut) {
@@ -650,7 +661,7 @@ struct HeavyionMultiplicity {
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (track.eta() < 1.0) {
+      if (track.eta() < etainelgt0) {
         nTrks++;
       }
     } // track loop
@@ -692,7 +703,7 @@ struct HeavyionMultiplicity {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-        if (Rectrack.eta() < 1.0) {
+        if (Rectrack.eta() < etainelgt0) {
           nTrks++;
         }
       }
@@ -720,13 +731,13 @@ struct HeavyionMultiplicity {
             auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
             if (mcpart.isPhysicalPrimary()) {
               switch (std::abs(mcpart.pdgCode())) {
-                case 211:
+                case PDG_t::kPiPlus:
                   pid = kSpPion;
                   break;
-                case 321:
+                case PDG_t::kKPlus:
                   pid = kSpKaon;
                   break;
-                case 2212:
+                case PDG_t::kProton:
                   pid = kSpProton;
                   break;
                 default:
@@ -738,7 +749,7 @@ struct HeavyionMultiplicity {
             }
             if (mcpart.has_mothers()) {
               auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-              if (mcpartMother.pdgCode() == 310 || std::abs(mcpartMother.pdgCode()) == 3122) {
+              if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
                 pid = kSpStrangeDecay;
               }
             }
@@ -759,7 +770,7 @@ struct HeavyionMultiplicity {
         if (!isGenTrackSelected(particle)) {
           continue;
         }
-        if (particle.eta() < 1.0) {
+        if (particle.eta() < etainelgt0) {
           npart++;
         }
       } // particle loop
@@ -770,7 +781,7 @@ struct HeavyionMultiplicity {
             continue;
           }
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-          if (particle.pt() < 0.1) {
+          if (particle.pt() < minptcut) {
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), selColCent(RecCol), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
           } else {
@@ -780,13 +791,13 @@ struct HeavyionMultiplicity {
 
           int pid = 0;
           switch (std::abs(particle.pdgCode())) {
-            case 211:
+            case PDG_t::kPiPlus:
               pid = kSpPion;
               break;
-            case 321:
+            case PDG_t::kKPlus:
               pid = kSpKaon;
               break;
-            case 2212:
+            case PDG_t::kProton:
               pid = kSpProton;
               break;
             default:
