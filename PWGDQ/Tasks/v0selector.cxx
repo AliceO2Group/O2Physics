@@ -207,7 +207,7 @@ struct v0selector {
     std::vector<int64_t> v0pidmap;
     v0pidmap.clear();
     v0pidmap.resize(V0s.size(),-1);
-    
+
     for (auto& V0 : V0s) {
       // if (!(V0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
       //   continue;
@@ -363,9 +363,11 @@ struct v0selector {
       // printf("negTrackId = %d\n",V0.negTrackId());
 
     } // end of V0 loop
+
     for (auto& V0 : V0s) {
-      v0mapID(v0pidmap[V0.globalIndex()]); 
+      v0mapID(v0pidmap[V0.globalIndex()]);
     }
+
     for (auto& track : tracks) {
       // printf("setting pidmap[%lld] = %d\n",track.globalIndex(),pidmap[track.globalIndex()]);
       v0bits(pidmap[track.globalIndex()]);
