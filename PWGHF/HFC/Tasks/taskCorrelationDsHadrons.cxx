@@ -270,11 +270,7 @@ struct HfTaskCorrelationDsHadrons {
   bool isSelectedCandidate(const int ptBinD, const float bdtScorePrompt, const float bdtScoreBkg)
   {
 
-    if (ptBinD == -1 || bdtScorePrompt < mlOutputPromptMin->at(ptBinD) || bdtScorePrompt > mlOutputPromptMax->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
-      return false;
-    } else {
-      return true;
-    }
+    return (ptBinD != -1 && bdtScorePrompt >= mlOutputPromptMin->at(ptBinD) && bdtScorePrompt <= mlOutputPromptMax->at(ptBinD) && bdtScoreBkg <= mlOutputBkg->at(ptBinD));
   }
 
   void processData(DsHadronPairWithMl const& pairEntries,
