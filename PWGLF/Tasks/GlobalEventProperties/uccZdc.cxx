@@ -494,17 +494,17 @@ struct UccZdc {
       if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
         return;
       }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
     }
-    registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
 
     // ZEM cut
     if (isZEMcut) {
       if (sumZEMs < zemCut) {
         return;
       }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
     registry.fill(HIST("ZN"), znA + znC);
