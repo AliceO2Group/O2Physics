@@ -258,7 +258,7 @@ struct TreeWriterTpcV0 {
   }
 
   /// Apply a track quality selection with a filter!
-  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID  const& v0s, aod::BCsWithTimestamps const&)
+  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, aod::BCsWithTimestamps const&)
   {
     /// Check event slection
     if (!isEventSelected(collision, tracks)) {
@@ -274,7 +274,7 @@ struct TreeWriterTpcV0 {
     for (const auto& v0 : v0s) {
       auto posTrack = v0.posTrack_as<soa::Filtered<Trks>>();
       auto negTrack = v0.negTrack_as<soa::Filtered<Trks>>();
-      if (v0.v0bit() == -1){
+      if (v0.v0bit() == -1) {
         continue;
       }
       // gamma
@@ -322,7 +322,6 @@ struct TreeWriterTpcV0 {
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
-  //Preslice<aod::V0Datas> perCollisionV0s = aod::v0data::collisionId;
   Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, MyBCTable const&, aod::TracksQA_002 const& tracksQA)
   {
@@ -352,7 +351,7 @@ struct TreeWriterTpcV0 {
       for (const auto& v0 : v0s) {
         auto posTrack = v0.posTrack_as<Trks>();
         auto negTrack = v0.negTrack_as<Trks>();
-        if (v0.v0bit() == -1){
+        if (v0.v0bit() == -1) {
           continue;
         }
         aod::TracksQA_002::iterator posTrackQA;
