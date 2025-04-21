@@ -118,4 +118,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   WorkflowSpec workflow{adaptAnalysisTask<TrackPropagationTester>(cfgc)};
   return workflow;
 }
- 
