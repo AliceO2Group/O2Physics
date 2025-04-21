@@ -133,8 +133,8 @@ struct v0selector {
 
     // Check for K0S candidates
     float q = cutAPK0SLow * std::sqrt(std::abs(1.0f - alpha * alpha / (cutAPK0SHigh * cutAPK0SHigh)));
-    float qtop =  cutQTK0SHigh * std::sqrt(std::abs(1.0f - alpha * alpha / (cutAPK0SHighTop * cutAPK0SHighTop)));
-    if ((qt > cutQTK0SLow) && (qt < cutQTK0SHigh) && (qt > q) && (qt < qtop) ) {
+    float qtop = cutQTK0SHigh * std::sqrt(std::abs(1.0f - alpha * alpha / (cutAPK0SHighTop * cutAPK0SHighTop)));
+    if ((qt > cutQTK0SLow) && (qt < cutQTK0SHigh) && (qt > q) && (qt < qtop)) {
       return kK0S;
     }
 
@@ -206,7 +206,7 @@ struct v0selector {
 
     std::vector<int64_t> v0pidmap;
     v0pidmap.clear();
-    v0pidmap.resize(V0s.size(),-1);
+    v0pidmap.resize(V0s.size(), -1);
 
     for (auto& V0 : V0s) {
       // if (!(V0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
@@ -323,7 +323,7 @@ struct v0selector {
         if (mGamma < v0max_mee && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < cutNsigmaElTPC && std::abs(psipair) < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
-          v0pidmap[V0.globalIndex()]= kGamma;
+          v0pidmap[V0.globalIndex()] = kGamma;
           if (fillhisto) {
             registry.fill(HIST("hGammaRxy"), V0.x(), V0.y());
           }
@@ -338,7 +338,7 @@ struct v0selector {
         if ((0.48 < mK0S && mK0S < 0.51) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
-          v0pidmap[V0.globalIndex()]= kK0S;
+          v0pidmap[V0.globalIndex()] = kK0S;
         }
       } else if (v0id == kLambda) { // L->p + pi-
         if (fillhisto) {
@@ -347,7 +347,7 @@ struct v0selector {
         if (v0id == kLambda && (1.110 < mLambda && mLambda < 1.120) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kLambda);
-          v0pidmap[V0.globalIndex()]= kLambda;
+          v0pidmap[V0.globalIndex()] = kLambda;
         }
       } else if (v0id == kAntiLambda) { // Lbar -> pbar + pi+
         if (fillhisto) {
@@ -356,7 +356,7 @@ struct v0selector {
         if ((1.110 < mAntiLambda && mAntiLambda < 1.120) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kAntiLambda);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kAntiLambda);
-          v0pidmap[V0.globalIndex()]= kAntiLambda;
+          v0pidmap[V0.globalIndex()] = kAntiLambda;
         }
       }
       // printf("posTrackId = %d\n",V0.posTrackId());
