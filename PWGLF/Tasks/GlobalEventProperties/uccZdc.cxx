@@ -123,6 +123,7 @@ struct UccZdc {
   Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
   Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
   Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
+  Configurable<int> minITSnCls{"minITSnCls", 5, "min ITSnCls"};
 
   enum EvCutLabel {
     All = 1,
@@ -573,7 +574,7 @@ struct UccZdc {
 
     // Calculates the event weight, W_k
     for (const auto& track : tracks) {
-      if (track.hasITS() && track.itsNCls() >= 5) {
+      if (track.hasITS() && track.itsNCls() >= minITSnCls) {
         itsTracks++;
       }
       // Track Selection
