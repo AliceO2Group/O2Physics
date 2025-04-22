@@ -60,6 +60,7 @@ struct doublephimeson {
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {1500, 2.0, 3.5}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisInvMassPhi{"configThnAxisInvMassPhi", {20, 1.01, 1.03}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisInvMassDeltaPhi{"configThnAxisInvMassDeltaPhi", {80, 0.0, 0.08}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisDaugherPt{"configThnAxisDaugherPt", {25, 0.0, 50.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {40, 0.0, 20.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {200, 0.0, 2.0}, "#it{k}^{*} (GeV/#it{c})"};
@@ -75,16 +76,18 @@ struct doublephimeson {
     histos.add("hnsigmaTPCKaonMinus", "hnsigmaTPCKaonMinus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCTOFKaon", "hnsigmaTPCTOFKaon", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hPhiMass", "hPhiMass", kTH2F, {{40, 1.0, 1.04f}, {100, 0.0f, 10.0f}});
+    histos.add("hPhiMass2", "hPhiMass2", kTH2F, {{40, 1.0, 1.04f}, {40, 1.0f, 1.04f}});
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassPhi{configThnAxisInvMassPhi, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisInvMassDeltaPhi{configThnAxisInvMassDeltaPhi, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisDeltaR{configThnAxisDeltaR, "#Delta R)"};
     const AxisSpec thnAxisCosTheta{configThnAxisCosTheta, "cos #theta"};
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
 
-    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
-    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassPhi, thnAxisInvMassPhi});
+    histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
+    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassDeltaPhi});
   }
 
   // get kstar
@@ -341,11 +344,13 @@ struct doublephimeson {
         // auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
         auto costheta = (Phid1.Px() * Phid2.Px() + Phid1.Py() * Phid2.Py() + Phid1.Pz() * Phid2.Pz()) / (Phid1.P() * Phid2.P());
+        auto deltam = TMath::Sqrt(TMath::Power(Phid1.M() - 1.0192, 2.0) + TMath::Power(Phid2.M() - 1.0192, 2.0));
+        histos.fill(HIST("hPhiMass2"), Phid1.M(), Phid2.M());
         if (!isDeep) {
-          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, deltam, phimult);
         }
         if (isDeep) {
-          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M(), phimult);
+          histos.fill(HIST("SEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), deltam, phimult);
         }
       }
     }
@@ -403,11 +408,12 @@ struct doublephimeson {
         exotic = Phid1 + Phid2;
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
         auto costheta = (Phid1.Px() * Phid2.Px() + Phid1.Py() * Phid2.Py() + Phid1.Pz() * Phid2.Pz()) / (Phid1.P() * Phid2.P());
+        auto deltam = TMath::Sqrt(TMath::Power(Phid1.M() - 1.0192, 2.0) + TMath::Power(Phid2.M() - 1.0192, 2.0));
         if (!isDeep) {
-          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M());
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, deltam);
         }
         if (isDeep) {
-          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M());
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), deltam);
         }
       }
     }
