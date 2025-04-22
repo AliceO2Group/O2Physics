@@ -960,11 +960,11 @@ struct HfTaskSigmac {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;
-        if (isTrueSc0Reco) {
+        if (isTrueScPlusPlusReco) {
           // Σc0(2455)
           indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCPlusPlus, true);
           sigmacSpecies = o2::hf_sigmactask::Sc2455;
-        } else if (isTrueScStar0Reco) {
+        } else if (isTrueScStarPlusPlusReco) {
           // Σc0(2520)
           indexMcScRec = RecoDecay::getMother(mcParticles, candSc.prong1_as<aod::TracksWMc>().mcParticle(), o2::constants::physics::Pdg::kSigmaCStarPlusPlus, true);
           sigmacSpecies = o2::hf_sigmactask::Sc2520;
