@@ -905,7 +905,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                    //!
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint16_t); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
