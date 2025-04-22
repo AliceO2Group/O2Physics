@@ -13,7 +13,8 @@
 /// \brief Reconstruction of Xi* resonance.
 ///
 /// \author Min-jae Kim <minjae.kim@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
-#include <TLorentzVector.h>
+//#include <TLorentzVector.h>
+#include "Math/Vector4D.h"
 #include "TF1.h"
 #include "TRandom3.h"
 
@@ -34,6 +35,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
 //Service<o2::framework::O2DatabasePDG> pdgDB;
 
 enum {
@@ -692,7 +694,7 @@ struct Xi1530Analysisqa {
       }
     }
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance; // It will be replaced to use RecoDecay (In fixing...)
+    LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance; // It will be replaced to use RecoDecay (In fixing...)
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
@@ -896,8 +898,8 @@ struct Xi1530Analysisqa {
         }
       }
 
-      lDecayDaughter1.SetPtEtaPhiM(trk1ptPi, trk1.eta(), trk1.phi(), massPi);
-      lDecayDaughter2.SetPtEtaPhiM(trk2ptXi, trk2.eta(), trk2.phi(), trk2.mXi());
+      lDecayDaughter1 = LorentzVectorPtEtaPhiMass(trk1ptPi, trk1.eta(), trk1.phi(), massPi);
+      lDecayDaughter2 = LorentzVectorPtEtaPhiMass(trk2ptXi, trk2.eta(), trk2.phi(), trk2.mXi());
       lResonance = lDecayDaughter1 + lDecayDaughter2;
 
       auto lResonancePt = lResonance.Pt();
