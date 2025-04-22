@@ -352,9 +352,11 @@ struct TreeWriterTpcV0 {
       for (const auto& v0 : v0s) {
         auto posTrack = v0.posTrack_as<Trks>();
         auto negTrack = v0.negTrack_as<Trks>();
+
         if (v0.v0bit() == -1) {
           continue;
         }
+
         aod::TracksQA_002::iterator posTrackQA;
         aod::TracksQA_002::iterator negTrackQA;
         bool existPosTrkQA;

@@ -130,6 +130,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   Configurable<bool> confDoSpher{"confDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> confStoreMCmothers{"confStoreMCmothers", false, "MC truth: Fill with not only primary particles and store mothers' PDG in tempFitVar."};
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   /// Event cuts
@@ -292,20 +293,17 @@ struct FemtoUniverseProducerTask {
     Configurable<float> confPhiInvMassLowLimit{"confPhiInvMassLowLimit", 1.011, "Lower limit of the Phi invariant mass"};
     Configurable<float> confPhiInvMassUpLimit{"confPhiInvMassUpLimit", 1.027, "Upper limit of the Phi invariant mass"};
     // Phi meson daughters
-    Configurable<bool> confLooseTPCNSigma{"confLooseTPCNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
-    Configurable<float> confLooseTPCNSigmaValue{"confLooseTPCNSigmaValue", 10, "Value for the loose TPC N Sigma for Kaon PID."};
-    Configurable<bool> confLooseTOFNSigma{"confLooseTOFNSigma", false, "Use loose TPC N sigmas for Kaon PID."};
-    Configurable<float> confTrackPionNsigmaReject{"confTrackPionNsigmaReject", 3.0, "Reject if particle could be a Pion combined nsigma value."};
-    Configurable<float> confTrackProtonNsigmaReject{"confTrackProtonNsigmaReject", 3.0, "Reject if particle could be a Proton combined nsigma value."};
-    Configurable<float> confLooseTOFNSigmaValue{"confLooseTOFNSigmaValue", 10, "Value for the loose TOF N Sigma for Kaon PID."};
+    Configurable<float> confPhiKaonRejectPionNsigma{"confPhiKaonRejectPionNsigma", 3.0, "Reject if particle could be a Pion combined nsigma value."};
+    Configurable<float> confPhiKaonRejectProtonNsigma{"confPhiKaonRejectProtonNsigma", 3.0, "Reject if particle could be a Proton combined nsigma value."};
     // Kaons
-    Configurable<float> confTrackKaonNsigmaTPCfrom0_0to0_3{"confTrackKaonNsigmaTPCfrom0_0to0_3", 3.0, "Reject if Kaons in 0.0-0.3 are have TPC n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTPCfrom0_3to0_45{"confTrackKaonNsigmaTPCfrom0_3to0_45", 2.0, "Reject if Kaons in 0.3-0.45 are have TPC n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTPCfrom0_45to0_55{"confTrackKaonNsigmaTPCfrom0_45to0_55", 1.0, "Reject if Kaons in 0.45-0.55 are have TPC n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTPCfrom0_55to1_5{"confTrackKaonNsigmaTPCfrom0_55to1_5", 3.0, "Reject if Kaons in 0.55-1.5 are have TPC n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTOFfrom0_55to1_5{"confTrackKaonNsigmaTOFfrom0_55to1_5", 3.0, "Reject if Kaons in 0.55-1.5 are have TOF n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTPCfrom1_5{"confTrackKaonNsigmaTPCfrom1_5", 3.0, "Reject if Kaons above 1.5 are have TPC n sigma above this value."};
-    Configurable<float> confTrackKaonNsigmaTOFfrom1_5{"confTrackKaonNsigmaTOFfrom1_5", 3.0, "Reject if Kaons above 1.5 are have TOF n sigma above this value."};
+    Configurable<bool> confPhiDoLFPID4Kaons{"confPhiDoLFPID4Kaons", true, "Switch on do PID for Kaons as in LF"};
+    Configurable<float> confPhiKaonNsigmaTPCfrom0_0to0_3{"confPhiKaonNsigmaTPCfrom0_0to0_3", 3.0, "Reject if Kaons in 0.0-0.3 are have TPC n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTPCfrom0_3to0_45{"confPhiKaonNsigmaTPCfrom0_3to0_45", 2.0, "Reject if Kaons in 0.3-0.45 are have TPC n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTPCfrom0_45to0_55{"confPhiKaonNsigmaTPCfrom0_45to0_55", 1.0, "Reject if Kaons in 0.45-0.55 are have TPC n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTPCfrom0_55to1_5{"confPhiKaonNsigmaTPCfrom0_55to1_5", 3.0, "Reject if Kaons in 0.55-1.5 are have TPC n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTOFfrom0_55to1_5{"confPhiKaonNsigmaTOFfrom0_55to1_5", 3.0, "Reject if Kaons in 0.55-1.5 are have TOF n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTPCfrom1_5{"confPhiKaonNsigmaTPCfrom1_5", 3.0, "Reject if Kaons above 1.5 are have TPC n sigma above this value."};
+    Configurable<float> confPhiKaonNsigmaTOFfrom1_5{"confPhiKaonNsigmaTOFfrom1_5", 3.0, "Reject if Kaons above 1.5 are have TOF n sigma above this value."};
   } ConfPhiSelection;
 
   // PDG codes for fillMCParticle function
@@ -327,25 +325,25 @@ struct FemtoUniverseProducerTask {
   {
 
     if (mom < 0.3) { // 0.0-0.3
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confTrackKaonNsigmaTPCfrom0_0to0_3) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confPhiKaonNsigmaTPCfrom0_0to0_3) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confTrackKaonNsigmaTPCfrom0_3to0_45) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confPhiKaonNsigmaTPCfrom0_3to0_45) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confTrackKaonNsigmaTPCfrom0_45to0_55) {
+      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confPhiKaonNsigmaTPCfrom0_45to0_55) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confTrackKaonNsigmaTOFfrom0_55to1_5) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confTrackKaonNsigmaTPCfrom0_55to1_5)) {
+      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confPhiKaonNsigmaTOFfrom0_55to1_5) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confPhiKaonNsigmaTPCfrom0_55to1_5)) {
         {
           return true;
         }
@@ -353,7 +351,7 @@ struct FemtoUniverseProducerTask {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confTrackKaonNsigmaTOFfrom1_5) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confTrackKaonNsigmaTPCfrom1_5)) {
+      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confPhiKaonNsigmaTOFfrom1_5) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confPhiKaonNsigmaTPCfrom1_5)) {
         return true;
       } else {
         return false;
@@ -363,77 +361,23 @@ struct FemtoUniverseProducerTask {
     }
   }
 
-  bool isKaonNSigmaTPCLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  bool isKaonNSigmaLF(float mom, float nsigmaTPCK, float nsigmaTOFK, bool hasTOF)
   {
-
-    if (mom < 0.3) { // 0.0-0.3
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confLooseTPCNSigmaValue.value) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confLooseTPCNSigmaValue.value) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (std::abs(nsigmaTPCK) < ConfPhiSelection.confLooseTPCNSigmaValue.value) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confLooseTPCNSigmaValue.value)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom > 1.5) { // 1.5 -
-      if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < ConfPhiSelection.confLooseTPCNSigmaValue.value)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  bool isKaonNSigmaTOFLoose(float mom, float nsigmaTPCK, float nsigmaTOFK)
-  {
-    if (mom < 0.3) { // 0.0-0.3
+    if (mom < 0.5) {
       if (std::abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (std::abs(nsigmaTPCK) < 2.0) {
-        return true;
-      } else {
+    } else if (mom >= 0.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if (!hasTOF) {
         return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (std::abs(nsigmaTPCK) < 1.0) {
-        return true;
       } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confLooseTOFNSigmaValue.value) && (std::abs(nsigmaTPCK) < 3.0)) {
-        {
+        if (std::sqrt(nsigmaTPCK * nsigmaTPCK + nsigmaTOFK * nsigmaTOFK) < 3.0) {
           return true;
+        } else {
+          return false;
         }
-      } else {
-        return false;
-      }
-    } else if (mom > 1.5) { // 1.5 -
-      if ((std::abs(nsigmaTOFK) < ConfPhiSelection.confLooseTOFNSigmaValue.value) && (std::abs(nsigmaTPCK) < 3.0)) {
-        return true;
-      } else {
-        return false;
       }
     } else {
       return false;
@@ -443,16 +387,16 @@ struct FemtoUniverseProducerTask {
   bool isKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (std::abs(nsigmaTPCPi) < ConfPhiSelection.confTrackPionNsigmaReject.value) {
+      if (std::abs(nsigmaTPCPi) < ConfPhiSelection.confPhiKaonRejectPionNsigma.value) {
         return true;
-      } else if (std::abs(nsigmaTPCPr) < ConfPhiSelection.confTrackProtonNsigmaReject.value) {
+      } else if (std::abs(nsigmaTPCPr) < ConfPhiSelection.confPhiKaonRejectProtonNsigma.value) {
         return true;
       }
     }
     if (mom > 0.5) {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.confTrackPionNsigmaReject.value) {
+      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPhiSelection.confPhiKaonRejectPionNsigma.value) {
         return true;
-      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.confTrackProtonNsigmaReject.value) {
+      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPhiSelection.confPhiKaonRejectProtonNsigma.value) {
         return true;
       } else {
         return false;
@@ -732,18 +676,21 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename ParticleType>
-  void fillDebugParticleMC(ParticleType const& particle)
+  int32_t getMotherPDG(ParticleType particle)
   {
     auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
     if (!motherparticlesMC.empty()) {
       auto motherparticleMC = motherparticlesMC.front();
-      if (particle.isPhysicalPrimary())
-        outputDebugPartsMC(0);
-      else
-        outputDebugPartsMC(motherparticleMC.pdgCode());
+      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
     } else {
-      outputDebugPartsMC(9999);
+      return 9999;
     }
+  }
+
+  template <typename ParticleType>
+  void fillDebugParticleMC(ParticleType const& particle)
+  {
+    outputDebugPartsMC(getMotherPDG(particle));
   }
 
   template <typename ParticleType>
@@ -1601,20 +1548,18 @@ struct FemtoUniverseProducerTask {
       if (!trackCuts.isSelectedMinimal(p1) || !trackCuts.isSelectedMinimal(p1)) {
         continue;
       }
-      // implementing PID cuts for phi children
-      if (ConfPhiSelection.confLooseTPCNSigma.value) {
-        if (!(isKaonNSigmaTPCLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
-          continue;
-        }
-        if (!(isKaonNSigmaTPCLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
-          continue;
-        }
+      if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
+        continue;
       }
-      if (ConfPhiSelection.confLooseTOFNSigma.value) {
-        if (!(isKaonNSigmaTOFLoose(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
+      // implementing PID cuts for phi children
+      if (ConfPhiSelection.confPhiDoLFPID4Kaons) {
+        if ((p1.isGlobalTrackWoDCA() == false) || (p2.isGlobalTrackWoDCA() == false) || (p1.isPVContributor() == false) || (p2.isPVContributor() == false)) {
           continue;
         }
-        if (!(isKaonNSigmaTOFLoose(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+        if (!(isKaonNSigmaLF(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), p1.hasTOF()))) {
+          continue;
+        }
+        if (!(isKaonNSigmaLF(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon), p2.hasTOF()))) {
           continue;
         }
       } else {
@@ -1629,10 +1574,6 @@ struct FemtoUniverseProducerTask {
         continue;
       }
       if (isKaonRejected(p2.p(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p2, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p2, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p2, o2::track::PID::Pion))) {
-        continue;
-      }
-
-      if ((!(p1.sign() == 1)) || (!(p2.sign() == -1))) {
         continue;
       }
 
@@ -1755,7 +1696,7 @@ struct FemtoUniverseProducerTask {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (confStoreMCmothers || particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1775,6 +1716,8 @@ struct FemtoUniverseProducerTask {
       // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
+      int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
       // now the table is filled
       if constexpr (resolveDaughs) {
         tmpIDtrack.push_back(particle.globalIndex());
@@ -1788,7 +1731,7 @@ struct FemtoUniverseProducerTask {
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                     0,
                     pdgCode,
-                    pdgCode,
+                    variablePDG,
                     childIDs,
                     0,
                     0);
@@ -1834,6 +1777,9 @@ struct FemtoUniverseProducerTask {
             }
           }
         }
+
+        int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
         if (!confIsActivateCascade) {
           outputParts(outputCollision.lastIndex(),
                       particle.pt(),
@@ -1842,7 +1788,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                       0,
                       static_cast<uint32_t>(particle.pdgCode()),
-                      particle.pdgCode(),
+                      variablePDG,
                       childIDs,
                       0,
                       0);

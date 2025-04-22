@@ -204,6 +204,7 @@ struct TrackEfficiencyJets {
     if (doprocessTracks || doprocessTracksWeighted) {
       AxisSpec centAxis = {121, -10., 111., "centrality (%)"};
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h_fakecollisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {centAxis, {4, 0.0, 4.0}}});
     }
     if (doprocessParticles || doprocessParticlesWeighted) {
@@ -409,6 +410,10 @@ struct TrackEfficiencyJets {
                              aod::JetMcCollisions const&,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
+    if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
+      registry.fill(HIST("h_fakecollisions"), 0.5);
+      return;
+    }
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);

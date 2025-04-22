@@ -252,6 +252,14 @@ struct CorrelationTask {
     return grpo->getNominalL3Field();
   }
 
+  template <class p2typeIterator>
+  bool passMLScore(const p2typeIterator& track)
+  {
+    auto it = std::lower_bound(cfgPtDepMLbkg->begin(), cfgPtDepMLbkg->end(), track.pt());
+    int idx = std::distance(cfgPtDepMLbkg->begin(), it) - 1;
+    return !((track.decay() == 0 && track.mlProbD0()[0] > cfgPtCentDepMLbkgSel->at(idx)) || (track.decay() == 1 && track.mlProbD0bar()[0] > cfgPtCentDepMLbkgSel->at(idx)));
+  }
+
   template <typename TCollision, typename TTracks>
   void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
   {
@@ -274,12 +282,20 @@ struct CorrelationTask {
       if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
           continue;
+        if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks1::iterator>::value) {
+          if (!passMLScore(track1))
+            continue;
+        }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
         for (const auto& track2 : tracks2) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {
             if (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) {
               if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
                 continue;
+              if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks2::iterator>::value) {
+                if (!passMLScore(track2))
+                  continue;
+              }
 
               if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value) {
                 if constexpr (std::experimental::is_detected<HasProng0Id, typename TTracks2::iterator>::value) {
@@ -412,15 +428,8 @@ struct CorrelationTask {
       }
 
       if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks1::iterator>::value) {
-        if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML) {
-          auto it = std::lower_bound(cfgPtDepMLbkg->begin(), cfgPtDepMLbkg->end(), track1.pt());
-          int idx = std::distance(cfgPtDepMLbkg->begin(), it) - 1;
-          if (track1.decay() == 0 && track1.mlProbD0()[0] > cfgPtCentDepMLbkgSel->at(idx)) {
-            continue;
-          } else if (track1.decay() == 1 && track1.mlProbD0bar()[0] > cfgPtCentDepMLbkgSel->at(idx)) {
-            continue;
-          }
-        }
+        if ((doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML) && !passMLScore(track1))
+          continue;
       } // ML selection
 
       if (cfgMassAxis) {
@@ -536,15 +545,8 @@ struct CorrelationTask {
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
 
         if constexpr (std::experimental::is_detected<HasMlProbD0, typename TTracks2::iterator>::value) {
-          if (doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML) {
-            auto it = std::lower_bound(cfgPtDepMLbkg->begin(), cfgPtDepMLbkg->end(), track2.pt());
-            int idx = std::distance(cfgPtDepMLbkg->begin(), it) - 1;
-            if (track2.decay() == 0 && track2.mlProbD0()[0] > cfgPtCentDepMLbkgSel->at(idx)) {
-              continue;
-            } else if (track2.decay() == 1 && track2.mlProbD0bar()[0] > cfgPtCentDepMLbkgSel->at(idx)) {
-              continue;
-            }
-          }
+          if ((doprocessSame2ProngDerivedML || doprocessSame2Prong2ProngML || doprocessMixed2ProngDerivedML || doprocessMixed2Prong2ProngML) && !passMLScore(track2))
+            continue;
         } // ML selection
 
         // last param is the weight
