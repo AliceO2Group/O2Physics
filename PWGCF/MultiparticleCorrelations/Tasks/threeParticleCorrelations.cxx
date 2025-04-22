@@ -470,11 +470,13 @@ struct ThreeParticleCorrelations {
     // End of the MC Mixed-events Correlations
   }
 
-  void processMCGen(MyFilteredMCGenCollision const&, MyFilteredMCParticles const&)
+  void processMCGen(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const&)
   {
 
+    auto groupMCParticles = mcParticles->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
+
     // Start of the Monte-Carlo generated QA
-    for (const auto& particle : mcParticles) {
+    for (const auto& particle : groupMCParticles) {
       if (particle.isPhysicalPrimary()) {
 
         // Efficiency - Generated
