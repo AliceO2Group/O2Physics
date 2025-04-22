@@ -32,12 +32,14 @@ using namespace o2::framework;
 
 namespace o2::hf_sigmactask
 {
-enum species : int { Sc2455 = 0,
+enum Species : int { Sc2455 = 0,
                      Sc2520,
                      NSpecies };
-enum decays : int { pkpi = 0,
-                    pikp,
+enum Decays : int { PKPi = 0,
+                    PiKP,
                     NDecays };
+const int chargeNull = 0;
+const int chargePlusPlus = 2;
 }; // namespace o2::hf_sigmactask
 
 struct HfTaskSigmac {
@@ -65,6 +67,23 @@ struct HfTaskSigmac {
   ConfigurableAxis configAxisDeltaMassSigmaC{"configAxisDeltaMassSigmaC", {200, 0.13, 0.23}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreLcBkg{"thnConfigAxisBdtScoreLcBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreLcNonPrompt{"thnConfigAxisBdtScoreLcNonPrompt", {100, 0., 1.}, ""};
+  const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
+  const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+  const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+  const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
+  const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
+  const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
+  const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
+  const AxisSpec thnAxisOriginMc{3, -0.5, 2.5, "0: none, 1: prompt, 2: non-prompt"};
+  const AxisSpec thnAxisChargeSigmaC{3, -0.5, 2.5, "#Sigma_{c}-baryon charge"};
+  const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
+  const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
+  const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
+  const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c})"};
+  const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
+  const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
+  const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
+  const AxisSpec thnAxisGenSigmaCSpecies = {o2::hf_sigmactask::Species::NSpecies, -0.5f, +o2::hf_sigmactask::Species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
 
   HfHelper hfHelper;
 
@@ -258,23 +277,6 @@ struct HfTaskSigmac {
 
     /// THn for candidate Λc+ and Σc0,++ cut variation
     if (enableTHn) {
-      const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
-      const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtSigmaC{thnConfigAxisPt, "#it{p}_{T}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-      const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length #Lambda_{c}^{+} (cm)"};
-      const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length XY #Lambda_{c}^{+} (cm)"};
-      const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle #Lambda_{c}^{+}"};
-      const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle XY #Lambda_{c}^{+}"};
-      const AxisSpec thnAxisOriginMc{3, -0.5, 2.5, "0: none, 1: prompt, 2: non-prompt"};
-      const AxisSpec thnAxisChargeSigmaC{3, -0.5, 2.5, "#Sigma_{c}-baryon charge"};
-      const AxisSpec thnAxisChannel{4, -0.5, 3.5, "0: direct  1,2,3: resonant"};
-      const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
-      const AxisSpec thnAxisGenPtLambdaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtSigmaC{thnConfigAxisGenPt, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++}) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
-      const AxisSpec thnAxisGenSigmaCSpecies = {o2::hf_sigmactask::species::NSpecies, -0.5f, +o2::hf_sigmactask::species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
       std::vector<AxisSpec> axesLambdaCWithMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel};
       std::vector<AxisSpec> axesSigmaCWithMl = {thnAxisPtLambdaC, axisDeltaMassSigmaC, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisOriginMc, thnAxisChannel, thnAxisPtSigmaC, thnAxisChargeSigmaC};
       std::vector<AxisSpec> axesLambdaCWoMl = {thnAxisPtLambdaC, thnAxisMassLambdaC, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisOriginMc, thnAxisChannel};
@@ -320,11 +322,11 @@ struct HfTaskSigmac {
     int8_t channel = 0;
     if ((candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
       // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      SETBIT(channel, o2::hf_sigmactask::decays::pkpi);
+      SETBIT(channel, o2::hf_sigmactask::Decays::PKPi);
     }
     if ((candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
       // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      SETBIT(channel, o2::hf_sigmactask::decays::pikp);
+      SETBIT(channel, o2::hf_sigmactask::Decays::PiKP);
     }
     return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
   }
@@ -363,12 +365,12 @@ struct HfTaskSigmac {
       double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
       double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) {
+      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PKPi)) {
         massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
         massLc = hfHelper.invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
-        if (chargeSc == 0) {
+        if (chargeSc == o2::hf_sigmactask::chargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
           registry.fill(HIST("Data/hEtaSc0"), etaSc);
           registry.fill(HIST("Data/hPhiSc0"), phiSc);
@@ -436,12 +438,12 @@ struct HfTaskSigmac {
         }
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) {
+      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PiKP)) {
         massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
         massLc = hfHelper.invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
-        if (chargeSc == 0) {
+        if (chargeSc == o2::hf_sigmactask::chargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
           registry.fill(HIST("Data/hEtaSc0"), etaSc);
           registry.fill(HIST("Data/hPhiSc0"), phiSc);
@@ -614,7 +616,8 @@ struct HfTaskSigmac {
       double ptGenSc(particle.pt()), etaGenSc(particle.eta()), phiGenSc(particle.phi());
       double ptGenScBMother(-1.);
       auto arrayDaughtersIds = particle.daughtersIds();
-      if (arrayDaughtersIds.size() != 2) {
+      const int dauSize = 2;
+      if (arrayDaughtersIds.size() != dauSize) {
         /// This should never happen
         LOG(fatal) << "generated Σc0,++ has a number of daughter particles different than 2";
         continue;
@@ -777,7 +780,7 @@ struct HfTaskSigmac {
       bool isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi;
       bool isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi;
       int sigmacSpecies = -1;
-      if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == 0)) {
+      if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == o2::hf_sigmactask::chargeNull)) {
         /// Reconstructed Σc0 signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;
@@ -813,7 +816,7 @@ struct HfTaskSigmac {
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -887,7 +890,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
@@ -961,7 +964,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
         /// end reconstructed Σc0 signal
-      } else if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == 2)) {
+      } else if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == o2::hf_sigmactask::chargePlusPlus)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;
@@ -997,7 +1000,7 @@ struct HfTaskSigmac {
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PKPi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -1071,7 +1074,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::Decays::PiKP)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
