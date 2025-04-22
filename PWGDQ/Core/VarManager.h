@@ -2857,7 +2857,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
- //Production frame
+  //Production frame
   ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v1.Py(), -v1.Px(), 0.f);
 
   if (fgUsedVars[kCosThetaHE]) {
@@ -2876,7 +2876,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     values[kPhiCS] = (t1.sign() > 0 ? TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : TMath::ATan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM)));
   }
 
- if (fgUsedVars[kCosThetaPP]) {
+  if (fgUsedVars[kCosThetaPP]) {
     values[kCosThetaPP] = (t1.sign() > 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
   }
   
