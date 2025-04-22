@@ -24,6 +24,8 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
@@ -33,7 +35,10 @@ namespace o2::hf_sigmactask
 enum species : int { Sc2455 = 0,
                      Sc2520,
                      NSpecies };
-};
+enum decays : int { pkpi = 0,
+                    pikp,
+                    NDecays };
+}; // namespace o2::hf_sigmactask
 
 struct HfTaskSigmac {
   /// One value of rapidity only
@@ -310,16 +315,16 @@ struct HfTaskSigmac {
   /// @param candSc Sc candidate
   /// @return 0: none; 1: only Λc+ → pK-π+ possible; 2: Λc+ → π+K-p possible; 3: both possible
   template <typename L, typename S>
-  int isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
+  int8_t isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
   {
-    int channel = 0;
+    int8_t channel = 0;
     if ((candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
       // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      channel += 1;
+      SETBIT(channel, o2::hf_sigmactask::decays::pkpi);
     }
     if ((candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
       // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      channel += 2;
+      SETBIT(channel, o2::hf_sigmactask::decays::pikp);
     }
     return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
   }
@@ -349,7 +354,7 @@ struct HfTaskSigmac {
       const auto& candidateLc = candSc.prongLc_as<CandsLc>();
       // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
+      const int8_t isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
       double massSc(-1.), massLc(-1.), deltaMass(-1.);
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
@@ -358,7 +363,7 @@ struct HfTaskSigmac {
       double decLengthLc(candidateLc.decayLength()), decLengthXYLc(candidateLc.decayLengthXY());
       double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
       /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-      if (isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) {
+      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) {
         massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
         massLc = hfHelper.invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
@@ -431,7 +436,7 @@ struct HfTaskSigmac {
         }
       } /// end candidate Λc+ → pK-π+ (and charge conjugate)
       /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-      if (isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) {
+      if (TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) {
         massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
         massLc = hfHelper.invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
@@ -763,7 +768,7 @@ struct HfTaskSigmac {
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
       const auto& candidateLc = candSc.prongLc_as<CandsLc>();
-      const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
+      const int8_t isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
 
       // candidateLc.flagMcDecayChanRec();
 
@@ -808,7 +813,7 @@ struct HfTaskSigmac {
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -882,7 +887,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
@@ -992,7 +997,7 @@ struct HfTaskSigmac {
         auto channel = candidateLc.flagMcDecayChanRec(); /// 0: direct; 1: Λc± → p± K*; 2: Λc± → Δ(1232)±± K∓; 3: Λc± → Λ(1520) π±
 
         /// candidate Λc+ → pK-π+ (and charge conjugate) within the range of M(pK-π+) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 1 || isCandPKPiPiKP == 3) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pkpi)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kProton) {
           massSc = hfHelper.invMassScRecoLcToPKPi(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
           deltaMass = massSc - massLc;
@@ -1066,7 +1071,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → pK-π+ (and charge conjugate)
         /// candidate Λc+ → π+K-p (and charge conjugate) within the range of M(π+K-p) chosen in the Σc0,++ builder
-        if ((isCandPKPiPiKP == 2 || isCandPKPiPiKP == 3) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
+        if ((TESTBIT(isCandPKPiPiKP, o2::hf_sigmactask::decays::pikp)) && std::abs(candidateLc.template prong0_as<aod::TracksWMc>().mcParticle().pdgCode()) == kPiPlus) {
           massSc = hfHelper.invMassScRecoLcToPiKP(candSc, candidateLc);
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
           deltaMass = massSc - massLc;
