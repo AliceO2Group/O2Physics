@@ -126,9 +126,9 @@ struct HeavyNeutralMeson {
 const int nSMEdges = 9;
 float smPhiEdges[nSMEdges] = {1.75, 2.1, 2.45, 2.8, 3.14, 4., 4.89, 5.24, 5.58};
 
-unsigned short getSMNumber(float eta, float phi)
+int getSMNumber(float eta, float phi)
 {
-  unsigned short smNumber = 0;
+  int smNumber = 0;
   for (int iPhiInterval = 0; iPhiInterval < nSMEdges; iPhiInterval++) {
     if (phi > smPhiEdges[iPhiInterval])
       smNumber = 2 * (iPhiInterval + 1);
@@ -147,7 +147,7 @@ void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::
   for (const auto& cluster : clusters) {
     float eta = cluster.eta();
     float phi = cluster.phi();
-    unsigned short smNumber = getSMNumber(eta, phi);
+    int smNumber = getSMNumber(eta, phi);
     // LOG(info) << "Shifting in sm " << smNumber << ", eta/phi = " << eta << " / " << phi << " to eta/phi = " << eta + EMCEtaShift[getSMNumber(eta, phi)] << " / " << phi + EMCPhiShift[getSMNumber(eta, phi)];
     eta += EMCEtaShift[smNumber];
     phi += EMCPhiShift[smNumber];
