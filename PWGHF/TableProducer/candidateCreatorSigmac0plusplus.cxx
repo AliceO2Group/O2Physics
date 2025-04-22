@@ -143,7 +143,8 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
     //  ITS hitmap
     std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    for (int idItsLayer = 0; idItsLayer < 7; idItsLayer++) {
+    const int itsLayers = 7;
+    for (int idItsLayer = 0; idItsLayer < itsLayers; idItsLayer++) {
       if (TESTBIT(softPiItsHitMap, idItsLayer)) {
         setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
       }
@@ -235,7 +236,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       int chargeLc = candLc.template prong0_as<aod::TracksWDcaExtra>().sign() + candLc.template prong1_as<aod::TracksWDcaExtra>().sign() + candLc.template prong2_as<aod::TracksWDcaExtra>().sign();
       int chargeSoftPi = trackSoftPi.sign();
       int8_t chargeSigmac = chargeLc + chargeSoftPi;
-      if (std::abs(chargeSigmac) != 0 && std::abs(chargeSigmac) != 2) {
+      if (std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::chargeNull && std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::chargePlusPlus) {
         /// this shall never happen
         LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
       }
@@ -461,7 +462,7 @@ struct HfCandidateSigmac0plusplusMc {
                                        candLc.prong2_as<aod::TracksWMc>(),
                                        candSigmac.prong1_as<aod::TracksWMc>()};
       chargeSigmac = candSigmac.charge();
-      if (chargeSigmac == 0) {
+      if (chargeSigmac == o2::aod::hf_cand_sigmac::chargeNull) {
         /// candidate Σc0
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
@@ -482,7 +483,7 @@ struct HfCandidateSigmac0plusplusMc {
           }
         }
 
-      } else if (std::abs(chargeSigmac) == 2) {
+      } else if (std::abs(chargeSigmac) == o2::aod::hf_cand_sigmac::chargePlusPlus) {
         /// candidate Σc++
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
