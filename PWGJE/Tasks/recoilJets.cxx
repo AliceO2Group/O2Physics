@@ -621,7 +621,7 @@ struct RecoilJets {
         }
       }
     } else {
-      //No closest jet
+      // No closest jet
       if (bGetMissJets) {
         spectra.fill(HIST("hMissedJets_pT"), jetBase.pt(), weight);
         if (bIsBaseJetRecoil)
