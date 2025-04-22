@@ -360,7 +360,7 @@ struct TableMaker {
     // Check whether we have to define barrel or muon histograms
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
-                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly");
+                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s");
 
     bool enableMuonHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
                              context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbMuonMFT"));
