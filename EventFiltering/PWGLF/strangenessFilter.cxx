@@ -80,15 +80,32 @@ struct strangenessFilter {
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
 
   // Dedicated selection criteria for lambda-lambda
-  Configurable<float> cfgPIDPi{"cfgPIDPi", 3.0, "pion PID selection"};
-  Configurable<float> cfgPIDPr{"cfgPIDPr", 3.0, "proton PID selection"};
-  Configurable<float> cfgLambdaMassWindow{"cfgLambdaMassWindow", 0.01, "window for lambda mass selection"};
-  Configurable<float> cfgCompV0Rej{"cfgCompV0Rej", 0.01, "competing V0 rejection"};
-
-  Configurable<float> cfgMinCPAV0V0{"cfgMinCPAV0V0", 0.8, "minimum CPA of v0v0"};
-  Configurable<float> cfgMaxRadiusV0V0{"cfgMaxRadiusV0V0", 10.0, "maximum radius of v0v0"};
-  Configurable<float> cfgMaxDistanceV0V0{"cfgMaxDistanceV0V0", 5.0, "maximum distance of v0v0"};
-  Configurable<float> cfgMaxDCAV0V0{"cfgMaxDCAV0V0", 5.0, "maximum DCA of v0v0"};
+  struct : ConfigurableGroup {
+    Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
+    Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
+    Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
+    Configurable<float> cfgv0CosPA{"cfgv0CosPA", 0.995, "minimum v0 cosine"};
+    Configurable<float> cfgDCAV0Dau{"cfgDCAV0Dau", 1.0, "maximum DCA between daughters"};
+    Configurable<float> cfgV0PtMin{"cfgV0PtMin", 0, "minimum pT for lambda"};
+    Configurable<float> cfgV0RapMin{"cfgV0RapMin", -0.5, "maximum rapidity"};
+    Configurable<float> cfgV0RapMax{"cfgV0RapMax", 0.5, "maximum rapidity"};
+    Configurable<float> cfgV0LifeTime{"cfgV0LifeTime", 30., "maximum lambda lifetime"};
+    Configurable<int16_t> cfgDaughTPCnclsMin{"cfgDaughTPCnclsMin", 70, "minimum fired crossed rows"};
+    Configurable<uint8_t> cfgITSNclus{"cfgITSNclus", 1, "minimum its cluster"};
+    Configurable<float> cfgRCrossedFindable{"cfgRCrossedFindable", 0.0, "minimum ratio of crossed rows over findable clusters"};
+    Configurable<float> cfgDaughPIDCutsTPCPr{"cfgDaughPIDCutsTPCPr", 5, "proton nsigma for TPC"};
+    Configurable<float> cfgDaughPIDCutsTPCPi{"cfgDaughPIDCutsTPCPi", 5, "pion nsigma for TPC"};
+    Configurable<float> cfgDaughEtaMin{"cfgDaughEtaMin", -0.8, "minimum daughter eta"};
+    Configurable<float> cfgDaughEtaMax{"cfgDaughEtaMax", 0.8, "maximum daughter eta"};
+    Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.5, "minimum daughter proton pt"};
+    Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.5, "minimum daughter pion pt"};
+    Configurable<float> cfgLambdaMassWindow{"cfgLambdaMassWindow", 0.01, "window for lambda mass selection"};
+    Configurable<float> cfgCompV0Rej{"cfgCompV0Rej", 0.01, "competing V0 rejection"};
+    Configurable<float> cfgMinCPAV0V0{"cfgMinCPAV0V0", 0.8, "minimum CPA of v0v0"};
+    Configurable<float> cfgMaxRadiusV0V0{"cfgMaxRadiusV0V0", 10.0, "maximum radius of v0v0"};
+    Configurable<float> cfgMaxDistanceV0V0{"cfgMaxDistanceV0V0", 5.0, "maximum distance of v0v0"};
+    Configurable<float> cfgMaxDCAV0V0{"cfgMaxDCAV0V0", 5.0, "maximum DCA of v0v0"};
+  } cfgLLCuts;
 
   // Selection criteria for cascades
   Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "use cascade momentum at PV"};
@@ -190,7 +207,7 @@ struct strangenessFilter {
   {
     return track.pt() > hMinPt && std::abs(track.eta()) < hEta && track.tpcNClsCrossedRows() >= tpcmincrossedrows && track.tpcCrossedRowsOverFindableCls() >= 0.8f && track.tpcChi2NCl() <= 4.f && track.itsChi2NCl() <= 36.f && (track.itsClusterMap() & 0x7) != 0;
   }
-  /// lambda-lambda analysis dedicated selections
+
   float getV0V0DCA(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
   {
     TVector3 posdiff = v02pos - v01pos;
@@ -210,8 +227,8 @@ struct strangenessFilter {
   float getV0V0Radius(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
   {
     TVector3 posdiff = v02pos - v01pos;
-    v01mom *= 1./v01mom.Mag();
-    v02mom *= 1./v02mom.Mag();
+    v01mom *= 1. / v01mom.Mag();
+    v02mom *= 1. / v02mom.Mag();
     float dd = 1. - TMath::Power(v01mom.Dot(v02mom), 2);
     if (dd < 1e-5)
       return 999;
@@ -223,17 +240,49 @@ struct strangenessFilter {
   }
   bool isSelectedV0V0(TVector3 v01pos, TVector3 v01mom, TVector3 v02pos, TVector3 v02mom)
   {
-    if (getV0V0DCA(v01pos, v01mom, v02pos, v02mom) > cfgMaxDCAV0V0)
+    if (getV0V0DCA(v01pos, v01mom, v02pos, v02mom) > cfgLLCuts.cfgMaxDCAV0V0)
       return false;
-    if (getV0V0CPA(v01mom, v02mom) < cfgMinCPAV0V0)
+    if (getV0V0CPA(v01mom, v02mom) < cfgLLCuts.cfgMinCPAV0V0)
       return false;
-    if (getV0V0Distance(v01pos, v02pos) > cfgMaxDistanceV0V0)
+    if (getV0V0Distance(v01pos, v02pos) > cfgLLCuts.cfgMaxDistanceV0V0)
       return false;
-    if (getV0V0Radius(v01pos, v01mom, v02pos, v02mom) > cfgMaxRadiusV0V0)
+    if (getV0V0Radius(v01pos, v01mom, v02pos, v02mom) > cfgLLCuts.cfgMaxRadiusV0V0)
       return false;
 
     return true;
   }
+
+  template <typename T>
+  bool isSelectedV0Daughter(T const& track)
+  {
+    if (track.tpcNClsCrossedRows() < cfgLLCuts.cfgDaughTPCnclsMin)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < cfgLLCuts.cfgRCrossedFindable)
+      return false;
+    if (track.itsNCls() < cfgLLCuts.cfgITSNclus)
+      return false;
+    if (track.eta() > cfgLLCuts.cfgDaughEtaMax)
+      return false;
+    if (track.eta() < cfgLLCuts.cfgDaughEtaMin)
+      return false;
+
+    return true;
+  }
+  template <typename T>
+  bool isSelectedV0DaughterPID(T const& track, int pid) // pid 0: proton, pid 1: pion
+  {
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgLLCuts.cfgDaughPIDCutsTPCPr)
+      return false;
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgLLCuts.cfgDaughPIDCutsTPCPi)
+      return false;
+    if (pid == 0 && track.pt() < cfgLLCuts.cfgDaughPrPt)
+      return false;
+    if (pid == 1 && track.pt() < cfgLLCuts.cfgDaughPiPt)
+      return false;
+
+    return true;
+  }
+
 
   void init(o2::framework::InitContext&)
   {
@@ -629,12 +678,20 @@ struct strangenessFilter {
     const auto primaryVertex = getPrimaryVertex(collision);
     o2::dataformats::DCA impactParameterTrk;
 
-    std::vector<int> v0sLambdaSel;
+    std::vector<std::tuple<int64_t, int64_t, TVector3, TVector3>> v0sSelTuple;
     for (auto& v00 : v0Base) { // loop over v0 for pre selection
-      hCandidate->Fill(0.5); // All candidates
+      hCandidate->Fill(0.5);   // All candidates
+
+      if (v00.v0Type() != 1) {
+        continue;
+      }
 
       const auto posTrack0 = v00.posTrack_as<TrackCandidates>();
       const auto negTrack0 = v00.negTrack_as<TrackCandidates>();
+
+      if (!isSelectedV0Daughter(posTrack0) || !isSelectedV0Daughter(negTrack0)) {
+        continue;
+      }
 
       auto trackParPos0 = getTrackParCov(posTrack0);
       auto trackParNeg0 = getTrackParCov(negTrack0);
@@ -642,70 +699,75 @@ struct strangenessFilter {
       if (!mStraHelper.buildV0Candidate(v00.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack0, negTrack0, trackParPos0, trackParNeg0)) {
         continue;
       }
-      int Tag = 0;
-      if (cfgPIDPi > std::fabs(negTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(posTrack0.tpcNSigmaPr())) {
-        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0)) {
-          if (cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-            Tag++;
-          }
-        }
-      }
-      if (cfgPIDPi > std::fabs(posTrack0.tpcNSigmaPi()) && cfgPIDPr > std::fabs(negTrack0.tpcNSigmaPr())) {
-        if (cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0)) {
-          if (cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
-            Tag++;
-          }
-        }
-      }
-      if (Tag != 1) { // Select when only one option is satisfied
+
+      if (std::hypot(mStraHelper.v0.position[0], mStraHelper.v0.position[1]) < cfgLLCuts.cfgv0radiusMin) {
         continue;
       }
-      v0sLambdaSel.push_back(v00.globalIndex());
+      if (std::fabs(mStraHelper.v0.positiveDCAxy) < cfgLLCuts.cfgDCAPosToPVMin) {
+        continue;
+      }
+      if (std::fabs(mStraHelper.v0.negativeDCAxy) < cfgLLCuts.cfgDCANegToPVMin) {
+        continue;
+      }
+      if (TMath::Cos(mStraHelper.v0.pointingAngle) < cfgLLCuts.cfgv0CosPA) {
+        continue;
+      }
+      if (std::fabs(mStraHelper.v0.daughterDCA ) > cfgLLCuts.cfgDCAV0Dau){
+        continue;
+      }
+      if (std::hypot(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1]) < cfgLLCuts.cfgV0PtMin) {
+        continue;
+      }
+      double yLambda = RecoDecay::y(array{mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]}, o2::constants::physics::MassLambda0);
+      if (yLambda < cfgLLCuts.cfgV0RapMin) {
+        continue;
+      }
+      if (yLambda > cfgLLCuts.cfgV0RapMax) {
+        continue;
+      }
+      double distovertotmom = std::hypot(mStraHelper.v0.position[0] - collision.posX(), mStraHelper.v0.position[1] - collision.posY(), mStraHelper.v0.position[2] - collision.posZ()) / (std::hypot(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]) + 1e-13);
+      if (distovertotmom * o2::constants::physics::MassLambda0 > cfgLLCuts.cfgV0LifeTime) {
+        continue;
+      }
+
+      int Tag = 0;
+      if (isSelectedV0DaughterPID(posTrack0, 0) && isSelectedV0DaughterPID(negTrack0, 1)) {
+        if (cfgLLCuts.cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massLambda - o2::constants::physics::MassLambda0)) {
+          if (cfgLLCuts.cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
+        }
+      } // lambda
+      if (isSelectedV0DaughterPID(posTrack0, 1) && isSelectedV0DaughterPID(negTrack0, 0)) {
+        if (cfgLLCuts.cfgLambdaMassWindow > std::fabs(mStraHelper.v0.massAntiLambda - o2::constants::physics::MassLambda0)) {
+          if (cfgLLCuts.cfgCompV0Rej < std::fabs(mStraHelper.v0.massK0Short - o2::constants::physics::MassLambda0)) {
+            Tag++;
+          }
+        }
+      } // anti lambda
+      if (Tag != 1) { // Select when only one hypothesis is satisfied
+        continue;
+      }
+
+      TVector3 v0pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
+      TVector3 v0mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
+
+      v0sSelTuple.emplace_back(posTrack0.globalIndex(), negTrack0.globalIndex(), v0pos, v0mom);
     }
 
-    for (auto& v00 : v0Base) { // loop over lambda using previous selection
-      if (std::find(v0sLambdaSel.begin(), v0sLambdaSel.end(), v00.globalIndex()) == v0sLambdaSel.end() ) {
-        continue;
-      }
-
-      const auto posTrack0 = v00.posTrack_as<TrackCandidates>();
-      const auto negTrack0 = v00.negTrack_as<TrackCandidates>();
-
-      auto trackParPos0 = getTrackParCov(posTrack0);
-      auto trackParNeg0 = getTrackParCov(negTrack0);
-
-      if (!mStraHelper.buildV0Candidate(v00.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack0, negTrack0, trackParPos0, trackParNeg0)) {
-        continue;
-      }
-
-      TVector3 v00pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
-      TVector3 v00mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
-
-      for (auto& v01 : v0Base) {
-        if (std::find(v0sLambdaSel.begin(), v0sLambdaSel.end(), v01.globalIndex()) == v0sLambdaSel.end() ) {
+    for (size_t i = 0; i < v0sSelTuple.size(); ++i) {
+      for(size_t j = i + 1; j < v0sSelTuple.size(); ++j) {
+        auto d00 = std::get<0>(v0sSelTuple[i]);
+        auto d01 = std::get<1>(v0sSelTuple[i]);
+        auto d10 = std::get<0>(v0sSelTuple[j]);
+        auto d11 = std::get<1>(v0sSelTuple[j]);
+        if (d00 == d10 || d00 == d11 || d01 == d10 || d01 == d11) {
           continue;
         }
-        if (v00.globalIndex() <= v01.globalIndex()) {
-          continue;
-        }
-
-        const auto posTrack1 = v01.posTrack_as<TrackCandidates>();
-        const auto negTrack1 = v01.negTrack_as<TrackCandidates>();
-
-        auto trackParPos1 = getTrackParCov(posTrack1);
-        auto trackParNeg1 = getTrackParCov(negTrack1);
-
-        if (!mStraHelper.buildV0Candidate(v01.collisionId(), pvPos[0], pvPos[1], pvPos[2], posTrack1, negTrack1, trackParPos1, trackParNeg1)) {
-          continue;
-        }
-
-        if (posTrack0.globalIndex() == posTrack1.globalIndex() || posTrack0.globalIndex() == negTrack1.globalIndex() || negTrack0.globalIndex() == posTrack1.globalIndex() || negTrack0.globalIndex() == negTrack1.globalIndex()) {
-          continue;
-        }
-
-        TVector3 v01pos(mStraHelper.v0.position[0], mStraHelper.v0.position[1], mStraHelper.v0.position[2]);
-        TVector3 v01mom(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]);
-
+        auto v00pos = std::get<2>(v0sSelTuple[i]);
+        auto v00mom = std::get<3>(v0sSelTuple[i]);
+        auto v01pos = std::get<2>(v0sSelTuple[j]);
+        auto v01mom = std::get<3>(v0sSelTuple[j]);
         if (isSelectedV0V0(v00pos, v00mom, v01pos, v01mom)) {
           keepEvent[12] = true;
         }
