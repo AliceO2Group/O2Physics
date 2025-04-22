@@ -50,8 +50,10 @@ struct doublephimeson {
   Configurable<float> cutMinNsigmaTPC{"cutMinNsigmaTPC", -2.5, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTPC{"cutNsigmaTPC", 3.0, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTOF{"cutNsigmaTOF", 3.0, "nsigma cut TOF"};
+  Configurable<float> momTOFCut{"momTOFCut", 1.8, "minimum pT cut for madnatory TOF"};
+  Configurable<float> maxKaonPt{"maxKaonPt", 4.0, "maximum kaon pt cut"};
   // Event Mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
+  Configurable<int> nEvtMixing{"nEvtMixing", 1, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 20.0, 40.0, 60.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
 
@@ -71,6 +73,7 @@ struct doublephimeson {
     // register histograms
     histos.add("hnsigmaTPCKaonPlus", "hnsigmaTPCKaonPlus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonMinus", "hnsigmaTPCKaonMinus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hnsigmaTPCTOFKaon", "hnsigmaTPCTOFKaon", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hPhiMass", "hPhiMass", kTH2F, {{40, 1.0, 1.04f}, {100, 0.0f, 10.0f}});
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -81,7 +84,7 @@ struct doublephimeson {
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
 
     histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
-    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassPhi, thnAxisInvMassPhi, thnAxisNumPhi});
+    histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassPhi, thnAxisInvMassPhi});
   }
 
   // get kstar
@@ -149,18 +152,35 @@ struct doublephimeson {
       }
       if (ptcand >= 0.5) {
         if (TOFHit != 1) {
-          if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC) {
+          if (ptcand >= 0.5 && ptcand < 0.6 && nsigmaTPC > -1.5 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.6 && ptcand < 0.7 && nsigmaTPC > -1.0 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.7 && ptcand < 0.8 && nsigmaTPC > -0.4 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.8 && ptcand < 1.0 && nsigmaTPC > -0.0 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 1.0 && ptcand < 1.8 && nsigmaTPC > -2.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 1.8 && ptcand < 2.0 && nsigmaTPC > -2.0 && nsigmaTPC < 1.5) {
+            return true;
+          }
+          if (ptcand >= 2.0 && nsigmaTPC > -2.0 && nsigmaTPC < 1.0) {
             return true;
           }
         }
         if (TOFHit == 1) {
-          if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+          if (TMath::Sqrt((nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) / 2.0) < cutNsigmaTOF) {
             return true;
           }
         }
       }
     }
-
     if (PIDStrategy == 1) {
       if (ptcand < 0.5) {
         if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC) {
@@ -170,6 +190,62 @@ struct doublephimeson {
       if (ptcand >= 0.5) {
         if (TOFHit == 1) {
           if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC && TMath::Abs(nsigmaTOF) < cutNsigmaTOF) {
+            return true;
+          }
+        }
+      }
+    }
+    if (PIDStrategy == 2) {
+      if (ptcand < 0.5) {
+        if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC) {
+          return true;
+        }
+      }
+      if (ptcand >= 0.5) {
+        if (TOFHit != 1 && ptcand < momTOFCut) {
+          if (ptcand >= 0.5 && ptcand < 0.6 && nsigmaTPC > -1.5 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.6 && ptcand < 0.7 && nsigmaTPC > -1.0 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.7 && ptcand < 0.8 && nsigmaTPC > -0.4 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 0.8 && ptcand < 1.0 && nsigmaTPC > -0.0 && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+          if (ptcand >= 1.0 && ptcand < 1.8 && nsigmaTPC > -2.0 && nsigmaTPC < 2.0) {
+            return true;
+          }
+          if (ptcand >= 1.8 && ptcand < 2.0 && nsigmaTPC > -2.0 && nsigmaTPC < 1.5) {
+            return true;
+          }
+          if (ptcand >= 2.0 && nsigmaTPC > -2.0 && nsigmaTPC < 1.0) {
+            return true;
+          }
+        }
+        if (TOFHit == 1) {
+          if (TMath::Sqrt((nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) / 2.0) < cutNsigmaTOF) {
+            return true;
+          }
+        }
+      }
+    }
+    if (PIDStrategy == 3) {
+      if (ptcand < 0.5) {
+        if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC) {
+          return true;
+        }
+      }
+      if (ptcand >= 0.5) {
+        if (TOFHit != 1) {
+          if (nsigmaTPC > cutMinNsigmaTPC && nsigmaTPC < cutNsigmaTPC) {
+            return true;
+          }
+        }
+        if (TOFHit == 1) {
+          if (TMath::Sqrt((nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) / 2.0) < cutNsigmaTOF) {
             return true;
           }
         }
@@ -186,24 +262,51 @@ struct doublephimeson {
     if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
       return;
     }
-    auto phimult = phitracks.size();
+    int phimult = 0;
     for (auto phitrackd1 : phitracks) {
       if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
         continue;
       }
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+      if (kaonplusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (kaonminusd1pt > maxKaonPt) {
+        continue;
+      }
       if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
         continue;
       }
       if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
         continue;
       }
-      auto phid1id = phitrackd1.index();
-      Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
+      phimult = phimult + 1;
+    }
+    for (auto phitrackd1 : phitracks) {
+      if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
+        continue;
+      }
+      auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
+      auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+      if (kaonplusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (kaonminusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
+        continue;
+      }
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
       histos.fill(HIST("hnsigmaTPCKaonPlus"), phitrackd1.phid1TPC(), kaonplusd1pt);
+      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
+        continue;
+      }
       histos.fill(HIST("hnsigmaTPCKaonMinus"), phitrackd1.phid2TPC(), kaonminusd1pt);
       histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
+      auto phid1id = phitrackd1.index();
+      Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
       for (auto phitrackd2 : phitracks) {
         auto phid2id = phitrackd2.index();
         if (phid2id <= phid1id) {
@@ -214,6 +317,12 @@ struct doublephimeson {
         }
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
+        if (kaonplusd2pt > maxKaonPt) {
+          continue;
+        }
+        if (kaonminusd2pt > maxKaonPt) {
+          continue;
+        }
         if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID2, kaonplusd2pt)) {
           continue;
         }
@@ -254,7 +363,6 @@ struct doublephimeson {
       if (collision1.index() == collision2.index()) {
         continue;
       }
-      auto phimult = tracks1.size();
       for (auto& [phitrackd1, phitrackd2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
           continue;
@@ -266,6 +374,18 @@ struct doublephimeson {
         auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
         auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
+        if (kaonplusd1pt > maxKaonPt) {
+          continue;
+        }
+        if (kaonminusd1pt > maxKaonPt) {
+          continue;
+        }
+        if (kaonplusd2pt > maxKaonPt) {
+          continue;
+        }
+        if (kaonminusd2pt > maxKaonPt) {
+          continue;
+        }
         if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
           continue;
         }
@@ -284,10 +404,10 @@ struct doublephimeson {
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
         auto costheta = (Phid1.Px() * Phid2.Px() + Phid1.Py() * Phid2.Py() + Phid1.Pz() * Phid2.Pz()) / (Phid1.P() * Phid2.P());
         if (!isDeep) {
-          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M(), phimult);
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, costheta, Phid1.M(), Phid2.M());
         }
         if (isDeep) {
-          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M(), phimult);
+          histos.fill(HIST("MEMassUnlike"), exotic.M(), exotic.Pt(), deltaR, deepangle(Phid1, Phid2), Phid1.M(), Phid2.M());
         }
       }
     }
