@@ -2857,7 +2857,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
-  //Production frame
+  // Production frame
   ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v1.Py(), -v1.Px(), 0.f);
 
   if (fgUsedVars[kCosThetaHE]) {
@@ -2879,11 +2879,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   if (fgUsedVars[kCosThetaPP]) {
     values[kCosThetaPP] = (t1.sign() > 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
   }
-  
+
   if (fgUsedVars[kPhiPP]) {
     values[kPhiPP] = (t1.sign() > 0 ? TMath::ATan2((normalVec.Dot(v1_CM)), zaxis_HE.Dot(v1_CM)) : TMath::ATan2((normalVec.Dot(v2_CM)), zaxis_HE.Dot(v2_CM)));
   }
- 
+
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
     if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
