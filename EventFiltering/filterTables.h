@@ -154,7 +154,7 @@ DECLARE_SOA_COLUMN(TrackedXi, hasTrackedXi, bool);               //! at least 1 
 DECLARE_SOA_COLUMN(TrackedOmega, hasTrackedOmega, bool);         //! at least 1 tracked Omega
 DECLARE_SOA_COLUMN(Tracked3Body, hasTracked3Body, bool);         //! at least 1 tracked 3Body
 DECLARE_SOA_COLUMN(OmegaHighMult, hasOmegaHighMult, bool);       //! at least 1 Omega + high-mult event
-DECLARE_SOA_COLUMN(LambdaLambda, lambdaLambda, bool);       //! at least 2 lambda satisfying selection
+DECLARE_SOA_COLUMN(LambdaLambda, lambdaLambda, bool);            //! at least 2 lambda satisfying selection
 
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
