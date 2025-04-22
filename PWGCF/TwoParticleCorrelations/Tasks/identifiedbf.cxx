@@ -275,7 +275,7 @@ struct IdentifiedbfTask {
     template <typename TrackObject>
     void trackPrimaryCheck(TrackObject const& track, float zvtx, float corr)
     {
-      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns> || framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
+      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
         if (isPrimaryCheck(track.template mcParticle_as<aod::McParticles>())) {
           fhN1VsZEtaPhiPtPrimary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
         } else {
@@ -342,7 +342,7 @@ struct IdentifiedbfTask {
     template <typename TrackObject>
     bool isPrimarySpeciesCheck(TrackObject const& track, int trkId)
     {
-      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns> || framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
+      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
         return (isPrimaryCheck(track.template mcParticle_as<aod::McParticles>()) && isSpeciesCheck(track.template mcParticle_as<aod::McParticles>(), trkId));
       }
       return false;
