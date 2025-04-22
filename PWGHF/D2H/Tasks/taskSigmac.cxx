@@ -15,6 +15,8 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -23,8 +25,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -53,9 +53,14 @@ struct HfTaskSigmac {
   /// consider the new parametrization of the fiducial acceptance (to be seen for reco signal in MC)
   Configurable<float> yCandGenMax{"yCandGenMax", -1, "Maximum generated Sc rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
+  Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
+
+  HfHelper hfHelper;
+  bool isMc;
+
+  using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
 
   /// THn for candidate Λc+ and Σc0,++ cut variation
-  Configurable<bool> enableTHn{"enableTHn", false, "enable the usage of THn for Λc+ and Σc0,++"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {16, 0, 16}, ""};
   ConfigurableAxis thnConfigAxisGenPt{"thnConfigAxisGenPt", {240, 0, 24}, "Gen pt prompt"};
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {800, 0, 80}, "Gen pt non-prompt"};
@@ -84,8 +89,6 @@ struct HfTaskSigmac {
   const AxisSpec thnAxisGenPtLambdaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Lambda_{c}^{+} B mother) (GeV/#it{c})"};
   const AxisSpec thnAxisGenPtSigmaCBMother{thnConfigAxisGenPtB, "#it{p}_{T}^{gen}(#Sigma_{c}^{0,++} B mother) (GeV/#it{c})"};
   const AxisSpec thnAxisGenSigmaCSpecies = {o2::hf_sigmactask::Species::NSpecies, -0.5f, +o2::hf_sigmactask::Species::NSpecies - 0.5f, "bin 1: #Sigma_{c}(2455), bin 2: #Sigma_{c}(2520)"};
-
-  HfHelper hfHelper;
 
   /// analysis histograms
   HistogramRegistry registry{
@@ -129,10 +132,6 @@ struct HfTaskSigmac {
      {"Data/hEtaLcFromSc0PlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #eta(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{40, -2., 2.}}}},
      {"Data/hPhiLcFromSc0PlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #varphi(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}); entries;", {HistType::kTH1D, {{72, 0, constants::math::TwoPI}}}}}};
   //{"Data/hDeltaMassLcFromSc0PlusPlus", "#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++} candidates; #it{M}(pK#pi#pi) - #it{M}(pK#pi) (GeV/#it{c}^{2}); #it{p}_{T}(#Lambda_{c}^{+} #leftarrow #Sigma_{c}^{0,++}) (GeV/#it{c});", {HistType::kTH2D, {axisDeltaMassSigmaC, {36, 0., 36.}}}}}};
-
-  using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
-
-  bool isMc;
 
   /// @brief init function, to define the additional analysis histograms
   /// @param
