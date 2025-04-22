@@ -448,8 +448,8 @@ struct nucleiFilter {
       }
 
       for (const auto& v0 : v0s) {
-        const auto& posTrack = tracks.rawIteratorAt(v0.posTrackId());
-        const auto& negTrack = tracks.rawIteratorAt(v0.negTrackId());
+        const auto& posTrack = v0.posTrack_as<TrackCandidates>();
+        const auto& negTrack = v0.negTrack_as<TrackCandidates>();
         if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
             (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
           continue;
