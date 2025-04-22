@@ -108,6 +108,7 @@ struct HfCandidateCreator3Prong {
   double bz{0.};
 
   constexpr static float UndefValueFloat{-999.f};
+  constexpr std::size_t NDaughtersResonant{2u};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
   using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
@@ -947,7 +948,7 @@ struct HfCandidateCreator3ProngExpressions {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
           RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
@@ -993,7 +994,7 @@ struct HfCandidateCreator3ProngExpressions {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
           RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
