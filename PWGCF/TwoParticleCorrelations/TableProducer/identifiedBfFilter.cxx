@@ -1679,13 +1679,21 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
       }
 
       if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
+<<<<<<< HEAD
         MatchRecoGenSpecies sp;
+=======
+        MatchRecoGenSpecies sp = 0;
+>>>>>>> 21cb44b95 (Changed check to fill generated single particle purity histograms as well as reconstructed ones)
         if (recoIdMethod == recoIdMethods[0]) {
           sp = kIdBfCharged;
         }
         if (recoIdMethod == recoIdMethods[1]) {
           sp = identifyParticle(particle);
+<<<<<<< HEAD
         }
+=======
+        } 
+>>>>>>> 21cb44b95 (Changed check to fill generated single particle purity histograms as well as reconstructed ones)
         if (sp != kWrongSpecies) {
           if (sp != kIdBfCharged) {
             /* fill the charged particle histograms */
