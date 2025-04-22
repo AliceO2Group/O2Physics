@@ -474,7 +474,7 @@ struct ThreeParticleCorrelations {
   {
 
     auto groupMCParticles = mcParticles->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
-    
+
     // Start of the Monte-Carlo generated QA
     for (const auto& particle : groupMCParticles) {
       if (particle.isPhysicalPrimary()) {
