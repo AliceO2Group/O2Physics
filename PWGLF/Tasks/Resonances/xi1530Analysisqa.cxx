@@ -13,7 +13,7 @@
 /// \brief Reconstruction of Xi* resonance.
 ///
 /// \author Min-jae Kim <minjae.kim@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
-//#include <TLorentzVector.h>
+// #include <TLorentzVector.h>
 #include "Math/Vector4D.h"
 #include "TF1.h"
 #include "TRandom3.h"
@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
-//Service<o2::framework::O2DatabasePDG> pdgDB;
+// Service<o2::framework::O2DatabasePDG> pdgDB;
 
 enum {
   kData = 0,
@@ -48,9 +48,8 @@ enum {
   kINEL10,
   kINELg010,
   kAllType,
-  kXiStar=3324
+  kXiStar = 3324
 };
-
 
 struct Xi1530Analysisqa {
 
@@ -71,7 +70,7 @@ struct Xi1530Analysisqa {
   Configurable<float> cInvMassStart{"cInvMassStart", 1.4, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 3.0, "Invariant mass end"};
   Configurable<int> cInvMassBins{"cInvMassBins", 800, "Invariant mass binning"};
-  
+
   Configurable<bool> invMass1D{"invMass1D", true, "Invariant mass 1D"};
   Configurable<bool> studyAntiparticle{"studyAntiparticle", true, "Study anti-particles separately"};
   Configurable<bool> pidPlots{"pidPlots", true, "Make TPC and TOF PID plots"};
@@ -113,7 +112,7 @@ struct Xi1530Analysisqa {
   // Primary track DCAxy to PV
   Configurable<float> cDCAxytoPVByPtPiFirstP0{"cDCAxytoPVByPtPiFirstP0", 0.004, "Coeff. Track DCAxy cut to PV by pt for Pion First (p0)"};
   Configurable<float> cDCAxyToPVByPtPiFirstExp{"cDCAxyToPVByPtPiFirstExp", 0.013, "Coeff. Track DCAxy cut to PV by pt for Pion First (exp)"};
-  
+
   Configurable<bool> cDCAxyToPVAsPtForCasc{"cDCAxyToPVAsPtForCasc", true, "Set DCAxy to PV selection as pt cut"};
   Configurable<float> cDCAxyToPVByPtCascP0{"cDCAxyToPVByPtCascP0", 999., "Coeff. for Track DCAxy cut to PV by pt for Cascade (p0)"};
   Configurable<float> cDCAxyToPVByPtCascExp{"cDCAxyToPVByPtCascExp", 1., "Coeff. Track DCAxy cut to PV by pt for Cascade (exp)"};
@@ -135,10 +134,10 @@ struct Xi1530Analysisqa {
 
   Configurable<float> cMaxV0radiuscut{"cMaxV0radiuscut", 200., "V0 radius cut Maximum"};
   Configurable<float> cMinV0radiuscut{"cMinV0radiuscut", 2.5, "V0 radius cut Minimum"};
-  Configurable<float> cMasswindowV0cut{"cMasswindowV0cut", 0.005, "V0 Mass window cut"}; 
+  Configurable<float> cMasswindowV0cut{"cMasswindowV0cut", 0.005, "V0 Mass window cut"};
 
   // Topological selections for Cascade
-  
+
   Configurable<float> cDCABachlorToPVcut{"cDCABachlorToPVcut", 0.06, "Bachelor DCA cut to PV"};
   Configurable<float> cDCAXiDaugthersCutPtRangeLower{"cDCAXiDaugthersCutPtRangeLower", 1., "Xi- DCA cut to PV as pt range lower"};
   Configurable<float> cDCAXiDaugthersCutPtRangeUpper{"cDCAXiDaugthersCutPtRangeUpper", 4., "Xi- DCA cut to PV as pt range upper"};
@@ -152,7 +151,6 @@ struct Xi1530Analysisqa {
   Configurable<float> cMaxCascradiuscut{"cMaxCascradiuscut", 200., "Cascade radius cut Maximum"};
   Configurable<float> cMinCascradiuscut{"cMinCascradiuscut", 1.1, "Cascade radius cut Minimum"};
   Configurable<float> cMasswindowCasccut{"cMasswindowCasccut", 0.008, "Cascade Mass window cut"};
-  
 
   //*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//*//
 
@@ -239,8 +237,8 @@ struct Xi1530Analysisqa {
     AxisSpec pidQAAxis = {65, -6.5, 6.5};
     AxisSpec flagAxis = {9, 0, 9, "Flags"};
 
- {
-    // Test on Mixed event 
+    {
+      // Test on Mixed event
       histos.add("TestME/hCollisionIndexSameE", "coll index sameE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
       histos.add("TestME/hCollisionIndexMixedE", "coll index mixedE", HistType::kTH1F, {{500, 0.0f, 500.0f}});
 
@@ -277,17 +275,17 @@ struct Xi1530Analysisqa {
     }
 
     // DCA QA to candidates for first pion and Xi-
-    histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
-    histos.add("QAbefore/trkDCAxy_Xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
+    histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
+    histos.add("QAbefore/trkDCAxy_Xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
 
-    histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
-    histos.add("QAbefore/trkDCAz_Xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
+    histos.add("QAbefore/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
+    histos.add("QAbefore/trkDCAz_Xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
 
-    histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
-    histos.add("QAafter/trkDCAxy_Xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
+    histos.add("QAafter/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
+    histos.add("QAafter/trkDCAxy_Xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
 
-    histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
-    histos.add("QAafter/trkDCAz_Xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
+    histos.add("QAafter/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
+    histos.add("QAafter/trkDCAz_Xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
 
     if (pidPlots) {
       // Plots for QA before, Need to pt info. for the daugthers
@@ -359,29 +357,29 @@ struct Xi1530Analysisqa {
 
     if (doprocessMC) {
       // MC QA
-      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAxy_xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
+      histos.add("QAMCTrue/trkDCAxy_xi", "DCAxy distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcaxyAxis});
 
-      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
-      histos.add("QAMCTrue/trkDCAz_xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis,dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
+      histos.add("QAMCTrue/trkDCAz_xi", "DCAz distribution of Xi- track candidates", HistType::kTH2F, {ptAxis, dcazAxis});
 
       if (pidPlots) {
         histos.add("QAMCTrue/TOF_TPC_Map_pi_first_all", "TOF + TPC Combined PID for Pion_{First};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
         histos.add("QAMCTrue/TOF_Nsigma_pi_first_all", "TOF NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
         histos.add("QAMCTrue/TPC_Nsigma_pi_first_all", "TPC NSigma for Pion_{First};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-  
+
         histos.add("QAMCTrue/TOF_TPC_Map_pi_bachelor_all", "TOF + TPC Combined PID for Pion_{Bachelor};#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
         histos.add("QAMCTrue/TPC_Nsigma_pi_bachelor_all", "TPC NSigma for Pion_{Bachelor};#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-  
+
         histos.add("QAMCTrue/TOF_TPC_Map_pr_all", "TOF + TPC Combined PID for Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
         histos.add("QAMCTrue/TOF_TPC_Map_antipr_all", "TOF + TPC Combined PID for Anti-Proton;#sigma_{TOF}^{Proton};#sigma_{TPC}^{Proton}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-  
+
         histos.add("QAMCTrue/TPC_Nsigma_pr_all", "TPC NSigma for Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
         histos.add("QAMCTrue/TPC_Nsigma_antipr_all", "TPC NSigma for Anti-Proton;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Proton};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
-  
+
         histos.add("QAMCTrue/TOF_TPC_Map_pi_all", "TOF + TPC Combined PID for Pion;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
         histos.add("QAMCTrue/TOF_TPC_Map_piminus_all", "TOF + TPC Combined PID for Pion -;#sigma_{TOF}^{Pion};#sigma_{TPC}^{Pion}", {HistType::kTH2F, {pidQAAxis, pidQAAxis}});
-  
+
         histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
         histos.add("QAMCTrue/TPC_Nsigma_piminus_all", "TPC NSigma for Pion -;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       }
@@ -400,69 +398,61 @@ struct Xi1530Analysisqa {
       histos.add("Xi1530Recinvmass", "Inv mass distribution of Reconstructed MC Xi(1530)0", kTH1F, {invMassAxis});
     }
 
-
     if (additionalQAplots) {
-      histos.add("QAbefore/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAbefore/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAbefore/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis,invMassAxisCasc});
-      histos.add("QAbefore/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
-      histos.add("QAbefore/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
+      histos.add("QAbefore/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAbefore/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAbefore/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis, invMassAxisCasc});
+      histos.add("QAbefore/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
+      histos.add("QAbefore/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
 
-      histos.add("QAafter/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAafter/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAafter/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis,invMassAxisCasc});
-      histos.add("QAafter/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
-      histos.add("QAafter/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
+      histos.add("QAafter/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAafter/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAafter/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis, invMassAxisCasc});
+      histos.add("QAafter/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
+      histos.add("QAafter/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
 
-      histos.add("QAMCTrue/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAMCTrue/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis,dcaDaugAxis});
-      histos.add("QAMCTrue/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis,invMassAxisCasc});
-      histos.add("QAMCTrue/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
-      histos.add("QAMCTrue/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis,cosPAAxis});
+      histos.add("QAMCTrue/V0sDCADoughter_aspt", "V0s DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAMCTrue/CascDCADoughter_aspt", "Casc DCA Doughter distribution as pt", HistType::kTH2F, {ptAxis, dcaDaugAxis});
+      histos.add("QAMCTrue/CascMass_aspt", "Casc DCA Bachlor distribution as pt", HistType::kTH2F, {ptAxis, invMassAxisCasc});
+      histos.add("QAMCTrue/V0sCosPA_aspt", "V0s CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
+      histos.add("QAMCTrue/CascCosPA_aspt", "Casc CosPA distribution as pt", HistType::kTH2F, {ptAxis, cosPAAxis});
     }
   }
 
   double massPi = MassPionCharged;
 
   // Primary track selection for the first pion //
-  template <bool IsResoMicrotrack,typename TrackType>
+  template <bool IsResoMicrotrack, typename TrackType>
   bool primaryTrackCut(const TrackType track)
   {
     if (std::abs(track.eta()) > cMaxetacut)
       return false;
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
-    if constexpr(IsResoMicrotrack){
-      if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(),-1.1)))
+    if constexpr (IsResoMicrotrack) {
+      if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
         return false;
-      if (cDCAzToPVAsPt)
-      {
-        if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(),-1.1)))
+      if (cDCAzToPVAsPt) {
+        if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
           return false;
-      }
-      else
-      {
+      } else {
         if (std::abs(o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags())) > cMaxDCAzToPVCut)
           return false;
       }
-    }
-    else {
-      if (std::abs(track.dcaXY()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(),-1.1)))
+    } else {
+      if (std::abs(track.dcaXY()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
         return false;
-      if (cDCAzToPVAsPt)
-      {
-        if (std::abs(track.dcaZ()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(),-1.1)))
+      if (cDCAzToPVAsPt) {
+        if (std::abs(track.dcaZ()) > (cDCAxytoPVByPtPiFirstP0 + cDCAxyToPVByPtPiFirstExp * std::pow(track.pt(), -1.1)))
           return false;
-      }
-      else
-      {
+      } else {
         if (std::abs(track.dcaZ()) > cMaxDCAzToPVCut)
           return false;
       }
-    if (track.tpcNClsFound() < cfgTPCcluster)
-      return false;
-    if (track.tpcNClsCrossedRows() < cfgTPCRows)
-      return false;
+      if (track.tpcNClsFound() < cfgTPCcluster)
+        return false;
+      if (track.tpcNClsCrossedRows() < cfgTPCRows)
+        return false;
     }
     if (cfgHasTOF && !track.hasTOF())
       return false;
@@ -490,16 +480,15 @@ struct Xi1530Analysisqa {
       return false;
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
-    if (cDCAxyToPVAsPtForCasc){
-    if (std::abs(track.dcaXYCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * track.pt()))
-      return false;
-    }
-    if (cDCAzToPVAsPtForCasc)
-    {
-      if (std::abs(track.dcaZCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * std::pow(track.pt(),-1.1)))
+    if (cDCAxyToPVAsPtForCasc) {
+      if (std::abs(track.dcaXYCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * track.pt()))
         return false;
     }
-    
+    if (cDCAzToPVAsPtForCasc) {
+      if (std::abs(track.dcaZCascToPV()) > (cDCAxyToPVByPtCascP0 + cDCAxyToPVByPtCascExp * std::pow(track.pt(), -1.1)))
+        return false;
+    }
+
     return true;
   }
 
@@ -529,26 +518,26 @@ struct Xi1530Analysisqa {
       return false;
     if (track.transRadius() > cMaxV0radiuscut || track.transRadius() < cMinV0radiuscut)
       return false;
-    if(std::abs(track.mLambda() - MassLambda) > cMasswindowV0cut)
+    if (std::abs(track.mLambda() - MassLambda) > cMasswindowV0cut)
       return false;
 
     // Topological Cuts for Cascades
     if (std::abs(track.dcabachtopv()) < cDCABachlorToPVcut)
       return false;
-    if(track.pt() < cDCAXiDaugthersCutPtRangeLower){
+    if (track.pt() < cDCAXiDaugthersCutPtRangeLower) {
       if (track.cascDaughDCA() > cDCAXiDaugthersCutPtDepLower)
         return false;
     }
-    if(track.pt() >= cDCAXiDaugthersCutPtRangeLower && track.pt() < cDCAXiDaugthersCutPtRangeUpper){
+    if (track.pt() >= cDCAXiDaugthersCutPtRangeLower && track.pt() < cDCAXiDaugthersCutPtRangeUpper) {
       if (track.cascDaughDCA() > cDCAXiDaugthersCutPtDepMiddle)
         return false;
     }
-    if(track.pt() >= cDCAXiDaugthersCutPtRangeUpper){
+    if (track.pt() >= cDCAXiDaugthersCutPtRangeUpper) {
       if (track.cascDaughDCA() > cDCAXiDaugthersCutPtDepUpper)
         return false;
     }
     if (track.cascCosPA() < std::cos(cCosPACascCutPtDepP0 - cCosPACascCutPtDepP1 * track.pt()))
-        return false;
+      return false;
 
     if (track.cascTransRadius() > cMaxCascradiuscut || track.cascTransRadius() < cMinCascradiuscut)
       return false;
@@ -563,7 +552,7 @@ struct Xi1530Analysisqa {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (tofAtHighPt && trackPt > cMinTOFpt) {
-     if (std::abs(TPCNsigma) < params.cMaxTPCnSigma) {
+      if (std::abs(TPCNsigma) < params.cMaxTPCnSigma) {
         tpcPIDPassed = true;
       }
 
@@ -610,18 +599,17 @@ struct Xi1530Analysisqa {
   }
 
   // PID selection for the First Pion //
-  template <bool IsResoMicrotrack,typename T>
+  template <bool IsResoMicrotrack, typename T>
   bool selectionPIDPionFirst(const T& candidate)
   {
 
     float tpcNsigmaPionFirst, tofNsigmaPionFirst;
     float trackPt = candidate.pt();
 
-    if constexpr(IsResoMicrotrack){
-      tpcNsigmaPionFirst =  o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPiFlag());
-      tofNsigmaPionFirst =  o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPiFlag());
-    }
-    else {
+    if constexpr (IsResoMicrotrack) {
+      tpcNsigmaPionFirst = o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPiFlag());
+      tofNsigmaPionFirst = o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPiFlag());
+    } else {
       tpcNsigmaPionFirst = candidate.tpcNSigmaPi();
       tofNsigmaPionFirst = candidate.tofNSigmaPi();
     }
@@ -675,13 +663,13 @@ struct Xi1530Analysisqa {
     return lConsistentWithXi && lConsistentWithLambda;
   }
 
-  template <bool IsResoMicrotrack,bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeCasc>
+  template <bool IsResoMicrotrack, bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeCasc>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeCasc& dTracks2) // Order: ResoColl, ResoTrack, ResoCascTrack
   {
     auto multiplicity = collision.cent();
 
- {
-    if constexpr (!IsMix) {
+    {
+      if constexpr (!IsMix) {
         histos.fill(HIST("QAevent/hVertexZSameE"), collision.posZ());
         histos.fill(HIST("QAevent/hMultiplicityPercentSameE"), collision.cent());
         histos.fill(HIST("TestME/hCollisionIndexSameE"), collision.globalIndex());
@@ -698,8 +686,8 @@ struct Xi1530Analysisqa {
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
-   {
-      if constexpr (!IsMix) {
+      {
+        if constexpr (!IsMix) {
           histos.fill(HIST("TestME/hPairsCounterSameE"), 1.0);
         } else {
           histos.fill(HIST("TestME/hPairsCounterMixedE"), 1.0);
@@ -716,8 +704,7 @@ struct Xi1530Analysisqa {
         trk1DCAZ = o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(trk1.trackSelectionFlags());
         trk1NSigmaPiTPC = o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(trk1.pidNSigmaPiFlag());
         trk1NSigmaPiTOF = o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(trk1.pidNSigmaPiFlag());
-      }
-      else {
+      } else {
         trk1DCAXY = trk1.dcaXY();
         trk1DCAZ = trk1.dcaZ();
         trk1NSigmaPiTPC = trk1.tpcNSigmaPi();
@@ -791,7 +778,6 @@ struct Xi1530Analysisqa {
           }
         }
 
-
         histos.fill(HIST("QAbefore/trkDCAxy_pi"), trk1ptPi, trk1DCAXY);
         histos.fill(HIST("QAbefore/trkDCAxy_Xi"), trk2ptXi, trk2DCAXY);
 
@@ -802,8 +788,8 @@ struct Xi1530Analysisqa {
           histos.fill(HIST("QAbefore/V0sDCADoughter_aspt"), trk2ptXi, trk2DCAV0sDougthers);
           histos.fill(HIST("QAbefore/CascDCADoughter_aspt"), trk2ptXi, trk2DCACascDougthers);
           histos.fill(HIST("QAbefore/CascMass_aspt"), trk2ptXi, trk2Mass);
-          histos.fill(HIST("QAbefore/V0sCosPA_aspt"), trk2ptXi, 1.-trk2V0sCosPA);
-          histos.fill(HIST("QAbefore/CascCosPA_aspt"), trk2ptXi, 1.-trk2CascCosPA);
+          histos.fill(HIST("QAbefore/V0sCosPA_aspt"), trk2ptXi, 1. - trk2V0sCosPA);
+          histos.fill(HIST("QAbefore/CascCosPA_aspt"), trk2ptXi, 1. - trk2CascCosPA);
         }
       }
 
@@ -833,9 +819,9 @@ struct Xi1530Analysisqa {
       if (!casctopCut(trk2))
         continue;
 
-        // TPCncluster distributions
-        // histos.fill(HIST("TPCncluster/TPCnclusterpifirst"), trk1.tpcNClsFound());
-        // histos.fill(HIST("TPCncluster/TPCnclusterPhipifirst"), trk1.tpcNClsFound(), trk1.phi());
+      // TPCncluster distributions
+      // histos.fill(HIST("TPCncluster/TPCnclusterpifirst"), trk1.tpcNClsFound());
+      // histos.fill(HIST("TPCncluster/TPCnclusterPhipifirst"), trk1.tpcNClsFound(), trk1.phi());
 
       if constexpr (!IsMix) {
         //// QA plots after the selection
@@ -893,8 +879,8 @@ struct Xi1530Analysisqa {
           histos.fill(HIST("QAafter/V0sDCADoughter_aspt"), trk2ptXi, trk2DCAV0sDougthers);
           histos.fill(HIST("QAafter/CascDCADoughter_aspt"), trk2ptXi, trk2DCACascDougthers);
           histos.fill(HIST("QAafter/CascMass_aspt"), trk2ptXi, trk2Mass);
-          histos.fill(HIST("QAafter/V0sCosPA_aspt"), trk2ptXi, 1.-trk2V0sCosPA);
-          histos.fill(HIST("QAafter/CascCosPA_aspt"), trk2ptXi, 1.-trk2CascCosPA);
+          histos.fill(HIST("QAafter/V0sCosPA_aspt"), trk2ptXi, 1. - trk2V0sCosPA);
+          histos.fill(HIST("QAafter/CascCosPA_aspt"), trk2ptXi, 1. - trk2CascCosPA);
         }
       }
 
@@ -957,13 +943,11 @@ struct Xi1530Analysisqa {
 
           if (studyStableXi) {
             if (trk1.sign() > 0) {
-            histos.fill(HIST("h3XiinvmassME_DS"), multiplicity, trk2ptXi, trk2Mass, kMixing);
-          } else if (trk1.sign() < 0) {
-            histos.fill(HIST("h3XiinvmassME_DSAnti"), multiplicity, trk2ptXi, trk2Mass, kMixing);
+              histos.fill(HIST("h3XiinvmassME_DS"), multiplicity, trk2ptXi, trk2Mass, kMixing);
+            } else if (trk1.sign() < 0) {
+              histos.fill(HIST("h3XiinvmassME_DSAnti"), multiplicity, trk2ptXi, trk2Mass, kMixing);
+            }
           }
-            
-          }
-
         }
         if constexpr (IsMC) {
           if (std::abs(trk2.motherPDG()) != kXiStar)
@@ -982,8 +966,8 @@ struct Xi1530Analysisqa {
             histos.fill(HIST("QAMCTrue/V0sDCADoughter_aspt"), trk2ptXi, trk2DCAV0sDougthers);
             histos.fill(HIST("QAMCTrue/CascDCADoughter_aspt"), trk2ptXi, trk2DCACascDougthers);
             histos.fill(HIST("QAMCTrue/CascMass_aspt"), trk2ptXi, trk2Mass);
-            histos.fill(HIST("QAMCTrue/V0sCosPA_aspt"), trk2ptXi, 1.-trk2V0sCosPA);
-            histos.fill(HIST("QAMCTrue/CascCosPA_aspt"), trk2ptXi, 1.-trk2CascCosPA);
+            histos.fill(HIST("QAMCTrue/V0sCosPA_aspt"), trk2ptXi, 1. - trk2V0sCosPA);
+            histos.fill(HIST("QAMCTrue/CascCosPA_aspt"), trk2ptXi, 1. - trk2CascCosPA);
           }
 
           histos.fill(HIST("QAMCTrue/TPC_Nsigma_pi_first_all"), multiplicity, trk1ptPi, trk1NSigmaPiTPC);
@@ -1052,26 +1036,23 @@ struct Xi1530Analysisqa {
                 histos.fill(HIST("Xi1530invmassLSAnti"), lResonanceInMass);
               histos.fill(HIST("h3Xi1530invmassLSAnti"), multiplicity, lResonancePt, lResonanceInMass, kLS);
               histos.fill(HIST("h3XiinvmassLSAnti"), multiplicity, trk2ptXi, trk2Mass, kLS);
-              
             }
           } else {
             if (invMass1D)
               histos.fill(HIST("Xi1530invmassLS"), lResonanceInMass);
             histos.fill(HIST("h3Xi1530invmassLS"), multiplicity, lResonancePt, lResonanceInMass, kLS);
-            histos.fill(HIST("h3XiinvmassLS"), multiplicity,trk2ptXi, trk2Mass, kLS);
+            histos.fill(HIST("h3XiinvmassLS"), multiplicity, trk2ptXi, trk2Mass, kLS);
           }
         }
       }
     }
   }
 
-
-
   void processData(aod::ResoCollision const& resoCollision, aod::ResoTracks const& resoTracks, aod::ResoCascades const& cascTracks)
   {
 
     histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
-    fillHistograms<false ,false, false>(resoCollision, resoTracks, cascTracks);
+    fillHistograms<false, false, false>(resoCollision, resoTracks, cascTracks);
   }
 
   void processMC(ResoMCCols::iterator const& resoCollision,
@@ -1080,7 +1061,7 @@ struct Xi1530Analysisqa {
   {
     if (!resoCollision.isInAfterAllCuts() || (std::abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
-    fillHistograms<false ,true, false>(resoCollision, resoTracks, cascTracks);
+    fillHistograms<false, true, false>(resoCollision, resoTracks, cascTracks);
   }
 
   void processMCTrue(ResoMCCols::iterator const& resoCollision, aod::ResoMCParents const& resoParents)
@@ -1099,9 +1080,9 @@ struct Xi1530Analysisqa {
         continue;
 
       if (part.pdgCode() > 0) // INELt0 or INEL
-          histos.fill(HIST("h3Xi1530Gen"), -1, part.pt(), multiplicity);
-        else
-          histos.fill(HIST("h3Xi1530GenAnti"), -1, part.pt(), multiplicity);
+        histos.fill(HIST("h3Xi1530Gen"), -1, part.pt(), multiplicity);
+      else
+        histos.fill(HIST("h3Xi1530GenAnti"), -1, part.pt(), multiplicity);
 
       if (resoCollision.isVtxIn10()) // vtx10
       {
@@ -1154,7 +1135,7 @@ struct Xi1530Analysisqa {
     Pair<aod::ResoCollisionDFs, aod::ResoTrackDFs, aod::ResoCascadeDFs, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-  
+
       histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<false, false, true>(collision1, tracks1, tracks2);
     }
@@ -1162,10 +1143,8 @@ struct Xi1530Analysisqa {
   void processDataDF(aod::ResoCollisionDF const& resoCollision, aod::ResoTrackDFs const& resotracks, aod::ResoCascadeDFs const& cascTracks)
   {
 
-      fillHistograms<false, false, false>(resoCollision, resotracks, cascTracks);
-    
+    fillHistograms<false, false, false>(resoCollision, resotracks, cascTracks);
   }
-
 
   void processMEMicro(aod::ResoCollisions const& resoCollisions, aod::ResoMicroTracks const& resomicrotracks, aod::ResoCascades const& cascTracks)
   {
@@ -1175,7 +1154,7 @@ struct Xi1530Analysisqa {
     Pair<aod::ResoCollisions, aod::ResoMicroTracks, aod::ResoCascades, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, resoCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-  
+
       histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       fillHistograms<true, false, true>(collision1, tracks1, tracks2);
     }
@@ -1188,9 +1167,6 @@ struct Xi1530Analysisqa {
   PROCESS_SWITCH(Xi1530Analysisqa, processMEMicro, "Process EventMixing (MicroTrack) ", false);
   PROCESS_SWITCH(Xi1530Analysisqa, processMEDF, "Process EventMixing (DF) ", true);
   PROCESS_SWITCH(Xi1530Analysisqa, processDataDF, "Process Event for Data (DF) ", true);
-
-
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
