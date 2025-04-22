@@ -1762,6 +1762,38 @@ DECLARE_SOA_TABLE(Tracked3BodyColls, "AOD", "TRA3BODYCOLL", //! Table joinable w
 using Tracked3BodyColl = Tracked3BodyColls::iterator;
 using AssignedTracked3Bodys = soa::Join<aod::Tracked3Bodys, aod::Tracked3BodyColls>;
 using AssignedTracked3Body = AssignedTracked3Bodys::iterator;
+
+namespace zdcneutrons
+{
+// FOR DERIVED
+DECLARE_SOA_INDEX_COLUMN(StraMCCollision, straMCCollision); //!
+// DYNAMIC COLUMNS
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! neutron transverse momentum (GeV/c)
+                           [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! neutron total momentum (GeV/c)
+                           [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! neutron phi in the range [0, 2pi)
+                           [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! neutron pseudorapidity
+                           [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! neutron rapidity
+                           [](float pz, float e) -> float { return std::atanh(pz / e); });
+} // namespace zdcneutrons
+
+DECLARE_SOA_TABLE(ZDCNeutrons, "AOD", "ZDCNEUTRON", //! MC properties of the neutrons within ZDC acceptance (for UPC analysis)
+                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                  mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
+                  mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
+                  // Dynamic columns for manipulating information
+                  zdcneutrons::Pt<mcparticle::Px, mcparticle::Py>,
+                  zdcneutrons::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                  zdcneutrons::Phi<mcparticle::Px, mcparticle::Py>,
+                  zdcneutrons::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                  zdcneutrons::Y<mcparticle::Pz, mcparticle::E>);
+
+DECLARE_SOA_TABLE(ZDCNMCCollRefs, "AOD", "ZDCNMCCOLLREF", //! refers MC candidate back to proper MC Collision
+                  o2::soa::Index<>, zdcneutrons::StraMCCollisionId, o2::soa::Marker<4>);
+
 } // namespace o2::aod
 
 //______________________________________________________
