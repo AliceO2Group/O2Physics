@@ -500,7 +500,7 @@ struct UccZdc {
       if (track.isGlobalTrack()) {
         glbTracks++;
         meanpt += track.pt();
-        et += std::sqrt(pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+        et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
       }
     }
 
