@@ -159,7 +159,6 @@ struct ResonancesGfwFlow {
     Configurable<std::vector<float>> cfgMccCut{"cfgMccCut", std::vector<float>{0.005f, 0.01f, 0.0f}, "MCC cut for resonances [K0, Lambda, Phi]"};
     Configurable<std::vector<float>> cfgPosTrackPt{"cfgPosTrackPt", std::vector<float>{0.15f, 0.15f, 0.15f}, "Pt cut for positive track of resonances [K0, Lambda, Phi]"};
     Configurable<std::vector<float>> cfgNegTrackPt{"cfgNegTrackPt", std::vector<float>{0.15f, 0.15f, 0.15f}, "Pt cut for negative track of resonances [K0, Lambda, Phi]"};
-    Configurable<std::vector<double>> cfgMccMass{"cfgMccMass", std::vector<double>{1.11568f, 0.497614f}, "MCC mass for resonances [K0, Lambda]"};
   } resoCuts;
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
@@ -174,7 +173,6 @@ struct ResonancesGfwFlow {
   std::vector<float> vMccCut = resoCuts.cfgMccCut;
   std::vector<float> vPosTrackPt = resoCuts.cfgPosTrackPt;
   std::vector<float> vNegTrackPt = resoCuts.cfgNegTrackPt;
-  std::vector<double> vMccMass = resoCuts.cfgMccMass;
 
   // Defining configurable axis
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -268,7 +266,7 @@ struct ResonancesGfwFlow {
       histos.add("K0d22Bpt", "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
       histos.add("K0d24Bpt", "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}});
 
-      histos.add("hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{11, 0, 11}}});
+      histos.add("hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{10, 0, 10}}});
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(1, "K0 candidates");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(2, "Daughter pt");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(3, "Mass cut");
@@ -279,7 +277,6 @@ struct ResonancesGfwFlow {
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(8, "CosPA");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(9, "Proper lifetime");
       histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(10, "Daughter track selection");
-      histos.get<TH1>(HIST("hK0Count"))->GetXaxis()->SetBinLabel(11, "Mass cross check");
     }
     if (cfgUseLambda) {
       histos.add("PlusTPC_L", "", {HistType::kTH2D, {{axisPt, axisTPCsignal}}});
@@ -308,7 +305,7 @@ struct ResonancesGfwFlow {
       histos.add("AnLambdad22Bpt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
       histos.add("AnLambdad24Bpt", "", {HistType::kTProfile3D, {axisPt, axisLambdaMass, axisMultiplicity}});
 
-      histos.add("hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{11, 0, 11}}});
+      histos.add("hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{10, 0, 10}}});
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(1, "Lambda candidates");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(2, "Daughter pt");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(3, "Mass cut");
@@ -319,7 +316,6 @@ struct ResonancesGfwFlow {
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(8, "CosPA");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(9, "Proper lifetime");
       histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(10, "Daughter track selection");
-      histos.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(11, "Mass cross check");
     }
 
     histos.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{8, 0, 8}}});
@@ -890,10 +886,6 @@ struct ResonancesGfwFlow {
         return false;
     }
     histos.fill(HIST("hLambdaCount"), 9.5);
-    // Mass cross check
-    if (cfgUseMCCLambda && std::abs(massK0Short - vMccMass[Lambda - 1]) < vMccCut[Lambda - 1])
-      return false;
-    histos.fill(HIST("hLambdaCount"), 10.5);
     bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
     bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
 
@@ -980,12 +972,6 @@ struct ResonancesGfwFlow {
     if (!selectionV0Daughter(postrack, 0) || !selectionV0Daughter(negtrack, 0))
       return false;
     histos.fill(HIST("hK0Count"), 9.5);
-    // Mass cross check
-    if (cfgUseMCCK0 && std::abs(massLambda - vMccMass[K0 - 1]) < vMccCut[K0 - 1])
-      return false;
-    if (cfgUseMCCK0 && std::abs(massLambda - vMccMass[K0 - 1]) < vMccCut[K0 - 1])
-      return false;
-    histos.fill(HIST("hK0Count"), 10.5);
     bool withinPtPOI = (cfgCutPtPOIMin < candidate.pt()) && (candidate.pt() < cfgCutPtPOIMax); // within POI pT range
     bool withinPtRef = (cfgCutPtMin < candidate.pt()) && (candidate.pt() < cfgCutPtMax);
 
