@@ -956,7 +956,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
         /// end reconstructed Σc0 signal
-      } else if ((isTrueScPlusPlusReco && isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == 2)) {
+      } else if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == 2)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;
