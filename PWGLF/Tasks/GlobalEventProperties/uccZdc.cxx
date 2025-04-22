@@ -135,6 +135,9 @@ struct UccZdc {
     Zem
   };
 
+  static constexpr float zEro{0.};
+  static constexpr float oneHalf{0.5};
+
   // Filters
   // Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt) && requireGlobalTrackInFilter());
   // Remove the GlobalTrack filter to count also ITS tracks
@@ -150,12 +153,7 @@ struct UccZdc {
   using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
   // Histograms: Data
-  HistogramRegistry registry{
-    "registry",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject,
-    true,
-    true};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
@@ -502,7 +500,7 @@ struct UccZdc {
       if (track.isGlobalTrack()) {
         glbTracks++;
         meanpt += track.pt();
-        et += sqrt(pow(track.pt(), 2.) + pow(0.13957, 2.));
+        et += std::sqrt(pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
       }
     }
 
@@ -689,7 +687,7 @@ struct UccZdc {
     registry.fill(HIST("RandomNumber"), rndNum);
 
     // Half of the statistics for MC closure
-    if (rndNum >= 0.0 && rndNum < 0.5) {
+    if (rndNum >= zEro && rndNum < oneHalf) {
       registry.fill(HIST("EvtsDivided"), 0);
       //----- MC reconstructed -----//
       for (const auto& collision : collisions) {
