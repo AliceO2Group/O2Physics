@@ -38,7 +38,7 @@
 
 namespace o2::aod::pwgem::photonmeson::hnmutilities
 {
-  // -------> Struct to store photons from EMC clusters or V0s
+// -------> Struct to store photons from EMC clusters or V0s
 struct Photon {
   Photon(float px, float py, float pz, bool isFromConversion) : px(px), py(py), pz(pz), pt(std::sqrt(px * px + py * py)), isFromConversion(isFromConversion)
   {
