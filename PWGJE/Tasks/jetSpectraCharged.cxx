@@ -349,7 +349,7 @@ struct JetSpectraCharged {
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
-      continue;
+      return;
     }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
@@ -371,7 +371,7 @@ struct JetSpectraCharged {
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
-      continue;
+      return;
     }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
