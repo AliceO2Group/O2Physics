@@ -334,7 +334,7 @@ struct IdentifiedbfTask {
           realPID = -1;
           break;
       }
-      return(realPID == trkId);
+      return (realPID == trkId);
     }
 
     /// \brief checks whether MC track is a physical primary or secondary
@@ -366,7 +366,7 @@ struct IdentifiedbfTask {
           fhN1VsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhSum1PtVsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
           trackPrimaryCheck(track, zvtx, corr);
-          if(isPrimarySpeciesCheck(track, track.trackacceptedid())){
+          if (isPrimarySpeciesCheck(track, track.trackacceptedid())) {
             fhN1VsZEtaPhiPtPure[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           }
         }
@@ -637,23 +637,23 @@ struct IdentifiedbfTask {
               ptlow,
               ptup);
 
-              fhN1VsZEtaPhiPtPure[i] = new TH3F(
-                TString::Format("n1_%s_Pure_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
-                TString::Format("#LT n_{1} Pure #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
-                                tname[i].c_str(),
-                                tname[i].c_str(),
-                                tname[i].c_str())
-                  .Data(),
-                zvtxbins,
-                zvtxlow,
-                zvtxup,
-                etabins * phibins,
-                0.0,
-                static_cast<double>(etabins * phibins),
-                ptbins,
-                ptlow,
-                ptup);
-  
+            fhN1VsZEtaPhiPtPure[i] = new TH3F(
+              TString::Format("n1_%s_Pure_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} Pure #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+
             fhSum1PtVsZEtaPhiPt[i] = new TH3F(
               TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
               TString::Format(

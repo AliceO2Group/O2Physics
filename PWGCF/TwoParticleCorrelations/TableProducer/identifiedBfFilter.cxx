@@ -1683,7 +1683,7 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
         if (recoIdMethod == recoIdMethods[0]) {
           sp = kIdBfCharged;
         }
-        if (recoIdMethod == recoIdMethods[1]||recoIdMethod == recoIdMethods[2]) {
+        if (recoIdMethod == recoIdMethods[1] || recoIdMethod == recoIdMethods[2]) {
           sp = identifyParticle(particle);
         }
 
