@@ -2197,6 +2197,7 @@ void VarManager::FillTrack(T const& track, float* values)
 
     if constexpr ((fillMap & MuonRealign) > 0) {
       values[kMuonChi2] = track.chi2();
+      values[kMuonTrackType] = track.trackType();
     }
 
     if (fgUsedVars[kM11REFoverMpsingle]) {
