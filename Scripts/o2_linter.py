@@ -1737,6 +1737,7 @@ def main():
             sys.exit(1)
 
     # Report results for tests that failed or were disabled or were tolerated.
+    n_issues, n_disabled, n_tolerated = 0, 0, 0  # global counters
     if not passed or any(n > 0 for n in (test.n_disabled + test.n_tolerated for test in tests)):
         print("\nResults for failed, disabled and tolerated tests")
         len_max = max(len(name) for name in test_names)
@@ -1750,6 +1751,13 @@ def main():
                     f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
                     f"\t\t{test.n_tolerated}\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
                 )
+            n_issues += test.n_issues
+            n_disabled += test.n_disabled
+            n_tolerated += test.n_tolerated
+        # Print the totals.
+        print("-" * len_max)
+        name_total = "total"
+        print(f"{name_total}{' ' * (len_max - len(name_total))}\t{n_issues}\t{n_disabled}\t\t{n_tolerated}")
         # Print list of references for listed tests.
         print("\nReferences")
         ref_names = list(dict.fromkeys(ref_names))
@@ -1782,8 +1790,17 @@ def main():
             print(f"\n{title_result}: {msg_result}")
             print(msg_disable)
             print(msg_tolerate)
+
+    # Make results available to the GitHub actions.
+    if github_mode:
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            print(f"n_issues={n_issues}", file=fh)
+            print(f"n_disabled={n_disabled}", file=fh)
+            print(f"n_tolerated={n_tolerated}", file=fh)
+
     # Print tips.
     print("\nTip: You can run the O2 linter locally with: python3 Scripts/o2_linter.py <files>")
+
     if not passed:
         sys.exit(1)
 
