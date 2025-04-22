@@ -52,6 +52,7 @@
 
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -88,6 +89,10 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancy, int, 3000, "Occupancy cut")
   O2_DEFINE_CONFIGURABLE(cfgUseGlobalTrack, bool, true, "use Global track")
   O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, true, "Use track density efficiency correction")
+
+  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -126,6 +131,13 @@ struct FlowPbpbPikp {
   std::vector<int> runNumbers;
   std::vector<GFWWeights*> mAcceptance;
   bool correctionsLoaded = false;
+
+  // local track density correction
+  std::vector<TF1*> funcEff;
+  TH1D* hFindPtBin;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
 
   void init(InitContext const&)
   {
@@ -199,6 +211,10 @@ struct FlowPbpbPikp {
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap24_pt_%i", i + 1), "Pr08Gap24_pTDiff"));
 
+    oba->Add(new TNamed("Pi08BGap22", "Pi08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pi08BGap22_pt_%i", i + 1), "Pi08BGap22_pTDiff"));
+
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
     fFC->Initialize(oba, axisMultiplicity, cfgNbootstrap);
@@ -218,6 +234,9 @@ struct FlowPbpbPikp {
     // pion
     fGFW->AddRegion("poiNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 16);
+
+    fGFW->AddRegion("poiPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("olPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 16);
 
     // kaon
     fGFW->AddRegion("poiNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
@@ -251,7 +270,30 @@ struct FlowPbpbPikp {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2 2} refP08 {-2 -2}", "Ka08Gap24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2 2} refP08 {-2 -2}", "Pr08Gap24", kTRUE));
 
+    // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08BGap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpi refP08 | olPpi {2} refN08 {-2}", "Pi08BGap22", kTRUE));
+
     fGFW->CreateRegions();
+
+    if (cfgTrackDensityCorrUse) {
+      std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      funcEff.resize(pTEffBins.size() - 1);
+      // LHC24g3 Eff
+      std::vector<double> f1p0 = cfgTrackDensityP0;
+      std::vector<double> f1p1 = cfgTrackDensityP1;
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+        funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+        funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
+      }
+      funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+      funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+      funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
+    }
   }
 
   enum Particles {
@@ -286,8 +328,9 @@ struct FlowPbpbPikp {
     if (track.pt() >= cfgTofPtCut && !track.hasTOF())
       return -1;
 
+    const int numSpecies = 3;
     // Select particle with the lowest nsigma
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < numSpecies; ++i) {
       if (std::abs(nSigmaToUse[i]) < nsigma) {
         pid = i;
         nsigma = std::abs(nSigmaToUse[i]);
@@ -303,8 +346,10 @@ struct FlowPbpbPikp {
     int bayesid = -1;
     int prob = 0;
 
-    for (int i = 0; i < 3; ++i) {
-      if (bayesprobs[i] > prob && bayesprobs[i] > 80) {
+    const int nParts = 3;
+    const int bayesCut = 80;
+    for (int i = 0; i < nParts; ++i) {
+      if (bayesprobs[i] > prob && bayesprobs[i] > bayesCut) {
         bayesid = i;
         prob = bayesprobs[i];
       }
@@ -317,12 +362,13 @@ struct FlowPbpbPikp {
   {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
+    const int nParts = 3;
     std::pair<int, int> idprob = getBayesID(track);
     if (idprob.first == PIONS || idprob.first == KAONS || idprob.first == PROTONS) { // 0 = pion, 1 = kaon, 2 = proton
       pidID = idprob.first;
       float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       if (idprob.second > maxProb[pidID]) {
-        if (std::fabs(nsigmaTPC[pidID]) > 3)
+        if (std::fabs(nsigmaTPC[pidID]) > nParts)
           return 0;
         return pidID + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
       } else {
@@ -523,6 +569,37 @@ struct FlowPbpbPikp {
     int pidIndex;
     loadCorrections(bc); // load corrections for the each event
 
+    // Track loop for calculating the Qn angles
+    double psi2Est = 0, psi3Est = 0, psi4Est = 0;
+    float wEPeff = 1;
+    double v2 = 0, v3 = 0, v4 = 0;
+    // be cautious, this only works for Pb-Pb
+    // esimate the Qn angles and vn for this event
+    if (cfgTrackDensityCorrUse) {
+      double q2x = 0, q2y = 0;
+      double q3x = 0, q3y = 0;
+      double q4x = 0, q4y = 0;
+      for (const auto& track : tracks) {
+        bool withinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax); // within RF pT range
+        if (withinPtRef) {
+          q2x += std::cos(2 * track.phi());
+          q2y += std::sin(2 * track.phi());
+          q3x += std::cos(3 * track.phi());
+          q3y += std::sin(3 * track.phi());
+          q4x += std::cos(4 * track.phi());
+          q4y += std::sin(4 * track.phi());
+        }
+      }
+      psi2Est = std::atan2(q2y, q2x) / 2.;
+      psi3Est = std::atan2(q3y, q3x) / 3.;
+      psi4Est = std::atan2(q4y, q4x) / 4.;
+
+      v2 = funcV2->Eval(cent);
+      v3 = funcV3->Eval(cent);
+      v4 = funcV4->Eval(cent);
+    }
+
+    // Actual track loop
     for (auto const& track : tracks) {
       if (!selectionTrack(track))
         continue;
@@ -540,6 +617,9 @@ struct FlowPbpbPikp {
 
       // pidIndex = getBayesPIDIndex(track);
       pidIndex = getNsigmaPID(track);
+
+      weff = 1; // Initializing weff for each track
+      // NUA weights
       if (cfgOutputNUAWeights)
         fillWeights(track, vtxz, pidIndex, runNumber);
 
@@ -550,10 +630,24 @@ struct FlowPbpbPikp {
       if (withinPtRef && withinPtPOI && pidIndex)
         waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
 
+      // Track density correction
+      if (cfgTrackDensityCorrUse && withinPtRef) {
+        double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
+        fphi = (1 + 2 * fphi);
+        int pTBinForEff = hFindPtBin->FindBin(track.pt());
+        if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
+          wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
+          if (wEPeff > 0.) {
+            wEPeff = 1. / wEPeff;
+            weff *= wEPeff;
+          }
+        }
+      } // end of track density correction loop
+
       if (withinPtRef) {
         histos.fill(HIST("hPhiWeighted"), track.phi(), waccRef);
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 1);
-        fGFW->Fill(track.eta(), 1, track.phi(), waccRef * weff, 512);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 512);
       }
       if (withinPtPOI) {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 128);
