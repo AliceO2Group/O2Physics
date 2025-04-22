@@ -283,7 +283,6 @@ struct strangenessFilter {
     return true;
   }
 
-
   void init(o2::framework::InitContext&)
   {
     // set V0 parameters in the helper
@@ -712,7 +711,7 @@ struct strangenessFilter {
       if (TMath::Cos(mStraHelper.v0.pointingAngle) < cfgLLCuts.cfgv0CosPA) {
         continue;
       }
-      if (std::fabs(mStraHelper.v0.daughterDCA ) > cfgLLCuts.cfgDCAV0Dau){
+      if (std::fabs(mStraHelper.v0.daughterDCA) > cfgLLCuts.cfgDCAV0Dau) {
         continue;
       }
       if (std::hypot(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1]) < cfgLLCuts.cfgV0PtMin) {
@@ -756,7 +755,7 @@ struct strangenessFilter {
     }
 
     for (size_t i = 0; i < v0sSelTuple.size(); ++i) {
-      for(size_t j = i + 1; j < v0sSelTuple.size(); ++j) {
+      for (size_t j = i + 1; j < v0sSelTuple.size(); ++j) {
         auto d00 = std::get<0>(v0sSelTuple[i]);
         auto d01 = std::get<1>(v0sSelTuple[i]);
         auto d10 = std::get<0>(v0sSelTuple[j]);
