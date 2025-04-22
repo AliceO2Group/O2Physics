@@ -11,13 +11,12 @@
 ///
 /// \file HeavyNeutralMesonFilter.cxx
 ///
-/// \brief This code loops over collisions to filter events contaning heavy mesons (omega or eta') using EMCal clusters and V0s (PCM)
+/// \brief This code loops over collisions to filter events contaning heavy neutral mesons (omega or eta') using EMCal clusters and V0s (PCM)
 ///
-/// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt;  Maximilian Korwieser (maximilian.korwieser@cern.ch) - Technical University Munich
+/// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt; Maximilian Korwieser (maximilian.korwieser@cern.ch) - Technical University Munich
 ///
 
 #include <vector>
-#include <iostream>
 #include <iterator>
 #include <string>
 
@@ -27,6 +26,7 @@
 #include "TRandom3.h"
 
 #include "PWGEM/PhotonMeson/Utils/HNMUtilities.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
@@ -51,16 +51,16 @@ using namespace o2::aod::pwgem::photonmeson;
 namespace o2::aod
 {
 using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>;
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::EMCALMatchedCollisions>;
 using MyCollision = MyCollisions::iterator;
 using SelectedTracks = soa::Join<aod::FullTracks, aod::TrackSelection, aod::TracksDCA,
                                  aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                  aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
 
-namespace CFTrigger
+namespace hnmtrigger
 {
-enum CFFemtoTriggers {
+enum FemtoTriggers {
   kPPOmega,
   kPPEtaPrime,
   kOmegaD,
@@ -70,7 +70,7 @@ enum CFFemtoTriggers {
   kNFemtoTriggers
 };
 
-enum FemtoPartners {
+enum TracksPID {
   kProton,
   kDeuteron,
   kPion,
@@ -84,13 +84,10 @@ enum PIDLimits { kTPCMin,
                  kITSmax,
                  kNPIDLimits
 };
-const std::vector<std::string> SpeciesName{"proton", "Deuteron", "pion"}; // ToDo include charged pions
-
-const std::vector<std::string> PtCutsName{"Pt min", "Pt max", "P TOF thres"};
-
-const std::vector<std::string> PidCutsName{"TPC min", "TPC max", "TPCTOF max", "ITS min", "ITS max"};
-
-const std::vector<std::string> FemtoFilterNames{"PPOmega", "PPEtaPrime", "Omegad", "EtaPrimed", "OmegaP", "EtaPrimeP"};
+const std::vector<std::string> speciesName{"proton", "Deuteron", "pion"};
+const std::vector<std::string> pTCutsName{"Pt min", "Pt max", "P TOF thres"};
+const std::vector<std::string> pidCutsName{"TPC min", "TPC max", "TPCTOF max", "ITS min", "ITS max"};
+const std::vector<std::string> femtoFilterNames{"PPOmega", "PPEtaPrime", "Omegad", "EtaPrimed", "OmegaP", "EtaPrimeP"};
 
 // configs for tracks
 const float pidcutsTable[kNFemtoPartners][kNPIDLimits]{
@@ -103,165 +100,117 @@ const float ptcutsTable[kNFemtoPartners][3]{
   {0.55f, 2.f, 1.2f},
   {0.35f, 6.f, 0.75f}};
 
-const float TPCNClustersMin[1][kNFemtoPartners]{
-  {80.0f, 80.0f, 80.0f}};
-const float ITSNClustersMin[1][kNFemtoPartners]{
-  {4, 4, 4}};
+const float nClusterMinTPC[1][kNFemtoPartners]{{80.0f, 80.0f, 80.0f}};
+const float nClusterMinITS[1][kNFemtoPartners]{{4, 4, 4}};
 
-static const float triggerSwitches[1][kNFemtoTriggers]{
-  {1, 1, 1, 1, 1, 1}};
-const float TriggerLimits[1][kNFemtoTriggers]{
-  {1.f, 1.f, 1.f, 1.f, 1.f, 1.f}};
-} // namespace CFTrigger
+static const float triggerSwitches[1][kNFemtoTriggers]{{1, 1, 1, 1, 1, 1}};
+const float triggerLimits[1][kNFemtoTriggers]{{1.f, 1.f, 1.f, 1.f, 1.f, 1.f}};
+} // namespace hnmtrigger
 
 struct HeavyNeutralMesonFilter {
+  Produces<aod::HeavyNeutralMesonFilters> tags;
 
-  Configurable<LabeledArray<float>> ConfTriggerSwitches{
-    "ConfTriggerSwitches",
-    {CFTrigger::triggerSwitches[0], 1, CFTrigger::kNFemtoTriggers, std::vector<std::string>{"Switch"}, CFTrigger::FemtoFilterNames},
-    "Turn on specific trigger"};
+  // --------------------------------> Configurables <------------------------------------
+  // - Event selection cuts
+  // - Track selection cuts
+  // - Cluster shifts
+  // - HNM mass selection windows
+  // - HNM min pTs / k*'s
+  // -------------------------------------------------------------------------------------
+  // ---> Event selection
+  Configurable<bool> confEvtSelectZvtx{"confEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
+  Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+  Configurable<bool> confEvtRequireSel8{"confEvtRequireSel8", false, "Evt sel: check for offline selection (sel8)"};
 
-  Configurable<bool> ConfKeepTwoBody{
-    "ConfKeepTwoBody",
-    true,
-    "Turn on specific trigger selection"};
+  // ---> Track selection
+  Configurable<LabeledArray<float>> cfgPtCuts{"cfgPtCuts", {hnmtrigger::ptcutsTable[0], hnmtrigger::kNFemtoPartners, 3, hnmtrigger::speciesName, hnmtrigger::pTCutsName}, "Track pT selections"};
+  Configurable<float> cfgTrkEta{"cfgTrkEta", 0.9, "Eta"};
+  Configurable<LabeledArray<float>> cfgTPCNClustersMin{"cfgTPCNClustersMin", {hnmtrigger::nClusterMinTPC[0], 1, hnmtrigger::kNFemtoPartners, std::vector<std::string>{"TPCNClusMin"}, hnmtrigger::speciesName}, "Mininum of TPC Clusters"};
+  Configurable<float> cfgTrkTPCfCls{"cfgTrkTPCfCls", 0.83, "Minimum fraction of crossed rows over findable clusters"};
+  Configurable<float> cfgTrkTPCcRowsMin{"cfgTrkTPCcRowsMin", 70, "Minimum number of crossed TPC rows"};
+  Configurable<float> cfgTrkTPCsClsSharedFrac{"cfgTrkTPCsClsSharedFrac", 1.f, "Fraction of shared TPC clusters"};
+  Configurable<LabeledArray<float>> cfgTrkITSnclsMin{"cfgTrkITSnclsMin", {hnmtrigger::nClusterMinITS[0], 1, hnmtrigger::kNFemtoPartners, std::vector<std::string>{"Cut"}, hnmtrigger::speciesName}, "Minimum number of ITS clusters"};
+  Configurable<float> cfgTrkDCAxyMax{"cfgTrkDCAxyMax", 0.15, "Maximum DCA_xy"};
+  Configurable<float> cfgTrkDCAzMax{"cfgTrkDCAzMax", 0.3, "Maximum DCA_z"};
+  Configurable<float> cfgTrkMaxChi2PerClusterTPC{"cfgTrkMaxChi2PerClusterTPC", 4.0f, "Minimal track selection: max allowed chi2 per TPC cluster"};  // 4.0 is default of global tracks on 20.01.2023
+  Configurable<float> cfgTrkMaxChi2PerClusterITS{"cfgTrkMaxChi2PerClusterITS", 36.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default of global tracks on 20.01.2023
 
-  // PID selections
-  Configurable<LabeledArray<float>>
-    ConfPIDCuts{
-      "ConfPIDCuts",
-      {CFTrigger::pidcutsTable[0], CFTrigger::kNFemtoPartners, CFTrigger::kNPIDLimits, CFTrigger::SpeciesName, CFTrigger::PidCutsName},
-      "Femtopartner PID nsigma selections"};
+  Configurable<LabeledArray<float>> cfgPIDCuts{"cfgPIDCuts", {hnmtrigger::pidcutsTable[0], hnmtrigger::kNFemtoPartners, hnmtrigger::kNPIDLimits, hnmtrigger::speciesName, hnmtrigger::pidCutsName}, "Femtopartner PID nsigma selections"}; // PID selections
 
-  Configurable<LabeledArray<float>> ConfPtCuts{
-    "ConfPtCuts",
-    {CFTrigger::ptcutsTable[0], CFTrigger::kNFemtoPartners, 3, CFTrigger::SpeciesName, CFTrigger::PtCutsName},
-    "Femtopartner pT selections"};
+  // ---> Configurables to allow for a shift in eta/phi of EMCal clusters to better align with extrapolated TPC tracks
+  Configurable<bool> cfgDoEMCShift{"cfgDoEMCShift", false, "Apply SM-wise shift in eta and phi to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> cfgEMCEtaShift{"cfgEMCEtaShift", {0.f}, "values for SM-wise shift in eta to be added to EMCal clusters to align with TPC tracks"};
+  Configurable<std::vector<float>> cfgEMCPhiShift{"cfgEMCPhiShift", {0.f}, "values for SM-wise shift in phi to be added to EMCal clusters to align with TPC tracks"};
+  static const int nSMs = 20;
+  std::array<float, nSMs> emcEtaShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<float, nSMs> emcPhiShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-  Configurable<float> ConfTrkEta{
-    "ConfTrkEta",
-    0.9,
-    "Eta"};
+  // ---> Shift the omega/eta' mass based on the difference of the reconstructed mass of the pi0/eta to its PDG mass to reduce smearing caused by EMCal/PCM in photon measurement
+  Configurable<int> cfgHNMMassCorrection{"cfgHNMMassCorrection", 1, "Use GG PDG mass to correct HNM mass (0 = off, 1 = subDeltaPi0, 2 = subLambda)"};
 
-  Configurable<LabeledArray<float>> ConfTPCNClustersMin{
-    "ConfTPCNClustersMin",
-    {CFTrigger::TPCNClustersMin[0], 1, CFTrigger::kNFemtoPartners, std::vector<std::string>{"TPCNClusMin"}, CFTrigger::SpeciesName},
-    "Mininum of TPC Clusters"};
+  // ---> Mass windows for the selection of heavy neutral mesons (also based on mass of their light neutral meson decay daughter)
+  static constexpr float DefaultMassWindows[2][4] = {{0., 0.4, 0.6, 1.}, {0.4, 0.8, 0.8, 1.2}};
+  Configurable<LabeledArray<float>> cfgMassWindowOmega{"cfgMassWindowOmega", {DefaultMassWindows[0], 4, {"pi0_min", "pi0_max", "omega_min", "omega_max"}}, "Mass window for selected omegas and their decay pi0"};
+  Configurable<LabeledArray<float>> cfgMassWindowEtaPrime{"cfgMassWindowEtaPrime", {DefaultMassWindows[1], 4, {"eta_min", "eta_max", "etaprime_min", "etaprime_max"}}, "Mass window for selected eta' and their decay eta"};
 
-  Configurable<float> ConfTrkTPCfCls{
-    "ConfTrkTPCfCls",
-    0.83,
-    "Minimum fraction of crossed rows over findable clusters"};
-  Configurable<float> ConfTrkTPCcRowsMin{
-    "ConfTrkTPCcRowsMin",
-    70,
-    "Minimum number of crossed TPC rows"};
-  Configurable<float> ConfTrkTPCsClsSharedFrac{
-    "ConfTrkTPCsClsSharedFrac",
-    1.f,
-    "Fraction of shared TPC clusters"};
+  // ---> Minimum pT values for the trigger decisions of the spectra and femto trigger. The femto triggers additionally require a given k*/Q3
+  static constexpr float DefaultSpectraMinPts[4] = {1.8, 1.8, 2.6, 2.6};
+  static constexpr float DefaultFemtoMinPts[4] = {1.8, 1.8, 2.6, 2.6};
+  Configurable<LabeledArray<float>> cfgMinHNMPtsSpectrumTrigger{"cfgMinHNMPtsSpectrumTrigger", {DefaultSpectraMinPts, 4, {"PCM_omega", "PCM_etaprime", "EMC_omega", "EMC_etaprime"}}, "Minimum pT values for the spetra trigger decisions (GeV/c)"};
+  Configurable<LabeledArray<float>> cfgMinHNMPtsFemtoTrigger{"cfgMinHNMPtsFemtoTrigger", {DefaultFemtoMinPts, 4, {"PCM_omega", "PCM_etaprime", "EMC_omega", "EMC_etaprime"}}, "Minimum pT values for the femto trigger decisions (GeV/c)"};
+  Configurable<LabeledArray<float>> cfgKinematicLimits{"cfgKinematicLimits", {hnmtrigger::triggerLimits[0], 1, hnmtrigger::kNFemtoTriggers, std::vector<std::string>{"Limit"}, hnmtrigger::femtoFilterNames}, "Maximum K* (Q_3) for two (three) body femto trigger"};
 
-  Configurable<LabeledArray<float>> ConfTrkITSnclsMin{
-    "ConfTrkITSnclsMin",
-    {CFTrigger::ITSNClustersMin[0], 1, CFTrigger::kNFemtoPartners, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
-    "Minimum number of ITS clusters"};
+  Configurable<LabeledArray<float>> cfgTriggerSwitches{"cfgTriggerSwitches", {hnmtrigger::triggerSwitches[0], 1, hnmtrigger::kNFemtoTriggers, std::vector<std::string>{"Switch"}, hnmtrigger::femtoFilterNames}, "Turn on specific trigger"};
 
-  Configurable<float> ConfTrkDCAxyMax{
-    "ConfTrkDCAxyMax",
-    0.15,
-    "Maximum DCA_xy"};
-  Configurable<float> ConfTrkDCAzMax{
-    "ConfTrkDCAzMax",
-    0.3,
-    "Maximum DCA_z"};
+  HistogramRegistry mHistManager{"HeavyNeutralMesonFilterHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float>
-    ConfTrkMaxChi2PerClusterTPC{
-      "ConfTrkMaxChi2PerClusterTPC",
-      4.0f,
-      "Minimal track selection: max allowed chi2 per TPC cluster"}; // 4.0 is default of
-                                                                    // global tracks
-                                                                    // on 20.01.2023
-  Configurable<float>
-    ConfTrkMaxChi2PerClusterITS{
-      "ConfTrkMaxChi2PerClusterITS",
-      36.0f,
-      "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default of
-                                                                    // global tracks
-                                                                    // on 20.01.2023
+  // Prepare vectors for different species
+  std::vector<hnmutilities::GammaGammaPair> vGGs;
+  std::vector<hnmutilities::HeavyNeutralMeson> vHNMs;
+  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, proton, antiproton, deuteron, antideuteron, pion, antipion;
+  float mMassProton = constants::physics::MassProton;
+  float mMassDeuteron = constants::physics::MassDeuteron;
+  float mMassOmega = 0.782;
+  float mMassEtaPrime = 0.957;
+  float mMassPionCharged = constants::physics::MassPionCharged;
 
-  Configurable<LabeledArray<float>> ConfKinematicLimits{
-    "ConfKstarLimits",
-    {CFTrigger::TriggerLimits[0], 1, CFTrigger::kNFemtoTriggers, std::vector<std::string>{"Limit"}, CFTrigger::FemtoFilterNames},
-    "hypermomentum limit for two body trigger"};
+  Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
+  Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
 
-  // Configs for events
-  Configurable<bool> ConfEvtSelectZvtx{
-    "ConfEvtSelectZvtx",
-    true,
-    "Event selection includes max. z-Vertex"};
-  Configurable<float> ConfEvtZvtx{"ConfEvtZvtx",
-                                  10.f,
-                                  "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<bool> ConfEvtOfflineCheck{
-    "ConfEvtOfflineCheck",
-    false,
-    "Evt sel: check for offline selection"};
-
-  Configurable<bool> ConfDoEMCShift{"ConfDoEMCShift", false, "Apply SM-wise shift in eta and phi to EMCal clusters to align with TPC tracks"};
-  Configurable<std::vector<float>> ConfEMCEtaShift{"ConfEMCEtaShift", {0.f}, "values for SM-wise shift in eta to be added to EMCal clusters to align with TPC tracks"};
-  Configurable<std::vector<float>> ConfEMCPhiShift{"ConfEMCPhiShift", {0.f}, "values for SM-wise shift in phi to be added to EMCal clusters to align with TPC tracks"};
-  std::array<float, 20> EMCEtaShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-  std::array<float, 20> EMCPhiShift = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  bool colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime = false;
 
   template <typename T>
-  bool isSelectedTrack(T const& track, CFTrigger::FemtoPartners partSpecies)
+  bool isSelectedTrack(T const& track, hnmtrigger::TracksPID partSpecies)
   {
-    const auto pT = track.pt();
-    const auto eta = track.eta();
-    const auto tpcNClsF = track.tpcNClsFound();
-    const auto tpcRClsC = track.tpcCrossedRowsOverFindableCls();
-    const auto tpcNClsC = track.tpcNClsCrossedRows();
-    const auto tpcNClsSFrac = track.tpcFractionSharedCls();
-    const auto itsNCls = track.itsNCls();
-    const auto dcaXY = track.dcaXY();
-    const auto dcaZ = track.dcaZ();
-
-    if (pT < ConfPtCuts->get(partSpecies, "Pt min")) {
+    if (track.pt() < cfgPtCuts->get(partSpecies, "Pt min"))
       return false;
-    }
-    if (pT > ConfPtCuts->get(partSpecies, "Pt max")) {
+    if (track.pt() > cfgPtCuts->get(partSpecies, "Pt max"))
       return false;
-    }
-    if (std::abs(eta) > ConfTrkEta) {
+    if (std::abs(track.eta()) > cfgTrkEta)
       return false;
-    }
-    if (tpcNClsF < ConfTPCNClustersMin->get("TPCNClusMin", partSpecies)) {
+    if (track.tpcNClsFound() < cfgTPCNClustersMin->get("TPCNClusMin", partSpecies))
       return false;
-    }
-    if (tpcRClsC < ConfTrkTPCfCls) {
+    if (track.tpcCrossedRowsOverFindableCls() < cfgTrkTPCfCls)
       return false;
-    }
-    if (tpcNClsC < ConfTrkTPCcRowsMin) {
+    if (track.tpcNClsCrossedRows() < cfgTrkTPCcRowsMin)
       return false;
-    }
-    if (tpcNClsSFrac > ConfTrkTPCsClsSharedFrac) {
+    if (track.tpcFractionSharedCls() > cfgTrkTPCsClsSharedFrac)
       return false;
-    }
-    if (itsNCls < ConfTrkITSnclsMin->get(static_cast<uint>(0), partSpecies)) {
+    if (track.itsNCls() < cfgTrkITSnclsMin->get(static_cast<uint>(0), partSpecies))
       return false;
-    }
-    if (std::abs(dcaXY) > ConfTrkDCAxyMax) {
+    if (std::abs(track.dcaXY()) > cfgTrkDCAxyMax)
       return false;
-    }
-    if (std::abs(dcaZ) > ConfTrkDCAzMax) {
+    if (std::abs(track.dcaZ()) > cfgTrkDCAzMax)
       return false;
-    }
+    if (track.tpcChi2NCl() > cfgTrkMaxChi2PerClusterTPC)
+      return false;
+    if (track.itsChi2NCl() > cfgTrkMaxChi2PerClusterITS)
+      return false;
     return true;
   }
 
   template <typename T>
-  bool isSelectedTrackPID(T const& track, CFTrigger::FemtoPartners partSpecies)
+  bool isSelectedTrackPID(T const& track, hnmtrigger::TracksPID partSpecies)
   {
     // nSigma should have entries [proton, deuteron, pion]
     bool isSelected = false;
@@ -270,20 +219,18 @@ struct HeavyNeutralMesonFilter {
     float nSigmaTrackTOF = -999.f;
     float nSigmaTrackITS = -999.f;
 
-    float nSigmaTrackTPCTOF = -999.f;
-
     switch (partSpecies) {
-      case CFTrigger::kProton:
+      case hnmtrigger::kProton:
         nSigmaTrackTPC = track.tpcNSigmaPr();
         nSigmaTrackTOF = track.tofNSigmaPr();
         nSigmaTrackITS = track.itsNSigmaPr();
         break;
-      case CFTrigger::kDeuteron:
+      case hnmtrigger::kDeuteron:
         nSigmaTrackTPC = track.tpcNSigmaDe();
         nSigmaTrackTOF = track.tofNSigmaDe();
         nSigmaTrackITS = track.itsNSigmaDe();
         break;
-      case CFTrigger::kPion:
+      case hnmtrigger::kPion:
         nSigmaTrackTPC = track.tpcNSigmaPi();
         nSigmaTrackTOF = track.tofNSigmaPi();
         nSigmaTrackITS = track.itsNSigmaPi();
@@ -292,24 +239,17 @@ struct HeavyNeutralMesonFilter {
         LOG(fatal) << "Particle species not known";
     }
 
-    nSigmaTrackTPCTOF = std::sqrt(std::pow(nSigmaTrackTPC, 2) + std::pow(nSigmaTrackTOF, 2));
+    float nSigmaTrackTPCTOF = std::sqrt(std::pow(nSigmaTrackTPC, 2) + std::pow(nSigmaTrackTOF, 2));
 
-    // check if track is selected
-    auto TPCmin = ConfPIDCuts->get(partSpecies, CFTrigger::kTPCMin);
-    auto TPCmax = ConfPIDCuts->get(partSpecies, CFTrigger::kTPCMax);
-    auto TPCTOFmax = ConfPIDCuts->get(partSpecies, CFTrigger::kTPCTOF);
-    auto ITSmin = ConfPIDCuts->get(partSpecies, CFTrigger::kITSmin);
-    auto ITSmax = ConfPIDCuts->get(partSpecies, CFTrigger::kITSmax);
-
-    if (track.p() <= ConfPtCuts->get(partSpecies, "P TOF thres")) {
-      if (nSigmaTrackTPC > TPCmin &&
-          nSigmaTrackTPC < TPCmax &&
-          nSigmaTrackITS > ITSmin &&
-          nSigmaTrackITS < ITSmax) {
+    if (track.p() <= cfgPtCuts->get(partSpecies, "P TOF thres")) {
+      if (nSigmaTrackTPC > cfgPIDCuts->get(partSpecies, hnmtrigger::kTPCMin) &&
+          nSigmaTrackTPC < cfgPIDCuts->get(partSpecies, hnmtrigger::kTPCMax) &&
+          nSigmaTrackITS > cfgPIDCuts->get(partSpecies, hnmtrigger::kITSmin) &&
+          nSigmaTrackITS < cfgPIDCuts->get(partSpecies, hnmtrigger::kITSmax)) {
         isSelected = true;
       }
     } else {
-      if (nSigmaTrackTPCTOF < TPCTOFmax) {
+      if (nSigmaTrackTPCTOF < cfgPIDCuts->get(partSpecies, hnmtrigger::kTPCTOF)) {
         isSelected = true;
       }
     }
@@ -319,12 +259,10 @@ struct HeavyNeutralMesonFilter {
   template <typename T>
   bool isSelectedEvent(T const& col)
   {
-    if (ConfEvtSelectZvtx && std::abs(col.posZ()) > ConfEvtZvtx) {
+    if (confEvtSelectZvtx && std::abs(col.posZ()) > confEvtZvtx)
       return false;
-    }
-    if (ConfEvtOfflineCheck && !col.sel8()) {
+    if (confEvtRequireSel8 && !col.sel8())
       return false;
-    }
     return true;
   }
 
@@ -333,18 +271,15 @@ struct HeavyNeutralMesonFilter {
   {
     const ROOT::Math::PtEtaPhiMVector trackSum = part1 + part2;
     const float beta = trackSum.Beta();
-    const float betax =
-      beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
-    const float betay =
-      beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
-    ROOT::Math::PxPyPzMVector PartOneCMS(part1);
-    ROOT::Math::PxPyPzMVector PartTwoCMS(part2);
-    const ROOT::Math::Boost boostPRF =
-      ROOT::Math::Boost(-betax, -betay, -betaz);
-    PartOneCMS = boostPRF(PartOneCMS);
-    PartTwoCMS = boostPRF(PartTwoCMS);
-    const ROOT::Math::PxPyPzMVector trackRelK = PartOneCMS - PartTwoCMS;
+    ROOT::Math::PxPyPzMVector partOneCMS(part1);
+    ROOT::Math::PxPyPzMVector partTwoCMS(part2);
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    partOneCMS = boostPRF(partOneCMS);
+    partTwoCMS = boostPRF(partTwoCMS);
+    const ROOT::Math::PxPyPzMVector trackRelK = partOneCMS - partTwoCMS;
     return 0.5 * trackRelK.P();
   }
 
@@ -365,447 +300,169 @@ struct HeavyNeutralMesonFilter {
     ROOT::Math::PxPyPzEVector q12 = getqij(part1, part2);
     ROOT::Math::PxPyPzEVector q23 = getqij(part2, part3);
     ROOT::Math::PxPyPzEVector q31 = getqij(part3, part1);
-    float Q32 = q12.M2() + q23.M2() + q31.M2();
-    return sqrt(-Q32);
+    float q32 = q12.M2() + q23.M2() + q31.M2();
+    return std::sqrt(-q32);
   }
-
-  // Circumvent missing of different phi mappings, enforce [0, 2 * M_PI]
-  // Tracks have domain [0, 2 * M_PI]
-  // TLorentVectors have domain [-M_PI, M_PI]
-  double translatePhi(double phi)
-  {
-    if (phi < 0) {
-      phi += 2 * M_PI; // Add 2 pi to make it positive
-    }
-    return phi;
-  }
-
-  Produces<aod::HeavyNeutralMesonFilters> tags;
-
-  HistogramRegistry mHistManager{"HeavyNeutralMesonFilterHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Configurable<int> cfgHNMMassCorrection{"cfgHNMMassCorrection", 1, "Use GG PDG mass to correct HNM mass (0 = off, 1 = subDeltaPi0, 2 = subLambda)"};
-  static constexpr float defaultMassWindows[2][4] = {{0., 0.4, 0.6, 1.}, {0.4, 0.8, 0.8, 1.2}};
-  Configurable<LabeledArray<float>> massWindowOmega{"massWindowOmega", {defaultMassWindows[0], 4, {"pi0_min", "pi0_max", "omega_min", "omega_max"}}, "Mass window for selected omegas and their decay pi0"};
-  Configurable<LabeledArray<float>> massWindowEtaPrime{"massWindowEtaPrime", {defaultMassWindows[1], 4, {"eta_min", "eta_max", "etaprime_min", "etaprime_max"}}, "Mass window for selected eta' and their decay eta"};
-
-  static constexpr float defaultMinPts[4] = {1.8, 1.8, 2.6, 2.6};
-  static constexpr float defaultFemtoMinPts[4] = {1.8, 1.8, 2.6, 2.6};
-
-  Configurable<LabeledArray<float>> minHNMPts{"minHNMPts", {defaultMinPts, 4, {"PCM_omega", "PCM_etaprime", "EMC_omega", "EMC_etaprime"}}, "Minimum pT values for the trigger decisions (GeV/c)"};
-
-  Configurable<LabeledArray<float>> minFemtoHNMPts{"minFemtoHNMPts", {defaultFemtoMinPts, 4, {"PCM_omega", "PCM_etaprime", "EMC_omega", "EMC_etaprime"}}, "Minimum pT values for the femto trigger decisions (GeV/c)"};
-
-  std::vector<hnmutilities::GammaGammaPair> vGGs;
-  std::vector<hnmutilities::HeavyNeutralMeson> vHNMs;
-
-  bool colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime = false;
-
-  emcal::Geometry* emcalGeom;
-
-  // Femto
-  // Prepare vectors for different species
-  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, proton, antiproton, deuteron, antideuteron, pion, antipion;
-  float mMassProton = o2::constants::physics::MassProton;
-  float mMassDeuteron = o2::constants::physics::MassDeuteron;
-  float mMassOmega = 0.782;
-  float mMassEtaPrime = 0.957;
-  float mMassPionCharged = o2::constants::physics::MassPionCharged;
 
   void init(InitContext const&)
   {
-    emcalGeom = emcal::Geometry::GetInstanceFromRunNumber(300000);
-    auto hCollisionCounter = mHistManager.add<TH1>("Event/hCollisionCounter", "Number of collisions;;#bf{#it{N}_{Coll}}", HistType::kTH1F, {{6, -0.5, 5.5}});
-    hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
-    hCollisionCounter->GetXaxis()->SetBinLabel(2, "kTVXinEMC");
-    hCollisionCounter->GetXaxis()->SetBinLabel(3, "PCM #omega");
-    hCollisionCounter->GetXaxis()->SetBinLabel(4, "EMC #omega");
-    hCollisionCounter->GetXaxis()->SetBinLabel(5, "PCM #eta'");
-    hCollisionCounter->GetXaxis()->SetBinLabel(6, "EMC #eta'");
+    mHistManager.add("Event/nGGs", "Number of (selected) #gamma#gamma paris;#bf{#it{N}^{#gamma#gamma}};#bf{#it{N}_{selected}^{#gamma#gamma}}", HistType::kTH2F, {{51, -0.5, 50.5}, {51, -0.5, 50.5}});
+    mHistManager.add("Event/nHeavyNeutralMesons", "Number of (selected) HNM candidates;#bf{#it{N}^{HNM}};#bf{#it{N}_{selected}^{HNM}}", HistType::kTH2F, {{51, -0.5, 50.5}, {51, -0.5, 50.5}});
+    mHistManager.add("Event/nClustersVsV0s", "Number of clusters and V0s in the collision;#bf{#it{N}^{clusters}};#bf{#it{N}^{V0s}}", HistType::kTH2F, {{26, -0.5, 25.5}, {26, -0.5, 25.5}});
+    mHistManager.add("Event/nEMCalEvents", "Number of collisions with a certain combination of EMCal triggers;;#bf{#it{N}_{collisions}}", HistType::kTH1F, {{5, -0.5, 4.5}});
+    std::vector<std::string> nEventTitles = {"Cells & kTVXinEMC", "Cells & L0", "Cells & !kTVXinEMC & !L0", "!Cells & kTVXinEMC", "!Cells & L0"};
+    for (size_t iBin = 0; iBin < nEventTitles.size(); iBin++)
+      mHistManager.get<TH1>(HIST("Event/nEMCalEvents"))->GetXaxis()->SetBinLabel(iBin + 1, nEventTitles[iBin].data());
+    mHistManager.add("Event/fMultiplicityBefore", "Multiplicity of all processed events;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
+    mHistManager.add("Event/fMultiplicityAfter", "Multiplicity after event cuts;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
+    mHistManager.add("Event/fZvtxBefore", "Zvtx of all processed events;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, -15, 15}});
+    mHistManager.add("Event/fZvtxAfter", "Zvtx after event cuts;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, -15, 15}});
+    mHistManager.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{12, -0.5, 11.5}});
+    std::vector<std::string> pEventTitles = {"all", "rejected", "PCM #omega", "EMC #omega", "PCM #eta'", "EMC #eta'", "PPOmega", "PPEtaPrime", "Omegad", "EtaPrimed", "OmegaP", "EtaPrimeP"};
+    for (size_t iBin = 0; iBin < pEventTitles.size(); iBin++)
+      mHistManager.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, pEventTitles[iBin].data());
 
-    mHistManager.add("Event/nGGs", "Number of (selected) #gamma#gamma paris;#bf{#it{N}_{#gamma#gamma}};#bf{#it{N}_{#gamma#gamma}^{selected}}", HistType::kTH2F, {{51, -0.5, 50.5}, {51, -0.5, 50.5}});
-    mHistManager.add("Event/nTracks", "Number of tracks;#bf{N_{tracks}};#bf{#it{N}_{Coll}}", HistType::kTH1F, {{51, -0.5, 50.5}});
-    mHistManager.add("Event/nHeavyNeutralMesons", "Number of (selected) HNM candidates;#bf{#it{N}_{HNM}};#bf{#it{N}_{HNM}^{selected}}", HistType::kTH2F, {{51, -0.5, 50.5}, {51, -0.5, 50.5}});
-    mHistManager.add("Event/nClustersVsV0s", "Number of clusters and V0s in the collision;#bf{#it{N}_{clusters}};#bf{#it{N}_{V0s}}", HistType::kTH2F, {{26, -0.5, 25.5}, {26, -0.5, 25.5}});
+    mHistManager.add("GG/invMassVsPt_PCM", "Invariant mass and pT of gg candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
+    mHistManager.add("GG/invMassVsPt_PCMEMC", "Invariant mass and pT of gg candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
+    mHistManager.add("GG/invMassVsPt_EMC", "Invariant mass and pT of gg candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
 
-    mHistManager.add("GG/invMassVsPt_PCM", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
-    mHistManager.add("GG/invMassVsPt_PCMEMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
-    mHistManager.add("GG/invMassVsPt_EMC", "Invariant mass and pT of gg candidates;#bf{#it{M}_{#gamma#gamma}};#bf{#it{pT}_{#gamma#gamma}}", HistType::kTH2F, {{400, 0., 0.8}, {250, 0., 25.}});
+    // Momentum correlations p vs p_TPC
+    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationPos", "fMomCorrelation;#bf{#it{p} (GeV/#it{c})};#bf{#it{p}_{TPC} (GeV/#it{c})}", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
+    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationNeg", "fMomCorrelation;#bf{#it{p} (GeV/#it{c})};#bf{#it{p}_{TPC} (GeV/#it{c})}", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
 
-    mHistManager.add("Omega/invMassVsPt_PCM", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
-    mHistManager.add("Omega/invMassVsPt_PCMEMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
-    mHistManager.add("Omega/invMassVsPt_EMC", "Invariant mass and pT of omega meson candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.6, 1.}, {250, 0., 25.}});
-
-    mHistManager.add("EtaPrime/invMassVsPt_PCM", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
-    mHistManager.add("EtaPrime/invMassVsPt_PCMEMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
-    mHistManager.add("EtaPrime/invMassVsPt_EMC", "Invariant mass and pT of eta' candidates;#bf{#it{M}_{#pi^{+}#pi^{-}#gamma#gamma}};#bf{#it{pT}_{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH2F, {{400, 0.8, 1.2}, {250, 0., 25.}});
-
-    // include all femto histograms
-    mHistManager.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{15, -0.5, 14.5}});
-    std::vector<std::string> eventTitles = {"all", "rejected", "PPOmega", "PPEtaPrime", "Omegad", "EtaPrimed", "OmegaP", "EtaPrimeP", "kTVXinEMC", "PCM #omega", "EMC #omega", "PCM #eta'", "EMC #eta'"};
-    for (size_t iBin = 0; iBin < eventTitles.size(); iBin++) {
-      mHistManager.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
-    }
-
-    // event cuts
-    mHistManager.add("EventCuts/fMultiplicityBefore", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("EventCuts/fMultiplicityAfter", "Multiplicity after event cuts;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("EventCuts/fZvtxBefore", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-    mHistManager.add("EventCuts/fZvtxAfter", "Zvtx after event cuts;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    // mom correlations p vs pTPC
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationPos", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationNeg", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsProton", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiProton", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsDeuteron", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiDeuteron", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
-
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsPion", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 20.0f}}});
-    mHistManager.add("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiPion", "fMomCorrelation;p (GeV/c);p_{TPC} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 20.0f}}});
-
-    // all tracks
-    mHistManager.add("TrackCuts/TracksBefore/fPtTrackBefore", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/TracksBefore/fEtaTrackBefore", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/TracksBefore/fPhiTrackBefore", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
+    // All tracks
+    mHistManager.add("TrackCuts/TracksBefore/fPtTrackBefore", "Transverse momentum of all processed tracks;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}_{tracks}}", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("TrackCuts/TracksBefore/fEtaTrackBefore", "Pseudorapidity of all processed tracks;#eta;#bf{#it{N}_{tracks}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("TrackCuts/TracksBefore/fPhiTrackBefore", "Azimuthal angle of all processed tracks;#phi;#bf{#it{N}_{tracks}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
 
     // TPC signal
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignal", "TPCSignal;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalP", "TPCSignalP;p (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
-    // TPC signal anti
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAnti", "TPCSignal;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAntiP", "TPCSignalP;p (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
+    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalTPCP", "TPCSignal;#bf{#it{p}_{TPC} (GeV/#it{c})};#bf{TPC d#it{E}/d#it{x}}", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
+    mHistManager.add("TrackCuts/TPCSignal/fTPCSignal", "TPCSignalP;#bf{#it{p} (GeV/#it{c})};#bf{TPC d#it{E}/d#it{x}}", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
+    // TPC signal antiparticles (negative charge)
+    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAntiTPCP", "TPCSignal;#bf{#it{p}_{TPC} (GeV/#it{c})};#bf{TPC d#it{E}/d#it{x}}", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
+    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAnti", "TPCSignalP;#bf{#it{p} (GeV/#it{c})};#bf{TPC d#it{E}/d#it{x}}", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {2000, -100.f, 500.f}}});
 
-    // TPC signal particles
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalProton", "fTPCSignalProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAntiProton", "fTPCSignalAntiProton;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalDeuteron", "fTPCSignalDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAntiDeuteron", "fTPCSignalAntiDeuteron;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalPion", "fTPCSignalPion;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
-    mHistManager.add("TrackCuts/TPCSignal/fTPCSignalAntiPion", "fTPCSignalAntiPion;p_{TPC} (GeV/c);dE/dx", {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
+    const int nTrackSpecies = 2 * hnmtrigger::kNFemtoPartners; // x2 because of anti particles
+    const char* particleSpecies[nTrackSpecies] = {"Proton", "AntiProton", "Deuteron", "AntiDeuteron", "Pion", "AntiPion"};
+    const char* particleSpeciesLatex[nTrackSpecies] = {"p", "#bar{p}", "d", "#bar{d}", "#pi^{+}", "#pi^{-}"};
 
-    // proton
-    mHistManager.add("TrackCuts/Proton/fPProton", "Momentum of protons at PV;p (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Proton/fPTPCProton", "Momentum of protons at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Proton/fPtProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Proton/fMomCorProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/Proton/fMomCorProtonRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/Proton/fEtaProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/Proton/fPhiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaTPCvsPProton", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaTOFvsPProton", "NSigmaTOF Proton;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaTPCTOFvsPProton", "NSigmaTPCTOF Proton;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaITSvsPProton", "NSigmaITS Proton;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    for (int iParticle = 0; iParticle < nTrackSpecies; iParticle++) {
+      mHistManager.add(Form("TrackCuts/TracksBefore/fMomCorrelationAfterCuts%s", particleSpecies[iParticle]), Form("%s momentum correlation;#bf{#it{p} (GeV/#it{c})};#bf{#it{p}_{TPC} (GeV/#it{c})}", particleSpecies[iParticle]), {HistType::kTH2F, {{500, 0.0f, 20.0f}, {500, 0.0f, 20.0f}}});
+      mHistManager.add(Form("TrackCuts/TPCSignal/fTPCSignal%s", particleSpecies[iParticle]), Form("%s TPC energy loss;#bf{#it{p}_{TPC}^{%s} (GeV/#it{c})};#bf{TPC d#it{E}/d#it{x}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{500, 0.0f, 6.0f}, {10000, -100.f, 500.f}}});
 
-    mHistManager.add("TrackCuts/Proton/fNsigmaTPCvsPProtonP", "NSigmaTPC Proton P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaTOFvsPProtonP", "NSigmaTOF Proton P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Proton/fNsigmaTPCTOFvsPProtonP", "NSigmaTPCTOF Proton P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fP", particleSpecies[iParticle]), Form("%s momentum at PV;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, 0, 10}});
+      mHistManager.add(Form("TrackCuts/%s/fPt", particleSpecies[iParticle]), Form("%s transverse momentum;#bf{#it{p}_{T}^{%s} (GeV/#it{c})};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, 0, 10}});
+      mHistManager.add(Form("TrackCuts/%s/fMomCorDif", particleSpecies[iParticle]), Form("Momentum correlation;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{#it{p}_{TPC}^{%s} - #it{p}^{%s} (GeV/#it{c})}", particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
+      mHistManager.add(Form("TrackCuts/%s/fMomCorRatio", particleSpecies[iParticle]), Form("Relative momentum correlation;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{#it{p}_{TPC}^{%s} - #it{p}^{%s} / #it{p}^{%s}}", particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
+      mHistManager.add(Form("TrackCuts/%s/fEta", particleSpecies[iParticle]), Form("%s pseudorapidity distribution;#eta;#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, -2, 2}});
+      mHistManager.add(Form("TrackCuts/%s/fPhi", particleSpecies[iParticle]), Form("%s azimuthal angle distribution;#phi;#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
 
-    mHistManager.add("TrackCuts/Proton/fDCAxyProton", "fDCAxy Proton;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Proton/fDCAzProton", "fDCAz Proton;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Proton/fTPCsClsProton", "fTPCsCls Proton;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Proton/fTPCcRowsProton", "fTPCcRows Proton;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Proton/fTrkTPCfClsProton", "fTrkTPCfCls Proton;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/Proton/fTPCnclsProton", "fTPCncls Proton;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTPCvsTPCP", particleSpecies[iParticle]), Form("NSigmaTPC %s;#bf{#it{p}_{TPC}^{%s} (GeV/#it{c})};#bf{n#sigma_{TPC}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTOFvsTPCP", particleSpecies[iParticle]), Form("NSigmaTOF %s;#bf{#it{p}_{TPC}^{%s} (GeV/#it{c})};#bf{n#sigma_{TOF}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTPCTOFvsTPCP", particleSpecies[iParticle]), Form("NSigmaTPCTOF %s;#bf{#it{p}_{TPC}^{%s} (GeV/#it{c})};n#sigma_{comb}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaITSvsP", particleSpecies[iParticle]), Form("NSigmaITS %s;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{n#sigma_{ITS}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTPCvsP", particleSpecies[iParticle]), Form("NSigmaTPC %s P;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{n#sigma_{TPC}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTOFvsP", particleSpecies[iParticle]), Form("NSigmaTOF %s P;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{n#sigma_{TOF}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fNsigmaTPCTOFvsP", particleSpecies[iParticle]), Form("NSigmaTPCTOF %s P;#bf{#it{p}^{%s} (GeV/#it{c})};#bf{n#sigma_{comb}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle], particleSpeciesLatex[iParticle]), {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
 
-    // antiproton
-    mHistManager.add("TrackCuts/AntiProton/fPtAntiProton", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/AntiProton/fMomCorAntiProtonDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/AntiProton/fMomCorAntiProtonRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/AntiProton/fEtaAntiProton", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/AntiProton/fPhiAntiProton", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton", "NSigmaTPC AntiProton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTOFvsPAntiProton", "NSigmaTOF AntiProton;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTPCTOFvsPAntiProton", "NSigmaTPCTOF AntiProton;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaITSvsPAntiProton", "NSigmaITS AntiProton;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+      mHistManager.add(Form("TrackCuts/%s/fDCAxy", particleSpecies[iParticle]), Form("fDCAxy %s;#bf{DCA_{xy}};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, -0.5f, 0.5f}});
+      mHistManager.add(Form("TrackCuts/%s/fDCAz", particleSpecies[iParticle]), Form("fDCAz %s;#bf{DCA_{z}};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, -0.5f, 0.5f}});
+      mHistManager.add(Form("TrackCuts/%s/fTPCsCls", particleSpecies[iParticle]), Form("fTPCsCls %s;#bf{TPC Shared Clusters};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{163, -1.0f, 162.0f}});
+      mHistManager.add(Form("TrackCuts/%s/fTPCcRows", particleSpecies[iParticle]), Form("fTPCcRows %s;#bf{TPC Crossed Rows};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{163, -1.0f, 162.0f}});
+      mHistManager.add(Form("TrackCuts/%s/fTrkTPCfCls", particleSpecies[iParticle]), Form("fTrkTPCfCls %s;#bf{TPC Findable/CrossedRows};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{500, 0.0f, 3.0f}});
+      mHistManager.add(Form("TrackCuts/%s/fTPCncls", particleSpecies[iParticle]), Form("fTPCncls %s;#bf{TPC Clusters};#bf{#it{N}^{%s}}", particleSpecies[iParticle], particleSpeciesLatex[iParticle]), HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    }
 
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProtonP", "NSigmaTPC AntiProton P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTOFvsPAntiProtonP", "NSigmaTOF AntiProton P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiProton/fNsigmaTPCTOFvsPAntiProtonP", "NSigmaTPCTOF AntiProton P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+    // --> HNM QA
+    // pi+ daughter
+    mHistManager.add("HNM/Before/PosDaughter/fInvMass", "Invariant mass HMN Pos Daugh;#bf{#it{M}^{#pi^{+}} (GeV/#it{c}^{2})};#bf{#it{N}^{#pi^{+}}}", HistType::kTH1F, {{200, 0, 0.2}});
+    mHistManager.add("HNM/Before/PosDaughter/fPt", "Transverse momentum HMN Pos Daugh tracks;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}^{#pi^{+}}}", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("HNM/Before/PosDaughter/fEta", "HMN Pos Daugh Eta;#eta;#bf{#it{N}^{#pi^{+}}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("HNM/Before/PosDaughter/fPhi", "Azimuthal angle of HMN Pos Daugh tracks;#phi;#bf{#it{N}^{#pi^{+}}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
+    // pi- daughter
+    mHistManager.add("HNM/Before/NegDaughter/fInvMass", "Invariant mass HMN Neg Daugh;#bf{#it{M}^{#pi^{-}} (GeV/#it{c}^{2})};#bf{#it{N}^{#pi^{-}}}", HistType::kTH1F, {{200, 0, 0.2}});
+    mHistManager.add("HNM/Before/NegDaughter/fPt", "Transverse momentum HMN Neg Daugh tracks;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}^{#pi^{-}}}", HistType::kTH1F, {{500, 0, 10}});
+    mHistManager.add("HNM/Before/NegDaughter/fEta", "HMN Neg Daugh Eta;#eta;#bf{#it{N}^{#pi^{-}}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("HNM/Before/NegDaughter/fPhi", "Azimuthal angle of HMN Neg Daugh tracks;#phi;#bf{#it{N}^{#pi^{-}}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
+    // Properties of the pi+pi- pair
+    mHistManager.add("HNM/Before/PiPlPiMi/fInvMassVsPt", "Invariant mass and pT of #pi^+pi^- pairs;#bf{#it{M}^{#pi^{+}#pi^{-}} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#pi^{+}#pi^{-}} (GeV/#it{c})}", HistType::kTH2F, {{400, 0.2, 1.}, {250, 0., 25.}});
+    mHistManager.add("HNM/Before/PiPlPiMi/fEta", "Pseudorapidity of HMNCand;#eta;#bf{#it{N}^{#pi^{+}#pi^{-}}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("HNM/Before/PiPlPiMi/fPhi", "Azimuthal angle of HMNCand;#phi;#bf{#it{N}^{#pi^{+}#pi^{-}}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
 
-    mHistManager.add("TrackCuts/AntiProton/fDCAxyAntiProton", "fDCAxy AntiProton;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiProton/fDCAzAntiProton", "fDCAz AntiProton;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiProton/fTPCsClsAntiProton", "fTPCsCls AntiProton;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiProton/fTPCcRowsAntiProton", "fTPCcRows AntiProton;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiProton/fTrkTPCfClsAntiProton", "fTrkTPCfCls AntiProton;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/AntiProton/fTPCnclsAntiProton", "fTPCncls AntiProton;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
+    for (const auto& BeforeAfterString : {"Before", "After"}) {
+      for (const auto& iHNM : {"Omega", "EtaPrime"}) {
+        for (const auto& MethodString : {"PCM", "EMC"}) {
+          mHistManager.add(Form("HNM/%s/%s/%s/fInvMassVsPt", BeforeAfterString, iHNM, MethodString), "Invariant mass and pT of heavy neutral meson candidates;#bf{#it{M}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
+          mHistManager.add(Form("HNM/%s/%s/%s/fEta", BeforeAfterString, iHNM, MethodString), "Pseudorapidity of HNM candidate;#eta;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{500, -2, 2}});
+          mHistManager.add(Form("HNM/%s/%s/%s/fPhi", BeforeAfterString, iHNM, MethodString), "Azimuthal angle of HNM candidate;#phi;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
+        }
+      }
+    }
+    mHistManager.add("HNM/Before/Omega/PCMEMC/fInvMassVsPt", "Invariant mass and pT of omega meson candidates;#bf{#it{M}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 25.}});
+    mHistManager.add("HNM/Before/Omega/PCMEMC/fEta", "Pseudorapidity of HMNCand;#eta;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("HNM/Before/Omega/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
+    mHistManager.add("HNM/Before/EtaPrime/PCMEMC/fInvMassVsPt", "Invariant mass and pT of eta' meson candidates;#bf{#it{M}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{600, 0.8, 1.2}, {250, 0., 25.}});
+    mHistManager.add("HNM/Before/EtaPrime/PCMEMC/fEta", "Pseudorapidity of HMNCand;#eta;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{500, -2, 2}});
+    mHistManager.add("HNM/Before/EtaPrime/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;#bf{#it{N}^{#pi^{+}#pi^{-}#gamma#gamma}}", HistType::kTH1F, {{720, 0, constants::math::TwoPI}});
 
-    // deuteron
-    mHistManager.add("TrackCuts/Deuteron/fPtDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Deuteron/fMomCorDeuteronDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/Deuteron/fMomCorDeuteronRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/Deuteron/fEtaDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/Deuteron/fPhiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteron", "NSigmaTPC Deuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTOFvsPDeuteron", "NSigmaTOF Deuteron;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTPCTOFvsPDeuteron", "NSigmaTPCTOF Deuteron;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaITSvsPDeuteron", "NSigmaITS Deuteron;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
+    // --> Two body femto histograms
+    for (const auto& iFemtoPartner : {"p", "d"}) {
+      for (const auto& iHNM : {"omega", "etaprime"}) {
+        mHistManager.add(Form("%s%s/fMultiplicity", iHNM, iFemtoPartner), "Multiplicity of all processed events;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
+        mHistManager.add(Form("%s%s/fZvtx", iHNM, iFemtoPartner), "Zvtx of all processed events;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, -15, 15}});
+        for (const auto& iEMCPCM : {"PCM", "EMC"}) {
+          mHistManager.add(Form("%s%s/fSE_particle_%s", iHNM, iFemtoPartner, iEMCPCM), Form("Same Event distribution;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{N}^{%s}}", iFemtoPartner), HistType::kTH1F, {{8000, 0, 8}});
+          mHistManager.add(Form("%s%s/fSE_Antiparticle_%s", iHNM, iFemtoPartner, iEMCPCM), Form("Same Event distribution;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{N}^{#bar{%s}}}", iFemtoPartner), HistType::kTH1F, {{8000, 0, 8}});
+          mHistManager.add(Form("%s%s/f%sPtVskstar_%s", iHNM, iFemtoPartner, iHNM, iEMCPCM), Form("K* vs %s pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iHNM, iHNM), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+          mHistManager.add(Form("%s%s/f%sPtVskstar_%s", iHNM, iFemtoPartner, iFemtoPartner, iEMCPCM), Form("K* vs %s pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iFemtoPartner, iFemtoPartner), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+          mHistManager.add(Form("%s%s/fAnti%sPtVskstar_%s", iHNM, iFemtoPartner, iFemtoPartner, iEMCPCM), Form("K* vs #bar{%s} pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{#bar{%s}} (GeV/#it{c})}", iFemtoPartner, iFemtoPartner), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+        }
+      }
+    }
 
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteronP", "NSigmaTPC Deuteron vd P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTOFvsPDeuteronP", "NSigmaTOF Deuteron P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Deuteron/fNsigmaTPCTOFvsPDeuteronP", "NSigmaTPCTOF Deuteron P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
+    // --> Three body femto histograms
+    for (const auto& iHNM : {"omega", "etaprime"}) {
+      mHistManager.add(Form("pp%s/fMultiplicity", iHNM), "Multiplicity of all processed events;#bf{#it{N}_{tracks}};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, 0, 500}});
+      mHistManager.add(Form("pp%s/fZvtx", iHNM), "Zvtx of all processed events;#bf{z_{vtx} (cm)};#bf{#it{N}_{collisions}}", HistType::kTH1F, {{500, -15, 15}});
+      for (const auto& iEMCPCM : {"PCM", "EMC"}) {
+        mHistManager.add(Form("pp%s/fSE_particle_%s", iHNM, iEMCPCM), "Same Event distribution;#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{N}^{pp}}", HistType::kTH1F, {{8000, 0, 8}});
+        mHistManager.add(Form("pp%s/fSE_Antiparticle_%s", iHNM, iEMCPCM), "Same Event distribution;#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{N}^{#bar{p}#bar{p}}}", HistType::kTH1F, {{8000, 0, 8}});
+        mHistManager.add(Form("pp%s/fProtonPtVsQ3_%s", iHNM, iEMCPCM), "pT (proton) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{p} (GeV/#it{c})}", HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+        mHistManager.add(Form("pp%s/f%sCandPtVsQ3_%s", iHNM, iHNM, iEMCPCM), Form("pT (%s) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iHNM, iHNM), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+        mHistManager.add(Form("pp%s/fAntiProtonPtVsQ3_%s", iHNM, iEMCPCM), "pT (antiproton) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{#bar{p}} (GeV/#it{c})}", HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+      }
+    }
 
-    mHistManager.add("TrackCuts/Deuteron/fDCAxyDeuteron", "fDCAxy Deuteron;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Deuteron/fDCAzDeuteron", "fDCAz Deuteron;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Deuteron/fTPCsClsDeuteron", "fTPCsCls Deuteron;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Deuteron/fTPCcRowsDeuteron", "fTPCcRows Deuteron;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Deuteron/fTrkTPCfClsDeuteron", "fTrkTPCfCls Deuteron;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/Deuteron/fTPCnclsDeuteron", "fTPCncls Deuteron;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-
-    // antideuteron
-    mHistManager.add("TrackCuts/AntiDeuteron/fPtAntiDeuteron", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronRatio", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fEtaAntiDeuteron", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fPhiAntiDeuteron", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteron", "NSigmaTPC AntiDeuteron;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTOFvsPAntiDeuteron", "NSigmaTOF AntiDeuteron;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsPAntiDeuteron", "NSigmaTPCTOF AntiDeuteron;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaITSvsPAntiDeuteron", "NSigmaITS AntiDeuteron;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteronP", "NSigmaTPC AntiDeuteron P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTOFvsPAntiDeuteronP", "NSigmaTOF AntiDeuteron P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsPAntiDeuteronP", "NSigmaTPCTOF AntiDeuteron P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/AntiDeuteron/fDCAxyAntiDeuteron", "fDCAxy AntiDeuteron;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fDCAzAntiDeuteron", "fDCAz AntiDeuteron;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fTPCsClsAntiDeuteron", "fTPCsCls AntiDeuteron;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fTPCcRowsAntiDeuteron", "fTPCcRows AntiDeuteron;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fTrkTPCfClsAntiDeuteron", "fTrkTPCfCls AntiDeuteron;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/AntiDeuteron/fTPCnclsAntiDeuteron", "fTPCncls AntiDeuteron;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-
-    // pions
-    mHistManager.add("TrackCuts/Pion/fPPion", "Momentum of Pions at PV;p (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Pion/fPTPCPion", "Momentum of Pions at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Pion/fPtPion", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/Pion/fMomCorPionDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/Pion/fMomCorPionRatio", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/Pion/fEtaPion", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/Pion/fPhiPion", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/Pion/fNsigmaTPCvsPPion", "NSigmaTPC Pion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Pion/fNsigmaTOFvsPPion", "NSigmaTOF Pion;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Pion/fNsigmaTPCTOFvsPPion", "NSigmaTPCTOF Pion;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/Pion/fNsigmaTPCvsPPionP", "NSigmaTPC Pion P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Pion/fNsigmaTOFvsPPionP", "NSigmaTOF Pion P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/Pion/fNsigmaTPCTOFvsPPionP", "NSigmaTPCTOF Pion P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/Pion/fDCAxyPion", "fDCAxy Pion;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Pion/fDCAzPion", "fDCAz Pion;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/Pion/fTPCsClsPion", "fTPCsCls Pion;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Pion/fTPCcRowsPion", "fTPCcRows Pion;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/Pion/fTrkTPCfClsPion", "fTrkTPCfCls Pion;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/Pion/fTPCnclsPion", "fTPCncls Pion;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-
-    // anti-pions
-    mHistManager.add("TrackCuts/AntiPion/fPtAntiPion", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/AntiPion/fMomCorAntiPionDif", "Momentum correlation;p_{reco} (GeV/c); (p_{TPC} - p_{reco}) (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {600, -3, 3}}});
-    mHistManager.add("TrackCuts/AntiPion/fMomCorAntiPionRatio", "Momentum correlation;p_{reco} (GeV/c); |p_{TPC} - p_{reco}| (GeV/c)", {HistType::kTH2F, {{500, 0, 10}, {200, -1, 1}}});
-    mHistManager.add("TrackCuts/AntiPion/fEtaAntiPion", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/AntiPion/fPhiAntiPion", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPion", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPion", "NSigmaTOF AntiPion;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPion", "NSigmaTPCTOF AntiPion;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPionP", "NSigmaTPC AntiPion P;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPionP", "NSigmaTOF AntiPion P;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, -10.f, 10.f}}});
-    mHistManager.add("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPionP", "NSigmaTPCTOF AntiPion P;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {100, 0.f, 10.f}}});
-
-    mHistManager.add("TrackCuts/AntiPion/fDCAxyAntiPion", "fDCAxy AntiPion;DCA_{XY};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiPion/fDCAzAntiPion", "fDCAz AntiPion;DCA_{Z};Entries", HistType::kTH1F, {{500, -0.5f, 0.5f}});
-    mHistManager.add("TrackCuts/AntiPion/fTPCsClsAntiPion", "fTPCsCls AntiPion;TPC Shared Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiPion/fTPCcRowsAntiPion", "fTPCcRows AntiPion;TPC Crossed Rows;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-    mHistManager.add("TrackCuts/AntiPion/fTrkTPCfClsAntiPion", "fTrkTPCfCls AntiPion;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {{500, 0.0f, 3.0f}});
-    mHistManager.add("TrackCuts/AntiPion/fTPCnclsAntiPion", "fTPCncls AntiPion;TPC Clusters;Entries", HistType::kTH1F, {{163, -1.0f, 162.0f}});
-
-    // HNM
-    // omega QA
-    // daughter pos before
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fInvMass", "Invariant mass HMN Pos Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fPt", "Transverse momentum HMN Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fEta", "HMN Pos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PosDaughter/fPhi", "Azimuthal angle of HMN Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // daughter neg before
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fInvMass", "Invariant mass HMN Neg Daugh;M_{#pi};Entries", HistType::kTH1F, {{500, 0, 1}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fPt", "Transverse momentum HMN Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fEta", "HMN Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/NegDaughter/fPhi", "Azimuthal angle of HMN Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // HMNCand tracks before
-    mHistManager.add("TrackCuts/HMN/Before/fInvMass_tracks", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/fPt_tracks", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/fEta_tracks", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/fPhi_tracks", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // Right now we loose the information about the used tracks and gg properties after creating the HeavyNeutralMeson struct: Maybe it is better to keep track of these?
-    /*// daughter pos after
-    mHistManager.add("TrackCuts/omega/After/PosDaughter/fPt", "Transverse momentum omegaCand Pos Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/omega/After/PosDaughter/fEta", "omegaCandPos Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/omega/After/PosDaughter/fPhi", "Azimuthal angle of omegaCand Pos Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // daughter neg after
-    mHistManager.add("TrackCuts/omega/After/NegDaughter/fPt", "Transverse momentum omegaCand Neg Daugh tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/omega/After/NegDaughter/fEta", "omegaCand Neg Daugh Eta;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/omega/After/NegDaughter/fPhi", "Azimuthal angle of omegaCand Neg Daugh tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});*/
-    // omegaCand after
-    // HMNCand full information
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PCM/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/EMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fInvMass", "Invariant mass HMNCand;M_{#pi#pi#gammg#gamma};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fPt", "Transverse momentum HMNCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fEta", "Pseudorapidity of HMNCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/Before/PCMEMC/fPhi", "Azimuthal angle of HMNCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // OmegaCand
-    mHistManager.add("TrackCuts/HMN/After/Omega/PCM/fInvMass", "Invariant mass omegaCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/PCM/fPt", "Transverse momentum omegaCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/PCM/fEta", "Pseudorapidity of omegaCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/PCM/fPhi", "Azimuthal angle of omegaCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/EMC/fInvMass", "Invariant mass omegaCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/EMC/fPt", "Transverse momentum omegaCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/EMC/fEta", "Pseudorapidity of omegaCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/After/Omega/EMC/fPhi", "Azimuthal angle of omegaCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    // EtaPrimeCand
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/PCM/fInvMass", "Invariant mass EtaPrimeCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/PCM/fPt", "Transverse momentum EtaPrimeCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/PCM/fEta", "Pseudorapidity of EtaPrimeCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/PCM/fPhi", "Azimuthal angle of EtaPrimeCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/EMC/fInvMass", "Invariant mass EtaPrimeCand;M_{#pi#pi};Entries", HistType::kTH1F, {{5000, 0, 5}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/EMC/fPt", "Transverse momentum EtaPrimeCand;p_{T} (GeV/c);Entries", HistType::kTH1F, {{500, 0, 10}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/EMC/fEta", "Pseudorapidity of EtaPrimeCand;#eta;Entries", HistType::kTH1F, {{500, -2, 2}});
-    mHistManager.add("TrackCuts/HMN/After/EtaPrime/EMC/fPhi", "Azimuthal angle of EtaPrimeCand;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
-
-    // Trigger combs
-    //  for ppomega
-    mHistManager.add("ppomega/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("ppomega/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("ppomega/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppomega/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppomega/fProtonPtVsQ3_EMC", "pT (proton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppomega/fOmegaCandPtVsQ3_EMC", "pT (omega) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppomega/fAntiProtonPtVsQ3_EMC", "pT (antiproton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-
-    mHistManager.add("ppomega/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppomega/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppomega/fProtonPtVsQ3_PCM", "pT (proton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppomega/fOmegaCandPtVsQ3_PCM", "pT (omega) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppomega/fAntiProtonPtVsQ3_PCM", "pT (antiproton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    //  for ppetaprime
-    mHistManager.add("ppetaprime/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("ppetaprime/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("ppetaprime/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppetaprime/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppetaprime/fProtonPtVsQ3_EMC", "pT (proton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppetaprime/fEtaPrimeCandPtVsQ3_EMC", "pT (etaprime) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppetaprime/fAntiProtonPtVsQ3_EMC", "pT (antiproton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-
-    mHistManager.add("ppetaprime/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppetaprime/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("ppetaprime/fProtonPtVsQ3_PCM", "pT (proton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppetaprime/fEtaPrimeCandPtVsQ3_PCM", "pT (etaprime) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-    mHistManager.add("ppetaprime/fAntiProtonPtVsQ3_PCM", "pT (antiproton) vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {{150, 0, 1.5}, {500, 0, 10}}});
-
-    // two body
-    // omegad
-    mHistManager.add("omegad/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("omegad/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("omegad/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fomegaPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fDeuteronPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fAntiDeuteronPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fomegaPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fDeuteronPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegad/fAntiDeuteronPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-
-    // etaprimed
-    mHistManager.add("etaprimed/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("etaprimed/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("etaprimed/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fetaprimePtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fDeuteronPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fAntiDeuteronPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fetaprimePtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fDeuteronPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimed/fAntiDeuteronPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-
-    // omegap
-    mHistManager.add("omegap/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("omegap/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("omegap/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fomegaPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fProtonPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fAntiProtonPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fomegaPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("omegap/fAntiProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-
-    // etaprimep
-    mHistManager.add("etaprimep/fMultiplicity", "Multiplicity of all processed events;Mult;Entries", HistType::kTH1F, {{500, 0, 500}});
-    mHistManager.add("etaprimep/fZvtx", "Zvtx of all processed events;Z_{vtx};Entries", HistType::kTH1F, {{500, -15, 15}});
-
-    mHistManager.add("etaprimep/fSE_particle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fSE_Antiparticle_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fetaprimePtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fProtonPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fAntiProtonPtVskstar_PCM", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fSE_particle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fSE_Antiparticle_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fetaprimePtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-    mHistManager.add("etaprimep/fAntiProtonPtVskstar_EMC", "Same Event distribution", HistType::kTH1F, {{8000, 0, 8}});
-
-    if (ConfDoEMCShift.value) {
-      for (int iSM = 0; iSM < 20; iSM++) {
-        EMCEtaShift[iSM] = ConfEMCEtaShift.value[iSM];
-        EMCPhiShift[iSM] = ConfEMCPhiShift.value[iSM];
-        LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << EMCEtaShift[iSM] << " / " << EMCPhiShift[iSM];
+    if (cfgDoEMCShift.value) {
+      for (int iSM = 0; iSM < nSMs; iSM++) {
+        emcEtaShift[iSM] = cfgEMCEtaShift.value[iSM];
+        emcPhiShift[iSM] = cfgEMCPhiShift.value[iSM];
+        LOG(info) << "SM-wise shift in eta/phi for SM " << iSM << ": " << emcEtaShift[iSM] << " / " << emcPhiShift[iSM];
       }
     }
   }
-  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
   void process(aod::MyCollision const& collision, aod::MyBCs const&, aod::SkimEMCClusters const& clusters, aod::V0PhotonsKF const& v0s, aod::SelectedTracks const& tracks)
   {
     // inlcude ITS PID information
     auto tracksWithItsPid = soa::Attach<aod::SelectedTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
 
-    mHistManager.fill(HIST("Event/hCollisionCounter"), 0.);
-
     // QA all evts
     mHistManager.fill(HIST("fProcessedEvents"), 0);
-    mHistManager.fill(HIST("EventCuts/fMultiplicityBefore"), collision.multNTracksPV());
-    mHistManager.fill(HIST("EventCuts/fZvtxBefore"), collision.posZ());
+    mHistManager.fill(HIST("Event/fMultiplicityBefore"), collision.multNTracksPV());
+    mHistManager.fill(HIST("Event/fZvtxBefore"), collision.posZ());
 
     // Ensure evts are consistent with Sel8 and Vtx-z selection
-    if (!isSelectedEvent(collision)) {
+    if (!isSelectedEvent(collision))
       return;
-    }
 
     // QA accepted evts
-    mHistManager.fill(HIST("EventCuts/fMultiplicityAfter"), collision.multNTracksPV());
-    mHistManager.fill(HIST("EventCuts/fZvtxAfter"), collision.posZ());
+    mHistManager.fill(HIST("Event/fMultiplicityAfter"), collision.multNTracksPV());
+    mHistManager.fill(HIST("Event/fZvtxAfter"), collision.posZ());
 
-    colContainsPCMOmega = colContainsEMCOmega = colContainsPCMEtaPrime = colContainsEMCEtaPrime = false;
-    bool keepFemtoEvent[CFTrigger::kNFemtoTriggers] = {false, false, false, false, false, false};
-    int lowMomentumMultiplets[CFTrigger::kNFemtoTriggers] = {0, 0, 0, 0, 0, 0};
+    colContainsPCMOmega = colContainsEMCOmega = colContainsPCMEtaPrime = colContainsEMCEtaPrime = false; // Used by spectrum trigger to flag events with high-pT omega/eta' candidates
+    int lowMomentumMultiplets[hnmtrigger::kNFemtoTriggers] = {0, 0, 0, 0, 0, 0};                         // Number of found femto pairs/triplets for each femto trigger
+    bool keepFemtoEvent[hnmtrigger::kNFemtoTriggers] = {false, false, false, false, false, false};       // Set based on number of found pairs (see above) - used to flag femto events
 
     // clean vecs
     // HNM candidates
@@ -824,646 +481,654 @@ struct HeavyNeutralMesonFilter {
     vHNMs.clear();
     // vGGs vector is cleared in reconstructGGs.
 
-    if (collision.foundBC_as<aod::MyBCs>().alias_bit(kTVXinEMC)) {
-      mHistManager.fill(HIST("Event/hCollisionCounter"), 1.);
-      mHistManager.fill(HIST("fProcessedEvents"), 8);
-    }
+    // ---------------------------------> EMCal event QA <----------------------------------
+    // - Fill Event/nEMCalEvents histogram for EMCal event QA
+    // -------------------------------------------------------------------------------------
+    bool bcHasEMCCells = collision.isemcreadout();
+    bool iskTVXinEMC = collision.foundBC_as<aod::MyBCs>().alias_bit(kTVXinEMC);
+    bool isL0Triggered = collision.foundBC_as<aod::MyBCs>().alias_bit(kEMC7) || collision.foundBC_as<aod::MyBCs>().alias_bit(kEG1) || collision.foundBC_as<aod::MyBCs>().alias_bit(kEG2);
 
-    auto v0sInThisCollision = v0s.sliceBy(perCollision_pcm, collision.globalIndex());
-    auto clustersInThisCollision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
+    if (bcHasEMCCells && iskTVXinEMC)
+      mHistManager.fill(HIST("Event/nEMCalEvents"), 0);
+    if (bcHasEMCCells && isL0Triggered)
+      mHistManager.fill(HIST("Event/nEMCalEvents"), 1);
+    if (bcHasEMCCells && !iskTVXinEMC && !isL0Triggered)
+      mHistManager.fill(HIST("Event/nEMCalEvents"), 2);
+    if (!bcHasEMCCells && iskTVXinEMC)
+      mHistManager.fill(HIST("Event/nEMCalEvents"), 3);
+    if (!bcHasEMCCells && isL0Triggered)
+      mHistManager.fill(HIST("Event/nEMCalEvents"), 4);
 
+    // --------------------------------> Process Photons <----------------------------------
+    // - Slice clusters and V0s by collision ID to get the ones in this collision
+    // - Store the clusters and V0s in the vGammas vector
+    // - Reconstruct gamma-gamma pairs
+    // -------------------------------------------------------------------------------------
+    auto v0sInThisCollision = v0s.sliceBy(perCollisionPCM, collision.globalIndex());
+    auto clustersInThisCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
     mHistManager.fill(HIST("Event/nClustersVsV0s"), clustersInThisCollision.size(), v0sInThisCollision.size());
-    mHistManager.fill(HIST("Event/nTracks"), tracksWithItsPid.size());
 
     std::vector<hnmutilities::Photon> vGammas;
-    hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, EMCEtaShift, EMCPhiShift);
+    hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, emcEtaShift, emcPhiShift);
     hnmutilities::reconstructGGs(vGammas, vGGs);
     vGammas.clear();
     processGGs(vGGs);
 
-    bool isProton = false;
-    bool isDeuteron = false;
-    bool isPion = false;
-
-    // #femtoPart
+    // ------------------------------> Loop over all tracks <-------------------------------
+    // - Sort them into vectors based on PID ((anti)protons, (anti)deuterons, (anti)pions)
+    // - Fill QA histograms for all tracks and per particle species
+    // -------------------------------------------------------------------------------------
     for (const auto& track : tracksWithItsPid) {
-      // General QA
       mHistManager.fill(HIST("TrackCuts/TracksBefore/fPtTrackBefore"), track.pt());
       mHistManager.fill(HIST("TrackCuts/TracksBefore/fEtaTrackBefore"), track.eta());
       mHistManager.fill(HIST("TrackCuts/TracksBefore/fPhiTrackBefore"), track.phi());
-      // Fill PID info
-      if (track.sign() > 0) {
-        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignal"), track.tpcInnerParam(), track.tpcSignal());
-        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalP"), track.p(), track.tpcSignal());
+      if (track.sign() > 0) { // All particles (positive electric charge)
+        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalTPCP"), track.tpcInnerParam(), track.tpcSignal());
+        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignal"), track.p(), track.tpcSignal());
         mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationPos"), track.p(), track.tpcInnerParam());
       }
-      if (track.sign() < 0) {
-
-        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAnti"), track.tpcInnerParam(), track.tpcSignal());
-        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiP"), track.p(), track.tpcSignal());
+      if (track.sign() < 0) { // All anti-particles (negative electric charge)
+        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiTPCP"), track.tpcInnerParam(), track.tpcSignal());
+        mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAnti"), track.p(), track.tpcSignal());
         mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationNeg"), track.p(), track.tpcInnerParam());
       }
 
-      // #fill protons and deuterons
-      isProton = (isSelectedTrackPID(track, CFTrigger::kProton) && isSelectedTrack(track, CFTrigger::kProton));
-      isDeuteron = (isSelectedTrackPID(track, CFTrigger::kDeuteron) && isSelectedTrack(track, CFTrigger::kDeuteron));
-      isPion = (isSelectedTrackPID(track, CFTrigger::kPion) && isSelectedTrack(track, CFTrigger::kPion));
+      // For each track, check if it fulfills track and PID criteria to be identified as a proton, deuteron or pion
+      bool isProton = (isSelectedTrackPID(track, hnmtrigger::kProton) && isSelectedTrack(track, hnmtrigger::kProton));
+      bool isDeuteron = (isSelectedTrackPID(track, hnmtrigger::kDeuteron) && isSelectedTrack(track, hnmtrigger::kDeuteron));
+      bool isPion = (isSelectedTrackPID(track, hnmtrigger::kPion) && isSelectedTrack(track, hnmtrigger::kPion));
 
-      if (track.sign() > 0) { // part
+      if (track.sign() > 0) { // Positive charge -> Particles
         if (isProton) {
           proton.emplace_back(track.pt(), track.eta(), track.phi(), mMassProton);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsProton"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalProton"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/Proton/fPProton"), track.p());
-          mHistManager.fill(HIST("TrackCuts/Proton/fPTPCProton"), track.tpcInnerParam());
-          mHistManager.fill(HIST("TrackCuts/Proton/fPtProton"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/Proton/fMomCorProtonDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/Proton/fMomCorProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/Proton/fEtaProton"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/Proton/fPhiProton"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsPProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTOFvsPProton"), track.tpcInnerParam(), track.tofNSigmaPr());
+
+          mHistManager.fill(HIST("TrackCuts/Proton/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/Proton/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/Proton/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/Proton/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/Proton/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/Proton/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaPr());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2));
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCTOFvsPProton"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaITSvsPProton"), track.p(), track.itsNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaITSvsP"), track.p(), track.itsNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTOFvsP"), track.p(), track.tofNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCvsPProtonP"), track.p(), track.tpcNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTOFvsPProtonP"), track.p(), track.tofNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/Proton/fNsigmaTPCTOFvsPProtonP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/Proton/fDCAxyProton"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/Proton/fDCAzProton"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/Proton/fTPCsClsProton"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/Proton/fTPCcRowsProton"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/Proton/fTrkTPCfClsProton"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/Proton/fTPCnclsProton"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/Proton/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/Proton/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/Proton/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/Proton/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/Proton/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/Proton/fTPCncls"), track.tpcNClsFound());
         }
         if (isDeuteron) {
           deuteron.emplace_back(track.pt(), track.eta(), track.phi(), mMassDeuteron);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsDeuteron"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalDeuteron"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fPtDeuteron"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fMomCorDeuteronDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fMomCorDeuteronRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fEtaDeuteron"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fPhiDeuteron"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteron"), track.tpcInnerParam(), track.tpcNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTOFvsPDeuteron"), track.tpcInnerParam(), track.tofNSigmaDe());
+
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaDe());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaDe(), 2) + std::pow(track.tofNSigmaDe(), 2));
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCTOFvsPDeuteron"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaITSvsPDeuteron"), track.p(), track.itsNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaITSvsP"), track.p(), track.itsNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTOFvsP"), track.p(), track.tofNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCvsPDeuteronP"), track.p(), track.tpcNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTOFvsPDeuteronP"), track.p(), track.tofNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fNsigmaTPCTOFvsPDeuteronP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fDCAxyDeuteron"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fDCAzDeuteron"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCsClsDeuteron"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCcRowsDeuteron"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fTrkTPCfClsDeuteron"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCnclsDeuteron"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/Deuteron/fTPCncls"), track.tpcNClsFound());
         }
         if (isPion) {
           pion.emplace_back(track.pt(), track.eta(), track.phi(), mMassPionCharged);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsPion"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalPion"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/Pion/fPPion"), track.p());
-          mHistManager.fill(HIST("TrackCuts/Pion/fPTPCPion"), track.tpcInnerParam());
-          mHistManager.fill(HIST("TrackCuts/Pion/fPtPion"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/Pion/fMomCorPionDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/Pion/fMomCorPionRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/Pion/fEtaPion"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/Pion/fPhiPion"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsPPion"), track.tpcInnerParam(), track.tpcNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsPPion"), track.tpcInnerParam(), track.tofNSigmaPi());
+
+          mHistManager.fill(HIST("TrackCuts/Pion/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/Pion/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/Pion/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/Pion/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/Pion/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/Pion/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaPi());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2));
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsPPion"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaITSvsP"), track.p(), track.itsNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsP"), track.p(), track.tofNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCvsPPionP"), track.p(), track.tpcNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTOFvsPPionP"), track.p(), track.tofNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/Pion/fNsigmaTPCTOFvsPPionP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/Pion/fDCAxyPion"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/Pion/fDCAzPion"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/Pion/fTPCsClsPion"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/Pion/fTPCcRowsPion"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/Pion/fTrkTPCfClsPion"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/Pion/fTPCnclsPion"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/Pion/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/Pion/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/Pion/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/Pion/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/Pion/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/Pion/fTPCncls"), track.tpcNClsFound());
         }
-
-      } else { // antipart
+      } else { // Negative charge -> Anti-particles
         if (isProton) {
           antiproton.emplace_back(track.pt(), track.eta(), track.phi(), mMassProton);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiProton"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiProton"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fPtAntiProton"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fMomCorAntiProtonRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fEtaAntiProton"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fPhiAntiProton"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProton"), track.tpcInnerParam(), track.tpcNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTOFvsPAntiProton"), track.tpcInnerParam(), track.tofNSigmaPr());
+
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaPr());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2));
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCTOFvsPAntiProton"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaITSvsPAntiProton"), track.p(), track.itsNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaITSvsP"), track.p(), track.itsNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTOFvsP"), track.p(), track.tofNSigmaPr());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCvsPAntiProtonP"), track.p(), track.tpcNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTOFvsPAntiProtonP"), track.p(), track.tofNSigmaPr());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fNsigmaTPCTOFvsPAntiProtonP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPr() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPr() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fDCAxyAntiProton"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fDCAzAntiProton"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCsClsAntiProton"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCcRowsAntiProton"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fTrkTPCfClsAntiProton"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCnclsAntiProton"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/AntiProton/fTPCncls"), track.tpcNClsFound());
         }
         if (isDeuteron) {
           antideuteron.emplace_back(track.pt(), track.eta(), track.phi(), mMassDeuteron);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiDeuteron"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiDeuteron"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fPtAntiDeuteron"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fMomCorAntiDeuteronRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fEtaAntiDeuteron"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fPhiAntiDeuteron"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteron"), track.tpcInnerParam(), track.tpcNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTOFvsPAntiDeuteron"), track.tpcInnerParam(), track.tofNSigmaDe());
+
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaDe());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaDe(), 2) + std::pow(track.tofNSigmaDe(), 2));
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsPAntiDeuteron"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaITSvsPAntiDeuteron"), track.p(), track.itsNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaITSvsP"), track.p(), track.itsNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTOFvsP"), track.p(), track.tofNSigmaDe());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCvsPAntiDeuteronP"), track.p(), track.tpcNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTOFvsPAntiDeuteronP"), track.p(), track.tofNSigmaDe());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fNsigmaTPCTOFvsPAntiDeuteronP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaDe() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaDe() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fDCAxyAntiDeuteron"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fDCAzAntiDeuteron"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCsClsAntiDeuteron"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCcRowsAntiDeuteron"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTrkTPCfClsAntiDeuteron"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCnclsAntiDeuteron"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/AntiDeuteron/fTPCncls"), track.tpcNClsFound());
         }
         if (isPion) {
           antipion.emplace_back(track.pt(), track.eta(), track.phi(), mMassPionCharged);
           mHistManager.fill(HIST("TrackCuts/TracksBefore/fMomCorrelationAfterCutsAntiPion"), track.p(), track.tpcInnerParam());
-
           mHistManager.fill(HIST("TrackCuts/TPCSignal/fTPCSignalAntiPion"), track.tpcInnerParam(), track.tpcSignal());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fPtAntiPion"), track.pt());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fMomCorAntiPionDif"), track.p(), track.tpcInnerParam() - track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fMomCorAntiPionRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fEtaAntiPion"), track.eta());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fPhiAntiPion"), track.phi());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPion"), track.tpcInnerParam(), track.tpcNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPion"), track.tpcInnerParam(), track.tofNSigmaPi());
+
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fP"), track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fPt"), track.pt());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fMomCorDif"), track.p(), track.tpcInnerParam() - track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fMomCorRatio"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fEta"), track.eta());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fPhi"), track.phi());
+
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsTPCP"), track.tpcInnerParam(), track.tpcNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsTPCP"), track.tpcInnerParam(), track.tofNSigmaPi());
           auto nSigmaTrackTPCTOF = std::sqrt(std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2));
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPion"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsTPCP"), track.tpcInnerParam(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaITSvsP"), track.p(), track.itsNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsP"), track.p(), track.tpcNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsP"), track.p(), track.tofNSigmaPi());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
 
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCvsPAntiPionP"), track.p(), track.tpcNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTOFvsPAntiPionP"), track.p(), track.tofNSigmaPi());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fNsigmaTPCTOFvsPAntiPionP"), track.p(), std::sqrt(std::pow(track.tpcNSigmaPi() - nSigmaTrackTPCTOF, 2) + std::pow(track.tofNSigmaPi() - nSigmaTrackTPCTOF, 2)));
-
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fDCAxyAntiPion"), track.dcaXY());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fDCAzAntiPion"), track.dcaZ());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCsClsAntiPion"), track.tpcNClsShared());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCcRowsAntiPion"), track.tpcNClsCrossedRows());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fTrkTPCfClsAntiPion"), track.tpcCrossedRowsOverFindableCls());
-          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCnclsAntiPion"), track.tpcNClsFound());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fDCAxy"), track.dcaXY());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fDCAz"), track.dcaZ());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCsCls"), track.tpcNClsShared());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCcRows"), track.tpcNClsCrossedRows());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fTrkTPCfCls"), track.tpcCrossedRowsOverFindableCls());
+          mHistManager.fill(HIST("TrackCuts/AntiPion/fTPCncls"), track.tpcNClsFound());
         }
       }
     }
 
-    // reconstruct HMN candidates
+    // -------------------------> Reconstruct HNM candidates <------------------------------
+    // - Based on the previously filled (anti)pion vectors
+    // - Fill QA histograms for kinematics of the pions and their combinations
+    // -------------------------------------------------------------------------------------
     for (const auto& posPion : pion) {
       for (const auto& negPion : antipion) {
-        hnmutilities::reconstructHeavyNeutralMesons(posPion, negPion, vGGs, vHNMs);
+        ROOT::Math::PtEtaPhiMVector vecPiPlPiMi = posPion + negPion;
+        hnmutilities::reconstructHeavyNeutralMesons(vecPiPlPiMi, vGGs, vHNMs);
 
-        ROOT::Math::PtEtaPhiMVector temp = posPion + negPion;
+        mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fInvMassVsPt"), vecPiPlPiMi.M(), vecPiPlPiMi.pt());
+        mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fEta"), vecPiPlPiMi.eta());
+        mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fPhi"), RecoDecay::constrainAngle(vecPiPlPiMi.phi()));
 
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fInvMass_tracks"), temp.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fPt_tracks"), temp.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fEta_tracks"), temp.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/fPhi_tracks"), translatePhi(temp.phi()));
+        mHistManager.fill(HIST("HNM/Before/PosDaughter/fInvMass"), posPion.M());
+        mHistManager.fill(HIST("HNM/Before/PosDaughter/fPt"), posPion.pt());
+        mHistManager.fill(HIST("HNM/Before/PosDaughter/fEta"), posPion.eta());
+        mHistManager.fill(HIST("HNM/Before/PosDaughter/fPhi"), RecoDecay::constrainAngle(posPion.phi()));
 
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fInvMass"), posPion.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fPt"), posPion.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fEta"), posPion.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PosDaughter/fPhi"), translatePhi(posPion.phi()));
-
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fInvMass"), negPion.M());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fPt"), negPion.pt());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fEta"), negPion.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/NegDaughter/fPhi"), translatePhi(negPion.phi()));
+        mHistManager.fill(HIST("HNM/Before/NegDaughter/fInvMass"), negPion.M());
+        mHistManager.fill(HIST("HNM/Before/NegDaughter/fPt"), negPion.pt());
+        mHistManager.fill(HIST("HNM/Before/NegDaughter/fEta"), negPion.eta());
+        mHistManager.fill(HIST("HNM/Before/NegDaughter/fPhi"), RecoDecay::constrainAngle(negPion.phi()));
       }
     }
 
-    processHNMs(vHNMs); // Contains QA of HMN properties
+    // ---------------------------> Process HNM candidates <--------------------------------
+    // - Fill invMassVsPt histograms separated into HNM types (based on GG mass) and gamma reco method
+    // - Set colContains* flags for each HNM type to be used in the high-pt spectrum trigger
+    // - Fill femto HNM vectors (omegaPCM, etaPrimePCM, omegaEMC, etaPrimeEMC)
+    // -------------------------------------------------------------------------------------
+    processHNMs(vHNMs);
 
-    // build triplets
-    float Q3 = 999.f, kstar = 999.f;
-    // omega
-    if (ConfTriggerSwitches->get("Switch", "PPOmega") > 0.) {
-      // ppomega trigger
-
+    // ------------------------------> Build triplets <-------------------------------------
+    // - Calculate Q3 for each triplet (p-p-omega, p-p-eta', anti-p-anti-p-omega, anti-p-anti-p-eta')
+    // - Fill QA histograms for Q3 and pT of the triplet and its daughters
+    // - Increment lowMomentumMultiplets for each triplet with Q3 < kinematic limit (used in femto trigger)
+    // -------------------------------------------------------------------------------------
+    if (cfgTriggerSwitches->get("Switch", "PPOmega") > 0.) { // -----> p-p-omega femtoscopy
       for (size_t i = 0; i < proton.size(); ++i) {
         for (size_t j = i + 1; j < proton.size(); ++j) {
-          const auto& Proton1 = proton[i];
-          const auto& Proton2 = proton[j];
-          // PCM
-          for (const auto& omegaParticles : omegaPCM) {
+          const auto& proton1 = proton[i];
+          const auto& proton2 = proton[j];
+          for (const auto& omegaParticles : omegaPCM) { // ---> PCM
 
-            Q3 = getQ3(Proton1, Proton2, omegaParticles);
+            float q3 = getQ3(proton1, proton2, omegaParticles);
 
-            mHistManager.fill(HIST("ppomega/fSE_particle_PCM"), Q3);
-            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), Q3, Proton1.Pt());
-            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), Q3, Proton2.Pt());
-            mHistManager.fill(HIST("ppomega/fOmegaCandPtVsQ3_PCM"), Q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fSE_particle_PCM"), q3);
+            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), q3, proton1.Pt());
+            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), q3, proton2.Pt());
+            mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_PCM"), q3, omegaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPOmega)) {
-              lowMomentumMultiplets[CFTrigger::kPPOmega] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
+              lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
           }
-          // EMC
-          for (const auto& omegaParticles : omegaEMC) {
+          for (const auto& omegaParticles : omegaEMC) { // ---> EMC
 
-            Q3 = getQ3(Proton1, Proton2, omegaParticles);
+            float q3 = getQ3(proton1, proton2, omegaParticles);
 
-            mHistManager.fill(HIST("ppomega/fSE_particle_EMC"), Q3);
-            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), Q3, Proton1.Pt());
-            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), Q3, Proton2.Pt());
-            mHistManager.fill(HIST("ppomega/fOmegaCandPtVsQ3_EMC"), Q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fSE_particle_EMC"), q3);
+            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), q3, proton1.Pt());
+            mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), q3, proton2.Pt());
+            mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_EMC"), q3, omegaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPOmega)) {
-              lowMomentumMultiplets[CFTrigger::kPPOmega] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
+              lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
           }
         }
       }
-      // apapomega trigger
-      // PCM
-      for (size_t i = 0; i < antiproton.size(); ++i) {
+      for (size_t i = 0; i < antiproton.size(); ++i) { // -----> antip-antip-omega femtoscopy
         for (size_t j = i + 1; j < antiproton.size(); ++j) {
           const auto& antiProton1 = antiproton[i];
           const auto& antiProton2 = antiproton[j];
-          // PCM
-          for (const auto& omegaParticles : omegaPCM) {
+          for (const auto& omegaParticles : omegaPCM) { // ---> PCM
 
-            Q3 = getQ3(antiProton1, antiProton2, omegaParticles);
+            float q3 = getQ3(antiProton1, antiProton2, omegaParticles);
 
-            mHistManager.fill(HIST("ppomega/fSE_Antiparticle_PCM"), Q3);
-            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), Q3, antiProton1.Pt());
-            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), Q3, antiProton2.Pt());
-            mHistManager.fill(HIST("ppomega/fOmegaCandPtVsQ3_PCM"), Q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fSE_Antiparticle_PCM"), q3);
+            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), q3, antiProton1.Pt());
+            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), q3, antiProton2.Pt());
+            mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_PCM"), q3, omegaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPOmega)) {
-              lowMomentumMultiplets[CFTrigger::kPPOmega] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
+              lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
           }
-          // EMC
-          for (const auto& omegaParticles : omegaEMC) {
+          for (const auto& omegaParticles : omegaEMC) { // ---> EMC
 
-            Q3 = getQ3(antiProton1, antiProton2, omegaParticles);
+            float q3 = getQ3(antiProton1, antiProton2, omegaParticles);
 
-            mHistManager.fill(HIST("ppomega/fSE_Antiparticle_EMC"), Q3);
-            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), Q3, antiProton1.Pt());
-            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), Q3, antiProton2.Pt());
-            mHistManager.fill(HIST("ppomega/fOmegaCandPtVsQ3_EMC"), Q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fSE_Antiparticle_EMC"), q3);
+            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), q3, antiProton1.Pt());
+            mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), q3, antiProton2.Pt());
+            mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_EMC"), q3, omegaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPOmega)) {
-              lowMomentumMultiplets[CFTrigger::kPPOmega] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
+              lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
           }
         }
       }
     }
-
-    // etaprime
-    if (ConfTriggerSwitches->get("Switch", "PPEtaPrime") > 0.) {
-      // ppetaprimetrigger
+    if (cfgTriggerSwitches->get("Switch", "PPEtaPrime") > 0.) { // -----> p-p-eta' femtoscopy
       for (size_t i = 0; i < proton.size(); ++i) {
         for (size_t j = i + 1; j < proton.size(); ++j) {
-          const auto& Proton1 = proton[i];
-          const auto& Proton2 = proton[j];
-          // PCM
-          for (const auto& etaParticles : etaPrimePCM) {
+          const auto& proton1 = proton[i];
+          const auto& proton2 = proton[j];
+          for (const auto& etaParticles : etaPrimePCM) { // ---> PCM
 
-            Q3 = getQ3(Proton1, Proton2, etaParticles);
+            float q3 = getQ3(proton1, proton2, etaParticles);
 
-            mHistManager.fill(HIST("ppetaprime/fSE_particle_PCM"), Q3);
-            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), Q3, Proton1.Pt());
-            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), Q3, Proton2.Pt());
-            mHistManager.fill(HIST("ppetaprime/fEtaPrimeCandPtVsQ3_PCM"), Q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fSE_particle_PCM"), q3);
+            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), q3, proton1.Pt());
+            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), q3, proton2.Pt());
+            mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_PCM"), q3, etaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPEtaPrime)) {
-              lowMomentumMultiplets[CFTrigger::kPPEtaPrime] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
+              lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
           }
-          // EMC
-          for (const auto& etaParticles : etaPrimeEMC) {
+          for (const auto& etaParticles : etaPrimeEMC) { // ---> EMC
 
-            Q3 = getQ3(Proton1, Proton2, etaParticles);
+            float q3 = getQ3(proton1, proton2, etaParticles);
 
-            mHistManager.fill(HIST("ppetaprime/fSE_particle_EMC"), Q3);
-            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), Q3, Proton1.Pt());
-            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), Q3, Proton2.Pt());
-            mHistManager.fill(HIST("ppetaprime/fEtaPrimeCandPtVsQ3_EMC"), Q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fSE_particle_EMC"), q3);
+            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), q3, proton1.Pt());
+            mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), q3, proton2.Pt());
+            mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_EMC"), q3, etaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPEtaPrime)) {
-              lowMomentumMultiplets[CFTrigger::kPPEtaPrime] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
+              lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
           }
         }
       }
-      // apapetaprime trigger
-      for (size_t i = 0; i < antiproton.size(); ++i) {
+      for (size_t i = 0; i < antiproton.size(); ++i) { // -----> antip-antip-eta' femtoscopy
         for (size_t j = i + 1; j < antiproton.size(); ++j) {
           const auto& antiProton1 = antiproton[i];
           const auto& antiProton2 = antiproton[j];
-          // PCM
-          for (const auto& etaParticles : etaPrimePCM) {
+          for (const auto& etaParticles : etaPrimePCM) { // ---> PCM
 
-            Q3 = getQ3(antiProton1, antiProton2, etaParticles);
+            float q3 = getQ3(antiProton1, antiProton2, etaParticles);
 
-            mHistManager.fill(HIST("ppetaprime/fSE_Antiparticle_PCM"), Q3);
-            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), Q3, antiProton1.Pt());
-            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), Q3, antiProton2.Pt());
-            mHistManager.fill(HIST("ppetaprime/fEtaPrimeCandPtVsQ3_PCM"), Q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fSE_Antiparticle_PCM"), q3);
+            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), q3, antiProton1.Pt());
+            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), q3, antiProton2.Pt());
+            mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_PCM"), q3, etaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPEtaPrime)) {
-              lowMomentumMultiplets[CFTrigger::kPPEtaPrime] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
+              lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
           }
-          // EMC
-          for (const auto& etaParticles : etaPrimeEMC) {
+          for (const auto& etaParticles : etaPrimeEMC) { // ---> EMC
 
-            Q3 = getQ3(antiProton1, antiProton2, etaParticles);
+            float q3 = getQ3(antiProton1, antiProton2, etaParticles);
 
-            mHistManager.fill(HIST("ppetaprime/fSE_Antiparticle_EMC"), Q3);
-            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), Q3, antiProton1.Pt());
-            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), Q3, antiProton2.Pt());
-            mHistManager.fill(HIST("ppetaprime/fEtaPrimeCandPtVsQ3_EMC"), Q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fSE_Antiparticle_EMC"), q3);
+            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), q3, antiProton1.Pt());
+            mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), q3, antiProton2.Pt());
+            mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_EMC"), q3, etaParticles.Pt());
 
-            if (Q3 < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kPPEtaPrime)) {
-              lowMomentumMultiplets[CFTrigger::kPPEtaPrime] += 1;
-            }
+            if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
+              lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
           }
         }
       }
     }
 
-    // build pairs
-    if (ConfTriggerSwitches->get("Switch", "Omegad") > 0.) {
-      // PCM
-      //  omegad trigger
-      for (auto iomega = omegaPCM.begin(); iomega != omegaPCM.end(); ++iomega) {
-        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {
-          kstar = getkstar(*iomega, *iDeuteron);
+    // --------------------------------> Build Pairs <--------------------------------------
+    // - Calculate k* for each pair ((anti)d-omega, (anti)d-eta', (anti)p-omega, (anti)p-eta')
+    // - Fill QA histograms for k* and pT of the pairs
+    // - Increment lowMomentumMultiplets for each triplet with k* < kinematic limit (used in femto trigger)
+    // -------------------------------------------------------------------------------------
+    if (cfgTriggerSwitches->get("Switch", "Omegad") > 0.) {
+      for (auto iomega = omegaPCM.begin(); iomega != omegaPCM.end(); ++iomega) {            // -----> PCM
+        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) { // ---> d-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iDeuteron);
+
           mHistManager.fill(HIST("omegad/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegad/fDeuteronPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaD)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaD] += 1;
-          }
+          mHistManager.fill(HIST("omegad/fdPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
+            lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
         }
-        // omegaAd trigger
-        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) {
-          kstar = getkstar(*iomega, *iAntiDeuteron);
+        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) { // ---> antid-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iAntiDeuteron);
+
           mHistManager.fill(HIST("omegad/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegad/fAntiDeuteronPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaD)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaD] += 1;
-          }
+          mHistManager.fill(HIST("omegad/fAntidPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
+            lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
         }
       }
-      // EMC
-      // omegad trigger
-      for (auto iomega = omegaEMC.begin(); iomega != omegaEMC.end(); ++iomega) {
-        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {
-          kstar = getkstar(*iomega, *iDeuteron);
+      for (auto iomega = omegaEMC.begin(); iomega != omegaEMC.end(); ++iomega) {            // -----> EMC
+        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) { // ---> d-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iDeuteron);
+
           mHistManager.fill(HIST("omegad/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegad/fDeuteronPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaD)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaD] += 1;
-          }
+          mHistManager.fill(HIST("omegad/fdPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
+            lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
         }
-        // omegaAd trigger
-        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) {
-          kstar = getkstar(*iomega, *iAntiDeuteron);
+        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) { // ---> antid-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iAntiDeuteron);
+
           mHistManager.fill(HIST("omegad/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegad/fAntiDeuteronPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaD)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaD] += 1;
-          }
+          mHistManager.fill(HIST("omegad/fAntidPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
+            lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
         }
       }
     }
-    if (ConfTriggerSwitches->get("Switch", "EtaPrimed") > 0.) {
-      // PCM
-      // etaPrimed trigger
-      for (auto ietaprime = etaPrimePCM.begin(); ietaprime != etaPrimePCM.end(); ++ietaprime) {
-        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {
-          kstar = getkstar(*ietaprime, *iDeuteron);
+    if (cfgTriggerSwitches->get("Switch", "EtaPrimed") > 0.) {
+      for (auto ietaprime = etaPrimePCM.begin(); ietaprime != etaPrimePCM.end(); ++ietaprime) { // -----> PCM
+        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {     // ---> d-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iDeuteron);
+
           mHistManager.fill(HIST("etaprimed/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimed/fDeuteronPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeD)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeD] += 1;
-          }
+          mHistManager.fill(HIST("etaprimed/fdPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
         }
-        // etaPrimeAd trigger
-        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) {
-          kstar = getkstar(*ietaprime, *iAntiDeuteron);
+        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) { // ---> antid-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iAntiDeuteron);
+
           mHistManager.fill(HIST("etaprimed/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimed/fAntiDeuteronPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeD)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeD] += 1;
-          }
+          mHistManager.fill(HIST("etaprimed/fAntidPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
         }
       }
-      // EMC
-      // etaPrimed trigger
-      for (auto ietaprime = etaPrimeEMC.begin(); ietaprime != etaPrimeEMC.end(); ++ietaprime) {
-        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {
-          kstar = getkstar(*ietaprime, *iDeuteron);
+      for (auto ietaprime = etaPrimeEMC.begin(); ietaprime != etaPrimeEMC.end(); ++ietaprime) { // -----> EMC
+        for (auto iDeuteron = deuteron.begin(); iDeuteron != deuteron.end(); ++iDeuteron) {     // ---> d-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iDeuteron);
+
           mHistManager.fill(HIST("etaprimed/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimed/fDeuteronPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeD)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeD] += 1;
-          }
+          mHistManager.fill(HIST("etaprimed/fdPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
         }
-        // etaPrimeAd trigger
-        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) {
-          kstar = getkstar(*ietaprime, *iAntiDeuteron);
+        for (auto iAntiDeuteron = antideuteron.begin(); iAntiDeuteron != antideuteron.end(); ++iAntiDeuteron) { // ---> antid-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iAntiDeuteron);
+
           mHistManager.fill(HIST("etaprimed/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimed/fAntiDeuteronPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeD)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeD] += 1;
-          }
+          mHistManager.fill(HIST("etaprimed/fAntidPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
         }
       }
     }
-    if (ConfTriggerSwitches->get("Switch", "OmegaP") > 0.) {
-      // PCM
-      //  omegap trigger
-      for (auto iomega = omegaPCM.begin(); iomega != omegaPCM.end(); ++iomega) {
-        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {
-          kstar = getkstar(*iomega, *iProton);
+    if (cfgTriggerSwitches->get("Switch", "OmegaP") > 0.) {
+      for (auto iomega = omegaPCM.begin(); iomega != omegaPCM.end(); ++iomega) {  // -----> PCM
+        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) { // ---> p-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iProton);
+
           mHistManager.fill(HIST("omegap/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegap/fProtonPtVskstar_PCM"), kstar, (*iProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaP)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaP] += 1;
-          }
+          mHistManager.fill(HIST("omegap/fpPtVskstar_PCM"), kstar, (*iProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
+            lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
         }
-        // omegaAp trigger
-        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) {
-          kstar = getkstar(*iomega, *iAntiProton);
+        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) { // ---> antip-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iAntiProton);
+
           mHistManager.fill(HIST("omegap/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegap/fAntiProtonPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaP)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaP] += 1;
-          }
+          mHistManager.fill(HIST("omegap/fAntipPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
+            lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
         }
       }
-      // EMC
-      // omegap trigger
-      for (auto iomega = omegaEMC.begin(); iomega != omegaEMC.end(); ++iomega) {
-        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {
-          kstar = getkstar(*iomega, *iProton);
+      for (auto iomega = omegaEMC.begin(); iomega != omegaEMC.end(); ++iomega) {  // -----> EMC
+        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) { // ---> p-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iProton);
+
           mHistManager.fill(HIST("omegap/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegap/fProtonPtVskstar_EMC"), kstar, (*iProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaP)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaP] += 1;
-          }
+          mHistManager.fill(HIST("omegap/fpPtVskstar_EMC"), kstar, (*iProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
+            lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
         }
-        // omegaAp trigger
-        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) {
-          kstar = getkstar(*iomega, *iAntiProton);
+        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) { // ---> antip-omega femtoscopy
+
+          float kstar = getkstar(*iomega, *iAntiProton);
+
           mHistManager.fill(HIST("omegap/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
-          mHistManager.fill(HIST("omegap/fAntiProtonPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kOmegaP)) {
-            lowMomentumMultiplets[CFTrigger::kOmegaP] += 1;
-          }
+          mHistManager.fill(HIST("omegap/fAntipPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
+            lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
         }
       }
     }
-    if (ConfTriggerSwitches->get("Switch", "EtaPrimeP") > 0.) {
-      // PCM
-      // etaPrimep trigger
-      for (auto ietaprime = etaPrimePCM.begin(); ietaprime != etaPrimePCM.end(); ++ietaprime) {
-        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {
-          kstar = getkstar(*ietaprime, *iProton);
+    if (cfgTriggerSwitches->get("Switch", "EtaPrimeP") > 0.) {
+      for (auto ietaprime = etaPrimePCM.begin(); ietaprime != etaPrimePCM.end(); ++ietaprime) { // -----> PCM
+        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {               // ---> p-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iProton);
+
           mHistManager.fill(HIST("etaprimep/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimep/fProtonPtVskstar_PCM"), kstar, (*iProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeP)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeP] += 1;
-          }
+          mHistManager.fill(HIST("etaprimep/fpPtVskstar_PCM"), kstar, (*iProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
         }
-        // etaPrimeAp trigger
-        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) {
-          kstar = getkstar(*ietaprime, *iAntiProton);
+        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) { // ---> antip-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iAntiProton);
+
           mHistManager.fill(HIST("etaprimep/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimep/fAntiProtonPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeP)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeP] += 1;
-          }
+          mHistManager.fill(HIST("etaprimep/fAntipPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
         }
       }
-      // EMC
-      // etaPrimep trigger
-      for (auto ietaprime = etaPrimeEMC.begin(); ietaprime != etaPrimeEMC.end(); ++ietaprime) {
-        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {
-          kstar = getkstar(*ietaprime, *iProton);
+      for (auto ietaprime = etaPrimeEMC.begin(); ietaprime != etaPrimeEMC.end(); ++ietaprime) { // -----> EMC
+        for (auto iProton = proton.begin(); iProton != proton.end(); ++iProton) {               // ---> p-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iProton);
+
           mHistManager.fill(HIST("etaprimep/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimep/fProtonPtVskstar_EMC"), kstar, (*iProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeP)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeP] += 1;
-          }
+          mHistManager.fill(HIST("etaprimep/fpPtVskstar_EMC"), kstar, (*iProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
         }
-        // etaPrimeAp trigger
-        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) {
-          kstar = getkstar(*ietaprime, *iAntiProton);
+        for (auto iAntiProton = antiproton.begin(); iAntiProton != antiproton.end(); ++iAntiProton) { // ---> antip-eta' femtoscopy
+
+          float kstar = getkstar(*ietaprime, *iAntiProton);
+
           mHistManager.fill(HIST("etaprimep/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
-          mHistManager.fill(HIST("etaprimep/fAntiProtonPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
-          if (kstar < ConfKinematicLimits->get(static_cast<uint>(0), CFTrigger::kEtaPrimeP)) {
-            lowMomentumMultiplets[CFTrigger::kEtaPrimeP] += 1;
-          }
+          mHistManager.fill(HIST("etaprimep/fAntipPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
+
+          if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
+            lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
         }
       }
     }
 
-    // create tags for three body triggers
-    if (lowMomentumMultiplets[CFTrigger::kPPOmega] > 0) {
-      keepFemtoEvent[CFTrigger::kPPOmega] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 2);
+    // -----------------------------> Create femto tags <-----------------------------------
+    // - Set keepFemtoEvent flags for each HNM type based on the lowMomentumMultiplets
+    // - Fill histograms for the multiplicity and z-vertex of femto-accepted events
+    // -------------------------------------------------------------------------------------
+    if (lowMomentumMultiplets[hnmtrigger::kPPOmega] > 0) {
+      keepFemtoEvent[hnmtrigger::kPPOmega] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 6);
       mHistManager.fill(HIST("ppomega/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("ppomega/fZvtx"), collision.posZ());
     }
-    if (lowMomentumMultiplets[CFTrigger::kPPEtaPrime] > 0) {
-      keepFemtoEvent[CFTrigger::kPPEtaPrime] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 3);
+    if (lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] > 0) {
+      keepFemtoEvent[hnmtrigger::kPPEtaPrime] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 7);
       mHistManager.fill(HIST("ppetaprime/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("ppetaprime/fZvtx"), collision.posZ());
     }
-    if (lowMomentumMultiplets[CFTrigger::kOmegaD] > 0) {
-      keepFemtoEvent[CFTrigger::kOmegaD] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 4);
+    if (lowMomentumMultiplets[hnmtrigger::kOmegaD] > 0) {
+      keepFemtoEvent[hnmtrigger::kOmegaD] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 8);
       mHistManager.fill(HIST("omegad/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("omegad/fZvtx"), collision.posZ());
     }
-    if (lowMomentumMultiplets[CFTrigger::kEtaPrimeD] > 0) {
-      keepFemtoEvent[CFTrigger::kEtaPrimeD] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 5);
+    if (lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] > 0) {
+      keepFemtoEvent[hnmtrigger::kEtaPrimeD] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 9);
       mHistManager.fill(HIST("etaprimed/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("etaprimed/fZvtx"), collision.posZ());
     }
-    if (lowMomentumMultiplets[CFTrigger::kOmegaP] > 0) {
-      keepFemtoEvent[CFTrigger::kOmegaP] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 6);
+    if (lowMomentumMultiplets[hnmtrigger::kOmegaP] > 0) {
+      keepFemtoEvent[hnmtrigger::kOmegaP] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 10);
       mHistManager.fill(HIST("omegap/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("omegap/fZvtx"), collision.posZ());
     }
-    if (lowMomentumMultiplets[CFTrigger::kEtaPrimeP] > 0) {
-      keepFemtoEvent[CFTrigger::kEtaPrimeP] = true;
-      mHistManager.fill(HIST("fProcessedEvents"), 7);
+    if (lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] > 0) {
+      keepFemtoEvent[hnmtrigger::kEtaPrimeP] = true;
+      mHistManager.fill(HIST("fProcessedEvents"), 11);
       mHistManager.fill(HIST("etaprimep/fMultiplicity"), collision.multNTracksPV());
       mHistManager.fill(HIST("etaprimep/fZvtx"), collision.posZ());
     }
 
-    // #set flag for tag
-    if (ConfKeepTwoBody.value) {
-      tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime,
-           keepFemtoEvent[CFTrigger::kPPOmega] || keepFemtoEvent[CFTrigger::kOmegaP], keepFemtoEvent[CFTrigger::kPPEtaPrime] || keepFemtoEvent[CFTrigger::kEtaPrimeP],
-           keepFemtoEvent[CFTrigger::kOmegaD], keepFemtoEvent[CFTrigger::kEtaPrimeD]);
-    } else {
-      tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime,
-           keepFemtoEvent[CFTrigger::kPPOmega], keepFemtoEvent[CFTrigger::kPPEtaPrime],
-           keepFemtoEvent[CFTrigger::kOmegaD], keepFemtoEvent[CFTrigger::kEtaPrimeD]);
-    }
+    // -----------------------------> Set trigger flags <-----------------------------------
+    // - 4 high pT spectrum trigger flags (PCM & EMC * omega & eta')
+    // - 4 femto trigger flags (p-omega, p-eta', d-omega || pp-omega, d-eta' || pp-eta')
+    // -------------------------------------------------------------------------------------
+    tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime, keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kEtaPrimeP],
+         keepFemtoEvent[hnmtrigger::kPPOmega] || keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kPPEtaPrime] || keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
 
-    if (!keepFemtoEvent[CFTrigger::kPPOmega] && !keepFemtoEvent[CFTrigger::kOmegaP] && !keepFemtoEvent[CFTrigger::kPPEtaPrime] && !keepFemtoEvent[CFTrigger::kEtaPrimeP] &&
-        !keepFemtoEvent[CFTrigger::kOmegaD] && !keepFemtoEvent[CFTrigger::kEtaPrimeD]) {
-      mHistManager.fill(HIST("fProcessedEvents"), 1);
-    }
+    if (!colContainsPCMOmega && !colContainsEMCOmega && !colContainsPCMEtaPrime && !colContainsEMCEtaPrime && !keepFemtoEvent[hnmtrigger::kPPOmega] && !keepFemtoEvent[hnmtrigger::kOmegaP] && !keepFemtoEvent[hnmtrigger::kPPEtaPrime] && !keepFemtoEvent[hnmtrigger::kEtaPrimeP] && !keepFemtoEvent[hnmtrigger::kOmegaD] && !keepFemtoEvent[hnmtrigger::kEtaPrimeD])
+      mHistManager.fill(HIST("fProcessedEvents"), 1); // Fill "rejected", if no trigger selected the event
   }
 
   /// \brief Loop over the GG candidates, fill the mass/pt histograms and set the isPi0/isEta flags based on the reconstructed mass
@@ -1481,9 +1146,9 @@ struct HeavyNeutralMesonFilter {
         mHistManager.fill(HIST("GG/invMassVsPt_PCMEMC"), lightMeson->m(), lightMeson->pT());
       }
 
-      if (lightMeson->m() > massWindowOmega->get("pi0_min") && lightMeson->m() < massWindowOmega->get("pi0_max")) {
+      if (lightMeson->m() > cfgMassWindowOmega->get("pi0_min") && lightMeson->m() < cfgMassWindowOmega->get("pi0_max")) {
         lightMeson->isPi0 = true;
-      } else if (lightMeson->m() > massWindowEtaPrime->get("eta_min") && lightMeson->m() < massWindowEtaPrime->get("eta_max")) {
+      } else if (lightMeson->m() > cfgMassWindowEtaPrime->get("eta_min") && lightMeson->m() < cfgMassWindowEtaPrime->get("eta_max")) {
         lightMeson->isEta = true;
       } else {
         vGGs.erase(vGGs.begin() + iGG);
@@ -1497,93 +1162,82 @@ struct HeavyNeutralMesonFilter {
   void processHNMs(std::vector<hnmutilities::HeavyNeutralMeson>& vHNMs)
   {
     int nHNMsBeforeMassCuts = vHNMs.size();
+
     for (unsigned int iHNM = 0; iHNM < vHNMs.size(); iHNM++) {
       auto heavyNeutralMeson = vHNMs.at(iHNM);
-
       float massHNM = heavyNeutralMeson.m(cfgHNMMassCorrection);
+
       if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
-        if (heavyNeutralMeson.gg->isPi0)
-          mHistManager.fill(HIST("Omega/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
-        else if (heavyNeutralMeson.gg->isEta)
-          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCM"), massHNM, heavyNeutralMeson.pT());
-        // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        if (heavyNeutralMeson.gg->isPi0) {
+          mHistManager.fill(HIST("HNM/Before/Omega/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/Omega/PCM/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/Omega/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        } else if (heavyNeutralMeson.gg->isEta) {
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCM/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        }
       } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
-        if (heavyNeutralMeson.gg->isPi0)
-          mHistManager.fill(HIST("Omega/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
-        else if (heavyNeutralMeson.gg->isEta)
-          mHistManager.fill(HIST("EtaPrime/invMassVsPt_EMC"), massHNM, heavyNeutralMeson.pT());
-        // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        if (heavyNeutralMeson.gg->isPi0) {
+          mHistManager.fill(HIST("HNM/Before/Omega/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/Omega/EMC/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/Omega/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        } else if (heavyNeutralMeson.gg->isEta) {
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/EMC/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        }
       } else {
-        if (heavyNeutralMeson.gg->isPi0)
-          mHistManager.fill(HIST("Omega/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
-        else if (heavyNeutralMeson.gg->isEta)
-          mHistManager.fill(HIST("EtaPrime/invMassVsPt_PCMEMC"), massHNM, heavyNeutralMeson.pT());
-        // QA
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fInvMass"), massHNM);
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fPt"), heavyNeutralMeson.pT());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fEta"), heavyNeutralMeson.eta());
-        mHistManager.fill(HIST("TrackCuts/HMN/Before/PCMEMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+        if (heavyNeutralMeson.gg->isPi0) {
+          mHistManager.fill(HIST("HNM/Before/Omega/PCMEMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/Omega/PCMEMC/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/Omega/PCMEMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        } else if (heavyNeutralMeson.gg->isEta) {
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCMEMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCMEMC/fEta"), heavyNeutralMeson.eta());
+          mHistManager.fill(HIST("HNM/Before/EtaPrime/PCMEMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
+        }
       }
 
-      if (heavyNeutralMeson.gg->isPi0 && massHNM > massWindowOmega->get("omega_min") && massHNM < massWindowOmega->get("omega_max")) {
+      if (heavyNeutralMeson.gg->isPi0 && massHNM > cfgMassWindowOmega->get("omega_min") && massHNM < cfgMassWindowOmega->get("omega_max")) {
         if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
-          if (heavyNeutralMeson.pT() > minFemtoHNMPts->get("PCM_omega")) {
-            omegaPCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), translatePhi(heavyNeutralMeson.phi()), mMassOmega);
-            // QA
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/PCM/fInvMass"), massHNM);
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/PCM/fPt"), heavyNeutralMeson.pT());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/PCM/fEta"), heavyNeutralMeson.eta());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("PCM_omega")) {
+            omegaPCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassOmega);
+            mHistManager.fill(HIST("HNM/After/Omega/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+            mHistManager.fill(HIST("HNM/After/Omega/PCM/fEta"), heavyNeutralMeson.eta());
+            mHistManager.fill(HIST("HNM/After/Omega/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
           }
-          if (heavyNeutralMeson.pT() > minHNMPts->get("PCM_omega")) {
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsSpectrumTrigger->get("PCM_omega"))
             colContainsPCMOmega = true;
-          }
         } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
-          if (heavyNeutralMeson.pT() > minFemtoHNMPts->get("EMC_omega")) {
-            omegaEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), translatePhi(heavyNeutralMeson.phi()), mMassOmega);
-            // QA
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/EMC/fInvMass"), massHNM);
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/EMC/fPt"), heavyNeutralMeson.pT());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/EMC/fEta"), heavyNeutralMeson.eta());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/Omega/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("EMC_omega")) {
+            omegaEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassOmega);
+            mHistManager.fill(HIST("HNM/After/Omega/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+            mHistManager.fill(HIST("HNM/After/Omega/EMC/fEta"), heavyNeutralMeson.eta());
+            mHistManager.fill(HIST("HNM/After/Omega/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
           }
-          if (heavyNeutralMeson.pT() > minHNMPts->get("EMC_omega")) {
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsSpectrumTrigger->get("EMC_omega"))
             colContainsEMCOmega = true;
-          }
         }
-      } else if (heavyNeutralMeson.gg->isEta && massHNM > massWindowEtaPrime->get("etaprime_min") && massHNM < massWindowEtaPrime->get("etaprime_max")) {
+      } else if (heavyNeutralMeson.gg->isEta && massHNM > cfgMassWindowEtaPrime->get("etaprime_min") && massHNM < cfgMassWindowEtaPrime->get("etaprime_max")) {
         if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
-          if (heavyNeutralMeson.pT() > minFemtoHNMPts->get("PCM_etaprime")) {
-            etaPrimePCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), translatePhi(heavyNeutralMeson.phi()), mMassEtaPrime);
-            // QA
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/PCM/fInvMass"), massHNM);
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/PCM/fPt"), heavyNeutralMeson.pT());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/PCM/fEta"), heavyNeutralMeson.eta());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/PCM/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("PCM_etaprime")) {
+            etaPrimePCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassEtaPrime);
+            mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+            mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fEta"), heavyNeutralMeson.eta());
+            mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
           }
-          if (heavyNeutralMeson.pT() > minHNMPts->get("PCM_etaprime")) {
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsSpectrumTrigger->get("PCM_etaprime"))
             colContainsPCMEtaPrime = true;
-          }
         } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
-          if (heavyNeutralMeson.pT() > minFemtoHNMPts->get("EMC_etaprime")) {
-            etaPrimeEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), translatePhi(heavyNeutralMeson.phi()), mMassEtaPrime);
-            // QA
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/EMC/fInvMass"), massHNM);
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/EMC/fPt"), heavyNeutralMeson.pT());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/EMC/fEta"), heavyNeutralMeson.eta());
-            mHistManager.fill(HIST("TrackCuts/HMN/After/EtaPrime/EMC/fPhi"), translatePhi(heavyNeutralMeson.phi()));
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("EMC_etaprime")) {
+            etaPrimeEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassEtaPrime);
+            mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
+            mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fEta"), heavyNeutralMeson.eta());
+            mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
           }
-          if (heavyNeutralMeson.pT() > minHNMPts->get("EMC_etaprime")) {
+          if (heavyNeutralMeson.pT() > cfgMinHNMPtsSpectrumTrigger->get("EMC_etaprime"))
             colContainsEMCEtaPrime = true;
-          }
         }
       } else {
         vHNMs.erase(vHNMs.begin() + iHNM);
@@ -1592,26 +1246,15 @@ struct HeavyNeutralMesonFilter {
     }
     mHistManager.fill(HIST("Event/nHeavyNeutralMesons"), nHNMsBeforeMassCuts, vHNMs.size());
 
-    if (colContainsPCMOmega) {
-      mHistManager.fill(HIST("Event/hCollisionCounter"), 2.);
-      mHistManager.fill(HIST("fProcessedEvents"), 9);
-    }
-    if (colContainsEMCOmega) {
-      mHistManager.fill(HIST("Event/hCollisionCounter"), 3.);
-      mHistManager.fill(HIST("fProcessedEvents"), 10);
-    }
-    if (colContainsPCMEtaPrime) {
-      mHistManager.fill(HIST("Event/hCollisionCounter"), 4.);
-      mHistManager.fill(HIST("fProcessedEvents"), 11);
-    }
-    if (colContainsEMCEtaPrime) {
-      mHistManager.fill(HIST("Event/hCollisionCounter"), 5.);
-      mHistManager.fill(HIST("fProcessedEvents"), 12);
-    }
+    if (colContainsPCMOmega)
+      mHistManager.fill(HIST("fProcessedEvents"), 2);
+    if (colContainsEMCOmega)
+      mHistManager.fill(HIST("fProcessedEvents"), 3);
+    if (colContainsPCMEtaPrime)
+      mHistManager.fill(HIST("fProcessedEvents"), 4);
+    if (colContainsEMCEtaPrime)
+      mHistManager.fill(HIST("fProcessedEvents"), 5);
   }
 };
 
-WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<HeavyNeutralMesonFilter>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<HeavyNeutralMesonFilter>(cfgc)}; }
