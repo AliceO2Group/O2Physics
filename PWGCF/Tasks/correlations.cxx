@@ -22,6 +22,7 @@
 #include <TDirectory.h>
 #include <THn.h>
 #include <TFile.h>
+#include <TVector2.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -165,6 +166,7 @@ struct CorrelationTask {
       registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
       if (doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML) {
         registry.add("invMassTwoPart", "2D 2-prong invariant mass (GeV/c^2)", {HistType::kTHnSparseF, {axisInvMassHistogram, axisInvMassHistogram, axisPtTrigger, axisPtAssoc, axisMultiplicity}});
+        registry.add("invMassTwoPartDPhi", "2D 2-prong invariant mass (GeV/c^2)", {HistType::kTHnSparseF, {axisInvMassHistogram, axisInvMassHistogram, axisPtTrigger, axisPtAssoc, axisDeltaPhi}});
       }
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -328,6 +330,7 @@ struct CorrelationTask {
               if (cfgCorrelationMethod == 2 && track1.decay() == track2.decay())
                 continue;
               registry.fill(HIST("invMassTwoPart"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), multiplicity);
+              registry.fill(HIST("invMassTwoPartDPhi"), track1.invMass(), track2.invMass(), track1.pt(), track2.pt(), TVector2::Phi_0_2pi(track1.phi() - track2.phi() + TMath::Pi() / 2.0) - TMath::Pi() / 2.0);
             }
           }
         }
