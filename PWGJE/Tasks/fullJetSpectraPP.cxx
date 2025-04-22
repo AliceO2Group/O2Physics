@@ -403,18 +403,6 @@ struct FullJetSpectrapp {
     } // jet.r()
   }
 
-  // template <typename T>
-  // void fillMCDMultHistograms(T const& jet, float weight = 1.0)
-  // {
-  //   float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-  //   if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { //MCD jets outlier rejection
-  //     return;
-  //   }
-  //   if (jet.r() == round(selectedJetsRadius * 100.0f))  {
-  //     registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), jet.pt(), collision.multiplicity(), weight);
-  //   }
-  // }
-
   // check for NEF distribution for rejected events
   template <typename T>
   void fillRejectedJetHistograms(T const& jet, float weight = 1.0)
@@ -671,9 +659,7 @@ struct FullJetSpectrapp {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
       return;
     }
-    // if (doMBGapTrigger && collision.mcCollision().weight() == 1) {
-    //   return;
-    // }
+
     if (doEMCALEventWorkaround) {
       if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
         eventAccepted = true;
@@ -910,9 +896,6 @@ struct FullJetSpectrapp {
     }
     registry.fill(HIST("h_Matchedcollision_counter"), 1.5);
 
-    // if (doMBGapTrigger && eventWeight == 1) {
-    //   return;
-    // }
     if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
@@ -1056,9 +1039,6 @@ struct FullJetSpectrapp {
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
         return;
       }
-      // if (eventWeight == 1) {
-      //   return;
-      // }
       if (doMBGapTrigger && eventWeight == 1) {
         return;
       }
@@ -1101,11 +1081,9 @@ struct FullJetSpectrapp {
       bool eventAccepted = false;
       float eventWeight = collision.mcCollision().weight();
 
-      // registry.fill(HIST("h_collisions_weighted"), 0.5);
       if (fabs(collision.posZ()) > VertexZCut) {
         return;
       }
-      // registry.fill(HIST("h_collisions_weighted"), 1.5);
       if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         return;
       }
@@ -1129,16 +1107,6 @@ struct FullJetSpectrapp {
         }
       }
 
-    /*  if (eventAccepted = true && collision.has_ft0()) {
-        auto ft0 = collision.ft0();
-        // for (const auto& amplitude : ft0.amplitudeA()) {
-        //   multFT0A += amplitude;
-        // }
-        for (const auto& amplitude : ft0.amplitudeC()) {
-          multFT0C += amplitude;
-        }
-      }*/
-
       if (!eventAccepted) {
         return;
       }
@@ -1148,7 +1116,6 @@ struct FullJetSpectrapp {
         }
       }
       registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
-      // registry.fill(HIST("h2_full_jet_FT0Amplitude"), multFT0C);
 
       for (auto const& mcdjet : mcdjets) {
         float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
