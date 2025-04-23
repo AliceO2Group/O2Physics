@@ -162,6 +162,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::TrkRecInfoDplus> entryTrackRecoInfo;
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
+  static constexpr std::size_t NDaughters{3u};
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -558,8 +559,7 @@ struct HfCorrelatorDplusHadrons {
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      int nDplusDaughters = 3;
-      if (listDaughters.size() == static_cast<size_t>(nDplusDaughters)) {
+      if (listDaughters.size() == NDaughters) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
