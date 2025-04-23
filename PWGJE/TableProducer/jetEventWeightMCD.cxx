@@ -40,14 +40,22 @@ struct JetEventWeightMCDTask {
   void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
     auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
-    mcDetectorLevelWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
+    float eventWeight = 0.0;
+    if (collision.has_mcCollision()) {
+      eventWeight = (float)(collision.mcCollision()).weight();
+    }
+    mcDetectorLevelWeightsTable(jet.globalIndex(), eventWeight);
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWeight, "Fill event weight tables for detector level MC jets", false);
 
   void processMCDetectorLevelEventWiseSubtractedEventWeight(MCDetectorLevelEventWiseSubtractedJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
     auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
-    mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
+    float eventWeight = 0.0;
+    if (collision.has_mcCollision()) {
+      eventWeight = (float)(collision.mcCollision()).weight();
+    }
+    mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), eventWeight);
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWiseSubtractedEventWeight, "Fill event weight tables for detector level MC jets", false);
 };

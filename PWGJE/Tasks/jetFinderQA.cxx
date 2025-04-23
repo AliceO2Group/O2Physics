@@ -1180,7 +1180,10 @@ struct JetFinderQATask {
                              aod::JetMcCollisions const&,
                              soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
-    float eventWeight = collision.mcCollision().weight();
+    float eventWeight = 0.0;
+    if (collision.has_mcCollision()) {
+      eventWeight = (float)(collision.mcCollision()).weight();
+    }
     if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       return;
     }
