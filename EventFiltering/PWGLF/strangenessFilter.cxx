@@ -61,7 +61,7 @@ static const std::vector<std::string> speciesNames{"Xi", "Omega"};
 
 float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
 {
-  return std::hypot((pvY - Y) * Pz - (pvZ - Z) * Py, (pvX - X) * Pz - (pvZ - Z) * Px, (pvX - X) * Py - (pvY - Y) * Px) / (Px * Px + Py * Py + Pz * Pz);
+  return std::hypot((pvY - Y) * Pz - (pvZ - Z) * Py, (pvX - X) * Pz - (pvZ - Z) * Px, (pvX - X) * Py - (pvY - Y) * Px) / std::sqrt(Px * Px + Py * Py + Pz * Pz);
 }
 
 struct strangenessFilter {
