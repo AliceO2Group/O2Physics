@@ -253,8 +253,10 @@ struct ZdcQVectors {
     }
 
     // Tower mean energies vs. centrality used for tower gain equalisation
-    for (int tower = 0; tower < 10; tower++) {
-      namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
+    int totalTowers = 10;
+    int totalTowersPerSide = 5;
+    for (int tower = 0; tower < totalTowers; tower++) {
+      namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < totalTowersPerSide) ? 0 : 1], tower % 5);
       registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
 
@@ -549,8 +551,11 @@ struct ZdcQVectors {
     const auto& zdcCol = foundBC.zdc();
 
     // Get the raw energies eZN[8] (not the common A,C)
-    for (int tower = 0; tower < 8; tower++) {
-      eZN[tower] = (tower < 4) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % 4];
+    int nTowers = 8; 
+    int nTowersPerSide = 4;
+    
+    for (int tower = 0; tower < nTowers; tower++) {
+      eZN[tower] = (tower < nTowersPerSide) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % nTowersPerSide];
     }
 
     // load the calibration histos for iteration 0 step 0 (Energy Calibration)
@@ -573,10 +578,10 @@ struct ZdcQVectors {
     bool isZNAhit = true;
     bool isZNChit = true;
 
-    for (int i = 0; i < 8; ++i) {
-      if (i < 4 && eZN[i] <= 0)
+    for (int i = 0; i < nTowers; ++i) {
+      if (i < nTowersPerSide && eZN[i] <= 0)
         isZNAhit = false;
-      if (i > 3 && eZN[i] <= 0)
+      if (i >= nTowersPerSide && eZN[i] <= 0)
         isZNChit = false;
     }
 
@@ -621,7 +626,7 @@ struct ZdcQVectors {
 
     // Now start gain equalisation!
     // Fill the list with calibration constants.
-    for (int tower = 0; tower < 10; tower++) {
+    for (int tower = 0; tower < (nTowers + 2); tower++) {
       meanEZN[tower] = getCorrection<TProfile2D, kEnergyCal>(namesEcal[tower].Data());
     }
 
@@ -631,13 +636,13 @@ struct ZdcQVectors {
 
     for (const auto& tower : towersNocom) {
       if (meanEZN[tower] > 0) {
-        double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
+        double ecommon = (tower > nTowersPerSide) ? meanEZN[5] : meanEZN[0];
         e[calibtower] = eZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
       }
       calibtower++;
     }
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < nTowersPerSide; i++) {
       float bincenter = i + .5;
       registry.fill(HIST("QA/ZNA_Energy"), bincenter, eZN[i]);
       registry.fill(HIST("QA/ZNA_Energy"), bincenter + 4, e[i]);
@@ -664,9 +669,9 @@ struct ZdcQVectors {
     }
 
     // Now calculate Q-vector
-    for (int tower = 0; tower < 8; tower++) {
-      int side = (tower > 3) ? 1 : 0;
-      int sector = tower % 4;
+    for (int tower = 0; tower < nTowers; tower++) {
+      int side = (tower >= nTowersPerSide) ? 1 : 0;
+      int sector = tower % nTowersPerSide;
       double energy = std::pow(e[tower], alphaZDC);
       sumZN[side] += energy;
       xEnZN[side] += (side == 0) ? -1.0 * pxZDC[sector] * energy : pxZDC[sector] * energy;
@@ -674,7 +679,8 @@ struct ZdcQVectors {
     }
 
     // "QXA", "QYA", "QXC", "QYC"
-    for (int i = 0; i < 2; ++i) {
+    int sides = 2; 
+    for (int i = 0; i < sides; ++i) {
       if (sumZN[i] > 0) {
         q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
         q[i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
@@ -713,14 +719,17 @@ struct ZdcQVectors {
 
       int pb = 0;
 
-      for (int it = 1; it < 6; it++) {
+      int nIterations = 6;
+      int nSteps = 5;
+
+      for (int it = 1; it < nIterations; it++) {
         corrQxA.push_back(getCorrection<THnSparse, kRec>(names[0][0].Data(), it, 0));
         corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 0));
         corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 0));
         corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 0));
         pb++;
 
-        for (int step = 1; step < 5; step++) {
+        for (int step = 1; step < nSteps; step++) {
           corrQxA.push_back(getCorrection<TProfile, kRec>(names[step][0].Data(), it, step));
           corrQyA.push_back(getCorrection<TProfile, kRec>(names[step][1].Data(), it, step));
           corrQxC.push_back(getCorrection<TProfile, kRec>(names[step][2].Data(), it, step));
