@@ -58,4 +58,4 @@ jobs:
           message: "**O2 linter results:**
             ❌ ${{ steps.linter.outputs.n_issues }} errors,
             ⚠️ ${{ steps.linter.outputs.n_tolerated }} warnings,
-            🔇🔕🙊🤐🤫 ${{ steps.linter.outputs.n_disabled }} disabled"
+            🔕 ${{ steps.linter.outputs.n_disabled }} disabled"
