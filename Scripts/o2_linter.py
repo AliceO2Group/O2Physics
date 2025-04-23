@@ -1739,9 +1739,9 @@ def main():
     # Report results for tests that failed or were disabled or were tolerated.
     n_issues, n_disabled, n_tolerated = 0, 0, 0  # global counters
     if not passed or any(n > 0 for n in (test.n_disabled + test.n_tolerated for test in tests)):
-        print("\nResults for failed, disabled and tolerated tests")
+        print("\nResults for failed, tolerated and disabled tests")
         len_max = max(len(name) for name in test_names)
-        print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\ttolerated\tbad files\trationale")
+        print(f"test{' ' * (len_max - len('test'))}\tissues\ttolerated\tdisabled\tbad files\trationale")
         print("-" * len_max)
         ref_names = []
         for test in tests:
@@ -1749,8 +1749,8 @@ def main():
                 ref_ids = [ref.value for ref in test.references]
                 ref_names += test.references
                 print(
-                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_disabled}"
-                    f"\t\t{test.n_tolerated}\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
+                    f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_tolerated}"
+                    f"\t\t{test.n_disabled}\t\t{n_files_bad[test.name]}\t\t{test.rationale} {ref_ids}"
                 )
             n_issues += test.n_issues
             n_disabled += test.n_disabled
@@ -1758,7 +1758,7 @@ def main():
         print("-" * len_max)
         # Print the totals.
         name_total = "total"
-        print(f"{name_total}{' ' * (len_max - len(name_total))}\t{n_issues}\t{n_disabled}\t\t{n_tolerated}")
+        print(f"{name_total}{' ' * (len_max - len(name_total))}\t{n_issues}\t{n_tolerated}\t\t{n_disabled}")
         # Print list of references for listed tests.
         print("\nReferences")
         ref_names = list(dict.fromkeys(ref_names))
