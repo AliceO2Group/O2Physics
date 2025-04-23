@@ -620,6 +620,14 @@ class VarManager : public TObject
     // MC mother particle variables
     kMCMotherPdgCode,
 
+    // MC pair variables
+    kMCCosThetaHE,
+    kMCCosThetaCS,
+    kMCCosThetaPP,
+    kMCPhiHE,
+    kMCPhiCS,
+    kMCPhiPP,
+
     // Pair variables
     kCandidateId,
     kPairType,
