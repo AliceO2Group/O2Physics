@@ -983,7 +983,7 @@ struct HfFilter { // Main struct for HF triggers
               if (!keepEvent[kPrCharm2P]) {
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks to find bachelor pion
-                  if (!isSelectedProtonFromLcResoOrThetaC<true>(trackProton)) {
+                  if (!helper.isSelectedProtonFromLcResoOrThetaC<true>(trackProton)) {
                     continue;
                   } // stop here if proton below pT threshold for thetaC to avoid computational losses
                   auto trackBachelor = tracks.rawIteratorAt(trackBachelorId.trackId());
@@ -1068,7 +1068,7 @@ struct HfFilter { // Main struct for HF triggers
                 if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 11u)) {
                   continue;
                 }
-                if (!isSelectedProtonFromLcResoOrThetaC(trackProton)) {
+                if (!helper.isSelectedProtonFromLcResoOrThetaC(trackProton)) {
                   continue;
                 }
                 float massLcStarCand{-999.}, massLcStarBarCand{-999.};
