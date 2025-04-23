@@ -2064,7 +2064,17 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 
 // mapping of decay types
 enum DecayType { Sc0ToPKPiPi = 0,
-                 ScplusplusToPKPiPi };
+                 ScplusplusToPKPiPi,
+                 ScStar0ToPKPiPi,
+                 ScStarPlusPlusToPKPiPi };
+enum Species : int { Sc2455 = 0,
+                     Sc2520,
+                     NSpecies };
+enum Decays : int { PKPi = 0,
+                    PiKP,
+                    NDecays };
+constexpr int ChargeNull = 0;
+constexpr int ChargePlusPlus = 2;
 } // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table
@@ -2293,8 +2303,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtSoftPi, ptSoftPi, [](float pxSoftPi, float pySoftPi
 DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
 
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);     //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);     //! generator level
 DECLARE_SOA_COLUMN(FlagMcMatchRecD0, flagMcMatchRecD0, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGenD0, flagMcMatchGenD0, int8_t); //! generator level
 
