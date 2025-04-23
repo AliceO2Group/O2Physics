@@ -75,7 +75,7 @@ struct HfFilter { // Main struct for HF triggers
   // nsigma PID (except for V0 and cascades)
   Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 4, 8, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for ITS/TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 9, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 10, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -208,6 +208,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setPtLimitsDeuteronForFemto(ptCuts->get(0u, 6u), ptCuts->get(1u, 6u));
     helper.setPtLimitsCharmBaryonBachelor(ptCuts->get(0u, 3u), ptCuts->get(1u, 3u));
     helper.setPtLimitsLcResonanceBachelor(ptCuts->get(0u, 8u), ptCuts->get(1u, 8u));
+    helper.setPtLimitsThetaCBachelor(ptCuts->get(0u, 9u), ptCuts->get(1u, 9u));
     helper.setCutsSingleTrackBeauty(cutsTrackBeauty3Prong, cutsTrackBeauty4Prong, cutsTrackBeauty4Prong);
     helper.setCutsSingleTrackCharmBaryonBachelor(cutsTrackCharmBaryonBachelor);
     helper.setCutsBhadrons(cutsBtoHadrons.cutsBplus, cutsBtoHadrons.cutsBzeroToDstar, cutsBtoHadrons.cutsBc, cutsBtoHadrons.cutsBzero, cutsBtoHadrons.cutsBs, cutsBtoHadrons.cutsLb, cutsBtoHadrons.cutsXib);
@@ -977,11 +978,14 @@ struct HfFilter { // Main struct for HF triggers
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParBachelorProton, 2.f, noMatCorr, &dcaInfoBachProton);
             }
             std::array<float, 3> pVecProton = trackProton.pVector();
-            bool isSelProton = helper.isSelectedProtonFromLcReso(trackProton);
-            if (isSelProton) {
+            bool isSelPIDProton = helper.isSelectedProton4CharmOrBeautyBaryons<false>(trackProton);
+            if (isSelPIDProton) {
               if (!keepEvent[kPrCharm2P]) {
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks to find bachelor pion
+                  if (!helper.isSelectedProtonFromLcResoOrThetaC<true>(trackProton)) {
+                    continue;
+                  } // stop here if proton below pT threshold for thetaC to avoid computational losses
                   auto trackBachelor = tracks.rawIteratorAt(trackBachelorId.trackId());
                   if (trackBachelor.globalIndex() == trackPos.globalIndex() || trackBachelor.globalIndex() == trackNeg.globalIndex() || trackBachelor.globalIndex() == trackProton.globalIndex()) {
                     continue;
@@ -1062,6 +1066,9 @@ struct HfFilter { // Main struct for HF triggers
                 } // end bachelor pion for D*p pairs
                 // build D0p candidate with the possibility of storing also the other sign hyp.
                 if (pt2Prong < cutsPtDeltaMassCharmReso->get(3u, 11u)) {
+                  continue;
+                }
+                if (!helper.isSelectedProtonFromLcResoOrThetaC(trackProton)) {
                   continue;
                 }
                 float massLcStarCand{-999.}, massLcStarBarCand{-999.};
