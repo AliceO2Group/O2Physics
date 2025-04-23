@@ -531,10 +531,7 @@ struct JetSpectraCharged {
                          aod::JetMcCollisions const&,
                          soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
-    if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
-      return;
-    }
-    float eventWeight = collision.mcCollision().weight();
+    float eventWeight = collision.weight();
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return;
     }
@@ -552,6 +549,9 @@ struct JetSpectraCharged {
 
   void processCollisions(soa::Filtered<aod::JetCollisions>::iterator const& collision)
   {
+    if (!collision.has_mcCollision()){
+      registry.fill(HIST("h_fakecollisions"), 1.5);
+    }
     registry.fill(HIST("h_collisions"), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return;
@@ -569,11 +569,10 @@ struct JetSpectraCharged {
   void processCollisionsWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                                  aod::JetMcCollisions const&)
   {
-    if (!collision.has_mcCollision()) { // the collision is fake and has no associated mc coll; skip as .mccollision() cannot be called
-      registry.fill(HIST("h_fakecollisions"), 0.5);
-      return;
+    if (!collision.has_mcCollision()){
+      registry.fill(HIST("h_fakecollisions"), 1.5);
     }
-    float eventWeight = collision.mcCollision().weight();
+    float eventWeight = collision.weight();
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
