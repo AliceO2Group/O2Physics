@@ -505,10 +505,10 @@ struct StrangenessBuilder {
           for (auto const& input : device.inputs) {
             if (device.name.compare("strangenessbuilder-initializer") == 0)
               continue; // don't listen to the initializer
-            if(DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))){
+            if (DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
               auto&& [origin, description, version] = DataSpecUtils::asConcreteDataMatcher(input.matcher);
-              std::string tableNameWithVersion = tableNames[i]; 
-              if(version>0){
+              std::string tableNameWithVersion = tableNames[i];
+              if (version > 0) {
                 tableNameWithVersion += Form("_%03d", version);
               }
               if (input.matcher.binding == tableNameWithVersion) {
