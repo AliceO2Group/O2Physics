@@ -55,7 +55,7 @@ jobs:
         uses: thollander/actions-comment-pull-request@v3
         with:
           comment-tag: o2-linter
-          message: "O2 linter results:
-            ${{ steps.linter.outputs.n_issues }} errors,
-            ${{ steps.linter.outputs.n_tolerated }} warnings,
-            ${{ steps.linter.outputs.n_disabled }} disabled"
+          message: "**O2 linter results:**
+            ❌ ${{ steps.linter.outputs.n_issues }} errors,
+            ⚠️ ${{ steps.linter.outputs.n_tolerated }} warnings,
+            🔇🔕🙊🤐🤫 ${{ steps.linter.outputs.n_disabled }} disabled"
