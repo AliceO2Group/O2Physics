@@ -1742,6 +1742,7 @@ def main():
         print("\nResults for failed, disabled and tolerated tests")
         len_max = max(len(name) for name in test_names)
         print(f"test{' ' * (len_max - len('test'))}\tissues\tdisabled\ttolerated\tbad files\trationale")
+        print("-" * len_max)
         ref_names = []
         for test in tests:
             if any(n > 0 for n in (test.n_issues, test.n_disabled, test.n_tolerated, n_files_bad[test.name])):
@@ -1754,8 +1755,8 @@ def main():
             n_issues += test.n_issues
             n_disabled += test.n_disabled
             n_tolerated += test.n_tolerated
-        # Print the totals.
         print("-" * len_max)
+        # Print the totals.
         name_total = "total"
         print(f"{name_total}{' ' * (len_max - len(name_total))}\t{n_issues}\t{n_disabled}\t\t{n_tolerated}")
         # Print list of references for listed tests.
