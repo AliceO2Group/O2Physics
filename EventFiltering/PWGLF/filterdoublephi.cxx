@@ -259,7 +259,7 @@ struct filterdoublephi {
           auto i6 = std::distance(phiresonance.begin(), if2);
           PhiVectorDummy2 = phiresonance.at(i6);
           PhiPair = PhiVectorDummy + PhiVectorDummy2;
-          if ((Phid1Index.at(i5) != Phid1Index.at(i6)) && (Phid2Index.at(i5) != Phid2Index.at(i6)) && PhiPair.M() > MinPhiPairMass && PhiPair.M() < MaxPhiPairMass && PhiPair.Pt() > MinPhiPairPt) {
+          if (!(Phid1Index.at(i5) == Phid1Index.at(i6) && Phid2Index.at(i5) == Phid2Index.at(i6)) && PhiPair.M() > MinPhiPairMass && PhiPair.M() < MaxPhiPairMass && PhiPair.Pt() > MinPhiPairPt) {
             qaRegistry.fill(HIST("hInvMassDoublePhi"), PhiPair.M(), PhiPair.Pt());
             keepEventDoublePhi = true;
           }

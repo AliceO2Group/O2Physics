@@ -45,6 +45,8 @@ struct doublephimeson {
   Configurable<int> strategyPID2{"strategyPID2", 0, "PID strategy 2"};
   Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
   Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
+  Configurable<float> minExoticMass{"minExoticMass", 2.4, "Minimum Exotic mass"};
+  Configurable<float> maxExoticMass{"maxExoticMass", 3.2, "Maximum Exotic mass"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selection"};
   Configurable<bool> isDeep{"isDeep", true, "Store deep angle"};
   Configurable<float> cutMinNsigmaTPC{"cutMinNsigmaTPC", -2.5, "nsigma cut TPC"};
@@ -332,14 +334,20 @@ struct doublephimeson {
         if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID2, kaonminusd2pt)) {
           continue;
         }
-        if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
-          continue;
-        }
-        if (phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
+        // if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
+        // continue;
+        // }
+        // if (phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
+        // continue;
+        // }
+        if (phitrackd1.phid1Index() == phitrackd2.phid1Index() && phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
           continue;
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
         exotic = Phid1 + Phid2;
+        if (exotic.M() < minExoticMass || exotic.M() > maxExoticMass) {
+          continue;
+        }
         // auto cosThetaStar = getCosTheta(exotic, Phid1);
         // auto kstar = getkstar(Phid1, Phid2);
         auto deltaR = TMath::Sqrt(TMath::Power(Phid1.Phi() - Phid2.Phi(), 2.0) + TMath::Power(Phid1.Eta() - Phid2.Eta(), 2.0));
