@@ -255,7 +255,6 @@ struct FullJetSpectrapp {
 
       registry.add("h_NOmcpemcalcollisions", "event status;entries", {HistType::kTH1F, {{100, 0., 100.}}});
       registry.add("h_mcpemcalcollisions", "event status;entries", {HistType::kTH1F, {{100, 0., 100.}}});
-
     }
 
     if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWeighted) {
@@ -304,7 +303,7 @@ struct FullJetSpectrapp {
 
   } // init
 
-  using EMCCollisionsData = o2::soa::Join<aod::JetCollisions, aod::JEMCCollisionLbs>; // JetCollisions with EMCAL Collision Labels
+  using EMCCollisionsData = o2::soa::Join<aod::JetCollisions, aod::JEMCCollisionLbs>;   // JetCollisions with EMCAL Collision Labels
   using EMCCollisionsMCD = o2::soa::Join<aod::JetCollisionsMCD, aod::JEMCCollisionLbs>; // where, JetCollisionsMCD = JetCollisions+JMcCollisionLbs
 
   using FullJetTableDataJoined = soa::Join<aod::FullJets, aod::FullJetConstituents>;
@@ -328,7 +327,6 @@ struct FullJetSpectrapp {
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
   Preslice<JetTableMCPMatchedJoined> JetMCPPerMcCollision = aod::jet::mcCollisionId;
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
-
 
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
@@ -715,11 +713,11 @@ struct FullJetSpectrapp {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 1.5);
-    if (collisions.size() < 1){
+    if (collisions.size() < 1) {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 2.5);
-    for (auto const& collision : collisions){
+    for (auto const& collision : collisions) {
       if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         return;
       }
@@ -739,22 +737,22 @@ struct FullJetSpectrapp {
         }
       }
     }
-    if(!eventAccepted){
+    if (!eventAccepted) {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 3.5);
 
-    for (auto const& jet : jets){
+    for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
       if (!isAcceptedJet<aod::JetParticles>(jet)) {
         continue;
       }
-      if (checkMcCollisionIsMatched) {  //basically checks if the same collisions are generated at the Part level as those at the Det level
+      if (checkMcCollisionIsMatched) { // basically checks if the same collisions are generated at the Part level as those at the Det level
         auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, jet.mcCollisionId());
         if (collisionspermcpjet.size() >= 1 && jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
-          //Now here for every matched collision, I fill the corresponding jet histograms.
+          // Now here for every matched collision, I fill the corresponding jet histograms.
           fillMCPHistograms(jet);
         }
       } else {
@@ -773,11 +771,11 @@ struct FullJetSpectrapp {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 1.5);
-    if (collisions.size() < 1){
+    if (collisions.size() < 1) {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 2.5);
-    for (auto const& collision : collisions){
+    for (auto const& collision : collisions) {
       if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         return;
       }
@@ -796,12 +794,12 @@ struct FullJetSpectrapp {
         }
       }
     }
-    if(!eventAccepted){
+    if (!eventAccepted) {
       return;
     }
     registry.fill(HIST("h_Partcollision_counter"), 3.5);
 
-    for (auto const& jet : jets){
+    for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         return;
       }
@@ -990,7 +988,6 @@ struct FullJetSpectrapp {
         if (collision.alias_bit(kTVXinEMC)) {
           registry.fill(HIST("h_collisions_unweighted"), 4.0); // Tracks with kTVXinEMC
           registry.fill(HIST("h_Detcollision_counter"), 1.0);
-
         }
       }
     } else {
@@ -1000,7 +997,6 @@ struct FullJetSpectrapp {
         eventAccepted = true;
         registry.fill(HIST("h_collisions_unweighted"), 4.0); // Tracks with kTVXinEMC
         registry.fill(HIST("h_Detcollision_counter"), 1.0);
-
       }
     }
 
@@ -1022,194 +1018,194 @@ struct FullJetSpectrapp {
   PROCESS_SWITCH(FullJetSpectrapp, processTracks, "Full Jet tracks", false);
 
   void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision,
-    aod::JMcCollisions const&,
-    soa::Filtered<aod::JetTracks> const& tracks,
-    soa::Filtered<aod::JetClusters> const& clusters)
-    {
-      bool eventAccepted = false;
-      float eventWeight = collision.mcCollision().weight();
+                             aod::JMcCollisions const&,
+                             soa::Filtered<aod::JetTracks> const& tracks,
+                             soa::Filtered<aod::JetClusters> const& clusters)
+  {
+    bool eventAccepted = false;
+    float eventWeight = collision.mcCollision().weight();
 
-      registry.fill(HIST("h_collisions_weighted"), 0.5);
-      if (fabs(collision.posZ()) > VertexZCut) {
-        return;
-      }
-      registry.fill(HIST("h_collisions_weighted"), 1.5);
-      if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
-        return;
-      }
-      if (doMBGapTrigger && eventWeight == 1) {
-        return;
-      }
-      registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
+    registry.fill(HIST("h_collisions_weighted"), 0.5);
+    if (fabs(collision.posZ()) > VertexZCut) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_weighted"), 1.5);
+    if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      return;
+    }
+    if (doMBGapTrigger && eventWeight == 1) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_weighted"), 1.0, eventWeight); // total events
 
-      if (doEMCALEventWorkaround) {
-        if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
-          eventAccepted = true;
-          fillTrackHistograms(tracks, clusters, eventWeight);
-          if (collision.alias_bit(kTVXinEMC)) {
-            registry.fill(HIST("h_collisions_weighted"), 4.0, eventWeight); // TracksWeighted with kTVXinEMC
-          }
-        }
-      } else {
-        if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-          eventAccepted = true;
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        eventAccepted = true;
+        fillTrackHistograms(tracks, clusters, eventWeight);
+        if (collision.alias_bit(kTVXinEMC)) {
           registry.fill(HIST("h_collisions_weighted"), 4.0, eventWeight); // TracksWeighted with kTVXinEMC
         }
       }
-
-      if (!eventAccepted) {
-        registry.fill(HIST("h_collisions_weighted"), 7.0, eventWeight); // TracksWeighted w/o kTVXinEMC
-        return;
-      }
-      registry.fill(HIST("h_collisions_weighted"), 2.5);
-
-      for (auto const& track : tracks) {
-        if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          continue;
-        }
-        // Fill Accepted events histos
-        fillTrackHistograms(tracks, clusters, 1.0);
-      }
-      registry.fill(HIST("h_collisions_weighted"), 3.5);
-    }
-    PROCESS_SWITCH(FullJetSpectrapp, processTracksWeighted, "Full Jet tracks weighted", false);
-
-    void processCollisionsWeightedWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDWeightedJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
-    {
-      bool eventAccepted = false;
-      float eventWeight = collision.mcCollision().weight();
-      float neutralEnergy = 0.0;
-
-      if (fabs(collision.posZ()) > VertexZCut) {
-        return;
-      }
-      if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
-        return;
-      }
-      if (doMBGapTrigger && eventWeight == 1) {
-        return;
-      }
-
-      if (doEMCALEventWorkaround) {
-        if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
-          eventAccepted = true;
-          fillTrackHistograms(tracks, clusters, eventWeight);
-          if (collision.alias_bit(kTVXinEMC)) {
-          }
-        }
-      } else {
-        if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-          eventAccepted = true;
-        }
-      }
-
-      if (!eventAccepted) {
-        return;
-      }
-      for (auto const& track : tracks) {
-        if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          continue;
-        }
-      }
-      registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
-
-      for (auto const& mcdjet : mcdjets) {
-        float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
-        if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { //MCD jets outlier rejection
-          return;
-        }
-        if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-          continue;
-        }
-        if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
-          continue;
-        }
-        if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-          continue;
-        }
-        registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), eventWeight);
-
-        for (auto const& cluster : clusters) {
-          neutralEnergy += cluster.energy();
-        }
-        auto NEF = neutralEnergy / mcdjet.energy();
-        registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, eventWeight);
+    } else {
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+        registry.fill(HIST("h_collisions_weighted"), 4.0, eventWeight); // TracksWeighted with kTVXinEMC
       }
     }
-    PROCESS_SWITCH(FullJetSpectrapp, processCollisionsWeightedWithMultiplicity, "Weighted Collisions for Full Jets Multiplicity Studies", false);
 
-    void processMBCollisionsWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
-    {
-      bool eventAccepted = false;
-      float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
-      float neutralEnergy = 0.0;
-
-      if (fabs(collision.posZ()) > VertexZCut) {
-        return;
-      }
-      if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-        return;
-      }
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
-        return;
-      }
-
-      if (doEMCALEventWorkaround) {
-        if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
-          eventAccepted = true;
-          fillTrackHistograms(tracks, clusters, 1.0);
-          if (collision.alias_bit(kTVXinEMC)) {
-          }
-        }
-      } else {
-        if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-          eventAccepted = true;
-        }
-      }
-
-      if (!eventAccepted) {
-        return;
-      }
-      for (auto const& track : tracks) {
-        if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-          continue;
-        }
-      }
-      registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
-
-      for (auto const& mcdjet : mcdjets) {
-        if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD (Detector Level) Outlier Rejection
-          return;
-        }
-        if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-          continue;
-        }
-        if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
-          continue;
-        }
-        if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
-          continue;
-        }
-        registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), 1.0);
-
-        for (auto const& cluster : clusters) {
-          neutralEnergy += cluster.energy();
-        }
-        auto NEF = neutralEnergy / mcdjet.energy();
-        registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, 1.0);
-      }
+    if (!eventAccepted) {
+      registry.fill(HIST("h_collisions_weighted"), 7.0, eventWeight); // TracksWeighted w/o kTVXinEMC
+      return;
     }
-    PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsWithMultiplicity, "MB Collisions for Full Jets Multiplicity Studies", false);
-  }; // struct
+    registry.fill(HIST("h_collisions_weighted"), 2.5);
 
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      // Fill Accepted events histos
+      fillTrackHistograms(tracks, clusters, 1.0);
+    }
+    registry.fill(HIST("h_collisions_weighted"), 3.5);
+  }
+  PROCESS_SWITCH(FullJetSpectrapp, processTracksWeighted, "Full Jet tracks weighted", false);
+
+  void processCollisionsWeightedWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDWeightedJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
-    return WorkflowSpec{
-      adaptAnalysisTask<FullJetSpectrapp>(cfgc, TaskName{"full-jet-spectra-pp"})};
+    bool eventAccepted = false;
+    float eventWeight = collision.mcCollision().weight();
+    float neutralEnergy = 0.0;
+
+    if (fabs(collision.posZ()) > VertexZCut) {
+      return;
     }
+    if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      return;
+    }
+    if (doMBGapTrigger && eventWeight == 1) {
+      return;
+    }
+
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        eventAccepted = true;
+        fillTrackHistograms(tracks, clusters, eventWeight);
+        if (collision.alias_bit(kTVXinEMC)) {
+        }
+      }
+    } else {
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+      }
+    }
+
+    if (!eventAccepted) {
+      return;
+    }
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+    }
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
+
+    for (auto const& mcdjet : mcdjets) {
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD jets outlier rejection
+        return;
+      }
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), eventWeight);
+
+      for (auto const& cluster : clusters) {
+        neutralEnergy += cluster.energy();
+      }
+      auto NEF = neutralEnergy / mcdjet.energy();
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, eventWeight);
+    }
+  }
+  PROCESS_SWITCH(FullJetSpectrapp, processCollisionsWeightedWithMultiplicity, "Weighted Collisions for Full Jets Multiplicity Studies", false);
+
+  void processMBCollisionsWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsMCD, aod::FT0Mults>>::iterator const& collision, JetTableMCDJoined const& mcdjets, aod::JMcCollisions const&, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  {
+    bool eventAccepted = false;
+    float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
+    float neutralEnergy = 0.0;
+
+    if (fabs(collision.posZ()) > VertexZCut) {
+      return;
+    }
+    if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      return;
+    }
+
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        eventAccepted = true;
+        fillTrackHistograms(tracks, clusters, 1.0);
+        if (collision.alias_bit(kTVXinEMC)) {
+        }
+      }
+    } else {
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+      }
+    }
+
+    if (!eventAccepted) {
+      return;
+    }
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+    }
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
+
+    for (auto const& mcdjet : mcdjets) {
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD (Detector Level) Outlier Rejection
+        return;
+      }
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (mcdjet.phi() < jetPhiMin || mcdjet.phi() > jetPhiMax) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), 1.0);
+
+      for (auto const& cluster : clusters) {
+        neutralEnergy += cluster.energy();
+      }
+      auto NEF = neutralEnergy / mcdjet.energy();
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, 1.0);
+    }
+  }
+  PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsWithMultiplicity, "MB Collisions for Full Jets Multiplicity Studies", false);
+}; // struct
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<FullJetSpectrapp>(cfgc, TaskName{"full-jet-spectra-pp"})};
+}
