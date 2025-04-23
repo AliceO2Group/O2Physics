@@ -41,6 +41,7 @@
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/DataModel/UDIndex.h" // for UDMcParticles2UDTracks table
+#include "PWGUD/DataModel/TauEventTables.h"
 #include "PWGUD/Core/SGSelector.h"
 
 // ROOT headers
@@ -52,82 +53,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-namespace o2::aod
-{
-namespace tau_tree
-{
-// event info
-DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(Bc, bc, int);
-DECLARE_SOA_COLUMN(TotalTracks, totalTracks, int);
-DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
-DECLARE_SOA_COLUMN(GlobalNonPVtracks, globalNonPVtracks, int);
-DECLARE_SOA_COLUMN(PosX, posX, float);
-DECLARE_SOA_COLUMN(PosY, posY, float);
-DECLARE_SOA_COLUMN(PosZ, posZ, float);
-DECLARE_SOA_COLUMN(RecoMode, recoMode, int);
-DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
-DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
-DECLARE_SOA_COLUMN(Trs, trs, int);
-DECLARE_SOA_COLUMN(Trofs, trofs, int);
-DECLARE_SOA_COLUMN(Hmpr, hmpr, int);
-DECLARE_SOA_COLUMN(Tfb, tfb, int);
-DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int);
-DECLARE_SOA_COLUMN(Sbp, sbp, int);
-DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int);
-DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
-// FIT info
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
-DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
-DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
-DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
-DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
-DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
-DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
-DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
-DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
-// tracks
-DECLARE_SOA_COLUMN(TrkPx, trkPx, float[2]);
-DECLARE_SOA_COLUMN(TrkPy, trkPy, float[2]);
-DECLARE_SOA_COLUMN(TrkPz, trkPz, float[2]);
-DECLARE_SOA_COLUMN(TrkSign, trkSign, int[2]);
-DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[2]);
-DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[2]);
-DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float[2]);
-DECLARE_SOA_COLUMN(Trk1ITSclusterSizes, trk1ITSclusterSizes, uint32_t);
-DECLARE_SOA_COLUMN(Trk2ITSclusterSizes, trk2ITSclusterSizes, uint32_t);
-DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaPi, trkTPCnSigmaPi, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaKa, trkTPCnSigmaKa, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCnSigmaPr, trkTPCnSigmaPr, float[2]);
-DECLARE_SOA_COLUMN(TrkTPCinnerParam, trkTPCinnerParam, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFsignal, trkTOFsignal, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaEl, trkTOFnSigmaEl, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
-DECLARE_SOA_COLUMN(TrkTOFexpMom, trkTOFexpMom, float[2]);
-
-} // namespace tau_tree
-DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
-                  tau_tree::RunNumber, tau_tree::Bc, tau_tree::TotalTracks, tau_tree::NumContrib, tau_tree::GlobalNonPVtracks, tau_tree::PosX, tau_tree::PosY, tau_tree::PosZ,
-                  tau_tree::RecoMode, tau_tree::OccupancyInTime, tau_tree::HadronicRate,
-                  tau_tree::Trs, tau_tree::Trofs, tau_tree::Hmpr, tau_tree::Tfb, tau_tree::ItsRofb, tau_tree::Sbp, tau_tree::ZvtxFT0vsPv, tau_tree::VtxITSTPC,
-                  tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA, tau_tree::EnergyCommonZNA, tau_tree::EnergyCommonZNC,
-                  tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A, tau_tree::TimeZNA, tau_tree::TimeZNC,
-                  tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz, tau_tree::TrkSign, tau_tree::TrkDCAxy, tau_tree::TrkDCAz, tau_tree::TrkTimeRes,
-                  tau_tree::Trk1ITSclusterSizes, tau_tree::Trk2ITSclusterSizes,
-                  tau_tree::TrkTPCsignal, tau_tree::TrkTPCnSigmaEl, tau_tree::TrkTPCnSigmaMu, tau_tree::TrkTPCnSigmaPi, tau_tree::TrkTPCnSigmaKa, tau_tree::TrkTPCnSigmaPr, tau_tree::TrkTPCinnerParam,
-                  tau_tree::TrkTOFsignal, tau_tree::TrkTOFnSigmaEl, tau_tree::TrkTOFnSigmaMu, tau_tree::TrkTOFnSigmaPi, tau_tree::TrkTOFnSigmaKa, tau_tree::TrkTOFnSigmaPr, tau_tree::TrkTOFexpMom);
-
-} // namespace o2::aod
-
 struct TauEventTableProducer {
   Produces<o2::aod::TauTwoTracks> tauTwoTracks;
+	Produces<o2::aod::TrueTauTwoTracks> trueTauTwoTracks;
 
   // Global varialbes
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -199,7 +127,6 @@ struct TauEventTableProducer {
   using FullMCSGUDCollision = FullMCSGUDCollisions::iterator;
   using UDMcParticlesWithUDTracks = soa::Join<aod::UDMcParticles, aod::UDMcParticlesToUDTracks>;
   using UDMcCollisionsWithUDCollisions = soa::Join<aod::UDMcCollisions, aod::UDMcCollisionsToUDCollisions>;
-  using UDMcCollisionsWithUDCollision = UDMcCollisionsWithUDCollisions::iterator;
 
   // init
   void init(InitContext&)
@@ -480,18 +407,47 @@ struct TauEventTableProducer {
   }
   PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
-  void processMonteCarlo(UDMcCollisionsWithUDCollision const& mccollision,
-                         FullMCSGUDCollisions const&,
-                         FullUDTracks const&,
-                         UDMcParticlesWithUDTracks const&)
+	PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+	PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
+//	PresliceUnsorted<FullUDTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+
+  void processMonteCarlo(UDMcCollisionsWithUDCollisions const& mccollisions,
+                         FullMCSGUDCollisions const& recolls,
+                         FullUDTracks const& tracks,
+                         aod::UDMcParticles const& parts)
   {
-    LOGF(info, "mccollision idx %i", mccollision.globalIndex());
-    if (mccollision.has_udcollisions()) {
-      auto const& collFromMcColl = mccollision.udcollisions_as<FullMCSGUDCollisions>();
-      LOGF(info, "collision size %i ", collFromMcColl.size());
-    }
+
+		for(const auto& mccoll : mccollisions){
+			if (mccoll.has_udcollisions()) {
+	      auto const& collFromMcColl = mccoll.udcollisions_as<FullMCSGUDCollisions>();
+	      LOGF(info, "collision size %i ", collFromMcColl.size());
+//				auto const& partsFromMcColl = mccoll.udmcparticles_as<aod::UDMcParticles>();
+				auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+				LOGF(info, "partsFromMcColl size %i", partsFromMcColl.size());
+				for (const auto& particle : partsFromMcColl) {
+					if (particle.has_mothers())
+						continue;
+					LOGF(info, "no mother pdg  %i", particle.pdgCode());
+					const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+					LOGF(info, "  daughters size %i", daughters.size());
+					for (const auto& daughter : daughters){
+						LOGF(info, "    daughters pdg  %i", daughter.pdgCode());
+					}
+				}// particles
+//				auto const& tracksFromColl = collFromMcColl.udtracks_as<FullUDTracks>();
+//				LOGF(info, "tracksFromColl size %i", tracksFromColl.size());
+	    }// collisions
+
+//			auto colSlice = recolls.sliceBy(colPerMcCollision, mccoll.globalIndex());
+//			LOGF(info, "collision slice size %i ", colSlice.size());
+		}// mccollisions
+
+
+//		const auto& mccollision = mccollisions.iteratorAt(0);
+
   }
   PROCESS_SWITCH(TauEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
