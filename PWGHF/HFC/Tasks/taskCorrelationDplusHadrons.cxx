@@ -46,9 +46,6 @@ const TString stringMCRecoDPrompt = "MC reco, prompt D+;";
 const TString stringMCGenDPrompt = "MC gen, prompt D+;";
 const TString stringMCRecoDFd = "MC reco, non-prompt D+;";
 const TString stringMCGenDFd = "MC gen, non-prompt D+;";
-constexpr int kPrompt = 1;
-constexpr int kNonPrompt = 2;
-constexpr int kFromB = 0; // 0 means from Beauty (non-prompt D+)
 
 const int npTBinsCorrelations = 8;
 const double pTBinsCorrelations[npTBinsCorrelations + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
@@ -80,7 +77,7 @@ struct HfTaskCorrelationDplusHadrons {
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D+"}; // 7 corresponds to topo+PID cuts
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
-  Configurable<std::vector<double>> mlScorePromptorNonPrompt{"mlScorePromptorNonPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt or Feed-down"};
+  Configurable<std::vector<double>> mlScorePromptOrNonPrompt{"mlScorePromptOrNonPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt or Feed-down"};
   Configurable<std::vector<double>> mlScoreBkg{"mlScoreBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{ptBinsCorrelationsVec}, "pT bin limits for correlation plots"};
@@ -308,14 +305,14 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScoreNonPrompt = candidate.mlScoreNonPrompt();
       float bdtScoreBkg = candidate.mlScoreBkg();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
-      float bdtScorePromptorNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
+      float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
         continue;
       }
 
-      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
+      if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -347,14 +344,14 @@ struct HfTaskCorrelationDplusHadrons {
       double massD = pairEntry.mD();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      float bdtScorePromptorNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
+      float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
         continue;
       }
 
-      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
+      if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -411,13 +408,13 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScoreBkg = candidate.mlScoreBkg();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       bool isDplusPrompt = candidate.isPrompt();
-      float bdtScorePromptorNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
+      float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
         continue;
 
-      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
+      if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
@@ -465,13 +462,13 @@ struct HfTaskCorrelationDplusHadrons {
       int poolBin = pairEntry.poolBin();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      float bdtScorePromptorNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
+      float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
       if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
         continue;
 
-      if (bdtScorePromptorNonPrompt < mlScorePromptorNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
+      if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPrompt->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
@@ -510,9 +507,9 @@ struct HfTaskCorrelationDplusHadrons {
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
           registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDplusPrompt, poolBin, efficiencyWeight);
-          if (statusDplusPrompt == kPrompt && statusPromptHadron == kPrompt) {
+          if (statusDplusPrompt == RecoDecay::OriginType::Prompt && statusPromptHadron == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDplusPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-          } else if (statusDplusPrompt == kFromB && statusPromptHadron == kNonPrompt) {
+          } else if (statusDplusPrompt != RecoDecay::OriginType::Prompt && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
         }
@@ -559,12 +556,12 @@ struct HfTaskCorrelationDplusHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDplusPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == kPrompt) {
+        if (statusPromptHadron == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptDPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == kNonPrompt) {
+        if (statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       }
@@ -628,7 +625,7 @@ struct HfTaskCorrelationDplusHadrons {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
       }
-      if (outputMl[0] > mlScoreBkg->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt())) || outputMl[idxBdtScore] < mlScorePromptorNonPrompt->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()))) {
+      if (outputMl[0] > mlScoreBkg->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt())) || outputMl[idxBdtScore] < mlScorePromptOrNonPrompt->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()))) {
         continue;
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
