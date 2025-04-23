@@ -143,8 +143,8 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
     //  ITS hitmap
     std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    constexpr std::size_t itsLayers = 7;
-    for (std::size_t idItsLayer = 0u; idItsLayer < itsLayers; idItsLayer++) {
+    constexpr std::size_t NLayersIts = 7;
+    for (std::size_t idItsLayer = 0u; idItsLayer < NLayersIts; idItsLayer++) {
       if (TESTBIT(softPiItsHitMap, idItsLayer)) {
         setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
       }
