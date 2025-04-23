@@ -207,7 +207,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
   }
 
-  void initRctChecker() {
+  void initRctChecker()
+  {
     rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
   }
 
