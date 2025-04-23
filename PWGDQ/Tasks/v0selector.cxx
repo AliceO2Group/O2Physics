@@ -85,7 +85,7 @@ struct v0selector {
   Configurable<float> cutAPL1{"cutAPL1", 0.107, "cutAPL1"};
   Configurable<float> cutAPL2{"cutAPL2", -0.69, "cutAPL2"};
   Configurable<float> cutAPL3{"cutAPL3", 0.5, "cutAPL3"};
-  Configurable<bool> produceV0ID{"produceV0ID",false,"Produce additional V0ID table"};
+  Configurable<bool> produceV0ID{"produceV0ID", false, "Produce additional V0ID table"};
 
   enum { // Reconstructed V0
     kUndef = -1,
