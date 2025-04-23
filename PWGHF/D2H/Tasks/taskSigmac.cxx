@@ -45,6 +45,7 @@ struct HfTaskSigmac {
 
   HfHelper hfHelper;
   bool isMc;
+  static constexpr std::size_t NDaughters{2u};
 
   using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
 
@@ -357,7 +358,7 @@ struct HfTaskSigmac {
         massLc = hfHelper.invMassLcToPKPi(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
-        if (chargeSc == o2::aod::hf_cand_sigmac::chargeNull) {
+        if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
           registry.fill(HIST("Data/hEtaSc0"), etaSc);
           registry.fill(HIST("Data/hPhiSc0"), phiSc);
@@ -430,7 +431,7 @@ struct HfTaskSigmac {
         massLc = hfHelper.invMassLcToPiKP(candidateLc);
         deltaMass = massSc - massLc;
         /// fill the histograms
-        if (chargeSc == o2::aod::hf_cand_sigmac::chargeNull) {
+        if (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull) {
           registry.fill(HIST("Data/hPtSc0"), ptSc);
           registry.fill(HIST("Data/hEtaSc0"), etaSc);
           registry.fill(HIST("Data/hPhiSc0"), phiSc);
@@ -563,10 +564,10 @@ struct HfTaskSigmac {
     for (const auto& particle : mcParticlesSc) {
 
       /// reject immediately particles different from Σc0,++
-      bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
-      bool isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
-      bool isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
-      bool isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == (1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
+      bool isSc0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi));
+      bool isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
+      bool isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
+      bool isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
       if (!isSc0Gen && !isScPlusPlusGen && !isScStar0Gen && !isScStarPlusPlusGen)
         continue;
 
@@ -603,8 +604,7 @@ struct HfTaskSigmac {
       double ptGenSc(particle.pt()), etaGenSc(particle.eta()), phiGenSc(particle.phi());
       double ptGenScBMother(-1.);
       auto arrayDaughtersIds = particle.daughtersIds();
-      const int dauSize = 2;
-      if (arrayDaughtersIds.size() != dauSize) {
+      if (arrayDaughtersIds.size() != NDaughters) {
         /// This should never happen
         LOG(fatal) << "generated Σc0,++ has a number of daughter particles different than 2";
         continue;
@@ -721,7 +721,7 @@ struct HfTaskSigmac {
 
     /// loop over Lc generated particles
     for (const auto& particle : mcParticlesLc) {
-      if (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) != BIT(aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
       if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandGenMax) {
@@ -742,8 +742,8 @@ struct HfTaskSigmac {
     for (const auto& candSc : candidatesSc) {
 
       /// Candidate selected as Σc0 and/or Σc++
-      if (!(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) &&         // Σc0,++(2455)
-          !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi) && !(candSc.hfflag() & 1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi)) { // Σc0,++(2520)
+      if (!(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi)) && !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi)) &&         // Σc0,++(2455)
+          !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi)) && !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi))) { // Σc0,++(2520)
         continue;
       }
       /// rapidity selection on Σc0,++
@@ -762,12 +762,12 @@ struct HfTaskSigmac {
 
       // candidateLc.flagMcDecayChanRec();
 
-      bool isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi;
-      bool isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi;
-      bool isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi;
-      bool isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == 1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi;
+      bool isTrueSc0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+      bool isTrueScStar0Reco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+      bool isTrueScPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+      bool isTrueScStarPlusPlusReco = std::abs(candSc.flagMcMatchRec()) == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
       int sigmacSpecies = -1;
-      if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == o2::aod::hf_cand_sigmac::chargeNull)) {
+      if ((isTrueSc0Reco || isTrueScStar0Reco) && (chargeSc == o2::aod::hf_cand_sigmac::ChargeNull)) {
         /// Reconstructed Σc0 signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;
@@ -951,7 +951,7 @@ struct HfTaskSigmac {
 
         } /// end candidate Λc+ → π+K-p (and charge conjugate)
         /// end reconstructed Σc0 signal
-      } else if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == o2::aod::hf_cand_sigmac::chargePlusPlus)) {
+      } else if ((isTrueScPlusPlusReco || isTrueScStarPlusPlusReco) && (std::abs(chargeSc) == o2::aod::hf_cand_sigmac::ChargePlusPlus)) {
         /// Reconstructed Σc++ signal
         // Get the corresponding MC particle for Sc, found as the mother of the soft pion
         int indexMcScRec = -1;

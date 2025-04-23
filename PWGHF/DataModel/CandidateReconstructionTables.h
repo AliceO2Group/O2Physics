@@ -2073,8 +2073,8 @@ enum Species : int { Sc2455 = 0,
 enum Decays : int { PKPi = 0,
                     PiKP,
                     NDecays };
-const int chargeNull = 0;
-const int chargePlusPlus = 2;
+constexpr int ChargeNull = 0;
+constexpr int ChargePlusPlus = 2;
 } // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table

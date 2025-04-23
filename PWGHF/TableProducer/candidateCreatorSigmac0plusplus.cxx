@@ -143,8 +143,8 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
     //  ITS hitmap
     std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    const int itsLayers = 7;
-    for (int idItsLayer = 0; idItsLayer < itsLayers; idItsLayer++) {
+    constexpr std::size_t itsLayers = 7;
+    for (std::size_t idItsLayer = 0u; idItsLayer < itsLayers; idItsLayer++) {
       if (TESTBIT(softPiItsHitMap, idItsLayer)) {
         setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
       }
@@ -180,7 +180,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
       /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
       /// if not selected, skip it and go to the next one
-      if (!(candLc.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if (!(candLc.hfflag() & BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) {
         continue;
       }
       /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
@@ -236,7 +236,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       int chargeLc = candLc.template prong0_as<aod::TracksWDcaExtra>().sign() + candLc.template prong1_as<aod::TracksWDcaExtra>().sign() + candLc.template prong2_as<aod::TracksWDcaExtra>().sign();
       int chargeSoftPi = trackSoftPi.sign();
       int8_t chargeSigmac = chargeLc + chargeSoftPi;
-      if (std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::chargeNull && std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::chargePlusPlus) {
+      if (std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargeNull && std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargePlusPlus) {
         /// this shall never happen
         LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
       }
@@ -451,7 +451,7 @@ struct HfCandidateSigmac0plusplusMc {
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
-      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
+      if (!(std::abs(candLc.flagMcMatchRec()) == BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) { /// (*)
         rowMCMatchScRec(flag, origin, -1.f, 0);
         continue;
       }
@@ -462,7 +462,7 @@ struct HfCandidateSigmac0plusplusMc {
                                        candLc.prong2_as<aod::TracksWMc>(),
                                        candSigmac.prong1_as<aod::TracksWMc>()};
       chargeSigmac = candSigmac.charge();
-      if (chargeSigmac == o2::aod::hf_cand_sigmac::chargeNull) {
+      if (chargeSigmac == o2::aod::hf_cand_sigmac::ChargeNull) {
         /// candidate Σc0
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
@@ -472,18 +472,18 @@ struct HfCandidateSigmac0plusplusMc {
         /// look for Σc0(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaC0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-          flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+          flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
 
         /// look for Σc0(2520)
         if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStar0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
           }
         }
 
-      } else if (std::abs(chargeSigmac) == o2::aod::hf_cand_sigmac::chargePlusPlus) {
+      } else if (std::abs(chargeSigmac) == o2::aod::hf_cand_sigmac::ChargePlusPlus) {
         /// candidate Σc++
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
@@ -493,14 +493,14 @@ struct HfCandidateSigmac0plusplusMc {
         /// look for Σc++(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-          flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+          flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
 
         /// look for Σc++(2520)
         if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStarPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
           }
         }
       }
@@ -554,7 +554,7 @@ struct HfCandidateSigmac0plusplusMc {
             continue;
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
             break;
           }
         }
@@ -566,7 +566,7 @@ struct HfCandidateSigmac0plusplusMc {
             continue;
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
             break;
           }
         }
@@ -582,7 +582,7 @@ struct HfCandidateSigmac0plusplusMc {
               continue;
             if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
               /// Λc+ daughter decaying in pK-π+ found!
-              flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+              flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
               break;
             }
           }
@@ -594,7 +594,7 @@ struct HfCandidateSigmac0plusplusMc {
               continue;
             if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
               /// Λc+ daughter decaying in pK-π+ found!
-              flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+              flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
               break;
             }
           }
