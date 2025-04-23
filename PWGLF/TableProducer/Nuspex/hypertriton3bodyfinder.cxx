@@ -865,7 +865,7 @@ struct hypertriton3bodyFinder {
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
       auto goodtracks = Goodtracks.sliceBy(perCollisionGoodTracks, collision.globalIndex());
 
-      if (!cffilter.hasLD() && UseCFFilter) {
+      if (!cffilter.hasLD_LooseKstar() && UseCFFilter) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
@@ -902,7 +902,7 @@ struct hypertriton3bodyFinder {
       VirtualLambdaCheck<MCLabeledTracksIU>(collision, v0s, 0);
       VirtualLambdaCheck<MCLabeledTracksIU>(collision, fullv0s, 3);
 
-      if (!cffilter.hasLD() && UseCFFilter) {
+      if (!cffilter.hasLD_LooseKstar() && UseCFFilter) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
