@@ -202,7 +202,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
   }
 
-  /// \brief Inits the HF event selection object 
+  /// \brief Inits the HF event selection object
   /// \param registry reference to the histogram registry
   void init(o2::framework::HistogramRegistry& registry)
   {
@@ -396,7 +396,7 @@ struct HfEventSelectionMc {
     setEventRejectionLabels(hParticles);
   }
 
-  /// \brief Configures the object from the reco workflow 
+  /// \brief Configures the object from the reco workflow
   /// \param registry reference to the histogram registry
   /// \param device device spec to get the configs from the reco workflow
   void configureFromDevice(const o2::framework::DeviceSpec& device)
@@ -430,7 +430,7 @@ struct HfEventSelectionMc {
     }
   }
 
-  /// \brief Inits the HF event selection object 
+  /// \brief Inits the HF event selection object
   /// \param device device spec to get the configs from the reco workflow
   /// \param registry reference to the histogram registry
   void init(const o2::framework::DeviceSpec& device, o2::framework::HistogramRegistry& registry)
