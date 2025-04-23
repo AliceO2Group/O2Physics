@@ -200,16 +200,22 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
     hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+  }
+
+  /// \brief Inits the HF event selection object 
+  /// \param registry reference to the histogram registry
+  void init(o2::framework::HistogramRegistry& registry)
+  {
+    // we initialise the RCT checker
+    rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
-  }
 
-  void initRctChecker()
-  {
-    rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    // we initialise histograms
+    addHistograms(registry);
   }
 
   /// \brief Applies event selection.
@@ -390,6 +396,9 @@ struct HfEventSelectionMc {
     setEventRejectionLabels(hParticles);
   }
 
+  /// \brief Configures the object from the reco workflow 
+  /// \param registry reference to the histogram registry
+  /// \param device device spec to get the configs from the reco workflow
   void configureFromDevice(const o2::framework::DeviceSpec& device)
   {
     for (const auto& option : device.options) {
@@ -419,7 +428,21 @@ struct HfEventSelectionMc {
         rctTreatLimitedAcceptanceAsBad = option.defaultValue.get<bool>();
       }
     }
+  }
+
+  /// \brief Inits the HF event selection object 
+  /// \param device device spec to get the configs from the reco workflow
+  /// \param registry reference to the histogram registry
+  void init(const o2::framework::DeviceSpec& device, o2::framework::HistogramRegistry& registry)
+  {
+    // we get the configuration from the reco workflow
+    configureFromDevice(device);
+
+    // we initialise the RCT checker
     rctChecker.init(rctLabel, rctCheckZDC, rctTreatLimitedAcceptanceAsBad);
+
+    // we initialise histograms
+    addHistograms(registry);
   }
 
   /// \brief Function to apply event selections to generated MC collisions

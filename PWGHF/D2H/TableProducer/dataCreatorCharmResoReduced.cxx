@@ -303,8 +303,8 @@ struct HfDataCreatorCharmResoReduced {
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
 
-    // init RCT checker
-    hfEvSel.initRctChecker();
+    // init HF event selection helper
+    hfEvSel.init(registry);
   }
 
   /// Basic track quality selections for V0 daughters
