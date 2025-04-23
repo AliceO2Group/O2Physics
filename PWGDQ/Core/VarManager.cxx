@@ -615,7 +615,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMCVz] = "cm"; // TODO: check the unit
   fgVariableNames[kMCCosThetaHE] = "cos#it{#theta}^{MC}_{HE}";
   fgVariableUnits[kMCCosThetaHE] = "";
-  fgVariableNames[kMCPhiHE] = "#varphi_{HE}";
+  fgVariableNames[kMCPhiHE] = "#varphi^{MC}_{HE}";
   fgVariableUnits[kMCPhiHE] = "rad.";
   fgVariableNames[kMCCosThetaCS] = "cos#it{#theta}^{MC}_{CS}";
   fgVariableUnits[kMCCosThetaCS] = "";
