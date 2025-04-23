@@ -1794,10 +1794,13 @@ def main():
 
     # Make results available to the GitHub actions.
     if github_mode:
-        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-            print(f"n_issues={n_issues}", file=fh)
-            print(f"n_disabled={n_disabled}", file=fh)
-            print(f"n_tolerated={n_tolerated}", file=fh)
+        try:
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+                print(f"n_issues={n_issues}", file=fh)
+                print(f"n_disabled={n_disabled}", file=fh)
+                print(f"n_tolerated={n_tolerated}", file=fh)
+        except KeyError:
+            print("Skipping writing in GITHUB_OUTPUT.")
 
     # Print tips.
     print("\nTip: You can run the O2 linter locally with: python3 Scripts/o2_linter.py <files>")
