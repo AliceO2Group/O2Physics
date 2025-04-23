@@ -207,7 +207,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   void init(o2::framework::HistogramRegistry& registry)
   {
     // we initialise the RCT checker
-    rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    }
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
@@ -439,7 +441,9 @@ struct HfEventSelectionMc {
     configureFromDevice(device);
 
     // we initialise the RCT checker
-    rctChecker.init(rctLabel, rctCheckZDC, rctTreatLimitedAcceptanceAsBad);
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel, rctCheckZDC, rctTreatLimitedAcceptanceAsBad);
+    }
 
     // we initialise histograms
     addHistograms(registry);
