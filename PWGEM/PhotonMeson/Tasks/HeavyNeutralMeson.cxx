@@ -211,7 +211,7 @@ struct HeavyNeutralMeson {
     if (confEvtRequireSel8 && !col.sel8()) {
       return false;
     }
-    if(col.multNTracksPV() > cfgMaxMultiplicity) {
+    if (col.multNTracksPV() > cfgMaxMultiplicity) {
       return false;
     }
     return true;
