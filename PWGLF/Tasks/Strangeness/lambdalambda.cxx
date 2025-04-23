@@ -144,7 +144,7 @@ struct lambdalambda {
   ConfigurableAxis RadiusAxis{"RadiusAxis", {100, 0, 5}, "radius of v0v0"};
   ConfigurableAxis CPAAxis{"CPAAxis", {102, -1.02, 1.02}, "CPA of v0v0"};
   ConfigurableAxis DistanceAxis{"DistanceAxis", {100, 0, 10}, "distance of v0v0"};
-  ConfigurableAxis DCARAxis{"DCAAxis", {100, 0, 2}, "DCA of v0v0R"};
+  ConfigurableAxis DCAAxis{"DCAAxis", {100, 0, 2}, "DCA of v0v0R"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
