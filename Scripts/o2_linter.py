@@ -1780,9 +1780,7 @@ def main():
             f'Exceptionally, you can disable a test for a line by adding a comment with "{prefix_disable}"'
             " followed by the name of the test and parentheses with a reason for the exception."
         )
-        msg_tolerate = (
-            f'To tolerate certain issues in a directory, add a line with the test name in "{file_config}".'
-        )
+        msg_tolerate = f'To tolerate certain issues in a directory, add a line with the test name in "{file_config}".'
         if github_mode:
             print(f"\n::error title={title_result}::{msg_result}")
             print(f"::notice::{msg_disable}")
