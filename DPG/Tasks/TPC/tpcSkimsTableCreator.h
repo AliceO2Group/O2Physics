@@ -33,6 +33,7 @@ DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(BetaGamma, bg, float);
 DECLARE_SOA_COLUMN(NormMultTPC, normMultTPC, float);
 DECLARE_SOA_COLUMN(NormNClustersTPC, normNClustersTPC, float);
+DECLARE_SOA_COLUMN(NormNClustersTPCPID, normNClustersTPCPID, float);
 DECLARE_SOA_COLUMN(PidIndex, pidIndexTPC, uint8_t);
 DECLARE_SOA_COLUMN(NSigTPC, nsigTPC, float);
 DECLARE_SOA_COLUMN(NSigTOF, nsigTOF, float);
@@ -64,6 +65,7 @@ DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   tpcskims::BetaGamma,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
+                  tpcskims::NormNClustersTPCPID,
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
@@ -90,6 +92,7 @@ DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithTrkQA, "AOD", "TPCSKIMV0WQA",
                   tpcskims::BetaGamma,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
+                  tpcskims::NormNClustersTPCPID,
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
@@ -129,6 +132,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::BetaGamma,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
+                  tpcskims::NormNClustersTPCPID,
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
@@ -150,6 +154,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   tpcskims::BetaGamma,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
+                  tpcskims::NormNClustersTPCPID,
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,

@@ -20,6 +20,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
+#include <string>
 /// ROOT
 #include "TRandom3.h"
 /// O2
@@ -53,6 +54,7 @@ struct TreeWriterTpcV0 {
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
+  using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID>;
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
@@ -63,6 +65,7 @@ struct TreeWriterTpcV0 {
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   /// Configurables downsampling
   Configurable<double> dwnSmplFactor_Pi{"dwnSmplFactor_Pi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactor_Pr{"dwnSmplFactor_Pr", 1., "downsampling factor for protons, default fraction to keep is 1."};
@@ -90,6 +93,7 @@ struct TreeWriterTpcV0 {
   {
 
     const double ncl = track.tpcNClsFound();
+    const double nclPID = track.tpcNClsFindableMinusPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -118,6 +122,7 @@ struct TreeWriterTpcV0 {
                  bg,
                  multTPC / 11000.,
                  std::sqrt(nClNorm / ncl),
+                 nclPID,
                  id,
                  nSigmaTPC,
                  nSigmaTOF,
@@ -140,6 +145,7 @@ struct TreeWriterTpcV0 {
   {
 
     const double ncl = track.tpcNClsFound();
+    const double nclPID = track.tpcNClsFindableMinusPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -168,6 +174,7 @@ struct TreeWriterTpcV0 {
                           bg,
                           multTPC / 11000.,
                           std::sqrt(nClNorm / ncl),
+                          nclPID,
                           id,
                           nSigmaTPC,
                           nSigmaTOF,
@@ -252,7 +259,7 @@ struct TreeWriterTpcV0 {
   }
 
   /// Apply a track quality selection with a filter!
-  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, aod::V0Datas const& v0s, aod::BCsWithTimestamps const&)
+  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, aod::BCsWithTimestamps const&)
   {
     /// Check event slection
     if (!isEventSelected(collision, tracks)) {
@@ -260,7 +267,7 @@ struct TreeWriterTpcV0 {
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
-    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
 
     rowTPCTree.reserve(tracks.size());
 
@@ -268,6 +275,9 @@ struct TreeWriterTpcV0 {
     for (const auto& v0 : v0s) {
       auto posTrack = v0.posTrack_as<soa::Filtered<Trks>>();
       auto negTrack = v0.negTrack_as<soa::Filtered<Trks>>();
+      if (v0.v0addid() == -1) {
+        continue;
+      }
       // gamma
       if (static_cast<bool>(posTrack.pidbit() & (1 << 0)) && static_cast<bool>(negTrack.pidbit() & (1 << 0))) {
         if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisElectrons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Electron], maxPt4dwnsmplTsalisElectrons)) {
@@ -313,8 +323,8 @@ struct TreeWriterTpcV0 {
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
-  Preslice<aod::V0Datas> perCollisionV0s = aod::v0data::collisionId;
-  void processWithTrQA(Colls const& collisions, Trks const& myTracks, aod::V0Datas const& myV0s, MyBCTable const&, aod::TracksQA_002 const& tracksQA)
+  Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
+  void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, MyBCTable const&, aod::TracksQA_002 const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA;
     labelTrack2TrackQA.clear();
@@ -333,7 +343,7 @@ struct TreeWriterTpcV0 {
       }
       auto bc = collision.bc_as<MyBCTable>();
       const int runnumber = bc.runNumber();
-      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
+      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
       const int bcGlobalIndex = bc.globalIndex();
       const int bcTimeFrameId = bc.tfId();
       const int bcBcInTimeFrame = bc.bcInTF();
@@ -342,6 +352,9 @@ struct TreeWriterTpcV0 {
       for (const auto& v0 : v0s) {
         auto posTrack = v0.posTrack_as<Trks>();
         auto negTrack = v0.negTrack_as<Trks>();
+        if (v0.v0addid() == -1) {
+          continue;
+        }
         aod::TracksQA_002::iterator posTrackQA;
         aod::TracksQA_002::iterator negTrackQA;
         bool existPosTrkQA;
@@ -432,6 +445,7 @@ struct TreeWriterTPCTOF {
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> applyTrkSel{"applyTrkSel", 1, "Flag to apply track selection: 0 -> no track selection, 1 -> track selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
+  Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   /// Triton
   Configurable<float> maxMomTPCOnlyTr{"maxMomTPCOnlyTr", 1.5, "Maximum momentum for TPC only cut triton"};
   Configurable<float> maxMomHardCutOnlyTr{"maxMomHardCutOnlyTr", 50, "Maximum TPC inner momentum for triton"};
@@ -517,6 +531,7 @@ struct TreeWriterTPCTOF {
   {
 
     const double ncl = track.tpcNClsFound();
+    const double nclPID = track.tpcNClsFindableMinusPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -538,6 +553,7 @@ struct TreeWriterTPCTOF {
                     bg,
                     multTPC / 11000.,
                     std::sqrt(nClNorm / ncl),
+                    nclPID,
                     id,
                     nSigmaTPC,
                     nSigmaTOF,
@@ -553,6 +569,7 @@ struct TreeWriterTPCTOF {
   {
 
     const double ncl = track.tpcNClsFound();
+    const double nclPID = track.tpcNClsFindableMinusPID();
     const double p = track.tpcInnerParam();
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
@@ -574,6 +591,7 @@ struct TreeWriterTPCTOF {
                              bg,
                              multTPC / 11000.,
                              std::sqrt(nClNorm / ncl),
+                             nclPID,
                              id,
                              nSigmaTPC,
                              nSigmaTOF,
@@ -628,7 +646,7 @@ struct TreeWriterTPCTOF {
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
-    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
 
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
@@ -688,7 +706,7 @@ struct TreeWriterTPCTOF {
       }
       auto bc = collision.bc_as<MyBCTable>();
       const int runnumber = bc.runNumber();
-      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
+      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
       const int bcGlobalIndex = bc.globalIndex();
       const int bcTimeFrameId = bc.tfId();
       const int bcBcInTimeFrame = bc.bcInTF();

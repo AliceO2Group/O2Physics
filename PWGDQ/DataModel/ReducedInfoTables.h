@@ -905,7 +905,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                    //!
 DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
 DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint16_t); //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
@@ -1011,6 +1011,14 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 
 // iterators
 using V0Bit = V0Bits::iterator;
+
+namespace v0mapID
+{
+DECLARE_SOA_COLUMN(V0AddID, v0addid, int8_t); //!
+} // namespace v0mapID
+
+DECLARE_SOA_TABLE(V0MapID, "AOD", "V0MAPID", //!
+                  v0mapID::V0AddID);
 
 namespace DalBits
 {
