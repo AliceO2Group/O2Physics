@@ -1952,7 +1952,7 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 /// Basic selection of proton candidates forLc and ThetaC decays
 /// \param track is a track
 /// \return true if track passes all cuts
-template <bool is4ThetaC = false, typename T>
+template <bool is4ThetaC, typename T>
 inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
 {
 
