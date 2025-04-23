@@ -717,7 +717,7 @@ struct DQFilterPPTask {
         histNames += value;
         histNames += ";";
       }
-      DefineHistograms(fHistMan, histNames.Data());
+      DefineHistograms(fHistMan, histNames.Data(), "cepf");
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
