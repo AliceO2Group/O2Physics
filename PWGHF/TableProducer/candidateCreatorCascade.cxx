@@ -119,6 +119,7 @@ struct HfCandidateCreatorCascade {
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
     hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.initRctChecker();
 
     massP = MassProton;
     massK0s = MassK0Short;

@@ -148,6 +148,7 @@ struct HfCandidateCreator2Prong {
     registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
     hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.initRctChecker();
 
     massPi = MassPiPlus;
     massK = MassKPlus;

@@ -137,6 +137,7 @@ struct HfCandidateCreatorDstar {
 
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
     hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.initRctChecker();
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;

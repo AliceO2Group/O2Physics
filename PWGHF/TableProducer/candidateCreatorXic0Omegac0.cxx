@@ -342,6 +342,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.add("hKFcosPaCascToOmegac", "hKFcosPaCascToOmegac", kTH1D, {{5000, 0.8f, 1.1f}});
     }
     hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.initRctChecker();
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);

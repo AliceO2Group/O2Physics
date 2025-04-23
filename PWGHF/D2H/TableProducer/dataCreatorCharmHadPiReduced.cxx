@@ -291,6 +291,9 @@ struct HfDataCreatorCharmHadPiReduced {
     setLabelHistoCands(hCandidatesD0);
     setLabelHistoCands(hCandidatesDPlus);
     setLabelHistoCands(hCandidatesDs);
+
+    // init RCT checker
+    hfEvSel.initRctChecker();
   }
 
   /// Pion selection (D Pi <-- B0)

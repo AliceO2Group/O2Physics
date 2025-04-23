@@ -176,6 +176,7 @@ struct HfCandidateCreator3Prong {
     registry.add("hDcaZProngs", "DCAz of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
     hfEvSel.addHistograms(registry); // collision monitoring
+    hfEvSel.initRctChecker();
 
     massP = MassProton;
     massPi = MassPiPlus;
