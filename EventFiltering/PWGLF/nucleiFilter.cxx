@@ -210,7 +210,6 @@ struct nucleiFilter {
     fitter2body.setMaxChi2(1e9);
     fitter2body.setUseAbsDCA(true);
 
-
     ccdb->setURL(trgH3L3Body.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -484,8 +483,8 @@ struct nucleiFilter {
         auto momTrackParCov = fitter2body.createParentTrackPar();
         momTrackParCov.getPxPyPzGlo(mom);
         double cosPA = (vtxXYZ[0] * mom[0] + vtxXYZ[1] * mom[1] + vtxXYZ[2] * mom[2]) /
-                         std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
-                                   (mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]));
+                       std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
+                                 (mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]));
         if (cosPA < cfgCutCosPAheV0) {
           continue;
         }
