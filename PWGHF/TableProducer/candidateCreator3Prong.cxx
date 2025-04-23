@@ -108,7 +108,6 @@ struct HfCandidateCreator3Prong {
   double bz{0.};
 
   constexpr static float UndefValueFloat{-999.f};
-  constexpr std::size_t NDaughtersResonant{2u};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
   using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
@@ -810,6 +809,8 @@ struct HfCandidateCreator3ProngExpressions {
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
+
+  constexpr static std::size_t NDaughtersResonant{2u};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
