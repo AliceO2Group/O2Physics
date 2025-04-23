@@ -553,9 +553,9 @@ struct ZdcQVectors {
     const auto& zdcCol = foundBC.zdc();
 
     // Get the raw energies eZN[8] (not the common A,C)
-    int nTowers = 8; 
+    int nTowers = 8;
     int nTowersPerSide = 4;
-    
+
     for (int tower = 0; tower < nTowers; tower++) {
       eZN[tower] = (tower < nTowersPerSide) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % nTowersPerSide];
     }
@@ -681,7 +681,7 @@ struct ZdcQVectors {
     }
 
     // "QXA", "QYA", "QXC", "QYC"
-    int sides = 2; 
+    int sides = 2;
     for (int i = 0; i < sides; ++i) {
       if (sumZN[i] > 0) {
         q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
@@ -759,7 +759,9 @@ struct ZdcQVectors {
 
       counter++;
       return;
-    } else {
+    }
+    else
+    {
       if (counter < 1)
         LOGF(info, "Recentering not complete!! q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
     }
