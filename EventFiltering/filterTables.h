@@ -154,6 +154,7 @@ DECLARE_SOA_COLUMN(TrackedXi, hasTrackedXi, bool);               //! at least 1 
 DECLARE_SOA_COLUMN(TrackedOmega, hasTrackedOmega, bool);         //! at least 1 tracked Omega
 DECLARE_SOA_COLUMN(Tracked3Body, hasTracked3Body, bool);         //! at least 1 tracked 3Body
 DECLARE_SOA_COLUMN(OmegaHighMult, hasOmegaHighMult, bool);       //! at least 1 Omega + high-mult event
+DECLARE_SOA_COLUMN(LambdaLambda, lambdaLambda, bool);            //! at least 2 lambda satisfying selection
 
 // F1-proton
 DECLARE_SOA_COLUMN(TriggerEventF1Proton, triggereventf1proton, bool); //! F1 - proton femto trigger event
@@ -186,10 +187,10 @@ DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson
 DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
 DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PPOmega, hasPPOmega, bool);                   //! PPomega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PPEtaPrime, hasPPEtaPrime, bool);             //! PPEta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(Omegad, hasOmegad, bool);                     //! Omegad' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);               //! Eta'd meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(POmega, hasPPOmega, bool);                    //! Pomega meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(PEtaPrime, hasPEtaPrime, bool);               //! PPEta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(OmegadOrPP, hasOmegadOrPP, bool);             //! Omegad' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimedOrPP, hasEtaPrimedOrPP, bool);       //! Eta'd meson candidate (3pi) in the collision
 
 } // namespace filtering
 
@@ -295,7 +296,7 @@ using FullJetFilter = FullJetFilters::iterator;
 
 // strangeness (lf)
 DECLARE_SOA_TABLE(StrangenessFilters, "AOD", "LFStrgFilters", //!
-                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult, filtering::DoubleOmega, filtering::OmegaXi);
+                  filtering::Omega, filtering::hadronOmega, filtering::DoubleXi, filtering::TripleXi, filtering::QuadrupleXi, filtering::SingleXiYN, filtering::OmegaLargeRadius, filtering::TrackedXi, filtering::TrackedOmega, filtering::OmegaHighMult, filtering::DoubleOmega, filtering::OmegaXi, filtering::LambdaLambda);
 
 using StrangenessFilter = StrangenessFilters::iterator;
 
@@ -325,8 +326,8 @@ using PhotonFilter = PhotonFilters::iterator;
 DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
                   filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
                   filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson,
-                  filtering::PPOmega, filtering::PPEtaPrime,
-                  filtering::Omegad, filtering::EtaPrimed);
+                  filtering::POmega, filtering::PEtaPrime,
+                  filtering::OmegadOrPP, filtering::EtaPrimedOrPP);
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 
