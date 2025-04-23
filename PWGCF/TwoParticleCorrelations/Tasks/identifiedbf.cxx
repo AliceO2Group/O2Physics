@@ -100,6 +100,7 @@ struct IdentifiedbfTask {
     std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                         //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtPure{nch + 1, nullptr};                     //!<! single particle distribution of pure particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                          //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
     std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                              //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
@@ -297,6 +298,56 @@ struct IdentifiedbfTask {
       return particle.isPhysicalPrimary();
     }
 
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param particle passed MC track converted to MCParticle
+    template <typename ParticleObject>
+    bool isSpeciesCheck(ParticleObject const& particle, int trkId)
+    {
+      int pdgcode = particle.pdgCode();
+      int realPID = -1;
+      switch (pdgcode) {
+        case kPositron:
+          realPID = 0;
+          break;
+        case kElectron:
+          realPID = 1;
+          break;
+        case kPiPlus:
+          realPID = 2;
+          break;
+        case kPiMinus:
+          realPID = 3;
+          break;
+        case kKPlus:
+          realPID = 4;
+          break;
+        case kKMinus:
+          realPID = 5;
+          break;
+        case kProton:
+          realPID = 6;
+          break;
+        case kProtonBar:
+          realPID = 7;
+          break;
+        default:
+          realPID = -1;
+          break;
+      }
+      return (realPID == trkId);
+    }
+
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param particle passed MC track converted to MCParticle
+    template <typename TrackObject>
+    bool isPrimarySpeciesCheck(TrackObject const& track, int trkId)
+    {
+      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+        return (isPrimaryCheck(track.template mcParticle_as<aod::McParticles>()) && isSpeciesCheck(track.template mcParticle_as<aod::McParticles>(), trkId));
+      }
+      return false;
+    }
+
     /// \brief fills the singles histograms in singles execution mode
     /// \param passedtracks filtered table with the tracks associated to the passed index
     /// \param tix index, in the singles histogram bank, for the passed filetered track table
@@ -315,6 +366,9 @@ struct IdentifiedbfTask {
           fhN1VsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhSum1PtVsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
           trackPrimaryCheck(track, zvtx, corr);
+          if (isPrimarySpeciesCheck(track, track.trackacceptedid())) {
+            fhN1VsZEtaPhiPtPure[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
+          }
         }
         index++;
       }
@@ -583,6 +637,23 @@ struct IdentifiedbfTask {
               ptlow,
               ptup);
 
+            fhN1VsZEtaPhiPtPure[i] = new TH3F(
+              TString::Format("n1_%s_Pure_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} Pure #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+
             fhSum1PtVsZEtaPhiPt[i] = new TH3F(
               TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
               TString::Format(
@@ -618,6 +689,8 @@ struct IdentifiedbfTask {
             fhN1VsZEtaPhiPtPrimary[i]->Sumw2(false);
             fhN1VsZEtaPhiPtSecondary[i]->SetBit(TH1::kIsNotW);
             fhN1VsZEtaPhiPtSecondary[i]->Sumw2(false);
+            fhN1VsZEtaPhiPtPure[i]->SetBit(TH1::kIsNotW);
+            fhN1VsZEtaPhiPtPure[i]->Sumw2(false);
             fhSum1PtVsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
             fhSum1PtVsZEtaPhiPt[i]->Sumw2(false);
           }
@@ -632,6 +705,7 @@ struct IdentifiedbfTask {
             fOutputList->Add(fhN1VsZEtaPhiPt[i]);
             fOutputList->Add(fhN1VsZEtaPhiPtPrimary[i]);
             fOutputList->Add(fhN1VsZEtaPhiPtSecondary[i]);
+            fOutputList->Add(fhN1VsZEtaPhiPtPure[i]);
             fOutputList->Add(fhSum1PtVsZEtaPhiPt[i]);
           }
         }

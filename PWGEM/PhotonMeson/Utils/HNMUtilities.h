@@ -36,11 +36,9 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
 
-using namespace o2::aod::pwgem::photonmeson;
-
-// -------> Struct to store photons from EMC clusters or V0s
 namespace o2::aod::pwgem::photonmeson::hnmutilities
 {
+// -------> Struct to store photons from EMC clusters or V0s
 struct Photon {
   Photon(float px, float py, float pz, bool isFromConversion) : px(px), py(py), pz(pz), pt(std::sqrt(px * px + py * py)), isFromConversion(isFromConversion)
   {
@@ -125,12 +123,13 @@ struct HeavyNeutralMeson {
   float phi() const { return vHeavyNeutralMeson.Phi(); }
 };
 
-float smPhiEdges[9] = {1.75, 2.1, 2.45, 2.8, 3.14, 4., 4.89, 5.24, 5.58};
+const int nSMEdges = 9;
+float smPhiEdges[nSMEdges] = {1.75, 2.1, 2.45, 2.8, 3.14, 4., 4.89, 5.24, 5.58};
 
-unsigned short getSMNumber(float eta, float phi)
+int getSMNumber(float eta, float phi)
 {
-  unsigned short smNumber = 0;
-  for (int iPhiInterval = 0; iPhiInterval < 9; iPhiInterval++) {
+  int smNumber = 0;
+  for (int iPhiInterval = 0; iPhiInterval < nSMEdges; iPhiInterval++) {
     if (phi > smPhiEdges[iPhiInterval])
       smNumber = 2 * (iPhiInterval + 1);
   }
@@ -148,7 +147,7 @@ void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::
   for (const auto& cluster : clusters) {
     float eta = cluster.eta();
     float phi = cluster.phi();
-    unsigned short smNumber = getSMNumber(eta, phi);
+    int smNumber = getSMNumber(eta, phi);
     // LOG(info) << "Shifting in sm " << smNumber << ", eta/phi = " << eta << " / " << phi << " to eta/phi = " << eta + EMCEtaShift[getSMNumber(eta, phi)] << " / " << phi + EMCPhiShift[getSMNumber(eta, phi)];
     eta += EMCEtaShift[smNumber];
     phi += EMCPhiShift[smNumber];
@@ -179,31 +178,11 @@ void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& v
   }
 }
 
-/// \brief Reconstruct heavy neutral mesons from tracks and GG candidates and fill them into the vHNMs vector
-template <typename Track>
-void reconstructHeavyNeutralMesons(Track const& tracks, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs) // ToDO: Pion comb. in main code, tracks -> 4-vectors
+/// \brief Reconstruct heavy neutral mesons from the given pion, antipion and the GG candidates and add them to the vHNMs vector
+void reconstructHeavyNeutralMesons(ROOT::Math::PtEtaPhiMVector const& vecPiPlPiMi, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs)
 {
-  vHNMs.clear();
-  for (const auto& posTrack : tracks) {
-    if (!posTrack.isGlobalTrack() || posTrack.sign() < 0)
-      continue;
-    for (const auto& negTrack : tracks) {
-      if (!negTrack.isGlobalTrack() || negTrack.sign() > 0)
-        continue;
-      for (size_t iGG = 0; iGG < vGGs.size(); iGG++) {
-        HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), posTrack.energy(constants::physics::MassPiPlus) + negTrack.energy(constants::physics::MassPiMinus), posTrack.px() + negTrack.px(), posTrack.py() + negTrack.py(), posTrack.pz() + negTrack.pz());
-        vHNMs.push_back(heavyNeutralMeson);
-      }
-    }
-  }
-}
-
-/// \brief Reconstruct heavy neutral mesons from pion and antipion and GG candidates and fill them into the vHNMs vector
-void reconstructHeavyNeutralMesons(ROOT::Math::PtEtaPhiMVector const& posPion, ROOT::Math::PtEtaPhiMVector const& negPion, std::vector<GammaGammaPair>& vGGs, std::vector<HeavyNeutralMeson>& vHNMs) // ToDO: Pion comb. in main code, tracks -> 4-vectors
-{
-  const ROOT::Math::PtEtaPhiMVector trackSum = posPion + negPion;
   for (size_t iGG = 0; iGG < vGGs.size(); iGG++) {
-    HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), trackSum.E(), trackSum.Px(), trackSum.Py(), trackSum.Pz());
+    HeavyNeutralMeson heavyNeutralMeson(&vGGs.at(iGG), vecPiPlPiMi.E(), vecPiPlPiMi.Px(), vecPiPlPiMi.Py(), vecPiPlPiMi.Pz());
     vHNMs.push_back(heavyNeutralMeson);
   }
 }

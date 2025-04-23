@@ -112,6 +112,11 @@ struct strangederivedbuilder {
   Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
 
   //__________________________________________________
+  // UPC specific information
+  Produces<aod::ZDCNeutrons> zdcNeutrons;              // Primary neutrons within ZDC acceptance
+  Produces<aod::ZDCNMCCollRefs> zdcNeutronsMCCollRefs; // references collisions from ZDCNeutrons
+
+  //__________________________________________________
   // Q-vectors
   Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
   Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
@@ -1054,6 +1059,26 @@ struct strangederivedbuilder {
     straOrigin(origin.dataframeID());
   }
 
+  void processSimulatedZDCNeutrons(soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticlesEntireTable)
+  {
+    for (const auto& mccollision : mcCollisions) {
+      const uint64_t mcCollIndex = mccollision.globalIndex();
+      auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
+
+      for (const auto& mcPart : mcParticles) {
+        if (std::abs(mcPart.pdgCode()) == kNeutron) { // check if it is a neutron or anti-neutron
+          if (std::abs(mcPart.eta()) > 8.7) {         // check if it is within ZDC acceptance
+            zdcNeutrons(mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(),
+                        mcPart.vx(), mcPart.vy(), mcPart.vz(), mcPart.vt(),
+                        mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+
+            zdcNeutronsMCCollRefs(mcPart.mcCollisionId());
+          }
+        }
+      }
+    }
+  }
+
   // debug processing
   PROCESS_SWITCH(strangederivedbuilder, processDataframeIDs, "Produce data frame ID tags", false);
 
@@ -1077,6 +1102,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+  PROCESS_SWITCH(strangederivedbuilder, processSimulatedZDCNeutrons, "Produce generated neutrons (within ZDC acceptance) table for UPC analysis", false);
 
   // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
