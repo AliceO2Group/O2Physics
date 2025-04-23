@@ -27,7 +27,7 @@ from typing import Union
 
 github_mode = False  # GitHub mode
 prefix_disable = "o2-linter: disable="  # prefix for disabling tests
-file_tolerated_tests = "o2linter"  # name of file with a list of tests whose failures should be tolerated
+file_config = "o2linter_config"  # name of the configuration file (applied per directory)
 # If this file exists in the path of the tested file,
 # failures of tests listed in this file will not make the linter fail.
 
@@ -199,12 +199,12 @@ def block_ranges(line: str, char_open: str, char_close: str) -> "list[list[int]]
 def get_tolerated_tests(path: str) -> "list[str]":
     """Get the list of tolerated tests.
 
-    Looks for file_tolerated_tests.
+    Looks for the configuration file.
     Starts in the test file directory and iterates through parents.
     """
     tests: list[str] = []
     for directory in Path(path).resolve().parents:
-        path_tests = directory / file_tolerated_tests
+        path_tests = directory / file_config
         if path_tests.is_file():
             with path_tests.open() as content:
                 tests = [line.strip() for line in content.readlines() if line.strip()]
@@ -1781,7 +1781,7 @@ def main():
             " followed by the name of the test and parentheses with a reason for the exception."
         )
         msg_tolerate = (
-            f'To tolerate certain issues in a directory, add a line with the test name in "{file_tolerated_tests}".'
+            f'To tolerate certain issues in a directory, add a line with the test name in "{file_config}".'
         )
         if github_mode:
             print(f"\n::error title={title_result}::{msg_result}")
