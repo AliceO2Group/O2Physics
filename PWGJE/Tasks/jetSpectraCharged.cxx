@@ -566,7 +566,7 @@ struct JetSpectraCharged {
   void processCollisionsWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                                  aod::JetMcCollisions const&)
   {
-    if (!collision.has_mcCollision()){
+    if (!collision.has_mcCollision()) {
       registry.fill(HIST("h_fakecollisions"), 0.5);
     }
     float eventWeight = collision.weight();
