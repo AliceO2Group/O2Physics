@@ -129,7 +129,7 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
   O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 100, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
-  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass4/", "ccdb path for recentering histos"); 
+  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass4/", "ccdb path for recentering histos");
   O2_DEFINE_CONFIGURABLE(cfgFillCommonRegistry, bool, true, "Fill common registry with histograms");
 
   // Additional event selections
@@ -148,7 +148,6 @@ struct ZdcQVectors {
   using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
-
   enum SelectionCriteria {
     evSel_Zvtx,
     evSel_sel8,
@@ -163,7 +162,7 @@ struct ZdcQVectors {
     nEventSelections
   };
 
-  enum CalibModes { 
+  enum CalibModes {
     kEnergyCal,
     kMeanv,
     kRec
@@ -177,7 +176,7 @@ struct ZdcQVectors {
   // keep track of calibration histos for each given step and iteration
   struct Calib {
     std::vector<TList*> calibList = std::vector<TList*>(3, nullptr); // [0] Enerfy cal, [1] vmean, [2] recentering
-    std::vector<bool> calibfilesLoaded = std::vector<bool>(3, false); 
+    std::vector<bool> calibfilesLoaded = std::vector<bool>(3, false);
     int atStep = 0;
     int atIteration = 0;
   } cal;
@@ -199,7 +198,7 @@ struct ZdcQVectors {
     std::vector<const char*> sides = {"A", "C"};
     std::vector<const char*> capCOORDS = {"X", "Y"};
 
-    if(cfgFillCommonRegistry){
+    if (cfgFillCommonRegistry) {
       registry.add<TH2>(Form("QA/before/hSPplaneA"), "hSPplaneA", kTH2D, {{100, -4, 4}, axisCent10});
       registry.add<TH2>(Form("QA/before/hSPplaneC"), "hSPplaneC", kTH2D, {{100, -4, 4}, axisCent10});
       registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -4, 4}, axisCent10});
@@ -234,26 +233,26 @@ struct ZdcQVectors {
         } // end of capCOORDS
       } // end of sides
 
-        registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
-        registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_before", "centrality_before", kTH1D, {{200, 0, 100}});
+      registry.add<TH1>("QA/centrality_after", "centrality_after", kTH1D, {{200, 0, 100}});
 
-        registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
-        registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
+      registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
 
-        registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNA_pm2", "ZNA_pm2", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNA_pm3", "ZNA_pm3", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNA_pm4", "ZNA_pm4", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_pm2", "ZNA_pm2", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_pm3", "ZNA_pm3", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_pm4", "ZNA_pm4", kTProfile, {{1, 0, 1.}});
 
-        registry.add<TProfile>("QA/before/ZNC_pm1", "ZNC_pm1", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNC_pm2", "ZNC_pm2", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNC_pm3", "ZNC_pm3", kTProfile, {{1, 0, 1.}});
-        registry.add<TProfile>("QA/before/ZNC_pm4", "ZNC_pm4", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_pm1", "ZNC_pm1", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_pm2", "ZNC_pm2", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_pm3", "ZNC_pm3", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_pm4", "ZNC_pm4", kTProfile, {{1, 0, 1.}});
 
-        registry.addClone("QA/before/", "QA/after/");
+      registry.addClone("QA/before/", "QA/after/");
     }
 
-       // Tower mean energies vs. centrality used for tower gain equalisation
+    // Tower mean energies vs. centrality used for tower gain equalisation
     for (int tower = 0; tower < 10; tower++) {
       namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
       registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
@@ -262,7 +261,7 @@ struct ZdcQVectors {
     // recentered q-vectors (to check what steps are finished in the end)
     registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}});
     registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
-    registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});  
+    registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
 
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_Zvtx + 1, "Z vertex cut event");
@@ -345,7 +344,6 @@ struct ZdcQVectors {
     return 1;
   }
 
-
   template <FillType ft>
   inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<double> v, double centrality)
   {
@@ -405,8 +403,8 @@ struct ZdcQVectors {
     registry.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hSPplaneFull"), psiFull, centrality, 1);
   }
 
-template <CalibModes cm>
-void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
+  template <CalibModes cm>
+  void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
   {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
@@ -414,14 +412,13 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
     if (cal.calibfilesLoaded[cm])
       return;
 
-    if (ccdb_dir.empty() == false){
-        cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
-        cal.calibfilesLoaded[cm] = true;
+    if (ccdb_dir.empty() == false) {
+      cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
+      cal.calibfilesLoaded[cm] = true;
       LOGF(info, "Loaded calibration histos from %s", ccdb_dir.c_str());
     } else {
       LOGF(info, "No ccdb path given for calibration histos. Do not recenter.");
     }
-      
   }
 
   template <typename T, CalibModes cm>
@@ -430,16 +427,16 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
     T* hist = nullptr;
     double calibConstant{0};
 
-    if(cm == kEnergyCal){
+    if (cm == kEnergyCal) {
       TList* list = cal.calibList[cm];
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
-    } else if(cm == kMeanv){
+    } else if (cm == kMeanv) {
       TList* list = cal.calibList[cm];
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
-      } else if(cm == kRec){
-        TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
-        hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
-        }
+    } else if (cm == kRec) {
+      TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+    }
 
     if (!hist) {
       LOGF(fatal, "%s not available.. Abort..", objName);
@@ -544,7 +541,7 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
 
     // load new calibrations for new runs only
     if (runnumber != lastRunNumber) {
-      cal.calibfilesLoaded[2] = false; 
+      cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
       lastRunNumber = runnumber;
     }
@@ -647,23 +644,23 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
       registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
       registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
 
-     registry.get<TProfile>(HIST("QA/before/ZNA_pm1"))->Fill(Form("%d", runnumber), eZN[0]);
-     registry.get<TProfile>(HIST("QA/before/ZNA_pm2"))->Fill(Form("%d", runnumber), eZN[1]);
-     registry.get<TProfile>(HIST("QA/before/ZNA_pm3"))->Fill(Form("%d", runnumber), eZN[2]);
-     registry.get<TProfile>(HIST("QA/before/ZNA_pm4"))->Fill(Form("%d", runnumber), eZN[3]);
-     registry.get<TProfile>(HIST("QA/before/ZNC_pm1"))->Fill(Form("%d", runnumber), eZN[4]);
-     registry.get<TProfile>(HIST("QA/before/ZNC_pm2"))->Fill(Form("%d", runnumber), eZN[5]);
-     registry.get<TProfile>(HIST("QA/before/ZNC_pm3"))->Fill(Form("%d", runnumber), eZN[6]);
-     registry.get<TProfile>(HIST("QA/before/ZNC_pm4"))->Fill(Form("%d", runnumber), eZN[7]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_pm1"))->Fill(Form("%d", runnumber), eZN[0]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_pm2"))->Fill(Form("%d", runnumber), eZN[1]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_pm3"))->Fill(Form("%d", runnumber), eZN[2]);
+      registry.get<TProfile>(HIST("QA/before/ZNA_pm4"))->Fill(Form("%d", runnumber), eZN[3]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_pm1"))->Fill(Form("%d", runnumber), eZN[4]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_pm2"))->Fill(Form("%d", runnumber), eZN[5]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_pm3"))->Fill(Form("%d", runnumber), eZN[6]);
+      registry.get<TProfile>(HIST("QA/before/ZNC_pm4"))->Fill(Form("%d", runnumber), eZN[7]);
 
-     registry.get<TProfile>(HIST("QA/after/ZNA_pm1"))->Fill(Form("%d", runnumber), e[0]);
-     registry.get<TProfile>(HIST("QA/after/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
-     registry.get<TProfile>(HIST("QA/after/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);
-     registry.get<TProfile>(HIST("QA/after/ZNA_pm4"))->Fill(Form("%d", runnumber), e[3]);
-     registry.get<TProfile>(HIST("QA/after/ZNC_pm1"))->Fill(Form("%d", runnumber), e[4]);
-     registry.get<TProfile>(HIST("QA/after/ZNC_pm2"))->Fill(Form("%d", runnumber), e[5]);
-     registry.get<TProfile>(HIST("QA/after/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
-     registry.get<TProfile>(HIST("QA/after/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
+      registry.get<TProfile>(HIST("QA/after/ZNA_pm1"))->Fill(Form("%d", runnumber), e[0]);
+      registry.get<TProfile>(HIST("QA/after/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
+      registry.get<TProfile>(HIST("QA/after/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);
+      registry.get<TProfile>(HIST("QA/after/ZNA_pm4"))->Fill(Form("%d", runnumber), e[3]);
+      registry.get<TProfile>(HIST("QA/after/ZNC_pm1"))->Fill(Form("%d", runnumber), e[4]);
+      registry.get<TProfile>(HIST("QA/after/ZNC_pm2"))->Fill(Form("%d", runnumber), e[5]);
+      registry.get<TProfile>(HIST("QA/after/ZNC_pm3"))->Fill(Form("%d", runnumber), e[6]);
+      registry.get<TProfile>(HIST("QA/after/ZNC_pm4"))->Fill(Form("%d", runnumber), e[7]);
     }
 
     // Now calculate Q-vector
@@ -689,23 +686,24 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
       v[1] = v[1] - getCorrection<TProfile, kMeanv>(vnames[1].Data());
     } else {
       LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
-      return; 
+      return;
     }
 
     loadCalibrations<kRec>(foundBC.timestamp(), cfgRec.value);
-
 
     std::vector<double> qRec(q);
 
     if (cal.atIteration == 0) {
       if (isSelected)
-        if(cfgFillCommonRegistry) fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+        if (cfgFillCommonRegistry)
+          fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
     } else if (cal.atIteration == 5 && cal.atStep == 4) {
-      if(cfgFillCommonRegistry) fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+      if (cfgFillCommonRegistry)
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -739,7 +737,8 @@ void loadCalibrations(uint64_t timestamp, std::string ccdb_dir)
       }
 
       if (isSelected) {
-        if(cfgFillCommonRegistry) fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
+        if (cfgFillCommonRegistry)
+          fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
         registry.fill(HIST("QA/centrality_after"), centrality);
       }
 
