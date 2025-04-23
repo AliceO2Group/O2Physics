@@ -1670,14 +1670,14 @@ struct CFFilterAll {
         for (size_t p2 = p1 + 1; p2 < vecProton.size(); p2++) {
           for (size_t p3 = p2 + 1; p3 < vecProton.size(); p3++) {
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecProton.at(p3));
+            registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPP/fZvtx"), col.posZ());
+            registry.fill(HIST("PPP/fSE_particle"), q3);
+            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPP")) {
               signalLooseLimit[cf_trigger::kPPP] += 1;
-              registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPP/fZvtx"), col.posZ());
-              registry.fill(HIST("PPP/fSE_particle"), q3);
-              registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPP")) {
                 signalTightLimit[cf_trigger::kPPP] += 1;
               }
@@ -1689,14 +1689,14 @@ struct CFFilterAll {
         for (size_t p2 = p1 + 1; p2 < vecAntiProton.size(); p2++) {
           for (size_t p3 = p2 + 1; p3 < vecAntiProton.size(); p3++) {
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecAntiProton.at(p3));
+            registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPP/fZvtx"), col.posZ());
+            registry.fill(HIST("PPP/fSE_antiparticle"), q3);
+            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPP")) {
               signalLooseLimit[cf_trigger::kPPP] += 1;
-              registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPP/fZvtx"), col.posZ());
-              registry.fill(HIST("PPP/fSE_antiparticle"), q3);
-              registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPP")) {
                 signalTightLimit[cf_trigger::kPPP] += 1;
               }
@@ -1714,14 +1714,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecLambda.at(l1));
+            registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPL/fZvtx"), col.posZ());
+            registry.fill(HIST("PPL/fSE_particle"), q3);
+            registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPL")) {
               signalLooseLimit[cf_trigger::kPPL] += 1;
-              registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPL/fZvtx"), col.posZ());
-              registry.fill(HIST("PPL/fSE_particle"), q3);
-              registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPL")) {
                 signalTightLimit[cf_trigger::kPPL] += 1;
               }
@@ -1736,14 +1736,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecAntiLambda.at(l1));
+            registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPL/fZvtx"), col.posZ());
+            registry.fill(HIST("PPL/fSE_particle"), q3);
+            registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPL")) {
               signalLooseLimit[cf_trigger::kPPL] += 1;
-              registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPL/fZvtx"), col.posZ());
-              registry.fill(HIST("PPL/fSE_particle"), q3);
-              registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPL")) {
                 signalTightLimit[cf_trigger::kPPL] += 1;
               }
@@ -1764,14 +1764,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecLambda.at(l1), vecLambda.at(l2), vecProton.at(p1));
+            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PLL/fZvtx"), col.posZ());
+            registry.fill(HIST("PLL/fSE_particle"), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+            registry.fill(HIST("PLL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PLL")) {
               signalLooseLimit[cf_trigger::kPLL] += 1;
-              registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PLL/fZvtx"), col.posZ());
-              registry.fill(HIST("PLL/fSE_particle"), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
-              registry.fill(HIST("PLL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PLL")) {
                 signalTightLimit[cf_trigger::kPLL] += 1;
               }
@@ -1789,14 +1789,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiLambda.at(l1), vecAntiLambda.at(l2), vecAntiProton.at(p1));
+            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PLL/fZvtx"), col.posZ());
+            registry.fill(HIST("PLL/fSE_antiparticle"), q3);
+            registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+            registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+            registry.fill(HIST("PLL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PLL")) {
               signalLooseLimit[cf_trigger::kPLL] += 1;
-              registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PLL/fZvtx"), col.posZ());
-              registry.fill(HIST("PLL/fSE_antiparticle"), q3);
-              registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
-              registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
-              registry.fill(HIST("PLL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PLL")) {
                 signalTightLimit[cf_trigger::kPLL] += 1;
               }
@@ -1816,14 +1816,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecLambda.at(l1), vecLambda.at(l2), vecLambda.at(l3));
+            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PLL/fZvtx"), col.posZ());
+            registry.fill(HIST("PLL/fSE_particle"), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "LLL")) {
               signalLooseLimit[cf_trigger::kLLL] += 1;
-              registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PLL/fZvtx"), col.posZ());
-              registry.fill(HIST("PLL/fSE_particle"), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "LLL")) {
                 signalTightLimit[cf_trigger::kLLL] += 1;
               }
@@ -1840,14 +1840,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiLambda.at(l1), vecAntiLambda.at(l2), vecAntiLambda.at(l3));
+            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PLL/fZvtx"), col.posZ());
+            registry.fill(HIST("PLL/fSE_particle"), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "LLL")) {
               signalLooseLimit[cf_trigger::kLLL] += 1;
-              registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PLL/fZvtx"), col.posZ());
-              registry.fill(HIST("PLL/fSE_particle"), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
-              registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "LLL")) {
                 signalTightLimit[cf_trigger::kLLL] += 1;
               }
@@ -1865,14 +1865,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecPhi.at(phi1));
+            registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
+            registry.fill(HIST("PPPhi/fSE_particle"), q3);
+            registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+            registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPPhi")) {
-              registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
-              registry.fill(HIST("PPPhi/fSE_particle"), q3);
-              registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
-              registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPPhi") &&
                   vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPPhi] += 1;
@@ -1888,14 +1888,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecPhi.at(phi1));
+            registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
+            registry.fill(HIST("PPPhi/fSE_particle"), q3);
+            registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+            registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPPhi")) {
-              registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
-              registry.fill(HIST("PPPhi/fSE_particle"), q3);
-              registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
-              registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPPhi") &&
                   vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPPhi] += 1;
@@ -1914,14 +1914,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecRho.at(r1));
+            registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPRho/fZvtx"), col.posZ());
+            registry.fill(HIST("PPRho/fSE_particle"), q3);
+            registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+            registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPRho")) {
-              registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPRho/fZvtx"), col.posZ());
-              registry.fill(HIST("PPRho/fSE_particle"), q3);
-              registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
-              registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPRho") &&
                   vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPRho] += 1;
@@ -1937,14 +1937,14 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecRho.at(r1));
+            registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
+            registry.fill(HIST("PPRho/fZvtx"), col.posZ());
+            registry.fill(HIST("PPRho/fSE_antiparticle"), q3);
+            registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+            registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPRho")) {
-              registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
-              registry.fill(HIST("PPRho/fZvtx"), col.posZ());
-              registry.fill(HIST("PPRho/fSE_antiparticle"), q3);
-              registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-              registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-              registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
-              registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPRho") &&
                   vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPRho] += 1;
@@ -1962,13 +1962,13 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecProton.at(p1), vecDeuteron.at(d1));
+          registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("PD/fZvtx"), col.posZ());
+          registry.fill(HIST("PD/fSE_particle"), kstar);
+          registry.fill(HIST("PD/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
+          registry.fill(HIST("PD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PD")) {
             signalLooseLimit[cf_trigger::kPD] += 1;
-            registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PD/fZvtx"), col.posZ());
-            registry.fill(HIST("PD/fSE_particle"), kstar);
-            registry.fill(HIST("PD/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
-            registry.fill(HIST("PD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PD")) {
               signalTightLimit[cf_trigger::kPD] += 1;
             }
@@ -1981,13 +1981,13 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecAntiProton.at(p1), vecAntiDeuteron.at(d1));
+          registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("PD/fZvtx"), col.posZ());
+          registry.fill(HIST("PD/fSE_antiparticle"), kstar);
+          registry.fill(HIST("PD/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
+          registry.fill(HIST("PD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PD")) {
             signalLooseLimit[cf_trigger::kPD] += 1;
-            registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PD/fZvtx"), col.posZ());
-            registry.fill(HIST("PD/fSE_antiparticle"), kstar);
-            registry.fill(HIST("PD/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
-            registry.fill(HIST("PD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PD")) {
               signalTightLimit[cf_trigger::kPD] += 1;
             }
@@ -2002,14 +2002,14 @@ struct CFFilterAll {
           if (idxLambdaDaughProton.at(l1) == idxDeuteron.at(d1)) {
             continue;
           }
+          kstar = getkstar(vecLambda.at(l1), vecDeuteron.at(d1));
+          registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("LD/fZvtx"), col.posZ());
+          registry.fill(HIST("LD/fSE_particle"), kstar);
+          registry.fill(HIST("LD/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
+          registry.fill(HIST("LD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "LD")) {
             signalLooseLimit[cf_trigger::kLD] += 1;
-            kstar = getkstar(vecLambda.at(l1), vecDeuteron.at(d1));
-            registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("LD/fZvtx"), col.posZ());
-            registry.fill(HIST("LD/fSE_particle"), kstar);
-            registry.fill(HIST("LD/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
-            registry.fill(HIST("LD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "LD")) {
               signalTightLimit[cf_trigger::kLD] += 1;
             }
@@ -2022,13 +2022,13 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecAntiLambda.at(l1), vecAntiDeuteron.at(d1));
+          registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("LD/fZvtx"), col.posZ());
+          registry.fill(HIST("LD/fSE_antiparticle"), kstar);
+          registry.fill(HIST("LD/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
+          registry.fill(HIST("LD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "LD")) {
             signalLooseLimit[cf_trigger::kLD] += 1;
-            registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("LD/fZvtx"), col.posZ());
-            registry.fill(HIST("LD/fSE_antiparticle"), kstar);
-            registry.fill(HIST("LD/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
-            registry.fill(HIST("LD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "LD")) {
               signalTightLimit[cf_trigger::kLD] += 1;
             }
@@ -2044,14 +2044,14 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecPhi.at(phi1), vecDeuteron.at(d1));
+          registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("PhiD/fZvtx"), col.posZ());
+          registry.fill(HIST("PhiD/fSE_particle"), kstar);
+          registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+          registry.fill(HIST("PhiD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PhiD")) {
             signalLooseLimit[cf_trigger::kPhiD] += 1;
-            registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PhiD/fZvtx"), col.posZ());
-            registry.fill(HIST("PhiD/fSE_particle"), kstar);
-            registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
-            registry.fill(HIST("PhiD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
-            registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PhiD") &&
                 vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kPhiD] += 1;
@@ -2065,14 +2065,14 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecPhi.at(phi1), vecAntiDeuteron.at(d1));
+          registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("PhiD/fZvtx"), col.posZ());
+          registry.fill(HIST("PhiD/fSE_antiparticle"), kstar);
+          registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+          registry.fill(HIST("PhiD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PhiD")) {
             signalLooseLimit[cf_trigger::kPhiD] += 1;
-            registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PhiD/fZvtx"), col.posZ());
-            registry.fill(HIST("PhiD/fSE_antiparticle"), kstar);
-            registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
-            registry.fill(HIST("PhiD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
-            registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PhiD") &&
                 vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kPhiD] += 1;
@@ -2089,14 +2089,14 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecRho.at(r1), vecDeuteron.at(d1));
+          registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("RhoD/fZvtx"), col.posZ());
+          registry.fill(HIST("RhoD/fSE_particle"), kstar);
+          registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+          registry.fill(HIST("RhoD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "RhoD")) {
             signalLooseLimit[cf_trigger::kRhoD] += 1;
-            registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("RhoD/fZvtx"), col.posZ());
-            registry.fill(HIST("RhoD/fSE_particle"), kstar);
-            registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
-            registry.fill(HIST("RhoD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
-            registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "RhoD") &&
                 vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kRhoD] += 1;
@@ -2110,14 +2110,14 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecRho.at(r1), vecAntiDeuteron.at(d1));
+          registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
+          registry.fill(HIST("RhoD/fZvtx"), col.posZ());
+          registry.fill(HIST("RhoD/fSE_antiparticle"), kstar);
+          registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+          registry.fill(HIST("RhoD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "RhoD")) {
             signalLooseLimit[cf_trigger::kRhoD] += 1;
-            registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("RhoD/fZvtx"), col.posZ());
-            registry.fill(HIST("RhoD/fSE_antiparticle"), kstar);
-            registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
-            registry.fill(HIST("RhoD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
-            registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "RhoD") &&
                 vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kRhoD] += 1;
