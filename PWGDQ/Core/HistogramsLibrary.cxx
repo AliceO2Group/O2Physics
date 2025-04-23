@@ -916,6 +916,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
   }
 
   if (!groupStr.CompareTo("pair")) {
+    if (subGroupStr.Contains("cepf")) {
+      hm->AddHistogram(histClass, "Mass", "", false, 300, 0.0, 12.0, VarManager::kMass);
+      hm->AddHistogram(histClass, "Mass_Pt", "", false, 300, 0.0, 12.0, VarManager::kMass, 10, 0.0, 20.0, VarManager::kPt);
+      hm->AddHistogram(histClass, "Mass_Y", "", false, 300, 0.0, 12.0, VarManager::kMass, 100, -5.0, 5.0, VarManager::kRap);
+      hm->AddHistogram(histClass, "Y_Pt", "", false, 100, -5.0, 5.0, VarManager::kRap, 20, 0.0, 20.0, VarManager::kPt);
+    }
     if (subGroupStr.Contains("mult_pvcontrib")) {
       hm->AddHistogram(histClass, "Mass_VtxNcontribReal", "Mass vs VtxNcontribReal", false, 200, 2.0, 5.0, VarManager::kMass, 200, 0, 200.0, VarManager::kVtxNcontribReal);
     }
