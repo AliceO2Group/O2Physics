@@ -2032,7 +2032,6 @@ struct AnalysisSameEventPairing {
             }
           }
           isig++;
-          // cout << "I am Here" <<endl;
         }
       }
   } // end runMCGen
