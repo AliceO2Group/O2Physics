@@ -438,6 +438,8 @@ struct ZdcQVectors {
     } else if (cm == kRec) {
       TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+      cal.AtStep = step;
+      cal.atIteration = iteration;
     }
 
     if (!hist) {
@@ -707,7 +709,7 @@ struct ZdcQVectors {
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
-    } else if (cal.atIteration == 5 && cal.atStep == 4) {
+    } else {
       if (cfgFillCommonRegistry)
         fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
 
