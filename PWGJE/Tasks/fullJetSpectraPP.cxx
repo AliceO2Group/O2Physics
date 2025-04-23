@@ -292,10 +292,11 @@ struct FullJetSpectrapp {
       registry.add("h_full_jet_ResponseMatrix", "Full Jets Response Matrix; p_{T,det} (GeV/c); p_{T,part} (GeV/c)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
     }
 
-    if (doprocessCollisionsWeightedWithMultiplicity) {
+    if (doprocessCollisionsWeightedWithMultiplicity || doprocessMBCollisionsWithMultiplicity) {
       registry.add("h_FT0Mults_occupancy", "", {HistType::kTH1F, {{3500, 0., 3500.}}});
       registry.add("h2_full_jet_FT0Amplitude", "; FT0C Amplitude; Counts", {HistType::kTH1F, {{3500, 0., 3500.}}});
       registry.add("h2_full_jet_jetpTDetVsFT0Mults", "; p_{T,det} (GeV/c); FT0C Multiplicity", {HistType::kTH2F, {{350, 0., 350.}, {3500, 0., 3500.}}});
+      registry.add("h3_full_jet_jetpTDet_FT0Mults_NEF", "; p_{T,det} (GeV/c); FT0C Multiplicity, NEF", {HistType::kTH3F, {{350, 0., 350.}, {3500, 0., 3500.}, {105, 0.0, 1.05}}});
     }
 
     // Label the histograms
@@ -1080,6 +1081,7 @@ struct FullJetSpectrapp {
     {
       bool eventAccepted = false;
       float eventWeight = collision.mcCollision().weight();
+      float neutralEnergy = 0.0;
 
       if (fabs(collision.posZ()) > VertexZCut) {
         return;
@@ -1132,6 +1134,12 @@ struct FullJetSpectrapp {
           continue;
         }
         registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), eventWeight);
+
+        for (auto const& cluster : clusters) {
+          neutralEnergy += cluster.energy();
+        }
+        auto NEF = neutralEnergy / mcdjet.energy();
+        registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, eventWeight);
       }
     }
     PROCESS_SWITCH(FullJetSpectrapp, processCollisionsWeightedWithMultiplicity, "Weighted Collisions for Full Jets Multiplicity Studies", false);
@@ -1140,6 +1148,7 @@ struct FullJetSpectrapp {
     {
       bool eventAccepted = false;
       float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
+      float neutralEnergy = 0.0;
 
       if (fabs(collision.posZ()) > VertexZCut) {
         return;
@@ -1188,6 +1197,12 @@ struct FullJetSpectrapp {
           continue;
         }
         registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), mcdjet.pt(), collision.multiplicity(), 1.0);
+
+        for (auto const& cluster : clusters) {
+          neutralEnergy += cluster.energy();
+        }
+        auto NEF = neutralEnergy / mcdjet.energy();
+        registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, 1.0);
       }
     }
     PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsWithMultiplicity, "MB Collisions for Full Jets Multiplicity Studies", false);
