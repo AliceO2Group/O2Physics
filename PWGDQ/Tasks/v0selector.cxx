@@ -207,7 +207,7 @@ struct v0selector {
 
     std::vector<int8_t> v0pidmap;
     v0pidmap.clear();
-    if(produceV0ID.value) {
+    if (produceV0ID.value) {
       v0pidmap.resize(V0s.size(), -1);
     }
     for (auto& V0 : V0s) {
@@ -322,7 +322,7 @@ struct v0selector {
         if (produceV0ID.value) {
           v0pidmap[gix] = id;
         }
-      }; 
+      };
       if (v0id == kGamma) { // photon conversion
         if (fillhisto) {
           registry.fill(HIST("hMassGamma"), V0radius, mGamma);
@@ -346,7 +346,7 @@ struct v0selector {
         if ((0.48 < mK0S && mK0S < 0.51) && std::abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kK0S);
-          storeV0AddID(V0.globalIndex(), kK0S);        
+          storeV0AddID(V0.globalIndex(), kK0S);
         }
       } else if (v0id == kLambda) { // L->p + pi-
         if (fillhisto) {
@@ -371,7 +371,7 @@ struct v0selector {
       // printf("negTrackId = %d\n",V0.negTrackId());
 
     } // end of V0 loop
-    if (produceV0ID.value) { 
+    if (produceV0ID.value) {
       for (auto& V0 : V0s) {
         v0mapID(v0pidmap[V0.globalIndex()]);
       }
