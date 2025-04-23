@@ -69,6 +69,7 @@ struct JetSpectraCharged {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
   Configurable<double> jetPtMax{"jetPtMax", 200., "set jet pT bin max"};
   Configurable<float> jetEtaMin{"jetEtaMin", -0.7, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.7, "maximum jet pseudorapidity"};
@@ -293,6 +294,10 @@ struct JetSpectraCharged {
   template <typename TJets>
   void fillJetHistograms(TJets const& jet, float centrality, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
@@ -313,6 +318,10 @@ struct JetSpectraCharged {
   template <typename TJets>
   void fillJetAreaSubHistograms(TJets const& jet, float centrality, float rho, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     double jetcorrpt = jet.pt() - (rho * jet.area());
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill jet histograms after area-based subtraction
@@ -338,6 +347,10 @@ struct JetSpectraCharged {
   template <typename TJets>
   void fillMCPHistograms(TJets const& jet, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
       registry.fill(HIST("h_jet_pt_part"), jet.pt(), weight);
@@ -356,6 +369,10 @@ struct JetSpectraCharged {
   template <typename TJets>
   void fillMCPAreaSubHistograms(TJets const& jet, float rho = 0.0, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       // fill mcp jet histograms
       double jetcorrpt = jet.pt() - (rho * jet.area());
@@ -373,6 +390,10 @@ struct JetSpectraCharged {
   template <typename TJets>
   void fillEventWiseConstituentSubtractedHistograms(TJets const& jet, float centrality, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
       registry.fill(HIST("h2_centrality_jet_pt_eventwiseconstituentsubtracted"), centrality, jet.pt(), weight);
       registry.fill(HIST("jet_observables_eventwiseconstituentsubtracted"), jet.pt(), jet.eta(), jet.phi(), weight);
@@ -390,14 +411,14 @@ struct JetSpectraCharged {
   void fillMatchedHistograms(TBase const& jetMCD, float weight = 1.0)
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jetMCD.pt() > pTHatMaxMCD * pTHat) {
+    if (jetMCD.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     // fill geometry matched histograms
     if (checkGeoMatched) {
       if (jetMCD.has_matchedJetGeo()) {
         for (const auto& jetMCP : jetMCD.template matchedJetGeo_as<std::decay_t<TTag>>()) {
-          if (jetMCP.pt() > pTHatMaxMCP * pTHat) {
+          if (jetMCP.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
             continue;
           }
           if (jetMCD.r() == round(selectedJetsRadius * 100.0f)) {
