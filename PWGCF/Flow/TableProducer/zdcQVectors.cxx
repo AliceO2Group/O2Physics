@@ -438,7 +438,7 @@ struct ZdcQVectors {
     } else if (cm == kRec) {
       TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
-      cal.AtStep = step;
+      cal.atStep = step;
       cal.atIteration = iteration;
     }
 
@@ -705,7 +705,6 @@ struct ZdcQVectors {
       if (isSelected)
         if (cfgFillCommonRegistry)
           fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
-
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
@@ -759,11 +758,6 @@ struct ZdcQVectors {
 
       counter++;
       return;
-    }
-    else
-    {
-      if (counter < 1)
-        LOGF(info, "Recentering not complete!! q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
     }
     LOGF(warning, "We return without saving table... -> THis is a problem");
   } // end of process
