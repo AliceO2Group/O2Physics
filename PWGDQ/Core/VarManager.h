@@ -3267,6 +3267,54 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCEta] = v12.Eta();
   values[kMCPhi] = v12.Phi();
   values[kMCY] = -v12.Rapidity();
+ double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
+  ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
+  ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
+
+  // Boost to center of mass frame
+  ROOT::Math::Boost boostv12{v12.BoostToCM()};
+  ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
+  ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+
+  // Helicity frame
+  ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+  ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+  ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+
+  // Collins-Soper frame
+  ROOT::Math::XYZVectorF zaxis_CS{((Beam1_CM.Unit() - Beam2_CM.Unit()).Unit())};
+  ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+  ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+
+  //Production frame
+  ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v1.Py(), -v1.Px(), 0.f);
+  
+  if (fgUsedVars[kMCCosThetaHE]) {
+    values[kMCCosThetaHE] = (t1.pdgCode() < 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
+  }
+
+  if (fgUsedVars[kMCPhiHE]) {
+    values[kMCPhiHE] = (t1.pdgCode() < 0 ? TMath::ATan2(yaxis_HE.Dot(v1_CM), xaxis_HE.Dot(v1_CM)) : TMath::ATan2(yaxis_HE.Dot(v2_CM), xaxis_HE.Dot(v2_CM)));
+  }
+
+  if (fgUsedVars[kMCCosThetaCS]) {
+    values[kMCCosThetaCS] = (t1.pdgCode() < 0 ? zaxis_CS.Dot(v1_CM) : zaxis_CS.Dot(v2_CM));
+  }
+
+  if (fgUsedVars[kMCPhiCS]) {
+    values[kMCPhiCS] = (t1.pdgCode() < 0 ? TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : TMath::ATan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM)));
+  }
+
+  if (fgUsedVars[kMCCosThetaPP]) {
+    values[kMCCosThetaPP] = (t1.pdgCode() < 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
+  }
+  
+  if (fgUsedVars[kMCPhiPP]) {
+    values[kMCPhiPP] = (t1.pdgCode() < 0 ? TMath::ATan2((normalVec.Dot(v1_CM)), zaxis_HE.Dot(v1_CM)) : TMath::ATan2((normalVec.Dot(v2_CM)), zaxis_HE.Dot(v2_CM)));
+  }
+
 }
 
 template <typename T1, typename T2, typename T3>
