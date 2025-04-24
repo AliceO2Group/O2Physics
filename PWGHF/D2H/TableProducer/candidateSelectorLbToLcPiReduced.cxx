@@ -56,7 +56,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lb_to_lc_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lb_to_lc_pi::Cuts[0], hf_cuts_lb_to_lc_pi::NBinsPt, hf_cuts_lb_to_lc_pi::NCutVars, hf_cuts_lb_to_lc_pi::labelsPt, hf_cuts_lb_to_lc_pi::labelsCutVar}, "Lb candidate selection per pT bin"};
-  // D-meson ML cuts
+  // Lc ML cuts
   Configurable<std::vector<double>> binsPtLcMl{"binsPtLcMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "Lc pT bin limits for ML cuts"};
   Configurable<LabeledArray<double>> cutsLcMl{"cutsLcMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsDmesCutScore}, "Lc ML cuts per pT bin"};
   // QA switch
