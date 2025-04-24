@@ -904,6 +904,12 @@ struct CFFilterAll {
   template <typename T>
   bool checkTrack(T const& track, std::string trackName)
   {
+    if (track.pt() < TrackSelections.momentum->get(trackName.c_str(), "PtMin")) {
+      return false;
+    }
+    if (track.pt() > TrackSelections.momentum->get(trackName.c_str(), "PtMax")) {
+      return false;
+    }
     if (std::abs(track.eta()) > TrackSelections.trackProperties->get(trackName.c_str(), "AbsEtaMax")) {
       return false;
     }
