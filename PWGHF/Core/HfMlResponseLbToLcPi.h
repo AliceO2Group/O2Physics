@@ -26,8 +26,8 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_Lb(FEATURE)                                      \
-  {                                                               \
+#define FILL_MAP_Lb(FEATURE)                                       \
+  {                                                                \
     #FEATURE, static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE) \
   }
 
@@ -35,28 +35,28 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_Lb_FULL(OBJECT, FEATURE, GETTER)   \
+#define CHECK_AND_FILL_VEC_Lb_FULL(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE): { \
-    inputFeatures.emplace_back(OBJECT.GETTER());              \
-    break;                                                    \
+    inputFeatures.emplace_back(OBJECT.GETTER());               \
+    break;                                                     \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the GETTER function taking OBJECT in argument
-#define CHECK_AND_FILL_VEC_Lb_FUNC(OBJECT, FEATURE, GETTER)   \
+#define CHECK_AND_FILL_VEC_Lb_FUNC(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE): { \
-    inputFeatures.emplace_back(GETTER(OBJECT));               \
-    break;                                                    \
+    inputFeatures.emplace_back(GETTER(OBJECT));                \
+    break;                                                     \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_Lb_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_Lb(GETTER)                        \
+#define CHECK_AND_FILL_VEC_Lb(GETTER)                         \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());          \
-    break;                                                   \
+    inputFeatures.emplace_back(candidate.GETTER());           \
+    break;                                                    \
   }
 
 namespace o2::analysis
