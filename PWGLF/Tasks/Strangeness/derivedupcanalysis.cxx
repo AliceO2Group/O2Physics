@@ -114,8 +114,6 @@ struct Derivedupcanalysis {
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
   Configurable<bool> doDaughterDCA{"doDaughterDCA", true, "dcaXY cut for daughter tracks"};
-  Configurable<bool> checkNeutronsInMC{"checkNeutronsInMC", true, "require no neutrons for single-gap in MC"};
-  Configurable<float> neutronEtaCut{"neutronEtaCut", 0.8, "ZN acceptance"};
 
   // Standard V0 topological criteria
   struct : ConfigurableGroup {
@@ -213,6 +211,8 @@ struct Derivedupcanalysis {
   Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
   ConfigurableAxis axisGeneratorIds{"axisGeneratorIds", {256, -0.5f, 255.5f}, "axis for generatorIds"};
+  Configurable<bool> checkNeutronsInMC{"checkNeutronsInMC", true, "require no neutrons for single-gap in MC"};
+  Configurable<float> neutronEtaCut{"neutronEtaCut", 0.8, "ZN acceptance"};
 
   // Occupancy cut
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
@@ -1720,32 +1720,34 @@ struct Derivedupcanalysis {
         }
 
         int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-        for (const auto& neutron : neutrons) {
-          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-            continue;
+        if (checkNeutronsInMC) {
+          for (const auto& neutron : neutrons) {
+            if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
+              continue;
 
-          const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
+            const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
 
-          // Consider neutrons from the same collision
-          if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-            continue;
+            // Consider neutrons from the same collision
+            if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
+              continue;
 
-          const float eta = neutron.eta();
-          switch (selGapSide) {
-            case 0: // SGA
-              if (eta > neutronEtaCut)
-                selGapSide = -1;
-              break;
-            case 1: // SGC
-              if (eta < -neutronEtaCut)
-                selGapSide = -1;
-              break;
-            case 2: // DG
-              if (eta > neutronEtaCut)
-                selGapSide = 1;
-              else if (eta < -neutronEtaCut)
-                selGapSide = 0;
-              break;
+            const float eta = neutron.eta();
+            switch (selGapSide) {
+              case 0: // SGA
+                if (eta > neutronEtaCut)
+                  selGapSide = -1;
+                break;
+              case 1: // SGC
+                if (eta < -neutronEtaCut)
+                  selGapSide = -1;
+                break;
+              case 2: // DG
+                if (eta > neutronEtaCut)
+                  selGapSide = 1;
+                else if (eta < -neutronEtaCut)
+                  selGapSide = 0;
+                break;
+            }
           }
         }
 
@@ -1799,32 +1801,34 @@ struct Derivedupcanalysis {
         }
 
         int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-        for (const auto& neutron : neutrons) {
-          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-            continue;
+        if (checkNeutronsInMC) {
+          for (const auto& neutron : neutrons) {
+            if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
+              continue;
 
-          const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
+            const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
 
-          // Consider neutrons from the same collision
-          if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-            continue;
+            // Consider neutrons from the same collision
+            if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
+              continue;
 
-          const float eta = neutron.eta();
-          switch (selGapSide) {
-            case 0: // SGA
-              if (eta > neutronEtaCut)
-                selGapSide = -1;
-              break;
-            case 1: // SGC
-              if (eta < -neutronEtaCut)
-                selGapSide = -1;
-              break;
-            case 2: // DG
-              if (eta > neutronEtaCut)
-                selGapSide = 1;
-              else if (eta < -neutronEtaCut)
-                selGapSide = 0;
-              break;
+            const float eta = neutron.eta();
+            switch (selGapSide) {
+              case 0: // SGA
+                if (eta > neutronEtaCut)
+                  selGapSide = -1;
+                break;
+              case 1: // SGC
+                if (eta < -neutronEtaCut)
+                  selGapSide = -1;
+                break;
+              case 2: // DG
+                if (eta > neutronEtaCut)
+                  selGapSide = 1;
+                else if (eta < -neutronEtaCut)
+                  selGapSide = 0;
+                break;
+            }
           }
         }
 
@@ -1869,7 +1873,11 @@ struct Derivedupcanalysis {
       return;
     }
 
-    const auto v0mother = v0.motherMCPart();
+    const auto v0mother = v0.template motherMCPart_as<aod::MotherMCParts>();
+    if (v0mother.size() < 1) {
+      return;
+    }
+
     const float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
     if (std::fabs(rapidityXi) > 0.5f) {
       return;
@@ -1928,11 +1936,13 @@ struct Derivedupcanalysis {
   {
     if (!collision.has_straMCCollision()) {
       histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
-    } else {
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
-      if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
-        return;
-      }
+      return;
+    }
+    
+    const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
+
+    if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
+      return;
     }
 
     if (!acceptEvent(collision, true)) {
@@ -1942,33 +1952,34 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    for (const auto& neutron : neutrons) {
-      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-        continue;
+    if (checkNeutronsInMC) {
+      for (const auto& neutron : neutrons) {
+        if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
+          continue;
 
-      const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();      // take gen. collision associated to the rec. collision
+        const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
 
-      // Consider neutrons from the same collision
-      if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-        continue;
+        // Consider neutrons from the same collision
+        if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
+          continue;
 
-      const float eta = neutron.eta();
-      switch (selGapSide) {
-        case 0: // SGA
-          if (eta > neutronEtaCut)
-            selGapSide = -1;
-          break;
-        case 1: // SGC
-          if (eta < -neutronEtaCut)
-            selGapSide = -1;
-          break;
-        case 2: // DG
-          if (eta > neutronEtaCut)
-            selGapSide = 1;
-          else if (eta < -neutronEtaCut)
-            selGapSide = 0;
-          break;
+        const float eta = neutron.eta();
+        switch (selGapSide) {
+          case 0: // SGA
+            if (eta > neutronEtaCut)
+              selGapSide = -1;
+            break;
+          case 1: // SGC
+            if (eta < -neutronEtaCut)
+              selGapSide = -1;
+            break;
+          case 2: // DG
+            if (eta > neutronEtaCut)
+              selGapSide = 1;
+            else if (eta < -neutronEtaCut)
+              selGapSide = 0;
+            break;
+        }
       }
     }
 
@@ -1977,13 +1988,10 @@ struct Derivedupcanalysis {
 
     fillHistogramsQA(collision, selGapSide);
 
-    if (collision.has_straMCCollision()) {
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
-    }
+    histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
+    histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+    histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+    histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
 
     for (const auto& v0 : fullV0s) {
       if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
@@ -2045,11 +2053,13 @@ struct Derivedupcanalysis {
   {
     if (!collision.has_straMCCollision()) {
       histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
-    } else {
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
-      if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
-        return;
-      }
+      return;
+    }
+    
+    const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
+
+    if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
+      return;
     }
 
     if (!acceptEvent(collision, true)) {
@@ -2059,34 +2069,35 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    for (const auto& neutron : neutrons) {
-      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-        continue;
+    if (checkNeutronsInMC) {
+      for (const auto& neutron : neutrons) {
+        if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
+          continue;
 
-      const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();      // take gen. collision associated to the rec. collision
+        const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
 
-      // Consider neutrons from the same collision
-      if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-        continue;
+        // Consider neutrons from the same collision
+        if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
+          continue;
 
-      const float eta = neutron.eta();
-      switch (selGapSide) {
-        case 0: // SGA
-          if (eta > neutronEtaCut)
-            selGapSide = -1;
-          break;
-        case 1: // SGC
-          if (eta < -neutronEtaCut)
-            selGapSide = -1;
-          break;
-        case 2: // DG
-          if (eta > neutronEtaCut)
-            selGapSide = 1;
-          else if (eta < -neutronEtaCut)
-            selGapSide = 0;
-          break;
-      }
+        const float eta = neutron.eta();
+        switch (selGapSide) {
+          case 0: // SGA
+            if (eta > neutronEtaCut)
+              selGapSide = -1;
+            break;
+          case 1: // SGC
+            if (eta < -neutronEtaCut)
+              selGapSide = -1;
+            break;
+          case 2: // DG
+            if (eta > neutronEtaCut)
+              selGapSide = 1;
+            else if (eta < -neutronEtaCut)
+              selGapSide = 0;
+            break;
+        }
+      }      
     }
 
     if (evSels.studyUPConly && (selGapSide < -0.5))
@@ -2094,13 +2105,10 @@ struct Derivedupcanalysis {
 
     fillHistogramsQA(collision, selGapSide);
 
-    if (collision.has_straMCCollision()) {
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
-      histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
-      histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
-    }
+    histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
+    histos.fill(HIST("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec"), collision.multNTracksPVeta1(), mcCollision.multMCNParticlesEta10());
+    histos.fill(HIST("eventQA/mc/hNTracksGlobalvstotalMultMCParticles"), collision.multNTracksGlobal(), mcCollision.totalMultMCParticles());
+    histos.fill(HIST("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles"), collision.multNTracksPVeta1(), mcCollision.totalMultMCParticles());
 
     for (const auto& casc : fullCascades) {
       std::bitset<kSelNum> selMap = computeBitmapCascade(casc, collision);
