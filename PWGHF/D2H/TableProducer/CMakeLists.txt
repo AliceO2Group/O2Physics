@@ -53,7 +53,7 @@ o2physics_add_dpl_workflow(candidate-selector-bs-to-ds-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-selector-Lb-to-Lc-pi-reduced
+o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi-reduced
                     SOURCES candidateSelectorLbToLcPiReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
