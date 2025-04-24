@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for Lb → Lc∓ π± analysis selections
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
-#ifndef PWGHF_CORE_HfMlResponseLBTOLCPI_H_
-#define PWGHF_CORE_HfMlResponseLBTOLCPI_H_
+#ifndef PWGHF_CORE_HFMLRESPONSELBTOLCPI_H_
+#define PWGHF_CORE_HFMLRESPONSELBTOLCPI_H_
 
 #include <map>
 #include <string>
@@ -194,4 +194,4 @@ class HfMlResponseLbToLcPi : public HfMlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_VEC_Lb_FUNC
 #undef CHECK_AND_FILL_VEC_Lb
 
-#endif // PWGHF_CORE_HfMlResponseLBTOLCPI_H_
+#endif // PWGHF_CORE_HFMLRESPONSELBTOLCPI_H_
