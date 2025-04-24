@@ -457,8 +457,8 @@ struct HfTaskCorrelationDplusHadrons {
       float trackDcaXY = pairEntry.trackDcaXY();
       float trackDcaZ = pairEntry.trackDcaZ();
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int isDplusPrompt = static_cast<int>(pairEntry.isPrompt());
-      int originPromptHadron = pairEntry.trackOrigin();
+      bool isDplusPrompt = pairEntry.isPrompt();
+      int originHadron = pairEntry.trackOrigin();
       int poolBin = pairEntry.poolBin();
       int effBinD = o2::analysis::findBin(binsPtEfficiencyD, ptD);
       int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
@@ -501,15 +501,15 @@ struct HfTaskCorrelationDplusHadrons {
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if (massD > signalRegionInner->at(pTBinD) && massD < signalRegionOuter->at(pTBinD)) {
         // in signal region
-        registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, isDplusPrompt, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(isDplusPrompt), poolBin, efficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegionMcRec"), deltaPhi, deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
         if (isPhysicalPrimary) {
-          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, isDplusPrompt, poolBin, efficiencyWeight);
-          if (isDplusPrompt == RecoDecay::OriginType::Prompt && originPromptHadron == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, static_cast<int>(isDplusPrompt), poolBin, efficiencyWeight);
+          if (isDplusPrompt && originHadron == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDplusPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-          } else if (isDplusPrompt != RecoDecay::OriginType::Prompt && originPromptHadron == RecoDecay::OriginType::NonPrompt) {
+          } else if (!isDplusPrompt && originHadron == RecoDecay::OriginType::NonPrompt) {
             registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDplusNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
           }
         }
@@ -548,7 +548,7 @@ struct HfTaskCorrelationDplusHadrons {
       float ptD = pairEntry.ptD();
       float ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
-      int originPromptHadron = pairEntry.trackOrigin();
+      int originHadron = pairEntry.trackOrigin();
       bool isDplusPrompt = pairEntry.isPrompt();
 
       registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
@@ -556,12 +556,12 @@ struct HfTaskCorrelationDplusHadrons {
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDplusPrompt) {
         registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (originPromptHadron == RecoDecay::OriginType::Prompt) {
+        if (originHadron == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenPromptDPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       } else {
         registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (originPromptHadron == RecoDecay::OriginType::NonPrompt) {
+        if (originHadron == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
         }
       }
