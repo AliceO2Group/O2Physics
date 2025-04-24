@@ -213,7 +213,7 @@ struct HfTaskLbReduced {
         registry.add("hDecLength", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
         registry.add("hDecLengthXy", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
         registry.add("hNormDecLengthXy", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate norm. decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisNormDecayLength}});
-        registry.add("hDcaProng0", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (D^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
+        registry.add("hDcaProng0", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (#Lambda_{c}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
         registry.add("hDcaProng1", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 1 (#pi^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
         registry.add("hPtProng0", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtLc}});
         registry.add("hPtProng1", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#pi^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtPi}});
@@ -223,16 +223,16 @@ struct HfTaskLbReduced {
         registry.add("hRapidity", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hImpParProd", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate impact parameter product;entries", {HistType::kTH2F, {axisPtLb, axisImpParProd}});
         registry.add("hinvMassLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtLc, axisMassLc}});
-        registry.add("hDecLengthLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
+        registry.add("hDecLengthLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
         registry.add("hDecLengthXyLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
-        registry.add("hCospLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
-        registry.add("hCospXyLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+        registry.add("hCospLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+        registry.add("hCospXyLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
 
         // ML scores of D- daughter
         if (doprocessDataWithLcMl) {
-          registry.add("hMlScoreBkgLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScorePromptLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScoreNonPromptLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreBkgLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScorePromptLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreNonPromptLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
         }
 
         // ML scores of Lb candidate
@@ -242,9 +242,9 @@ struct HfTaskLbReduced {
       }
       if (fillSparses) {
         if (!(doprocessDataWithLcMl || doprocessDataWithLbMl)) {
-          registry.add("hMassPtCutVars", "#Lambda_{b}^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);D^{#minus} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
+          registry.add("hMassPtCutVars", "#Lambda_{b}^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);#Lambda_{c}^{+} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
         } else {
-          registry.add("hMassPtCutVars", "#Lambda_{b}^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate ML score bkg;D^{#minus} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
+          registry.add("hMassPtCutVars", "#Lambda_{b}^{0} candidates;#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate ML score bkg;#Lambda_{c}^{+} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
         }
       }
     }
@@ -255,11 +255,11 @@ struct HfTaskLbReduced {
         registry.add("hEtaGen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{#eta}^{gen}(#Lambda_{b}^{0});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hYGen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{y}^{gen}(#Lambda_{b}^{0});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hYGenWithProngsInAcceptance", "MC particles (generated-daughters in acceptance);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{y}^{gen}(#Lambda_{b}^{0});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
-        registry.add("hPtProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}^{gen}(D^{#minus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtLc}});
+        registry.add("hPtProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}^{gen}(#Lambda_{c}^{+}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtLc}});
         registry.add("hPtProng1Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}^{gen}(#pi^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtPi}});
-        registry.add("hYProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{y}^{gen}(D^{#minus});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
+        registry.add("hYProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{y}^{gen}(#Lambda_{c}^{+});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hYProng1Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{y}^{gen}(#pi^{#plus});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
-        registry.add("hEtaProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{#eta}^{gen}(D^{#minus});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
+        registry.add("hEtaProng0Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{#eta}^{gen}(#Lambda_{c}^{+});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hEtaProng1Gen", "#Lambda_{b}^{0} particles (generated);#it{p}_{T}^{gen}(#Lambda_{b}^{0}) (GeV/#it{c});#it{#eta}^{gen}(#pi^{#plus});entries", {HistType::kTH2F, {axisPtLb, axisEta}});
 
         // reco histos
@@ -268,7 +268,7 @@ struct HfTaskLbReduced {
         registry.add("hDecLengthRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
         registry.add("hDecLengthXyRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
         registry.add("hNormDecLengthXyRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate norm. decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisNormDecayLength}});
-        registry.add("hDcaProng0RecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (D^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
+        registry.add("hDcaProng0RecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (#Lambda_{c}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
         registry.add("hDcaProng1RecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 1 (#pi^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
         registry.add("hPtProng0RecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtLc}});
         registry.add("hPtProng1RecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#pi^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtPi}});
@@ -278,17 +278,17 @@ struct HfTaskLbReduced {
         registry.add("hRapidityRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {axisPtLb, axisEta}});
         registry.add("hImpParProdRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate impact parameter product;entries", {HistType::kTH2F, {axisPtLb, axisImpParProd}});
         registry.add("hinvMassLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtLc, axisMassLc}});
-        registry.add("hDecLengthLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
+        registry.add("hDecLengthLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
         registry.add("hDecLengthXyLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
-        registry.add("hCospLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
-        registry.add("hCospXyLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+        registry.add("hCospLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+        registry.add("hCospXyLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
         // background
         if (fillBackground) {
           registry.add("hMassRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{M} (D#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtLb, axisMassLb}});
           registry.add("hDecLengthRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
           registry.add("hDecLengthXyRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisDecayLength}});
           registry.add("hNormDecLengthXyRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate norm. decay length XY (cm);entries", {HistType::kTH2F, {axisPtLb, axisNormDecayLength}});
-          registry.add("hDcaProng0RecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (D^{#minus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
+          registry.add("hDcaProng0RecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 0 (#Lambda_{c}^{+}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
           registry.add("hDcaProng1RecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});prong 1 (#pi^{#plus}) DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {axisPtLb, axisDca}});
           registry.add("hPtProng0RecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtLc}});
           registry.add("hPtProng1RecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#it{p}_{T}(#pi^{#plus}) (GeV/#it{c});entries", {HistType::kTH2F, {axisPtLb, axisPtPi}});
@@ -298,10 +298,10 @@ struct HfTaskLbReduced {
           registry.add("hRapidityRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate #it{y};entries", {HistType::kTH2F, {axisPtLb, axisEta}});
           registry.add("hImpParProdRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate impact parameter product;entries", {HistType::kTH2F, {axisPtLb, axisImpParProd}});
           registry.add("hinvMassLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPtLc, axisMassLc}});
-          registry.add("hDecLengthLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
+          registry.add("hDecLengthLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
           registry.add("hDecLengthXyLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtLc, axisDecayLength}});
-          registry.add("hCospLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
-          registry.add("hCospXyLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+          registry.add("hCospLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
+          registry.add("hCospXyLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
         }
         // MC checks
         if (doprocessMcWithDecayTypeCheck || doprocessMcWithLbMlAndDecayTypeCheck || doprocessMcWithLcMlAndDecayTypeCheck) {
@@ -320,13 +320,13 @@ struct HfTaskLbReduced {
         // ML scores of Lc daughter
         if (doprocessMcWithLcMl || doprocessMcWithLcMlAndDecayTypeCheck) {
           // signal
-          registry.add("hMlScoreBkgLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScorePromptLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScoreNonPromptLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreBkgLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScorePromptLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreNonPromptLcRecSig", "#Lambda_{b}^{0} candidates (matched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
           // background
-          registry.add("hMlScoreBkgLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScorePromptLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
-          registry.add("hMlScoreNonPromptLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, D^{#minus} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreBkgLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScorePromptLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
+          registry.add("hMlScoreNonPromptLcRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML nonprompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
         }
         // ML scores of Lb candidate
         if (doprocessMcWithLbMl || doprocessMcWithLbMlAndDecayTypeCheck) {
@@ -343,14 +343,14 @@ struct HfTaskLbReduced {
 
         // reco sparses
         if (!(doprocessDataWithLcMl || doprocessDataWithLbMl)) {
-          registry.add("hMassPtCutVarsRecSig", "#Lambda_{b}^{0} candidates (matched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);D^{#minus} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
+          registry.add("hMassPtCutVarsRecSig", "#Lambda_{b}^{0} candidates (matched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);#Lambda_{c}^{+} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
           if (fillBackground) {
-            registry.add("hMassPtCutVarsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate decay length (cm);D^{#minus} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
+            registry.add("hMassPtCutVarsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate decay length (cm);#Lambda_{c}^{+} candidate cos(#vartheta_{P})", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisDecayLength, axisCosp}});
           }
         } else {
-          registry.add("hMassPtCutVarsRecSig", "#Lambda_{b}^{0} candidates (matched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate ML score bkg;D^{#minus} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
+          registry.add("hMassPtCutVarsRecSig", "#Lambda_{b}^{0} candidates (matched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate ML score bkg;#Lambda_{c}^{+} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
           if (fillBackground) {
-            registry.add("hMassPtCutVarsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});D^{#minus} candidate ML score bkg;D^{#minus} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
+            registry.add("hMassPtCutVarsRecBg", "#Lambda_{b}^{0} candidates (unmatched);#it{M} (D#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{b}^{0}) (GeV/#it{c});#Lambda_{b}^{0} candidate decay length (cm);#Lambda_{b}^{0} candidate norm. decay length XY (cm);#Lambda_{b}^{0} candidate impact parameter product (cm);#Lambda_{b}^{0} candidate cos(#vartheta_{P});#it{M} (pK#pi) (GeV/#it{c}^{2});#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate ML score bkg;#Lambda_{c}^{+} candidate ML score nonprompt", {HistType::kTHnSparseF, {axisMassLb, axisPtLb, axisDecayLength, axisNormDecayLength, axisImpParProd, axisCosp, axisMassLc, axisPtLc, axisMlScore, axisMlScore}});
           }
         }
       }
