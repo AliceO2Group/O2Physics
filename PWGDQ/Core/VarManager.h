@@ -646,8 +646,10 @@ class VarManager : public TObject
     kVertexingChi2PCA,
     kCosThetaHE,
     kCosThetaCS,
+    kCosThetaPP,
     kPhiHE,
     kPhiCS,
+    kPhiPP,
     kCosPhiVP,
     kPhiVP,
     kDeltaPhiPair2,
@@ -2826,6 +2828,9 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
+  // Production frame
+  ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+
   if (fgUsedVars[kCosThetaHE]) {
     values[kCosThetaHE] = (t1.sign() > 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
   }
@@ -2840,6 +2845,14 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if (fgUsedVars[kPhiCS]) {
     values[kPhiCS] = (t1.sign() > 0 ? TMath::ATan2(yaxis_CS.Dot(v1_CM), xaxis_CS.Dot(v1_CM)) : TMath::ATan2(yaxis_CS.Dot(v2_CM), xaxis_CS.Dot(v2_CM)));
+  }
+
+  if (fgUsedVars[kCosThetaPP]) {
+    values[kCosThetaPP] = (t1.sign() > 0 ? normalVec.Dot(v1_CM) : normalVec.Dot(v2_CM));
+  }
+
+  if (fgUsedVars[kPhiPP]) {
+    values[kPhiPP] = (t1.sign() > 0 ? TMath::ATan2((normalVec.Dot(v1_CM)), zaxis_HE.Dot(v1_CM)) : TMath::ATan2((normalVec.Dot(v2_CM)), zaxis_HE.Dot(v2_CM)));
   }
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
