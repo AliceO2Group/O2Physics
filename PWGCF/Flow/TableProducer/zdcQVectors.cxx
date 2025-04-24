@@ -129,7 +129,7 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
   O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 100, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
-  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass4/", "ccdb path for recentering histos");
+  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass4", "ccdb path for recentering histos");
   O2_DEFINE_CONFIGURABLE(cfgFillCommonRegistry, bool, true, "Fill common registry with histograms");
 
   // Additional event selections
@@ -418,6 +418,10 @@ struct ZdcQVectors {
       cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
       cal.calibfilesLoaded[cm] = true;
       LOGF(info, "Loaded calibration histos from %s", ccdb_dir.c_str());
+      if(cm == kRec){
+        cal.atStep = 5; 
+        cal.atIteration = 5;
+      }
     } else {
       LOGF(info, "No ccdb path given for calibration histos. Do not recenter.");
     }
@@ -437,7 +441,13 @@ struct ZdcQVectors {
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kRec) {
       TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      if (!list) {
+        LOGF(fatal, "No calibration list for iteration %i and step %i", iteration, step);
+      }
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+      if (!hist) {
+        LOGF(fatal, "No calibration histo for iteration %i and step %i -> %s", iteration, step, objName);
+      }
       cal.atStep = step;
       cal.atIteration = iteration;
     }
@@ -720,21 +730,21 @@ struct ZdcQVectors {
 
       int pb = 0;
 
-      int nIterations = 6;
+      int nIterations = 5;
       int nSteps = 5;
 
-      for (int it = 1; it < nIterations; it++) {
-        corrQxA.push_back(getCorrection<THnSparse, kRec>(names[0][0].Data(), it, 0));
-        corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 0));
-        corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 0));
-        corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 0));
+      for (int it = 1; it <= nIterations; it++) {
+        corrQxA.push_back(getCorrection<THnSparse, kRec>(names[0][0].Data(), it, 1));
+        corrQyA.push_back(getCorrection<THnSparse, kRec>(names[0][1].Data(), it, 1));
+        corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
+        corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
         pb++;
 
-        for (int step = 1; step < nSteps; step++) {
-          corrQxA.push_back(getCorrection<TProfile, kRec>(names[step][0].Data(), it, step));
-          corrQyA.push_back(getCorrection<TProfile, kRec>(names[step][1].Data(), it, step));
-          corrQxC.push_back(getCorrection<TProfile, kRec>(names[step][2].Data(), it, step));
-          corrQyC.push_back(getCorrection<TProfile, kRec>(names[step][3].Data(), it, step));
+        for (int step = 2; step <= nSteps; step++) {
+          corrQxA.push_back(getCorrection<TProfile, kRec>(names[step-1][0].Data(), it, step));
+          corrQyA.push_back(getCorrection<TProfile, kRec>(names[step-1][1].Data(), it, step));
+          corrQxC.push_back(getCorrection<TProfile, kRec>(names[step-1][2].Data(), it, step));
+          corrQyC.push_back(getCorrection<TProfile, kRec>(names[step-1][3].Data(), it, step));
           pb++;
         }
       }
