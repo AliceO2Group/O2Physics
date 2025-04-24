@@ -408,35 +408,222 @@ struct TauEventTableProducer {
   PROCESS_SWITCH(TauEventTableProducer, processDataSG, "Iterate UD tables with measured data created by SG-Candidate-Producer.", false);
 
 	PresliceUnsorted<aod::UDMcParticles> partPerMcCollision = aod::udmcparticle::udMcCollisionId;
+//  PresliceUnsorted<UDMcParticlesWithUDTracks> partWtrkPerMcCollision = aod::udmcparticle::udMcCollisionId;
 	PresliceUnsorted<FullMCSGUDCollisions> colPerMcCollision = aod::udcollision::udMcCollisionId;
-//	PresliceUnsorted<FullUDTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+	PresliceUnsorted<FullMCUDTracks> trackPerMcParticle = aod::udmctracklabel::udMcParticleId;
+	PresliceUnsorted<FullMCUDTracks> trackPerCollision = aod::udtrack::udCollisionId;
 
-  void processMonteCarlo(UDMcCollisionsWithUDCollisions const& mccollisions,
+  void processMonteCarlo(aod::UDMcCollisions const& mccollisions,
+                         aod::UDMcParticles const& parts,
                          FullMCSGUDCollisions const& recolls,
-                         FullUDTracks const& tracks,
-                         aod::UDMcParticles const& parts)
+                         FullMCUDTracks const& trks)
   {
 
 		for(const auto& mccoll : mccollisions){
-			if (mccoll.has_udcollisions()) {
-	      auto const& collFromMcColl = mccoll.udcollisions_as<FullMCSGUDCollisions>();
-	      LOGF(info, "collision size %i ", collFromMcColl.size());
-//				auto const& partsFromMcColl = mccoll.udmcparticles_as<aod::UDMcParticles>();
+
+			int32_t runNumber = -999;
+			int bc = -999;
+			int nTrks[3] = {-999,-999,-999};//totalTracks, numContrib, globalNonPVtracks
+			float vtxPos[3] = {-999.,-999.,-999.};
+			int recoMode = -999;
+			int occupancy = -999.;
+			double hadronicRate = -999.;
+			int bcSels[8] = {-999,-999,-999,-999,-999,-999,-999,-999};
+			float amplitudesFIT[3] = {-999.,-999.,-999.};//FT0A, FT0C, FV0
+			float timesFIT[3] = {-999.,-999.,-999.};//FT0A, FT0C, FV0
+
+			float px[2] = {-999., -999.};
+			float py[2] = {-999., -999.};
+			float pz[2] = {-999., -999.};
+			int sign[2] = {-999, -999};
+			float dcaxy[2] = {-999., -999.};
+			float dcaz[2] = {-999., -999.};
+			float trkTimeRes[2] = {-999., -999.};
+			uint32_t itsClusterSizesTrk1 = 4294967295;
+			uint32_t itsClusterSizesTrk2 = 4294967295;
+			float tpcSignal[2] = {-999, -999};
+			float tpcEl[2] = {-999, -999};
+			float tpcMu[2] = {-999, -999};
+			float tpcPi[2] = {-999, -999};
+			float tpcKa[2] = {-999, -999};
+			float tpcPr[2] = {-999, -999};
+			float tpcIP[2] = {-999, -999};
+			float tofSignal[2] = {-999, -999};
+			float tofEl[2] = {-999, -999};
+			float tofMu[2] = {-999, -999};
+			float tofPi[2] = {-999, -999};
+			float tofKa[2] = {-999, -999};
+			float tofPr[2] = {-999, -999};
+			float tofEP[2] = {-999, -999};
+
+			int trueChannel = -1;
+			bool trueHasRecoColl = false;
+			float trueTauX[2] = {-999., -999.};
+			float trueTauY[2] = {-999., -999.};
+			float trueTauZ[2] = {-999., -999.};
+			float trueDaugX[2] = {-999., -999.};
+			float trueDaugY[2] = {-999., -999.};
+			float trueDaugZ[2] = {-999., -999.};
+			int trueDaugPdgCode[2] = {-999,-999};
+
+			auto const& collFromMcColls = recolls.sliceBy(colPerMcCollision, mccoll.globalIndex());
+//			if (mccoll.has_udcollisions()) {
+			if (collFromMcColls.size() > 0) {
+				trueHasRecoColl = true;
+//	      auto const& collFromMcColls = mccoll.udcollisions_as<FullMCSGUDCollisions>();
+				if (collFromMcColls.size() > 1) {
+					printLargeMessage("Truth collision has more than 1 reco collision. Skipping this event.");
+					continue;
+				}
+				auto const& collFromMcColl = collFromMcColls.iteratorAt(0);
+				auto const& trksFromColl = trks.sliceBy(trackPerCollision, collFromMcColl.globalIndex());
+				int countTracksPerCollision = 0;
+				int countGoodNonPVtracks = 0;
+				for (auto const& trkFromColl : trksFromColl){
+					countTracksPerCollision++;
+					if (!trkFromColl.isPVContributor()) {
+						countGoodNonPVtracks++;
+						continue;
+					}
+				}
+
+				runNumber = collFromMcColl.runNumber();
+				bc = collFromMcColl.globalBC();
+				nTrks[0] = countTracksPerCollision;
+				nTrks[1] = collFromMcColl.numContrib();
+				nTrks[2] = countGoodNonPVtracks;
+				vtxPos[0] = collFromMcColl.posX();
+				vtxPos[1] = collFromMcColl.posY();
+				vtxPos[2] = collFromMcColl.posZ();
+				recoMode = collFromMcColl.flags();
+				occupancy = collFromMcColl.occupancyInTime();
+				hadronicRate = collFromMcColl.hadronicRate();
+				bcSels[0] = collFromMcColl.trs();
+				bcSels[1] = collFromMcColl.trofs();
+				bcSels[2] = collFromMcColl.hmpr();
+				bcSels[3] = collFromMcColl.tfb();
+				bcSels[4] = collFromMcColl.itsROFb();
+				bcSels[5] = collFromMcColl.sbp();
+				bcSels[6] = collFromMcColl.zVtxFT0vPV();
+				bcSels[7] = collFromMcColl.vtxITSTPC();
+				amplitudesFIT[0] = collFromMcColl.totalFT0AmplitudeA();
+				amplitudesFIT[1] = collFromMcColl.totalFT0AmplitudeC();
+				amplitudesFIT[2] = collFromMcColl.totalFV0AmplitudeA();
+				timesFIT[0] = collFromMcColl.timeFT0A();
+				timesFIT[1] = collFromMcColl.timeFT0C();
+				timesFIT[2] = collFromMcColl.timeFV0A();
+
 				auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
-				LOGF(info, "partsFromMcColl size %i", partsFromMcColl.size());
+				int countMothers = 0;
 				for (const auto& particle : partsFromMcColl) {
 					if (particle.has_mothers())
 						continue;
-					LOGF(info, "no mother pdg  %i", particle.pdgCode());
-					const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
-					LOGF(info, "  daughters size %i", daughters.size());
-					for (const auto& daughter : daughters){
-						LOGF(info, "    daughters pdg  %i", daughter.pdgCode());
+					countMothers++;
+					if (countMothers > 2) {
+						printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
+						break;
 					}
+					trueTauX[countMothers-1] = particle.px();
+					trueTauY[countMothers-1] = particle.py();
+					trueTauZ[countMothers-1] = particle.pz();
+
+					const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+					int countDaughters = 0;
+					for (const auto& daughter : daughters){
+						// check if it is the charged particle (= no pi0 or neutrino)
+						if (enumMyParticle(daughter.pdgCode()) == -1)
+							continue;
+						countDaughters++;
+						if (countDaughters > 2) {
+							printLargeMessage("Truth collision has more than 2 charged daughters of no mother particles. Breaking the daughter loop.");
+							break;
+						}
+						trueDaugX[countDaughters-1] = daughter.px();
+						trueDaugY[countDaughters-1] = daughter.py();
+						trueDaugZ[countDaughters-1] = daughter.pz();
+						trueDaugPdgCode[countDaughters-1] = daughter.pdgCode();
+
+//						const auto& tracksFromDaughter = daughter.udtracks_as<FullMCUDTracks>();
+						auto const& tracksFromDaughter = trks.sliceBy(trackPerMcParticle, daughter.globalIndex());
+						if (tracksFromDaughter.size() > 1) {
+							printLargeMessage("Daughter has more than 1 associated track. Skipping this daughter.");
+							continue;
+						}
+						const auto& trk = tracksFromDaughter.iteratorAt(0);
+						px[countDaughters-1] = trk.px();
+						py[countDaughters-1] = trk.py();
+						pz[countDaughters-1] = trk.pz();
+						sign[countDaughters-1] = trk.sign();
+						dcaxy[countDaughters-1] = trk.dcaXY();
+						dcaz[countDaughters-1] = trk.dcaZ();
+						trkTimeRes[countDaughters-1] = trk.trackTimeRes();
+						if (countDaughters == 1) {
+							itsClusterSizesTrk1 = trk.itsClusterSizes();
+						} else {
+							itsClusterSizesTrk2 = trk.itsClusterSizes();
+						}
+						tpcSignal[countDaughters-1] = trk.tpcSignal();
+						tpcEl[countDaughters-1] = trk.tpcNSigmaEl();
+						tpcMu[countDaughters-1] = trk.tpcNSigmaMu();
+						tpcPi[countDaughters-1] = trk.tpcNSigmaPi();
+						tpcKa[countDaughters-1] = trk.tpcNSigmaKa();
+						tpcPr[countDaughters-1] = trk.tpcNSigmaPr();
+						tpcIP[countDaughters-1] = trk.tpcInnerParam();
+						tofSignal[countDaughters-1] = trk.tofSignal();
+						tofEl[countDaughters-1] = trk.tofNSigmaEl();
+						tofMu[countDaughters-1] = trk.tofNSigmaMu();
+						tofPi[countDaughters-1] = trk.tofNSigmaPi();
+						tofKa[countDaughters-1] = trk.tofNSigmaKa();
+						tofPr[countDaughters-1] = trk.tofNSigmaPr();
+						tofEP[countDaughters-1] = trk.tofExpMom();
+					}// daughters
 				}// particles
-//				auto const& tracksFromColl = collFromMcColl.udtracks_as<FullUDTracks>();
-//				LOGF(info, "tracksFromColl size %i", tracksFromColl.size());
-	    }// collisions
+	    } else {
+				auto const& partsFromMcColl = parts.sliceBy(partPerMcCollision, mccoll.globalIndex());
+				int countMothers = 0;
+				for (const auto& particle : partsFromMcColl) {
+					if (particle.has_mothers())
+						continue;
+					countMothers++;
+					if (countMothers > 2) {
+						printLargeMessage("Truth collision has more than 2 no mother particles. Breaking the particle loop.");
+						break;
+					}
+					trueTauX[countMothers-1] = particle.px();
+					trueTauY[countMothers-1] = particle.py();
+					trueTauZ[countMothers-1] = particle.pz();
+
+					const auto& daughters = particle.daughters_as<aod::UDMcParticles>();
+					int countDaughters = 0;
+					for (const auto& daughter : daughters){
+						// check if it is the charged particle (= no pi0 or neutrino)
+						if (enumMyParticle(daughter.pdgCode()) == -1)
+							continue;
+						countDaughters++;
+						if (countDaughters > 2) {
+							printLargeMessage("Truth collision has more than 2 charged daughters of no mother particles. Breaking the daughter loop.");
+							break;
+						}
+						trueDaugX[countDaughters-1] = daughter.px();
+						trueDaugY[countDaughters-1] = daughter.py();
+						trueDaugZ[countDaughters-1] = daughter.pz();
+						trueDaugPdgCode[countDaughters-1] = daughter.pdgCode();
+					}// daughters
+				}// particles
+			}// collisions
+
+			trueTauTwoTracks(runNumber, bc, nTrks[0], nTrks[1], nTrks[2], vtxPos[0], vtxPos[1], vtxPos[2],
+											 recoMode, occupancy, hadronicRate, bcSels[0], bcSels[1], bcSels[2],
+											 bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+											 amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2], -999.,-999.,
+											 timesFIT[0], timesFIT[1], timesFIT[2], -999.,-999.,
+					             px, py, pz, sign, dcaxy, dcaz, trkTimeRes,
+					             itsClusterSizesTrk1, itsClusterSizesTrk2,
+					             tpcSignal, tpcEl, tpcMu, tpcPi, tpcKa, tpcPr, tpcIP,
+					             tofSignal, tofEl, tofMu, tofPi, tofKa, tofPr, tofEP,
+											 trueChannel, trueHasRecoColl, mccoll.posX(), mccoll.posY(), mccoll.posZ(),
+											 trueTauX, trueTauY, trueTauZ, trueDaugX, trueDaugY, trueDaugZ, trueDaugPdgCode);
+
 
 //			auto colSlice = recolls.sliceBy(colPerMcCollision, mccoll.globalIndex());
 //			LOGF(info, "collision slice size %i ", colSlice.size());

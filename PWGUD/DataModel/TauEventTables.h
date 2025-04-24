@@ -82,6 +82,7 @@ DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[2]);
 DECLARE_SOA_COLUMN(TrkTOFexpMom, trkTOFexpMom, float[2]);
 // truth event
 DECLARE_SOA_COLUMN(TrueChannel, trueChannel, int);
+DECLARE_SOA_COLUMN(TrueHasRecoColl, trueHasRecoColl, bool);
 DECLARE_SOA_COLUMN(TruePosX, truePosX, float);
 DECLARE_SOA_COLUMN(TruePosY, truePosY, float);
 DECLARE_SOA_COLUMN(TruePosZ, truePosZ, float);
@@ -204,6 +205,7 @@ DECLARE_SOA_TABLE(TrueTauTwoTracks, "AOD", "TRUETAUTWOTRACK",
                   tau_tree::TrkTOFnSigmaPr,
                   tau_tree::TrkTOFexpMom,
                   tau_tree::TrueChannel,
+									tau_tree::TrueHasRecoColl,
                   tau_tree::TruePosX,
                   tau_tree::TruePosY,
                   tau_tree::TruePosZ,
