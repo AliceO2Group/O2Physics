@@ -94,6 +94,8 @@ DECLARE_SOA_COLUMN(TrueDaugPx, trueDaugPx, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPy, trueDaugPy, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPz, trueDaugPz, float[2]);
 DECLARE_SOA_COLUMN(TrueDaugPdgCode, trueDaugPdgCode, int[2]);
+// additional info
+DECLARE_SOA_COLUMN(ProblematicEvent, problematicEvent, bool);
 
 } // namespace tau_tree
 DECLARE_SOA_TABLE(TauTwoTracks, "AOD", "TAUTWOTRACK",
@@ -215,7 +217,8 @@ DECLARE_SOA_TABLE(TrueTauTwoTracks, "AOD", "TRUETAUTWOTRACK",
                   tau_tree::TrueDaugPx,
                   tau_tree::TrueDaugPy,
                   tau_tree::TrueDaugPz,
-                  tau_tree::TrueDaugPdgCode);
+                  tau_tree::TrueDaugPdgCode,
+									tau_tree::ProblematicEvent);
 
 } // namespace o2::aod
 
