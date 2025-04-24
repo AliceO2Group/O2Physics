@@ -272,7 +272,7 @@ struct HfCandidateCreatorLbReduced {
     }
   } // processDataWithLcMl
 
-  PROCESS_SWITCH(HfCandidateCreatorLbReduced, processDataWithLcMl, "Process data with ML scores of D mesons", false);
+  PROCESS_SWITCH(HfCandidateCreatorLbReduced, processDataWithLcMl, "Process data with ML scores of Lc", false);
 }; // struct
 
 /// Extends the table base with expression columns and performs MC matching.
