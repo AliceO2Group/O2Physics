@@ -19,7 +19,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/MftmchMatchingML.h"
 #include "Common/DataModel/MatchMFTMuonData.h"
