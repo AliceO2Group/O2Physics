@@ -1721,7 +1721,7 @@ struct Derivedupcanalysis {
 
         int selGapSide = collision.isUPC() ? getGapSide(collision, false) : -1;
         for (const auto& neutron : neutrons) {
-          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision()) 
+          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
             continue;
 
           const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
@@ -1733,14 +1733,18 @@ struct Derivedupcanalysis {
           const float eta = neutron.eta();
           switch (selGapSide) {
             case 0: // SGA
-              if (eta > 8.8) selGapSide = -1;
+              if (eta > 8.8)
+                selGapSide = -1;
               break;
             case 1: // SGC
-              if (eta < -8.8) selGapSide = -1;
+              if (eta < -8.8)
+                selGapSide = -1;
               break;
             case 2: // DG
-              if (eta > 8.8) selGapSide = 1;
-              else if (eta < -8.8) selGapSide = 0;
+              if (eta > 8.8)
+                selGapSide = 1;
+              else if (eta < -8.8)
+                selGapSide = 0;
               break;
           }
         }
@@ -1759,7 +1763,7 @@ struct Derivedupcanalysis {
     return listBestCollisionIds;
   }
 
-  void fillGenMCHistogramsQA(StraMCCollisionsFull const& mcCollisions, 
+  void fillGenMCHistogramsQA(StraMCCollisionsFull const& mcCollisions,
                              StraCollisonsFullMC const& collisions,
                              NeutronsMC const& neutrons)
   {
@@ -1796,7 +1800,7 @@ struct Derivedupcanalysis {
 
         int selGapSide = collision.isUPC() ? getGapSide(collision, false) : -1;
         for (const auto& neutron : neutrons) {
-          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision()) 
+          if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
             continue;
 
           const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
@@ -1808,14 +1812,18 @@ struct Derivedupcanalysis {
           const float eta = neutron.eta();
           switch (selGapSide) {
             case 0: // SGA
-              if (eta > 8.8) selGapSide = -1;
+              if (eta > 8.8)
+                selGapSide = -1;
               break;
             case 1: // SGC
-              if (eta < -8.8) selGapSide = -1;
+              if (eta < -8.8)
+                selGapSide = -1;
               break;
             case 2: // DG
-              if (eta > 8.8) selGapSide = 1;
-              else if (eta < -8.8) selGapSide = 0;
+              if (eta > 8.8)
+                selGapSide = 1;
+              else if (eta < -8.8)
+                selGapSide = 0;
               break;
           }
         }
@@ -1934,11 +1942,11 @@ struct Derivedupcanalysis {
 
     int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
     for (const auto& neutron : neutrons) {
-      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision()) 
+      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
         continue;
 
       const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
+      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();      // take gen. collision associated to the rec. collision
 
       // Consider neutrons from the same collision
       if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
@@ -1947,14 +1955,18 @@ struct Derivedupcanalysis {
       const float eta = neutron.eta();
       switch (selGapSide) {
         case 0: // SGA
-          if (eta > 8.8) selGapSide = -1;
+          if (eta > 8.8)
+            selGapSide = -1;
           break;
         case 1: // SGC
-          if (eta < -8.8) selGapSide = -1;
+          if (eta < -8.8)
+            selGapSide = -1;
           break;
         case 2: // DG
-          if (eta > 8.8) selGapSide = 1;
-          else if (eta < -8.8) selGapSide = 0;
+          if (eta > 8.8)
+            selGapSide = 1;
+          else if (eta < -8.8)
+            selGapSide = 0;
           break;
       }
     }
@@ -2047,11 +2059,11 @@ struct Derivedupcanalysis {
 
     int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
     for (const auto& neutron : neutrons) {
-      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision()) 
+      if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
         continue;
-      
+
       const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
+      const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>();      // take gen. collision associated to the rec. collision
 
       // Consider neutrons from the same collision
       if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
@@ -2060,14 +2072,18 @@ struct Derivedupcanalysis {
       const float eta = neutron.eta();
       switch (selGapSide) {
         case 0: // SGA
-          if (eta > 8.8) selGapSide = -1;
+          if (eta > 8.8)
+            selGapSide = -1;
           break;
         case 1: // SGC
-          if (eta < -8.8) selGapSide = -1;
+          if (eta < -8.8)
+            selGapSide = -1;
           break;
         case 2: // DG
-          if (eta > 8.8) selGapSide = 1;
-          else if (eta < -8.8) selGapSide = 0;
+          if (eta > 8.8)
+            selGapSide = 1;
+          else if (eta < -8.8)
+            selGapSide = 0;
           break;
       }
     }
@@ -2162,13 +2178,13 @@ struct Derivedupcanalysis {
       const bool isNegativePion = (pdgNeg == PDG_t::kPiMinus) || (doTreatPiToMuon && pdgNeg == PDG_t::kMuonMinus);
 
       // Fill histograms
-      if ( (pdgV0 == PDG_t::kK0Short) && isPositivePion &&  isNegativePion) {
+      if ((pdgV0 == PDG_t::kK0Short) && isPositivePion && isNegativePion) {
         histos.fill(HIST(kParticlenames[0]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
-      if ( (pdgV0 == PDG_t::kLambda0) && isPositiveProton && isNegativePion) {
+      if ((pdgV0 == PDG_t::kLambda0) && isPositiveProton && isNegativePion) {
         histos.fill(HIST(kParticlenames[1]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
-      if ( (pdgV0 == PDG_t::kLambda0Bar) && isPositivePion && isNegativeProton) {
+      if ((pdgV0 == PDG_t::kLambda0Bar) && isPositivePion && isNegativeProton) {
         histos.fill(HIST(kParticlenames[2]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
     } // V0 end
@@ -2181,10 +2197,9 @@ struct Derivedupcanalysis {
       // Kinematics (|y| < rapidityCut)
       float pTmc = cascMC.ptMC();
       float ymc = 1e3;
-      if ( (cascMC.pdgCode() == PDG_t::kXiMinus) || (cascMC.pdgCode() == PDG_t::kXiPlusBar) ) {
+      if ((cascMC.pdgCode() == PDG_t::kXiMinus) || (cascMC.pdgCode() == PDG_t::kXiPlusBar)) {
         ymc = cascMC.rapidityMC(0);
-      }
-      else if ( (cascMC.pdgCode() == PDG_t::kOmegaMinus) || (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) ) {
+      } else if ((cascMC.pdgCode() == PDG_t::kOmegaMinus) || (cascMC.pdgCode() == PDG_t::kOmegaPlusBar)) {
         ymc = cascMC.rapidityMC(2);
       }
       if (std::abs(ymc) > rapidityCut)
@@ -2227,16 +2242,16 @@ struct Derivedupcanalysis {
       const bool isBachelorNegativeKaon = (pdgBach == PDG_t::kKMinus);
 
       // Fill histograms
-      if ( (pdgCasc == PDG_t::kXiMinus) && isPositiveProton && isNegativePion && isBachelorNegativePion) {
+      if ((pdgCasc == PDG_t::kXiMinus) && isPositiveProton && isNegativePion && isBachelorNegativePion) {
         histos.fill(HIST(kParticlenames[3]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
-      if ( (pdgCasc == PDG_t::kXiPlusBar) && isNegativeProton && isPositivePion && isBachelorPositivePion) {
+      if ((pdgCasc == PDG_t::kXiPlusBar) && isNegativeProton && isPositivePion && isBachelorPositivePion) {
         histos.fill(HIST(kParticlenames[4]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
-      if ( (pdgCasc == PDG_t::kOmegaMinus) && isPositiveProton && isNegativePion && isBachelorNegativeKaon) {
+      if ((pdgCasc == PDG_t::kOmegaMinus) && isPositiveProton && isNegativePion && isBachelorNegativeKaon) {
         histos.fill(HIST(kParticlenames[5]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
-      if ( (pdgCasc == PDG_t::kOmegaPlusBar) && isNegativeProton && isPositivePion && isBachelorPositiveKaon) {
+      if ((pdgCasc == PDG_t::kOmegaPlusBar) && isNegativeProton && isPositivePion && isBachelorPositiveKaon) {
         histos.fill(HIST(kParticlenames[6]) + HIST("/mc/h7dGen"), ft0ampl, nTracksGlobal, mcCollision.multMCNParticlesEta08(), pTmc, static_cast<int>(upcCuts.genGapSide), ymc, mcCollision.generatorsID());
       }
     } // Cascade end
