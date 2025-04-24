@@ -1148,7 +1148,7 @@ struct HeavyNeutralMesonFilter {
     // - 4 high pT spectrum trigger flags (PCM & EMC * omega & eta')
     // - 4 femto trigger flags (p-omega, p-eta', d-omega || pp-omega, d-eta' || pp-eta')
     // -------------------------------------------------------------------------------------
-    tags(keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kPPOmega], keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kEtaPrimeP], keepFemtoEvent[hnmtrigger::kPPEtaPrime],  keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
+    tags(keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kPPOmega], keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kEtaPrimeP], keepFemtoEvent[hnmtrigger::kPPEtaPrime], keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
     // tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime, keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kEtaPrimeP],
     //      keepFemtoEvent[hnmtrigger::kPPOmega] || keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kPPEtaPrime] || keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
 
