@@ -115,7 +115,8 @@ struct Derivedupcanalysis {
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
   Configurable<bool> doDaughterDCA{"doDaughterDCA", true, "dcaXY cut for daughter tracks"};
-  Configurable<bool> checkNetronsInMC{"checkNetronsInMC", true, "require no neutrons for single-gap in MC"};
+  Configurable<bool> checkNeutronsInMC{"checkNeutronsInMC", true, "require no neutrons for single-gap in MC"};
+  Configurable<float> neutronEtaCut{"neutronEtaCut", 0.8, "ZN acceptance"};
 
   // Standard V0 topological criteria
   struct : ConfigurableGroup {
@@ -920,7 +921,8 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel", "hTracksGlobalVsNcoll_afterEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
       histos.add("eventQA/mc/hTracksGlobalVsPVzMC", "hTracksGlobalVsPVzMC", kTH2F, {axisNTracksGlobal, {100, -20., 20.}});
       histos.add("eventQA/mc/hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20., 20.}});
-      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisDetectors.axisFT0Aampl});
+      histos.add("eventQA/mc/hGenEventFT0ampl", "hGenEventFT0ampl", kTH1F, {axisDetectors.axisFT0Aampl});
+      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0Cqa});
       histos.add("eventQA/mc/hGeneratorsId", "hGeneratorsId", kTH1F, {axisGeneratorIds});
     }
 
@@ -1024,17 +1026,9 @@ struct Derivedupcanalysis {
   }
 
   template <typename TCollision>
-  int getGapSide(TCollision const& collision, bool fillQA)
+  int getGapSide(TCollision const& collision)
   {
     int selGapSide = sgSelector.trueGap(collision, upcCuts.fv0a, upcCuts.ft0a, upcCuts.ft0c, upcCuts.zdc);
-
-    if (fillQA) {
-      histos.fill(HIST("eventQA/hGapSide"), collision.gapSide());
-      histos.fill(HIST("eventQA/hSelGapSide"), selGapSide);
-      histos.fill(HIST("eventQA/hFT0"), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), selGapSide);
-      histos.fill(HIST("eventQA/hFDD"), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(), selGapSide);
-      histos.fill(HIST("eventQA/hZN"), collision.energyCommonZNA(), collision.energyCommonZNC(), selGapSide);
-    }
     return selGapSide;
   }
 
@@ -1064,6 +1058,12 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hPosX"), collision.posX(), gap);
     histos.fill(HIST("eventQA/hPosY"), collision.posY(), gap);
     histos.fill(HIST("eventQA/hPosZ"), collision.posZ(), gap);
+
+    histos.fill(HIST("eventQA/hGapSide"), collision.gapSide());
+    histos.fill(HIST("eventQA/hSelGapSide"), gap);
+    histos.fill(HIST("eventQA/hFT0"), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), gap);
+    histos.fill(HIST("eventQA/hFDD"), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(), gap);
+    histos.fill(HIST("eventQA/hZN"), collision.energyCommonZNA(), collision.energyCommonZNC(), gap);
   }
 
   template <typename TCollision>
@@ -1720,7 +1720,7 @@ struct Derivedupcanalysis {
           continue;
         }
 
-        int selGapSide = collision.isUPC() ? getGapSide(collision, false) : -1;
+        int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
         for (const auto& neutron : neutrons) {
           if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
             continue;
@@ -1734,17 +1734,17 @@ struct Derivedupcanalysis {
           const float eta = neutron.eta();
           switch (selGapSide) {
             case 0: // SGA
-              if (eta > 8.8)
+              if (eta > neutronEtaCut)
                 selGapSide = -1;
               break;
             case 1: // SGC
-              if (eta < -8.8)
+              if (eta < -neutronEtaCut)
                 selGapSide = -1;
               break;
             case 2: // DG
-              if (eta > 8.8)
+              if (eta > neutronEtaCut)
                 selGapSide = 1;
-              else if (eta < -8.8)
+              else if (eta < -neutronEtaCut)
                 selGapSide = 0;
               break;
           }
@@ -1799,7 +1799,7 @@ struct Derivedupcanalysis {
           continue;
         }
 
-        int selGapSide = collision.isUPC() ? getGapSide(collision, false) : -1;
+        int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
         for (const auto& neutron : neutrons) {
           if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
             continue;
@@ -1813,17 +1813,17 @@ struct Derivedupcanalysis {
           const float eta = neutron.eta();
           switch (selGapSide) {
             case 0: // SGA
-              if (eta > 8.8)
+              if (eta > neutronEtaCut)
                 selGapSide = -1;
               break;
             case 1: // SGC
-              if (eta < -8.8)
+              if (eta < -neutronEtaCut)
                 selGapSide = -1;
               break;
             case 2: // DG
-              if (eta > 8.8)
+              if (eta > neutronEtaCut)
                 selGapSide = 1;
-              else if (eta < -8.8)
+              else if (eta < -neutronEtaCut)
                 selGapSide = 0;
               break;
           }
@@ -1858,6 +1858,7 @@ struct Derivedupcanalysis {
       if (atLeastOne) {
         histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 2.0, mcCollision.multMCNParticlesEta08(), mcCollision.generatorsID());
         histos.fill(HIST("eventQA/mc/hGenEventCentrality"), centrality);
+        histos.fill(HIST("eventQA/mc/hGenEventFT0ampl"), ft0ampl);
       }
     }
   }
@@ -1898,7 +1899,7 @@ struct Derivedupcanalysis {
 
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
-    int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
+    int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
     if (evSels.studyUPConly && (selGapSide < -0.5))
       return;
 
@@ -1941,7 +1942,7 @@ struct Derivedupcanalysis {
 
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
-    int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
+    int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
     for (const auto& neutron : neutrons) {
       if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
         continue;
@@ -1956,17 +1957,17 @@ struct Derivedupcanalysis {
       const float eta = neutron.eta();
       switch (selGapSide) {
         case 0: // SGA
-          if (eta > 8.8)
+          if (eta > neutronEtaCut)
             selGapSide = -1;
           break;
         case 1: // SGC
-          if (eta < -8.8)
+          if (eta < -neutronEtaCut)
             selGapSide = -1;
           break;
         case 2: // DG
-          if (eta > 8.8)
+          if (eta > neutronEtaCut)
             selGapSide = 1;
-          else if (eta < -8.8)
+          else if (eta < -neutronEtaCut)
             selGapSide = 0;
           break;
       }
@@ -2019,7 +2020,7 @@ struct Derivedupcanalysis {
 
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
-    int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
+    int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
     if (evSels.studyUPConly && (selGapSide < -0.5))
       return;
 
@@ -2058,7 +2059,7 @@ struct Derivedupcanalysis {
 
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
-    int selGapSide = collision.isUPC() ? getGapSide(collision, true) : -1;
+    int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
     for (const auto& neutron : neutrons) {
       if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
         continue;
@@ -2073,17 +2074,17 @@ struct Derivedupcanalysis {
       const float eta = neutron.eta();
       switch (selGapSide) {
         case 0: // SGA
-          if (eta > 8.8)
+          if (eta > neutronEtaCut)
             selGapSide = -1;
           break;
         case 1: // SGC
-          if (eta < -8.8)
+          if (eta < -neutronEtaCut)
             selGapSide = -1;
           break;
         case 2: // DG
-          if (eta > 8.8)
+          if (eta > neutronEtaCut)
             selGapSide = 1;
-          else if (eta < -8.8)
+          else if (eta < -neutronEtaCut)
             selGapSide = 0;
           break;
       }
