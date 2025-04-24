@@ -167,14 +167,14 @@ struct tofPidQaImp {
     break;
 
       particleCase(Electron);
-      // particleCase(Muon);
-      // particleCase(Pion);
-      // particleCase(Kaon);
-      // particleCase(Proton);
-      // particleCase(Deuteron);
-      // particleCase(Triton);
-      // particleCase(Helium3);
-      // particleCase(Alpha);
+      particleCase(Muon);
+      particleCase(Pion);
+      particleCase(Kaon);
+      particleCase(Proton);
+      particleCase(Deuteron);
+      particleCase(Triton);
+      particleCase(Helium3);
+      particleCase(Alpha);
 #undef particleCase
     }
     if (enabledProcesses != 1) {
@@ -640,24 +640,27 @@ struct tofPidQaImp {
   }
 
   // QA of nsigma only tables
-#define makeProcessFunction(inputPid, particleId)                            \
-  void process##particleId(CollisionCandidate const& collision,              \
-                           soa::Filtered<TrackCandidates> const& tracks)     \
-  {                                                                          \
-    auto tracksWithPid = soa::Attach<TrackCandidates, inputPid>(tracks);     \
-    processSingleParticle<PID::particleId, false>(collision, tracksWithPid); \
-  }                                                                          \
+#define makeProcessFunction(inputPid, particleId, asd)                            \
+  void process##particleId(CollisionCandidate const& collision,                   \
+                           TrackCandidates const& tracks)                         \
+  {                                                                               \
+    auto tracksWithPid = soa::Attach<TrackCandidates, inputPid>(tracks);          \
+    for (auto t : tracksWithPid) {                                                \
+      LOG(info) << t.tofNSigma##asd();                                            \
+    }                                                                             \
+    /*processSingleParticle<PID::particleId, false>(collision, tracksWithPid); */ \
+  }                                                                               \
   PROCESS_SWITCH(tofPidQaImp, process##particleId, Form("Process for the %s hypothesis for TOF NSigma QA", #particleId), false);
 
-  makeProcessFunction(aod::TOFNSigmaEl, Electron);
-  makeProcessFunction(aod::TOFNSigmaMu, Muon);
-  makeProcessFunction(aod::TOFNSigmaPi, Pion);
-  makeProcessFunction(aod::TOFNSigmaKa, Kaon);
-  makeProcessFunction(aod::TOFNSigmaPr, Proton);
-  makeProcessFunction(aod::TOFNSigmaDe, Deuteron);
-  makeProcessFunction(aod::TOFNSigmaTr, Triton);
-  makeProcessFunction(aod::TOFNSigmaHe, Helium3);
-  makeProcessFunction(aod::TOFNSigmaAl, Alpha);
+  makeProcessFunction(aod::TOFNSigmaEl, Electron, El);
+  makeProcessFunction(aod::TOFNSigmaMu, Muon, Mu);
+  makeProcessFunction(aod::TOFNSigmaPi, Pion, Pi);
+  makeProcessFunction(aod::TOFNSigmaKa, Kaon, Ka);
+  makeProcessFunction(aod::TOFNSigmaPr, Proton, Pr);
+  makeProcessFunction(aod::TOFNSigmaDe, Deuteron, De);
+  makeProcessFunction(aod::TOFNSigmaTr, Triton, Tr);
+  makeProcessFunction(aod::TOFNSigmaHe, Helium3, He);
+  makeProcessFunction(aod::TOFNSigmaAl, Alpha, Al);
 #undef makeProcessFunction
 
 // QA of full tables

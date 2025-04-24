@@ -350,7 +350,7 @@ o2::pid::tof::TOFResoParamsV3 TOFResponse::parameters;
                                if (momentum <= 0) {                                                                             \
                                  return o2::pid::tof::defaultReturnValue;                                                       \
                                }                                                                                                \
-                               const float reso = TOFResponse::parameters.getResolution<0>(momentum, eta);                      \
+                               const float reso = TOFResponse::parameters.getResolution<id>(momentum, eta);                     \
                                if (reso > 0) {                                                                                  \
                                  return std::sqrt(reso * reso +                                                                 \
                                                   TOFResponse::parameters[4] * TOFResponse::parameters[4] +                     \
