@@ -877,11 +877,15 @@ struct sigma0builder {
     float fSigmaRap = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
     float fSigmaOPAngle = v1.Angle(v2);
     float fSigmaCentrality = coll.centFT0C();
-    float fSigmaTimeStamp = coll.timestamp();
-    float fSigmaRunNumber = coll.runNumber();
+    uint64_t fSigmaTimeStamp = coll.timestamp();
+    int fSigmaRunNumber = coll.runNumber();
+    float fSigmaIR = -1;
+
+    if (fGetIR)
+      fSigmaIR = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
 
     // Filling TTree for ML analysis
-    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality, fSigmaRunNumber, fSigmaTimeStamp);
+    sigma0cores(fSigmapT, fSigmaMass, fSigmaRap, fSigmaOPAngle, fSigmaCentrality, fSigmaRunNumber, fSigmaTimeStamp, fSigmaIR);
 
     sigmaPhotonExtras(fPhotonPt, fPhotonMass, fPhotonQt, fPhotonAlpha, fPhotonRadius,
                       fPhotonCosPA, fPhotonDCADau, fPhotonDCANegPV, fPhotonDCAPosPV, fPhotonZconv,
@@ -916,7 +920,7 @@ struct sigma0builder {
     
     //_______________________________________________
     // Retrieving IR info
-    double interactionRate = -1;
+    float interactionRate = -1;
     if (fGetIR){
       interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
       
@@ -1107,7 +1111,8 @@ struct sigma0builder {
     histos.fill(HIST("hEventCentrality"), centrality);
 
     //_______________________________________________
-    // Retrieving IR info
+    // Retrieving IR info    
+    float interactionRate = -1;
     if (fGetIR){
       interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
       
