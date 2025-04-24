@@ -68,7 +68,7 @@ struct FemtoUniverseEfficiencyBase {
   /// Kaon configurable
   Configurable<bool> isKaonRun2{"isKaonRun2", false, "Enable kaon selection used in Run2"}; // to check consistency with Run2 results
   struct : o2::framework::ConfigurableGroup {
-    // Momentum thresholds for Run2 and Run3 
+    // Momentum thresholds for Run2 and Run3
     Configurable<float> confMomKaonRun2{"confMomKaonRun2", 0.4, "Momentum threshold for kaon identification using ToF (Run2)"};
     Configurable<float> confMomKaonRun3{"confMomKaonRun3", 0.3, "Momentum threshold for kaon identification using ToF (Run3)"};
     Configurable<float> confMomKaon045{"confMomKaon045", 0.45, "Momentum threshold for kaon identification pT = 0.45 GeV/c"};
@@ -89,7 +89,7 @@ struct FemtoUniverseEfficiencyBase {
     Configurable<float> confKaonNsigmaTPCfrom055to15{"confKaonNsigmaTPCfrom055to15", 3.0, "Reject kaons within pT from 0.55 to 1.5 if TPC n sigma is above this value."};
     Configurable<float> confKaonNsigmaTOFfrom055to15{"confKaonNsigmaTOFfrom055to15", 3.0, "Reject kaons within pT from 0.55 to 1.5 if ToF n sigma is above this value."};
     Configurable<float> confKaonNsigmaTPCfrom15{"confKaonNsigmaTPCfrom15", 3.0, "Reject kaons with pT above 1.5 if TPC n sigma is above this value."};
-    Configurable<float> confKaonNsigmaTOFfrom15{"confKaonNsigmaTOFfrom15", 2.0, "Reject kaons with pT above 1.5 if ToF n sigma is above this value.."};    
+    Configurable<float> confKaonNsigmaTOFfrom15{"confKaonNsigmaTOFfrom15", 2.0, "Reject kaons with pT above 1.5 if ToF n sigma is above this value.."};
   } ConfKaonSelection;
 
   /// Deuteron configurables
@@ -370,7 +370,7 @@ struct FemtoUniverseEfficiencyBase {
       }
       const auto mcParticle = part.fdMCParticle();
 
-      if(!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)){
+      if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         continue;
       }
 
@@ -391,7 +391,7 @@ struct FemtoUniverseEfficiencyBase {
         }
         const auto mcParticle = part.fdMCParticle();
 
-        if(!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)){
+        if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
           continue;
         }
 
