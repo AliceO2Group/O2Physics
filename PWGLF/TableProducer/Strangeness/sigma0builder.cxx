@@ -170,7 +170,7 @@ struct sigma0builder {
   // Invariant Mass
   ConfigurableAxis axisSigmaMass{"axisSigmaMass", {500, 1.10f, 1.30f}, "M_{#Sigma^{0}} (GeV/c^{2})"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.05f, 1.151f}, "M_{#Lambda} (GeV/c^{2})"};
-  ConfigurableAxis axisPhotonMass{"axisPhotonMass", {600, -0.1f, 0.5f}, "M_{#Gamma}"};
+  ConfigurableAxis axisPhotonMass{"axisPhotonMass", {200, -0.1f, 0.5f}, "M_{#Gamma}"};
   ConfigurableAxis axisPi0Mass{"axisPi0Mass", {200, 0.08f, 0.18f}, "M_{#Pi^{0}}"};
   ConfigurableAxis axisK0SMass{"axisK0SMass", {200, 0.4f, 0.6f}, "M_{K^{0}}"};
 
@@ -481,7 +481,7 @@ struct sigma0builder {
   }
 
   template <typename TCollision, typename TV0Object>
-  void analyzeV0CollAssoc(TCollision const& collision, TV0Object const& fullv0s, std::vector<int> selV0Indices, double IR)
+  void analyzeV0CollAssoc(TCollision const& collision, TV0Object const& fullv0s, std::vector<int> selV0Indices, float IR)
   {            
     auto v0MCCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
 
@@ -906,289 +906,301 @@ struct sigma0builder {
                       fLambdaV0Type, LambdaBDTScore, AntiLambdaBDTScore);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& coll, V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, V0DerivedMCDatas const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    if (!IsEventAccepted(coll, true)) 
-      return;
-    
-    float centrality = coll.centFT0C();
-    histos.fill(HIST("hEventCentrality"), centrality);
-    
-    bool fhasMCColl=false;
-    if (coll.has_straMCCollision())
-      fhasMCColl=true;
-    
-    //_______________________________________________
-    // Retrieving IR info
-    float interactionRate = -1;
-    if (fGetIR){
-      interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+    for (const auto& coll : collisions) {
+
+      if (!IsEventAccepted(coll, true)) 
+        continue;
       
-      if (interactionRate<0)          
-          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = coll.globalIndex();
+      auto V0s = fullV0s.sliceBy(perCollisionMCDerived, collIdx);
 
-      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);  
-      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);    
-    }
-    
-    std::vector<int> bestGammasArray;
-    std::vector<int> bestLambdasArray;
-    int v0TableOffset = V0s.offset();
-
-    //_______________________________________________
-    // Photon-only loop    
-    for (auto& gamma : V0s) { // selecting photons from Sigma0      
-      if (!gamma.has_v0MCCore())
-        continue;
-
-      auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+      float centrality = coll.centFT0C();
+      histos.fill(HIST("hEventCentrality"), centrality);
       
-      if (gammaMC.pdgCode() == 22) {
-        histos.fill(HIST("MC/h2dGammaXYConversion"), gamma.x(), gamma.y());
-        float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
-        if (GammaY < 0.5) {                                                                                                                // rapidity selection
-          histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, gamma.pt());                                                // isgamma            
-        }
-      }
-
-      // basic photon selection
-      if (!processPhotonCandidate(gamma)) 
-        continue;
-
-      // Save indices of best gamma candidates
-      bestGammasArray.push_back(gamma.globalIndex() - v0TableOffset);
-    }
-    
-    //_______________________________________________
-    // Lambda-only loop
-    for (auto& lambda : V0s) { // selecting lambdas from Sigma0
-      if (!lambda.has_v0MCCore())
-        continue;
-
-      auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-      float lambdaY = TMath::Abs(RecoDecay::y(std::array{lambda.px(), lambda.py(), lambda.pz()}, o2::constants::physics::MassLambda));
+      bool fhasMCColl=false;
+      if (coll.has_straMCCollision())
+        fhasMCColl=true;
       
-      if (lambdaY < 0.5){
-        if (lambdaMC.pdgCode() == 3122) // Is Lambda          
-          histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocLambda"), centrality, lambda.pt());          
-        if (lambdaMC.pdgCode() == -3122) // Is AntiLambda          
-          histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, lambda.pt());            
-      }
-      
-      // basic lambda selection
-      if (!processLambdaCandidate(lambda)) 
-        continue;
-
-      // Save indices of best lambda candidates
-      bestLambdasArray.push_back(lambda.globalIndex() - v0TableOffset); 
-    }
-    //_______________________________________________
-    // Pi0 optional loop
-    if (doPi0QA){      
-      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
-        auto gamma1 = V0s.rawIteratorAt(bestGammasArray[i]);
-        for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {            
-          auto gamma2 = V0s.rawIteratorAt(bestGammasArray[j]);          
-          runPi0QA(gamma1, gamma2);
-        }
-      }
-    }
-    
-    //_______________________________________________
-    // Wrongly collision association study
-    if (doAssocStudy && fhasMCColl){
-      analyzeV0CollAssoc(coll, V0s, bestGammasArray, interactionRate); // Gamma     
-      analyzeV0CollAssoc(coll, V0s, bestLambdasArray, interactionRate); // Lambda   
-    }
-    
-    //_______________________________________________
-    // Sigma0 loop
-    for (size_t i = 0; i < bestGammasArray.size(); ++i) {
-      auto gamma = V0s.rawIteratorAt(bestGammasArray[i]);
-
-      if (!gamma.has_v0MCCore())
-        continue;
-
-      auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-
-      bool fIsPhotonCorrectlyAssign = false;
-      if (fhasMCColl) {
-        auto gammaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
-        fIsPhotonCorrectlyAssign = (gammaMC.straMCCollisionId() == gammaMCCollision.globalIndex());
-      }
-
-      for (size_t j = 0; j < bestLambdasArray.size(); ++j){
-        auto lambda = V0s.iteratorAt(bestLambdasArray[j]);
+      //_______________________________________________
+      // Retrieving IR info
+      float interactionRate = -1;
+      if (fGetIR){
+        interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
         
+        if (interactionRate<0)          
+            histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+
+        histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);  
+        histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);    
+      }
+      
+      std::vector<int> bestGammasArray;
+      std::vector<int> bestLambdasArray;      
+
+      //_______________________________________________
+      // Photon-only loop    
+      for (auto& gamma : V0s) { // selecting photons from Sigma0      
+        if (!gamma.has_v0MCCore())
+          continue;
+
+        auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+        
+        if (gammaMC.pdgCode() == 22) {
+          histos.fill(HIST("MC/h2dGammaXYConversion"), gamma.x(), gamma.y());
+          float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
+          if (GammaY < 0.5) {                                                                                                                // rapidity selection
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, gamma.pt());                                                // isgamma            
+          }
+        }
+
+        // basic photon selection
+        if (!processPhotonCandidate(gamma)) 
+          continue;
+
+        // Save indices of best gamma candidates
+        bestGammasArray.push_back(gamma.globalIndex());
+      }
+      
+      //_______________________________________________
+      // Lambda-only loop
+      for (auto& lambda : V0s) { // selecting lambdas from Sigma0
         if (!lambda.has_v0MCCore())
           continue;
 
         auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-      
-        // Sigma0 candidate properties
-        std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
-        std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
-        auto arrMom = std::array{pVecPhotons, pVecLambda};
-        float SigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
-        float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
-        float SigmaY = TMath::Abs(RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0));
-
-        // MC properties
-        bool fIsSigma = false;
-        bool fIsAntiSigma = false;
-        bool fIsPhotonPrimary = gammaMC.isPhysicalPrimary();
-        bool fIsLambdaPrimary = lambdaMC.isPhysicalPrimary();     
-        bool fIsLambdaCorrectlyAssign = false;     
-
-        int PhotonCandPDGCode = gammaMC.pdgCode();
-        int PhotonCandPDGCodeMother = gammaMC.pdgCodeMother();
-        int LambdaCandPDGCode = lambdaMC.pdgCode();
-        int LambdaCandPDGCodeMother = lambdaMC.pdgCodeMother();
-
-        float SigmaMCpT = RecoDecay::pt(array{gammaMC.pxMC() + lambdaMC.pxMC(), gammaMC.pyMC() + lambdaMC.pyMC()});
-        float PhotonMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
-        float LambdaMCpT = RecoDecay::pt(array{lambdaMC.pxMC(), lambdaMC.pyMC()});
-      
-        if (fhasMCColl) {
-          auto lambdaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
-          fIsLambdaCorrectlyAssign = (lambdaMC.straMCCollisionId() == lambdaMCCollision.globalIndex());
-        }
-
-        if ((PhotonCandPDGCode == 22) && (PhotonCandPDGCodeMother == 3212) && (LambdaCandPDGCode == 3122) && (LambdaCandPDGCodeMother == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
-          fIsSigma = true;
-        if ((PhotonCandPDGCode == 22) && (PhotonCandPDGCodeMother == -3212) && (LambdaCandPDGCode == -3122) && (LambdaCandPDGCodeMother == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
-          fIsAntiSigma = true;
-
-        if (SigmaY < 0.5){
-          if (fIsSigma) {
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocSigma0"), centrality, SigmaMCpT);
-            histos.fill(HIST("MC/h2dSigma0PtVsLambdaPtBeforeSel_MCAssoc"), SigmaMCpT, LambdaMCpT);
-            histos.fill(HIST("MC/h2dSigma0PtVsGammaPtBeforeSel_MCAssoc"), SigmaMCpT, PhotonMCpT);
-          }
-          if (fIsAntiSigma)
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocASigma0"), centrality, SigmaMCpT);  
-        }
-
-        histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
+        float lambdaY = TMath::Abs(RecoDecay::y(std::array{lambda.px(), lambda.py(), lambda.pz()}, o2::constants::physics::MassLambda));
         
-        // Build sigma0 candidate, please
-        if (!buildSigma0(lambda, gamma)) 
+        if (lambdaY < 0.5){
+          if (lambdaMC.pdgCode() == 3122) // Is Lambda          
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocLambda"), centrality, lambda.pt());          
+          if (lambdaMC.pdgCode() == -3122) // Is AntiLambda          
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, lambda.pt());            
+        }
+        
+        // basic lambda selection
+        if (!processLambdaCandidate(lambda)) 
           continue;
 
-        // Filling histos and tables
-        histos.fill(HIST("SigmaSel/h3dMassSigma0AfterSel"), centrality, SigmapT, SigmaMass);
-
-        if (SigmaY < 0.5){
-          if (fIsSigma) 
-            histos.fill(HIST("MC/h2dPtVsCentralityAfterSel_MCAssocSigma0"), centrality, SigmaMCpT);            
-          if (fIsAntiSigma) 
-            histos.fill(HIST("MC/h2dPtVsCentralityAfterSel_MCAssocASigma0"), centrality, SigmaMCpT);
+        // Save indices of best lambda candidates
+        bestLambdasArray.push_back(lambda.globalIndex()); 
+      }
+      //_______________________________________________
+      // Pi0 optional loop
+      if (doPi0QA){      
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {            
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);          
+            runPi0QA(gamma1, gamma2);
+          }
         }
-                            
-        if (fillBkgQAhistos) 
-          runBkgAnalysis(fIsSigma, fIsAntiSigma, PhotonCandPDGCode, PhotonCandPDGCodeMother, LambdaCandPDGCode, LambdaCandPDGCodeMother, SigmapT, SigmaMass);
+      }
+      
+      //_______________________________________________
+      // Wrongly collision association study
+      if (doAssocStudy && fhasMCColl){
+        analyzeV0CollAssoc(coll, fullV0s, bestGammasArray, interactionRate); // Gamma     
+        analyzeV0CollAssoc(coll, fullV0s, bestLambdasArray, interactionRate); // Lambda   
+      }
+      
+      //_______________________________________________
+      // Sigma0 loop
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
 
-        // Fill Tables please
-        sigma0mccores(fIsSigma, fIsAntiSigma, SigmaMCpT,
-                      PhotonCandPDGCode, PhotonCandPDGCodeMother, fIsPhotonPrimary, PhotonMCpT, fIsPhotonCorrectlyAssign,
-                      LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT, fIsLambdaCorrectlyAssign);
+        if (!gamma.has_v0MCCore())
+          continue;
 
-        fillTables(lambda, gamma, coll); // filling tables with accepted candidates
+        auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-        nSigmaCandidates++;
-        if (nSigmaCandidates % 10000 == 0) 
-          LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+        bool fIsPhotonCorrectlyAssign = false;
+        if (fhasMCColl) {
+          auto gammaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+          fIsPhotonCorrectlyAssign = (gammaMC.straMCCollisionId() == gammaMCCollision.globalIndex());
+        }
+
+        for (size_t j = 0; j < bestLambdasArray.size(); ++j){
+          auto lambda = fullV0s.iteratorAt(bestLambdasArray[j]);
+          
+          if (!lambda.has_v0MCCore())
+            continue;
+
+          auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+        
+          // Sigma0 candidate properties
+          std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
+          std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
+          auto arrMom = std::array{pVecPhotons, pVecLambda};
+          float SigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
+          float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
+          float SigmaY = TMath::Abs(RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0));
+
+          // MC properties
+          bool fIsSigma = false;
+          bool fIsAntiSigma = false;
+          bool fIsPhotonPrimary = gammaMC.isPhysicalPrimary();
+          bool fIsLambdaPrimary = lambdaMC.isPhysicalPrimary();     
+          bool fIsLambdaCorrectlyAssign = false;     
+
+          int PhotonCandPDGCode = gammaMC.pdgCode();
+          int PhotonCandPDGCodeMother = gammaMC.pdgCodeMother();
+          int LambdaCandPDGCode = lambdaMC.pdgCode();
+          int LambdaCandPDGCodeMother = lambdaMC.pdgCodeMother();
+
+          float SigmaMCpT = RecoDecay::pt(array{gammaMC.pxMC() + lambdaMC.pxMC(), gammaMC.pyMC() + lambdaMC.pyMC()});
+          float PhotonMCpT = RecoDecay::pt(array{gammaMC.pxMC(), gammaMC.pyMC()});
+          float LambdaMCpT = RecoDecay::pt(array{lambdaMC.pxMC(), lambdaMC.pyMC()});
+        
+          if (fhasMCColl) {
+            auto lambdaMCCollision = coll.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+            fIsLambdaCorrectlyAssign = (lambdaMC.straMCCollisionId() == lambdaMCCollision.globalIndex());
+          }
+
+          if ((PhotonCandPDGCode == 22) && (PhotonCandPDGCodeMother == 3212) && (LambdaCandPDGCode == 3122) && (LambdaCandPDGCodeMother == 3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
+            fIsSigma = true;
+          if ((PhotonCandPDGCode == 22) && (PhotonCandPDGCodeMother == -3212) && (LambdaCandPDGCode == -3122) && (LambdaCandPDGCodeMother == -3212) && (gamma.motherMCPartId() == lambda.motherMCPartId()))
+            fIsAntiSigma = true;
+
+          if (SigmaY < 0.5){
+            if (fIsSigma) {
+              histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocSigma0"), centrality, SigmaMCpT);
+              histos.fill(HIST("MC/h2dSigma0PtVsLambdaPtBeforeSel_MCAssoc"), SigmaMCpT, LambdaMCpT);
+              histos.fill(HIST("MC/h2dSigma0PtVsGammaPtBeforeSel_MCAssoc"), SigmaMCpT, PhotonMCpT);
+            }
+            if (fIsAntiSigma)
+              histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocASigma0"), centrality, SigmaMCpT);  
+          }
+
+          histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
+          
+          // Build sigma0 candidate, please
+          if (!buildSigma0(lambda, gamma)) 
+            continue;
+
+          // Filling histos and tables
+          histos.fill(HIST("SigmaSel/h3dMassSigma0AfterSel"), centrality, SigmapT, SigmaMass);
+
+          if (SigmaY < 0.5){
+            if (fIsSigma) 
+              histos.fill(HIST("MC/h2dPtVsCentralityAfterSel_MCAssocSigma0"), centrality, SigmaMCpT);            
+            if (fIsAntiSigma) 
+              histos.fill(HIST("MC/h2dPtVsCentralityAfterSel_MCAssocASigma0"), centrality, SigmaMCpT);
+          }
+                              
+          if (fillBkgQAhistos) 
+            runBkgAnalysis(fIsSigma, fIsAntiSigma, PhotonCandPDGCode, PhotonCandPDGCodeMother, LambdaCandPDGCode, LambdaCandPDGCodeMother, SigmapT, SigmaMass);
+
+          // Fill Tables please
+          sigma0mccores(fIsSigma, fIsAntiSigma, SigmaMCpT,
+                        PhotonCandPDGCode, PhotonCandPDGCodeMother, fIsPhotonPrimary, PhotonMCpT, fIsPhotonCorrectlyAssign,
+                        LambdaCandPDGCode, LambdaCandPDGCodeMother, fIsLambdaPrimary, LambdaMCpT, fIsLambdaCorrectlyAssign);
+
+          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
+
+          nSigmaCandidates++;
+          if (nSigmaCandidates % 10000 == 0) 
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;
+        }
       }
     }          
   }
 
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& coll, V0StandardDerivedDatas const& V0s, dauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, V0StandardDerivedDatas const& fullV0s, dauTracks const&)
   {    
-    if (!IsEventAccepted(coll, true)) 
-      return;
-    
-    float centrality = coll.centFT0C();
-    histos.fill(HIST("hEventCentrality"), centrality);
+    for (const auto& coll : collisions) {
 
-    //_______________________________________________
-    // Retrieving IR info    
-    float interactionRate = -1;
-    if (fGetIR){
-      interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+      if (!IsEventAccepted(coll, true)) 
+        continue;
       
-      if (interactionRate<0)          
-          histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
+      // Do analysis with collision-grouped V0s, retain full collision information
+      const uint64_t collIdx = coll.globalIndex();
+      auto V0s = fullV0s.sliceBy(perCollisionSTDDerived, collIdx);
 
-      histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
-      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);      
-    }
-    
-    std::vector<int> bestGammasArray;
-    std::vector<int> bestLambdasArray;
-    int v0TableOffset = V0s.offset(); // We need this because we're dealing with a "grouped table"
+      float centrality = coll.centFT0C();
+      histos.fill(HIST("hEventCentrality"), centrality);
 
-    //_______________________________________________
-    // Photon-only loop
-    for (auto& gamma : V0s) { // selecting photons       
-      if (!processPhotonCandidate(gamma)) 
-        continue;
+      //_______________________________________________
+      // Retrieving IR info    
+      float interactionRate = -1;
+      if (fGetIR){
+        interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource, fIRCrashOnNull) * 1.e-3;
+        
+        if (interactionRate<0)          
+            histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", coll.runNumber()), 1);
 
-      // Save indices of best gamma candidates
-      bestGammasArray.push_back(gamma.globalIndex() - v0TableOffset);
-    }
-
-    //_______________________________________________
-    // Lambda-only loop
-    for (auto& lambda : V0s) { // selecting lambdas 
-      if (!processLambdaCandidate(lambda))  
-        continue;
-
-      // Save indices of best lambda candidates
-      bestLambdasArray.push_back(lambda.globalIndex() - v0TableOffset);      
-    }
-
-    //_______________________________________________
-    // Pi0 optional loop
-    if (doPi0QA){      
-      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
-        auto gamma1 = V0s.rawIteratorAt(bestGammasArray[i]);
-        for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {            
-          auto gamma2 = V0s.rawIteratorAt(bestGammasArray[j]);          
-          runPi0QA(gamma1, gamma2);
-        }
+        histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
+        histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate);      
       }
-    }
-
-    //_______________________________________________
-    // Sigma0 loop
-    for (size_t i = 0; i < bestGammasArray.size(); ++i) {
-      auto gamma = V0s.rawIteratorAt(bestGammasArray[i]);
       
-      for (size_t j = 0; j < bestLambdasArray.size(); ++j){
-        auto lambda = V0s.iteratorAt(bestLambdasArray[j]);
+      std::vector<int> bestGammasArray;
+      std::vector<int> bestLambdasArray;      
 
-        // Sigma0 candidate properties
-        std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
-        std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
-        auto arrMom = std::array{pVecPhotons, pVecLambda};
-        float SigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
-        float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
-
-        histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
-
-        // Building sigma0 candidate
-        if (!buildSigma0(lambda, gamma)) 
+      //_______________________________________________
+      // Photon-only loop
+      for (auto& gamma : V0s) { // selecting photons       
+        if (!processPhotonCandidate(gamma)) 
           continue;
 
-        fillTables(lambda, gamma, coll); // filling tables with accepted candidates
-
-        histos.fill(HIST("SigmaSel/h3dMassSigma0AfterSel"), centrality, SigmapT, SigmaMass);
-
-        nSigmaCandidates++;
-        if (nSigmaCandidates % 10000 == 0)
-          LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;        
+        // Save indices of best gamma candidates
+        bestGammasArray.push_back(gamma.globalIndex());
       }
-    }    
+
+      //_______________________________________________
+      // Lambda-only loop
+      for (auto& lambda : V0s) { // selecting lambdas 
+        if (!processLambdaCandidate(lambda))  
+          continue;
+
+        // Save indices of best lambda candidates
+        bestLambdasArray.push_back(lambda.globalIndex());      
+      }
+
+      //_______________________________________________
+      // Pi0 optional loop
+      if (doPi0QA){      
+        for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+          auto gamma1 = fullV0s.rawIteratorAt(bestGammasArray[i]);
+          for (size_t j = i + 1; j < bestGammasArray.size(); ++j) {            
+            auto gamma2 = fullV0s.rawIteratorAt(bestGammasArray[j]);          
+            runPi0QA(gamma1, gamma2);
+          }
+        }
+      }
+
+      //_______________________________________________
+      // Sigma0 loop
+      for (size_t i = 0; i < bestGammasArray.size(); ++i) {
+        auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
+        
+        for (size_t j = 0; j < bestLambdasArray.size(); ++j){
+          auto lambda = fullV0s.iteratorAt(bestLambdasArray[j]);
+
+          // Sigma0 candidate properties
+          std::array<float, 3> pVecPhotons{gamma.px(), gamma.py(), gamma.pz()};
+          std::array<float, 3> pVecLambda{lambda.px(), lambda.py(), lambda.pz()};
+          auto arrMom = std::array{pVecPhotons, pVecLambda};
+          float SigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
+          float SigmapT = RecoDecay::pt(array{gamma.px() + lambda.px(), gamma.py() + lambda.py()});
+
+          histos.fill(HIST("SigmaSel/h3dMassSigma0BeforeSel"), centrality, SigmapT, SigmaMass);
+
+          // Building sigma0 candidate
+          if (!buildSigma0(lambda, gamma)) 
+            continue;
+
+          fillTables(lambda, gamma, coll); // filling tables with accepted candidates
+
+          histos.fill(HIST("SigmaSel/h3dMassSigma0AfterSel"), centrality, SigmapT, SigmaMass);
+
+          nSigmaCandidates++;
+          if (nSigmaCandidates % 10000 == 0)
+            LOG(info) << "Sigma0 Candidates built: " << nSigmaCandidates;        
+        }
+      } 
+    }   
   }
 
   // Simulated processing in Run 3 (subscribes to MC information too)
