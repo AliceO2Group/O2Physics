@@ -277,10 +277,10 @@ struct HfCandidateCreatorLbReduced {
 
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorLbReducedExpressions {
-  Spawns<aod::HfCandLbExt> rowCandidateB0;
+  Spawns<aod::HfCandLbExt> rowCandidateLb;
   Spawns<aod::HfRedTracksExt> rowTracksExt;
-  Produces<aod::HfMcRecRedB0s> rowLbMcRec;
-  Produces<aod::HfMcCheckB0s> rowLbMcCheck;
+  Produces<aod::HfMcRecRedLbs> rowLbMcRec;
+  Produces<aod::HfMcCheckLbs> rowLbMcCheck;
 
   /// Fill candidate information at MC reconstruction level
   /// \param checkDecayTypeMc
