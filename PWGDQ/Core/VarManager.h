@@ -2858,7 +2858,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
   // Production frame
-  ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v1.Py(), -v1.Px(), 0.f);
+  ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
 
   if (fgUsedVars[kCosThetaHE]) {
     values[kCosThetaHE] = (t1.sign() > 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
