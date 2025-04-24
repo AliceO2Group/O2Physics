@@ -47,7 +47,7 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::SigmaOPAngle,
                   sigma0Core::SigmaCentrality,
                   sigma0Core::SigmaRunNumber,
-                  sigma0Core::SigmaTimestamp, 
+                  sigma0Core::SigmaTimestamp,
                   sigma0Core::SigmaIR);
 
 // For Photon extra info
@@ -123,7 +123,7 @@ DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
                   sigmaPhotonExtra::PhotonNegITSChi2PerNcl,
                   sigmaPhotonExtra::PhotonPosTrackCode,
                   sigmaPhotonExtra::PhotonNegTrackCode,
-                  sigmaPhotonExtra::PhotonV0Type,            
+                  sigmaPhotonExtra::PhotonV0Type,
                   sigmaPhotonExtra::GammaBDTScore);
 
 // For Lambda extra info
