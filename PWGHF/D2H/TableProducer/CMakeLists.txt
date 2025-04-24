@@ -26,6 +26,11 @@ o2physics_add_dpl_workflow(candidate-creator-bs-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-lb-reduced
+                    SOURCES candidateCreatorLbReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-charm-reso-reduced
                     SOURCES candidateCreatorCharmResoReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -45,6 +50,11 @@ o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
 
 o2physics_add_dpl_workflow(candidate-selector-bs-to-ds-pi-reduced
                     SOURCES candidateSelectorBsToDsPiReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-selector-Lb-to-Lc-pi-reduced
+                    SOURCES candidateSelectorLbToLcPiReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
