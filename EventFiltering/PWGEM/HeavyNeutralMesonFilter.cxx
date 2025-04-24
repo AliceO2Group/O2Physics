@@ -170,8 +170,6 @@ struct HeavyNeutralMesonFilter {
   std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, proton, antiproton, deuteron, antideuteron, pion, antipion;
   float mMassProton = constants::physics::MassProton;
   float mMassDeuteron = constants::physics::MassDeuteron;
-  float mMassOmega = 0.782;
-  float mMassEtaPrime = 0.957;
   float mMassPionCharged = constants::physics::MassPionCharged;
 
   Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
@@ -416,6 +414,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.add(Form("%s%s/f%sPtVskstar_%s", iHNM, iFemtoPartner, iHNM, iEMCPCM), Form("K* vs %s pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iHNM, iHNM), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
           mHistManager.add(Form("%s%s/f%sPtVskstar_%s", iHNM, iFemtoPartner, iFemtoPartner, iEMCPCM), Form("K* vs %s pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iFemtoPartner, iFemtoPartner), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
           mHistManager.add(Form("%s%s/fAnti%sPtVskstar_%s", iHNM, iFemtoPartner, iFemtoPartner, iEMCPCM), Form("K* vs #bar{%s} pt;#bf{#it{K}^{*} (GeV/#it{c})};#bf{#it{p}_{T}^{#bar{%s}} (GeV/#it{c})}", iFemtoPartner, iFemtoPartner), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+          mHistManager.add(Form("%s%s/fInvMassVsKStar_%s", iHNM, iFemtoPartner, iEMCPCM), "Invariant mass and K* of heavy neutral meson candidates;#bf{#it{M}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{K}^{*} (GeV/#it{c})}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 1.}});
         }
       }
     }
@@ -430,6 +429,7 @@ struct HeavyNeutralMesonFilter {
         mHistManager.add(Form("pp%s/fProtonPtVsQ3_%s", iHNM, iEMCPCM), "pT (proton) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{p} (GeV/#it{c})}", HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
         mHistManager.add(Form("pp%s/f%sCandPtVsQ3_%s", iHNM, iHNM, iEMCPCM), Form("pT (%s) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{%s} (GeV/#it{c})}", iHNM, iHNM), HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
         mHistManager.add(Form("pp%s/fAntiProtonPtVsQ3_%s", iHNM, iEMCPCM), "pT (antiproton) vs Q_{3};#bf{#it{Q}_{3} (GeV/#it{c})};#bf{#it{p}_{T}^{#bar{p}} (GeV/#it{c})}", HistType::kTH2F, {{{150, 0, 1.5}, {500, 0, 10}}});
+        mHistManager.add(Form("pp%s/fInvMassVsQ3_%s", iHNM, iEMCPCM), "Invariant mass and Q3 of heavy neutral meson candidates;#bf{#it{M}^{#pi^{+}#pi^{-}#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{Q}_{3} (GeV/#it{c})}", HistType::kTH2F, {{600, 0.6, 1.2}, {250, 0., 1.}});
       }
     }
 
@@ -761,6 +761,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), q3, proton1.Pt());
             mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_PCM"), q3, proton2.Pt());
             mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_PCM"), q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fInvMassVsQ3_PCM"), omegaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
               lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
@@ -773,6 +774,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), q3, proton1.Pt());
             mHistManager.fill(HIST("ppomega/fProtonPtVsQ3_EMC"), q3, proton2.Pt());
             mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_EMC"), q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fInvMassVsQ3_EMC"), omegaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
               lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
@@ -791,6 +793,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), q3, antiProton1.Pt());
             mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_PCM"), q3, antiProton2.Pt());
             mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_PCM"), q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fInvMassVsQ3_PCM"), omegaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
               lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
@@ -803,6 +806,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), q3, antiProton1.Pt());
             mHistManager.fill(HIST("ppomega/fAntiProtonPtVsQ3_EMC"), q3, antiProton2.Pt());
             mHistManager.fill(HIST("ppomega/fomegaCandPtVsQ3_EMC"), q3, omegaParticles.Pt());
+            mHistManager.fill(HIST("ppomega/fInvMassVsQ3_EMC"), omegaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPOmega))
               lowMomentumMultiplets[hnmtrigger::kPPOmega] += 1;
@@ -823,6 +827,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), q3, proton1.Pt());
             mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_PCM"), q3, proton2.Pt());
             mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_PCM"), q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fInvMassVsQ3_PCM"), etaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
               lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
@@ -835,6 +840,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), q3, proton1.Pt());
             mHistManager.fill(HIST("ppetaprime/fProtonPtVsQ3_EMC"), q3, proton2.Pt());
             mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_EMC"), q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fInvMassVsQ3_EMC"), etaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
               lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
@@ -853,6 +859,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), q3, antiProton1.Pt());
             mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_PCM"), q3, antiProton2.Pt());
             mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_PCM"), q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fInvMassVsQ3_PCM"), etaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
               lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
@@ -865,6 +872,7 @@ struct HeavyNeutralMesonFilter {
             mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), q3, antiProton1.Pt());
             mHistManager.fill(HIST("ppetaprime/fAntiProtonPtVsQ3_EMC"), q3, antiProton2.Pt());
             mHistManager.fill(HIST("ppetaprime/fetaprimeCandPtVsQ3_EMC"), q3, etaParticles.Pt());
+            mHistManager.fill(HIST("ppetaprime/fInvMassVsQ3_EMC"), etaParticles.M(), q3);
 
             if (q3 < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kPPEtaPrime))
               lowMomentumMultiplets[hnmtrigger::kPPEtaPrime] += 1;
@@ -887,6 +895,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegad/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegad/fdPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
+          mHistManager.fill(HIST("omegad/fInvMassVsKStar_PCM"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
             lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
@@ -898,6 +907,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegad/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegad/fAntidPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
+          mHistManager.fill(HIST("omegad/fInvMassVsKStar_PCM"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
             lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
@@ -911,6 +921,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegad/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegad/fdPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
+          mHistManager.fill(HIST("omegad/fInvMassVsKStar_EMC"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
             lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
@@ -922,6 +933,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegad/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("omegad/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegad/fAntidPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
+          mHistManager.fill(HIST("omegad/fInvMassVsKStar_EMC"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaD))
             lowMomentumMultiplets[hnmtrigger::kOmegaD] += 1;
@@ -937,6 +949,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimed/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimed/fdPtVskstar_PCM"), kstar, (*iDeuteron).Pt());
+          mHistManager.fill(HIST("etaprimed/fInvMassVsKStar_PCM"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
@@ -948,6 +961,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimed/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimed/fAntidPtVskstar_PCM"), kstar, (*iAntiDeuteron).Pt());
+          mHistManager.fill(HIST("etaprimed/fInvMassVsKStar_PCM"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
@@ -961,6 +975,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimed/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimed/fdPtVskstar_EMC"), kstar, (*iDeuteron).Pt());
+          mHistManager.fill(HIST("etaprimed/fInvMassVsKStar_EMC"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
@@ -972,6 +987,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimed/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimed/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimed/fAntidPtVskstar_EMC"), kstar, (*iAntiDeuteron).Pt());
+          mHistManager.fill(HIST("etaprimed/fInvMassVsKStar_EMC"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeD))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeD] += 1;
@@ -987,6 +1003,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegap/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegap/fpPtVskstar_PCM"), kstar, (*iProton).Pt());
+          mHistManager.fill(HIST("omegap/fInvMassVsKStar_PCM"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
             lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
@@ -998,6 +1015,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegap/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_PCM"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegap/fAntipPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
+          mHistManager.fill(HIST("omegap/fInvMassVsKStar_PCM"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
             lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
@@ -1011,6 +1029,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegap/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegap/fpPtVskstar_EMC"), kstar, (*iProton).Pt());
+          mHistManager.fill(HIST("omegap/fInvMassVsKStar_EMC"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
             lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
@@ -1022,6 +1041,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("omegap/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("omegap/fomegaPtVskstar_EMC"), kstar, (*iomega).Pt());
           mHistManager.fill(HIST("omegap/fAntipPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
+          mHistManager.fill(HIST("omegap/fInvMassVsKStar_EMC"), (*iomega).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kOmegaP))
             lowMomentumMultiplets[hnmtrigger::kOmegaP] += 1;
@@ -1037,6 +1057,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimep/fSE_particle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimep/fpPtVskstar_PCM"), kstar, (*iProton).Pt());
+          mHistManager.fill(HIST("etaprimep/fInvMassVsKStar_PCM"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
@@ -1048,6 +1069,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimep/fSE_Antiparticle_PCM"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_PCM"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimep/fAntipPtVskstar_PCM"), kstar, (*iAntiProton).Pt());
+          mHistManager.fill(HIST("etaprimep/fInvMassVsKStar_PCM"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
@@ -1061,6 +1083,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimep/fSE_particle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimep/fpPtVskstar_EMC"), kstar, (*iProton).Pt());
+          mHistManager.fill(HIST("etaprimep/fInvMassVsKStar_EMC"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
@@ -1072,6 +1095,7 @@ struct HeavyNeutralMesonFilter {
           mHistManager.fill(HIST("etaprimep/fSE_Antiparticle_EMC"), kstar);
           mHistManager.fill(HIST("etaprimep/fetaprimePtVskstar_EMC"), kstar, (*ietaprime).Pt());
           mHistManager.fill(HIST("etaprimep/fAntipPtVskstar_EMC"), kstar, (*iAntiProton).Pt());
+          mHistManager.fill(HIST("etaprimep/fInvMassVsKStar_EMC"), (*ietaprime).M(), kstar);
 
           if (kstar < cfgKinematicLimits->get(static_cast<uint>(0), hnmtrigger::kEtaPrimeP))
             lowMomentumMultiplets[hnmtrigger::kEtaPrimeP] += 1;
@@ -1124,10 +1148,11 @@ struct HeavyNeutralMesonFilter {
     // - 4 high pT spectrum trigger flags (PCM & EMC * omega & eta')
     // - 4 femto trigger flags (p-omega, p-eta', d-omega || pp-omega, d-eta' || pp-eta')
     // -------------------------------------------------------------------------------------
-    tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime, keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kEtaPrimeP],
-         keepFemtoEvent[hnmtrigger::kPPOmega] || keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kPPEtaPrime] || keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
+    tags(keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kPPOmega], keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kEtaPrimeP], keepFemtoEvent[hnmtrigger::kPPEtaPrime], keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
+    // tags(colContainsPCMOmega, colContainsEMCOmega, colContainsPCMEtaPrime, colContainsEMCEtaPrime, keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kEtaPrimeP],
+    //      keepFemtoEvent[hnmtrigger::kPPOmega] || keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kPPEtaPrime] || keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
 
-    if (!colContainsPCMOmega && !colContainsEMCOmega && !colContainsPCMEtaPrime && !colContainsEMCEtaPrime && !keepFemtoEvent[hnmtrigger::kPPOmega] && !keepFemtoEvent[hnmtrigger::kOmegaP] && !keepFemtoEvent[hnmtrigger::kPPEtaPrime] && !keepFemtoEvent[hnmtrigger::kEtaPrimeP] && !keepFemtoEvent[hnmtrigger::kOmegaD] && !keepFemtoEvent[hnmtrigger::kEtaPrimeD])
+    if (!keepFemtoEvent[hnmtrigger::kPPOmega] && !keepFemtoEvent[hnmtrigger::kOmegaP] && !keepFemtoEvent[hnmtrigger::kPPEtaPrime] && !keepFemtoEvent[hnmtrigger::kEtaPrimeP] && !keepFemtoEvent[hnmtrigger::kOmegaD] && !keepFemtoEvent[hnmtrigger::kEtaPrimeD])
       mHistManager.fill(HIST("fProcessedEvents"), 1); // Fill "rejected", if no trigger selected the event
   }
 
@@ -1202,7 +1227,7 @@ struct HeavyNeutralMesonFilter {
       if (heavyNeutralMeson.gg->isPi0 && massHNM > cfgMassWindowOmega->get("omega_min") && massHNM < cfgMassWindowOmega->get("omega_max")) {
         if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
           if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("PCM_omega")) {
-            omegaPCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassOmega);
+            omegaPCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), massHNM);
             mHistManager.fill(HIST("HNM/After/Omega/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
             mHistManager.fill(HIST("HNM/After/Omega/PCM/fEta"), heavyNeutralMeson.eta());
             mHistManager.fill(HIST("HNM/After/Omega/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
@@ -1211,7 +1236,7 @@ struct HeavyNeutralMesonFilter {
             colContainsPCMOmega = true;
         } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
           if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("EMC_omega")) {
-            omegaEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassOmega);
+            omegaEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), massHNM);
             mHistManager.fill(HIST("HNM/After/Omega/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
             mHistManager.fill(HIST("HNM/After/Omega/EMC/fEta"), heavyNeutralMeson.eta());
             mHistManager.fill(HIST("HNM/After/Omega/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
@@ -1222,7 +1247,7 @@ struct HeavyNeutralMesonFilter {
       } else if (heavyNeutralMeson.gg->isEta && massHNM > cfgMassWindowEtaPrime->get("etaprime_min") && massHNM < cfgMassWindowEtaPrime->get("etaprime_max")) {
         if (heavyNeutralMeson.gg->reconstructionType == photonpair::kPCMPCM) {
           if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("PCM_etaprime")) {
-            etaPrimePCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassEtaPrime);
+            etaPrimePCM.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), massHNM);
             mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
             mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fEta"), heavyNeutralMeson.eta());
             mHistManager.fill(HIST("HNM/After/EtaPrime/PCM/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));
@@ -1231,7 +1256,7 @@ struct HeavyNeutralMesonFilter {
             colContainsPCMEtaPrime = true;
         } else if (heavyNeutralMeson.gg->reconstructionType == photonpair::kEMCEMC) {
           if (heavyNeutralMeson.pT() > cfgMinHNMPtsFemtoTrigger->get("EMC_etaprime")) {
-            etaPrimeEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), mMassEtaPrime);
+            etaPrimeEMC.emplace_back(heavyNeutralMeson.pT(), heavyNeutralMeson.eta(), RecoDecay::constrainAngle(heavyNeutralMeson.phi()), massHNM);
             mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fInvMassVsPt"), massHNM, heavyNeutralMeson.pT());
             mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fEta"), heavyNeutralMeson.eta());
             mHistManager.fill(HIST("HNM/After/EtaPrime/EMC/fPhi"), RecoDecay::constrainAngle(heavyNeutralMeson.phi()));

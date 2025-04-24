@@ -196,14 +196,16 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 
 // heavy meson filters
-DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(POmega, hasPPOmega, bool);                    //! Pomega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PEtaPrime, hasPEtaPrime, bool);               //! PPEta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(OmegadOrPP, hasOmegadOrPP, bool);             //! Omegad' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EtaPrimedOrPP, hasEtaPrimedOrPP, bool);       //! Eta'd meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(OmegaP, hasOmegaP, bool);         //! omegaP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(OmegaPP, hasOmegaPP, bool);       //! omegaPP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(Omegad, hasOmegad, bool);         //! omegad meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimeP, hasEtaPrimeP, bool);   //! eta'P meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimePP, hasEtaPrimePP, bool); //! eta'PP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);   //! eta'd meson candidate (3pi) in the collision
 
 } // namespace filtering
 
@@ -347,10 +349,8 @@ using PhotonFilter = PhotonFilters::iterator;
 
 // heavy mesons
 DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
-                  filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
-                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson,
-                  filtering::POmega, filtering::PEtaPrime,
-                  filtering::OmegadOrPP, filtering::EtaPrimedOrPP);
+                  filtering::OmegaP, filtering::OmegaPP, filtering::Omegad,
+                  filtering::EtaPrimeP, filtering::EtaPrimePP, filtering::EtaPrimed);
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 
