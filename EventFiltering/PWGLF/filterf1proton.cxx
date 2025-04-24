@@ -23,7 +23,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-
+#include <vector>
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "ReconstructionDataFormats/Track.h"
