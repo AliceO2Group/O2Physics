@@ -554,7 +554,7 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }
-  }  
+  }
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const& mccollisions,
@@ -563,9 +563,9 @@ struct HfTreeCreatorDplusToPiKPi {
                  TracksWPid const& tracks)
   {
     if (fillOnlySignal) {
-      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks); 
+      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks);
     } else if (fillOnlyBackground) {
-      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks); 
+      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks);
     } else {
       fillMcTables(collisions, mccollisions, candidates, particles, tracks);
     }
@@ -580,11 +580,11 @@ struct HfTreeCreatorDplusToPiKPi {
                       TracksWPid const& tracks)
   {
     if (fillOnlySignal) {
-      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks); 
+      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks);
     } else if (fillOnlyBackground) {
-      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks); 
+      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks);
     } else {
-      fillMcTables(collisions, mccollisions, candidates, particles, tracks); 
+      fillMcTables(collisions, mccollisions, candidates, particles, tracks);
     }
   }
 
@@ -596,7 +596,7 @@ struct HfTreeCreatorDplusToPiKPi {
                        MatchedGenCandidatesMc const& particles,
                        TracksWPid const& tracks)
   {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks); 
+    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
@@ -607,7 +607,7 @@ struct HfTreeCreatorDplusToPiKPi {
                            MatchedGenCandidatesMc const& particles,
                            TracksWPid const& tracks)
   {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks); 
+    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
