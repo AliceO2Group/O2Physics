@@ -289,6 +289,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   template <o2::track::PID::ID pid>
   float getResolution(const float p, const float eta) const
   {
+    LOG(info) << "Get resolution for " << particleNames[pid] << " with p " << p << " and eta " << eta;
     return mResolution[pid]->Eval(p, eta);
   }
 
