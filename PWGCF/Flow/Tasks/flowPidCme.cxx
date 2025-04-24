@@ -1924,7 +1924,7 @@ struct QAProcessCent {
   }
 };
 
-struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
+struct FlowPidCme { // o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -3429,6 +3429,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<FillPIDcolums>(cfgc),
     adaptAnalysisTask<QAProcessCent>(cfgc),
-    adaptAnalysisTask<pidcme>(cfgc),
+    adaptAnalysisTask<FlowPidCme>(cfgc),
   };
 }
