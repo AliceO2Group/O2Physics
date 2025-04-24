@@ -920,7 +920,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhi] = "rad.";
   fgVariableNames[kDeltaPhiSym] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiSym] = "rad.";
-  fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
+  fgVariableNames[kCosThetaHE] = "cos#it{#theta}_{HE}";
   fgVariableUnits[kCosThetaHE] = "";
   fgVariableNames[kPhiHE] = "#varphi_{HE}";
   fgVariableUnits[kPhiHE] = "rad.";
@@ -928,6 +928,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaCS] = "";
   fgVariableNames[kPhiCS] = "#varphi_{CS}";
   fgVariableUnits[kPhiCS] = "rad.";
+  fgVariableNames[kCosThetaPP] = "cos#it{#theta}_{PP}";
+  fgVariableUnits[kCosThetaPP] = "";
+  fgVariableNames[kPhiPP] = "#varphi_{PP}";
+  fgVariableUnits[kPhiPP] = "rad.";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1467,8 +1471,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingChi2PCA"] = kVertexingChi2PCA;
   fgVarNamesMap["kCosThetaHE"] = kCosThetaHE;
   fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
+  fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiHE"] = kPhiHE;
   fgVarNamesMap["kPhiCS"] = kPhiCS;
+  fgVarNamesMap["kPhiPP"] = kPhiPP;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
