@@ -103,7 +103,7 @@ struct HfCandidateCreatorLbReduced {
   }
 
   /// Main function to perform Lb candidate creation
-  /// \param withLcMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
+  /// \param withLcMl is the flag to use the table with ML scores for the Lc daughter (only possible if present in the derived data)
   /// \param collision the collision
   /// \param candsLcThisColl Lc candidates in this collision
   /// \param tracksPionThisCollision pion tracks in this collision
@@ -307,7 +307,7 @@ struct HfCandidateCreatorLbReducedExpressions {
         }
         break;
       }
-      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the LcPi creator
         rowLbMcRec(0, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowLbMcCheck(-1, -1, -1, -1, -1, -1);
