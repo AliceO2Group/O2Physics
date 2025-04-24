@@ -17,7 +17,6 @@
 #include <TFile.h>
 #include <TH2F.h>
 #include <TProfile.h>
-#include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <vector>
 #include <algorithm>
@@ -2155,13 +2154,13 @@ struct Derivedupcanalysis {
         continue;
       }
 
-      float centrality = -1.f;
+      // float centrality = -1.f;
       float ft0ampl = -1.f;
       int nTracksGlobal = -1;
 
       if (listBestCollisionIds[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIds[mcCollision.globalIndex()]);
-        centrality = collision.centFT0C();
+        // centrality = collision.centFT0C();
         if (static_cast<int>(upcCuts.genGapSide) == 0) {
           ft0ampl = collision.totalFT0AmplitudeC();
         } else if (static_cast<int>(upcCuts.genGapSide) == 1) {
@@ -2211,13 +2210,13 @@ struct Derivedupcanalysis {
       if (std::abs(mcCollision.posZ()) > maxZVtxPosition)
         continue;
 
-      float centrality = -1.f;
+      // float centrality = -1.f;
       float ft0ampl = -1.f;
       int nTracksGlobal = -1;
 
       if (listBestCollisionIds[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIds[mcCollision.globalIndex()]);
-        centrality = collision.centFT0C();
+        // centrality = collision.centFT0C();
         if (static_cast<int>(upcCuts.genGapSide) == 0) {
           ft0ampl = collision.totalFT0AmplitudeC();
         } else if (static_cast<int>(upcCuts.genGapSide) == 1) {
