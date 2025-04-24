@@ -128,6 +128,7 @@ struct HeavyNeutralMeson {
   Configurable<LabeledArray<float>> cfgMassWindowOmega{"cfgMassWindowOmega", {DefaultMassWindows[0], 4, {"pi0_min", "pi0_max", "omega_min", "omega_max"}}, "Mass window for selected omegas and their decay pi0"};
   Configurable<LabeledArray<float>> cfgMassWindowEtaPrime{"cfgMassWindowEtaPrime", {DefaultMassWindows[1], 4, {"eta_min", "eta_max", "etaprime_min", "etaprime_max"}}, "Mass window for selected eta' and their decay eta"};
 
+  Configurable<float> cfgMaxMultiplicity{"cfgMaxMultiplicity", 5000, "Maximum number of tracks in a collision (can be used to increase the S/B -> Very experimental)"};
   Configurable<float> cfgMinGGPtOverHNMPt{"cfgMinGGPtOverHNMPt", 0., "Minimum ratio of the pT of the gamma gamma pair over the pT of the HNM (can be used to increase the S/B)"};
 
   HistogramRegistry mHistManager{"HeavyNeutralMesonHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -208,6 +209,9 @@ struct HeavyNeutralMeson {
       return false;
     }
     if (confEvtRequireSel8 && !col.sel8()) {
+      return false;
+    }
+    if (col.multNTracksPV() > cfgMaxMultiplicity) {
       return false;
     }
     return true;
