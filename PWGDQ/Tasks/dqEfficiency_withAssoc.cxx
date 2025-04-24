@@ -18,6 +18,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <utility>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
@@ -394,8 +395,6 @@ struct AnalysisTrackSelection {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
-  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
 
   Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
   Configurable<std::string> fConfigMCSignalsJSON{"cfgTrackMCsignalsJSON", "", "Additional list of MC signals via JSON"};
@@ -433,7 +432,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back((AnalysisCompositeCut*)t);
+        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -493,9 +492,6 @@ struct AnalysisTrackSelection {
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
-    if (fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist(fConfigInitRunNumber);
-    }
     if (fConfigComputeTPCpostCalib) {
       fCCDB->setURL(fConfigCcdbUrl.value);
       fCCDB->setCaching(true);
@@ -760,7 +756,7 @@ struct AnalysisMuonSelection {
     if (addCutsStr != "") {
       std::vector<AnalysisCut*> addCuts = dqcuts::GetCutsFromJSON(addCutsStr.Data());
       for (auto& t : addCuts) {
-        fMuonCuts.push_back((AnalysisCompositeCut*)t);
+        fMuonCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -2203,7 +2199,7 @@ struct AnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (auto& t : addPairCuts) {
-        fPairCuts.push_back((AnalysisCompositeCut*)t);
+        fPairCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -3290,7 +3286,7 @@ struct AnalysisDileptonTrack {
     // loop over all the upstream cuts and make a bit mask for the track cuts specified in this task
     for (int icut = 0; icut < cfgTrackSelection_objArrayTrackCuts->GetEntries(); icut++) {
       if (cfgDileptonTrack_objArrayTrackCuts->FindObject(cfgTrackSelection_objArrayTrackCuts->At(icut)->GetName())) {
-        fTrackCutBitMap |= (uint32_t(1) << icut);
+        fTrackCutBitMap |= (static_cast<uint32_t>(1) << icut);
       }
     }
     // finally, store the total number of upstream tasks, for easy access
@@ -3358,7 +3354,7 @@ struct AnalysisDileptonTrack {
         for (int iCutTrack = 0; iCutTrack < fNCuts; iCutTrack++) {
 
           // here we check that this track cut is one of those required to associate with the dileptons
-          if (!(fTrackCutBitMap & (uint32_t(1) << iCutTrack))) {
+          if (!(fTrackCutBitMap & (static_cast<uint32_t>(1) << iCutTrack))) {
             continue;
           }
 
@@ -3593,13 +3589,13 @@ struct AnalysisDileptonTrack {
           // loop over specified track cuts (the tracks to be combined with the dileptons)
           for (int iTrackCut = 0; iTrackCut < fNCuts; iTrackCut++) {
 
-            if (!(trackSelection & (uint32_t(1) << iTrackCut))) {
+            if (!(trackSelection & (static_cast<uint32_t>(1) << iTrackCut))) {
               continue;
             }
 
             fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
             for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
-              if (mcDecision & (uint32_t(1) << isig)) {
+              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                 fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
               }
             }
@@ -3609,7 +3605,7 @@ struct AnalysisDileptonTrack {
                 if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
                   fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                   for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
-                    if (mcDecision & (uint32_t(1) << isig)) {
+                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                       fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                     }
                   }
@@ -3619,7 +3615,7 @@ struct AnalysisDileptonTrack {
                 if (dilepton.pairFilterMap_bit(iPairCut)) {
                   fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                   for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
-                    if (mcDecision & (uint32_t(1) << isig)) {
+                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                       fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                     }
                   }
@@ -3627,7 +3623,7 @@ struct AnalysisDileptonTrack {
                     if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
                       fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                       for (uint32_t isig = 0; isig < fRecMCSignals.size(); isig++) {
-                        if (mcDecision & (uint32_t(1) << isig)) {
+                        if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
                           fHistMan->FillHistClass(Form("DileptonTrackMCMatched_%s_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data(), fRecMCSignals[isig]->GetName()), fValuesHadron);
                         }
                       }

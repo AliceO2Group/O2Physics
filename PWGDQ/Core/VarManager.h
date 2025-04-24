@@ -175,8 +175,6 @@ class VarManager : public TObject
     kNothing = -1,
     // Run wise variables
     kRunNo = 0,
-    kRunId,
-    kRunIndex,
     kNRunWiseVariables,
 
     // Event wise variables
@@ -898,29 +896,6 @@ class VarManager : public TObject
     return false;
   }
 
-  static void SetRunNumbers(int n, int* runs);
-  static void SetRunNumbers(std::vector<int> runs);
-  static float GetRunIndex(double);
-  static void SetDummyRunlist(int InitRunnumber);
-  static int GetDummyFirst();
-  static int GetDummyLast();
-  static int GetDummyNRuns()
-  {
-    if (fgRunMap.size() == 0) {
-      return 101;
-    } else {
-      return fgRunMap.size();
-    }
-  }
-  static int GetNRuns()
-  {
-    return fgRunMap.size();
-  }
-  static TString GetRunStr()
-  {
-    return fgRunStr;
-  }
-
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
 
@@ -1159,9 +1134,6 @@ class VarManager : public TObject
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
   static float fgMagField;
-  static std::map<int, int> fgRunMap;     // map of runs to be used in histogram axes
-  static TString fgRunStr;                // semi-colon separated list of runs, to be used for histogram axis labels
-  static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
   static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
@@ -1172,7 +1144,7 @@ class VarManager : public TObject
   static uint64_t fgSOR;                  // Timestamp for start of run
   static uint64_t fgEOR;                  // Timestamp for end of run
 
-  static void FillEventDerived(float* values = nullptr);
+  // static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
   template <typename T, typename U, typename V>
   static auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta);
@@ -1442,7 +1414,6 @@ void VarManager::FillBC(T const& bc, float* values)
   values[kBCOrbit] = bc.globalBC() % o2::constants::lhc::LHCMaxBunches;
   values[kTimestamp] = bc.timestamp();
   values[kTimeFromSOR] = (fgSOR > 0 ? (bc.timestamp() - fgSOR) / 60000. : -1.0);
-  values[kRunIndex] = GetRunIndex(bc.runNumber());
 }
 
 template <uint32_t fillMap, typename T>
@@ -1611,7 +1582,6 @@ void VarManager::FillEvent(T const& event, float* values)
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
     values[kRunNo] = event.runNumber();
-    values[kRunIndex] = GetRunIndex(event.runNumber());
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
@@ -1903,7 +1873,7 @@ void VarManager::FillEvent(T const& event, float* values)
     FillZDC(event, values);
   }
 
-  FillEventDerived(values);
+  // FillEventDerived(values);
 }
 
 template <uint32_t fillMap, typename TEvent, typename TAssoc, typename TTracks>

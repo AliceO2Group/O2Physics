@@ -233,8 +233,6 @@ struct TableMaker {
     Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
     Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
-    Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
-    Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   } fConfigPostCalibTPC;
 
   struct : ConfigurableGroup {
@@ -395,10 +393,6 @@ struct TableMaker {
           histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
-    }
-
-    if (fConfigPostCalibTPC.fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist(fConfigPostCalibTPC.fConfigInitRunNumber);
     }
 
     DefineHistograms(histClasses);                   // define all histograms

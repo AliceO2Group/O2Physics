@@ -206,8 +206,6 @@ struct TableMaker {
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
   Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
-  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
-  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -334,10 +332,6 @@ struct TableMaker {
       }
     }
 
-    if (fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist(fConfigInitRunNumber);
-    }
-
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -441,7 +435,6 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
-    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -915,7 +908,6 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
-    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
