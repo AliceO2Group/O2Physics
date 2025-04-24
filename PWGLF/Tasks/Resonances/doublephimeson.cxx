@@ -340,7 +340,10 @@ struct doublephimeson {
         // if (phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
         // continue;
         // }
-        if (phitrackd1.phid1Index() == phitrackd2.phid1Index() && phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
+        if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
+          continue;
+        }
+        if (phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
           continue;
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
