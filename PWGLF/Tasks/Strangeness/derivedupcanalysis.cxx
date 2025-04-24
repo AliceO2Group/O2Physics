@@ -22,6 +22,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
