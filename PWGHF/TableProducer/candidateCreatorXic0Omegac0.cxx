@@ -88,6 +88,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Produces<aod::HfCandToOmegaK> rowCandToOmegaK;
   Produces<aod::HfOmegacKf> kfCandidateData;
   Produces<aod::HfCandToXiPiKf> kfCandidateXicData;
+  Produces<aod::HfCandToXiPiKfQa> rowKfXic0Qa;
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -236,6 +237,65 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2MassCasc;
     float etaXic;
   } kfXic0Candidate;
+
+  struct {
+    float v0DauPosX; // Pos
+    float v0DauPosY;
+    float v0DauPosZ;
+    float v0DauPosXError;
+    float v0DauPosYError;
+    float v0DauPosZError;
+    float v0DauPosPt;
+    float v0DauNegX; // Neg
+    float v0DauNegY;
+    float v0DauNegZ;
+    float v0DauNegXError;
+    float v0DauNegYError;
+    float v0DauNegZError;
+    float v0DauNegPt;
+    float v0X;
+    float v0Y;
+    float v0Z;
+    float v0XError;
+    float v0YError;
+    float v0ZError;
+    float v0Pt;
+    float xiBachelorX;
+    float xiBachelorY;
+    float xiBachelorZ;
+    float xiBachelorXError;
+    float xiBachelorYError;
+    float xiBachelorZError;
+    float xiBachelorPt;
+    float xiX;
+    float xiY;
+    float xiZ;
+    float xiXError;
+    float xiYError;
+    float xiZError;
+    float xiPt;
+    float xic0BachelorX;
+    float xic0BachelorY;
+    float xic0BachelorZ;
+    float xic0BachelorXError;
+    float xic0BachelorYError;
+    float xic0BachelorZError;
+    float xic0BachelorPt;
+    float xic0X;
+    float xic0Y;
+    float xic0Z;
+    float xic0XError;
+    float xic0YError;
+    float xic0ZError;
+    float xic0Pt;
+    float vertexV0X;
+    float vertexV0Y;
+    float vertexV0Z;
+    float vertexCascX;
+    float vertexCascY;
+    float vertexCascZ;
+  } kfXic0Qa;
+
   void init(InitContext const&)
   {
     std::array<bool, 12> allProcesses = {doprocessNoCentToXiPi, doprocessNoCentToXiPiTraCasc, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi, doprocessNoCentToOmegaPi, doprocessOmegacToOmegaPiWithKFParticle, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK, doprocessXicToXiPiWithKFParticle};
@@ -1293,7 +1353,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFParticle kfV0MassConstrained = kfV0;
       kfV0MassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassLambda); // set mass constrain to Lambda
       if (kfUseV0MassConstraint) {
-        KFParticle kfV0 = kfV0MassConstrained;
+        kfV0 = kfV0MassConstrained;
       }
       kfV0.TransportToDecayVertex();
 
@@ -1362,6 +1422,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFPVertex kfVertex = createKFPVertexFromCollision(collision);
       KFParticle kfPV(kfVertex);
 
+      KFParticle kfPosOrigin = kfPos;
+      KFParticle kfNegOrigin = kfNeg;
       // set production vertex;
       kfNeg.SetProductionVertex(kfV0);
       kfPos.SetProductionVertex(kfV0);
@@ -1576,6 +1638,63 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.fill(HIST("hKfXiC0_ldl"), kfXic0Candidate.ldlXic);
       registry.fill(HIST("hDcaXYCascadeToPVKf"), kfXic0Candidate.kfDcaXYCascToPv);
 
+      // QA
+      kfXic0Qa.v0DauPosX = kfPos.GetX();
+      kfXic0Qa.v0DauPosY = kfPos.GetY();
+      kfXic0Qa.v0DauPosZ = kfPos.GetZ();
+      kfXic0Qa.v0DauPosXError = kfPos.GetErrX();
+      kfXic0Qa.v0DauPosYError = kfPos.GetErrY();
+      kfXic0Qa.v0DauPosZError = kfPos.GetErrZ();
+      kfXic0Qa.v0DauPosPt = kfPos.GetPt();
+      kfXic0Qa.v0DauNegX = kfNeg.GetX();
+      kfXic0Qa.v0DauNegY = kfNeg.GetY();
+      kfXic0Qa.v0DauNegZ = kfNeg.GetZ();
+      kfXic0Qa.v0DauNegXError = kfNeg.GetErrX();
+      kfXic0Qa.v0DauNegYError = kfNeg.GetErrY();
+      kfXic0Qa.v0DauNegZError = kfNeg.GetErrZ();
+      kfXic0Qa.v0DauNegPt = kfV0.GetPt();
+      kfXic0Qa.v0X = kfV0.GetX();
+      kfXic0Qa.v0Y = kfV0.GetY();
+      kfXic0Qa.v0Z = kfV0.GetZ();
+      kfXic0Qa.v0XError = kfV0.GetErrX();
+      kfXic0Qa.v0YError = kfV0.GetErrY();
+      kfXic0Qa.v0ZError = kfV0.GetErrZ();
+      kfXic0Qa.v0Pt = kfV0.GetPt();
+      kfXic0Qa.xiBachelorX = kfBachPionToXi.GetX();
+      kfXic0Qa.xiBachelorY = kfBachPionToXi.GetY();
+      kfXic0Qa.xiBachelorZ = kfBachPionToXi.GetZ();
+      kfXic0Qa.xiBachelorXError = kfBachPionToXi.GetErrX();
+      kfXic0Qa.xiBachelorYError = kfBachPionToXi.GetErrY();
+      kfXic0Qa.xiBachelorZError = kfBachPionToXi.GetErrZ();
+      kfXic0Qa.xiBachelorPt = kfBachPionToXi.GetPt();
+      kfXic0Qa.xiX = kfXi.GetX();
+      kfXic0Qa.xiY = kfXi.GetY();
+      kfXic0Qa.xiZ = kfXi.GetZ();
+      kfXic0Qa.xiXError = kfXi.GetErrX();
+      kfXic0Qa.xiYError = kfXi.GetErrY();
+      kfXic0Qa.xiZError = kfXi.GetErrZ();
+      kfXic0Qa.xiPt = kfXi.GetPt();
+      kfXic0Qa.xic0BachelorX = kfCharmBachPionToXiC.GetX();
+      kfXic0Qa.xic0BachelorY = kfCharmBachPionToXiC.GetY();
+      kfXic0Qa.xic0BachelorZ = kfCharmBachPionToXiC.GetZ();
+      kfXic0Qa.xic0BachelorXError = kfCharmBachPionToXiC.GetErrX();
+      kfXic0Qa.xic0BachelorYError = kfCharmBachPionToXiC.GetErrY();
+      kfXic0Qa.xic0BachelorZError = kfCharmBachPionToXiC.GetErrZ();
+      kfXic0Qa.xic0BachelorPt = kfCharmBachPionToXiC.GetPt();
+      kfXic0Qa.xic0X = kfXiC0.GetX();
+      kfXic0Qa.xic0Y = kfXiC0.GetY();
+      kfXic0Qa.xic0Z = kfXiC0.GetZ();
+      kfXic0Qa.xic0XError = kfXiC0.GetErrX();
+      kfXic0Qa.xic0YError = kfXiC0.GetErrY();
+      kfXic0Qa.xic0ZError = kfXiC0.GetErrZ();
+      kfXic0Qa.xic0Pt = kfXiC0.GetPt();
+      kfXic0Qa.vertexV0X = casc.xlambda();
+      kfXic0Qa.vertexV0Y = casc.ylambda();
+      kfXic0Qa.vertexV0Z = casc.zlambda();
+      kfXic0Qa.vertexCascX = casc.x();
+      kfXic0Qa.vertexCascY = casc.y();
+      kfXic0Qa.vertexCascZ = casc.z();
+
       // fill kf table
       kfCandidateXicData(collision.globalIndex(),
                          pvCoord[0], pvCoord[1], pvCoord[2],
@@ -1616,6 +1735,18 @@ struct HfCandidateCreatorXic0Omegac0 {
                          kfXic0Candidate.cosThetaStarPiFromXic,
                          v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
                          v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
+
+      // fill QA table
+      rowKfXic0Qa(massLam, massCasc, massXiC0, sigLam, sigCasc, sigXiC0,
+                  collision.globalIndex(), v0index, casc.posTrackId(), casc.negTrackId(), casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
+                  kfXic0Qa.v0DauPosX, kfXic0Qa.v0DauPosY, kfXic0Qa.v0DauPosZ, kfXic0Qa.v0DauPosXError, kfXic0Qa.v0DauPosYError, kfXic0Qa.v0DauPosZError, kfXic0Qa.v0DauPosPt,
+                  kfXic0Qa.v0DauNegX, kfXic0Qa.v0DauNegY, kfXic0Qa.v0DauNegZ, kfXic0Qa.v0DauNegXError, kfXic0Qa.v0DauNegYError, kfXic0Qa.v0DauNegZError, kfXic0Qa.v0DauNegPt,
+                  kfXic0Qa.v0X, kfXic0Qa.v0Y, kfXic0Qa.v0Z, kfXic0Qa.v0XError, kfXic0Qa.v0YError, kfXic0Qa.v0ZError, kfXic0Qa.v0Pt,
+                  kfXic0Qa.xiBachelorX, kfXic0Qa.xiBachelorY, kfXic0Qa.xiBachelorZ, kfXic0Qa.xiBachelorXError, kfXic0Qa.xiBachelorYError, kfXic0Qa.xiBachelorZError, kfXic0Qa.xiBachelorPt,
+                  kfXic0Qa.xiX, kfXic0Qa.xiY, kfXic0Qa.xiZ, kfXic0Qa.xiXError, kfXic0Qa.xiYError, kfXic0Qa.xiZError, kfXic0Qa.xiPt,
+                  kfXic0Qa.xic0BachelorX, kfXic0Qa.xic0BachelorY, kfXic0Qa.xic0BachelorZ, kfXic0Qa.xic0BachelorXError, kfXic0Qa.xic0BachelorYError, kfXic0Qa.xic0BachelorZError, kfXic0Qa.xic0BachelorPt,
+                  kfXic0Qa.xic0X, kfXic0Qa.xic0Y, kfXic0Qa.xic0Z, kfXic0Qa.xic0XError, kfXic0Qa.xic0YError, kfXic0Qa.xic0ZError, kfXic0Qa.xic0Pt,
+                  kfXic0Qa.vertexV0X, kfXic0Qa.vertexV0Y, kfXic0Qa.vertexV0Z, kfXic0Qa.vertexCascX, kfXic0Qa.vertexCascY, kfXic0Qa.vertexCascZ);
 
     } // loop over LF Cascade-bachelor candidates
   }
@@ -1859,7 +1990,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
   // inspect for which zPvPosMax cut was set for reconstructed
   void init(InitContext& initContext)
   {
-    std::array<bool, 4> procCollisionsXicToXiPi{doprocessMcXicToXiPi, doprocessMcXicToXiPiFT0m, doprocessMcXicToXiPiFT0c, doprocessMcXicToXiPiKf};
+    std::array<bool, 5> procCollisionsXicToXiPi{doprocessMcXicToXiPi, doprocessMcXicToXiPiFT0m, doprocessMcXicToXiPiFT0c, doprocessMcXicToXiPiKf, doprocessMcXicToXiPiKfQa};
     if (std::accumulate(procCollisionsXicToXiPi.begin(), procCollisionsXicToXiPi.end(), 0) > 1) {
       LOGP(fatal, "At most one process function for XicToXiPi collision study can be enabled at a time.");
     }
@@ -1896,6 +2027,126 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
     hGenCharmBaryonPtRapidityTightOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityTightOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
     hGenCharmBaryonPtRapidityLooseOmegacToOmegaK = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseOmegacToOmegaK", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}});
+
+    // QA
+    // mass over pt
+    registry.add("hV0MassPullVsPt", "m_{PULL}(V0) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXiMassPullVsPt", "m_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXic0MassPullVsPt", "m_{PULL}(#Xic0) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    // delta
+    registry.add("hV0DauPosXDelta", "x^{p} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0DauPosYDelta", "y^{p} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0DauPosZDelta", "z^{p} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0DauNegXDelta", "x^{#pi^{-}} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0DauNegYDelta", "y^{#pi^{-}} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0DauNegZDelta", "z^{#pi^{-}} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0XDelta", "x^{#Lambda^{0}} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0YDelta", "y^{#Lambda^{0}} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hV0ZDelta", "z^{#Lambda^{0}} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+
+    registry.add("hXiBachelorXDelta", "x^{Bachelor} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXiBachelorYDelta", "y^{Bachelor} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXiBachelorZDelta", "z^{Bachelor} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+
+    registry.add("hXiXDelta", "x^{#Xi^{-}} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXiYDelta", "y^{#Xi^{-}} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXiZDelta", "z^{#Xi^{-}} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+
+    registry.add("hXic0BachelorXDelta", "x^{CharmBachelor} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXic0BachelorYDelta", "y^{CharmBachelor} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXic0BachelorZDelta", "z^{CharmBachelor} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+
+    registry.add("hXic0XDelta", "x^{#Xi_c^0} - x^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXic0YDelta", "y^{#Xi_c^0} - y^{MC}", kTH1F, {{2000, -10., 10.}});
+    registry.add("hXic0ZDelta", "z^{#Xi_c^0} - z^{MC}", kTH1F, {{2000, -10., 10.}});
+    // delta over pt
+    registry.add("hV0DauPosXDeltaVsPt", "#Delta_{x}(p) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0DauPosYDeltaVsPt", "#Delta_{y}(p) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0DauPosZDeltaVsPt", "#Delta_{z}(p) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0DauNegXDeltaVsPt", "#Delta_{x}(#pi) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0DauNegYDeltaVsPt", "#Delta_{y}(#pi) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0DauNegZDeltaVsPt", "#Delta_{z}(#pi) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0XDeltaVsPt", "#Delta_{x}(#Lambda^(0)) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0YDeltaVsPt", "#Delta_{y}(#Lambda^(0)) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hV0ZDeltaVsPt", "#Delta_{z}(#Lambda^(0)) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+
+    registry.add("hXiBachelorXDeltaVsPt", "#Delta_{x}(Bachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXiBachelorYDeltaVsPt", "#Delta_{y}(Bachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXiBachelorZDeltaVsPt", "#Delta_{z}(Bachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+
+    registry.add("hXiXDeltaVsPt", "#Delta_{x}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXiYDeltaVsPt", "#Delta_{y}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXiZDeltaVsPt", "#Delta_{z}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+
+    registry.add("hXic0BachelorXDeltaVsPt", "#Delta_{x}(CharmBachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(CharmBachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(CharmBachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+
+    registry.add("hXic0XDeltaVsPt", "{#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXic0YDeltaVsPt", "{#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+    registry.add("hXic0ZDeltaVsPt", "{#Delta_{z}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+
+    // pull
+    registry.add("hV0DauPosXPull", "x^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0DauPosYPull", "y^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0DauPosZPull", "z^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0DauNegXPull", "x^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0DauNegYPull", "y^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0DauNegZPull", "z^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0XPull", "x^{PULL}(#Lambda)", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0YPull", "y^{PULL}(#Lambda)", kTH1F, {{4000, -20., 20.}});
+    registry.add("hV0ZPull", "z^{PULL}(#Lambda)", kTH1F, {{4000, -20., 20.}});
+
+    registry.add("hXiBachelorXPull", "x^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXiBachelorYPull", "y^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXiBachelorZPull", "z^{PULL}", kTH1F, {{4000, -20., 20.}});
+
+    registry.add("hXiXPull", "x^{PULL}(#Xi^{-})", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXiYPull", "y^{PULL}(#Xi^{-})", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXiZPull", "z^{PULL}(#Xi^{-})", kTH1F, {{4000, -20., 20.}});
+
+    registry.add("hXic0BachelorXPull", "x^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXic0BachelorYPull", "y^{PULL}", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXic0BachelorZPull", "z^{PULL}", kTH1F, {{4000, -20., 20.}});
+
+    registry.add("hXic0XPull", "x^{PULL}(#Xi_{c}^{0})", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXic0YPull", "y^{PULL}(#Xi_{c}^{0})", kTH1F, {{4000, -20., 20.}});
+    registry.add("hXic0ZPull", "z^{PULL}(#Xi_{c}^{0})", kTH1F, {{4000, -20., 20.}});
+    // pull over pt
+    registry.add("hV0DauPosXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0DauPosYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0DauPosZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0DauNegXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0DauNegYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0DauNegZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0XPullVsPt", "x_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0YPullVsPt", "y_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hV0ZPullVsPt", "z_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+
+    registry.add("hXiBachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXiBachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXiBachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+
+    registry.add("hXiXPullVsPt", "x_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXiYPullVsPt", "y_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXiZPullVsPt", "z_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+
+    registry.add("hXic0BachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXic0BachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXic0BachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+
+    registry.add("hXic0XPullVsPt", "x_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXic0YPullVsPt", "y_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+    registry.add("hXic0ZPullVsPt", "z_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+
+    // Defaut delta
+    registry.add("hLambdaXDelta", "x^{#Lambda} - x^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
+    registry.add("hLambdaYDelta", "y^{#Lambda} - y^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
+    registry.add("hLambdaZDelta", "z^{#Lambda} - z^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
+
+    registry.add("hCascXDelta", "x^{#Xi^{-}} - x^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
+    registry.add("hCascYDelta", "y^{#Xi^{-}} - y^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
+    registry.add("hCascZDelta", "z^{#Xi^{-}} - z^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Colls, typename TMyRecoCand, typename McCollisions>
@@ -2386,6 +2637,397 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     } // close loop on MCCollisions
   } // close process
 
+  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename TMyRecoCand>
+  void runXic0Omegac0McQa(TMyRecoCand const& candidates,
+                          MyTracksWMc const&,
+                          aod::McParticles const& mcParticles,
+                          BCsInfo const&)
+  {
+    int indexRec = -1;
+    int indexRecCharmBaryon = -1;
+    int8_t sign = -9;
+    int8_t signCasc = -9;
+    int8_t signV0 = -9;
+    int8_t flag = 0;
+    int8_t origin = 0; // to be used for prompt/non prompt
+    McMatchFlag debug{McMatchFlag::None};
+
+    float v0MassPull;
+    float xiMassPull;
+    float xic0MassPull;
+
+    float v0DauPosXDelta;
+    float v0DauPosYDelta;
+    float v0DauPosZDelta;
+    float v0DauPosPt;
+    float v0DauPosXPull;
+    float v0DauPosYPull;
+    float v0DauPosZPull;
+
+    float v0DauNegXDelta;
+    float v0DauNegYDelta;
+    float v0DauNegZDelta;
+    float v0DauNegPt;
+    float v0DauNegXPull;
+    float v0DauNegYPull;
+    float v0DauNegZPull;
+
+    float v0XDelta;
+    float v0YDelta;
+    float v0ZDelta;
+    float v0Pt;
+    float v0XPull;
+    float v0YPull;
+    float v0ZPull;
+
+    float lambdaXDelta;
+    float lambdaYDelta;
+    float lambdaZDelta;
+
+    float xiBachelorXDelta;
+    float xiBachelorYDelta;
+    float xiBachelorZDelta;
+    float xiBachelorPt;
+    float xiBachelorXPull;
+    float xiBachelorYPull;
+    float xiBachelorZPull;
+
+    float xiXDelta;
+    float xiYDelta;
+    float xiZDelta;
+    float xiPt;
+    float xiXPull;
+    float xiYPull;
+    float xiZPull;
+
+    float xic0BachelorXDelta;
+    float xic0BachelorYDelta;
+    float xic0BachelorZDelta;
+    float xic0BachelorPt;
+    float xic0BachelorXPull;
+    float xic0BachelorYPull;
+    float xic0BachelorZPull;
+
+    float xic0XDelta;
+    float xic0YDelta;
+    float xic0ZDelta;
+    float xic0Pt;
+    float xic0XPull;
+    float xic0YPull;
+    float xic0ZPull;
+
+    float cascXDelta;
+    float cascYDelta;
+    float cascZDelta;
+
+    for (const auto& candidate : candidates) {
+      v0MassPull = 0;
+      xiMassPull = 0;
+      xic0MassPull = 0;
+
+      v0DauPosXDelta = 0;
+      v0DauPosYDelta = 0;
+      v0DauPosZDelta = 0;
+      v0DauPosPt = 0;
+      v0DauPosXPull = 0;
+      v0DauPosYPull = 0;
+      v0DauPosZPull = 0;
+
+      v0DauNegXDelta = 0;
+      v0DauNegYDelta = 0;
+      v0DauNegZDelta = 0;
+      v0DauNegPt = 0;
+      v0DauNegXPull = 0;
+      v0DauNegYPull = 0;
+      v0DauNegZPull = 0;
+
+      v0XDelta = 0;
+      v0YDelta = 0;
+      v0ZDelta = 0;
+      v0Pt = 0;
+      v0XPull = 0;
+      v0YPull = 0;
+      v0ZPull = 0;
+
+      lambdaXDelta = 0;
+      lambdaYDelta = 0;
+      lambdaZDelta = 0;
+
+      xiBachelorXDelta = 0;
+      xiBachelorYDelta = 0;
+      xiBachelorZDelta = 0;
+      xiBachelorPt = 0;
+      xiBachelorXPull = 0;
+      xiBachelorYPull = 0;
+      xiBachelorZPull = 0;
+
+      xiXDelta = 0;
+      xiYDelta = 0;
+      xiZDelta = 0;
+      xiPt = 0;
+      xiXPull = 0;
+      xiYPull = 0;
+      xiZPull = 0;
+
+      xic0BachelorXDelta = 0;
+      xic0BachelorYDelta = 0;
+      xic0BachelorZDelta = 0;
+      xic0BachelorPt = 0;
+      xic0BachelorXPull = 0;
+      xic0BachelorYPull = 0;
+      xic0BachelorZPull = 0;
+
+      xic0XDelta = 0;
+      xic0YDelta = 0;
+      xic0ZDelta = 0;
+      xic0Pt = 0;
+      xic0XPull = 0;
+      xic0YPull = 0;
+      xic0ZPull = 0;
+
+      flag = 0;
+      origin = RecoDecay::OriginType::None;
+      debug = McMatchFlag::None;
+      std::vector<int> idxBhadMothers{};
+
+      auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<MyTracksWMc>(), // bachelor <- charm baryon
+                                       candidate.template bachelor_as<MyTracksWMc>(),                // bachelor <- cascade
+                                       candidate.template posTrack_as<MyTracksWMc>(),                // p <- lambda
+                                       candidate.template negTrack_as<MyTracksWMc>()};               // pi <- lambda
+      auto arrayDaughtersCasc = std::array{candidate.template bachelor_as<MyTracksWMc>(),
+                                           candidate.template posTrack_as<MyTracksWMc>(),
+                                           candidate.template negTrack_as<MyTracksWMc>()};
+      auto arrayDaughtersV0 = std::array{candidate.template posTrack_as<MyTracksWMc>(),
+                                         candidate.template negTrack_as<MyTracksWMc>()};
+
+      auto mcV0DauPos = arrayDaughtersV0[0].mcParticle();
+      auto mcV0DauNeg = arrayDaughtersV0[1].mcParticle();
+      auto mcXiBachelor = arrayDaughtersCasc[0].mcParticle();
+      auto mcXic0Bachelor = arrayDaughters[0].mcParticle();
+
+      // Xic0 -> xi pi matching
+      if constexpr (decayChannel != aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+        LOGF(info, "ERROR: Quality validation is restricted to Xic0 → Xi Pi decay processes at this stage");
+      }
+      if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
+        // Lambda → p pi
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
+        if (indexRec == -1) {
+          debug = McMatchFlag::V0Unmatched;
+        }
+        if (indexRec > -1) {
+          if (signV0 == 1) {
+            auto mcV0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+
+            v0MassPull = (candidate.invMassLambda() - MassLambda0) / candidate.invMassV0Sig();
+            registry.fill(HIST("hV0MassPullVsPt"), candidate.v0Pt(), v0MassPull);
+
+            v0DauPosXDelta = candidate.v0DauPosX() - mcV0DauPos.vx();
+            v0DauPosYDelta = candidate.v0DauPosY() - mcV0DauPos.vy();
+            v0DauPosZDelta = candidate.v0DauPosZ() - mcV0DauPos.vz();
+            v0DauPosPt = mcV0DauPos.pt();
+            v0DauPosXPull = v0DauPosXDelta / candidate.v0DauPosXError();
+            v0DauPosYPull = v0DauPosYDelta / candidate.v0DauPosYError();
+            v0DauPosZPull = v0DauPosZDelta / candidate.v0DauPosZError();
+
+            v0DauNegXDelta = candidate.v0DauNegX() - mcV0DauNeg.vx();
+            v0DauNegYDelta = candidate.v0DauNegY() - mcV0DauNeg.vy();
+            v0DauNegZDelta = candidate.v0DauNegZ() - mcV0DauNeg.vz();
+            v0DauNegPt = mcV0DauNeg.pt();
+            v0DauNegXPull = v0DauNegXDelta / candidate.v0DauNegXError();
+            v0DauNegYPull = v0DauNegYDelta / candidate.v0DauNegYError();
+            v0DauNegZPull = v0DauNegZDelta / candidate.v0DauNegZError();
+
+            v0XDelta = candidate.v0VtxX() - mcV0DauNeg.vx();
+            v0YDelta = candidate.v0VtxY() - mcV0DauNeg.vy();
+            v0ZDelta = candidate.v0VtxZ() - mcV0DauNeg.vz();
+            v0Pt = mcV0.pt();
+            v0XPull = v0XDelta / candidate.v0XError();
+            v0YPull = v0YDelta / candidate.v0YError();
+            v0ZPull = v0ZDelta / candidate.v0ZError();
+
+            lambdaXDelta = candidate.v0X() - mcV0DauNeg.vx();
+            lambdaYDelta = candidate.v0Y() - mcV0DauNeg.vy();
+            lambdaZDelta = candidate.v0Z() - mcV0DauNeg.vz();
+            registry.fill(HIST("hV0DauPosXDelta"), v0DauPosXDelta);
+            registry.fill(HIST("hV0DauPosYDelta"), v0DauPosYDelta);
+            registry.fill(HIST("hV0DauPosZDelta"), v0DauPosZDelta);
+            registry.fill(HIST("hV0DauPosXDeltaVsPt"), v0DauPosPt, v0DauPosXDelta);
+            registry.fill(HIST("hV0DauPosYDeltaVsPt"), v0DauPosPt, v0DauPosYDelta);
+            registry.fill(HIST("hV0DauPosZDeltaVsPt"), v0DauPosPt, v0DauPosZDelta);
+            registry.fill(HIST("hV0DauPosXPull"), v0DauPosXPull);
+            registry.fill(HIST("hV0DauPosYPull"), v0DauPosYPull);
+            registry.fill(HIST("hV0DauPosZPull"), v0DauPosZPull);
+            registry.fill(HIST("hV0DauPosXPullVsPt"), v0DauPosPt, v0DauPosXPull);
+            registry.fill(HIST("hV0DauPosYPullVsPt"), v0DauPosPt, v0DauPosYPull);
+            registry.fill(HIST("hV0DauPosZPullVsPt"), v0DauPosPt, v0DauPosZPull);
+
+            registry.fill(HIST("hV0DauNegXDelta"), v0DauNegXDelta);
+            registry.fill(HIST("hV0DauNegYDelta"), v0DauNegYDelta);
+            registry.fill(HIST("hV0DauNegZDelta"), v0DauNegZDelta);
+            registry.fill(HIST("hV0DauNegXDeltaVsPt"), v0DauNegPt, v0DauNegXDelta);
+            registry.fill(HIST("hV0DauNegYDeltaVsPt"), v0DauNegPt, v0DauNegYDelta);
+            registry.fill(HIST("hV0DauNegZDeltaVsPt"), v0DauNegPt, v0DauNegZDelta);
+            registry.fill(HIST("hV0DauNegXPull"), v0DauNegXPull);
+            registry.fill(HIST("hV0DauNegYPull"), v0DauNegYPull);
+            registry.fill(HIST("hV0DauNegZPull"), v0DauNegZPull);
+            registry.fill(HIST("hV0DauNegXPullVsPt"), v0DauNegPt, v0DauNegXPull);
+            registry.fill(HIST("hV0DauNegYPullVsPt"), v0DauNegPt, v0DauNegYPull);
+            registry.fill(HIST("hV0DauNegZPullVsPt"), v0DauNegPt, v0DauNegZPull);
+
+            registry.fill(HIST("hV0XDelta"), v0XDelta);
+            registry.fill(HIST("hV0YDelta"), v0YDelta);
+            registry.fill(HIST("hV0ZDelta"), v0ZDelta);
+            registry.fill(HIST("hV0XDeltaVsPt"), v0Pt, v0XDelta);
+            registry.fill(HIST("hV0YDeltaVsPt"), v0Pt, v0YDelta);
+            registry.fill(HIST("hV0ZDeltaVsPt"), v0Pt, v0ZDelta);
+            registry.fill(HIST("hV0XPull"), v0XPull);
+            registry.fill(HIST("hV0YPull"), v0YPull);
+            registry.fill(HIST("hV0ZPull"), v0ZPull);
+            registry.fill(HIST("hV0XPullVsPt"), v0Pt, v0XPull);
+            registry.fill(HIST("hV0YPullVsPt"), v0Pt, v0YPull);
+            registry.fill(HIST("hV0ZPullVsPt"), v0Pt, v0ZPull);
+
+            registry.fill(HIST("hLambdaXDelta"), lambdaXDelta);
+            registry.fill(HIST("hLambdaYDelta"), lambdaYDelta);
+            registry.fill(HIST("hLambdaZDelta"), lambdaZDelta);
+          }
+          // Xi- → pi pi p
+          indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
+          if (indexRec == -1) {
+            debug = McMatchFlag::CascUnmatched;
+          }
+          if (indexRec > -1) {
+            // QA
+            if (signCasc == 1) {
+              xiMassPull = (candidate.invMassCascade() - MassXiMinus) / candidate.invMassXiSig();
+              registry.fill(HIST("hXiMassPullVsPt"), candidate.xiPt(), xiMassPull);
+
+              xiBachelorXDelta = candidate.xiBachelorX() - mcXiBachelor.vx();
+              xiBachelorYDelta = candidate.xiBachelorY() - mcXiBachelor.vy();
+              xiBachelorZDelta = candidate.xiBachelorZ() - mcXiBachelor.vz();
+              xiBachelorPt = mcXiBachelor.pt();
+              xiBachelorXPull = xiBachelorXDelta / candidate.xiBachelorXError();
+              xiBachelorYPull = xiBachelorYDelta / candidate.xiBachelorYError();
+              xiBachelorZPull = xiBachelorZDelta / candidate.xiBachelorZError();
+
+              auto mcXi = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+              auto mcV0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+
+              xiXDelta = candidate.xiX() - mcXiBachelor.vx();
+              xiYDelta = candidate.xiY() - mcXiBachelor.vy();
+              xiZDelta = candidate.xiZ() - mcXiBachelor.vz();
+              xiPt = mcXi.pt();
+              xiXPull = xiXDelta / candidate.xiXError();
+              xiYPull = xiYDelta / candidate.xiYError();
+              xiZPull = xiZDelta / candidate.xiZError();
+
+              cascXDelta = candidate.xDecayVtxCascade() - mcXiBachelor.vx();
+              cascYDelta = candidate.yDecayVtxCascade() - mcXiBachelor.vy();
+              cascZDelta = candidate.zDecayVtxCascade() - mcXiBachelor.vz();
+
+              registry.fill(HIST("hXiBachelorXDelta"), xiBachelorXDelta);
+              registry.fill(HIST("hXiBachelorYDelta"), xiBachelorYDelta);
+              registry.fill(HIST("hXiBachelorZDelta"), xiBachelorZDelta);
+              registry.fill(HIST("hXiBachelorXDeltaVsPt"), xiBachelorPt, xiBachelorXDelta);
+              registry.fill(HIST("hXiBachelorYDeltaVsPt"), xiBachelorPt, xiBachelorYDelta);
+              registry.fill(HIST("hXiBachelorZDeltaVsPt"), xiBachelorPt, xiBachelorZDelta);
+              registry.fill(HIST("hXiBachelorXPull"), xiBachelorXPull);
+              registry.fill(HIST("hXiBachelorYPull"), xiBachelorYPull);
+              registry.fill(HIST("hXiBachelorZPull"), xiBachelorZPull);
+              registry.fill(HIST("hXiBachelorXPullVsPt"), xiBachelorPt, xiBachelorXPull);
+              registry.fill(HIST("hXiBachelorYPullVsPt"), xiBachelorPt, xiBachelorYPull);
+              registry.fill(HIST("hXiBachelorZPullVsPt"), xiBachelorPt, xiBachelorZPull);
+
+              registry.fill(HIST("hXiXDelta"), xiXDelta);
+              registry.fill(HIST("hXiYDelta"), xiYDelta);
+              registry.fill(HIST("hXiZDelta"), xiZDelta);
+              registry.fill(HIST("hXiXDeltaVsPt"), xiPt, xiXDelta);
+              registry.fill(HIST("hXiYDeltaVsPt"), xiPt, xiYDelta);
+              registry.fill(HIST("hXiZDeltaVsPt"), xiPt, xiZDelta);
+              registry.fill(HIST("hXiXPull"), xiXPull);
+              registry.fill(HIST("hXiYPull"), xiYPull);
+              registry.fill(HIST("hXiZPull"), xiZPull);
+              registry.fill(HIST("hXiXPullVsPt"), xiPt, xiXPull);
+              registry.fill(HIST("hXiYPullVsPt"), xiPt, xiYPull);
+              registry.fill(HIST("hXiZPullVsPt"), xiPt, xiZPull);
+
+              registry.fill(HIST("hCascXDelta"), cascXDelta);
+              registry.fill(HIST("hCascYDelta"), cascYDelta);
+              registry.fill(HIST("hCascZDelta"), cascZDelta);
+            }
+
+            // Xic → pi pi pi p
+            indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kXiC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
+            indexRecCharmBaryon = indexRec;
+            if (indexRec == -1) {
+              debug = McMatchFlag::CharmbaryonUnmatched;
+            }
+            if (indexRec > -1) {
+              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
+
+              if (sign == 1) {
+                auto mcXi = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+                auto mcXic0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+                xic0MassPull = (candidate.invMassCharmBaryon() - MassXiC0) / candidate.invMassXic0Sig();
+                registry.fill(HIST("hXic0MassPullVsPt"), candidate.xic0Pt(), xic0MassPull);
+
+                xic0BachelorXDelta = candidate.xic0BachelorX() - mcXic0Bachelor.vx();
+                xic0BachelorYDelta = candidate.xic0BachelorY() - mcXic0Bachelor.vy();
+                xic0BachelorZDelta = candidate.xic0BachelorZ() - mcXic0Bachelor.vz();
+                xic0BachelorPt = mcXic0Bachelor.pt();
+                xic0BachelorXPull = xic0BachelorXDelta / candidate.xic0BachelorXError();
+                xic0BachelorYPull = xic0BachelorYDelta / candidate.xic0BachelorYError();
+                xic0BachelorZPull = xic0BachelorZDelta / candidate.xic0BachelorZError();
+
+                xic0XDelta = candidate.xDecayVtxCharmBaryon() - mcXic0Bachelor.vx();
+                xic0YDelta = candidate.yDecayVtxCharmBaryon() - mcXic0Bachelor.vy();
+                xic0ZDelta = candidate.zDecayVtxCharmBaryon() - mcXic0Bachelor.vz();
+                xic0Pt = mcXic0.pt();
+                xic0XPull = xic0XDelta / candidate.xic0XError();
+                xic0YPull = xic0YDelta / candidate.xic0YError();
+                xic0ZPull = xic0ZDelta / candidate.xic0ZError();
+                registry.fill(HIST("hXic0BachelorXDelta"), xic0BachelorXDelta);
+                registry.fill(HIST("hXic0BachelorYDelta"), xic0BachelorYDelta);
+                registry.fill(HIST("hXic0BachelorZDelta"), xic0BachelorZDelta);
+                registry.fill(HIST("hXic0BachelorXDeltaVsPt"), xic0BachelorPt, xic0BachelorXDelta);
+                registry.fill(HIST("hXic0BachelorYDeltaVsPt"), xic0BachelorPt, xic0BachelorYDelta);
+                registry.fill(HIST("hXic0BachelorZDeltaVsPt"), xic0BachelorPt, xic0BachelorZDelta);
+                registry.fill(HIST("hXic0BachelorXPull"), xic0BachelorXPull);
+                registry.fill(HIST("hXic0BachelorYPull"), xic0BachelorYPull);
+                registry.fill(HIST("hXic0BachelorZPull"), xic0BachelorZPull);
+                registry.fill(HIST("hXic0BachelorXPullVsPt"), xic0BachelorPt, xic0BachelorXPull);
+                registry.fill(HIST("hXic0BachelorYPullVsPt"), xic0BachelorPt, xic0BachelorYPull);
+                registry.fill(HIST("hXic0BachelorZPullVsPt"), xic0BachelorPt, xic0BachelorZPull);
+
+                registry.fill(HIST("hXic0XDelta"), xic0XDelta);
+                registry.fill(HIST("hXic0YDelta"), xic0YDelta);
+                registry.fill(HIST("hXic0ZDelta"), xic0ZDelta);
+                registry.fill(HIST("hXic0XDeltaVsPt"), xic0Pt, xic0XDelta);
+                registry.fill(HIST("hXic0YDeltaVsPt"), xic0Pt, xic0YDelta);
+                registry.fill(HIST("hXic0ZDeltaVsPt"), xic0Pt, xic0ZDelta);
+                registry.fill(HIST("hXic0XPull"), xic0XPull);
+                registry.fill(HIST("hXic0YPull"), xic0YPull);
+                registry.fill(HIST("hXic0ZPull"), xic0ZPull);
+                registry.fill(HIST("hXic0XPullVsPt"), xic0Pt, xic0XPull);
+                registry.fill(HIST("hXic0YPullVsPt"), xic0Pt, xic0YPull);
+                registry.fill(HIST("hXic0ZPullVsPt"), xic0Pt, xic0ZPull);
+              }
+            }
+          }
+        }
+        // Check whether the charm baryon is non-prompt (from a b quark).
+        if (flag != 0) {
+          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
+        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
+          LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
+        }
+      }
+    }
+  }
+
   void processDoNoMc(aod::Collisions::iterator const&)
   {
     // dummy process function - should not be required in the future
@@ -2413,6 +3055,15 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     runXic0Omegac0Mc<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcColls, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiKf, "Run Xic0 to xi pi MC process function - no centrality", false);
+
+  void processMcXicToXiPiKfQa(aod::HfCandToXiPiKfQa const& candidates,
+                              MyTracksWMc const& tracks,
+                              aod::McParticles const& mcParticles,
+                              BCsInfo const& bcs)
+  {
+    runXic0Omegac0McQa<CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0Mc, processMcXicToXiPiKfQa, "Run Xic0 to xi pi MC QA process function - no centrality", false);
 
   void processMcXicToXiPiFT0m(aod::HfCandToXiPi const& candidates,
                               MyTracksWMc const& tracks,
