@@ -1938,7 +1938,7 @@ struct Derivedupcanalysis {
       histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
       return;
     }
-    
+
     const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
 
     if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
@@ -2055,7 +2055,7 @@ struct Derivedupcanalysis {
       histos.fill(HIST("eventQA/mc/hFakeEvents"), 0); // no assoc. MC collisions
       return;
     }
-    
+
     const auto& mcCollision = collision.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the rec. collision
 
     if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
@@ -2097,7 +2097,7 @@ struct Derivedupcanalysis {
               selGapSide = 0;
             break;
         }
-      }      
+      }
     }
 
     if (evSels.studyUPConly && (selGapSide < -0.5))
