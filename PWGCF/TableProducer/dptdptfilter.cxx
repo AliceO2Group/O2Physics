@@ -540,6 +540,9 @@ struct DptDptFilter {
   void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, const aod::BCsWithTimestamps&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
 
+  void processWithoutCentWithoutEvSelDetectorLevel(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, const aod::BCsWithTimestamps&);
+  PROCESS_SWITCH(DptDptFilter, processWithoutCentWithoutEvSelDetectorLevel, "Process MC detector level without centrality nor event selections", false);
+
   template <typename CollisionObject, typename ParticlesList>
   bool processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
@@ -643,6 +646,11 @@ void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent 
 }
 
 void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
+{
+  processReconstructed(collision, ftracks, 50.0);
+}
+
+void DptDptFilter::processWithoutCentWithoutEvSelDetectorLevel(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
 {
   processReconstructed(collision, ftracks, 50.0);
 }
