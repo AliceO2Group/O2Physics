@@ -228,7 +228,7 @@ struct HfTaskLbReduced {
         registry.add("hCospLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
         registry.add("hCospXyLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});#Lambda_{c}^{+} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtLc, axisCosp}});
 
-        // ML scores of D- daughter
+        // ML scores of Lc daughter
         if (doprocessDataWithLcMl) {
           registry.add("hMlScoreBkgLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML background score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
           registry.add("hMlScorePromptLc", "#Lambda_{b}^{0} candidates;#it{p}_{T}(#Lambda_{c}^{#plus}) (GeV/#it{c});prong0, #Lambda_{c}^{+} ML prompt score;entries", {HistType::kTH2F, {axisPtLc, axisMlScore}});
@@ -370,10 +370,10 @@ struct HfTaskLbReduced {
   /// Fill candidate information at reconstruction level
   /// \param doMc is the flag to enable the filling with MC information
   /// \param withDecayTypeCheck is the flag to enable MC with decay type check
-  /// \param withLcMl is the flag to enable the filling with ML scores for the D- daughter
+  /// \param withLcMl is the flag to enable the filling with ML scores for the Lc daughter
   /// \param withLbMl is the flag to enable the filling with ML scores for the Lb candidate
   /// \param candidate is the Lb candidate
-  /// \param candidatesLc is the table with D- candidates
+  /// \param candidatesLc is the table with Lc candidates
   template <bool doMc, bool withDecayTypeCheck, bool withLcMl, bool withLbMl, typename Cand, typename CandsLc>
   void fillCand(Cand const& candidate,
                 CandsLc const&)
