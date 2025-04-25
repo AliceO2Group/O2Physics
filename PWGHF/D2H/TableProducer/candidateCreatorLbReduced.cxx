@@ -80,7 +80,7 @@ struct HfCandidateCreatorLbReduced {
     // invariant-mass window cut
     massPi = o2::constants::physics::MassPiPlus;
     massLc = o2::constants::physics::MassLambdaCPlus;
-    MassLb = o2::constants::physics::MassLambdaB0;
+    massLb = o2::constants::physics::MassLambdaB0;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);
