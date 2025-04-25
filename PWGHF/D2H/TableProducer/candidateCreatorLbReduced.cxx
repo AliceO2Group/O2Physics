@@ -184,7 +184,6 @@ struct HfCandidateCreatorLbReduced {
         getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertexLb, phi, theta);
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-        int hfFlag = 1 << hf_cand_lb::DecayType::LbToLcPi;
 
         // fill the candidate table for the Lb here:
         rowCandidateBase(collision.globalIndex(),
