@@ -285,7 +285,7 @@ struct Derivedupcanalysis {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
-  ConfigurableAxis axisNctau{"axisNctau", {200, 0.0f, 20.0f}, "c x tau (cm)"};
+  ConfigurableAxis axisCtau{"axisCtau", {200, 0.0f, 20.0f}, "c x tau (cm)"};
 
   static constexpr std::string_view kParticlenames[] = {"K0Short", "Lambda", "AntiLambda", "Xi", "AntiXi", "Omega", "AntiOmega"};
 
@@ -312,7 +312,7 @@ struct Derivedupcanalysis {
       histos.add(Form("%s/hDCAV0Daughters", kParticlenames[partID].data()), "hDCAV0Daughters", kTH2F, {axisPtCoarse, axisDCAdau});
       histos.add(Form("%s/hDCAV0ToPV", kParticlenames[partID].data()), "hDCAV0ToPV", kTH2F, {axisPtCoarse, {44, 0.0f, 2.2f}});
       histos.add(Form("%s/hMassLambdaDau", kParticlenames[partID].data()), "hMassLambdaDau", kTH2F, {axisPtCoarse, axisLambdaMass});
-      histos.add(Form("%s/hNctau", kParticlenames[partID].data()), "hNctau", kTH2F, {axisPtCoarse, axisNctau});
+      histos.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
       if (doBachelorBaryonCut) {
         histos.add(Form("%s/hBachBaryonCosPA", kParticlenames[partID].data()), "hBachBaryonCosPA", kTH2F, {axisPtCoarse, {100, 0.0f, 1.0f}});
         histos.add(Form("%s/hBachBaryonDCAxyToPV", kParticlenames[partID].data()), "hBachBaryonDCAxyToPV", kTH2F, {axisPtCoarse, {300, -3.0f, 3.0f}});
@@ -326,7 +326,7 @@ struct Derivedupcanalysis {
       histos.add(Form("%s/hV0Radius", kParticlenames[partID].data()), "hV0Radius", kTH1F, {axisV0Radius});
       histos.add(Form("%s/h2dPositiveITSvsTPCpts", kParticlenames[partID].data()), "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
       histos.add(Form("%s/h2dNegativeITSvsTPCpts", kParticlenames[partID].data()), "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-      histos.add(Form("%s/hNctau", kParticlenames[partID].data()), "hNctau", kTH2F, {axisPtCoarse, axisNctau});
+      histos.add(Form("%s/hCtau", kParticlenames[partID].data()), "hCtau", kTH2F, {axisPtCoarse, axisCtau});
     }
   }
 
@@ -525,7 +525,7 @@ struct Derivedupcanalysis {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hV0Radius"), cand.v0radius());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/hNctau"), pT, ctau);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hCtau"), pT, ctau);
     }
     if (doDetectPropQA == 1) {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h6dDetectPropVsCentrality"), ft0ampl, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pT);
@@ -686,7 +686,7 @@ struct Derivedupcanalysis {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCAV0Daughters"), pT, cand.dcaV0daughters());
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hDCAV0ToPV"), pT, std::fabs(cand.dcav0topv(coll.posX(), coll.posY(), coll.posZ())));
       histos.fill(HIST(kParticlenames[partID]) + HIST("/hMassLambdaDau"), pT, cand.mLambda());
-      histos.fill(HIST(kParticlenames[partID]) + HIST("/hNctau"), pT, ctau);
+      histos.fill(HIST(kParticlenames[partID]) + HIST("/hCtau"), pT, ctau);
     }
     if (PIDConfigurations.doTPCQA) {
       histos.fill(HIST(kParticlenames[partID]) + HIST("/h3dPosNsigmaTPC"), centrality, pT, tpcNsigmaPos);
@@ -1715,6 +1715,7 @@ struct Derivedupcanalysis {
   }
 
   PresliceUnsorted<StraCollisonsFullMC> perMcCollision = aod::v0data::straMCCollisionId;
+  PresliceUnsorted<NeutronsMC> neutronsPerMcCollision = aod::zdcneutrons::straMCCollisionId;
 
   std::vector<int> getListOfRecoCollIds(StraMCCollisionsFull const& mcCollisions,
                                         StraCollisonsFullMC const& collisions,
@@ -1726,7 +1727,10 @@ struct Derivedupcanalysis {
       if (std::find(generatorIds->begin(), generatorIds->end(), mcCollision.generatorsID()) == generatorIds->end()) {
         continue;
       }
+
+      // Group collisions and neutrons by MC collision index
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
       // Find the collision with the biggest nbr of PV contributors
       // Follows what was done here: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/mcCollsExtra.cxx#L93
       int biggestNContribs = -1;
@@ -1738,7 +1742,10 @@ struct Derivedupcanalysis {
 
         int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
         if (checkNeutronsInMC) {
-          for (const auto& neutron : neutrons) {
+          for (const auto& neutron : groupedNeutrons) {
+            if (selGapSide < -0.5)
+              break;
+
             if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
               continue;
 
@@ -1801,8 +1808,9 @@ struct Derivedupcanalysis {
 
       histos.fill(HIST("eventQA/mc/hEventSelectionMC"), 1.0, mcCollision.multMCNParticlesEta08(), mcCollision.generatorsID());
 
-      // Group collisions by MC collision index
+      // Group collisions and neutrons by MC collision index
       auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+      auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
 
       bool atLeastOne = false;
       float centrality = -1.f;
@@ -1819,7 +1827,10 @@ struct Derivedupcanalysis {
 
         int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
         if (checkNeutronsInMC) {
-          for (const auto& neutron : neutrons) {
+          for (const auto& neutron : groupedNeutrons) {
+            if (selGapSide < -0.5)
+              break;
+
             if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
               continue;
 
@@ -1969,8 +1980,13 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+
+    auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
     if (checkNeutronsInMC) {
-      for (const auto& neutron : neutrons) {
+      for (const auto& neutron : groupedNeutrons) {
+        if (selGapSide < -0.5)
+          break;
+
         if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
           continue;
 
@@ -2086,8 +2102,13 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+
+    auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
     if (checkNeutronsInMC) {
-      for (const auto& neutron : neutrons) {
+      for (const auto& neutron : groupedNeutrons) {
+        if (selGapSide < -0.5)
+          break;
+
         if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
           continue;
 
