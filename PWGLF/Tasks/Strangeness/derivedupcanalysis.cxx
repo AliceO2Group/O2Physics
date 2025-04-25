@@ -198,7 +198,7 @@ struct Derivedupcanalysis {
   struct : ConfigurableGroup {
     ConfigurableAxis axisFT0Aampl{"axisFT0Aampl", {100, 0.0f, 2000.0f}, "FT0Aamplitude"};
     ConfigurableAxis axisFT0Campl{"axisFT0Campl", {100, 0.0f, 2000.0f}, "FT0Camplitude"};
-    ConfigurableAxis axisFT0ampl{"axisFT0ampl", {2000, 0.0f, 2000.0f}, "axisFT0ampl"};
+    ConfigurableAxis axisFT0ampl{"axisFT0ampl", {2002, -1.5f, 2000.5f}, "axisFT0ampl"};
     ConfigurableAxis axisFV0Aampl{"axisFV0Aampl", {100, 0.0f, 2000.0f}, "FV0Aamplitude"};
     ConfigurableAxis axisFDDAampl{"axisFDDAampl", {100, 0.0f, 2000.0f}, "FDDAamplitude"};
     ConfigurableAxis axisFDDCampl{"axisFDDCampl", {100, 0.0f, 2000.0f}, "FDDCamplitude"};
