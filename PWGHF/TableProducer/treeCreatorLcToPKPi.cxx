@@ -545,6 +545,80 @@ struct HfTreeCreatorLcToPKPi {
     return std::make_pair(invMass, invMassKPi);
   }
 
+  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
+  void fillLiteTable(CandType const& candidate,
+                     TrackType const& trackPos1,
+                     TrackType const& trackNeg,
+                     TrackType const& trackPos2,
+                     int candFlag)
+  {
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
+    const float functionCt = hfHelper.ctLc(candidate);
+    const float functionY = hfHelper.yLc(candidate);
+
+    int8_t functionFlagMcMatchRec{0};
+    int8_t functionOriginMcRec{0};
+    int8_t functionIsCandidateSwapped{0};
+    int8_t functionFlagMcDecayChanRec{-1};
+
+    if constexpr (isMc) {
+      functionFlagMcMatchRec = candidate.flagMcMatchRec();
+      functionOriginMcRec = candidate.originMcRec();
+      functionIsCandidateSwapped = candidate.isCandidateSwapped();
+      functionFlagMcDecayChanRec = candidate.flagMcDecayChanRec();
+    }
+
+    rowCandidateLite(
+      candidate.posX(),
+      candidate.posY(),
+      candidate.posZ(),
+      candidate.nProngsContributorsPV(),
+      candidate.bitmapProngsContributorsPV(),
+      candidate.chi2PCA(),
+      candidate.decayLength(),
+      candidate.decayLengthXY(),
+      candidate.ptProng0(),
+      candidate.ptProng1(),
+      candidate.ptProng2(),
+      candidate.impactParameter0(),
+      candidate.impactParameter1(),
+      candidate.impactParameter2(),
+      trackPos1.tpcNSigmaPi(),
+      trackPos1.tpcNSigmaPr(),
+      trackPos1.tofNSigmaPi(),
+      trackPos1.tofNSigmaPr(),
+      trackNeg.tpcNSigmaKa(),
+      trackNeg.tofNSigmaKa(),
+      trackPos2.tpcNSigmaPi(),
+      trackPos2.tpcNSigmaPr(),
+      trackPos2.tofNSigmaPi(),
+      trackPos2.tofNSigmaPr(),
+      trackPos1.tpcTofNSigmaPi(),
+      trackPos1.tpcTofNSigmaPr(),
+      trackNeg.tpcTofNSigmaKa(),
+      trackPos2.tpcTofNSigmaPi(),
+      trackPos2.tpcTofNSigmaPr(),
+      1 << candFlag,
+      functionInvMass,
+      candidate.pt(),
+      candidate.cpa(),
+      candidate.cpaXY(),
+      functionCt,
+      candidate.eta(),
+      candidate.phi(),
+      functionY,
+      functionFlagMcMatchRec,
+      functionOriginMcRec,
+      functionIsCandidateSwapped,
+      functionFlagMcDecayChanRec,
+      functionInvMassKPi);
+
+    if (fillCollIdTable) {
+      /// save also candidate collision indices
+      rowCollisionId(candidate.collisionId());
+    }
+  }
+
   /// \brief core function to fill tables in MC
   /// \param collisions Collision table
   /// \param mcCollisions MC collision table
@@ -583,55 +657,7 @@ struct HfTreeCreatorLcToPKPi {
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
           if (fillCandidateLiteTable) {
-            rowCandidateLite(
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.chi2PCA(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.ptProng0(),
-              candidate.ptProng1(),
-              candidate.ptProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              candidate.flagMcMatchRec(),
-              candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.flagMcDecayChanRec(),
-              functionInvMassKPi);
-
-            if (fillCollIdTable) {
-              /// save also candidate collision indices
-              rowCollisionId(candidate.collisionId());
-            }
+            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -972,56 +998,7 @@ struct HfTreeCreatorLcToPKPi {
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
           if (fillCandidateLiteTable) {
-            rowCandidateLite(
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.chi2PCA(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.ptProng0(),
-              candidate.ptProng1(),
-              candidate.ptProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              0.,
-              0.,
-              0.,
-              -1,
-              functionInvMassKPi);
-
-            if (fillCollIdTable) {
-              /// save also candidate collision indices
-              rowCollisionId(candidate.collisionId());
-            }
-
+            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
             rowCandidateFull(
               candidate.collisionId(),
