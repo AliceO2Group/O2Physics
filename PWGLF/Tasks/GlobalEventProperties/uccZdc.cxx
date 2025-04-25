@@ -491,7 +491,7 @@ struct UccZdc {
     int itsTracks = 0, glbTracks = 0;
     float et = 0., meanpt = 0.;
     for (const auto& track : tracks) {
-      if (!track.hasTPC() && track.hasITS() && track.itsNCls() >= minITSnCls) {
+      if (track.hasITS() && track.itsNCls() >= minITSnCls) {
         itsTracks++;
       }
       // Track Selection
