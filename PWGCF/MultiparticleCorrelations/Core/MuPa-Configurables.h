@@ -34,7 +34,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfPlainPrintout{"cfPlainPrintout", false, "print in color or in plain (use the latter in HL)"};
   Configurable<bool> cfDoAdditionalInsanityChecks{"cfDoAdditionalInsanityChecks", false, "do additional insanity checks at run time (this leads to small loss of performance)"};
   Configurable<bool> cfInsanityCheckForEachParticle{"cfInsanityCheckForEachParticle", false, "do insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging."};
-  Configurable<unsigned int> cfRandomSeed{"fRandomSeed", 0, "0 = random seed is guaranteed to be unique in space and time"};
+  Configurable<unsigned int> cfRandomSeed{"cfRandomSeed", 0, "0 = random seed is guaranteed to be unique in space and time"};
   Configurable<bool> cfUseFisherYates{"cfUseFisherYates", false, "use or not Fisher-Yates algorithm to randomize particle indices"};
   Configurable<int> cfFixedNumberOfRandomlySelectedTracks{"cfFixedNumberOfRandomlySelectedTracks", -1, "set to some integer > 0, to apply and use. Set to <=0, to ignore."};
   Configurable<bool> cfUseStopwatch{"cfUseStopwatch", false, "if true, some basic info on time execution is printed, here and there. Very loosely, this can be used for execution time profiling."};
