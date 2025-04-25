@@ -363,7 +363,6 @@ struct FemtoUniverseEfficiencyBase {
       if (part.partType() != confParticleTypePartOne || part.sign() != confChargePart1 || !isParticleNSigma(confPDGCodePartOne, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron))) {
         continue;
       }
-      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
 
       if (!part.has_fdMCParticle()) {
         continue;
@@ -374,6 +373,11 @@ struct FemtoUniverseEfficiencyBase {
         continue;
       }
 
+      if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartOne))) {
+        continue;
+      }
+
+      trackHistoPartOneRec.fillQA<isMC, isDebug>(part);
       registryPDG.fill(HIST("part1/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
       registryMCOrigin.fill(HIST("part1/hPt"), mcParticle.pt());
     }
@@ -384,8 +388,6 @@ struct FemtoUniverseEfficiencyBase {
           continue;
         }
 
-        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
-
         if (!part.has_fdMCParticle()) {
           continue;
         }
@@ -395,6 +397,11 @@ struct FemtoUniverseEfficiencyBase {
           continue;
         }
 
+        if (!(std::abs(mcParticle.pdgMCTruth()) == std::abs(confPDGCodePartTwo))) {
+          continue;
+        }
+
+        trackHistoPartTwoRec.fillQA<isMC, isDebug>(part);
         registryPDG.fill(HIST("part2/PDGvspT"), part.pt(), mcParticle.pdgMCTruth());
         registryMCOrigin.fill(HIST("part2/hPt"), mcParticle.pt());
       }
