@@ -2064,7 +2064,17 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin,
 
 // mapping of decay types
 enum DecayType { Sc0ToPKPiPi = 0,
-                 ScplusplusToPKPiPi };
+                 ScplusplusToPKPiPi,
+                 ScStar0ToPKPiPi,
+                 ScStarPlusPlusToPKPiPi };
+enum Species : int { Sc2455 = 0,
+                     Sc2520,
+                     NSpecies };
+enum Decays : int { PKPi = 0,
+                    PiKP,
+                    NDecays };
+constexpr int ChargeNull = 0;
+constexpr int ChargePlusPlus = 2;
 } // namespace hf_cand_sigmac
 
 // declare dedicated Σc0,++ decay candidate table
@@ -2293,8 +2303,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtSoftPi, ptSoftPi, [](float pxSoftPi, float pySoftPi
 DECLARE_SOA_DYNAMIC_COLUMN(PVecSoftPi, pVecSoftPi, [](float px, float py, float pz) -> std::array<float, 3> { return std::array{px, py, pz}; });
 
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);     //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);     //! generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRecD0, flagMcMatchRecD0, int8_t); //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGenD0, flagMcMatchGenD0, int8_t); //! generator level
 
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); //! particle origin, generator level
@@ -2302,6 +2314,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); //! particle origin, gener
 enum DecayType {
   DstarToD0Pi = 0,
   D0ToPiK,
+  DstarToD0PiPi0,
+  D0ToPiKPi0,
   NDstarDecayType
 };
 
@@ -2415,6 +2429,7 @@ using HfCandDstar = HfCandDstars::iterator;
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
                   hf_cand_dstar::FlagMcMatchRec,
+                  hf_cand_dstar::FlagMcMatchRecD0,
                   hf_cand_dstar::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
                   hf_cand::PdgBhadMotherPart,
@@ -2424,6 +2439,7 @@ DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcGen, "AOD", "HFCANDDSTRMCGEN",
                   hf_cand_dstar::FlagMcMatchGen,
+                  hf_cand_dstar::FlagMcMatchGenD0,
                   hf_cand_dstar::OriginMcGen,
                   hf_cand::IdxBhadMotherPart);
 
