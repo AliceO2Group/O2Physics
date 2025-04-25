@@ -56,28 +56,31 @@ namespace o2::aod
 {
 namespace flow_ese_p_he3
 {
-DECLARE_SOA_COLUMN(NPidFlag, nPidFlag, int8_t); //unqualified -1, hadron 0, proton 1, he3 2, proton+he3 3
+DECLARE_SOA_COLUMN(NPidFlag, nPidFlag, int8_t); // unqualified -1, hadron 0, proton 1, he3 2, proton+he3 3
 } // namespace flow_ese_p_he3
 DECLARE_SOA_TABLE(PHe3ESEFlags, "AOD", "PHe3ESEFlags", flow_ese_p_he3::NPidFlag);
 } // namespace o2::aod
 
-namespace pid_flags {
-  constexpr int8_t kUnqualified = -1;
-  constexpr int8_t kUnPOIHadron = 0;
-  constexpr int8_t kProton = 1;
-  constexpr int8_t kHe3 = 2;
-  constexpr int8_t kProtonHe3 = 3;
+namespace pid_flags
+{
+constexpr int8_t kUnqualified = -1;
+constexpr int8_t kUnPOIHadron = 0;
+constexpr int8_t kProton = 1;
+constexpr int8_t kHe3 = 2;
+constexpr int8_t kProtonHe3 = 3;
+} // namespace pid_flags
+
+namespace event_selection
+{
+constexpr int kFT0AV0ASigma = 5;
 }
 
-namespace event_selection {
-  constexpr int kFT0AV0ASigma = 5;
-}
-
-namespace fourier_mode {
-  constexpr int kMode1 = 1;
-  constexpr int kMode2 = 2;
-  constexpr int kMode3 = 3;
-}
+namespace fourier_mode
+{
+constexpr int kMode1 = 1;
+constexpr int kMode2 = 2;
+constexpr int kMode3 = 3;
+} // namespace fourier_mode
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullHe, aod::pidTOFFullHe>;
 struct FillPIDcolums {
@@ -99,9 +102,9 @@ struct FillPIDcolums {
   Configurable<float> cfgMaxDCAz{"cfgMaxDCAz", 2, "Maxium DCAz for standard PID tracking"};
   Configurable<float> cfgPtMaxforTPCOnlyPIDPrton{"cfgPtMaxforTPCOnlyPIDPrton", 0.4, "Maxmium track pt for TPC only PID, at RMS PID mode for proton"};
   Configurable<float> cfgPtMaxforTPCOnlyPIDHe3{"cfgPtMaxforTPCOnlyPIDHe3", 0.5, "Maxmium track pt for TPC only PID, at RMS PID mode for he3"};
-  
-  Configurable<int>  cfgProtonPIDMode{"cfgProtonPIDMode", 2, "Proton PID mode: 0 for TPC + RMS(TPC,TOF), 1 for TPC only, 2 for TOF only"};
-  Configurable<int>  cfgHe3PIDMode{"cfgHe3PIDMode", 1, "He3 PID mode: 0 for TPC + RMS(TPC,TOF), 1 for TPC only, 2 for TOF only"};
+
+  Configurable<int> cfgProtonPIDMode{"cfgProtonPIDMode", 2, "Proton PID mode: 0 for TPC + RMS(TPC,TOF), 1 for TPC only, 2 for TOF only"};
+  Configurable<int> cfgHe3PIDMode{"cfgHe3PIDMode", 1, "He3 PID mode: 0 for TPC + RMS(TPC,TOF), 1 for TPC only, 2 for TOF only"};
 
   Configurable<bool> cfgOpenpassedITSNCls{"cfgOpenpassedITSNCls", false, "useTrackSelectionTables passedITSNCls for basic track selection"};
   Configurable<bool> cfgOpenpassedITSChi2NDF{"cfgOpenpassedITSChi2NDF", false, "useTrackSelectionTables passedITSChi2NDF for basic track selection"};
@@ -124,7 +127,7 @@ struct FillPIDcolums {
   Configurable<bool> cfgOpenPlotnSigmaTOFITSPt{"cfgOpenPlotnSigmaTOFITSPt", true, "plot nSigmaTOF vs nSigmaITS vs Pt"};
   Configurable<bool> cfgOpenPlotnSigmaITSTPCPt{"cfgOpenPlotnSigmaITSTPCPt", true, "plot nSigmaITS vs nSigmaTOF vs Pt"};
   Configurable<bool> cfgOpenPlotnSigmaTOFTPCPt{"cfgOpenPlotnSigmaTOFTPCPt", true, "plot nSigmaTOF vs nSigmaTPC vs Pt"};
-    
+
   Configurable<std::vector<float>> cfgPtCutProton{"cfgPtCutProton", {0.15, 99.}, "Pt limit for Proton"};
   Configurable<std::vector<float>> cfgPtCutHe3{"cfgPtCutHe3", {0.15, 99.}, "Pt limit for He3"};
   Configurable<std::vector<float>> cfgnSigmaCutTPCProton{"cfgnSigmaCutTPCProton", {-3, 3}, "TPC nsigma cut limit for Proton"};
@@ -137,8 +140,8 @@ struct FillPIDcolums {
   Configurable<std::vector<float>> cfgnSigmaCutRMSHe3{"cfgnSigmaCutRMSHe3", {-3, 3}, "RMS nsigma cut limit for He3"};
 
   Configurable<std::vector<float>> cfgPtBinProtonPID{"cfgPtBinProtonPID", {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0}, "pt bin for pion PIDnsigma"};
-  Configurable<std::vector<float>> cfgPtBinHe3PID{"cfgPtBinHe3PID", {2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.6, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.4, 7.2, 8, 10 }, "pt bin for pion PIDnsigma"};
-  
+  Configurable<std::vector<float>> cfgPtBinHe3PID{"cfgPtBinHe3PID", {2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.6, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.4, 7.2, 8, 10}, "pt bin for pion PIDnsigma"};
+
   Configurable<std::vector<float>> cfgnSigmaTPCProtonPtUpper{"cfgnSigmaTPCProtonPtUpper", {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}, "nSigmaTPC cut upper limit anchored to proton pt bins"};
   Configurable<std::vector<float>> cfgnSigmaTOFProtonPtUpper{"cfgnSigmaTOFProtonPtUpper", {1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5}, "nSigmaTOF cut upper limit anchored to proton pt bins"};
   Configurable<std::vector<float>> cfgnSigmaITSProtonPtUpper{"cfgnSigmaITSProtonPtUpper", {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, "nSigmaITS cut upper limit anchored to proton pt bins"};
@@ -169,9 +172,9 @@ struct FillPIDcolums {
   ConfigurableAxis cfgaxisDCAxy{"cfgaxisDCAxy", {100, -0.5, 0.5}, "Binning for DCAxy"};
   ConfigurableAxis cfgaxisChi2Ncls{"cfgaxisChi2Ncls", {100, 0, 100}, "Binning for Chi2Ncls TPC/ITS"};
 
-  //Function for He3 TPC-ITS mismatching cuts referd to by chiara's slides 
+  // Function for He3 TPC-ITS mismatching cuts referd to by chiara's slides
   TF1* fNSigmaITSPt = nullptr;
-  
+
   template <typename TrackType>
   bool trackSelBasic(const TrackType track)
   {
@@ -226,55 +229,58 @@ struct FillPIDcolums {
       return false;
     return true;
   }
-  
+
   template <typename TrackType>
-  bool pidProtonSel(const TrackType track , float nSigmaLower, float nSigmaUpper) { // proton == 1 , He3 == 2
+  bool pidProtonSel(const TrackType track, float nSigmaLower, float nSigmaUpper)
+  { // proton == 1 , He3 == 2
     if (track.pt() < cfgPtCutProton.value[0] || track.pt() > cfgPtCutProton.value[1])
       return false;
     float nSigmaUse = -999;
     switch (cfgProtonPIDMode) {
-      case 0://RMS 
+      case 0: // RMS
         nSigmaUse = (track.pt() > cfgPtMaxforTPCOnlyPIDPrton) ? std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()) : track.tpcNSigmaPr();
         break;
-      case 1://TPC only
+      case 1: // TPC only
         nSigmaUse = track.tpcNSigmaPr();
         break;
-      case 2://TOF only
+      case 2: // TOF only
         nSigmaUse = track.tofNSigmaPr();
         break;
     }
-    if (nSigmaUse < nSigmaLower || nSigmaUse > nSigmaUpper){
+    if (nSigmaUse < nSigmaLower || nSigmaUse > nSigmaUpper) {
       return false;
-    }  else {
+    } else {
       return true;
     }
   }
 
   template <typename TrackType>
-  bool pidHe3Sel(const TrackType track, float nSigmaLower, float nSigmaUpper) { // proton == 1 , He3 == 2
+  bool pidHe3Sel(const TrackType track, float nSigmaLower, float nSigmaUpper)
+  { // proton == 1 , He3 == 2
     if (track.pt() < cfgPtCutHe3.value[0] || track.pt() > cfgPtCutHe3.value[1])
       return false;
     float nSigmaUse = -999;
     switch (cfgHe3PIDMode) {
-      case 0://RMS 
+      case 0: // RMS
         nSigmaUse = (track.pt() > cfgPtMaxforTPCOnlyPIDHe3) ? std::hypot(track.tpcNSigmaHe(), track.tofNSigmaHe()) : track.tpcNSigmaHe();
         break;
-      case 1://TPC only
+      case 1: // TPC only
         nSigmaUse = track.tpcNSigmaHe();
         break;
-      case 2://TOF only
+      case 2: // TOF only
         nSigmaUse = track.tofNSigmaHe();
         break;
     }
-    if (nSigmaUse < nSigmaLower || nSigmaUse > nSigmaUpper){
+    if (nSigmaUse < nSigmaLower || nSigmaUse > nSigmaUpper) {
       return false;
-    }  else {
+    } else {
       return true;
     }
   }
 
   template <typename TrackType>
-  int crossTrackID(const TrackType track) {
+  int crossTrackID(const TrackType track)
+  {
     if (track.tpcNSigmaPr() < track.tpcNSigmaHe()) {
       return 0;
     } else {
@@ -286,11 +292,11 @@ struct FillPIDcolums {
   {
     if (cfgOpenHe3ITSPtCut) {
       fNSigmaITSPt = new TF1("fNSigmaITSPt", "[0]/pow(x,0.5) - [2]", 0.02, 1000);
-      fNSigmaITSPt->SetParameters(4.6,0.5,4.5);
+      fNSigmaITSPt->SetParameters(4.6, 0.5, 4.5);
     }
     AxisSpec axisITSNcls = {10, -1.5, 8.5, "ITSNcls"};
     AxisSpec axisTPCNcls = {160, 0, 160, "TPCNcls"};
-    if(!cfgQuietMode) {
+    if (!cfgQuietMode) {
       histosQA.add("QA/hist_dEdxTPC_All", ";#it{p}^{TPC}/#it{z} (GeV/c);d#it{E}/d#it{x}", {HistType::kTH2F, {cfgrigidityBins, cfgdedxBins}});
       histosQA.add("QA/Proton/hist_dEdxTPC_Pr", ";#it{p}^{TPC}/#it{z} (GeV/c);d#it{E}/d#it{x}", {HistType::kTH2F, {cfgrigidityBins, cfgdedxBins}});
       histosQA.add("QA/He3/hist_dEdxTPC_He3", ";#it{p}^{TPC}/#it{z} (GeV/c);d#it{E}/d#it{x}", {HistType::kTH2F, {cfgrigidityBins, cfgdedxBins}});
@@ -338,16 +344,16 @@ struct FillPIDcolums {
         histosQA.add("QA/He3/hist_nSigmaITSPt_He3_unCuted", ";#it{p}_{T};n_{#sigma}ITS", {HistType::kTH2F, {cfgaxisptPID, cfgnSigmaBinsITS}});
       }
       if (cfgOpenPlotnSigmaTOFITSPt) {
-        histosQA.add("QA/Proton/hist_nSigmaTOFITSPt_Pr", ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF,cfgnSigmaBinsITS,cfgaxisptPID}});
-        histosQA.add("QA/He3/hist_nSigmaTOFITSPt_He3", ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF,cfgnSigmaBinsITS,cfgaxisptPID}});
+        histosQA.add("QA/Proton/hist_nSigmaTOFITSPt_Pr", ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsITS, cfgaxisptPID}});
+        histosQA.add("QA/He3/hist_nSigmaTOFITSPt_He3", ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsITS, cfgaxisptPID}});
       }
       if (cfgOpenPlotnSigmaITSTPCPt) {
-        histosQA.add("QA/Proton/hist_nSigmaITSTPCPt_Pr", ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsITS,cfgnSigmaBinsTPC,cfgaxisptPID}});
-        histosQA.add("QA/He3/hist_nSigmaITSTPCPt_He3", ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsITS,cfgnSigmaBinsTPC,cfgaxisptPID}});
+        histosQA.add("QA/Proton/hist_nSigmaITSTPCPt_Pr", ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsITS, cfgnSigmaBinsTPC, cfgaxisptPID}});
+        histosQA.add("QA/He3/hist_nSigmaITSTPCPt_He3", ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsITS, cfgnSigmaBinsTPC, cfgaxisptPID}});
       }
       if (cfgOpenPlotnSigmaTOFTPCPt) {
-        histosQA.add("QA/Proton/hist_nSigmaTOFTPCPt_Pr", ";n_{#sigma}TOF;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF,cfgnSigmaBinsTPC,cfgaxisptPID}});
-        histosQA.add("QA/He3/hist_nSigmaTOFTPCPt_He3", ";n_{#sigma}TOF;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF,cfgnSigmaBinsTPC,cfgaxisptPID}});
+        histosQA.add("QA/Proton/hist_nSigmaTOFTPCPt_Pr", ";n_{#sigma}TOF;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsTPC, cfgaxisptPID}});
+        histosQA.add("QA/He3/hist_nSigmaTOFTPCPt_He3", ";n_{#sigma}TOF;n_{#sigma}TPC;#it{p}_{T}", {HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsTPC, cfgaxisptPID}});
       }
     }
   }
@@ -359,15 +365,15 @@ struct FillPIDcolums {
                                         aod::pidits::ITSNSigmaHe>(tracks);
     int8_t pidFlag;
     for (const auto& track : tracksWithITSPid) {
-      histosQA.fill(HIST("QA/hist_dEdxTPC_All"),track.sign() * track.tpcInnerParam(), track.tpcSignal());
-      histosQA.fill(HIST("QA/hist_pt_All"),track.pt());
-      histosQA.fill(HIST("QA/hist_eta_All"),track.eta());
-      histosQA.fill(HIST("QA/hist_ITSNcls_All"),track.itsNCls());
-      histosQA.fill(HIST("QA/hist_TPCNcls_All"),track.tpcNClsFound());
-      histosQA.fill(HIST("QA/hist_ITSChi2NDF_All"),track.itsChi2NCl());
-      histosQA.fill(HIST("QA/hist_TPCChi2NDF_All"),track.tpcChi2NCl());
-      histosQA.fill(HIST("QA/hist_DCAxy_All"),track.dcaXY());
-      histosQA.fill(HIST("QA/hist_DCAz_All"),track.dcaZ());
+      histosQA.fill(HIST("QA/hist_dEdxTPC_All"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+      histosQA.fill(HIST("QA/hist_pt_All"), track.pt());
+      histosQA.fill(HIST("QA/hist_eta_All"), track.eta());
+      histosQA.fill(HIST("QA/hist_ITSNcls_All"), track.itsNCls());
+      histosQA.fill(HIST("QA/hist_TPCNcls_All"), track.tpcNClsFound());
+      histosQA.fill(HIST("QA/hist_ITSChi2NDF_All"), track.itsChi2NCl());
+      histosQA.fill(HIST("QA/hist_TPCChi2NDF_All"), track.tpcChi2NCl());
+      histosQA.fill(HIST("QA/hist_DCAxy_All"), track.dcaXY());
+      histosQA.fill(HIST("QA/hist_DCAz_All"), track.dcaZ());
       if (!trackSelBasic(track)) {
         pidFlag = -1;
       } else {
@@ -435,8 +441,8 @@ struct FillPIDcolums {
             break;
         }
         bool kIsPr = false, kIsHe3 = false;
-        //Identify Proton
-        if (pidProtonSel(track,nSigmaMainLowerPr,nSigmaMainUpperPr)) {
+        // Identify Proton
+        if (pidProtonSel(track, nSigmaMainLowerPr, nSigmaMainUpperPr)) {
           kIsPr = true;
           if (cfgOpenPIDITSProton) {
             if (track.itsNSigmaPr() < nSigmaITSCutPrPtLower || track.itsNSigmaPr() > nSigmaITSCutPrPtUpper) {
@@ -444,8 +450,8 @@ struct FillPIDcolums {
             }
           }
         }
-        //Identify He3
-        if (pidHe3Sel(track,nSigmaMainLowerHe3,nSigmaMainUpperHe3)) {
+        // Identify He3
+        if (pidHe3Sel(track, nSigmaMainLowerHe3, nSigmaMainUpperHe3)) {
           kIsHe3 = true;
           if (cfgOpenPIDITSHe3) {
             if (track.itsNSigmaHe() < nSigmaITSCutHe3PtLower || track.itsNSigmaHe() > nSigmaITSCutHe3PtUpper) {
@@ -453,7 +459,7 @@ struct FillPIDcolums {
             }
           }
         }
-        //Cross track rejection
+        // Cross track rejection
         if (!cfgOpenAllowCrossTrack) {
           if (kIsPr && kIsHe3) {
             switch (crossTrackID(track)) {
@@ -468,72 +474,72 @@ struct FillPIDcolums {
             }
           }
         }
-        //Filter He3 contaimination
+        // Filter He3 contaimination
         if (cfgOpenHe3ITSPtCut && kIsHe3) {
           if (!cfgQuietMode) {
-            histosQA.fill(HIST("QA/He3/hist_nSigmaITSPt_He3_unCuted"),track.pt(),track.itsNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaITSPt_He3_unCuted"), track.pt(), track.itsNSigmaHe());
           }
           if (track.itsNSigmaHe() < fNSigmaITSPt->Eval(track.pt())) {
             kIsHe3 = false;
           }
         }
         pidFlag = (kIsHe3 << 1) | kIsPr;
-        //Fill QA histograms
+        // Fill QA histograms
         if (!cfgQuietMode) {
           if (kIsPr) {
-            histosQA.fill(HIST("QA/Proton/hist_dEdxTPC_Pr"),track.sign() * track.tpcInnerParam(), track.tpcSignal());
-            histosQA.fill(HIST("QA/Proton/hist_pt_Pr"),track.pt());
-            histosQA.fill(HIST("QA/Proton/hist_eta_Pr"),track.eta());
-            histosQA.fill(HIST("QA/Proton/hist_ITSNcls_Pr"),track.itsNCls());
-            histosQA.fill(HIST("QA/Proton/hist_TPCNcls_Pr"),track.tpcNClsFound());
-            histosQA.fill(HIST("QA/Proton/hist_ITSChi2NDF_Pr"),track.itsChi2NCl());
-            histosQA.fill(HIST("QA/Proton/hist_TPCChi2NDF_Pr"),track.tpcChi2NCl());
-            histosQA.fill(HIST("QA/Proton/hist_DCAxy_Pr"),track.dcaXY());
-            histosQA.fill(HIST("QA/Proton/hist_DCAz_Pr"),track.dcaZ());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaTPC_Pr"),track.tpcNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaTPCPt_Pr"),track.pt(),track.tpcNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaTOF_Pr"),track.tofNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFPt_Pr"),track.pt(),track.tofNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaITS_Pr"),track.itsNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaITSPt_Pr"),track.pt(),track.itsNSigmaPr());
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaRMS_Pr"),std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
-            histosQA.fill(HIST("QA/Proton/hist_nSigmaRMSPt_Pr"),track.pt(),std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+            histosQA.fill(HIST("QA/Proton/hist_dEdxTPC_Pr"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+            histosQA.fill(HIST("QA/Proton/hist_pt_Pr"), track.pt());
+            histosQA.fill(HIST("QA/Proton/hist_eta_Pr"), track.eta());
+            histosQA.fill(HIST("QA/Proton/hist_ITSNcls_Pr"), track.itsNCls());
+            histosQA.fill(HIST("QA/Proton/hist_TPCNcls_Pr"), track.tpcNClsFound());
+            histosQA.fill(HIST("QA/Proton/hist_ITSChi2NDF_Pr"), track.itsChi2NCl());
+            histosQA.fill(HIST("QA/Proton/hist_TPCChi2NDF_Pr"), track.tpcChi2NCl());
+            histosQA.fill(HIST("QA/Proton/hist_DCAxy_Pr"), track.dcaXY());
+            histosQA.fill(HIST("QA/Proton/hist_DCAz_Pr"), track.dcaZ());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaTPC_Pr"), track.tpcNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaTPCPt_Pr"), track.pt(), track.tpcNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaTOF_Pr"), track.tofNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFPt_Pr"), track.pt(), track.tofNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaITS_Pr"), track.itsNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaITSPt_Pr"), track.pt(), track.itsNSigmaPr());
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaRMS_Pr"), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+            histosQA.fill(HIST("QA/Proton/hist_nSigmaRMSPt_Pr"), track.pt(), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr()));
             if (cfgOpenPlotnSigmaTOFITSPt) {
-              histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFITSPt_Pr"),track.tofNSigmaPr(),track.itsNSigmaPr(),track.pt());
+              histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFITSPt_Pr"), track.tofNSigmaPr(), track.itsNSigmaPr(), track.pt());
             }
             if (cfgOpenPlotnSigmaITSTPCPt) {
-              histosQA.fill(HIST("QA/Proton/hist_nSigmaITSTPCPt_Pr"),track.itsNSigmaPr(),track.tpcNSigmaPr(),track.pt());
+              histosQA.fill(HIST("QA/Proton/hist_nSigmaITSTPCPt_Pr"), track.itsNSigmaPr(), track.tpcNSigmaPr(), track.pt());
             }
             if (cfgOpenPlotnSigmaTOFTPCPt) {
-              histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFTPCPt_Pr"),track.tofNSigmaPr(),track.tpcNSigmaPr(),track.pt());
+              histosQA.fill(HIST("QA/Proton/hist_nSigmaTOFTPCPt_Pr"), track.tofNSigmaPr(), track.tpcNSigmaPr(), track.pt());
             }
           }
           if (kIsHe3) {
-            histosQA.fill(HIST("QA/He3/hist_dEdxTPC_He3"),track.sign() * track.tpcInnerParam(), track.tpcSignal());
-            histosQA.fill(HIST("QA/He3/hist_pt_He3"),track.pt());
-            histosQA.fill(HIST("QA/He3/hist_eta_He3"),track.eta());
-            histosQA.fill(HIST("QA/He3/hist_ITSNcls_He3"),track.itsNCls());
-            histosQA.fill(HIST("QA/He3/hist_TPCNcls_He3"),track.tpcNClsFound());
-            histosQA.fill(HIST("QA/He3/hist_ITSChi2NDF_He3"),track.itsChi2NCl());
-            histosQA.fill(HIST("QA/He3/hist_TPCChi2NDF_He3"),track.tpcChi2NCl());
-            histosQA.fill(HIST("QA/He3/hist_DCAxy_He3"),track.dcaXY());
-            histosQA.fill(HIST("QA/He3/hist_DCAz_He3"),track.dcaZ());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaTPC_He3"),track.tpcNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaTPCPt_He3"),track.pt(),track.tpcNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaTOF_He3"),track.tofNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaTOFPt_He3"),track.pt(),track.tofNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaITS_He3"),track.itsNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaITSPt_He3"),track.pt(),track.itsNSigmaHe());
-            histosQA.fill(HIST("QA/He3/hist_nSigmaRMS_He3"),std::hypot(track.tpcNSigmaHe(), track.tofNSigmaHe()));
-            histosQA.fill(HIST("QA/He3/hist_nSigmaRMSPt_He3"),track.pt(),std::hypot(track.tpcNSigmaHe(), track.tofNSigmaHe()));
+            histosQA.fill(HIST("QA/He3/hist_dEdxTPC_He3"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+            histosQA.fill(HIST("QA/He3/hist_pt_He3"), track.pt());
+            histosQA.fill(HIST("QA/He3/hist_eta_He3"), track.eta());
+            histosQA.fill(HIST("QA/He3/hist_ITSNcls_He3"), track.itsNCls());
+            histosQA.fill(HIST("QA/He3/hist_TPCNcls_He3"), track.tpcNClsFound());
+            histosQA.fill(HIST("QA/He3/hist_ITSChi2NDF_He3"), track.itsChi2NCl());
+            histosQA.fill(HIST("QA/He3/hist_TPCChi2NDF_He3"), track.tpcChi2NCl());
+            histosQA.fill(HIST("QA/He3/hist_DCAxy_He3"), track.dcaXY());
+            histosQA.fill(HIST("QA/He3/hist_DCAz_He3"), track.dcaZ());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaTPC_He3"), track.tpcNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaTPCPt_He3"), track.pt(), track.tpcNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaTOF_He3"), track.tofNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaTOFPt_He3"), track.pt(), track.tofNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaITS_He3"), track.itsNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaITSPt_He3"), track.pt(), track.itsNSigmaHe());
+            histosQA.fill(HIST("QA/He3/hist_nSigmaRMS_He3"), std::hypot(track.tpcNSigmaHe(), track.tofNSigmaHe()));
+            histosQA.fill(HIST("QA/He3/hist_nSigmaRMSPt_He3"), track.pt(), std::hypot(track.tpcNSigmaHe(), track.tofNSigmaHe()));
             if (cfgOpenPlotnSigmaTOFITSPt) {
-              histosQA.fill(HIST("QA/He3/hist_nSigmaTOFITSPt_He3"),track.tofNSigmaHe(),track.itsNSigmaHe(),track.pt());
+              histosQA.fill(HIST("QA/He3/hist_nSigmaTOFITSPt_He3"), track.tofNSigmaHe(), track.itsNSigmaHe(), track.pt());
             }
             if (cfgOpenPlotnSigmaITSTPCPt) {
-              histosQA.fill(HIST("QA/He3/hist_nSigmaITSTPCPt_He3"),track.itsNSigmaHe(),track.tpcNSigmaHe(),track.pt());
+              histosQA.fill(HIST("QA/He3/hist_nSigmaITSTPCPt_He3"), track.itsNSigmaHe(), track.tpcNSigmaHe(), track.pt());
             }
             if (cfgOpenPlotnSigmaTOFTPCPt) {
-              histosQA.fill(HIST("QA/He3/hist_nSigmaTOFTPCPt_He3"),track.tofNSigmaHe(),track.tpcNSigmaHe(),track.pt());
+              histosQA.fill(HIST("QA/He3/hist_nSigmaTOFTPCPt_He3"), track.tofNSigmaHe(), track.tpcNSigmaHe(), track.pt());
             }
           }
         }
@@ -543,7 +549,7 @@ struct FillPIDcolums {
   }
 };
 
-struct FlowEsePHe3{
+struct FlowEsePHe3 {
   HistogramRegistry histos{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -576,7 +582,6 @@ struct FlowEsePHe3{
   Configurable<bool> cfgOpenESEProton{"cfgOpenESEProton", true, "Open ESE Proton process"};
   Configurable<bool> cfgOpenESEHe3{"cfgOpenESEHe3", true, "Open ESE He3 process"};
 
-
   ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {90, 0, 90}, ""};
   ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
@@ -586,7 +591,7 @@ struct FlowEsePHe3{
   ConfigurableAxis cfgaxisT0A{"cfgaxisT0A", {200, 0, 200000}, "N_{ch} (T0A)"};
   ConfigurableAxis cfgaxisNchPV{"cfgaxisNchPV", {4000, 0, 4000}, "N_{ch} (PV)"};
   ConfigurableAxis cfgaxisq2{"cfgaxisq2", {120, 0, 12}, "Binning for P_{t} PID"};
-  
+
   EventPlaneHelper helperEP;
   SliceCache cache;
 
@@ -600,13 +605,13 @@ struct FlowEsePHe3{
   TF1* fMultCutHigh = nullptr;
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
-  
+
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVtzCut) && (aod::cent::centFT0C > cfgCentMin) && (aod::cent::centFT0C < cfgCentMax);
-  Filter properPIDfilter = aod::flow_ese_p_he3::nPidFlag >= (int8_t)0; //Only POI
+  Filter properPIDfilter = aod::flow_ese_p_he3::nPidFlag >= (int8_t)0; // Only POI
 
   Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> protonTrackSet = ((aod::flow_ese_p_he3::nPidFlag == pid_flags::kProton) || (aod::flow_ese_p_he3::nPidFlag == pid_flags::kProtonHe3));
   Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> he3TrackSet = ((aod::flow_ese_p_he3::nPidFlag == pid_flags::kHe3) || (aod::flow_ese_p_he3::nPidFlag == pid_flags::kProtonHe3));
-  
+
   template <typename T>
   int getDetId(const T& name)
   {
@@ -733,54 +738,53 @@ struct FlowEsePHe3{
   }
 
   template <typename TrackType>
-  float calculateq2(const TrackType tracks, float psi2, float cent ,int pidmode)//pidmode 1 for proton , 2 for he3
+  float calculateq2(const TrackType tracks, float psi2, float cent, int pidmode) // pidmode 1 for proton , 2 for he3
   {
     int multi = tracks.size();
     if (multi > 0) {
-      float q2x = 0 , q2y = 0;
-      for(const auto& track : tracks) {
+      float q2x = 0, q2y = 0;
+      for (const auto& track : tracks) {
         q2x += std::cos(2 * track.phi());
         q2y += std::sin(2 * track.phi());
         if (pidmode == pid_flags::kProton) {
-          if (track.sign()>0) {
-            histos.fill(HIST("V2/histCosV2EP_Pr_Pos"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
+          if (track.sign() > 0) {
+            histos.fill(HIST("V2/histCosV2EP_Pr_Pos"), track.pt(), cent, std::cos(2 * (track.phi() - psi2)));
           } else {
-            histos.fill(HIST("V2/histCosV2EP_Pr_Neg"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
+            histos.fill(HIST("V2/histCosV2EP_Pr_Neg"), track.pt(), cent, std::cos(2 * (track.phi() - psi2)));
           }
         }
         if (pidmode == pid_flags::kHe3) {
-          if (track.sign()>0) {
-            histos.fill(HIST("V2/histCosV2EP_He3_Pos"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
+          if (track.sign() > 0) {
+            histos.fill(HIST("V2/histCosV2EP_He3_Pos"), track.pt(), cent, std::cos(2 * (track.phi() - psi2)));
           } else {
-            histos.fill(HIST("V2/histCosV2EP_He3_Neg"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
+            histos.fill(HIST("V2/histCosV2EP_He3_Neg"), track.pt(), cent, std::cos(2 * (track.phi() - psi2)));
           }
         }
       }
-      return std::hypot(q2x, q2y) / std::sqrt(multi);  
-    }
-    else {
+      return std::hypot(q2x, q2y) / std::sqrt(multi);
+    } else {
       return 0;
     }
   }
 
   template <typename TrackType>
-  void processESE(const TrackType tracks, float psi2, float q2, float cent, int pidmode, bool spcharge)//pidmode 1 for proton , 2 for he3
+  void processESE(const TrackType tracks, float psi2, float q2, float cent, int pidmode, bool spcharge) // pidmode 1 for proton , 2 for he3
   {
-    for(const auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (pidmode == pid_flags::kProton) {
         if (spcharge) {
-          if (track.sign()>0) {
+          if (track.sign() > 0) {
             histos.fill(HIST("ESE/hist_v2PosPr_Cent_Pt_q2He3"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
           } else {
             histos.fill(HIST("ESE/hist_v2NegPr_Cent_Pt_q2He3"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
-          }  
+          }
         } else {
           histos.fill(HIST("ESE/hist_v2Pr_Cent_Pt_q2He3"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
         }
       }
       if (pidmode == pid_flags::kHe3) {
         if (spcharge) {
-          if (track.sign()>0) {
+          if (track.sign() > 0) {
             histos.fill(HIST("ESE/hist_v2PosHe3_Cent_Pt_q2Pr"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
           } else {
             histos.fill(HIST("ESE/hist_v2NegHe3_Cent_Pt_q2Pr"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
@@ -791,7 +795,7 @@ struct FlowEsePHe3{
       }
     }
   }
-  
+
   void init(InitContext const&)
   {
     detId = getDetId(cfgDetName);
@@ -808,12 +812,12 @@ struct FlowEsePHe3{
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
-  
+
       fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
-  
+
       fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
       fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
@@ -871,36 +875,36 @@ struct FlowEsePHe3{
     histos.add("QA/histQvecRes_SigRefBV2", ";Centrality;Cos(Sig-RefB)", {HistType::kTProfile, {cfgaxisCent}});
     histos.add("QA/histQvecRes_RefARefBV2", ";Centrality;Cos(RefA-RefB)", {HistType::kTProfile, {cfgaxisCent}});
     if (cfgOpenv2q) {
-      histos.add("V2/histCosV2EP_Pr_Pos", ";#it{p}_{T};Centrality",  {HistType::kTProfile2D, {cfgaxispt,cfgaxisCent}});
-      histos.add("V2/histCosV2EP_Pr_Neg", ";#it{p}_{T};Centrality",  {HistType::kTProfile2D, {cfgaxispt,cfgaxisCent}});
-      histos.add("V2/histCosV2EP_He3_Pos", ";#it{p}_{T};Centrality",  {HistType::kTProfile2D, {cfgaxispt,cfgaxisCent}});
-      histos.add("V2/histCosV2EP_He3_Neg", ";#it{p}_{T};Centrality",  {HistType::kTProfile2D, {cfgaxispt,cfgaxisCent}});
-      histos.add("q2/hist_q2_Cen_Pr", ";q_{2} (TPC);Centrality", {HistType::kTH2F, {cfgaxisq2,cfgaxisCent}});
-      histos.add("q2/hist_q2_Cen_He3", ";q_{2} (TPC);Centrality", {HistType::kTH2F, {cfgaxisq2,cfgaxisCent}});
+      histos.add("V2/histCosV2EP_Pr_Pos", ";#it{p}_{T};Centrality", {HistType::kTProfile2D, {cfgaxispt, cfgaxisCent}});
+      histos.add("V2/histCosV2EP_Pr_Neg", ";#it{p}_{T};Centrality", {HistType::kTProfile2D, {cfgaxispt, cfgaxisCent}});
+      histos.add("V2/histCosV2EP_He3_Pos", ";#it{p}_{T};Centrality", {HistType::kTProfile2D, {cfgaxispt, cfgaxisCent}});
+      histos.add("V2/histCosV2EP_He3_Neg", ";#it{p}_{T};Centrality", {HistType::kTProfile2D, {cfgaxispt, cfgaxisCent}});
+      histos.add("q2/hist_q2_Cen_Pr", ";q_{2} (TPC);Centrality", {HistType::kTH2F, {cfgaxisq2, cfgaxisCent}});
+      histos.add("q2/hist_q2_Cen_He3", ";q_{2} (TPC);Centrality", {HistType::kTH2F, {cfgaxisq2, cfgaxisCent}});
       histos.add("q2/hist_q2_Pr", ";q_{2} (TPC);counts", {HistType::kTH1F, {cfgaxisq2}});
       histos.add("q2/hist_q2_He3", ";q_{2} (TPC);counts", {HistType::kTH1F, {cfgaxisq2}});
     }
     if (cfgOpenESE) {
       if (cfgOpenESEChargeSeperation) {
         if (cfgOpenESEProton) {
-          histos.add("ESE/hist_v2PosPr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});
-          histos.add("ESE/hist_v2NegPr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});  
+          histos.add("ESE/hist_v2PosPr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
+          histos.add("ESE/hist_v2NegPr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
         }
         if (cfgOpenESEHe3) {
-          histos.add("ESE/hist_v2PosHe3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});
-          histos.add("ESE/hist_v2NegHe3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});    
+          histos.add("ESE/hist_v2PosHe3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
+          histos.add("ESE/hist_v2NegHe3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
         }
       } else {
         if (cfgOpenESEProton) {
-          histos.add("ESE/hist_v2Pr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});
+          histos.add("ESE/hist_v2Pr_Cent_Pt_q2He3", ";#it{p}_{T};q_{2}(He3);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
         }
         if (cfgOpenESEHe3) {
-          histos.add("ESE/hist_v2He3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt,cfgaxisq2,cfgaxisCent});
+          histos.add("ESE/hist_v2He3_Cent_Pt_q2Pr", ";#it{p}_{T};q_{2}(Proton);Centrality", HistType::kTProfile3D, {cfgaxispt, cfgaxisq2, cfgaxisCent});
         }
       }
     }
   }
-  
+
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::Qvectors>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>> const& tracks)
   {
     const auto cent = collision.centFT0C();
@@ -939,31 +943,31 @@ struct FlowEsePHe3{
     int multiPr = tracksPr.size();
     int multiHe3 = tracksHe3.size();
     // LOGF(info, Form("Collison ID + 1; Proton Num:%d; He3 Num:%d;\n", multiPr, multiHe3));
-    histos.fill(HIST("QA/histProtonNum"),multiPr);
-    histos.fill(HIST("QA/histHe3Num"),multiHe3);
+    histos.fill(HIST("QA/histProtonNum"), multiPr);
+    histos.fill(HIST("QA/histHe3Num"), multiHe3);
     if (multiPr < 1 && multiHe3 < 1)
-      return; //Reject Collisions without enough POI
+      return; // Reject Collisions without enough POI
     for (auto i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
       int detIndGlobal = detId * 4 + cfgnTotalSystem * 4 * (cfgnMods->at(i) - 2);
       float psiNGlobal = helperEP.GetEventPlane(collision.qvecRe()[detIndGlobal + 3], collision.qvecIm()[detIndGlobal + 3], cfgnMods->at(i));
-      if(cfgnMods->at(i) == fourier_mode::kMode2) {
-        //LOGF(info, "Process q2\n");
-        float q2Proton = calculateq2(tracksPr,psiNGlobal,cent,1);
-        float q2He3 = calculateq2(tracksHe3,psiNGlobal,cent,2);
-        histos.fill(HIST("q2/hist_q2_Pr"),q2Proton);
-        histos.fill(HIST("q2/hist_q2_He3"),q2He3);
-        histos.fill(HIST("q2/hist_q2_Cen_Pr"),q2Proton,cent);
-        histos.fill(HIST("q2/hist_q2_Cen_He3"),q2He3,cent);
+      if (cfgnMods->at(i) == fourier_mode::kMode2) {
+        // LOGF(info, "Process q2\n");
+        float q2Proton = calculateq2(tracksPr, psiNGlobal, cent, 1);
+        float q2He3 = calculateq2(tracksHe3, psiNGlobal, cent, 2);
+        histos.fill(HIST("q2/hist_q2_Pr"), q2Proton);
+        histos.fill(HIST("q2/hist_q2_He3"), q2He3);
+        histos.fill(HIST("q2/hist_q2_Cen_Pr"), q2Proton, cent);
+        histos.fill(HIST("q2/hist_q2_Cen_He3"), q2He3, cent);
         if (cfgOpenESE && multiPr > 0 && multiHe3 > 0) {
-          //LOGF(info, "Process ESE\n");
+          // LOGF(info, "Process ESE\n");
           if (cfgOpenESEProton) {
-            processESE(tracksPr,psiNGlobal,q2Proton,cent,1,cfgOpenESEChargeSeperation);
+            processESE(tracksPr, psiNGlobal, q2Proton, cent, 1, cfgOpenESEChargeSeperation);
           }
           if (cfgOpenESEHe3) {
-            processESE(tracksHe3,psiNGlobal,q2He3,cent,2,cfgOpenESEChargeSeperation);
+            processESE(tracksHe3, psiNGlobal, q2He3, cent, 2, cfgOpenESEChargeSeperation);
           }
         }
-        //LOGF(info, "Process for this event over\n");
+        // LOGF(info, "Process for this event over\n");
       }
       fillHistosQvec(collision, cfgnMods->at(i));
     }
@@ -977,3 +981,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<FlowEsePHe3>(cfgc),
   };
 }
+ 
