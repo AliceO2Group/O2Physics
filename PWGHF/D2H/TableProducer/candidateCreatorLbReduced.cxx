@@ -56,7 +56,7 @@ struct HfCandidateCreatorLbReduced {
   float myInvMassWindowLcPi{1.}; // variable that will store the value of invMassWindowLcPi
   float massPi{0.};
   float massLc{0.};
-  float MassLb{0.};
+  float massLb{0.};
   float bz{0.};
 
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
