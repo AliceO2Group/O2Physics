@@ -507,22 +507,9 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
-  /// \brief core function to fill tables in MC
-  /// \param collisions Collision table
-  /// \param mcCollisions MC collision table
-  /// \param candidates Lc->pKpi candidate table
-  /// \param particles Generated particle table
-  template <bool useCentrality, int reconstructionType, typename Colls, typename CandType>
-  void fillTablesMc(Colls const& collisions,
-                    aod::McCollisions const&,
-                    CandType const& candidates,
-                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                    soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
+  template <int reconstructionType, typename CandType>
+  void reserveTables(CandType const& candidates, bool isMc)
   {
-
-    fillEventProperties<useCentrality, true>(collisions);
-
-    // Filling candidate properties
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
       if (fillCandidateLiteTable) {
         rowCandidateLite.reserve(candidates.size() * 2);
@@ -536,9 +523,30 @@ struct HfTreeCreatorLcToPKPi {
       /// save also candidate collision indices
       rowCollisionId.reserve(candidates.size());
     }
-    if (fillCandidateMcTable) {
+    if (isMc && fillCandidateMcTable) {
       rowCandidateMC.reserve(candidates.size() * 2);
     }
+  }
+
+  /// \brief core function to fill tables in MC
+  /// \param collisions Collision table
+  /// \param mcCollisions MC collision table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param particles Generated particle table
+  template <bool useCentrality, int reconstructionType, typename Colls, typename CandType>
+  void fillTablesMc(Colls const& collisions,
+                    aod::McCollisions const&,
+                    CandType const& candidates,
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                    soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
+  {
+
+    constexpr bool isMc = true;
+
+    fillEventProperties<useCentrality, isMc>(collisions);
+
+    reserveTables<reconstructionType>(candidates, isMc);
+
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
@@ -932,22 +940,14 @@ struct HfTreeCreatorLcToPKPi {
                       TracksWPid const&, aod::BCs const&)
   {
 
-    fillEventProperties<useCentrality, false>(collisions);
+    constexpr bool isMc = false;
+
+    fillEventProperties<useCentrality, isMc>(collisions);
+
+    reserveTables<reconstructionType>(candidates, isMc);
 
     // Filling candidate properties
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size() * 2);
-      } else {
-        rowCandidateFull.reserve(candidates.size() * 2);
-      }
-    } else {
-      rowCandidateKF.reserve(candidates.size() * 2);
-    }
-    if (fillCollIdTable) {
-      /// save also candidate collision indices
-      rowCollisionId.reserve(candidates.size());
-    }
+
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
