@@ -981,4 +981,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<FlowEsePHe3>(cfgc),
   };
 }
- 
