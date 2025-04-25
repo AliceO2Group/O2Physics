@@ -101,7 +101,7 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::MaxNormalisedDeltaIP,
                   hf_cand_lb_lite::MlScoreSig,
                   hf_sel_candidate_lb::IsSelLbToLcPi,
-                  // Lc meson features
+                  // Lc baryon features
                   hf_cand_lb_lite::MLc,
                   hf_cand_lb_lite::PtLc,
                   hf_cand_lb_lite::DecayLengthLc,
@@ -382,7 +382,8 @@ struct HfTaskLbReduced {
     auto invMassLb = hfHelper.invMassLbToLcPi(candidate);
     auto candLc = candidate.template prong0Lc_as<CandsLc>();
     auto ptLc = candidate.ptProng0();
-    auto invMassLc = candLc.invMassHypo0();
+    auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
+    // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvLc{candLc.xSecondaryVertex(), candLc.ySecondaryVertex(), candLc.zSecondaryVertex()};
     std::array<float, 3> momLc{candLc.pVector()};
