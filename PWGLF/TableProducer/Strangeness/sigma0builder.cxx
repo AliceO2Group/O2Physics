@@ -518,9 +518,7 @@ struct sigma0builder {
   {
     // Check if both V0s are made of the same tracks
     if (gamma1.posTrackExtraId() == gamma2.posTrackExtraId() ||
-        gamma1.negTrackExtraId() == gamma2.negTrackExtraId() ||
-        gamma1.posTrackExtraId() == gamma2.negTrackExtraId() ||
-        gamma1.negTrackExtraId() == gamma2.posTrackExtraId()) {
+        gamma1.negTrackExtraId() == gamma2.negTrackExtraId()) {
       return;
     }
 
@@ -702,9 +700,7 @@ struct sigma0builder {
   {
     // Checking if both V0s are made of the very same tracks
     if (gamma.posTrackExtraId() == lambda.posTrackExtraId() ||
-        gamma.negTrackExtraId() == lambda.negTrackExtraId() ||
-        gamma.posTrackExtraId() == lambda.negTrackExtraId() ||
-        gamma.negTrackExtraId() == lambda.posTrackExtraId()) {
+        gamma.negTrackExtraId() == lambda.negTrackExtraId()) {
       return false;
     }
 
@@ -939,52 +935,36 @@ struct sigma0builder {
       std::vector<int> bestLambdasArray;
 
       //_______________________________________________
-      // Photon-only loop
-      for (auto& gamma : V0s) { // selecting photons from Sigma0
-        if (!gamma.has_v0MCCore())
+      // V0s loop
+      for (auto& v0 : V0s) { 
+        if (!v0.has_v0MCCore())
           continue;
 
-        auto gammaMC = gamma.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
+        auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
-        if (gammaMC.pdgCode() == 22) {
-          histos.fill(HIST("MC/h2dGammaXYConversion"), gamma.x(), gamma.y());
-          float GammaY = TMath::Abs(RecoDecay::y(std::array{gamma.px(), gamma.py(), gamma.pz()}, o2::constants::physics::MassGamma));
+        if (v0MC.pdgCode() == 22) {
+          histos.fill(HIST("MC/h2dGammaXYConversion"), v0.x(), v0.y());
+          float GammaY = TMath::Abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma));
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, gamma.pt());                                         // isgamma
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, v0.pt());                                         // isgamma
           }
         }
 
-        // basic photon selection
-        if (!processPhotonCandidate(gamma))
-          continue;
-
-        // Save indices of best gamma candidates
-        bestGammasArray.push_back(gamma.globalIndex());
-      }
-
-      //_______________________________________________
-      // Lambda-only loop
-      for (auto& lambda : V0s) { // selecting lambdas from Sigma0
-        if (!lambda.has_v0MCCore())
-          continue;
-
-        auto lambdaMC = lambda.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-        float lambdaY = TMath::Abs(RecoDecay::y(std::array{lambda.px(), lambda.py(), lambda.pz()}, o2::constants::physics::MassLambda));
-
+        float lambdaY = TMath::Abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassLambda));
         if (lambdaY < 0.5) {
-          if (lambdaMC.pdgCode() == 3122) // Is Lambda
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocLambda"), centrality, lambda.pt());
-          if (lambdaMC.pdgCode() == -3122) // Is AntiLambda
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, lambda.pt());
+          if (v0MC.pdgCode() == 3122) // Is Lambda
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocLambda"), centrality, v0.pt());
+          if (v0MC.pdgCode() == -3122) // Is AntiLambda
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, v0.pt());
         }
 
-        // basic lambda selection
-        if (!processLambdaCandidate(lambda))
-          continue;
+        if (processPhotonCandidate(v0)) // selecting photons         
+          bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        // Save indices of best lambda candidates
-        bestLambdasArray.push_back(lambda.globalIndex());
+        if (processLambdaCandidate(v0)) // selecting lambdas          
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates       
       }
+      
       //_______________________________________________
       // Pi0 optional loop
       if (doPi0QA) {
@@ -1137,25 +1117,15 @@ struct sigma0builder {
       std::vector<int> bestLambdasArray;
 
       //_______________________________________________
-      // Photon-only loop
-      for (auto& gamma : V0s) { // selecting photons
-        if (!processPhotonCandidate(gamma))
-          continue;
+      // V0s loop
+      for (auto& v0 : V0s) { 
+        if (processPhotonCandidate(v0)) // selecting photons         
+          bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        // Save indices of best gamma candidates
-        bestGammasArray.push_back(gamma.globalIndex());
+        if (processLambdaCandidate(v0)) // selecting lambdas          
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates       
       }
-
-      //_______________________________________________
-      // Lambda-only loop
-      for (auto& lambda : V0s) { // selecting lambdas
-        if (!processLambdaCandidate(lambda))
-          continue;
-
-        // Save indices of best lambda candidates
-        bestLambdasArray.push_back(lambda.globalIndex());
-      }
-
+      
       //_______________________________________________
       // Pi0 optional loop
       if (doPi0QA) {
@@ -1169,7 +1139,7 @@ struct sigma0builder {
       }
 
       //_______________________________________________
-      // Sigma0 loop
+      // Sigma0 nested loop
       for (size_t i = 0; i < bestGammasArray.size(); ++i) {
         auto gamma = fullV0s.rawIteratorAt(bestGammasArray[i]);
 
