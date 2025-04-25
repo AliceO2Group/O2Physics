@@ -936,7 +936,7 @@ struct sigma0builder {
 
       //_______________________________________________
       // V0s loop
-      for (auto& v0 : V0s) { 
+      for (auto& v0 : V0s) {
         if (!v0.has_v0MCCore())
           continue;
 
@@ -946,7 +946,7 @@ struct sigma0builder {
           histos.fill(HIST("MC/h2dGammaXYConversion"), v0.x(), v0.y());
           float GammaY = TMath::Abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma));
           if (GammaY < 0.5) {                                                                                                                // rapidity selection
-            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, v0.pt());                                         // isgamma
+            histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocGamma"), centrality, v0.pt());                                            // isgamma
           }
         }
 
@@ -958,13 +958,13 @@ struct sigma0builder {
             histos.fill(HIST("MC/h2dPtVsCentralityBeforeSel_MCAssocALambda"), centrality, v0.pt());
         }
 
-        if (processPhotonCandidate(v0)) // selecting photons         
+        if (processPhotonCandidate(v0))                // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0)) // selecting lambdas          
-          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates       
+        if (processLambdaCandidate(v0))                 // selecting lambdas
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
       }
-      
+
       //_______________________________________________
       // Pi0 optional loop
       if (doPi0QA) {
@@ -1118,14 +1118,14 @@ struct sigma0builder {
 
       //_______________________________________________
       // V0s loop
-      for (auto& v0 : V0s) { 
-        if (processPhotonCandidate(v0)) // selecting photons         
+      for (auto& v0 : V0s) {
+        if (processPhotonCandidate(v0))                // selecting photons
           bestGammasArray.push_back(v0.globalIndex()); // Save indices of best gamma candidates
 
-        if (processLambdaCandidate(v0)) // selecting lambdas          
-          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates       
+        if (processLambdaCandidate(v0))                 // selecting lambdas
+          bestLambdasArray.push_back(v0.globalIndex()); // Save indices of best lambda candidates
       }
-      
+
       //_______________________________________________
       // Pi0 optional loop
       if (doPi0QA) {
