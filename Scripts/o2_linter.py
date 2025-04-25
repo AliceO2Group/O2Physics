@@ -208,7 +208,7 @@ def get_tolerated_tests(path: str) -> "list[str]":
         if path_tests.is_file():
             with path_tests.open() as content:
                 tests = [line.strip() for line in content.readlines() if line.strip()]
-                print(f"{path}:0: info: Tolerating tests from {path_tests}. {tests}")
+                print(f"{path}:1: info: Tolerating tests from {path_tests}. {tests}")
             break
     return tests
 
@@ -249,7 +249,7 @@ class TestSpec:
     def print_error(self, path: str, line: Union[int, None], message: str):
         """Format and print error message."""
         # return # Use to suppress error messages.
-        line = line or 0
+        line = line or 1
         # terminal format
         print(f"{path}:{line}: {message_levels[self.severity_current]}: {message} [{self.name}]")
         if github_mode and not self.tolerated:  # Annotate only not tolerated issues.
