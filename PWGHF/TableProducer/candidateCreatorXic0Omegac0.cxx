@@ -119,7 +119,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: use Lambda mass constraint"};
   Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint"};
-  Configurable<bool> kfResolutionQA{"kfResolutionQA", false, "KF: KFParticle Quality Assurance"};
+  Configurable<bool> kfResolutionQA{"kfResolutionQA", true, "KF: KFParticle Quality Assurance"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
@@ -1916,124 +1916,126 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
     // QA
     if (doprocessMcXicToXiPiKfQa) {
+      AxisSpec axisPt{20, 0., 20.};
+      AxisSpec axisPull{2000, -10., 10.};
       // mass over pt
-      registry.add("hV0MassPullVsPt", "m_{PULL}(V0) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXiMassPullVsPt", "m_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0MassPullVsPt", "m_{PULL}(#Xic0) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hV0MassPullVsPt", "m_{PULL}(V0) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiMassPullVsPt", "m_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0MassPullVsPt", "m_{PULL}(#Xic0) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       // delta
-      registry.add("hV0DauPosXDelta", "x^{p} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0DauPosYDelta", "y^{p} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0DauPosZDelta", "z^{p} - z^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0DauNegXDelta", "x^{#pi^{-}} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0DauNegYDelta", "y^{#pi^{-}} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0DauNegZDelta", "z^{#pi^{-}} - z^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0XDelta", "x^{#Lambda^{0}} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0YDelta", "y^{#Lambda^{0}} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hV0ZDelta", "z^{#Lambda^{0}} - z^{MC}", kTH1D, {{2000, -10., 10.}});
+      registry.add("hV0DauPosXDelta", "x^{p} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hV0DauPosYDelta", "y^{p} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hV0DauPosZDelta", "z^{p} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hV0DauNegXDelta", "x^{#pi^{-}} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hV0DauNegYDelta", "y^{#pi^{-}} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hV0DauNegZDelta", "z^{#pi^{-}} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hV0XDelta", "x^{#Lambda^{0}} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hV0YDelta", "y^{#Lambda^{0}} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hV0ZDelta", "z^{#Lambda^{0}} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXiBachelorXDelta", "x^{Bachelor} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXiBachelorYDelta", "y^{Bachelor} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXiBachelorZDelta", "z^{Bachelor} - z^{MC}", kTH1D, {{2000, -10., 10.}});
+      registry.add("hXiBachelorXDelta", "x^{Bachelor} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXiBachelorYDelta", "y^{Bachelor} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXiBachelorZDelta", "z^{Bachelor} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXiXDelta", "x^{#Xi^{-}} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXiYDelta", "y^{#Xi^{-}} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXiZDelta", "z^{#Xi^{-}} - z^{MC}", kTH1D, {{2000, -10., 10.}});
+      registry.add("hXiXDelta", "x^{#Xi^{-}} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXiYDelta", "y^{#Xi^{-}} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXiZDelta", "z^{#Xi^{-}} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXic0BachelorXDelta", "x^{CharmBachelor} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXic0BachelorYDelta", "y^{CharmBachelor} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXic0BachelorZDelta", "z^{CharmBachelor} - z^{MC}", kTH1D, {{2000, -10., 10.}});
+      registry.add("hXic0BachelorXDelta", "x^{CharmBachelor} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorYDelta", "y^{CharmBachelor} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorZDelta", "z^{CharmBachelor} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXic0XDelta", "x^{#Xi_c^0} - x^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXic0YDelta", "y^{#Xi_c^0} - y^{MC}", kTH1D, {{2000, -10., 10.}});
-      registry.add("hXic0ZDelta", "z^{#Xi_c^0} - z^{MC}", kTH1D, {{2000, -10., 10.}});
+      registry.add("hXic0XDelta", "x^{#Xi_c^0} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0YDelta", "y^{#Xi_c^0} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0ZDelta", "z^{#Xi_c^0} - z^{MC}", kTH1D, {axisPull});
       // delta over pt
-      registry.add("hV0DauPosXDeltaVsPt", "#Delta_{x}(p) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0DauPosYDeltaVsPt", "#Delta_{y}(p) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0DauPosZDeltaVsPt", "#Delta_{z}(p) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0DauNegXDeltaVsPt", "#Delta_{x}(#pi) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0DauNegYDeltaVsPt", "#Delta_{y}(#pi) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0DauNegZDeltaVsPt", "#Delta_{z}(#pi) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0XDeltaVsPt", "#Delta_{x}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0YDeltaVsPt", "#Delta_{y}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hV0ZDeltaVsPt", "#Delta_{z}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hV0DauPosXDeltaVsPt", "#Delta_{x}(p) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauPosYDeltaVsPt", "#Delta_{y}(p) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauPosZDeltaVsPt", "#Delta_{z}(p) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegXDeltaVsPt", "#Delta_{x}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegYDeltaVsPt", "#Delta_{y}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegZDeltaVsPt", "#Delta_{z}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0XDeltaVsPt", "#Delta_{x}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0YDeltaVsPt", "#Delta_{y}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0ZDeltaVsPt", "#Delta_{z}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXiBachelorXDeltaVsPt", "#Delta_{x}(Bachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXiBachelorYDeltaVsPt", "#Delta_{y}(Bachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXiBachelorZDeltaVsPt", "#Delta_{z}(Bachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXiBachelorXDeltaVsPt", "#Delta_{x}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorYDeltaVsPt", "#Delta_{y}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorZDeltaVsPt", "#Delta_{z}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXiXDeltaVsPt", "#Delta_{x}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXiYDeltaVsPt", "#Delta_{y}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXiZDeltaVsPt", "#Delta_{z}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXiXDeltaVsPt", "#Delta_{x}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiYDeltaVsPt", "#Delta_{y}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiZDeltaVsPt", "#Delta_{z}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXic0BachelorXDeltaVsPt", "#Delta_{x}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXic0BachelorXDeltaVsPt", "#Delta_{x}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXic0XDeltaVsPt", "#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0YDeltaVsPt", "#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0ZDeltaVsPt", "#Delta_{z}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXic0XDeltaVsPt", "#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0YDeltaVsPt", "#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0ZDeltaVsPt", "#Delta_{z}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
       // pull
-      registry.add("hV0DauPosXPull", "x^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0DauPosYPull", "y^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0DauPosZPull", "z^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0DauNegXPull", "x^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0DauNegYPull", "y^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0DauNegZPull", "z^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0XPull", "x^{PULL}(#Lambda)", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0YPull", "y^{PULL}(#Lambda)", kTH1D, {{4000, -20., 20.}});
-      registry.add("hV0ZPull", "z^{PULL}(#Lambda)", kTH1D, {{4000, -20., 20.}});
+      registry.add("hV0DauPosXPull", "x^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0DauPosYPull", "y^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0DauPosZPull", "z^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0DauNegXPull", "x^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0DauNegYPull", "y^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0DauNegZPull", "z^{PULL}", kTH1D, {axisPull});
+      registry.add("hV0XPull", "x^{PULL}(#Lambda)", kTH1D, {axisPull});
+      registry.add("hV0YPull", "y^{PULL}(#Lambda)", kTH1D, {axisPull});
+      registry.add("hV0ZPull", "z^{PULL}(#Lambda)", kTH1D, {axisPull});
 
-      registry.add("hXiBachelorXPull", "x^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXiBachelorYPull", "y^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXiBachelorZPull", "z^{PULL}", kTH1D, {{4000, -20., 20.}});
+      registry.add("hXiBachelorXPull", "x^{PULL}", kTH1D, {axisPull});
+      registry.add("hXiBachelorYPull", "y^{PULL}", kTH1D, {axisPull});
+      registry.add("hXiBachelorZPull", "z^{PULL}", kTH1D, {axisPull});
 
-      registry.add("hXiXPull", "x^{PULL}(#Xi^{-})", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXiYPull", "y^{PULL}(#Xi^{-})", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXiZPull", "z^{PULL}(#Xi^{-})", kTH1D, {{4000, -20., 20.}});
+      registry.add("hXiXPull", "x^{PULL}(#Xi^{-})", kTH1D, {axisPull});
+      registry.add("hXiYPull", "y^{PULL}(#Xi^{-})", kTH1D, {axisPull});
+      registry.add("hXiZPull", "z^{PULL}(#Xi^{-})", kTH1D, {axisPull});
 
-      registry.add("hXic0BachelorXPull", "x^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXic0BachelorYPull", "y^{PULL}", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXic0BachelorZPull", "z^{PULL}", kTH1D, {{4000, -20., 20.}});
+      registry.add("hXic0BachelorXPull", "x^{PULL}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorYPull", "y^{PULL}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorZPull", "z^{PULL}", kTH1D, {axisPull});
 
-      registry.add("hXic0XPull", "x^{PULL}(#Xi_{c}^{0})", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXic0YPull", "y^{PULL}(#Xi_{c}^{0})", kTH1D, {{4000, -20., 20.}});
-      registry.add("hXic0ZPull", "z^{PULL}(#Xi_{c}^{0})", kTH1D, {{4000, -20., 20.}});
+      registry.add("hXic0XPull", "x^{PULL}(#Xi_{c}^{0})", kTH1D, {axisPull});
+      registry.add("hXic0YPull", "y^{PULL}(#Xi_{c}^{0})", kTH1D, {axisPull});
+      registry.add("hXic0ZPull", "z^{PULL}(#Xi_{c}^{0})", kTH1D, {axisPull});
       // pull over pt
-      registry.add("hV0DauPosXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0DauPosYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0DauPosZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0DauNegXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0DauNegYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0DauNegZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0XPullVsPt", "x_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0YPullVsPt", "y_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hV0ZPullVsPt", "z_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hV0DauPosXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauPosYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauPosZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0DauNegZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0XPullVsPt", "x_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0YPullVsPt", "y_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0ZPullVsPt", "z_{PULL}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXiBachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXiBachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXiBachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXiBachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXiXPullVsPt", "x_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXiYPullVsPt", "y_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXiZPullVsPt", "z_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXiXPullVsPt", "x_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiYPullVsPt", "y_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiZPullVsPt", "z_{PULL}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXic0BachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0BachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0BachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXic0BachelorXPullVsPt", "x_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXic0XPullVsPt", "x_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0YPullVsPt", "y_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0ZPullVsPt", "z_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXic0XPullVsPt", "x_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0YPullVsPt", "y_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0ZPullVsPt", "z_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
       // Defaut delta
-      registry.add("hLambdaXDelta", "x^{#Lambda} - x^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
-      registry.add("hLambdaYDelta", "y^{#Lambda} - y^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
-      registry.add("hLambdaZDelta", "z^{#Lambda} - z^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
+      registry.add("hLambdaXDelta", "x^{#Lambda} - x^{MC}(Default)", kTH1D, {axisPull});
+      registry.add("hLambdaYDelta", "y^{#Lambda} - y^{MC}(Default)", kTH1D, {axisPull});
+      registry.add("hLambdaZDelta", "z^{#Lambda} - z^{MC}(Default)", kTH1D, {axisPull});
 
-      registry.add("hCascXDelta", "x^{#Xi^{-}} - x^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
-      registry.add("hCascYDelta", "y^{#Xi^{-}} - y^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
-      registry.add("hCascZDelta", "z^{#Xi^{-}} - z^{MC}(Default)", kTH1D, {{2000, -10., 10.}});
+      registry.add("hCascXDelta", "x^{#Xi^{-}} - x^{MC}(Default)", kTH1D, {axisPull});
+      registry.add("hCascYDelta", "y^{#Xi^{-}} - y^{MC}(Default)", kTH1D, {axisPull});
+      registry.add("hCascZDelta", "z^{#Xi^{-}} - z^{MC}(Default)", kTH1D, {axisPull});
     }
   }
 
