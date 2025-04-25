@@ -200,9 +200,9 @@ struct HfCandidateCreatorLbReduced {
 
         if constexpr (withLcMl) {
           if (candLc.invMassHypo0() > 0) {
-              rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
+            rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
           } else {
-              rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo1(), candLc.mlScorePromptMassHypo1(), candLc.mlScoreNonpromptMassHypo1());
+            rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo1(), candLc.mlScorePromptMassHypo1(), candLc.mlScoreNonpromptMassHypo1());
           }
         } // pi loop
       } // Lc loop
