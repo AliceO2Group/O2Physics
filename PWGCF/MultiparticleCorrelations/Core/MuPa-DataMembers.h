@@ -59,7 +59,7 @@ struct TaskConfiguration {
   bool fInsanityCheckForEachParticle = false;    // do additional insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging.
   bool fProcess[eProcess_N] = {false};           // set what to process. See enum eProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
   TString fWhichProcess = "ProcessRec";          // dump in this variable which process was used
-  UInt_t fRandomSeed = 0;                        // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
+  unsigned int fRandomSeed = 0;                  // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
   bool fUseFisherYates = false;                  // algorithm used to randomize particle indices, set via configurable
   TArrayI* fRandomIndices = NULL;                // array to store random indices obtained from Fisher-Yates algorithm
   int fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event, applies to all centralities. It is set and applied if > 0. Set to <=0 to ignore.
@@ -257,10 +257,10 @@ struct Qvector {
   TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
   int fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                         // count number of entries in each differential q-vector
   TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};                                             //! integrated [-eta or +eta][harmonic][eta separation]
-  Double_t fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                 //! multiplicities in 2 eta separated intervals
+  float fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                    //! multiplicities in 2 eta separated intervals
   TH1F* fMabDist[2][2][2][gMaxNumberEtaSeparations] = {{{{NULL}}}};                                                                    // multiplicity distributions in A and B, for each eta separation [ A or B ] [rec or sim] [ before or after cuts ] [ eta separation value ]
   TComplex fqabVector[2][gMaxNoBinsKine][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{{TComplex(0., 0.)}}}};                           //! differential in pt [-eta or +eta][binNo][harmonic][eta separation]
-  Double_t fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                               //! multiplicities vs pt in 2 eta separated intervals
+  float fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                                  //! multiplicities vs pt in 2 eta separated intervals
 } qv;                                                                                                                                  // "qv" is a common label for objects in this struct
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
@@ -345,7 +345,7 @@ struct InternalValidation {
                                                       // This is OK as long as I do not apply any event cuts in InternalValidation().
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
                                                       // Can be used in combination with setting fSequentialBailout > 0.
-  UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
+  unsigned int fnEventsInternalValidation = 0;        // how many on-the-fly events will be sampled for each real event, for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated" or "persistent", see .cxx for full documentation
   bool fRescaleWithTheoreticalInput = false;          // if true, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
