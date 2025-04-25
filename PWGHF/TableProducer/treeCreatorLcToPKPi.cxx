@@ -17,6 +17,8 @@
 /// \author Nicolo' Jacazio <nicolo.jacazio@cern.ch>, CERN
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, CERN
 
+#include <utility>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -528,6 +530,21 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  template <int reconstructionType, typename CandType>
+  std::pair<float, float> evaluateInvariantMasses(CandType const& candidate, int candFlag)
+  {
+    float invMass, invMassKPi;
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
+      invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
+    } else {
+      invMass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
+      invMassKPi = candFlag == 0 ? candidate.kfMassKPi() : candidate.kfMassPiK();
+    }
+
+    return std::make_pair(invMass, invMassKPi);
+  }
+
   /// \brief core function to fill tables in MC
   /// \param collisions Collision table
   /// \param mcCollisions MC collision table
@@ -561,14 +578,7 @@ struct HfTreeCreatorLcToPKPi {
         const bool keepAll = !keepOnlySignalMc && !keepOnlyBkg;
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
-          float functionInvMass, functionInvMassKPi;
-          if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-            functionInvMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
-            functionInvMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
-          } else {
-            functionInvMass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
-            functionInvMassKPi = candFlag == 0 ? candidate.kfMassKPi() : candidate.kfMassPiK();
-          }
+          auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
@@ -957,14 +967,7 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
-          float functionInvMass, functionInvMassKPi;
-          if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
-            functionInvMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
-            functionInvMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
-          } else {
-            functionInvMass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
-            functionInvMassKPi = candFlag == 0 ? candidate.kfMassKPi() : candidate.kfMassPiK();
-          }
+          auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
           const float functionCt = hfHelper.ctLc(candidate);
           const float functionY = hfHelper.yLc(candidate);
           const float functionE = hfHelper.eLc(candidate);
