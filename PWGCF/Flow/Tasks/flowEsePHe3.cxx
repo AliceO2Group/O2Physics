@@ -63,8 +63,8 @@ DECLARE_SOA_TABLE(PHe3ESEFlags, "AOD", "PHe3ESEFlags", flow_ese_p_he3::NPidFlag)
 
 namespace pid_flags
 {
-constexpr int8_t kUnqualified = -1;
-constexpr int8_t kUnPOIHadron = 0;
+//constexpr int8_t kUnqualified = -1;
+//constexpr int8_t kUnPOIHadron = 0;
 constexpr int8_t kProton = 1;
 constexpr int8_t kHe3 = 2;
 constexpr int8_t kProtonHe3 = 3;
@@ -77,9 +77,9 @@ constexpr int kFT0AV0ASigma = 5;
 
 namespace fourier_mode
 {
-constexpr int kMode1 = 1;
+//constexpr int kMode1 = 1;
 constexpr int kMode2 = 2;
-constexpr int kMode3 = 3;
+//constexpr int kMode3 = 3;
 } // namespace fourier_mode
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullHe, aod::pidTOFFullHe>;
