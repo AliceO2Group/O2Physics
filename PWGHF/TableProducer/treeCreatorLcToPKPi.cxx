@@ -619,6 +619,106 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
+  void fillFullTable(CandType const& candidate,
+                     TrackType const& trackPos1,
+                     TrackType const& trackNeg,
+                     TrackType const& trackPos2,
+                     int candFlag)
+  {
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
+    const float functionCt = hfHelper.ctLc(candidate);
+    const float functionY = hfHelper.yLc(candidate);
+    const float functionE = hfHelper.eLc(candidate);
+
+    int8_t functionFlagMcMatchRec{0};
+    int8_t functionOriginMcRec{0};
+    int8_t functionIsCandidateSwapped{0};
+    int8_t functionFlagMcDecayChanRec{-1};
+
+    if constexpr (isMc) {
+      functionFlagMcMatchRec = candidate.flagMcMatchRec();
+      functionOriginMcRec = candidate.originMcRec();
+      functionIsCandidateSwapped = candidate.isCandidateSwapped();
+      functionFlagMcDecayChanRec = candidate.flagMcDecayChanRec();
+    }
+
+    rowCandidateFull(
+      candidate.collisionId(),
+      candidate.posX(),
+      candidate.posY(),
+      candidate.posZ(),
+      candidate.nProngsContributorsPV(),
+      candidate.bitmapProngsContributorsPV(),
+      candidate.xSecondaryVertex(),
+      candidate.ySecondaryVertex(),
+      candidate.zSecondaryVertex(),
+      candidate.errorDecayLength(),
+      candidate.errorDecayLengthXY(),
+      candidate.chi2PCA(),
+      candidate.rSecondaryVertex(),
+      candidate.decayLength(),
+      candidate.decayLengthXY(),
+      candidate.decayLengthNormalised(),
+      candidate.decayLengthXYNormalised(),
+      candidate.impactParameterNormalised0(),
+      candidate.ptProng0(),
+      RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+      candidate.impactParameterNormalised1(),
+      candidate.ptProng1(),
+      RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+      candidate.impactParameterNormalised2(),
+      candidate.ptProng2(),
+      RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+      candidate.pxProng0(),
+      candidate.pyProng0(),
+      candidate.pzProng0(),
+      candidate.pxProng1(),
+      candidate.pyProng1(),
+      candidate.pzProng1(),
+      candidate.pxProng2(),
+      candidate.pyProng2(),
+      candidate.pzProng2(),
+      candidate.impactParameter0(),
+      candidate.impactParameter1(),
+      candidate.impactParameter2(),
+      candidate.errorImpactParameter0(),
+      candidate.errorImpactParameter1(),
+      candidate.errorImpactParameter2(),
+      trackPos1.tpcNSigmaPi(),
+      trackPos1.tpcNSigmaPr(),
+      trackPos1.tofNSigmaPi(),
+      trackPos1.tofNSigmaPr(),
+      trackNeg.tpcNSigmaKa(),
+      trackNeg.tofNSigmaKa(),
+      trackPos2.tpcNSigmaPi(),
+      trackPos2.tpcNSigmaPr(),
+      trackPos2.tofNSigmaPi(),
+      trackPos2.tofNSigmaPr(),
+      trackPos1.tpcTofNSigmaPi(),
+      trackPos1.tpcTofNSigmaPr(),
+      trackNeg.tpcTofNSigmaKa(),
+      trackPos2.tpcTofNSigmaPi(),
+      trackPos2.tpcTofNSigmaPr(),
+      1 << candFlag,
+      functionInvMass,
+      candidate.pt(),
+      candidate.p(),
+      candidate.cpa(),
+      candidate.cpaXY(),
+      functionCt,
+      candidate.eta(),
+      candidate.phi(),
+      functionY,
+      functionE,
+      functionFlagMcMatchRec,
+      functionOriginMcRec,
+      functionIsCandidateSwapped,
+      candidate.globalIndex(),
+      functionFlagMcDecayChanRec,
+      functionInvMassKPi);
+  }
+
   /// \brief core function to fill tables in MC
   /// \param collisions Collision table
   /// \param mcCollisions MC collision table
@@ -652,87 +752,10 @@ struct HfTreeCreatorLcToPKPi {
         const bool keepAll = !keepOnlySignalMc && !keepOnlyBkg;
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
-          auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
-          const float functionCt = hfHelper.ctLc(candidate);
-          const float functionY = hfHelper.yLc(candidate);
-          const float functionE = hfHelper.eLc(candidate);
           if (fillCandidateLiteTable) {
             fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            rowCandidateFull(
-              candidate.collisionId(),
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.xSecondaryVertex(),
-              candidate.ySecondaryVertex(),
-              candidate.zSecondaryVertex(),
-              candidate.errorDecayLength(),
-              candidate.errorDecayLengthXY(),
-              candidate.chi2PCA(),
-              candidate.rSecondaryVertex(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.impactParameterNormalised0(),
-              candidate.ptProng0(),
-              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-              candidate.impactParameterNormalised1(),
-              candidate.ptProng1(),
-              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-              candidate.impactParameterNormalised2(),
-              candidate.ptProng2(),
-              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-              candidate.pxProng0(),
-              candidate.pyProng0(),
-              candidate.pzProng0(),
-              candidate.pxProng1(),
-              candidate.pyProng1(),
-              candidate.pzProng1(),
-              candidate.pxProng2(),
-              candidate.pyProng2(),
-              candidate.pzProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.errorImpactParameter0(),
-              candidate.errorImpactParameter1(),
-              candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.p(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              functionE,
-              candidate.flagMcMatchRec(),
-              candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.globalIndex(),
-              candidate.flagMcDecayChanRec(),
-              functionInvMassKPi);
+            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -993,87 +1016,10 @@ struct HfTreeCreatorLcToPKPi {
         double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
-          auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
-          const float functionCt = hfHelper.ctLc(candidate);
-          const float functionY = hfHelper.yLc(candidate);
-          const float functionE = hfHelper.eLc(candidate);
           if (fillCandidateLiteTable) {
             fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            rowCandidateFull(
-              candidate.collisionId(),
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.xSecondaryVertex(),
-              candidate.ySecondaryVertex(),
-              candidate.zSecondaryVertex(),
-              candidate.errorDecayLength(),
-              candidate.errorDecayLengthXY(),
-              candidate.chi2PCA(),
-              candidate.rSecondaryVertex(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.impactParameterNormalised0(),
-              candidate.ptProng0(),
-              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-              candidate.impactParameterNormalised1(),
-              candidate.ptProng1(),
-              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-              candidate.impactParameterNormalised2(),
-              candidate.ptProng2(),
-              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-              candidate.pxProng0(),
-              candidate.pyProng0(),
-              candidate.pzProng0(),
-              candidate.pxProng1(),
-              candidate.pyProng1(),
-              candidate.pzProng1(),
-              candidate.pxProng2(),
-              candidate.pyProng2(),
-              candidate.pzProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.errorImpactParameter0(),
-              candidate.errorImpactParameter1(),
-              candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.p(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              functionE,
-              0.,
-              0.,
-              0.,
-              candidate.globalIndex(),
-              -1,
-              functionInvMassKPi);
+            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
