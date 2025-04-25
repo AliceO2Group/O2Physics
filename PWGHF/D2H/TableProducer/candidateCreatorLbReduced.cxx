@@ -251,8 +251,8 @@ struct HfCandidateCreatorLbReduced {
     }
     // invMassWindowLcPiTolerance is used to apply a slightly tighter cut than in LcPi pair preselection
     // to avoid accepting LcPi pairs that were not formed in LcPi pair creator
-    float invMass2LcPiMin = (MassLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (MassLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
-    float invMass2LcPiMax = (MassLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (MassLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
+    float invMass2LcPiMin = (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
+    float invMass2LcPiMax = (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
