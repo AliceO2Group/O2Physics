@@ -61,7 +61,6 @@
 #include "CCDB/BasicCCDBManager.h"
 
 // from phi
-#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
@@ -85,8 +84,8 @@ struct F0980pbpbanalysis {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "PV selection"};
   Configurable<bool> cfgQvecSel{"cfgQvecSel", true, "Reject events when no QVector"};
   Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
-  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -100, "minimum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
@@ -101,8 +100,8 @@ struct F0980pbpbanalysis {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.8, "TPC Crossed Rows to Findable Clusters"};
 
-  Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
-  Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+  Configurable<float> cfgRapMin{"cfgRapMin", -0.5, "Minimum rapidity for pair"};
+  Configurable<float> cfgRapMax{"cfgRapMax", 0.5, "Maximum rapidity for pair"};
 
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
@@ -115,24 +114,23 @@ struct F0980pbpbanalysis {
   Configurable<int> cfgSelectPID{"cfgSelectPID", 0, "PID selection type"};
   Configurable<int> cfgSelectPtl{"cfgSelectPtl", 0, "Particle selection type"};
 
-  Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
+  Configurable<int> cfgNMods{"cfgNMods", 1, "The number of modulations of interest starting from 2"};
   Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
 
   Configurable<std::string> cfgQvecDetName{"cfgQvecDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
   Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
 
-  Configurable<bool> cfgRotBkg{"cfgRotBkg", true, "flag to construct rotational backgrounds"};
-  Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
+  Configurable<bool> cfgRotBkgSel{"cfgRotBkgSel", true, "flag to construct rotational backgrounds"};
+  Configurable<int> cfgRotBkgNum{"cfgRotBkgNum", 10, "the number of rotational backgrounds"};
 
   // for phi test
   Configurable<bool> cfgTPCFinableClsSel{"cfgTPCFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
   Configurable<bool> cfgITSClsSel{"cfgITSClsSel", false, "ITS cluster selection flag"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
-  Configurable<bool> cfgpTDepPID{"cfgpTDepPID", false, "pT dependent PID"};
-  Configurable<bool> cfgBetaCutSel{"cfgBetaCutSel", false, "TOF beta cut selection flag"};
-  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
-  Configurable<bool> isDeepAngle{"isDeepAngle", true, "Deep Angle cut"};
+  Configurable<bool> cfgTOFBetaSel{"cfgTOFBetaSel", false, "TOF beta cut selection flag"};
+  Configurable<float> cfgTOFBetaCut{"cfgTOFBetaCut", 0.0, "cut TOF beta"};
+  Configurable<bool> cfgDeepAngleSel{"cfgDeepAngleSel", true, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
@@ -186,8 +184,7 @@ struct F0980pbpbanalysis {
   //  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < cMaxTPCnSigmaPion;
   //  Filter PIDcutFilter = nabs(aod::pidTPCFullKa::tpcNSigmaKa) < cMaxTPCnSigmaPion;
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors, aod::EPCalibrationTables>>;
-  // aod::EPCalibrationTables 추가됨
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFbeta>>;
   // aod::pidTOFbeta 추가됨
 
@@ -239,7 +236,7 @@ struct F0980pbpbanalysis {
     if (cfgQvecSel && (collision.qvecAmp()[detId] < 1e-4 || collision.qvecAmp()[refAId] < 1e-4 || collision.qvecAmp()[refBId] < 1e-4)) {
       return 0;
     }
-    if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+    if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgOccupancyMax || collision.trackOccupancyInTimeRange() < cfgOccupancyMin)) {
       return 0;
     }
     if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -349,7 +346,7 @@ struct F0980pbpbanalysis {
     p1 = track1.p();
     p2 = track2.p();
     angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (isDeepAngle && angle < cfgDeepAngle) {
+    if (cfgDeepAngleSel && angle < cfgDeepAngle) {
       return 0;
     }
     return 1;
@@ -434,7 +431,7 @@ struct F0980pbpbanalysis {
         pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPtl);
         reco = pion1 + pion2;
 
-        if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap) {
+        if (reco.Rapidity() > cfgRapMax || reco.Rapidity() < cfgRapMin) {
           continue;
         }
 
@@ -448,8 +445,8 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), reco.M(), reco.Pt(), centrality, relPhi);
         }
 
-        if (cfgRotBkg && trk1.sign() * trk2.sign() < 0) {
-          for (int nr = 0; nr < cfgNRotBkg; nr++) {
+        if (cfgRotBkgSel && trk1.sign() * trk2.sign() < 0) {
+          for (int nr = 0; nr < cfgRotBkgNum; nr++) {
             auto randomPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
             randomPhi += pion2.Phi();
             pion2Rot.SetXYZM(pion2.Pt() * std::cos(randomPhi), pion2.Pt() * std::sin(randomPhi), trk2.pz(), massPtl);

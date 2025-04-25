@@ -16,6 +16,12 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include <utility>
+#include <algorithm>
+#include <vector>
+#include <memory>
+#include <string>
+
 // O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -28,7 +34,9 @@
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 #include "pidTOFBase.h"
 

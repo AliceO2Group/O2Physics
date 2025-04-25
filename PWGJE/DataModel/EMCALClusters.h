@@ -135,6 +135,12 @@ DECLARE_SOA_TABLE(EMCALMCClusters, "AOD", "EMCALMCCLUSTERS", //!
 
 using EMCALMCCluster = EMCALMCClusters::iterator;
 
+// table of cluster MC info that could not be matched to a collision
+DECLARE_SOA_TABLE(EMCALAmbiguousMCClusters, "AOD", "EMCALAMBMCCLS", //!
+                  emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
+
+using EMCALAmbiguousMCCluster = EMCALAmbiguousMCClusters::iterator;
+
 namespace emcalclustercell
 {
 // declare index column pointing to cluster table

@@ -102,6 +102,7 @@ struct nucleiFilter {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 3, "Max DCAxy"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 10, "Max DCAz"};
   Configurable<float> cfgCutKstar{"cfgCutKstar", 1.f, "Kstar cut for triton femto trigger"};
+  Configurable<double> cfgCutCosPAheV0{"cfgCutCosPAheV0", 0.99, "CosPA cut for HeV0"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
@@ -112,16 +113,17 @@ struct nucleiFilter {
 
   // variable/tool for hypertriton 3body decay
   int mRunNumber;
-  float d_bz;
+  float mBz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA, aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>; // FIXME: positio has been changed
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID;
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter2body;
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   // configurable for hypertriton 3body decay
   struct : ConfigurableGroup {
-    Configurable<double> d_bz_input{"trgH3L3Body.d_bz", -999, "bz field, -999 is automatic"};
+    Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
     Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
@@ -200,6 +202,14 @@ struct nucleiFilter {
     fitter3body.setMaxChi2(1e9);
     fitter3body.setUseAbsDCA(true);
 
+    fitter2body.setPropagateToPCA(true);
+    fitter2body.setMaxR(200.);
+    fitter2body.setMinParamChange(1e-3);
+    fitter2body.setMinRelChi2Change(0.9);
+    fitter2body.setMaxDZIni(1e9);
+    fitter2body.setMaxChi2(1e9);
+    fitter2body.setUseAbsDCA(true);
+
     ccdb->setURL(trgH3L3Body.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -213,12 +223,11 @@ struct nucleiFilter {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (trgH3L3Body.d_bz_input > -990) {
-      d_bz = trgH3L3Body.d_bz_input;
-      fitter3body.setBz(d_bz);
+    if (trgH3L3Body.bFieldInput > -990) {
+      mBz = trgH3L3Body.bFieldInput;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(mBz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (mBz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -231,8 +240,8 @@ struct nucleiFilter {
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      mBz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(trgH3L3Body.grpmagPath, run3grp_timestamp);
       if (!grpmag) {
@@ -240,13 +249,14 @@ struct nucleiFilter {
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
-      // d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      // mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      mBz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
-    fitter3body.setBz(d_bz);
+    fitter2body.setBz(mBz);
+    fitter3body.setBz(mBz);
 
     if (trgH3L3Body.useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
@@ -457,11 +467,29 @@ struct nucleiFilter {
         float nSigmas[2]{
           cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
           cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
-        if ((nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u)) ||
-            (nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u))) {
-          keepEvent[kHeV0] = true;
-          break;
+        if ((nSigmas[0] < cfgCutsPID->get(2, 0u) || nSigmas[0] > cfgCutsPID->get(2, 1u)) &&
+            (nSigmas[1] < cfgCutsPID->get(2, 0u) || nSigmas[1] > cfgCutsPID->get(2, 1u))) {
+          continue;
         }
+        int n2bodyVtx = fitter2body.process(getTrackParCov(posTrack), getTrackParCov(negTrack));
+        if (n2bodyVtx == 0) {
+          continue;
+        }
+        auto vtxXYZ = fitter2body.getPCACandidate();
+        o2::gpu::gpustd::array<float, 3> mom = {0.};
+        vtxXYZ[0] -= collision.posX();
+        vtxXYZ[1] -= collision.posY();
+        vtxXYZ[2] -= collision.posZ();
+        auto momTrackParCov = fitter2body.createParentTrackPar();
+        momTrackParCov.getPxPyPzGlo(mom);
+        double cosPA = (vtxXYZ[0] * mom[0] + vtxXYZ[1] * mom[1] + vtxXYZ[2] * mom[2]) /
+                       std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
+                                 (mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]));
+        if (cosPA < cfgCutCosPAheV0) {
+          continue;
+        }
+        keepEvent[kHeV0] = true;
+        break;
       }
 
       //
