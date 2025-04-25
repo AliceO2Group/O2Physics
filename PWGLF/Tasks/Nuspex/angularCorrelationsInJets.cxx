@@ -18,6 +18,7 @@
 #include <utility>
 #include <map>
 #include <string>
+#include <random>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -66,6 +67,8 @@ struct AngularCorrelationsInJets {
   Configurable<bool> doJetCorrelations{"doJetCorrelations", false, "measure correlations for all particles inside jets"};
   Configurable<bool> doFullCorrelations{"doFullCorrelations", false, "measure correlations for all particles in an event"};
   Configurable<bool> measureKaons{"measureKaons", false, "measure correlations for K-K"};
+  Configurable<bool> rejectEvents{"rejectEvents", false, "reject some events"};
+  Configurable<int> rejectionPercentage{"rejectionPercentage", 3, "percentage of events to reject"};
 
   // Track Cuts
   Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of crossed rows TPC"};
@@ -163,6 +166,7 @@ struct AngularCorrelationsInJets {
 
     // Counters
     registryData.add("numberOfEvents", "Number of events", HistType::kTH1I, {{1, 0, 1}});
+    registryData.add("numberRejectedEvents", "Number of events rejected", HistType::kTH1I, {{2, 0, 2, "counter"}});
     registryData.add("numberOfJets", "Total number of jets", HistType::kTH1I, {{1, 0, 1}});
     registryData.add("eventProtocol", "Event protocol", HistType::kTH1I, {{20, 0, 20}});
     registryData.add("trackProtocol", "Track protocol", HistType::kTH1I, {{20, 0, 20}});
@@ -310,6 +314,18 @@ struct AngularCorrelationsInJets {
       return;
     }
     mRunNumber = bc.runNumber();
+  }
+
+  bool shouldRejectEvent()
+  {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 99);
+    int randomNumber = dis(gen);
+    if (randomNumber > rejectionPercentage) {
+      return false; // accept event
+    }
+    return true; // reject event
   }
 
   template <typename T>
@@ -1250,6 +1266,16 @@ struct AngularCorrelationsInJets {
                    BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
+      if (rejectEvents) {
+        // event counter: before event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 0);
+
+        if (shouldRejectEvent())
+          continue;
+
+        // event counter: after event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 1);
+      }
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
@@ -1270,6 +1296,16 @@ struct AngularCorrelationsInJets {
                    soa::Filtered<FullTracksRun3> const& tracks)
   {
     for (const auto& collision : collisions) {
+      if (rejectEvents) {
+        // event counter: before event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 0);
+
+        if (shouldRejectEvent())
+          continue;
+
+        // event counter: after event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 1);
+      }
       registryData.fill(HIST("eventProtocol"), 0);
       if (!collision.sel8())
         continue;
@@ -1288,6 +1324,16 @@ struct AngularCorrelationsInJets {
   void processMCRun2(McCollisions const& collisions, soa::Filtered<McTracksRun2> const& tracks, BCsWithRun2Info const&, aod::McParticles const&, aod::McCollisions const&)
   {
     for (const auto& collision : collisions) {
+      if (rejectEvents) {
+        // event counter: before event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 0);
+
+        if (shouldRejectEvent())
+          continue;
+
+        // event counter: after event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 1);
+      }
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
@@ -1307,6 +1353,16 @@ struct AngularCorrelationsInJets {
   void processMCRun3(McCollisions const& collisions, soa::Filtered<McTracksRun3> const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     for (const auto& collision : collisions) {
+      if (rejectEvents) {
+        // event counter: before event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 0);
+
+        if (shouldRejectEvent())
+          continue;
+
+        // event counter: after event rejection
+        registryData.fill(HIST("numberRejectedEvents"), 1);
+      }
       registryData.fill(HIST("eventProtocol"), 0);
       if (!collision.sel8())
         continue;
