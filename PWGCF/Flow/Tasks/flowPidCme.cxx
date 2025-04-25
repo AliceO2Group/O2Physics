@@ -101,9 +101,9 @@ constexpr int kFT0AV0ASigma = 5;
 
 namespace fourier_mode
 {
-constexpr int kMode1 = 1;
+//constexpr int kMode1 = 1;
 constexpr int kMode2 = 2;
-constexpr int kMode3 = 3;
+//constexpr int kMode3 = 3;
 } // namespace fourier_mode
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
