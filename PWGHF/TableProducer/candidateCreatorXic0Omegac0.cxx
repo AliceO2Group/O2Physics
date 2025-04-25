@@ -119,6 +119,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: use Lambda mass constraint"};
   Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint"};
+  Configurable<bool> kfResolutionQA{"kfResolutionQA", false, "KF: KFParticle Quality Assurance"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
@@ -237,64 +238,6 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2MassCasc;
     float etaXic;
   } kfXic0Candidate;
-
-  struct {
-    float v0DauPosX; // Pos
-    float v0DauPosY;
-    float v0DauPosZ;
-    float v0DauPosXError;
-    float v0DauPosYError;
-    float v0DauPosZError;
-    float v0DauPosPt;
-    float v0DauNegX; // Neg
-    float v0DauNegY;
-    float v0DauNegZ;
-    float v0DauNegXError;
-    float v0DauNegYError;
-    float v0DauNegZError;
-    float v0DauNegPt;
-    float v0X;
-    float v0Y;
-    float v0Z;
-    float v0XError;
-    float v0YError;
-    float v0ZError;
-    float v0Pt;
-    float xiBachelorX;
-    float xiBachelorY;
-    float xiBachelorZ;
-    float xiBachelorXError;
-    float xiBachelorYError;
-    float xiBachelorZError;
-    float xiBachelorPt;
-    float xiX;
-    float xiY;
-    float xiZ;
-    float xiXError;
-    float xiYError;
-    float xiZError;
-    float xiPt;
-    float xic0BachelorX;
-    float xic0BachelorY;
-    float xic0BachelorZ;
-    float xic0BachelorXError;
-    float xic0BachelorYError;
-    float xic0BachelorZError;
-    float xic0BachelorPt;
-    float xic0X;
-    float xic0Y;
-    float xic0Z;
-    float xic0XError;
-    float xic0YError;
-    float xic0ZError;
-    float xic0Pt;
-    float vertexV0X;
-    float vertexV0Y;
-    float vertexV0Z;
-    float vertexCascX;
-    float vertexCascY;
-    float vertexCascZ;
-  } kfXic0Qa;
 
   void init(InitContext const&)
   {
@@ -1638,63 +1581,6 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.fill(HIST("hKfXiC0_ldl"), kfXic0Candidate.ldlXic);
       registry.fill(HIST("hDcaXYCascadeToPVKf"), kfXic0Candidate.kfDcaXYCascToPv);
 
-      // QA
-      kfXic0Qa.v0DauPosX = kfPos.GetX();
-      kfXic0Qa.v0DauPosY = kfPos.GetY();
-      kfXic0Qa.v0DauPosZ = kfPos.GetZ();
-      kfXic0Qa.v0DauPosXError = kfPos.GetErrX();
-      kfXic0Qa.v0DauPosYError = kfPos.GetErrY();
-      kfXic0Qa.v0DauPosZError = kfPos.GetErrZ();
-      kfXic0Qa.v0DauPosPt = kfPos.GetPt();
-      kfXic0Qa.v0DauNegX = kfNeg.GetX();
-      kfXic0Qa.v0DauNegY = kfNeg.GetY();
-      kfXic0Qa.v0DauNegZ = kfNeg.GetZ();
-      kfXic0Qa.v0DauNegXError = kfNeg.GetErrX();
-      kfXic0Qa.v0DauNegYError = kfNeg.GetErrY();
-      kfXic0Qa.v0DauNegZError = kfNeg.GetErrZ();
-      kfXic0Qa.v0DauNegPt = kfV0.GetPt();
-      kfXic0Qa.v0X = kfV0.GetX();
-      kfXic0Qa.v0Y = kfV0.GetY();
-      kfXic0Qa.v0Z = kfV0.GetZ();
-      kfXic0Qa.v0XError = kfV0.GetErrX();
-      kfXic0Qa.v0YError = kfV0.GetErrY();
-      kfXic0Qa.v0ZError = kfV0.GetErrZ();
-      kfXic0Qa.v0Pt = kfV0.GetPt();
-      kfXic0Qa.xiBachelorX = kfBachPionToXi.GetX();
-      kfXic0Qa.xiBachelorY = kfBachPionToXi.GetY();
-      kfXic0Qa.xiBachelorZ = kfBachPionToXi.GetZ();
-      kfXic0Qa.xiBachelorXError = kfBachPionToXi.GetErrX();
-      kfXic0Qa.xiBachelorYError = kfBachPionToXi.GetErrY();
-      kfXic0Qa.xiBachelorZError = kfBachPionToXi.GetErrZ();
-      kfXic0Qa.xiBachelorPt = kfBachPionToXi.GetPt();
-      kfXic0Qa.xiX = kfXi.GetX();
-      kfXic0Qa.xiY = kfXi.GetY();
-      kfXic0Qa.xiZ = kfXi.GetZ();
-      kfXic0Qa.xiXError = kfXi.GetErrX();
-      kfXic0Qa.xiYError = kfXi.GetErrY();
-      kfXic0Qa.xiZError = kfXi.GetErrZ();
-      kfXic0Qa.xiPt = kfXi.GetPt();
-      kfXic0Qa.xic0BachelorX = kfCharmBachPionToXiC.GetX();
-      kfXic0Qa.xic0BachelorY = kfCharmBachPionToXiC.GetY();
-      kfXic0Qa.xic0BachelorZ = kfCharmBachPionToXiC.GetZ();
-      kfXic0Qa.xic0BachelorXError = kfCharmBachPionToXiC.GetErrX();
-      kfXic0Qa.xic0BachelorYError = kfCharmBachPionToXiC.GetErrY();
-      kfXic0Qa.xic0BachelorZError = kfCharmBachPionToXiC.GetErrZ();
-      kfXic0Qa.xic0BachelorPt = kfCharmBachPionToXiC.GetPt();
-      kfXic0Qa.xic0X = kfXiC0.GetX();
-      kfXic0Qa.xic0Y = kfXiC0.GetY();
-      kfXic0Qa.xic0Z = kfXiC0.GetZ();
-      kfXic0Qa.xic0XError = kfXiC0.GetErrX();
-      kfXic0Qa.xic0YError = kfXiC0.GetErrY();
-      kfXic0Qa.xic0ZError = kfXiC0.GetErrZ();
-      kfXic0Qa.xic0Pt = kfXiC0.GetPt();
-      kfXic0Qa.vertexV0X = casc.xlambda();
-      kfXic0Qa.vertexV0Y = casc.ylambda();
-      kfXic0Qa.vertexV0Z = casc.zlambda();
-      kfXic0Qa.vertexCascX = casc.x();
-      kfXic0Qa.vertexCascY = casc.y();
-      kfXic0Qa.vertexCascZ = casc.z();
-
       // fill kf table
       kfCandidateXicData(collision.globalIndex(),
                          pvCoord[0], pvCoord[1], pvCoord[2],
@@ -1735,19 +1621,19 @@ struct HfCandidateCreatorXic0Omegac0 {
                          kfXic0Candidate.cosThetaStarPiFromXic,
                          v0NDF, cascNDF, charmbaryonNDF, v0Ndfm, cascNdfm,
                          v0Chi2OverNdf, cascChi2OverNdf, charmbaryonChi2OverNdf, v0Chi2OverNdfm, cascChi2OverNdfm);
-
       // fill QA table
-      rowKfXic0Qa(massLam, massCasc, massXiC0, sigLam, sigCasc, sigXiC0,
-                  collision.globalIndex(), v0index, casc.posTrackId(), casc.negTrackId(), casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
-                  kfXic0Qa.v0DauPosX, kfXic0Qa.v0DauPosY, kfXic0Qa.v0DauPosZ, kfXic0Qa.v0DauPosXError, kfXic0Qa.v0DauPosYError, kfXic0Qa.v0DauPosZError, kfXic0Qa.v0DauPosPt,
-                  kfXic0Qa.v0DauNegX, kfXic0Qa.v0DauNegY, kfXic0Qa.v0DauNegZ, kfXic0Qa.v0DauNegXError, kfXic0Qa.v0DauNegYError, kfXic0Qa.v0DauNegZError, kfXic0Qa.v0DauNegPt,
-                  kfXic0Qa.v0X, kfXic0Qa.v0Y, kfXic0Qa.v0Z, kfXic0Qa.v0XError, kfXic0Qa.v0YError, kfXic0Qa.v0ZError, kfXic0Qa.v0Pt,
-                  kfXic0Qa.xiBachelorX, kfXic0Qa.xiBachelorY, kfXic0Qa.xiBachelorZ, kfXic0Qa.xiBachelorXError, kfXic0Qa.xiBachelorYError, kfXic0Qa.xiBachelorZError, kfXic0Qa.xiBachelorPt,
-                  kfXic0Qa.xiX, kfXic0Qa.xiY, kfXic0Qa.xiZ, kfXic0Qa.xiXError, kfXic0Qa.xiYError, kfXic0Qa.xiZError, kfXic0Qa.xiPt,
-                  kfXic0Qa.xic0BachelorX, kfXic0Qa.xic0BachelorY, kfXic0Qa.xic0BachelorZ, kfXic0Qa.xic0BachelorXError, kfXic0Qa.xic0BachelorYError, kfXic0Qa.xic0BachelorZError, kfXic0Qa.xic0BachelorPt,
-                  kfXic0Qa.xic0X, kfXic0Qa.xic0Y, kfXic0Qa.xic0Z, kfXic0Qa.xic0XError, kfXic0Qa.xic0YError, kfXic0Qa.xic0ZError, kfXic0Qa.xic0Pt,
-                  kfXic0Qa.vertexV0X, kfXic0Qa.vertexV0Y, kfXic0Qa.vertexV0Z, kfXic0Qa.vertexCascX, kfXic0Qa.vertexCascY, kfXic0Qa.vertexCascZ);
-
+      if (kfResolutionQA) {
+        rowKfXic0Qa(massLam, massCasc, massXiC0, sigLam, sigCasc, sigXiC0,
+                    collision.globalIndex(), v0index, casc.posTrackId(), casc.negTrackId(), casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
+                    kfPos.GetX(), kfPos.GetY(), kfPos.GetZ(), kfPos.GetErrX(), kfPos.GetErrY(), kfPos.GetErrZ(), kfPos.GetPt(),
+                    kfNeg.GetX(), kfNeg.GetY(), kfNeg.GetZ(), kfNeg.GetErrX(), kfNeg.GetErrY(), kfNeg.GetErrZ(), kfNeg.GetPt(),
+                    kfV0.GetX(), kfV0.GetY(), kfV0.GetZ(), kfV0.GetErrX(), kfV0.GetErrY(), kfV0.GetErrZ(), kfV0.GetPt(),
+                    kfBachPionToXi.GetX(), kfBachPionToXi.GetY(), kfBachPionToXi.GetZ(), kfBachPionToXi.GetErrX(), kfBachPionToXi.GetErrY(), kfBachPionToXi.GetErrZ(), kfBachPionToXi.GetPt(),
+                    kfXi.GetX(), kfXi.GetY(), kfXi.GetZ(), kfXi.GetErrX(), kfXi.GetErrY(), kfXi.GetErrZ(), kfXi.GetPt(),
+                    kfCharmBachPionToXiC.GetX(), kfCharmBachPionToXiC.GetY(), kfCharmBachPionToXiC.GetZ(), kfCharmBachPionToXiC.GetErrX(), kfCharmBachPionToXiC.GetErrY(), kfCharmBachPionToXiC.GetErrZ(), kfCharmBachPionToXiC.GetPt(),
+                    kfXiC0.GetX(), kfXiC0.GetY(), kfXiC0.GetZ(), kfXiC0.GetErrX(), kfXiC0.GetErrY(), kfXiC0.GetErrZ(), kfXiC0.GetPt(),
+                    casc.xlambda(), casc.ylambda(), casc.zlambda(), casc.x(), casc.y(), casc.z());
+      }
     } // loop over LF Cascade-bachelor candidates
   }
   /// @brief process function w/o centrality selections
@@ -2083,9 +1969,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(CharmBachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
       registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(CharmBachelor) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
 
-      registry.add("hXic0XDeltaVsPt", "{#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0YDeltaVsPt", "{#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
-      registry.add("hXic0ZDeltaVsPt", "{#Delta_{z}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXic0XDeltaVsPt", "#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXic0YDeltaVsPt", "#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
+      registry.add("hXic0ZDeltaVsPt", "#Delta_{z}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {2000, -10., 10.}});
 
       // pull
       registry.add("hV0DauPosXPull", "x^{PULL}", kTH1F, {{4000, -20., 20.}});
@@ -2136,9 +2022,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       registry.add("hXic0BachelorYPullVsPt", "y_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
       registry.add("hXic0BachelorZPullVsPt", "z_{PULL} vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
 
-      registry.add("hXic0XPullVsPt", "x_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0YPullVsPt", "y_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
-      registry.add("hXic0ZPullVsPt", "z_{PULL}(#Xi_c^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXic0XPullVsPt", "x_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXic0YPullVsPt", "y_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
+      registry.add("hXic0ZPullVsPt", "z_{PULL}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2F, {{20, 0., 20.}, {4000, -20., 20.}});
 
       // Defaut delta
       registry.add("hLambdaXDelta", "x^{#Lambda} - x^{MC}(Default)", kTH1F, {{2000, -10., 10.}});
