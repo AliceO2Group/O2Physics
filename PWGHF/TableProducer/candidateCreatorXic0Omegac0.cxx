@@ -2574,7 +2574,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (signV0 == 1) {
             auto mcV0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
 
-            float v0MassPull = (candidate.invMassLambda() - MassLambda0) / candidate.invMassV0Sig();
+            float v0MassPull = (candidate.invMassLambda() - MassLambda0) / candidate.invMassV0Err();
             registry.fill(HIST("hV0MassPullVsPt"), candidate.v0Pt(), v0MassPull);
 
             float v0DauPosXDelta = candidate.v0DauPosX() - mcV0DauPos.vx();
@@ -2655,7 +2655,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           if (indexRec > -1) {
             // QA
             if (signCasc == 1) {
-              float xiMassPull = (candidate.invMassCascade() - MassXiMinus) / candidate.invMassXiSig();
+              float xiMassPull = (candidate.invMassCascade() - MassXiMinus) / candidate.invMassXiErr();
               registry.fill(HIST("hXiMassPullVsPt"), candidate.xiPt(), xiMassPull);
 
               float xiBachelorXDelta = candidate.xiBachelorX() - mcXiBachelor.vx();
@@ -2722,7 +2722,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
               if (sign == 1) {
                 auto mcXic0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
-                float xic0MassPull = (candidate.invMassCharmBaryon() - MassXiC0) / candidate.invMassXic0Sig();
+                float xic0MassPull = (candidate.invMassCharmBaryon() - MassXiC0) / candidate.invMassXic0Err();
                 registry.fill(HIST("hXic0MassPullVsPt"), candidate.xic0Pt(), xic0MassPull);
 
                 float xic0BachelorXDelta = candidate.xic0BachelorX() - mcXic0Bachelor.vx();
