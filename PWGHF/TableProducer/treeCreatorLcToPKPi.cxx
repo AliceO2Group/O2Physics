@@ -449,6 +449,8 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  /// \brief function to fill event properties
+  /// \param collisions Collision table
   template <bool useCentrality, bool isMc, typename Colls>
   void fillEventProperties(Colls const& collisions)
   {
@@ -509,6 +511,9 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  /// \brief function to reserve tables size
+  /// \param candidatesSize size of the candidates table
+  /// \param isMc boolean flag whether MC or data is processed
   template <int reconstructionType>
   void reserveTables(size_t candidatesSize, bool isMc)
   {
@@ -530,6 +535,9 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  /// \brief function to evaluate invariant mass of the Lc candidate and KPi pair
+  /// \param candidate candidate instance
+  /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <int reconstructionType, typename CandType>
   std::pair<float, float> evaluateInvariantMasses(CandType const& candidate, int candFlag)
   {
@@ -545,6 +553,12 @@ struct HfTreeCreatorLcToPKPi {
     return std::make_pair(invMass, invMassKPi);
   }
 
+  /// \brief function to fill lite table
+  /// \param candidate candidate instance
+  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
+  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
+  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
+  /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
   void fillLiteTable(CandType const& candidate,
                      TrackType const& trackPos1,
@@ -619,6 +633,12 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
+  /// \brief function to fill lite table
+  /// \param candidate candidate instance
+  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
+  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
+  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
+  /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
   void fillFullTable(CandType const& candidate,
                      TrackType const& trackPos1,
@@ -719,6 +739,15 @@ struct HfTreeCreatorLcToPKPi {
       functionInvMassKPi);
   }
 
+  /// \brief function to fill lite table
+  /// \param candidate candidate instance
+  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
+  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
+  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
+  /// \param collision collision, to which the candidate belongs
+  /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
+  /// \param functionSelection flag indicating if candidate was selected by candidateSelectorLc task
+  /// \param sigbgstatus for MC: number indicating if candidate is prompt, non-prompt or background; for data: UndefValueInt
   template <typename CandType, typename TrackType, typename CollType>
   void fillKFTable(CandType const& candidate,
                    TrackType const& trackPos1,
