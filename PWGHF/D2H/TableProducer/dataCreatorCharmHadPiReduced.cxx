@@ -290,26 +290,26 @@ struct HfDataCreatorCharmHadPiReduced {
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiMc || doprocessDplusPiMcWithMl) {
       charmHadTitle = "D^{#plus}";
       histMassTitle = "Dplus";
-      registry.add("hMassDplus", "D^{#plus} candidates; #it{M}(K#pi#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassDplus", "D^{#plus} candidates; #it{M}(K#pi#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
     } else if (doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiMc || doprocessDsPiMcWithMl) {
       charmHadTitle = "D_{s}^{#plus}";
       histMassTitle = "Ds";
-      registry.add("hMassDsToKKPi", "D_{s}^{#plus} to KKpi candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-      registry.add("hMassDsToPiKK", "D_{s}^{#plus} to piKK candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassDsToKKPi", "D_{s}^{#plus} to KKpi candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassDsToPiKK", "D_{s}^{#plus} to piKK candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
     } else if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
       charmHadTitle = "D^{0}";
       histMassTitle = "D0";
-      registry.add("hMassD0", "D^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-      registry.add("hMassD0bar", "#overline{D}^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassD0", "D^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
+      registry.add("hMassD0bar", "#overline{D}^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
     } else if (doprocessLcPiData || doprocessLcPiDataWithMl || doprocessLcPiMc || doprocessLcPiMcWithMl) {
       charmHadTitle = "#Lambda_{c}^{+}";
       histMassTitle = "Lc";
       registry.add("hMassLc", "#Lambda_{c}^{+} candidates; #it{M}(pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 0., 5.}}});
     }
 
-    registry.add(Form("hPt%s", histMassTitle.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add(Form("hCpa%s", histMassTitle.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    registry.add(Form("hPt%s", histMassTitle.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1D, {{100, 0., 10.}}});
+    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{100, 0., 10.}}});
+    registry.add(Form("hCpa%s", histMassTitle.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1D, {{110, -1.1, 1.1}}});
 
     /// candidate monitoring
     hCandidatesD0 = registry.add<TH1>("hCandidatesD0", "D0 candidate counter", {HistType::kTH1D, {axisCands}});
