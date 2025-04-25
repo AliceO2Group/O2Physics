@@ -13,7 +13,6 @@
 /// \file   flowPidCme.cxx
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
-// o2-linter: disable=name/workflow-file
 #include <CCDB/BasicCCDBManager.h>
 #include <chrono>
 #include <string>
@@ -95,7 +94,7 @@ namespace pid_flags {
 }
 
 namespace event_selection {
-  constexpr int idxFT0AV0ASigma = 5;
+  constexpr int kFT0AV0ASigma = 5;
 }
 
 namespace fourier_mode {
@@ -1958,7 +1957,7 @@ struct QAProcessCent {
   }
 };
 
-struct FlowPidCme { // o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
+struct FlowPidCme {
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -2595,7 +2594,7 @@ struct FlowPidCme { // o2-linter: disable=name/struct(keep the saving dir name f
     if (cfgOpenEvSelMultCorrelationGlobalTracks) {
       histosQA.fill(HIST("QA/histEventCountDetail"), 9.5);
     }
-    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::idxFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::kFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return 0;
     }
     if (cfgOpenEvSelV0AT0ACut) {

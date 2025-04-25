@@ -13,7 +13,6 @@
 /// \file   flowEsePHe3.cxx
 /// \brief  task to calculate the P He3 flow correlation.
 // C++/ROOT includes.
-// o2-linter: disable=name/workflow-file
 #include <CCDB/BasicCCDBManager.h>
 #include <chrono>
 #include <string>
@@ -71,7 +70,7 @@ namespace pid_flags {
 }
 
 namespace event_selection {
-  constexpr int idxFT0AV0ASigma = 5;
+  constexpr int kFT0AV0ASigma = 5;
 }
 
 namespace fourier_mode {
@@ -699,7 +698,7 @@ struct FlowEsePHe3{
     if (cfgOpenEvSelMultCorrelationGlobalTracks) {
       histos.fill(HIST("QA/histEventCountDetail"), 9.5);
     }
-    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::idxFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::kFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return false;
     }
     if (cfgOpenEvSelV0AT0ACut) {
@@ -768,7 +767,7 @@ struct FlowEsePHe3{
   void processESE(const TrackType tracks, float psi2, float q2, float cent, int pidmode, bool spcharge)//pidmode 1 for proton , 2 for he3
   {
     for(const auto& track : tracks) {
-      if (pidmode == 1) {
+      if (pidmode == pid_flags::kProton) {
         if (spcharge) {
           if (track.sign()>0) {
             histos.fill(HIST("ESE/hist_v2PosPr_Cent_Pt_q2He3"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
@@ -779,7 +778,7 @@ struct FlowEsePHe3{
           histos.fill(HIST("ESE/hist_v2Pr_Cent_Pt_q2He3"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
         }
       }
-      if (pidmode == 2) {
+      if (pidmode == pid_flags::kHe3) {
         if (spcharge) {
           if (track.sign()>0) {
             histos.fill(HIST("ESE/hist_v2PosHe3_Cent_Pt_q2Pr"), track.pt(), cent, q2, std::cos(2 * (track.phi() - psi2)));
