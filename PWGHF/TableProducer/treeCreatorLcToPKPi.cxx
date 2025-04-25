@@ -509,24 +509,24 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
-  template <int reconstructionType, typename CandType>
-  void reserveTables(CandType const& candidates, bool isMc)
+  template <int reconstructionType>
+  void reserveTables(size_t candidatesSize, bool isMc)
   {
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
       if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size() * 2);
+        rowCandidateLite.reserve(candidatesSize * 2);
       } else {
-        rowCandidateFull.reserve(candidates.size() * 2);
+        rowCandidateFull.reserve(candidatesSize * 2);
       }
     } else {
-      rowCandidateKF.reserve(candidates.size() * 2);
+      rowCandidateKF.reserve(candidatesSize * 2);
     }
     if (fillCollIdTable) {
       /// save also candidate collision indices
-      rowCollisionId.reserve(candidates.size());
+      rowCollisionId.reserve(candidatesSize);
     }
     if (isMc && fillCandidateMcTable) {
-      rowCandidateMC.reserve(candidates.size() * 2);
+      rowCandidateMC.reserve(candidatesSize * 2);
     }
   }
 
@@ -736,7 +736,8 @@ struct HfTreeCreatorLcToPKPi {
 
     fillEventProperties<useCentrality, isMc>(collisions);
 
-    reserveTables<reconstructionType>(candidates, isMc);
+    const size_t candidatesSize = candidates.size();
+    reserveTables<reconstructionType>(candidatesSize, isMc);
 
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
@@ -1003,7 +1004,8 @@ struct HfTreeCreatorLcToPKPi {
 
     fillEventProperties<useCentrality, isMc>(collisions);
 
-    reserveTables<reconstructionType>(candidates, isMc);
+    const size_t candidatesSize = candidates.size();
+    reserveTables<reconstructionType>(candidatesSize, isMc);
 
     // Filling candidate properties
 
