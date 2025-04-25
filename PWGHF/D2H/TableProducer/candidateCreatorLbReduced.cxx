@@ -199,10 +199,14 @@ struct HfCandidateCreatorLbReduced {
         rowCandidateProngs(candLc.globalIndex(), trackPion.globalIndex());
 
         if constexpr (withLcMl) {
-          rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
-        }
-      } // pi loop
-    } // Lc loop
+          if (candLc.invMassHypo0() > 0) {
+              rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo0(), candLc.mlScorePromptMassHypo0(), candLc.mlScoreNonpromptMassHypo0());
+          } else {
+              rowCandidateLcMlScores(candLc.mlScoreBkgMassHypo1(), candLc.mlScorePromptMassHypo1(), candLc.mlScoreNonpromptMassHypo1());
+          }
+        } // pi loop
+      } // Lc loop
+    }
   }
 
   void processData(HfRedCollisionsWithExtras const& collisions,
