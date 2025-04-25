@@ -74,34 +74,37 @@ DECLARE_SOA_TABLE(Flags, "AOD", "Flags", cme_track_pid_columns::NPidFlag);
 DECLARE_SOA_TABLE(PidInfo, "AOD", "PidInfo", cme_track_pid_columns::AverClusterSizeCosl, cme_track_pid_columns::NSigmaPiITS, cme_track_pid_columns::NSigmaKaITS, cme_track_pid_columns::NSigmaPrITS, cme_track_pid_columns::NSigmaPiTPC, cme_track_pid_columns::NSigmaKaTPC, cme_track_pid_columns::NSigmaPrTPC, cme_track_pid_columns::NSigmaPiTOF, cme_track_pid_columns::NSigmaKaTOF, cme_track_pid_columns::NSigmaPrTOF);
 } // namespace o2::aod
 
-namespace pid_flags {
-  constexpr int8_t kUnqualified = -1;
-  constexpr int8_t kUnPOIHadron = 0;
-  constexpr int8_t kPion = 1;
-  constexpr int8_t kKaon = 2;
-  constexpr int8_t kProton = 3;
-  constexpr int8_t kPionITSleft = 4;
-  constexpr int8_t kKaonITSleft = 5;
-  constexpr int8_t kProtonITSleft = 6;
-  constexpr int8_t kPionKaon = 7;
-  constexpr int8_t kPionProton = 8;
-  constexpr int8_t kKaonProton = 9;
-  constexpr int8_t kPionKaonProton = 10;
-  constexpr int8_t kPionKaonITSleft = 11;
-  constexpr int8_t kPionProtonITSleft = 12;
-  constexpr int8_t kKaonProtonITSleft = 13;
-  constexpr int8_t kPionKaonProtonITSleft = 14;
+namespace pid_flags
+{
+constexpr int8_t kUnqualified = -1;
+constexpr int8_t kUnPOIHadron = 0;
+constexpr int8_t kPion = 1;
+constexpr int8_t kKaon = 2;
+constexpr int8_t kProton = 3;
+constexpr int8_t kPionITSleft = 4;
+constexpr int8_t kKaonITSleft = 5;
+constexpr int8_t kProtonITSleft = 6;
+constexpr int8_t kPionKaon = 7;
+constexpr int8_t kPionProton = 8;
+constexpr int8_t kKaonProton = 9;
+constexpr int8_t kPionKaonProton = 10;
+constexpr int8_t kPionKaonITSleft = 11;
+constexpr int8_t kPionProtonITSleft = 12;
+constexpr int8_t kKaonProtonITSleft = 13;
+constexpr int8_t kPionKaonProtonITSleft = 14;
+} // namespace pid_flags
+
+namespace event_selection
+{
+constexpr int kFT0AV0ASigma = 5;
 }
 
-namespace event_selection {
-  constexpr int kFT0AV0ASigma = 5;
-}
-
-namespace fourier_mode {
-  constexpr int kMode1 = 1;
-  constexpr int kMode2 = 2;
-  constexpr int kMode3 = 3;
-}
+namespace fourier_mode
+{
+constexpr int kMode1 = 1;
+constexpr int kMode2 = 2;
+constexpr int kMode3 = 3;
+} // namespace fourier_mode
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 using CollisionPID = soa::Join<aod::Collisions, aod::CentFT0Cs>;
