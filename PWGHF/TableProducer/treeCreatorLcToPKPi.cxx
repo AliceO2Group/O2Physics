@@ -719,6 +719,108 @@ struct HfTreeCreatorLcToPKPi {
       functionInvMassKPi);
   }
 
+  template <typename CandType, typename TrackType, typename CollType>
+  void fillKFTable(CandType const& candidate,
+                   TrackType const& trackPos1,
+                   TrackType const& trackNeg,
+                   TrackType const& trackPos2,
+                   CollType const& collision,
+                   int candFlag,
+                   int functionSelection,
+                   int sigbgstatus)
+  {
+    float chi2primProton;
+    float chi2primPion;
+    float dcaProtonKaon;
+    float dcaPionKaon;
+    float chi2GeoProtonKaon;
+    float chi2GeoPionKaon;
+    float mass;
+    float valueTpcNSigmaPr;
+    const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+    float valueTpcNSigmaPi;
+    float valueTofNSigmaPr;
+    const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+    float valueTofNSigmaPi;
+    float valueTpcTofNSigmaPr;
+    const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+    float valueTpcTofNSigmaPi;
+    if (candFlag == 0) {
+      chi2primProton = candidate.kfChi2PrimProng0();
+      chi2primPion = candidate.kfChi2PrimProng2();
+      dcaProtonKaon = candidate.kfDcaProng0Prong1();
+      dcaPionKaon = candidate.kfDcaProng1Prong2();
+      chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
+      chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
+      mass = candidate.kfMassPKPi();
+      valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
+      valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
+      valueTofNSigmaPr = trackPos1.tofNSigmaPr();
+      valueTofNSigmaPi = trackPos2.tofNSigmaPi();
+      valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
+      valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+    } else {
+      chi2primProton = candidate.kfChi2PrimProng2();
+      chi2primPion = candidate.kfChi2PrimProng0();
+      dcaProtonKaon = candidate.kfDcaProng1Prong2();
+      dcaPionKaon = candidate.kfDcaProng0Prong1();
+      chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
+      chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
+      mass = candidate.kfMassPiKP();
+      valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
+      valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
+      valueTofNSigmaPr = trackPos2.tofNSigmaPr();
+      valueTofNSigmaPi = trackPos1.tofNSigmaPi();
+      valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
+      valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+    }
+    const float svX = candidate.xSecondaryVertex();
+    const float svY = candidate.ySecondaryVertex();
+    const float svZ = candidate.zSecondaryVertex();
+    const float svErrX = candidate.kfXError();
+    const float svErrY = candidate.kfYError();
+    const float svErrZ = candidate.kfZError();
+    const float pvErrX = candidate.kfXPVError();
+    const float pvErrY = candidate.kfYPVError();
+    const float pvErrZ = candidate.kfZPVError();
+    const float chi2primKaon = candidate.kfChi2PrimProng1();
+    const float dcaProtonPion = candidate.kfDcaProng0Prong2();
+    const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
+    const float chi2Geo = candidate.kfChi2Geo();
+    const float chi2Topo = candidate.kfChi2Topo();
+    const float decayLength = candidate.kfDecayLength();
+    const float dl = candidate.kfDecayLengthError();
+    const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+    const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
+                                    candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
+                          pt;
+    const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+    const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
+                                   candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
+                         p;
+    const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
+    const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
+    rowCandidateKF(
+      svX, svY, svZ, svErrX, svErrY, svErrZ,
+      pvErrX, pvErrY, pvErrZ,
+      chi2primProton, chi2primKaon, chi2primPion,
+      dcaProtonKaon, dcaProtonPion, dcaPionKaon,
+      chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
+      chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
+      mass, p, pt, deltaP, deltaPt,
+      functionSelection, sigbgstatus,
+      collision.multNTracksPV(),
+      valueTpcNSigmaPr,
+      valueTpcNSigmaKa,
+      valueTpcNSigmaPi,
+      valueTofNSigmaPr,
+      valueTofNSigmaKa,
+      valueTofNSigmaPi,
+      valueTpcTofNSigmaPr,
+      valueTpcTofNSigmaKa,
+      valueTpcTofNSigmaPi);
+  }
+
   /// \brief core function to fill tables in MC
   /// \param collisions Collision table
   /// \param mcCollisions MC collision table
@@ -760,96 +862,7 @@ struct HfTreeCreatorLcToPKPi {
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            float chi2primProton;
-            float chi2primPion;
-            float dcaProtonKaon;
-            float dcaPionKaon;
-            float chi2GeoProtonKaon;
-            float chi2GeoPionKaon;
-            float mass;
-            float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
-            float valueTpcNSigmaPi;
-            float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
-            float valueTofNSigmaPi;
-            float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
-            float valueTpcTofNSigmaPi;
-            if (candFlag == 0) {
-              chi2primProton = candidate.kfChi2PrimProng0();
-              chi2primPion = candidate.kfChi2PrimProng2();
-              dcaProtonKaon = candidate.kfDcaProng0Prong1();
-              dcaPionKaon = candidate.kfDcaProng1Prong2();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
-              mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos2.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
-            } else {
-              chi2primProton = candidate.kfChi2PrimProng2();
-              chi2primPion = candidate.kfChi2PrimProng0();
-              dcaProtonKaon = candidate.kfDcaProng1Prong2();
-              dcaPionKaon = candidate.kfDcaProng0Prong1();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
-              mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
-            }
-            const float svX = candidate.xSecondaryVertex();
-            const float svY = candidate.ySecondaryVertex();
-            const float svZ = candidate.zSecondaryVertex();
-            const float svErrX = candidate.kfXError();
-            const float svErrY = candidate.kfYError();
-            const float svErrZ = candidate.kfZError();
-            const float pvErrX = candidate.kfXPVError();
-            const float pvErrY = candidate.kfYPVError();
-            const float pvErrZ = candidate.kfZPVError();
-            const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2Geo = candidate.kfChi2Geo();
-            const float chi2Topo = candidate.kfChi2Topo();
-            const float decayLength = candidate.kfDecayLength();
-            const float dl = candidate.kfDecayLengthError();
-            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
-                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
-                                  pt;
-            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
-            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
-                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
-                                 p;
-            const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            rowCandidateKF(
-              svX, svY, svZ, svErrX, svErrY, svErrZ,
-              pvErrX, pvErrY, pvErrZ,
-              chi2primProton, chi2primKaon, chi2primPion,
-              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
-              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
-              mass, p, pt, deltaP, deltaPt,
-              functionSelection, sigbgstatus,
-              collision.multNTracksPV(),
-              valueTpcNSigmaPr,
-              valueTpcNSigmaKa,
-              valueTpcNSigmaPi,
-              valueTofNSigmaPr,
-              valueTofNSigmaKa,
-              valueTofNSigmaPi,
-              valueTpcTofNSigmaPr,
-              valueTpcTofNSigmaKa,
-              valueTpcTofNSigmaPi);
+            fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
@@ -1025,96 +1038,7 @@ struct HfTreeCreatorLcToPKPi {
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            float chi2primProton;
-            float chi2primPion;
-            float dcaProtonKaon;
-            float dcaPionKaon;
-            float chi2GeoProtonKaon;
-            float chi2GeoPionKaon;
-            float mass;
-            float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
-            float valueTpcNSigmaPi;
-            float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
-            float valueTofNSigmaPi;
-            float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
-            float valueTpcTofNSigmaPi;
-            if (candFlag == 0) {
-              chi2primProton = candidate.kfChi2PrimProng0();
-              chi2primPion = candidate.kfChi2PrimProng2();
-              dcaProtonKaon = candidate.kfDcaProng0Prong1();
-              dcaPionKaon = candidate.kfDcaProng1Prong2();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
-              mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos2.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
-            } else {
-              chi2primProton = candidate.kfChi2PrimProng2();
-              chi2primPion = candidate.kfChi2PrimProng0();
-              dcaProtonKaon = candidate.kfDcaProng1Prong2();
-              dcaPionKaon = candidate.kfDcaProng0Prong1();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
-              mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
-            }
-            const float x = candidate.xSecondaryVertex();
-            const float y = candidate.ySecondaryVertex();
-            const float z = candidate.zSecondaryVertex();
-            const float errX = candidate.kfXError();
-            const float errY = candidate.kfYError();
-            const float errZ = candidate.kfZError();
-            const float errPVX = candidate.kfXPVError();
-            const float errPVY = candidate.kfYPVError();
-            const float errPVZ = candidate.kfZPVError();
-            const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2Geo = candidate.kfChi2Geo();
-            const float chi2Topo = candidate.kfChi2Topo();
-            const float l = candidate.kfDecayLength();
-            const float dl = candidate.kfDecayLengthError();
-            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
-                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
-                                  pt;
-            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
-            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
-                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
-                                 p;
-            const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            rowCandidateKF(
-              x, y, z, errX, errY, errZ,
-              errPVX, errPVY, errPVZ,
-              chi2primProton, chi2primKaon, chi2primPion,
-              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
-              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
-              mass, p, pt, deltaP, deltaPt,
-              functionSelection, UndefValueInt,
-              collision.multNTracksPV(),
-              valueTpcNSigmaPr,
-              valueTpcNSigmaKa,
-              valueTpcNSigmaPi,
-              valueTofNSigmaPr,
-              valueTofNSigmaKa,
-              valueTofNSigmaPi,
-              valueTpcTofNSigmaPr,
-              valueTpcTofNSigmaKa,
-              valueTpcTofNSigmaPi);
+            fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, UndefValueInt);
           }
         }
       };
