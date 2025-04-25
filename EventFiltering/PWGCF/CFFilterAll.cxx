@@ -296,7 +296,10 @@ struct CFFilterAll {
 
   } Binning;
 
-  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // define histogram registry
+  // because we have so many histograms, we need to have 2 registries
+  HistogramRegistry registryParticleQA{"ParticleQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryTriggerQA{"TriggerQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // helper object flor building lambdas
   o2::pwglf::strangenessBuilderHelper mStraHelper;
@@ -353,519 +356,671 @@ struct CFFilterAll {
                                               "PhiD_LooseKstar", "PhiD_TightKstar",
                                               "RhoD_LooseKstar", "RhoD_TightKstar"};
 
-    registry.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{prossedEventsBins, -0.5, prossedEventsBins - 0.5}});
-    registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(1, "all");
-    registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(2, "accepted_loose");
-    registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(3, "accepted_tight");
+    registryTriggerQA.add("fProcessedEvents", "CF - event filtered;;Events", HistType::kTH1F, {{prossedEventsBins, -0.5, prossedEventsBins - 0.5}});
+    registryTriggerQA.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(1, "all");
+    registryTriggerQA.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(2, "accepted_loose");
+    registryTriggerQA.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(3, "accepted_tight");
 
-    registry.add("fTriggerCorrelations", "CF - Trigger correlations", HistType::kTH2F, {{allTriggers, -0.5, allTriggers - 0.5}, {allTriggers, -0.5, allTriggers - 0.5}});
+    registryTriggerQA.add("fTriggerCorrelations", "CF - Trigger correlations", HistType::kTH2F, {{allTriggers, -0.5, allTriggers - 0.5}, {allTriggers, -0.5, allTriggers - 0.5}});
 
     for (size_t iBin = 0; iBin < triggerTitles.size(); iBin++) {
-      registry.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 4, triggerTitles[iBin].data()); // start triggers from 4th bin
-      registry.get<TH2>(HIST("fTriggerCorrelations"))->GetXaxis()->SetBinLabel(iBin + 1, triggerTitles[iBin].data());
-      registry.get<TH2>(HIST("fTriggerCorrelations"))->GetYaxis()->SetBinLabel(iBin + 1, triggerTitles[iBin].data());
+      registryTriggerQA.get<TH1>(HIST("fProcessedEvents"))->GetXaxis()->SetBinLabel(iBin + 4, triggerTitles[iBin].data()); // start triggers from 4th bin
+      registryTriggerQA.get<TH2>(HIST("fTriggerCorrelations"))->GetXaxis()->SetBinLabel(iBin + 1, triggerTitles[iBin].data());
+      registryTriggerQA.get<TH2>(HIST("fTriggerCorrelations"))->GetYaxis()->SetBinLabel(iBin + 1, triggerTitles[iBin].data());
     }
 
     // event cuts
-    registry.add("EventQA/Before/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("EventQA/Before/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryParticleQA.add("EventQA/Before/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryParticleQA.add("EventQA/Before/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
 
-    registry.add("EventQA/After/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("EventQA/After/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryParticleQA.add("EventQA/After/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryParticleQA.add("EventQA/After/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
 
     // all tracks before cuts
-    registry.add("TrackQA/Before/Particle/fPt", "Transverse;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/Before/Particle/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/Before/Particle/fPhi", "Azimuthal;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("TrackQA/Before/Particle/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/Before/Particle/fItsSignal", "ITSSignal;p_{TPC} (GeV/c);ITS Signal", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/Before/Particle/fTpcSignal", "TPCSignal;p_{TPC} (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/Before/Particle/fTofSignal", "TOFSignal;p_{TPC} (GeV/c);TOF Signal", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/Before/Particle/fPt", "Transverse;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/Before/Particle/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/Before/Particle/fPhi", "Azimuthal;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/Before/Particle/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/Before/Particle/fItsSignal", "ITSSignal;p_{TPC} (GeV/c);ITS Signal", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/Before/Particle/fTpcSignal", "TPCSignal;p_{TPC} (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/Before/Particle/fTofSignal", "TOFSignal;p_{TPC} (GeV/c);TOF Signal", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/Before/AntiParticle/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/Before/AntiParticle/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/Before/AntiParticle/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("TrackQA/Before/AntiParticle/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/Before/AntiParticle/fItsSignal", "ITSSignal;p_{TPC} (GeV/c);ITS Signal", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/Before/AntiParticle/fTpcSignal", "TPCSignal;p_{TPC} (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/Before/AntiParticle/fTofSignal", "TOFSignal;p_{TPC} (GeV/c);TOF Signal", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fItsSignal", "ITSSignal;p_{TPC} (GeV/c);ITS Signal", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fTpcSignal", "TPCSignal;p_{TPC} (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/Before/AntiParticle/fTofSignal", "TOFSignal;p_{TPC} (GeV/c);TOF Signal", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
     // PID vs momentum before cuts
-    registry.add("TrackQA/Before/Pion/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Pion/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Pion/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Pion/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/Pion/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Pion/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Pion/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Pion/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/AntiPion/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiPion/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiPion/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiPion/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/AntiPion/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiPion/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiPion/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiPion/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/Kaon/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Kaon/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Kaon/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Kaon/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/Kaon/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Kaon/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Kaon/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Kaon/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/AntiKaon/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiKaon/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiKaon/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiKaon/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/AntiKaon/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiKaon/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiKaon/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiKaon/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/Proton/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Proton/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Proton/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Proton/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/Proton/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Proton/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Proton/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Proton/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/AntiProton/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiProton/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiProton/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiProton/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/AntiProton/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiProton/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiProton/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiProton/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/Deuteron/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Deuteron/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Deuteron/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/Deuteron/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/Deuteron/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Deuteron/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Deuteron/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/Deuteron/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/Before/AntiDeuteron/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiDeuteron/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiDeuteron/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/Before/AntiDeuteron/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/Before/AntiDeuteron/fNsigmaITS", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiDeuteron/fNsigmaTPC", "NSigmaTPC;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiDeuteron/fNsigmaTOF", "NSigmaTOF;p_{TPC} (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/Before/AntiDeuteron/fNsigmaTPCTOF", "NsigmaTPCTOF;p_{TPC} (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
     // Pion
-    registry.add("TrackQA/After/Pion/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Pion/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Pion/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/Pion/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/Pion/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/Pion/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Pion/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Pion/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/Pion/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/Pion/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/Pion/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Pion/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Pion/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Pion/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/Pion/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Pion/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Pion/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Pion/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/Pion/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/Pion/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/Pion/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/Pion/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/Pion/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/Pion/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/Pion/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Pion/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Pion/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/Pion/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Pion/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Pion/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Pion/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Pion/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Pion/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Pion/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/Pion/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/Pion/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/Pion/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/Pion/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/Pion/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/Pion/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // antiPion
-    registry.add("TrackQA/After/AntiPion/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiPion/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiPion/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/AntiPion/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/AntiPion/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/AntiPion/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiPion/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiPion/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/AntiPion/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/AntiPion/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiPion/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiPion/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiPion/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/AntiPion/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/AntiPion/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/AntiPion/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/AntiPion/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/AntiPion/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiPion/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiPion/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/AntiPion/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiPion/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiPion/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiPion/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiPion/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiPion/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiPion/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/AntiPion/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/AntiPion/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/AntiPion/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/AntiPion/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/AntiPion/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/AntiPion/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // Kaon
-    registry.add("TrackQA/After/Kaon/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Kaon/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Kaon/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/Kaon/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/Kaon/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/Kaon/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Kaon/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Kaon/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/Kaon/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/Kaon/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/Kaon/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Kaon/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Kaon/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Kaon/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/Kaon/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Kaon/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Kaon/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Kaon/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/Kaon/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/Kaon/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/Kaon/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/Kaon/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/Kaon/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/Kaon/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/Kaon/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Kaon/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Kaon/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/Kaon/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Kaon/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Kaon/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Kaon/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Kaon/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Kaon/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Kaon/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/Kaon/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/Kaon/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/Kaon/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/Kaon/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/Kaon/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/Kaon/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // antiKaon
-    registry.add("TrackQA/After/AntiKaon/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiKaon/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiKaon/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/AntiKaon/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/AntiKaon/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/AntiKaon/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiKaon/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiKaon/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiKaon/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/AntiKaon/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/AntiKaon/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/AntiKaon/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/AntiKaon/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/AntiKaon/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/AntiKaon/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiKaon/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiKaon/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiKaon/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiKaon/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiKaon/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/AntiKaon/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/AntiKaon/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/AntiKaon/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/AntiKaon/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // proton
-    registry.add("TrackQA/After/Proton/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Proton/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Proton/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/Proton/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/Proton/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/Proton/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Proton/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Proton/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/Proton/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/Proton/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/Proton/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Proton/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Proton/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Proton/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/Proton/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Proton/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Proton/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Proton/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/Proton/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/Proton/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/Proton/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/Proton/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/Proton/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/Proton/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/Proton/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Proton/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Proton/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/Proton/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Proton/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Proton/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Proton/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Proton/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Proton/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Proton/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/Proton/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/Proton/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/Proton/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/Proton/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/Proton/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/Proton/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // antiproton
-    registry.add("TrackQA/After/AntiProton/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiProton/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiProton/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/AntiProton/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/AntiProton/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/AntiProton/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiProton/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiProton/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/AntiProton/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/AntiProton/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiProton/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiProton/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiProton/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/AntiProton/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/AntiProton/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/AntiProton/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/AntiProton/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/AntiProton/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiProton/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiProton/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/AntiProton/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiProton/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiProton/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiProton/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiProton/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiProton/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiProton/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/AntiProton/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/AntiProton/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/AntiProton/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/AntiProton/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/AntiProton/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/AntiProton/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // Deuteron
-    registry.add("TrackQA/After/Deuteron/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Deuteron/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/Deuteron/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/Deuteron/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/Deuteron/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/Deuteron/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Deuteron/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/Deuteron/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/Deuteron/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/Deuteron/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Deuteron/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Deuteron/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/Deuteron/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigmaComb}});
 
-    registry.add("TrackQA/After/Deuteron/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/Deuteron/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/Deuteron/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/Deuteron/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/Deuteron/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Deuteron/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/Deuteron/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/Deuteron/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Deuteron/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Deuteron/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/Deuteron/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Deuteron/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/Deuteron/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/Deuteron/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/Deuteron/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/Deuteron/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/Deuteron/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/Deuteron/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/Deuteron/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/Deuteron/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // AntiDeuteron
-    registry.add("TrackQA/After/AntiDeuteron/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiDeuteron/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("TrackQA/After/AntiDeuteron/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
-    registry.add("TrackQA/After/AntiDeuteron/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("TrackQA/After/AntiDeuteron/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fPTpc", "Momentum at TPC inner wall;p_{TPC} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fMomCor", "Momentum correlation;p_{reco} (GeV/c); p_{TPC} - p_{reco} / p_{reco}", {HistType::kTH2F, {Binning.momentum, Binning.momCor}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fPhi", "Azimuthal angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
-    registry.add("TrackQA/After/AntiDeuteron/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiDeuteron/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiDeuteron/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("TrackQA/After/AntiDeuteron/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fNsigmaIts", "NSigmaITS;p (GeV/c);n#sigma_{ITS}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fNsigmaTpc", "NSigmaTPC;p (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fNsigmaTof", "NSigmaTOF;p (GeV/c);n#sigma_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fNsigmaTpcTof", "NSigmaTPCTOF;p (GeV/c);n#sigma_{comb}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
 
-    registry.add("TrackQA/After/AntiDeuteron/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
-    registry.add("TrackQA/After/AntiDeuteron/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fItsSignal", "ITS Signal;p (GeV/c);<cluster size * cos(#lambda)> (cm)", {HistType::kTH2F, {Binning.momentum, Binning.itsSignal}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcSignal", "TPC Signal;p (GeV/c);TPC Signal", {HistType::kTH2F, {Binning.momentum, Binning.tpcSignal}});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTofBeta", "TOF #beta;p (GeV/c);#beta_{TOF}", {HistType::kTH2F, {Binning.momentum, Binning.tofSignal}});
 
-    registry.add("TrackQA/After/AntiDeuteron/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("TrackQA/After/AntiDeuteron/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fDcaXy", "DCA_{xy};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fDcaZ", "DCA_{z};p_{T} (GeV/c); DCA_{Z};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
 
-    registry.add("TrackQA/After/AntiDeuteron/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
-    registry.add("TrackQA/After/AntiDeuteron/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcCrossedRows", "TPC Crossed Rows;TPC Crossed Rows;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcSharedClusters", "TPC Shared Clusters;TPC Shared Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcSharedClusterOverClusterss", "TPC Shared Clusters/Clusters;TPC Shared Clusters/Clusters;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcFindableOverRows", "TPC Findabled/Crossed Rows;TPC Findable/CrossedRows;Entries", HistType::kTH1F, {Binning.ratio});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fTpcChi2OverCluster", "TPC #chi^{2}/Cluster;TPC #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.tpcChi2});
 
-    registry.add("TrackQA/After/AntiDeuteron/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
-    registry.add("TrackQA/After/AntiDeuteron/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
-    registry.add("TrackQA/After/AntiDeuteron/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fItsClusters", "ITS Clusters;ITS Clusters;Entries", HistType::kTH1F, {Binning.itsCluster});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fItsIbClusters", "ITS Inner Barrel Clusters;ITS Inner Barrel Clusters;Entries", HistType::kTH1F, {Binning.itsIbCluster});
+    registryParticleQA.add("TrackQA/After/AntiDeuteron/fItsChi2OverCluster", "ITS #chi^{2}/Cluster;ITS #chi^{2}/Cluster;Entries", HistType::kTH1F, {Binning.itsChi2});
 
     // Lambda before
-    registry.add("LambdaQA/Before/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/Before/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/Before/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/Before/fInvMassLambda", "Invariant mass Lambda;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
-    registry.add("LambdaQA/Before/fInvMassAntiLambda", "Invariant mass AntiLambda;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
-    registry.add("LambdaQA/Before/fInvMassLambdaVsAntiLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
-    registry.add("LambdaQA/Before/fInvMassLambdaVsKaon", "Invariant mass of Lambda vs K0;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
-    registry.add("LambdaQA/Before/fInvMassAntiLambdaVsKaon", "Invariant mass of AntiLambda vs K0;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
-    registry.add("LambdaQA/Before/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
-    registry.add("LambdaQA/Before/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
-    registry.add("LambdaQA/Before/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
-    registry.add("LambdaQA/Before/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
-    registry.add("LambdaQA/Before/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/Before/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/Before/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/Before/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/Before/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/Before/PosDaughter/fNsigmaTpcProton", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("LambdaQA/Before/PosDaughter/fNsigmaTpcPion", "NSigmaTPC Pion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("LambdaQA/Before/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/Before/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/Before/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/Before/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/Before/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/Before/NegDaughter/fNsigmaTpcProton", "NSigmaTPC AnitProton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("LambdaQA/Before/NegDaughter/fNsigmaTpcPion", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/Before/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/Before/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/Before/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/Before/fInvMassLambda", "Invariant mass Lambda;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/Before/fInvMassAntiLambda", "Invariant mass AntiLambda;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/Before/fInvMassLambdaVsAntiLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/Before/fInvMassLambdaVsKaon", "Invariant mass of Lambda vs K0;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
+    registryParticleQA.add("LambdaQA/Before/fInvMassAntiLambdaVsKaon", "Invariant mass of AntiLambda vs K0;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
+    registryParticleQA.add("LambdaQA/Before/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
+    registryParticleQA.add("LambdaQA/Before/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
+    registryParticleQA.add("LambdaQA/Before/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
+    registryParticleQA.add("LambdaQA/Before/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fNsigmaTpcProton", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/Before/PosDaughter/fNsigmaTpcPion", "NSigmaTPC Pion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fNsigmaTpcProton", "NSigmaTPC AnitProton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/Before/NegDaughter/fNsigmaTpcPion", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
 
     // Lambda after
-    registry.add("LambdaQA/After/Lambda/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/Lambda/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/Lambda/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/Lambda/fInvMass", "Invariant mass;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
-    registry.add("LambdaQA/After/Lambda/fInvMassLambdaVsAntiLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
-    registry.add("LambdaQA/After/Lambda/fInvMassLambdaVsKaon", "Invariant mass of rejected K0 vs V0s;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
-    registry.add("LambdaQA/After/Lambda/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
-    registry.add("LambdaQA/After/Lambda/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
-    registry.add("LambdaQA/After/Lambda/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
-    registry.add("LambdaQA/After/Lambda/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/After/Lambda/PosDaughter/fNsigmaTpc", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/After/Lambda/NegDaughter/fNsigmaTpc", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/After/Lambda/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/Lambda/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/Lambda/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/Lambda/fInvMass", "Invariant mass;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/After/Lambda/fInvMassLambdaVsAntiLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/After/Lambda/fInvMassLambdaVsKaon", "Invariant mass of rejected K0 vs V0s;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
+    registryParticleQA.add("LambdaQA/After/Lambda/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
+    registryParticleQA.add("LambdaQA/After/Lambda/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
+    registryParticleQA.add("LambdaQA/After/Lambda/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
+    registryParticleQA.add("LambdaQA/After/Lambda/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/After/Lambda/PosDaughter/fNsigmaTpc", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/After/Lambda/NegDaughter/fNsigmaTpc", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
 
     // AntiLambda after
-    registry.add("LambdaQA/After/AntiLambda/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/AntiLambda/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/AntiLambda/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/AntiLambda/fInvMass", "Invariant mass;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
-    registry.add("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
-    registry.add("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsKaon", "Invariant mass of rejected K0 vs V0s;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
-    registry.add("LambdaQA/After/AntiLambda/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
-    registry.add("LambdaQA/After/AntiLambda/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
-    registry.add("LambdaQA/After/AntiLambda/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
-    registry.add("LambdaQA/After/AntiLambda/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/After/AntiLambda/PosDaughter/fNsigmaTpc", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
-    registry.add("LambdaQA/After/AntiLambda/NegDaughter/fNsigmaTpc", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fPt", "Transverse momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fEta", "Psedurapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fInvMass", "Invariant mass;M_{#pi p};Entries", HistType::kTH1F, {Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsLambda", "Invariant mass of Lambda vs AntiLambda;M_{#pi p};Entries", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassLambda});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsKaon", "Invariant mass of rejected K0 vs V0s;M_{#pi p};;M_{#pi #pi}", HistType::kTH2F, {Binning.invMassLambda, Binning.invMassK0short});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fDcaDaugh", "DCA_{Daugh};DCA_{daugh};Entries", HistType::kTH1F, {Binning.dcaDaugh});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fCpa", "Cosine of pointing angle;CPA;Entries", HistType::kTH1F, {Binning.cpa});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fTranRad", "Transverse Radisu;TranRad;Entries", HistType::kTH1F, {Binning.transRad});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/fDecVtx", "Decay vertex displacement;DecVtx;Entries", HistType::kTH1F, {Binning.decayVtx});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/PosDaughter/fNsigmaTpc", "NSigmaTPC Proton;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fPt", "Transverse Momentum;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fEta", "Pseudorapidity;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fPhi", "Azimuthal Angle;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fDcaXy", "DCA_{XY};p_{T} (GeV/c); DCA_{XY};Entries", HistType::kTH2F, {Binning.momentum, Binning.dca});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fTpcClusters", "TPC Clusters;TPC Clusters;Entries", HistType::kTH1F, {Binning.tpcCluster});
+    registryParticleQA.add("LambdaQA/After/AntiLambda/NegDaughter/fNsigmaTpc", "NSigmaTPC AntiPion;p_{TPC} (GeV/c);n#sigma_{TPC}", {HistType::kTH2F, {Binning.momentum, Binning.nsigma}});
 
     // Phi before
-    registry.add("PhiQA/Before/fInvMass", "Invariant mass #phi;M_{KK};Entries", HistType::kTH1F, {Binning.invMassPhi});
-    registry.add("PhiQA/Before/fPt", "Transverse momentum #phi;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("PhiQA/Before/fEta", "Pseudorapidity of V0;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("PhiQA/Before/fPhi", "Azimuthal angle of #phi;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("PhiQA/Before/fInvMass", "Invariant mass #phi;M_{KK};Entries", HistType::kTH1F, {Binning.invMassPhi});
+    registryParticleQA.add("PhiQA/Before/fPt", "Transverse momentum #phi;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("PhiQA/Before/fEta", "Pseudorapidity of V0;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("PhiQA/Before/fPhi", "Azimuthal angle of #phi;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
     // Phi after
-    registry.add("PhiQA/After/fInvMass", "Invariant mass #phi;M_{KK};Entries", HistType::kTH1F, {Binning.invMassPhi});
-    registry.add("PhiQA/After/fPt", "Transverse momentum #phi;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("PhiQA/After/fEta", "Pseudorapidity of #phi;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("PhiQA/After/fPhi", "Azimuthal angle of #Phi;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("PhiQA/After/fInvMass", "Invariant mass #phi;M_{KK};Entries", HistType::kTH1F, {Binning.invMassPhi});
+    registryParticleQA.add("PhiQA/After/fPt", "Transverse momentum #phi;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("PhiQA/After/fEta", "Pseudorapidity of #phi;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("PhiQA/After/fPhi", "Azimuthal angle of #Phi;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
     // Rho before
-    registry.add("RhoQA/Before/fInvMass", "Invariant mass #rho;M_{#pi#pi};Entries", HistType::kTH1F, {Binning.invMassRho});
-    registry.add("RhoQA/Before/fPt", "Transverse momentum #rho;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("RhoQA/Before/fEta", "Pseudorapidity of #rho;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("RhoQA/Before/fPhi", "Azimuthal angle of #rho;#varphi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("RhoQA/Before/fInvMass", "Invariant mass #rho;M_{#pi#pi};Entries", HistType::kTH1F, {Binning.invMassRho});
+    registryParticleQA.add("RhoQA/Before/fPt", "Transverse momentum #rho;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("RhoQA/Before/fEta", "Pseudorapidity of #rho;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("RhoQA/Before/fPhi", "Azimuthal angle of #rho;#varphi;Entries", HistType::kTH1F, {Binning.phi});
 
     // Rho after
-    registry.add("RhoQA/After/fInvMass", "Invariant mass #rho;M_{#pi#pi};Entries", HistType::kTH1F, {Binning.invMassRho});
-    registry.add("RhoQA/After/fPt", "Transverse momentum #rho;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
-    registry.add("RhoQA/After/fEta", "Pseudorapidity of #rho;#eta;Entries", HistType::kTH1F, {Binning.eta});
-    registry.add("RhoQA/After/fPhi", "Azimuthal angle of #rho;#phi;Entries", HistType::kTH1F, {Binning.phi});
+    registryParticleQA.add("RhoQA/After/fInvMass", "Invariant mass #rho;M_{#pi#pi};Entries", HistType::kTH1F, {Binning.invMassRho});
+    registryParticleQA.add("RhoQA/After/fPt", "Transverse momentum #rho;p_{T} (GeV/c);Entries", HistType::kTH1F, {Binning.momentum});
+    registryParticleQA.add("RhoQA/After/fEta", "Pseudorapidity of #rho;#eta;Entries", HistType::kTH1F, {Binning.eta});
+    registryParticleQA.add("RhoQA/After/fPhi", "Azimuthal angle of #rho;#phi;Entries", HistType::kTH1F, {Binning.phi});
 
     // for ppp
-    registry.add("PPP/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PPP/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PPP/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPP/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPP/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PPP/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPP/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPP/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/all/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/all/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPP/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPP/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/loose/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/loose/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPP/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPP/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPP/tight/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPP/tight/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
 
     // for ppl
-    registry.add("PPL/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PPL/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PPL/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPL/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPL/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PPL/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PPL/fLambdaPtVsQ3", "Lambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PPL/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPL/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPL/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/all/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/all/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/all/fLambdaPtVsQ3", "Lambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/all/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPL/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPL/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/loose/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/loose/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/loose/fLambdaPtVsQ3", "Lambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/loose/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPL/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPL/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPL/tight/fProtonPtVsQ3", "Proton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/tight/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/tight/fLambdaPtVsQ3", "Lambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PPL/tight/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q_{3};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
 
     // for pll
-    registry.add("PLL/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PLL/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PLL/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
-    registry.add("PLL/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
-    registry.add("PLL/fProtonPtVsQ3", "Proton p_{T}Q3 vs pT", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PLL/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PLL/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("PLL/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PLL/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PLL/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/all/fProtonPtVsQ3", "Proton p_{T}Q3 vs pT", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/all/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/all/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/all/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PLL/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PLL/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/loose/fProtonPtVsQ3", "Proton p_{T}Q3 vs pT", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/loose/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/loose/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/loose/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PLL/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PLL/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PLL/tight/fProtonPtVsQ3", "Proton p_{T}Q3 vs pT", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/tight/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/tight/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("PLL/tight/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
 
     // for lll
-    registry.add("LLL/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("LLL/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("LLL/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("LLL/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("LLL/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
-    registry.add("LLL/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LLL/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LLL/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/all/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/all/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LLL/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LLL/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/loose/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/loose/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LLL/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LLL/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("LLL/tight/fLambdaPtVsQ3", "Lambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
+    registryTriggerQA.add("LLL/tight/fAntiLambdaPtVsQ3", "AntiLambda p_{T} vs Q3", {HistType::kTH2F, {Binning.momentum, Binning.q3}});
 
     // for ppPhi
-    registry.add("PPPhi/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PPPhi/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PPPhi/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPPhi/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
-    registry.add("PPPhi/fProtonPtVsQ3", "Proton p_{T} vs Q_{3}", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPPhi/fAntiProtonPtVsQ3", "AntiLambda p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPPhi/fPhiPtVsQ3", "#phi p_{T} vs Q_{3};p_{T} (GeV/c); Q_{3} (GeV/c)", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPPhi/fPhiInvMassVsQ3", "#phi mass vs Q_{3};M_{K^{+}K^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassPhi, Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPPhi/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPPhi/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fProtonPtVsQ3", "Proton p_{T} vs Q_{3}", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fAntiProtonPtVsQ3", "AntiLambda p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fPhiPtVsQ3", "#phi p_{T} vs Q_{3};p_{T} (GeV/c); Q_{3} (GeV/c)", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/all/fPhiInvMassVsQ3", "#phi mass vs Q_{3};M_{K^{+}K^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassPhi, Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPPhi/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPPhi/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fProtonPtVsQ3", "Proton p_{T} vs Q_{3}", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fAntiProtonPtVsQ3", "AntiLambda p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fPhiPtVsQ3", "#phi p_{T} vs Q_{3};p_{T} (GeV/c); Q_{3} (GeV/c)", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/loose/fPhiInvMassVsQ3", "#phi mass vs Q_{3};M_{K^{+}K^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassPhi, Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPPhi/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPPhi/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);Entries", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fProtonPtVsQ3", "Proton p_{T} vs Q_{3}", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fAntiProtonPtVsQ3", "AntiLambda p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fPhiPtVsQ3", "#phi p_{T} vs Q_{3};p_{T} (GeV/c); Q_{3} (GeV/c)", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPPhi/tight/fPhiInvMassVsQ3", "#phi mass vs Q_{3};M_{K^{+}K^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassPhi, Binning.q3});
 
     // for ppRho
-    registry.add("PPRho/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PPRho/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PPRho/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
-    registry.add("PPRho/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
-    registry.add("PPRho/fProtonPtVsQ3", "Proton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPRho/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPRho/fRhoPtVsQ3", "#rho p_{T} vs Q3;Q_{3} (GeV/c);SE", HistType::kTH2F, {Binning.momentum, Binning.q3});
-    registry.add("PPRho/fRhoInvMassVsQ3", "#rho mass vs Q_{3};M_{#pi^{+}#pi^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.q3});
+    registryTriggerQA.add("PPRho/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPRho/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPRho/all/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/all/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/all/fProtonPtVsQ3", "Proton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/all/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/all/fRhoPtVsQ3", "#rho p_{T} vs Q3;Q_{3} (GeV/c);SE", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/all/fRhoInvMassVsQ3", "#rho mass vs Q_{3};M_{#pi^{+}#pi^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPRho/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPRho/loose/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fProtonPtVsQ3", "Proton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fRhoPtVsQ3", "#rho p_{T} vs Q3;Q_{3} (GeV/c);SE", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/loose/fRhoInvMassVsQ3", "#rho mass vs Q_{3};M_{#pi^{+}#pi^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PPRho/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PPRho/tight/fSE_particle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fSE_antiparticle", "Same Event distribution;Q_{3} (GeV/c);SE", HistType::kTH1F, {Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fProtonPtVsQ3", "Proton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fAntiProtonPtVsQ3", "AntiProton p_{T} vs Q3", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fRhoPtVsQ3", "#rho p_{T} vs Q3;Q_{3} (GeV/c);SE", HistType::kTH2F, {Binning.momentum, Binning.q3});
+    registryTriggerQA.add("PPRho/tight/fRhoInvMassVsQ3", "#rho mass vs Q_{3};M_{#pi^{+}#pi^{-}} (GeV/c^{2});Q_{3} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.q3});
 
     // for pd
-    registry.add("PD/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PD/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PD/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("PD/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("PD/fProtonPtVskstar", "Proton p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PD/fAntiProtonPtVskstar", "AntiProton p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PD/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PD/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PD/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PD/all/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/all/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/all/fProtonPtVskstar", "Proton p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/all/fAntiProtonPtVskstar", "AntiProton p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/all/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/all/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PD/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PD/loose/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/loose/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/loose/fProtonPtVskstar", "Proton p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/loose/fAntiProtonPtVskstar", "AntiProton p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/loose/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/loose/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PD/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PD/tight/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/tight/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PD/tight/fProtonPtVskstar", "Proton p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/tight/fAntiProtonPtVskstar", "AntiProton p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/tight/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PD/tight/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
 
     // for ld
-    registry.add("LD/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("LD/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("LD/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("LD/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("LD/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("LD/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("LD/fLambdaPtVskstar", "Lambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("LD/fAntiLambdaPtVskstar", "AntiLambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LD/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LD/all/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/all/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/all/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/all/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/all/fLambdaPtVskstar", "Lambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/all/fAntiLambdaPtVskstar", "AntiLambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LD/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LD/loose/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/loose/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/loose/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/loose/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/loose/fLambdaPtVskstar", "Lambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/loose/fAntiLambdaPtVskstar", "AntiLambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("LD/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("LD/tight/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/tight/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("LD/tight/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/tight/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};Q_{3} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/tight/fLambdaPtVskstar", "Lambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("LD/tight/fAntiLambdaPtVskstar", "AntiLambda p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
 
     // for phid
-    registry.add("PhiD/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("PhiD/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("PhiD/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("PhiD/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("PhiD/fPhiPtVskstar", "Phi p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PhiD/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PhiD/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("PhiD/fPhiInvMassVskstar", "#phi mass vs k^{*};M_{K^{+}K^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("PhiD/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PhiD/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PhiD/all/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/all/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/all/fPhiPtVskstar", "Phi p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/all/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/all/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/all/fPhiInvMassVskstar", "#phi mass vs k^{*};M_{K^{+}K^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("PhiD/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PhiD/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PhiD/loose/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/loose/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/loose/fPhiPtVskstar", "Phi p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/loose/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/loose/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/loose/fPhiInvMassVskstar", "#phi mass vs k^{*};M_{K^{+}K^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("PhiD/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("PhiD/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("PhiD/tight/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/tight/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("PhiD/tight/fPhiPtVskstar", "Phi p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/tight/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/tight/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("PhiD/tight/fPhiInvMassVskstar", "#phi mass vs k^{*};M_{K^{+}K^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
 
     // for rhod
-    registry.add("RhoD/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
-    registry.add("RhoD/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
-    registry.add("RhoD/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("RhoD/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
-    registry.add("RhoD/fRhoPtVskstar", "Rho p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("RhoD/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("RhoD/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
-    registry.add("RhoD/fRhoInvMassVskstar", "#rho mass vs k^{*};M_{#pi^{+}#pi^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("RhoD/all/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("RhoD/all/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("RhoD/all/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/all/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/all/fRhoPtVskstar", "Rho p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/all/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/all/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/all/fRhoInvMassVskstar", "#rho mass vs k^{*};M_{#pi^{+}#pi^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("RhoD/loose/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("RhoD/loose/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("RhoD/loose/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/loose/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/loose/fRhoPtVskstar", "Rho p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/loose/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/loose/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/loose/fRhoInvMassVskstar", "#rho mass vs k^{*};M_{#pi^{+}#pi^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
+    registryTriggerQA.add("RhoD/tight/fMultiplicity", "Multiplicity;Mult;Entries", HistType::kTH1F, {Binning.multiplicity});
+    registryTriggerQA.add("RhoD/tight/fZvtx", "Zvtx;Z_{vtx};Entries", HistType::kTH1F, {Binning.zvtx});
+    registryTriggerQA.add("RhoD/tight/fSE_particle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/tight/fSE_antiparticle", "Same Event distribution;k^{*} (GeV/c);Entries", HistType::kTH1F, {Binning.kstar});
+    registryTriggerQA.add("RhoD/tight/fRhoPtVskstar", "Rho p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/tight/fDeuteronPtVskstar", "Deuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/tight/fAntiDeuteronPtVskstar", "AntiDeuteron p_{T} vs k^{*};k^{*} (GeV/c);p_{T} (GeV/c)", {HistType::kTH2F, {Binning.momentum, Binning.kstar}});
+    registryTriggerQA.add("RhoD/tight/fRhoInvMassVskstar", "#rho mass vs k^{*};M_{#pi^{+}#pi^{-}} (GeV/c^{2});k^{*} (GeV/c)", HistType::kTH2F, {Binning.invMassRho, Binning.kstar});
   }
 
   void initCCDB(int run)
@@ -904,6 +1059,12 @@ struct CFFilterAll {
   template <typename T>
   bool checkTrack(T const& track, std::string trackName)
   {
+    if (track.pt() < TrackSelections.momentum->get(trackName.c_str(), "PtMin")) {
+      return false;
+    }
+    if (track.pt() > TrackSelections.momentum->get(trackName.c_str(), "PtMax")) {
+      return false;
+    }
     if (std::abs(track.eta()) > TrackSelections.trackProperties->get(trackName.c_str(), "AbsEtaMax")) {
       return false;
     }
@@ -1106,16 +1267,16 @@ struct CFFilterAll {
 
     auto tracksWithItsPid = soa::Attach<cf_trigger::FullTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
 
-    registry.fill(HIST("fProcessedEvents"), 0);
-    registry.fill(HIST("EventQA/Before/fMultiplicity"), col.multNTracksPV());
-    registry.fill(HIST("EventQA/Before/fZvtx"), col.posZ());
+    registryTriggerQA.fill(HIST("fProcessedEvents"), 0);
+    registryParticleQA.fill(HIST("EventQA/Before/fMultiplicity"), col.multNTracksPV());
+    registryParticleQA.fill(HIST("EventQA/Before/fZvtx"), col.posZ());
 
     if (!checkEvent(col)) {
       return;
     }
 
-    registry.fill(HIST("EventQA/After/fMultiplicity"), col.multNTracksPV());
-    registry.fill(HIST("EventQA/After/fZvtx"), col.posZ());
+    registryParticleQA.fill(HIST("EventQA/After/fMultiplicity"), col.multNTracksPV());
+    registryParticleQA.fill(HIST("EventQA/After/fZvtx"), col.posZ());
 
     initCCDB(col.bc().runNumber());
 
@@ -1155,334 +1316,334 @@ struct CFFilterAll {
 
       // get paritcles
       if (track.sign() > 0) {
-        registry.fill(HIST("TrackQA/Before/Particle/fPt"), track.pt());
-        registry.fill(HIST("TrackQA/Before/Particle/fEta"), track.eta());
-        registry.fill(HIST("TrackQA/Before/Particle/fPhi"), track.phi());
-        registry.fill(HIST("TrackQA/Before/Particle/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-        registry.fill(HIST("TrackQA/Before/Particle/fItsSignal"), track.p(), itsSignal(track));
-        registry.fill(HIST("TrackQA/Before/Particle/fTpcSignal"), track.p(), track.tpcSignal());
-        registry.fill(HIST("TrackQA/Before/Particle/fTofSignal"), track.p(), track.beta());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fPt"), track.pt());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fEta"), track.eta());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fPhi"), track.phi());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fItsSignal"), track.p(), itsSignal(track));
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fTpcSignal"), track.p(), track.tpcSignal());
+        registryParticleQA.fill(HIST("TrackQA/Before/Particle/fTofSignal"), track.p(), track.beta());
 
-        registry.fill(HIST("TrackQA/Before/Pion/fNsigmaITS"), track.p(), track.itsNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/Pion/fNsigmaTPC"), track.p(), track.tpcNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/Pion/fNsigmaTOF"), track.p(), track.tofNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/Pion/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
+        registryParticleQA.fill(HIST("TrackQA/Before/Pion/fNsigmaITS"), track.p(), track.itsNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/Pion/fNsigmaTPC"), track.p(), track.tpcNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/Pion/fNsigmaTOF"), track.p(), track.tofNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/Pion/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
 
-        registry.fill(HIST("TrackQA/Before/Kaon/fNsigmaITS"), track.p(), track.itsNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/Kaon/fNsigmaTPC"), track.p(), track.tpcNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/Kaon/fNsigmaTOF"), track.p(), track.tofNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/Kaon/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
+        registryParticleQA.fill(HIST("TrackQA/Before/Kaon/fNsigmaITS"), track.p(), track.itsNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/Kaon/fNsigmaTPC"), track.p(), track.tpcNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/Kaon/fNsigmaTOF"), track.p(), track.tofNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/Kaon/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
 
-        registry.fill(HIST("TrackQA/Before/Proton/fNsigmaITS"), track.p(), track.itsNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/Proton/fNsigmaTPC"), track.p(), track.tpcNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/Proton/fNsigmaTOF"), track.p(), track.tofNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/Proton/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+        registryParticleQA.fill(HIST("TrackQA/Before/Proton/fNsigmaITS"), track.p(), track.itsNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/Proton/fNsigmaTPC"), track.p(), track.tpcNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/Proton/fNsigmaTOF"), track.p(), track.tofNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/Proton/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
 
-        registry.fill(HIST("TrackQA/Before/Deuteron/fNsigmaITS"), track.p(), track.itsNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTPC"), track.p(), track.tpcNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTOF"), track.p(), track.tofNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
+        registryParticleQA.fill(HIST("TrackQA/Before/Deuteron/fNsigmaITS"), track.p(), track.itsNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTPC"), track.p(), track.tpcNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTOF"), track.p(), track.tofNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/Deuteron/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
 
         if (checkTrack(track, std::string("Pion")) && checkTrackPid(track, std::string("Pion"))) {
           vecPion.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassPionCharged);
           idxPion.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/Pion/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/Pion/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/Pion/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/Pion/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/Pion/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/Pion/fNsigmaIts"), track.p(), track.itsNSigmaPi());
-          registry.fill(HIST("TrackQA/After/Pion/fNsigmaTpc"), track.p(), track.tpcNSigmaPi());
-          registry.fill(HIST("TrackQA/After/Pion/fNsigmaTof"), track.p(), track.tofNSigmaPi());
-          registry.fill(HIST("TrackQA/After/Pion/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fNsigmaIts"), track.p(), track.itsNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fNsigmaTpc"), track.p(), track.tpcNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fNsigmaTof"), track.p(), track.tofNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
 
-          registry.fill(HIST("TrackQA/After/Pion/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/Pion/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/Pion/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/Pion/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/Pion/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/Pion/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/Pion/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/Pion/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/Pion/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/Pion/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/Pion/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/Pion/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/Pion/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/Pion/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/Pion/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Kaon")) && checkTrackPid(track, std::string("Kaon"))) {
           vecKaon.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassKaonCharged);
           idxKaon.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/Kaon/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/Kaon/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/Kaon/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/Kaon/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/Kaon/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/Kaon/fNsigmaIts"), track.p(), track.itsNSigmaKa());
-          registry.fill(HIST("TrackQA/After/Kaon/fNsigmaTpc"), track.p(), track.tpcNSigmaKa());
-          registry.fill(HIST("TrackQA/After/Kaon/fNsigmaTof"), track.p(), track.tofNSigmaKa());
-          registry.fill(HIST("TrackQA/After/Kaon/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fNsigmaIts"), track.p(), track.itsNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fNsigmaTpc"), track.p(), track.tpcNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fNsigmaTof"), track.p(), track.tofNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
 
-          registry.fill(HIST("TrackQA/After/Kaon/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/Kaon/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/Kaon/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/Kaon/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/Kaon/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/Kaon/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/Kaon/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/Kaon/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/Kaon/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Proton")) && checkTrackPid(track, std::string("Proton"))) {
           vecProton.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassProton);
           idxProton.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/Proton/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/Proton/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/Proton/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/Proton/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/Proton/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/Proton/fNsigmaIts"), track.p(), track.itsNSigmaPr());
-          registry.fill(HIST("TrackQA/After/Proton/fNsigmaTpc"), track.p(), track.tpcNSigmaPr());
-          registry.fill(HIST("TrackQA/After/Proton/fNsigmaTof"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("TrackQA/After/Proton/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fNsigmaIts"), track.p(), track.itsNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fNsigmaTpc"), track.p(), track.tpcNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fNsigmaTof"), track.p(), track.tofNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
 
-          registry.fill(HIST("TrackQA/After/Proton/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/Proton/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/Proton/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/Proton/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/Proton/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/Proton/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/Proton/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/Proton/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/Proton/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/Proton/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/Proton/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/Proton/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/Proton/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/Proton/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/Proton/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Deuteron")) && checkTrackPid(track, std::string("Deuteron"))) {
           vecDeuteron.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassDeuteron);
           idxDeuteron.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/Deuteron/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/Deuteron/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/Deuteron/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/Deuteron/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fNsigmaIts"), track.p(), track.itsNSigmaDe());
-          registry.fill(HIST("TrackQA/After/Deuteron/fNsigmaTpc"), track.p(), track.tpcNSigmaDe());
-          registry.fill(HIST("TrackQA/After/Deuteron/fNsigmaTof"), track.p(), track.tofNSigmaDe());
-          registry.fill(HIST("TrackQA/After/Deuteron/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fNsigmaIts"), track.p(), track.itsNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fNsigmaTpc"), track.p(), track.tpcNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fNsigmaTof"), track.p(), track.tofNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/Deuteron/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/Deuteron/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/Deuteron/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/Deuteron/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/Deuteron/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/Deuteron/fItsChi2OverCluster"), track.itsChi2NCl());
         }
       }
 
       if (track.sign() < 0) {
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fPt"), track.pt());
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fEta"), track.eta());
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fPhi"), track.phi());
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fItsSignal"), track.p(), itsSignal(track));
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fTpcSignal"), track.p(), track.tpcSignal());
-        registry.fill(HIST("TrackQA/Before/AntiParticle/fTofSignal"), track.p(), track.beta());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fPt"), track.pt());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fEta"), track.eta());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fPhi"), track.phi());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fItsSignal"), track.p(), itsSignal(track));
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fTpcSignal"), track.p(), track.tpcSignal());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiParticle/fTofSignal"), track.p(), track.beta());
 
-        registry.fill(HIST("TrackQA/Before/AntiPion/fNsigmaITS"), track.p(), track.itsNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTPC"), track.p(), track.tpcNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTOF"), track.p(), track.tofNSigmaPi());
-        registry.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiPion/fNsigmaITS"), track.p(), track.itsNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTPC"), track.p(), track.tpcNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTOF"), track.p(), track.tofNSigmaPi());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiPion/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
 
-        registry.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaITS"), track.p(), track.itsNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTPC"), track.p(), track.tpcNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTOF"), track.p(), track.tofNSigmaKa());
-        registry.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaITS"), track.p(), track.itsNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTPC"), track.p(), track.tpcNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTOF"), track.p(), track.tofNSigmaKa());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiKaon/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
 
-        registry.fill(HIST("TrackQA/Before/AntiProton/fNsigmaITS"), track.p(), track.itsNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTPC"), track.p(), track.tpcNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTOF"), track.p(), track.tofNSigmaPr());
-        registry.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiProton/fNsigmaITS"), track.p(), track.itsNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTPC"), track.p(), track.tpcNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTOF"), track.p(), track.tofNSigmaPr());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiProton/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
 
-        registry.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaITS"), track.p(), track.itsNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTPC"), track.p(), track.tpcNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTOF"), track.p(), track.tofNSigmaDe());
-        registry.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaITS"), track.p(), track.itsNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTPC"), track.p(), track.tpcNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTOF"), track.p(), track.tofNSigmaDe());
+        registryParticleQA.fill(HIST("TrackQA/Before/AntiDeuteron/fNsigmaTPCTOF"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
 
         if (checkTrack(track, std::string("Pion")) && checkTrackPid(track, std::string("Pion"))) {
           vecAntiPion.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassPionCharged);
           idxAntiPion.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/AntiPion/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/AntiPion/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/AntiPion/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/AntiPion/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fNsigmaIts"), track.p(), track.itsNSigmaPi());
-          registry.fill(HIST("TrackQA/After/AntiPion/fNsigmaTpc"), track.p(), track.tpcNSigmaPi());
-          registry.fill(HIST("TrackQA/After/AntiPion/fNsigmaTof"), track.p(), track.tofNSigmaPi());
-          registry.fill(HIST("TrackQA/After/AntiPion/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fNsigmaIts"), track.p(), track.itsNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fNsigmaTpc"), track.p(), track.tpcNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fNsigmaTof"), track.p(), track.tofNSigmaPi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPi(), track.tofNSigmaPi()));
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/AntiPion/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/AntiPion/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/AntiPion/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/AntiPion/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/AntiPion/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiPion/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Kaon")) && checkTrackPid(track, std::string("Kaon"))) {
           vecAntiKaon.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassKaonCharged);
           idxAntiKaon.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fNsigmaIts"), track.p(), track.itsNSigmaKa());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTpc"), track.p(), track.tpcNSigmaKa());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTof"), track.p(), track.tofNSigmaKa());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fNsigmaIts"), track.p(), track.itsNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTpc"), track.p(), track.tpcNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTof"), track.p(), track.tofNSigmaKa());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaKa(), track.tofNSigmaKa()));
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/AntiKaon/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/AntiKaon/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiKaon/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Proton")) && checkTrackPid(track, std::string("Proton"))) {
           vecAntiProton.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassProton);
           idxAntiProton.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/AntiProton/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/AntiProton/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/AntiProton/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/AntiProton/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fNsigmaIts"), track.p(), track.itsNSigmaPr());
-          registry.fill(HIST("TrackQA/After/AntiProton/fNsigmaTpc"), track.p(), track.tpcNSigmaPr());
-          registry.fill(HIST("TrackQA/After/AntiProton/fNsigmaTof"), track.p(), track.tofNSigmaPr());
-          registry.fill(HIST("TrackQA/After/AntiProton/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fNsigmaIts"), track.p(), track.itsNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fNsigmaTpc"), track.p(), track.tpcNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fNsigmaTof"), track.p(), track.tofNSigmaPr());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaPr(), track.tofNSigmaPr()));
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/AntiProton/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/AntiProton/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/AntiProton/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/AntiProton/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/AntiProton/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiProton/fItsChi2OverCluster"), track.itsChi2NCl());
         }
 
         if (checkTrack(track, std::string("Deuteron")) && checkTrackPid(track, std::string("Deuteron"))) {
           vecAntiDeuteron.emplace_back(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassDeuteron);
           idxAntiDeuteron.push_back(track.globalIndex());
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fPt"), track.pt());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fPTpc"), track.tpcInnerParam());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fEta"), track.eta());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fPhi"), track.phi());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fPt"), track.pt());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fPTpc"), track.tpcInnerParam());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fMomCor"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fEta"), track.eta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fPhi"), track.phi());
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaIts"), track.p(), track.itsNSigmaDe());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTpc"), track.p(), track.tpcNSigmaDe());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTof"), track.p(), track.tofNSigmaDe());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaIts"), track.p(), track.itsNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTpc"), track.p(), track.tpcNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTof"), track.p(), track.tofNSigmaDe());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fNsigmaTpcTof"), track.p(), RecoDecay::sqrtSumOfSquares(track.tpcNSigmaDe(), track.tofNSigmaDe()));
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fItsSignal"), track.p(), itsSignal(track));
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSignal"), track.p(), track.tpcSignal());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTofBeta"), track.p(), track.beta());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fItsSignal"), track.p(), itsSignal(track));
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSignal"), track.p(), track.tpcSignal());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTofBeta"), track.p(), track.beta());
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fDcaXy"), track.pt(), track.dcaXY());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fDcaZ"), track.pt(), track.dcaZ());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fDcaXy"), track.pt(), track.dcaXY());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fDcaZ"), track.pt(), track.dcaZ());
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcClusters"), track.tpcNClsFound());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcCrossedRows"), track.tpcNClsCrossedRows());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSharedClusters"), track.tpcNClsShared());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fTpcChi2OverCluster"), track.tpcChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcClusters"), track.tpcNClsFound());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcCrossedRows"), track.tpcNClsCrossedRows());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSharedClusters"), track.tpcNClsShared());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcSharedClusterOverClusterss"), track.tpcFractionSharedCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcFindableOverRows"), track.tpcCrossedRowsOverFindableCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fTpcChi2OverCluster"), track.tpcChi2NCl());
 
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fItsClusters"), track.itsNCls());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fItsIbClusters"), track.itsNClsInnerBarrel());
-          registry.fill(HIST("TrackQA/After/AntiDeuteron/fItsChi2OverCluster"), track.itsChi2NCl());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fItsClusters"), track.itsNCls());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fItsIbClusters"), track.itsNClsInnerBarrel());
+          registryParticleQA.fill(HIST("TrackQA/After/AntiDeuteron/fItsChi2OverCluster"), track.itsChi2NCl());
         }
       }
     }
@@ -1516,64 +1677,64 @@ struct CFFilterAll {
       float negTrackEta = RecoDecay::eta(std::array{mStraHelper.v0.negativeMomentum[0], mStraHelper.v0.negativeMomentum[1], mStraHelper.v0.negativeMomentum[2]});
       float negTrackDca = mStraHelper.v0.negativeDCAxy;
 
-      registry.fill(HIST("LambdaQA/Before/fPt"), lambdaPt);
-      registry.fill(HIST("LambdaQA/Before/fEta"), lambdaEta);
-      registry.fill(HIST("LambdaQA/Before/fPhi"), lambdaPhi);
-      registry.fill(HIST("LambdaQA/Before/fInvMassLambda"), lambdaMass);
-      registry.fill(HIST("LambdaQA/Before/fInvMassAntiLambda"), antiLambdaMass);
-      registry.fill(HIST("LambdaQA/Before/fInvMassLambdaVsAntiLambda"), lambdaMass, antiLambdaMass);
-      registry.fill(HIST("LambdaQA/Before/fInvMassLambdaVsKaon"), lambdaMass, kaonMass);
-      registry.fill(HIST("LambdaQA/Before/fInvMassAntiLambdaVsKaon"), antiLambdaMass, kaonMass);
-      registry.fill(HIST("LambdaQA/Before/fDcaDaugh"), lambdaDauDca);
-      registry.fill(HIST("LambdaQA/Before/fCpa"), lambdaCpa);
-      registry.fill(HIST("LambdaQA/Before/fTranRad"), lambdaRadius);
-      registry.fill(HIST("LambdaQA/Before/fDecVtx"), lambdaPos);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fPt"), lambdaPt);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fEta"), lambdaEta);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fPhi"), lambdaPhi);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fInvMassLambda"), lambdaMass);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fInvMassAntiLambda"), antiLambdaMass);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fInvMassLambdaVsAntiLambda"), lambdaMass, antiLambdaMass);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fInvMassLambdaVsKaon"), lambdaMass, kaonMass);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fInvMassAntiLambdaVsKaon"), antiLambdaMass, kaonMass);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fDcaDaugh"), lambdaDauDca);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fCpa"), lambdaCpa);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fTranRad"), lambdaRadius);
+      registryParticleQA.fill(HIST("LambdaQA/Before/fDecVtx"), lambdaPos);
 
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fPt"), posTrack.pt());
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fEta"), posTrackEta);
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fPhi"), posTrack.phi());
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fNsigmaTpcProton"), posTrack.p(), posTrack.tpcNSigmaPr());
-      registry.fill(HIST("LambdaQA/Before/PosDaughter/fNsigmaTpcPion"), posTrack.p(), posTrack.tpcNSigmaPi());
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fPt"), posTrack.pt());
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fEta"), posTrackEta);
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fPhi"), posTrack.phi());
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fNsigmaTpcProton"), posTrack.p(), posTrack.tpcNSigmaPr());
+      registryParticleQA.fill(HIST("LambdaQA/Before/PosDaughter/fNsigmaTpcPion"), posTrack.p(), posTrack.tpcNSigmaPi());
 
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fPt"), negTrack.pt());
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fEta"), negTrackEta);
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fPhi"), negTrack.phi());
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fNsigmaTpcProton"), negTrack.p(), negTrack.tpcNSigmaPr());
-      registry.fill(HIST("LambdaQA/Before/NegDaughter/fNsigmaTpcPion"), negTrack.p(), negTrack.tpcNSigmaPi());
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fPt"), negTrack.pt());
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fEta"), negTrackEta);
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fPhi"), negTrack.phi());
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fNsigmaTpcProton"), negTrack.p(), negTrack.tpcNSigmaPr());
+      registryParticleQA.fill(HIST("LambdaQA/Before/NegDaughter/fNsigmaTpcPion"), negTrack.p(), negTrack.tpcNSigmaPi());
 
       if (checkLambda(lambdaPt, lambdaDauDca, lambdaCpa, lambdaRadius, lambdaPos, kaonMass, lambdaMass) && checkLambdaDaughter(posTrack, posTrackEta, posTrackDca, posTrack.tpcNSigmaPr()) && checkLambdaDaughter(negTrack, negTrackEta, negTrackDca, negTrack.tpcNSigmaPi())) {
         vecLambda.emplace_back(lambdaPt, lambdaEta, lambdaPhi, o2::constants::physics::MassLambda0);
         idxLambdaDaughProton.push_back(posTrack.globalIndex());
         idxLambdaDaughPion.push_back(negTrack.globalIndex());
 
-        registry.fill(HIST("LambdaQA/After/Lambda/fPt"), lambdaPt);
-        registry.fill(HIST("LambdaQA/After/Lambda/fEta"), lambdaEta);
-        registry.fill(HIST("LambdaQA/After/Lambda/fPhi"), lambdaPhi);
-        registry.fill(HIST("LambdaQA/After/Lambda/fInvMass"), lambdaMass);
-        registry.fill(HIST("LambdaQA/After/Lambda/fInvMassLambdaVsAntiLambda"), lambdaMass, antiLambdaMass);
-        registry.fill(HIST("LambdaQA/After/Lambda/fInvMassLambdaVsKaon"), lambdaMass, kaonMass);
-        registry.fill(HIST("LambdaQA/After/Lambda/fDcaDaugh"), lambdaDauDca);
-        registry.fill(HIST("LambdaQA/After/Lambda/fCpa"), lambdaCpa);
-        registry.fill(HIST("LambdaQA/After/Lambda/fTranRad"), lambdaRadius);
-        registry.fill(HIST("LambdaQA/After/Lambda/fDecVtx"), lambdaPos);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fPt"), lambdaPt);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fEta"), lambdaEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fPhi"), lambdaPhi);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fInvMass"), lambdaMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fInvMassLambdaVsAntiLambda"), lambdaMass, antiLambdaMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fInvMassLambdaVsKaon"), lambdaMass, kaonMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fDcaDaugh"), lambdaDauDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fCpa"), lambdaCpa);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fTranRad"), lambdaRadius);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/fDecVtx"), lambdaPos);
 
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fPt"), posTrack.pt());
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fEta"), posTrackEta);
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fPhi"), posTrack.phi());
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
-        registry.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fNsigmaTpc"), posTrack.p(), posTrack.tpcNSigmaPr());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fPt"), posTrack.pt());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fEta"), posTrackEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fPhi"), posTrack.phi());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/PosDaughter/fNsigmaTpc"), posTrack.p(), posTrack.tpcNSigmaPr());
 
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fPt"), negTrack.pt());
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fEta"), negTrackEta);
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fPhi"), negTrack.phi());
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
-        registry.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fNsigmaTpc"), negTrack.p(), negTrack.tpcNSigmaPi());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fPt"), negTrack.pt());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fEta"), negTrackEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fPhi"), negTrack.phi());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
+        registryParticleQA.fill(HIST("LambdaQA/After/Lambda/NegDaughter/fNsigmaTpc"), negTrack.p(), negTrack.tpcNSigmaPi());
       }
 
       if (checkLambda(lambdaPt, lambdaDauDca, lambdaCpa, lambdaRadius, lambdaPos, kaonMass, antiLambdaMass) && checkLambdaDaughter(posTrack, posTrackEta, posTrackDca, posTrack.tpcNSigmaPi()) && checkLambdaDaughter(negTrack, negTrackEta, negTrackDca, negTrack.tpcNSigmaPr())) {
@@ -1582,30 +1743,30 @@ struct CFFilterAll {
         idxAntiLambdaDaughProton.push_back(negTrack.globalIndex());
         idxAntiLambdaDaughPion.push_back(posTrack.globalIndex());
 
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fPt"), lambdaPt);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fEta"), lambdaEta);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fPhi"), lambdaPhi);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fInvMass"), antiLambdaMass);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsLambda"), antiLambdaMass, lambdaMass);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsKaon"), antiLambdaMass, kaonMass);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fDcaDaugh"), lambdaDauDca);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fCpa"), lambdaCpa);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fTranRad"), lambdaRadius);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/fDecVtx"), lambdaPos);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fPt"), lambdaPt);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fEta"), lambdaEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fPhi"), lambdaPhi);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fInvMass"), antiLambdaMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsLambda"), antiLambdaMass, lambdaMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fInvMassAntiLambdaVsKaon"), antiLambdaMass, kaonMass);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fDcaDaugh"), lambdaDauDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fCpa"), lambdaCpa);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fTranRad"), lambdaRadius);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/fDecVtx"), lambdaPos);
 
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fPt"), posTrack.pt());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fEta"), posTrackEta);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fPhi"), posTrack.phi());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fNsigmaTpc"), posTrack.p(), posTrack.tpcNSigmaPr());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fPt"), posTrack.pt());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fEta"), posTrackEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fPhi"), posTrack.phi());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fDcaXy"), posTrack.pt(), posTrackDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fTpcClusters"), posTrack.tpcNClsFound());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/PosDaughter/fNsigmaTpc"), posTrack.p(), posTrack.tpcNSigmaPr());
 
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fPt"), negTrack.pt());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fEta"), negTrackEta);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fPhi"), negTrack.phi());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
-        registry.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fNsigmaTpc"), negTrack.p(), negTrack.tpcNSigmaPi());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fPt"), negTrack.pt());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fEta"), negTrackEta);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fPhi"), negTrack.phi());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fDcaXy"), negTrack.pt(), negTrackDca);
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fTpcClusters"), negTrack.tpcNClsFound());
+        registryParticleQA.fill(HIST("LambdaQA/After/AntiLambda/NegDaughter/fNsigmaTpc"), negTrack.p(), negTrack.tpcNSigmaPi());
       }
     }
 
@@ -1614,10 +1775,10 @@ struct CFFilterAll {
       for (size_t k2 = 0; k2 < vecAntiKaon.size(); k2++) {
         ROOT::Math::PtEtaPhiMVector phi = vecKaon.at(k1) + vecAntiKaon.at(k2);
 
-        registry.fill(HIST("PhiQA/Before/fInvMass"), phi.M());
-        registry.fill(HIST("PhiQA/Before/fPt"), phi.Pt());
-        registry.fill(HIST("PhiQA/Before/fEta"), phi.Eta());
-        registry.fill(HIST("PhiQA/Before/fPhi"), RecoDecay::constrainAngle(phi.Phi()));
+        registryParticleQA.fill(HIST("PhiQA/Before/fInvMass"), phi.M());
+        registryParticleQA.fill(HIST("PhiQA/Before/fPt"), phi.Pt());
+        registryParticleQA.fill(HIST("PhiQA/Before/fEta"), phi.Eta());
+        registryParticleQA.fill(HIST("PhiQA/Before/fPhi"), RecoDecay::constrainAngle(phi.Phi()));
 
         if ((phi.M() >= PhiSelections.invMassLow.value) &&
             (phi.M() <= PhiSelections.invMassUp.value)) {
@@ -1625,10 +1786,10 @@ struct CFFilterAll {
           idxPhiDaughPos.push_back(idxKaon.at(k1));
           idxPhiDaughNeg.push_back(idxAntiKaon.at(k2));
 
-          registry.fill(HIST("PhiQA/After/fInvMass"), phi.M());
-          registry.fill(HIST("PhiQA/After/fPt"), phi.Pt());
-          registry.fill(HIST("PhiQA/After/fEta"), phi.Eta());
-          registry.fill(HIST("PhiQA/After/fPhi"), RecoDecay::constrainAngle(phi.Phi()));
+          registryParticleQA.fill(HIST("PhiQA/After/fInvMass"), phi.M());
+          registryParticleQA.fill(HIST("PhiQA/After/fPt"), phi.Pt());
+          registryParticleQA.fill(HIST("PhiQA/After/fEta"), phi.Eta());
+          registryParticleQA.fill(HIST("PhiQA/After/fPhi"), RecoDecay::constrainAngle(phi.Phi()));
         }
       }
     }
@@ -1638,20 +1799,20 @@ struct CFFilterAll {
       for (size_t p2 = 0; p2 < vecAntiPion.size(); p2++) {
         ROOT::Math::PtEtaPhiMVector rho = vecPion.at(p1) + vecAntiPion.at(p2);
 
-        registry.fill(HIST("RhoQA/Before/fInvMass"), rho.M());
-        registry.fill(HIST("RhoQA/Before/fPt"), rho.Pt());
-        registry.fill(HIST("RhoQA/Before/fEta"), rho.Eta());
-        registry.fill(HIST("RhoQA/Before/fPhi"), RecoDecay::constrainAngle(rho.Phi()));
+        registryParticleQA.fill(HIST("RhoQA/Before/fInvMass"), rho.M());
+        registryParticleQA.fill(HIST("RhoQA/Before/fPt"), rho.Pt());
+        registryParticleQA.fill(HIST("RhoQA/Before/fEta"), rho.Eta());
+        registryParticleQA.fill(HIST("RhoQA/Before/fPhi"), RecoDecay::constrainAngle(rho.Phi()));
 
         if (((rho.M() >= RhoSelections.invMassLow.value) && (rho.M() <= RhoSelections.invMassUp.value)) && (rho.Pt() >= RhoSelections.ptLow)) {
           vecRho.push_back(rho);
           idxRhoDaughPos.push_back(idxPion.at(p1));
           idxRhoDaughNeg.push_back(idxAntiPion.at(p2));
 
-          registry.fill(HIST("RhoQA/After/fInvMass"), rho.M());
-          registry.fill(HIST("RhoQA/After/fPt"), rho.Pt());
-          registry.fill(HIST("RhoQA/After/fEta"), rho.Eta());
-          registry.fill(HIST("RhoQA/After/fPhi"), RecoDecay::constrainAngle(rho.Phi()));
+          registryParticleQA.fill(HIST("RhoQA/After/fInvMass"), rho.M());
+          registryParticleQA.fill(HIST("RhoQA/After/fPt"), rho.Pt());
+          registryParticleQA.fill(HIST("RhoQA/After/fEta"), rho.Eta());
+          registryParticleQA.fill(HIST("RhoQA/After/fPhi"), RecoDecay::constrainAngle(rho.Phi()));
         }
       }
     }
@@ -1670,16 +1831,28 @@ struct CFFilterAll {
         for (size_t p2 = p1 + 1; p2 < vecProton.size(); p2++) {
           for (size_t p3 = p2 + 1; p3 < vecProton.size(); p3++) {
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecProton.at(p3));
-            registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPP/fZvtx"), col.posZ());
-            registry.fill(HIST("PPP/fSE_particle"), q3);
-            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPP/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPP/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPP/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPP")) {
               signalLooseLimit[cf_trigger::kPPP] += 1;
+              registryTriggerQA.fill(HIST("PPP/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPP/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPP/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPP")) {
                 signalTightLimit[cf_trigger::kPPP] += 1;
+                registryTriggerQA.fill(HIST("PPP/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPP/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPP/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fProtonPtVsQ3"), vecProton.at(p3).Pt(), q3);
               }
             }
           }
@@ -1689,16 +1862,28 @@ struct CFFilterAll {
         for (size_t p2 = p1 + 1; p2 < vecAntiProton.size(); p2++) {
           for (size_t p3 = p2 + 1; p3 < vecAntiProton.size(); p3++) {
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecAntiProton.at(p3));
-            registry.fill(HIST("PPP/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPP/fZvtx"), col.posZ());
-            registry.fill(HIST("PPP/fSE_antiparticle"), q3);
-            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPP/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPP/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPP/all/fSE_antiparticle"), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPP/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPP")) {
               signalLooseLimit[cf_trigger::kPPP] += 1;
+              registryTriggerQA.fill(HIST("PPP/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPP/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPP/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPP/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPP")) {
                 signalTightLimit[cf_trigger::kPPP] += 1;
+                registryTriggerQA.fill(HIST("PPP/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPP/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPP/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPP/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p3).Pt(), q3);
               }
             }
           }
@@ -1714,16 +1899,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecLambda.at(l1));
-            registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPL/fZvtx"), col.posZ());
-            registry.fill(HIST("PPL/fSE_particle"), q3);
-            registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPL/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPL/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPL")) {
               signalLooseLimit[cf_trigger::kPPL] += 1;
+              registryTriggerQA.fill(HIST("PPL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPL/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPL")) {
                 signalTightLimit[cf_trigger::kPPL] += 1;
+                registryTriggerQA.fill(HIST("PPL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPL/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
               }
             }
           }
@@ -1736,16 +1933,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecAntiLambda.at(l1));
-            registry.fill(HIST("PPL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPL/fZvtx"), col.posZ());
-            registry.fill(HIST("PPL/fSE_particle"), q3);
-            registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPL/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPL/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPL/all/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPL")) {
               signalLooseLimit[cf_trigger::kPPL] += 1;
+              registryTriggerQA.fill(HIST("PPL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPL/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPL/loose/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPL")) {
                 signalTightLimit[cf_trigger::kPPL] += 1;
+                registryTriggerQA.fill(HIST("PPL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPL/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPL/tight/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
               }
             }
           }
@@ -1764,16 +1973,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecLambda.at(l1), vecLambda.at(l2), vecProton.at(p1));
-            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PLL/fZvtx"), col.posZ());
-            registry.fill(HIST("PLL/fSE_particle"), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
-            registry.fill(HIST("PLL/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PLL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PLL/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PLL")) {
               signalLooseLimit[cf_trigger::kPLL] += 1;
+              registryTriggerQA.fill(HIST("PLL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PLL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PLL/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PLL")) {
                 signalTightLimit[cf_trigger::kPLL] += 1;
+                registryTriggerQA.fill(HIST("PLL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PLL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PLL/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
               }
             }
           }
@@ -1789,16 +2010,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiLambda.at(l1), vecAntiLambda.at(l2), vecAntiProton.at(p1));
-            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PLL/fZvtx"), col.posZ());
-            registry.fill(HIST("PLL/fSE_antiparticle"), q3);
-            registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
-            registry.fill(HIST("PLL/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
-            registry.fill(HIST("PLL/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PLL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PLL/all/fSE_antiparticle"), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PLL/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PLL")) {
               signalLooseLimit[cf_trigger::kPLL] += 1;
+              registryTriggerQA.fill(HIST("PLL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PLL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PLL/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PLL/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PLL")) {
                 signalTightLimit[cf_trigger::kPLL] += 1;
+                registryTriggerQA.fill(HIST("PLL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PLL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PLL/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fAntiLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PLL/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
               }
             }
           }
@@ -1816,16 +2049,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecLambda.at(l1), vecLambda.at(l2), vecLambda.at(l3));
-            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PLL/fZvtx"), col.posZ());
-            registry.fill(HIST("PLL/fSE_particle"), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("LLL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("LLL/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "LLL")) {
               signalLooseLimit[cf_trigger::kLLL] += 1;
+              registryTriggerQA.fill(HIST("LLL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("LLL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("LLL/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "LLL")) {
                 signalTightLimit[cf_trigger::kLLL] += 1;
+                registryTriggerQA.fill(HIST("LLL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("LLL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("LLL/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecLambda.at(l1).Pt(), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecLambda.at(l2).Pt(), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecLambda.at(l3).Pt(), q3);
               }
             }
           }
@@ -1840,16 +2085,28 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiLambda.at(l1), vecAntiLambda.at(l2), vecAntiLambda.at(l3));
-            registry.fill(HIST("PLL/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PLL/fZvtx"), col.posZ());
-            registry.fill(HIST("PLL/fSE_particle"), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
-            registry.fill(HIST("PLL/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("LLL/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("LLL/all/fSE_antiparticle"), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+            registryTriggerQA.fill(HIST("LLL/all/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "LLL")) {
               signalLooseLimit[cf_trigger::kLLL] += 1;
+              registryTriggerQA.fill(HIST("LLL/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("LLL/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("LLL/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+              registryTriggerQA.fill(HIST("LLL/loose/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "LLL")) {
                 signalTightLimit[cf_trigger::kLLL] += 1;
+                registryTriggerQA.fill(HIST("LLL/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("LLL/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("LLL/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecAntiLambda.at(l1).Pt(), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecAntiLambda.at(l2).Pt(), q3);
+                registryTriggerQA.fill(HIST("LLL/tight/fLambdaPtVsQ3"), vecAntiLambda.at(l3).Pt(), q3);
               }
             }
           }
@@ -1865,17 +2122,32 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecPhi.at(phi1));
-            registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
-            registry.fill(HIST("PPPhi/fSE_particle"), q3);
-            registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPPhi/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
-            registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPPhi/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPPhi/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPPhi")) {
+              signalLooseLimit[cf_trigger::kPPPhi] += 1;
+              registryTriggerQA.fill(HIST("PPPhi/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPPhi/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPPhi/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPPhi") &&
                   vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPPhi] += 1;
+                registryTriggerQA.fill(HIST("PPPhi/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPPhi/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPPhi/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               }
             }
           }
@@ -1888,17 +2160,32 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecPhi.at(phi1));
-            registry.fill(HIST("PPPhi/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPPhi/fZvtx"), col.posZ());
-            registry.fill(HIST("PPPhi/fSE_particle"), q3);
-            registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPPhi/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPPhi/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
-            registry.fill(HIST("PPPhi/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPPhi/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPPhi/all/fSE_antiparticle"), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPPhi/all/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPPhi")) {
+              signalLooseLimit[cf_trigger::kPPPhi] += 1;
+              registryTriggerQA.fill(HIST("PPPhi/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPPhi/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPPhi/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPPhi/loose/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPPhi") &&
                   vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPPhi] += 1;
+                registryTriggerQA.fill(HIST("PPPhi/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPPhi/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPPhi/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fPhiPtVsQ3"), vecPhi.at(phi1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPPhi/tight/fPhiInvMassVsQ3"), vecPhi.at(phi1).M(), q3);
               }
             }
           }
@@ -1914,17 +2201,32 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecProton.at(p1), vecProton.at(p2), vecRho.at(r1));
-            registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPRho/fZvtx"), col.posZ());
-            registry.fill(HIST("PPRho/fSE_particle"), q3);
-            registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPRho/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
-            registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPRho/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPRho/all/fSE_particle"), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPRho")) {
+              signalLooseLimit[cf_trigger::kPPRho] += 1;
+              registryTriggerQA.fill(HIST("PPRho/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPRho/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPRho/loose/fSE_particle"), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPRho") &&
                   vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPRho] += 1;
+                registryTriggerQA.fill(HIST("PPRho/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPRho/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPRho/tight/fSE_particle"), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fProtonPtVsQ3"), vecProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fProtonPtVsQ3"), vecProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               }
             }
           }
@@ -1937,17 +2239,32 @@ struct CFFilterAll {
               continue;
             }
             q3 = getQ3(vecAntiProton.at(p1), vecAntiProton.at(p2), vecRho.at(r1));
-            registry.fill(HIST("PPRho/fMultiplicity"), col.multNTracksPV());
-            registry.fill(HIST("PPRho/fZvtx"), col.posZ());
-            registry.fill(HIST("PPRho/fSE_antiparticle"), q3);
-            registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
-            registry.fill(HIST("PPRho/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
-            registry.fill(HIST("PPRho/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
-            registry.fill(HIST("PPRho/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PPRho/all/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PPRho/all/fSE_antiparticle"), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+            registryTriggerQA.fill(HIST("PPRho/all/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
             if (q3 < TriggerSelections.limits->get("Loose Limit", "PPRho")) {
+              signalLooseLimit[cf_trigger::kPPRho] += 1;
+              registryTriggerQA.fill(HIST("PPRho/loose/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PPRho/loose/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PPRho/loose/fSE_antiparticle"), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+              registryTriggerQA.fill(HIST("PPRho/loose/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               if (q3 < TriggerSelections.limits->get("Tight Limit", "PPRho") &&
                   vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
                 signalTightLimit[cf_trigger::kPPRho] += 1;
+                registryTriggerQA.fill(HIST("PPRho/tight/fMultiplicity"), col.multNTracksPV());
+                registryTriggerQA.fill(HIST("PPRho/tight/fZvtx"), col.posZ());
+                registryTriggerQA.fill(HIST("PPRho/tight/fSE_antiparticle"), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fAntiProtonPtVsQ3"), vecAntiProton.at(p2).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fRhoPtVsQ3"), vecRho.at(r1).Pt(), q3);
+                registryTriggerQA.fill(HIST("PPRho/tight/fRhoInvMassVsQ3"), vecRho.at(r1).M(), q3);
               }
             }
           }
@@ -1962,15 +2279,25 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecProton.at(p1), vecDeuteron.at(d1));
-          registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("PD/fZvtx"), col.posZ());
-          registry.fill(HIST("PD/fSE_particle"), kstar);
-          registry.fill(HIST("PD/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
-          registry.fill(HIST("PD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("PD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("PD/all/fSE_particle"), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PD")) {
             signalLooseLimit[cf_trigger::kPD] += 1;
+            registryTriggerQA.fill(HIST("PD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PD/loose/fSE_particle"), kstar);
+            registryTriggerQA.fill(HIST("PD/loose/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PD/loose/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PD")) {
               signalTightLimit[cf_trigger::kPD] += 1;
+              registryTriggerQA.fill(HIST("PD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PD/tight/fSE_particle"), kstar);
+              registryTriggerQA.fill(HIST("PD/tight/fProtonPtVskstar"), vecProton.at(p1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PD/tight/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             }
           }
         }
@@ -1981,15 +2308,25 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecAntiProton.at(p1), vecAntiDeuteron.at(d1));
-          registry.fill(HIST("PD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("PD/fZvtx"), col.posZ());
-          registry.fill(HIST("PD/fSE_antiparticle"), kstar);
-          registry.fill(HIST("PD/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
-          registry.fill(HIST("PD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("PD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("PD/all/fSE_antiparticle"), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PD/all/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PD")) {
             signalLooseLimit[cf_trigger::kPD] += 1;
+            registryTriggerQA.fill(HIST("PD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PD/loose/fSE_antiparticle"), kstar);
+            registryTriggerQA.fill(HIST("PD/loose/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PD/loose/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PD")) {
               signalTightLimit[cf_trigger::kPD] += 1;
+              registryTriggerQA.fill(HIST("PD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PD/tight/fSE_antiparticle"), kstar);
+              registryTriggerQA.fill(HIST("PD/tight/fAntiProtonPtVskstar"), vecAntiProton.at(p1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PD/tight/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             }
           }
         }
@@ -2003,15 +2340,25 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecLambda.at(l1), vecDeuteron.at(d1));
-          registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("LD/fZvtx"), col.posZ());
-          registry.fill(HIST("LD/fSE_particle"), kstar);
-          registry.fill(HIST("LD/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
-          registry.fill(HIST("LD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("LD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("LD/all/fSE_particle"), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "LD")) {
             signalLooseLimit[cf_trigger::kLD] += 1;
+            registryTriggerQA.fill(HIST("LD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("LD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("LD/loose/fSE_particle"), kstar);
+            registryTriggerQA.fill(HIST("LD/loose/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("LD/loose/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "LD")) {
               signalTightLimit[cf_trigger::kLD] += 1;
+              registryTriggerQA.fill(HIST("LD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("LD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("LD/tight/fSE_particle"), kstar);
+              registryTriggerQA.fill(HIST("LD/tight/fLambdaPtVskstar"), vecLambda.at(l1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("LD/tight/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
             }
           }
         }
@@ -2022,15 +2369,25 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecAntiLambda.at(l1), vecAntiDeuteron.at(d1));
-          registry.fill(HIST("LD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("LD/fZvtx"), col.posZ());
-          registry.fill(HIST("LD/fSE_antiparticle"), kstar);
-          registry.fill(HIST("LD/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
-          registry.fill(HIST("LD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("LD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("LD/all/fSE_antiparticle"), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("LD/all/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "LD")) {
             signalLooseLimit[cf_trigger::kLD] += 1;
+            registryTriggerQA.fill(HIST("LD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("LD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("LD/loose/fSE_antiparticle"), kstar);
+            registryTriggerQA.fill(HIST("LD/loose/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("LD/loose/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "LD")) {
               signalTightLimit[cf_trigger::kLD] += 1;
+              registryTriggerQA.fill(HIST("LD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("LD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("LD/tight/fSE_antiparticle"), kstar);
+              registryTriggerQA.fill(HIST("LD/tight/fAntiLambdaPtVskstar"), vecAntiLambda.at(l1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("LD/tight/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
             }
           }
         }
@@ -2044,17 +2401,29 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecPhi.at(phi1), vecDeuteron.at(d1));
-          registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("PhiD/fZvtx"), col.posZ());
-          registry.fill(HIST("PhiD/fSE_particle"), kstar);
-          registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
-          registry.fill(HIST("PhiD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
-          registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("PhiD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("PhiD/all/fSE_particle"), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PhiD")) {
             signalLooseLimit[cf_trigger::kPhiD] += 1;
+            registryTriggerQA.fill(HIST("PhiD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PhiD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PhiD/loose/fSE_particle"), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PhiD") &&
                 vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kPhiD] += 1;
+              registryTriggerQA.fill(HIST("PhiD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PhiD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PhiD/tight/fSE_particle"), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             }
           }
         }
@@ -2065,17 +2434,29 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecPhi.at(phi1), vecAntiDeuteron.at(d1));
-          registry.fill(HIST("PhiD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("PhiD/fZvtx"), col.posZ());
-          registry.fill(HIST("PhiD/fSE_antiparticle"), kstar);
-          registry.fill(HIST("PhiD/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
-          registry.fill(HIST("PhiD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
-          registry.fill(HIST("PhiD/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("PhiD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("PhiD/all/fSE_antiparticle"), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("PhiD/all/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "PhiD")) {
             signalLooseLimit[cf_trigger::kPhiD] += 1;
+            registryTriggerQA.fill(HIST("PhiD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("PhiD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("PhiD/loose/fSE_antiparticle"), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("PhiD/loose/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "PhiD") &&
                 vecPhi.at(phi1).M() > PhiSelections.tightInvMassLow.value && vecPhi.at(phi1).M() < PhiSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kPhiD] += 1;
+              registryTriggerQA.fill(HIST("PhiD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("PhiD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("PhiD/tight/fSE_antiparticle"), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fPhiPtVskstar"), vecPhi.at(phi1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("PhiD/tight/fPhiInvMassVskstar"), vecPhi.at(phi1).M(), kstar);
             }
           }
         }
@@ -2089,17 +2470,29 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecRho.at(r1), vecDeuteron.at(d1));
-          registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("RhoD/fZvtx"), col.posZ());
-          registry.fill(HIST("RhoD/fSE_particle"), kstar);
-          registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
-          registry.fill(HIST("RhoD/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
-          registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("RhoD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("RhoD/all/fSE_particle"), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "RhoD")) {
             signalLooseLimit[cf_trigger::kRhoD] += 1;
+            registryTriggerQA.fill(HIST("RhoD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("RhoD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("RhoD/loose/fSE_particle"), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "RhoD") &&
                 vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kRhoD] += 1;
+              registryTriggerQA.fill(HIST("RhoD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("RhoD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("RhoD/tight/fSE_particle"), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fDeuteronPtVskstar"), vecDeuteron.at(d1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             }
           }
         }
@@ -2110,17 +2503,29 @@ struct CFFilterAll {
             continue;
           }
           kstar = getkstar(vecRho.at(r1), vecAntiDeuteron.at(d1));
-          registry.fill(HIST("RhoD/fMultiplicity"), col.multNTracksPV());
-          registry.fill(HIST("RhoD/fZvtx"), col.posZ());
-          registry.fill(HIST("RhoD/fSE_antiparticle"), kstar);
-          registry.fill(HIST("RhoD/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
-          registry.fill(HIST("RhoD/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
-          registry.fill(HIST("RhoD/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fMultiplicity"), col.multNTracksPV());
+          registryTriggerQA.fill(HIST("RhoD/all/fZvtx"), col.posZ());
+          registryTriggerQA.fill(HIST("RhoD/all/fSE_antiparticle"), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+          registryTriggerQA.fill(HIST("RhoD/all/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
           if (kstar < TriggerSelections.limits->get("Loose Limit", "RhoD")) {
             signalLooseLimit[cf_trigger::kRhoD] += 1;
+            registryTriggerQA.fill(HIST("RhoD/loose/fMultiplicity"), col.multNTracksPV());
+            registryTriggerQA.fill(HIST("RhoD/loose/fZvtx"), col.posZ());
+            registryTriggerQA.fill(HIST("RhoD/loose/fSE_antiparticle"), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+            registryTriggerQA.fill(HIST("RhoD/loose/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             if (kstar < TriggerSelections.limits->get("Tight Limit", "RhoD") &&
                 vecRho.at(r1).M() > RhoSelections.tightInvMassLow.value && vecRho.at(r1).M() < RhoSelections.tightInvMassUp.value) {
               signalTightLimit[cf_trigger::kRhoD] += 1;
+              registryTriggerQA.fill(HIST("RhoD/tight/fMultiplicity"), col.multNTracksPV());
+              registryTriggerQA.fill(HIST("RhoD/tight/fZvtx"), col.posZ());
+              registryTriggerQA.fill(HIST("RhoD/tight/fSE_antiparticle"), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fRhoPtVskstar"), vecRho.at(r1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fAntiDeuteronPtVskstar"), vecAntiDeuteron.at(d1).Pt(), kstar);
+              registryTriggerQA.fill(HIST("RhoD/tight/fRhoInvMassVskstar"), vecRho.at(r1).M(), kstar);
             }
           }
         }
@@ -2129,22 +2534,22 @@ struct CFFilterAll {
 
     for (int i = 0; i < cf_trigger::kNTriggers; i++) {
       if (signalLooseLimit[i] > 0) {
-        registry.fill(HIST("fProcessedEvents"), 3 + 2 * i); // need offset for filling
+        registryTriggerQA.fill(HIST("fProcessedEvents"), 3 + 2 * i); // need offset for filling
         keepEventLooseLimit[i] = true;
       }
       if (signalTightLimit[i] > 0) {
-        registry.fill(HIST("fProcessedEvents"), 3 + 2 * i + 1); // need offset for filling
+        registryTriggerQA.fill(HIST("fProcessedEvents"), 3 + 2 * i + 1); // need offset for filling
         keepEventTightLimit[i] = true;
       }
       for (int j = i; j < cf_trigger::kNTriggers; j++) {
         if (signalLooseLimit[i] > 0 && signalLooseLimit[j]) {
-          registry.fill(HIST("fTriggerCorrelations"), 2 * i, 2 * j);
+          registryTriggerQA.fill(HIST("fTriggerCorrelations"), 2 * i, 2 * j);
         }
         if (signalLooseLimit[i] > 0 && signalTightLimit[j]) { // only one combination needed, fill only entries above diagonal
-          registry.fill(HIST("fTriggerCorrelations"), 2 * i, 2 * j + 1);
+          registryTriggerQA.fill(HIST("fTriggerCorrelations"), 2 * i, 2 * j + 1);
         }
         if (signalTightLimit[i] > 0 && signalTightLimit[j]) {
-          registry.fill(HIST("fTriggerCorrelations"), 2 * i + 1, 2 * j + 1);
+          registryTriggerQA.fill(HIST("fTriggerCorrelations"), 2 * i + 1, 2 * j + 1);
         }
       }
     }
@@ -2159,7 +2564,7 @@ struct CFFilterAll {
         keepEventLooseLimit[cf_trigger::kLD] ||
         keepEventLooseLimit[cf_trigger::kPhiD] ||
         keepEventLooseLimit[cf_trigger::kRhoD]) {
-      registry.fill(HIST("fProcessedEvents"), 1);
+      registryTriggerQA.fill(HIST("fProcessedEvents"), 1);
     }
 
     if (keepEventTightLimit[cf_trigger::kPPP] ||
@@ -2172,7 +2577,7 @@ struct CFFilterAll {
         keepEventTightLimit[cf_trigger::kLD] ||
         keepEventTightLimit[cf_trigger::kPhiD] ||
         keepEventTightLimit[cf_trigger::kRhoD]) {
-      registry.fill(HIST("fProcessedEvents"), 2);
+      registryTriggerQA.fill(HIST("fProcessedEvents"), 2);
     }
 
     tags(keepEventTightLimit[cf_trigger::kPPP], keepEventLooseLimit[cf_trigger::kPPP],
