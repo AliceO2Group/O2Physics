@@ -101,7 +101,7 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::MaxNormalisedDeltaIP,
                   hf_cand_lb_lite::MlScoreSig,
                   hf_sel_candidate_lb::IsSelLbToLcPi,
-                  // D meson features
+                  // Lc meson features
                   hf_cand_lb_lite::MLc,
                   hf_cand_lb_lite::PtLc,
                   hf_cand_lb_lite::DecayLengthLc,
