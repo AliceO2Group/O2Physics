@@ -1539,35 +1539,35 @@ void DefaultBinning()
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
-  if (cf_res.cfUseVariableLength_mult_bins) {
+  if (cf_res.cfUseVariableLengthMultBins) {
     this->InitializeVariableLengthBins(AFO_MULTIPLICITY);
   }
   // *) Variable-length binning vs. centrality:
-  if (cf_res.cfUseVariableLength_cent_bins) {
+  if (cf_res.cfUseVariableLengthCentBins) {
     this->InitializeVariableLengthBins(AFO_CENTRALITY);
   }
   // *) Variable-length binning vs. pt:
-  if (cf_res.cfUseVariableLength_pt_bins) {
+  if (cf_res.cfUseVariableLengthPtBins) {
     this->InitializeVariableLengthBins(AFO_PT);
   }
   // *) Variable-length binning vs. eta:
-  if (cf_res.cfUseVariableLength_eta_bins) {
+  if (cf_res.cfUseVariableLengthEtaBins) {
     this->InitializeVariableLengthBins(AFO_ETA);
   }
   // *) Variable-length binning vs. occupancy:
-  if (cf_res.cfUseVariableLength_occu_bins) {
+  if (cf_res.cfUseVariableLengthOccuBins) {
     this->InitializeVariableLengthBins(AFO_OCCUPANCY);
   }
   // *) Variable-length binning vs. interaction rate:
-  if (cf_res.cfUseVariableLength_ir_bins) {
+  if (cf_res.cfUseVariableLengthIRBins) {
     this->InitializeVariableLengthBins(AFO_INTERACTIONRATE);
   }
   // *) Variable-length binning vs. run duration:
-  if (cf_res.cfUseVariableLength_crd_bins) {
+  if (cf_res.cfUseVariableLengthCRDBins) {
     this->InitializeVariableLengthBins(AFO_CURRENTRUNDURATION);
   }
   // *) Variable-length binning vs. vertex z position:
-  if (cf_res.cfUseVariableLength_vz_bins) {
+  if (cf_res.cfUseVariableLengthVzBins) {
     this->InitializeVariableLengthBins(AFO_VZ);
   }
 
@@ -1665,35 +1665,35 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY: {
-      lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthMultBins.value;
       break;
     }
     case AFO_CENTRALITY: {
-      lVariableLength_bins = cf_res.cfVariableLength_cent_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthCentBins.value;
       break;
     }
     case AFO_PT: {
-      lVariableLength_bins = cf_res.cfVariableLength_pt_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthPtBins.value;
       break;
     }
     case AFO_ETA: {
-      lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthEtaBins.value;
       break;
     }
     case AFO_OCCUPANCY: {
-      lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthOccuBins.value;
       break;
     }
     case AFO_INTERACTIONRATE: {
-      lVariableLength_bins = cf_res.cfVariableLength_ir_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthIRBins.value;
       break;
     }
     case AFO_CURRENTRUNDURATION: {
-      lVariableLength_bins = cf_res.cfVariableLength_crd_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthCRDBins.value;
       break;
     }
     case AFO_VZ: {
-      lVariableLength_bins = cf_res.cfVariableLength_vz_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthVzBins.value;
       break;
     }
     // ...

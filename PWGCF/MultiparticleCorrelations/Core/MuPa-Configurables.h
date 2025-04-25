@@ -291,22 +291,22 @@ struct : ConfigurableGroup {
   Configurable<std::vector<float>> cfFixedLengthVzBins{"cfFixedLengthVzBins", {400, -20., 20.}, "nvzBins, vzMin, vzMax (only for results histograms)"};
 
   // Variable-length binning (per request):
-  Configurable<bool> cfUseVariableLength_mult_bins{"cfUseVariableLength_mult_bins", false, "use or not variable-length multiplicity bins"};
-  Configurable<std::vector<float>> cfVariableLength_mult_bins{"cfVariableLength_mult_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length multiplicity bins"};
-  Configurable<bool> cfUseVariableLength_cent_bins{"cfUseVariableLength_cent_bins", false, "use or not variable-length centrality bins"};
-  Configurable<std::vector<float>> cfVariableLength_cent_bins{"cfVariableLength_cent_bins", {0., 10., 50., 100.}, "variable-length centrality bins"};
-  Configurable<bool> cfUseVariableLength_pt_bins{"cfUseVariableLength_pt_bins", true, "use or not variable-length pt bins"};
-  Configurable<std::vector<float>> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", {0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.80, 1.00, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00, 5.00}, "variable-length pt bins"};
-  Configurable<bool> cfUseVariableLength_eta_bins{"cfUseVariableLength_eta_bins", true, "use or not variable-length eta bins"};
-  Configurable<std::vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {-0.8, -0.6, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8}, "variable-length eta bins"};
-  Configurable<bool> cfUseVariableLength_occu_bins{"cfUseVariableLength_occu_bins", false, "use or not variable-length occupancy bins"};
-  Configurable<std::vector<float>> cfVariableLength_occu_bins{"cfVariableLength_occu_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length occupancy bins"};
-  Configurable<bool> cfUseVariableLength_ir_bins{"cfUseVariableLength_ir_bins", false, "use or not variable-length interaction rate bins"};
-  Configurable<std::vector<float>> cfVariableLength_ir_bins{"cfVariableLength_ir_bins", {0., 5., 10., 50., 100., 200.}, "variable-length ineraction rate bins"};
-  Configurable<bool> cfUseVariableLength_crd_bins{"cfUseVariableLength_crd_bins", false, "use or not variable-length current run duration bins"};
-  Configurable<std::vector<float>> cfVariableLength_crd_bins{"cfVariableLength_crd_bins", {0., 5., 10., 50., 100., 500.}, "variable-length current run duration bins"};
-  Configurable<bool> cfUseVariableLength_vz_bins{"cfUseVariableLength_vz_bins", false, "use or not variable-length vertex z bins"};
-  Configurable<std::vector<float>> cfVariableLength_vz_bins{"cfVariableLength_vz_bins", {-10., -8., -6., -4, -2., -1., 0., 1., 2., 4., 6., 8., 10.}, "variable-length vertex z bins"};
+  Configurable<bool> cfUseVariableLengthMultBins{"cfUseVariableLengthMultBins", false, "use or not variable-length multiplicity bins"};
+  Configurable<std::vector<float>> cfVariableLengthMultBins{"cfVariableLengthMultBins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length multiplicity bins"};
+  Configurable<bool> cfUseVariableLengthCentBins{"cfUseVariableLengthCentBins", false, "use or not variable-length centrality bins"};
+  Configurable<std::vector<float>> cfVariableLengthCentBins{"cfVariableLengthCentBins", {0., 10., 50., 100.}, "variable-length centrality bins"};
+  Configurable<bool> cfUseVariableLengthPtBins{"cfUseVariableLengthPtBins", true, "use or not variable-length pt bins"};
+  Configurable<std::vector<float>> cfVariableLengthPtBins{"cfVariableLengthPtBins", {0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.80, 1.00, 1.25, 1.50, 1.75, 2.00, 2.50, 3.00, 4.00, 5.00}, "variable-length pt bins"};
+  Configurable<bool> cfUseVariableLengthEtaBins{"cfUseVariableLengthEtaBins", true, "use or not variable-length eta bins"};
+  Configurable<std::vector<float>> cfVariableLengthEtaBins{"cfVariableLengthEtaBins", {-0.8, -0.6, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.8}, "variable-length eta bins"};
+  Configurable<bool> cfUseVariableLengthOccuBins{"cfUseVariableLengthOccuBins", false, "use or not variable-length occupancy bins"};
+  Configurable<std::vector<float>> cfVariableLengthOccuBins{"cfVariableLengthOccuBins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length occupancy bins"};
+  Configurable<bool> cfUseVariableLengthIRBins{"cfUseVariableLengthIRBins", false, "use or not variable-length interaction rate bins"};
+  Configurable<std::vector<float>> cfVariableLengthIRBins{"cfVariableLengthIRBins", {0., 5., 10., 50., 100., 200.}, "variable-length ineraction rate bins"};
+  Configurable<bool> cfUseVariableLengthCRDBins{"cfUseVariableLengthCRDBins", false, "use or not variable-length current run duration bins"};
+  Configurable<std::vector<float>> cfVariableLengthCRDBins{"cfVariableLengthCRDBins", {0., 5., 10., 50., 100., 500.}, "variable-length current run duration bins"};
+  Configurable<bool> cfUseVariableLengthVzBins{"cfUseVariableLengthVzBins", false, "use or not variable-length vertex z bins"};
+  Configurable<std::vector<float>> cfVariableLengthVzBins{"cfVariableLengthVzBins", {-10., -8., -6., -4, -2., -1., 0., 1., 2., 4., 6., 8., 10.}, "variable-length vertex z bins"};
 
 } cf_res;
 
