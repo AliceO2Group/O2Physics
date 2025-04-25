@@ -35,11 +35,6 @@ enum EventRejection {
   TvxTrigger,
   TimeFrameBorderCut,
   ItsRofBorderCut,
-  IsGoodZvtxFT0vsPV,
-  NoSameBunchPileup,
-  NoCollInTimeRangeNarrow,
-  NoCollInTimeRangeStandard,
-  NoCollInRofStandard,
   NEventRejection
 };
 
@@ -56,11 +51,6 @@ void setEventRejectionLabels(Histo& hRejection)
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITS ROF border");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeNarrow + 1, "No coll timerange narrow");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeStandard + 1, "No coll timerange strict");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInRofStandard + 1, "No coll in ROF std");
 }
 
 struct EMCEventSelection : o2::framework::ConfigurableGroup {
@@ -71,12 +61,6 @@ struct EMCEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useTvxTrigger{"useTvxTrigger", true, "Apply TVX trigger sel"};
   o2::framework::Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "Apply TF border cut"};
   o2::framework::Configurable<bool> useItsRofBorderCut{"useItsRofBorderCut", true, "Apply ITS ROF border cut"};
-  o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
-  o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"};
-  o2::framework::Configurable<bool> useNoCollInTimeRangeNarrow{"useNoCollInTimeRangeNarrow", false, "Reject collisions in time range narrow"};
-  o2::framework::Configurable<bool> useNoCollInTimeRangeStandard{"useNoCollInTimeRangeStandard", false, "Reject collisions in time range strict"};
-  o2::framework::Configurable<bool> useNoCollInRofStandard{"useNoCollInRofStandard", false, "Reject collisions in ROF standard"};
-
   // histogram names
   static constexpr char NameHistBCs[] = "hBCs";
 
@@ -103,8 +87,8 @@ struct EMCEventSelection : o2::framework::ConfigurableGroup {
 
     if constexpr (useEvSel) {
       /// trigger condition
-      bool sel8 = bc.selection_bit(o2::aod::evsel::kIsBBT0A) && bc.selection_bit(o2::aod::evsel::kIsBBT0C);
-      if ((useSel8Trigger && sel8) || (!useSel8Trigger && triggerClass > -1 && !bc.alias_bit(triggerClass))) {
+      bool sel8 = bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) && bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+      if ((useSel8Trigger && !sel8) || (!useSel8Trigger && triggerClass > -1 && !bc.alias_bit(triggerClass))) {
         SETBIT(rejectionMask, EventRejection::Trigger);
       }
       /// TVX trigger selection
@@ -118,27 +102,6 @@ struct EMCEventSelection : o2::framework::ConfigurableGroup {
       /// ITS rof border cut
       if (useItsRofBorderCut && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         SETBIT(rejectionMask, EventRejection::ItsRofBorderCut);
-      }
-      /// PVz consistency tracking - FT0 timing
-      if (useIsGoodZvtxFT0vsPV && !bc.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        SETBIT(rejectionMask, EventRejection::IsGoodZvtxFT0vsPV);
-      }
-      /// remove collisions in bunches with more than 1 reco bc
-      /// POTENTIALLY BAD FOR BEAUTY ANALYSES
-      if (useNoSameBunchPileup && !bc.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        SETBIT(rejectionMask, EventRejection::NoSameBunchPileup);
-      }
-      /// No collisions in time range narrow
-      if (useNoCollInTimeRangeNarrow && !bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
-        SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeNarrow);
-      }
-      /// No collisions in time range strict
-      if (useNoCollInTimeRangeStandard && !bc.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-        SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeStandard);
-      }
-      /// No collisions in ROF standard
-      if (useNoCollInRofStandard && !bc.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-        SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
     }
     return rejectionMask;
