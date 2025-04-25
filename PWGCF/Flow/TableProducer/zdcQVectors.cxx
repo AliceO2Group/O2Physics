@@ -81,6 +81,7 @@ double alphaZDC = 0.395;
 
 // q-vectors before (q) and after (qRec) recentering.
 std::vector<double> q(4); // start values of [QxA, QyA, QxC, QyC]
+std::vector<double> q_noEq(4); // start values of [QxA, QyA, QxC, QyC]
 
 // for energy calibration
 std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
@@ -249,6 +250,16 @@ struct ZdcQVectors {
       registry.add<TProfile>("QA/before/ZNC_pm3", "ZNC_pm3", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_pm4", "ZNC_pm4", kTProfile, {{1, 0, 1.}});
 
+      registry.add<TProfile>("QA/before/ZNA_Qx", "ZNA_Qx", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_Qy", "ZNA_Qy", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_Qx", "ZNC_Qx", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_Qy", "ZNC_Qy", kTProfile, {{1, 0, 1.}});
+
+      registry.add<TProfile>("QA/before/ZNA_Qx_noEq", "ZNA_Qx_noEq", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNA_Qy_noEq", "ZNA_Qy_noEq", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_Qx_noEq", "ZNC_Qx_noEq", kTProfile, {{1, 0, 1.}});
+      registry.add<TProfile>("QA/before/ZNC_Qy_noEq", "ZNC_Qy_noEq", kTProfile, {{1, 0, 1.}});
+    
       registry.addClone("QA/before/", "QA/after/");
     }
 
@@ -511,9 +522,9 @@ struct ZdcQVectors {
   {
     // for Q-vector calculation
     //  A[0] & C[1]
-    std::vector<double> sumZN(2, 0.);
-    std::vector<double> xEnZN(2, 0.);
-    std::vector<double> yEnZN(2, 0.);
+    std::vector<double> sumZN(2, 0.), sumZN_noEq(2, 0.);
+    std::vector<double> xEnZN(2, 0.), xEnZN_noEq(2, 0.);
+    std::vector<double> yEnZN(2, 0.), yEnZN_noEq(2, 0.);
 
     isSelected = true;
 
@@ -688,6 +699,12 @@ struct ZdcQVectors {
       sumZN[side] += energy;
       xEnZN[side] += (side == 0) ? -1.0 * pxZDC[sector] * energy : pxZDC[sector] * energy;
       yEnZN[side] += pyZDC[sector] * energy;
+
+      // Also calculate the Q-vector for the non-equalized energy
+      double energy_noEq = std::pow(eZN[tower], alphaZDC);
+      sumZN_noEq[side] += energy_noEq;
+      xEnZN_noEq[side] += (side == 0) ? -1.0 * pxZDC[sector] * energy_noEq : pxZDC[sector] * energy_noEq;
+      yEnZN_noEq[side] += pyZDC[sector] * energy_noEq;
     }
 
     // "QXA", "QYA", "QXC", "QYC"
@@ -696,6 +713,10 @@ struct ZdcQVectors {
       if (sumZN[i] > 0) {
         q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
         q[i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
+      }
+      if(sumZN_noEq[i] > 0) {
+        q_noEq[i * 2] = xEnZN_noEq[i] / sumZN_noEq[i];     // for QXA[0] and QXC[2]
+        q_noEq[i * 2 + 1] = yEnZN_noEq[i] / sumZN_noEq[i]; // for QYA[1] and QYC[3]
       }
     }
 
@@ -711,10 +732,20 @@ struct ZdcQVectors {
 
     std::vector<double> qRec(q);
 
+    registry.get<TProfile>(HIST("QA/before/ZNA_Qx"))->Fill(Form("%d", runnumber), q[0]);
+    registry.get<TProfile>(HIST("QA/before/ZNA_Qy"))->Fill(Form("%d", runnumber), q[1]);
+    registry.get<TProfile>(HIST("QA/before/ZNC_Qx"))->Fill(Form("%d", runnumber), q[2]);
+    registry.get<TProfile>(HIST("QA/before/ZNC_Qy"))->Fill(Form("%d", runnumber), q[3]);
+
+    registry.get<TProfile>(HIST("QA/before/ZNA_Qx_noEq"))->Fill(Form("%d", runnumber), q_noEq[0]);
+    registry.get<TProfile>(HIST("QA/before/ZNA_Qy_noEq"))->Fill(Form("%d", runnumber), q_noEq[1]);
+    registry.get<TProfile>(HIST("QA/before/ZNC_Qx_noEq"))->Fill(Form("%d", runnumber), q_noEq[2]);
+    registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), q_noEq[3]);
+
     if (cal.atIteration == 0) {
-      if (isSelected)
-        if (cfgFillCommonRegistry)
+      if (isSelected && cfgFillCommonRegistry) 
           fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+        
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
@@ -756,10 +787,14 @@ struct ZdcQVectors {
         qRec[3] -= corrQyC[cor];
       }
 
-      if (isSelected) {
-        if (cfgFillCommonRegistry)
-          fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
+      if (isSelected && cfgFillCommonRegistry) {
+        fillCommonRegistry<kAfter>(qRec[0], qRec[1], qRec[2], qRec[3], v, centrality);
         registry.fill(HIST("QA/centrality_after"), centrality);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qRec[0]);
+        registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qRec[1]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qRec[2]);
+        registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
+
       }
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);
