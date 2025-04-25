@@ -241,12 +241,11 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, aod::McCollisions const&)
   {
+    products.jMcCollisionsLabelTable(collision.mcCollisionId()); // collision.mcCollisionId() returns -1 if collision has no associated mcCollision
     if (collision.has_mcCollision()) {
-      products.jMcCollisionsLabelTable(collision.mcCollisionId());
       products.jCollisionMcInfosTable(collision.mcCollision().weight(), collision.mcCollision().getSubGeneratorId());
     } else {
-      products.jMcCollisionsLabelTable(-1);
-      products.jCollisionMcInfosTable(-1.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
+      products.jCollisionMcInfosTable(0.0, jetderiveddatautilities::JCollisionSubGeneratorId::none);
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisionLabels, "produces derived MC collision labels table", false);
