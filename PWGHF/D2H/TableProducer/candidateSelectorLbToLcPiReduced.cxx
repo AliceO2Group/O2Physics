@@ -34,6 +34,12 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
 
+enum PidMethod {
+  NoPid = 0, // none
+  TpcOrTof,  // TPC or TOF
+  TpcAndTof  // TPC and TOF
+};
+
 struct HfCandidateSelectorLbToLcPiReduced {
   Produces<aod::HfSelLbToLcPi> hfSelLbToLcPiCandidate; // table defined in CandidateSelectionTables.h
   Produces<aod::HfMlLbToLcPi> hfMlLbToLcPiCandidate;   // table defined in CandidateSelectionTables.h
@@ -94,7 +100,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (pionPidMethod < 0 || pionPidMethod > 2) {
+    if (pionPidMethod < PidMethod::NoPid || pionPidMethod > PidMethod::TpcAndTof) {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
