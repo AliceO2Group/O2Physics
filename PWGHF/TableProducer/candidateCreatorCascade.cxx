@@ -118,7 +118,9 @@ struct HfCandidateCreatorCascade {
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     massP = MassProton;
     massK0s = MassK0Short;
@@ -471,11 +473,11 @@ struct HfCandidateCreatorCascadeMc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>

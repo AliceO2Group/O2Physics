@@ -147,7 +147,9 @@ struct HfCandidateCreator2Prong {
     registry.add("hDcaZProngs", "DCAz of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -713,11 +715,11 @@ struct HfCandidateCreator2ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-2prong") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// Performs MC matching.

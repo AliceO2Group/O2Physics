@@ -408,12 +408,11 @@ struct HfCandidateSigmac0plusplusMc {
       // here we assume that the hf-candidate-creator-3prong is in the workflow
       // configure the ev. sel from that workflow
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// @brief dummy process function, to be run on data
