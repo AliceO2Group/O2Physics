@@ -1471,10 +1471,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "D0", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("nonPromptD0")) {
+    MCProng prong(2, {Pdg::kD0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt D0", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("D0FS")) {
+    MCProng prong(1, {Pdg::kD0}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "D0", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("KPiFromD0")) {
     MCProng prongKaon(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     MCProng prongPion(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and pion pair from D0", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0Reflected")) {
+    MCProng prongFalseKaon(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongFalsePion(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0 with reflected mass assumption", {prongFalseKaon, prongFalsePion}, {1, 1});
     return signal;
   }
   if (!nameStr.compare("Dcharged")) {
