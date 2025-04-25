@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-Enums.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 

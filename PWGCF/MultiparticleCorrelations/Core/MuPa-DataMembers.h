@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-DataMembers.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
@@ -333,7 +337,7 @@ struct NUA {
   TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};                // custom, user-supplied distributions used to simulate NUA
   TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL};    // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
   TString fFileWithCustomNUA = "";                        // path to external ROOT file which holds all histograms with custom NUA
-  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};                // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
+  float fMaxValuePDF[eNUAPDF_N] = {0.};                   // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
 } nua;
 
 // *) Internal validation:
