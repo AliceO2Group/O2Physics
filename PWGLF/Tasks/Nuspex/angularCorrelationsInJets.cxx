@@ -1269,10 +1269,10 @@ struct AngularCorrelationsInJets {
       if (rejectEvents) {
         // event counter: before event rejection
         registryData.fill(HIST("numberRejectedEvents"), 0);
-  
+
         if (shouldRejectEvent())
           continue;
-  
+
         // event counter: after event rejection
         registryData.fill(HIST("numberRejectedEvents"), 1);
       }
@@ -1299,10 +1299,10 @@ struct AngularCorrelationsInJets {
       if (rejectEvents) {
         // event counter: before event rejection
         registryData.fill(HIST("numberRejectedEvents"), 0);
-  
+
         if (shouldRejectEvent())
           continue;
-  
+
         // event counter: after event rejection
         registryData.fill(HIST("numberRejectedEvents"), 1);
       }
@@ -1327,10 +1327,10 @@ struct AngularCorrelationsInJets {
       if (rejectEvents) {
         // event counter: before event rejection
         registryData.fill(HIST("numberRejectedEvents"), 0);
-  
+
         if (shouldRejectEvent())
           continue;
-  
+
         // event counter: after event rejection
         registryData.fill(HIST("numberRejectedEvents"), 1);
       }
@@ -1356,10 +1356,10 @@ struct AngularCorrelationsInJets {
       if (rejectEvents) {
         // event counter: before event rejection
         registryData.fill(HIST("numberRejectedEvents"), 0);
-  
+
         if (shouldRejectEvent())
           continue;
-  
+
         // event counter: after event rejection
         registryData.fill(HIST("numberRejectedEvents"), 1);
       }
