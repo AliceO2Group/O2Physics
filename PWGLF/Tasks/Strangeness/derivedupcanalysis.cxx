@@ -911,9 +911,8 @@ struct Derivedupcanalysis {
     histos.add("eventQA/hTracksPVeta1VsTracksGlobal", "hTracksPVeta1VsTracksGlobal", kTH3F, {axisNTracksPVeta1, axisNTracksGlobal, axisSelGap});
     histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH3F, {axisFT0Cqa, axisNTracksGlobal, axisSelGap});
     histos.add("eventQA/hFT0amplVsTracksGlobal", "hFT0amplVsTracksGlobal", kTH3F, {axisDetectors.axisFT0Aampl, axisNTracksGlobal, axisSelGap});
-    histos.add("eventQA/hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("eventQA/hRawGapSide", "Raw Gap side; Entries", kTH1F, {{6, -1.5, 4.5}});
-    histos.add("eventQA/hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
+    histos.add("eventQA/hSelGapSide", "Selected gap side (with n); Entries", kTH1F, {axisSelGap});
     histos.add("eventQA/hPosX", "Vertex position in x", kTH2F, {{100, -0.1, 0.1}, axisSelGap});
     histos.add("eventQA/hPosY", "Vertex position in y", kTH2F, {{100, -0.1, 0.1}, axisSelGap});
     histos.add("eventQA/hPosZ", "Vertex position in z", kTH2F, {{100, -20., 20.}, axisSelGap});
@@ -943,6 +942,7 @@ struct Derivedupcanalysis {
       histos.add("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec", "hNTracksPVeta1vsMCNParticlesEta10rec", kTH2F, {axisNTracksPVeta1, axisNTracksPVeta1});
       histos.add("eventQA/mc/hNTracksGlobalvstotalMultMCParticles", "hNTracksGlobalvstotalMultMCParticles", kTH2F, {axisNTracksGlobal, axisNchInvMass});
       histos.add("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles", "hNTracksPVeta1vstotalMultMCParticles", kTH2F, {axisNTracksPVeta1, axisNchInvMass});
+      histos.add("eventQA/hSelGapSideNoNeutrons", "Selected gap side (no n); Entries", kTH1F, {{5, -0.5, 4.5}});
     }
 
     if (doprocessV0sMC) {
@@ -1070,7 +1070,6 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hPosY"), collision.posY(), gap);
     histos.fill(HIST("eventQA/hPosZ"), collision.posZ(), gap);
 
-    histos.fill(HIST("eventQA/hGapSide"), collision.gapSide());
     histos.fill(HIST("eventQA/hSelGapSide"), gap);
     histos.fill(HIST("eventQA/hFT0"), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), gap);
     histos.fill(HIST("eventQA/hFDD"), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(), gap);
@@ -1746,15 +1745,6 @@ struct Derivedupcanalysis {
             if (selGapSide < -0.5)
               break;
 
-            if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-              continue;
-
-            const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-
-            // Consider neutrons from the same collision
-            if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-              continue;
-
             const float eta = neutron.eta();
             switch (selGapSide) {
               case 0: // SGA
@@ -1830,15 +1820,6 @@ struct Derivedupcanalysis {
           for (const auto& neutron : groupedNeutrons) {
             if (selGapSide < -0.5)
               break;
-
-            if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-              continue;
-
-            const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-
-            // Consider neutrons from the same collision
-            if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-              continue;
 
             const float eta = neutron.eta();
             switch (selGapSide) {
@@ -1980,21 +1961,13 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+    int selGapSideNoNeutrons = selGapSide;
 
     auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
     if (checkNeutronsInMC) {
       for (const auto& neutron : groupedNeutrons) {
         if (selGapSide < -0.5)
           break;
-
-        if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-          continue;
-
-        const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-
-        // Consider neutrons from the same collision
-        if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-          continue;
 
         const float eta = neutron.eta();
         switch (selGapSide) {
@@ -2019,6 +1992,7 @@ struct Derivedupcanalysis {
     if (evSels.studyUPConly && (selGapSide < -0.5))
       return;
 
+    histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
     fillHistogramsQA(collision, selGapSide);
 
     histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
@@ -2102,21 +2076,13 @@ struct Derivedupcanalysis {
     histos.fill(HIST("eventQA/hRawGapSide"), collision.gapSide());
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
+    int selGapSideNoNeutrons = selGapSide;
 
     auto groupedNeutrons = neutrons.sliceBy(neutronsPerMcCollision, mcCollision.globalIndex());
     if (checkNeutronsInMC) {
       for (const auto& neutron : groupedNeutrons) {
         if (selGapSide < -0.5)
           break;
-
-        if (!neutron.has_straMCCollision() || !collision.has_straMCCollision())
-          continue;
-
-        const auto& mcCollisionNeutron = neutron.straMCCollision_as<StraMCCollisionsFull>(); // take gen. collision associated to the neutron
-
-        // Consider neutrons from the same collision
-        if (mcCollisionNeutron.globalIndex() != mcCollision.globalIndex())
-          continue;
 
         const float eta = neutron.eta();
         switch (selGapSide) {
@@ -2141,6 +2107,7 @@ struct Derivedupcanalysis {
     if (evSels.studyUPConly && (selGapSide < -0.5))
       return;
 
+    histos.fill(HIST("eventQA/hSelGapSideNoNeutrons"), selGapSideNoNeutrons);
     fillHistogramsQA(collision, selGapSide);
 
     histos.fill(HIST("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec"), collision.multNTracksGlobal(), mcCollision.multMCNParticlesEta08());
