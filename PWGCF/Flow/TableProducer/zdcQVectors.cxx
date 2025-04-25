@@ -259,7 +259,7 @@ struct ZdcQVectors {
       registry.add<TProfile>("QA/before/ZNA_Qy_noEq", "ZNA_Qy_noEq", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_Qx_noEq", "ZNC_Qx_noEq", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNC_Qy_noEq", "ZNC_Qy_noEq", kTProfile, {{1, 0, 1.}});
-    
+
       registry.addClone("QA/before/", "QA/after/");
     }
 
@@ -429,8 +429,8 @@ struct ZdcQVectors {
       cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
       cal.calibfilesLoaded[cm] = true;
       LOGF(info, "Loaded calibration histos from %s", ccdb_dir.c_str());
-      if(cm == kRec){
-        cal.atStep = 5; 
+      if (cm == kRec) {
+        cal.atStep = 5;
         cal.atIteration = 5;
       }
     } else {
@@ -714,7 +714,7 @@ struct ZdcQVectors {
         q[i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
         q[i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
       }
-      if(sumZN_noEq[i] > 0) {
+      if (sumZN_noEq[i] > 0) {
         qNoEq[i * 2] = xEnZN_noEq[i] / sumZN_noEq[i];     // for QXA[0] and QXC[2]
         qNoEq[i * 2 + 1] = yEnZN_noEq[i] / sumZN_noEq[i]; // for QYA[1] and QYC[3]
       }
@@ -743,9 +743,9 @@ struct ZdcQVectors {
     registry.get<TProfile>(HIST("QA/before/ZNC_Qy_noEq"))->Fill(Form("%d", runnumber), qNoEq[3]);
 
     if (cal.atIteration == 0) {
-      if (isSelected && cfgFillCommonRegistry) 
-          fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
-        
+      if (isSelected && cfgFillCommonRegistry)
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
+
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       return;
@@ -772,10 +772,10 @@ struct ZdcQVectors {
         pb++;
 
         for (int step = 2; step <= nSteps; step++) {
-          corrQxA.push_back(getCorrection<TProfile, kRec>(names[step-1][0].Data(), it, step));
-          corrQyA.push_back(getCorrection<TProfile, kRec>(names[step-1][1].Data(), it, step));
-          corrQxC.push_back(getCorrection<TProfile, kRec>(names[step-1][2].Data(), it, step));
-          corrQyC.push_back(getCorrection<TProfile, kRec>(names[step-1][3].Data(), it, step));
+          corrQxA.push_back(getCorrection<TProfile, kRec>(names[step - 1][0].Data(), it, step));
+          corrQyA.push_back(getCorrection<TProfile, kRec>(names[step - 1][1].Data(), it, step));
+          corrQxC.push_back(getCorrection<TProfile, kRec>(names[step - 1][2].Data(), it, step));
+          corrQyC.push_back(getCorrection<TProfile, kRec>(names[step - 1][3].Data(), it, step));
           pb++;
         }
       }
@@ -794,7 +794,6 @@ struct ZdcQVectors {
         registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qRec[1]);
         registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qRec[2]);
         registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
-
       }
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);

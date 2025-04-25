@@ -82,9 +82,9 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, true, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoubleTrackFunction, bool, true, "Include track cut at low pt");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsTrackCutSize, float, 0.06, "Spread of track cut");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt , bool, true, "Apply Pt dependent DCAz cut");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1 , float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2 , float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, true, "Apply Pt dependent DCAz cut");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
   // Additional event selections
   O2_DEFINE_CONFIGURABLE(cfgEvSelsUseAdditionalEventCut, bool, true, "Bool to enable Additional Event Cut");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsnSigmaMultCuts, int, 1, "Sigma cut on Additional event cut: 1 (default), 2 or 3 sigma available");
@@ -767,10 +767,10 @@ struct FlowSP {
     if (track.dcaZ() > cfgTrackSelsDCAz)
       return false;
 
-    if (cfgTrackSelsDoDCApt && std::fabs(track.dcaZ()) > (cfgTrackSelsDCApt1 * cfgTrackSelsDCApt2)/(std::pow(track.pt(),1.1)))
+    if (cfgTrackSelsDoDCApt && std::fabs(track.dcaZ()) > (cfgTrackSelsDCApt1 * cfgTrackSelsDCApt2) / (std::pow(track.pt(), 1.1)))
       return false;
-    
-      registry.fill(HIST("hTrackCount"), trackSel_DCAz);
+
+    registry.fill(HIST("hTrackCount"), trackSel_DCAz);
 
     // registry.fill(HIST("hTrackCount"), trackSel_GlobalTracks);
 
