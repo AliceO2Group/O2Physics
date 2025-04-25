@@ -13,6 +13,7 @@
 /// \file   flowEsePHe3.cxx
 /// \brief  task to calculate the P He3 flow correlation.
 // C++/ROOT includes.
+// o2-linter: disable=name/workflow-file
 #include <CCDB/BasicCCDBManager.h>
 #include <chrono>
 #include <string>
@@ -60,6 +61,24 @@ DECLARE_SOA_COLUMN(NPidFlag, nPidFlag, int8_t); //unqualified -1, hadron 0, prot
 } // namespace flow_ese_p_he3
 DECLARE_SOA_TABLE(PHe3ESEFlags, "AOD", "PHe3ESEFlags", flow_ese_p_he3::NPidFlag);
 } // namespace o2::aod
+
+namespace pid_flags {
+  constexpr int8_t kUnqualified = -1;
+  constexpr int8_t kUnPOIHadron = 0;
+  constexpr int8_t kProton = 1;
+  constexpr int8_t kHe3 = 2;
+  constexpr int8_t kProtonHe3 = 3;
+}
+
+namespace event_selection {
+  constexpr int idxFT0AV0ASigma = 5;
+}
+
+namespace fourier_mode {
+  constexpr int kMode1 = 1;
+  constexpr int kMode2 = 2;
+  constexpr int kMode3 = 3;
+}
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullHe, aod::pidTOFFullHe>;
 struct FillPIDcolums {
@@ -586,8 +605,8 @@ struct FlowEsePHe3{
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgVtzCut) && (aod::cent::centFT0C > cfgCentMin) && (aod::cent::centFT0C < cfgCentMax);
   Filter properPIDfilter = aod::flow_ese_p_he3::nPidFlag >= (int8_t)0; //Only POI
 
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> ProtonTrackSet = ((aod::flow_ese_p_he3::nPidFlag == 1) || (aod::flow_ese_p_he3::nPidFlag == 3));
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> He3TrackSet = ((aod::flow_ese_p_he3::nPidFlag == 2) || (aod::flow_ese_p_he3::nPidFlag == 3));
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> protonTrackSet = ((aod::flow_ese_p_he3::nPidFlag == pid_flags::kProton) || (aod::flow_ese_p_he3::nPidFlag == pid_flags::kProtonHe3));
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::PHe3ESEFlags>>> he3TrackSet = ((aod::flow_ese_p_he3::nPidFlag == pid_flags::kHe3) || (aod::flow_ese_p_he3::nPidFlag == pid_flags::kProtonHe3));
   
   template <typename T>
   int getDetId(const T& name)
@@ -680,7 +699,7 @@ struct FlowEsePHe3{
     if (cfgOpenEvSelMultCorrelationGlobalTracks) {
       histos.fill(HIST("QA/histEventCountDetail"), 9.5);
     }
-    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::idxFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return false;
     }
     if (cfgOpenEvSelV0AT0ACut) {
@@ -695,7 +714,7 @@ struct FlowEsePHe3{
     int detInd = detId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refAInd = refAId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refBInd = refBId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
-    if (nmode == 2) {
+    if (nmode == fourier_mode::kMode2) {
       if (collision.qvecAmp()[detId] > 1e-8) {
         histos.fill(HIST("QA/histQvec_CorrL0_V2"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.centFT0C());
         histos.fill(HIST("QA/histQvec_CorrL1_V2"), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], collision.centFT0C());
@@ -721,16 +740,16 @@ struct FlowEsePHe3{
     if (multi > 0) {
       float q2x = 0 , q2y = 0;
       for(const auto& track : tracks) {
-        q2x += TMath::Cos(2 * track.phi());
-        q2y += TMath::Sin(2 * track.phi());
-        if (pidmode == 1) {
+        q2x += std::cos(2 * track.phi());
+        q2y += std::sin(2 * track.phi());
+        if (pidmode == pid_flags::kProton) {
           if (track.sign()>0) {
             histos.fill(HIST("V2/histCosV2EP_Pr_Pos"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
           } else {
             histos.fill(HIST("V2/histCosV2EP_Pr_Neg"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
           }
         }
-        if (pidmode == 2) {
+        if (pidmode == pid_flags::kHe3) {
           if (track.sign()>0) {
             histos.fill(HIST("V2/histCosV2EP_He3_Pos"),track.pt(),cent,std::cos(2 * (track.phi() - psi2)));
           } else {
@@ -738,7 +757,7 @@ struct FlowEsePHe3{
           }
         }
       }
-      return std::hypot(q2x, q2y) / TMath::Sqrt(multi);  
+      return std::hypot(q2x, q2y) / std::sqrt(multi);  
     }
     else {
       return 0;
@@ -916,8 +935,8 @@ struct FlowEsePHe3{
       histos.fill(HIST("QA/hist_multV0A_multT0A_after"), collision.multFT0A(), collision.multFV0A());
       histos.fill(HIST("QA/hist_multT0C_centT0C_after"), cent, collision.multFT0C());
     }
-    auto tracksPr = ProtonTrackSet->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto tracksHe3 = He3TrackSet->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksPr = protonTrackSet->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto tracksHe3 = he3TrackSet->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     int multiPr = tracksPr.size();
     int multiHe3 = tracksHe3.size();
     // LOGF(info, Form("Collison ID + 1; Proton Num:%d; He3 Num:%d;\n", multiPr, multiHe3));
@@ -928,7 +947,7 @@ struct FlowEsePHe3{
     for (auto i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
       int detIndGlobal = detId * 4 + cfgnTotalSystem * 4 * (cfgnMods->at(i) - 2);
       float psiNGlobal = helperEP.GetEventPlane(collision.qvecRe()[detIndGlobal + 3], collision.qvecIm()[detIndGlobal + 3], cfgnMods->at(i));
-      if(cfgnMods->at(i) == 2) {
+      if(cfgnMods->at(i) == fourier_mode::kMode2) {
         //LOGF(info, "Process q2\n");
         float q2Proton = calculateq2(tracksPr,psiNGlobal,cent,1);
         float q2He3 = calculateq2(tracksHe3,psiNGlobal,cent,2);
