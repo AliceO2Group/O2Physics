@@ -447,19 +447,9 @@ struct HfTreeCreatorLcToPKPi {
     }
   }
 
-  /// \brief core function to fill tables in MC
-  /// \param collisions Collision table
-  /// \param mcCollisions MC collision table
-  /// \param candidates Lc->pKpi candidate table
-  /// \param particles Generated particle table
-  template <bool useCentrality, int reconstructionType, typename Colls, typename CandType>
-  void fillTablesMc(Colls const& collisions,
-                    aod::McCollisions const&,
-                    CandType const& candidates,
-                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
-                    soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
+  template <bool useCentrality, bool isMc, typename Colls>
+  void fillEventProperties(Colls const& collisions)
   {
-
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
@@ -477,11 +467,24 @@ struct HfTreeCreatorLcToPKPi {
         centFDDM = collision.centFDDM();
       }
 
-      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+      float mcPosX{UndefValueFloat};
+      float mcPosY{UndefValueFloat};
+      float mcPosZ{UndefValueFloat};
+      int mcCollId{-1};
+
+      if constexpr (isMc) {
+        auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+
+        mcPosX = mcCollision.posX();
+        mcPosY = mcCollision.posY();
+        mcPosZ = mcCollision.posZ();
+
+        mcCollId = collision.mcCollisionId();
+      }
 
       rowCandidateFullEvents(
         collision.globalIndex(),
-        collision.mcCollisionId(),
+        mcCollId,
         collision.numContrib(),
         collision.posX(),
         collision.posY(),
@@ -489,9 +492,9 @@ struct HfTreeCreatorLcToPKPi {
         std::sqrt(collision.covXX()),
         std::sqrt(collision.covYY()),
         std::sqrt(collision.covZZ()),
-        mcCollision.posX(),
-        mcCollision.posY(),
-        mcCollision.posZ(),
+        mcPosX,
+        mcPosY,
+        mcPosZ,
         0,
         collision.bc().runNumber(),
         centFT0A,
@@ -502,6 +505,22 @@ struct HfTreeCreatorLcToPKPi {
         collision.multZeqNTracksPV(),
         collision.multNTracksPV());
     }
+  }
+
+  /// \brief core function to fill tables in MC
+  /// \param collisions Collision table
+  /// \param mcCollisions MC collision table
+  /// \param candidates Lc->pKpi candidate table
+  /// \param particles Generated particle table
+  template <bool useCentrality, int reconstructionType, typename Colls, typename CandType>
+  void fillTablesMc(Colls const& collisions,
+                    aod::McCollisions const&,
+                    CandType const& candidates,
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
+                    soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
+  {
+
+    fillEventProperties<useCentrality, true>(collisions);
 
     // Filling candidate properties
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
@@ -913,46 +932,7 @@ struct HfTreeCreatorLcToPKPi {
                       TracksWPid const&, aod::BCs const&)
   {
 
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-
-      float centFT0A = -1.f;
-      float centFT0C = -1.f;
-      float centFT0M = -1.f;
-      float centFV0A = -1.f;
-      float centFDDM = -1.f;
-      if constexpr (useCentrality) {
-        centFT0A = collision.centFT0A();
-        centFT0C = collision.centFT0C();
-        centFT0M = collision.centFT0M();
-        centFV0A = collision.centFV0A();
-        centFDDM = collision.centFDDM();
-      }
-
-      rowCandidateFullEvents(
-        collision.globalIndex(),
-        -1,
-        collision.numContrib(),
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
-        std::sqrt(collision.covXX()),
-        std::sqrt(collision.covYY()),
-        std::sqrt(collision.covZZ()),
-        UndefValueFloat,
-        UndefValueFloat,
-        UndefValueFloat,
-        0,
-        collision.bc().runNumber(),
-        centFT0A,
-        centFT0C,
-        centFT0M,
-        centFV0A,
-        centFDDM,
-        collision.multZeqNTracksPV(),
-        collision.multNTracksPV());
-    }
+    fillEventProperties<useCentrality, false>(collisions);
 
     // Filling candidate properties
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
