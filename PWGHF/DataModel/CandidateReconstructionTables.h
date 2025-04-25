@@ -1369,9 +1369,9 @@ DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 DECLARE_SOA_COLUMN(CascRejectInvmass, cascRejectInvmass, float);
 
 // Kf QA results:
-DECLARE_SOA_COLUMN(InvMassV0Sig, invMassV0Sig, float);
-DECLARE_SOA_COLUMN(InvMassXiSig, invMassXiSig, float);
-DECLARE_SOA_COLUMN(InvMassXic0Sig, invMassXic0Sig, float);
+DECLARE_SOA_COLUMN(InvMassV0Err, invMassV0Err, float);
+DECLARE_SOA_COLUMN(InvMassXiErr, invMassXiErr, float);
+DECLARE_SOA_COLUMN(InvMassXic0Err, invMassXic0Err, float);
 DECLARE_SOA_COLUMN(V0DauPosX, v0DauPosX, float);
 DECLARE_SOA_COLUMN(V0DauPosY, v0DauPosY, float);
 DECLARE_SOA_COLUMN(V0DauPosZ, v0DauPosZ, float);
@@ -1611,7 +1611,7 @@ DECLARE_SOA_TABLE(HfCandToXiPiKf, "AOD", "HFCANDTOXIPIKF", //!
 
 DECLARE_SOA_TABLE(HfCandToXiPiKfQa, "AOD", "HFCANDTOXIPIKFQA",
                   o2::soa::Index<>,
-                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon, hf_cand_xic0_omegac0::InvMassV0Sig, hf_cand_xic0_omegac0::InvMassXiSig, hf_cand_xic0_omegac0::InvMassXic0Sig,
+                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon, hf_cand_xic0_omegac0::InvMassV0Err, hf_cand_xic0_omegac0::InvMassXiErr, hf_cand_xic0_omegac0::InvMassXic0Err,
                   hf_cand_xic0_omegac0::CollisionId, hf_track_index::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
                   hf_cand_xic0_omegac0::V0DauPosX, hf_cand_xic0_omegac0::V0DauPosY, hf_cand_xic0_omegac0::V0DauPosZ, hf_cand_xic0_omegac0::V0DauPosXError, hf_cand_xic0_omegac0::V0DauPosYError, hf_cand_xic0_omegac0::V0DauPosZError, hf_cand_xic0_omegac0::V0DauPosPt,
                   hf_cand_xic0_omegac0::V0DauNegX, hf_cand_xic0_omegac0::V0DauNegY, hf_cand_xic0_omegac0::V0DauNegZ, hf_cand_xic0_omegac0::V0DauNegXError, hf_cand_xic0_omegac0::V0DauNegYError, hf_cand_xic0_omegac0::V0DauNegZError, hf_cand_xic0_omegac0::V0DauNegPt,
