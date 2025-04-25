@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-DataMembers.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
 
@@ -33,7 +37,8 @@ TString sBaseListName = "Default list name"; // yes, I declare it separately, be
 OutputObj<TList> fBaseList{sBaseListName.Data(),
                            OutputObjHandlingPolicy::AnalysisObject,
                            OutputObjSourceType::OutputObjSource};
-TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
+TProfile* fBasePro = NULL;           //!<! keeps flags relevant for the whole analysis
+TObjArray* fBaseProBinLabels = NULL; // helper for fBasePro to hold bin labels, until SetBinLabel(...) large memory consumption is resolved
 
 // *) Task configuration:
 struct TaskConfiguration {
@@ -58,19 +63,23 @@ struct TaskConfiguration {
   bool fInsanityCheckForEachParticle = false;    // do additional insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging.
   bool fProcess[eProcess_N] = {false};           // set what to process. See enum eProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
   TString fWhichProcess = "ProcessRec";          // dump in this variable which process was used
-  UInt_t fRandomSeed = 0;                        // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
+  unsigned int fRandomSeed = 0;                  // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
   bool fUseFisherYates = false;                  // algorithm used to randomize particle indices, set via configurable
   TArrayI* fRandomIndices = NULL;                // array to store random indices obtained from Fisher-Yates algorithm
   int fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event, applies to all centralities. It is set and applied if > 0. Set to <=0 to ignore.
 
   bool fUseStopwatch = false;            // do some basing profiling with TStopwatch for where the execution time is going
   TStopwatch* fTimer[eTimer_N] = {NULL}; // stopwatch, global (overal execution time) and local
-  float fFloatingPointPrecision = 1.e-6; // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
+  float fFloatingPointPrecision = 1.e-6; // two floats are the same if abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
   int fSequentialBailout = 0;            // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
   bool fUseSpecificCuts = false;         // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
   TString fWhichSpecificCuts = "";       // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
   TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
   bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
+  bool fUseSetBinLabel = false;          // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
+                                         // See also local executable PostprocessLabels.C
+  bool fUseClone = false;                // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
+  bool fUseFormula = false;              // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
 } tc;                                    // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
@@ -179,12 +188,14 @@ struct EventCuts {
   int fEventCutCounterBinNumber[2] = {1, 1};                   // bin counter for set bin labels in fEventCutCounterHist
   float fdEventCuts[eEventCuts_N][2] = {{0.}};                 // event cuts defined via [min,max)
   TString fsEventCuts[eEventCuts_N] = {""};                    // event cuts defined via string
-  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}};     //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
+  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}};     //!<! [rec,sim][see enum eCutCounter] histogram to store how many times each event cut triggered
   int fBeforeAfterColor[2] = {kRed, kGreen};                   // color code before and after cuts
   float fCentralityCorrelationsCutTreshold = 5.;               // see bool CentralityCorrelationCut()
   TString fCentralityCorrelationsCutVersion = "Absolute";      // see bool CentralityCorrelationCut()
   float fCentralityValues[2] = {0.};                           // [0] value of first cent. estimator, [1] = value of second cent. estimator, when CentralityCorrelationsCut is requested
-  TFormula* fEventCutsFormulas[eEventCutsFormulas_N] = {NULL}; // see enum
+  TFormula* fEventCutsFormulas[eEventCutsFormulas_N] = {NULL}; // see enum TBI 20250415 I do not use it for the time being, due to memory blow-up in TFormula
+  float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}; // I need this only temporarily until large memory consumption with TFormula is resolved.
+                                                               // I support at the moment only linear cut in the format p0 + p1*x. Then, [0] = p0, [1] = p1.
 } ec;                                                          // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
@@ -235,7 +246,7 @@ struct ParticleCuts {
   int fParticleCutCounterBinNumber[2] = {1, 1};               // bin counter for set bin labels in fParticleCutCounterHist
   float fdParticleCuts[eParticleCuts_N][2] = {{0.}};          // particles cuts defined via [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
   TString fsParticleCuts[eParticleCuts_N] = {""};             // particles cuts defined via booleans via string
-  TH1I* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
+  TH1F* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
   TFormula* fPtDependentDCAxyFormula = NULL;                  // the actual formula, used to evaluate for a given pT, the corresponding DCAxy, where the parameterization is given by configurable cfPtDependentDCAxyParameterization
 } pc;                                                         // "pc" is a common label for objects in this struct
 
@@ -250,10 +261,10 @@ struct Qvector {
   TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
   int fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                         // count number of entries in each differential q-vector
   TComplex fQabVector[2][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{TComplex(0., 0.)}}};                                             //! integrated [-eta or +eta][harmonic][eta separation]
-  Double_t fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                 //! multiplicities in 2 eta separated intervals
+  float fMab[2][gMaxNumberEtaSeparations] = {{0.}};                                                                                    //! multiplicities in 2 eta separated intervals
   TH1F* fMabDist[2][2][2][gMaxNumberEtaSeparations] = {{{{NULL}}}};                                                                    // multiplicity distributions in A and B, for each eta separation [ A or B ] [rec or sim] [ before or after cuts ] [ eta separation value ]
   TComplex fqabVector[2][gMaxNoBinsKine][gMaxHarmonic][gMaxNumberEtaSeparations] = {{{{TComplex(0., 0.)}}}};                           //! differential in pt [-eta or +eta][binNo][harmonic][eta separation]
-  Double_t fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                               //! multiplicities vs pt in 2 eta separated intervals
+  float fmab[2][gMaxNoBinsKine][gMaxNumberEtaSeparations] = {{{0.}}};                                                                  //! multiplicities vs pt in 2 eta separated intervals
 } qv;                                                                                                                                  // "qv" is a common label for objects in this struct
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
@@ -326,7 +337,7 @@ struct NUA {
   TH1D* fCustomNUAPDF[eNUAPDF_N] = {NULL};                // custom, user-supplied distributions used to simulate NUA
   TString* fCustomNUAPDFHistNames[eNUAPDF_N] = {NULL};    // these are the names of histograms holding custom NUA in an external file. There is a configurable for this one.
   TString fFileWithCustomNUA = "";                        // path to external ROOT file which holds all histograms with custom NUA
-  Double_t fMaxValuePDF[eNUAPDF_N] = {0.};                // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
+  float fMaxValuePDF[eNUAPDF_N] = {0.};                   // see algorithm used in Accept(...). I implemented it as a data member, so that it is not calculated again and again at each particle call
 } nua;
 
 // *) Internal validation:
@@ -338,7 +349,7 @@ struct InternalValidation {
                                                       // This is OK as long as I do not apply any event cuts in InternalValidation().
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
                                                       // Can be used in combination with setting fSequentialBailout > 0.
-  UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
+  unsigned int fnEventsInternalValidation = 0;        // how many on-the-fly events will be sampled for each real event, for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // "constant", "correlated" or "persistent", see .cxx for full documentation
   bool fRescaleWithTheoreticalInput = false;          // if true, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
@@ -356,7 +367,6 @@ struct Test0 {
   TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
   bool fUseDefaultLabels = false;                                               // use default labels hardwired in GetDefaultObjArrayWithLabels(), the choice is made with cfWhichDefaultLabels
   TString fWhichDefaultLabels = "";                                             // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
-  TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
 } t0;                                                                           // "t0" labels an instance of this group of histograms
 
 // *) Eta separations:

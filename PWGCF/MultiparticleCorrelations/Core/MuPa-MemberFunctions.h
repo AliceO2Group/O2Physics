@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-MemberFunctions.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 
@@ -23,7 +27,13 @@ void BookBaseList()
   // Book base TList and store task configuration.
 
   // a) Book base TList;
-  // b) Store task configuration.
+  // b) Book base profile fBasePro to hold task configuration;
+  // c) Define bin labels directly via SetBinLabel(...);
+  // d) Define bin labels indirectly by storing them in y-axis title + local executable PostprocessLabels.C.
+  //    Algorithm: y-axis title is formatted with respect to 2 IFS, ":" and ";" as follows "1:first-bin-label; 2:second-bin-label; ..."
+  //               Then, I tokenize with respect to ";" to get bin number and corresponding bin label.
+  //               In the final step, I tokenize with respect to ":" to disentangle bin number and its bin label;
+  // e) Add configured base TProfile to the list.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -34,7 +44,7 @@ void BookBaseList()
   temp->SetOwner(true);
   fBaseList.setObject(temp);
 
-  // b) Store task configuration:
+  // b) Book base profile to hold task configuration:
   fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N - 1, 0.5, static_cast<float>(eConfiguration_N) - 0.5);
   // yes, eConfiguration_N - 1 and -0.5, because eConfiguration kicks off from 1
   fBasePro->SetStats(false);
@@ -43,65 +53,170 @@ void BookBaseList()
 
   // Remark: If I want to change the ordering of bin labels, simply change the
   // ordering in enum eConfiguration { ... }, nothing needs to be changed here.
-  fBasePro->GetXaxis()->SetBinLabel(eTaskIsConfiguredFromJson, Form("fTaskIsConfiguredFromJson = %s", tc.fTaskIsConfiguredFromJson.Data()));
 
-  fBasePro->GetXaxis()->SetBinLabel(eTaskName, Form("fTaskName = %s", tc.fTaskName.Data()));
+  if (tc.fUseSetBinLabel) {
 
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", "__RUN_NUMBER__"));
-  // I have to do it this way via placeholder, because run number is available only when i start to process data.
-  // Then, I replace placeholder with run number in PropagateRunNumber(...)
+    // c) Define bin labels directly via SetBinLabel(...):
+    fBasePro->GetXaxis()->SetBinLabel(eTaskIsConfiguredFromJson, TString::Format("fTaskIsConfiguredFromJson = %s", tc.fTaskIsConfiguredFromJson.Data()));
 
-  fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
+    fBasePro->GetXaxis()->SetBinLabel(eTaskName, Form("fTaskName = %s", tc.fTaskName.Data()));
 
-  fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose, static_cast<double>(tc.fVerbose));
+    fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", "__RUN_NUMBER__"));
+    // I have to do it this way via placeholder, because run number is available only when i start to process data.
+    // Then, I replace placeholder with run number in PropagateRunNumber(...)
 
-  fBasePro->GetXaxis()->SetBinLabel(eVerboseUtility, "fVerboseUtility");
-  fBasePro->Fill(eVerboseUtility, static_cast<double>(tc.fVerboseUtility));
+    fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
+    fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
 
-  fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle, static_cast<double>(tc.fVerboseForEachParticle));
+    fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
+    fBasePro->Fill(eVerbose, static_cast<double>(tc.fVerbose));
 
-  fBasePro->GetXaxis()->SetBinLabel(eVerboseEventCounter, "fVerboseEventCounter");
-  fBasePro->Fill(eVerboseEventCounter, static_cast<double>(tc.fVerboseEventCounter));
+    fBasePro->GetXaxis()->SetBinLabel(eVerboseUtility, "fVerboseUtility");
+    fBasePro->Fill(eVerboseUtility, static_cast<double>(tc.fVerboseUtility));
 
-  fBasePro->GetXaxis()->SetBinLabel(ePlainPrintout, "fPlainPrintout");
-  fBasePro->Fill(ePlainPrintout, static_cast<double>(tc.fPlainPrintout));
+    fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
+    fBasePro->Fill(eVerboseForEachParticle, static_cast<double>(tc.fVerboseForEachParticle));
 
-  fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<double>(tc.fDoAdditionalInsanityChecks));
+    fBasePro->GetXaxis()->SetBinLabel(eVerboseEventCounter, "fVerboseEventCounter");
+    fBasePro->Fill(eVerboseEventCounter, static_cast<double>(tc.fVerboseEventCounter));
 
-  fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
-  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
+    fBasePro->GetXaxis()->SetBinLabel(ePlainPrintout, "fPlainPrintout");
+    fBasePro->Fill(ePlainPrintout, static_cast<double>(tc.fPlainPrintout));
 
-  fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
+    fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
+    fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<double>(tc.fDoAdditionalInsanityChecks));
 
-  fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(eRandomSeed, static_cast<double>(tc.fRandomSeed));
+    fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
+    fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
 
-  fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(eUseFisherYates, static_cast<double>(tc.fUseFisherYates));
+    fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
-  fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
-  fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
+    fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
+    fBasePro->Fill(eRandomSeed, static_cast<double>(tc.fRandomSeed));
 
-  fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(eUseStopwatch, static_cast<double>(tc.fUseStopwatch));
+    fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
+    fBasePro->Fill(eUseFisherYates, static_cast<double>(tc.fUseFisherYates));
 
-  fBasePro->GetXaxis()->SetBinLabel(eFloatingPointPrecision, "fFloatingPointPrecision");
-  fBasePro->Fill(eFloatingPointPrecision, tc.fFloatingPointPrecision);
+    fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
+    fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
 
-  fBasePro->GetXaxis()->SetBinLabel(eSequentialBailout, "fSequentialBailout");
-  fBasePro->Fill(eSequentialBailout, static_cast<double>(tc.fSequentialBailout));
+    fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
+    fBasePro->Fill(eUseStopwatch, static_cast<double>(tc.fUseStopwatch));
 
-  fBasePro->GetXaxis()->SetBinLabel(eUseSpecificCuts, "fUseSpecificCuts");
-  fBasePro->Fill(eUseSpecificCuts, static_cast<double>(tc.fUseSpecificCuts));
+    fBasePro->GetXaxis()->SetBinLabel(eFloatingPointPrecision, "fFloatingPointPrecision");
+    fBasePro->Fill(eFloatingPointPrecision, tc.fFloatingPointPrecision);
 
-  fBasePro->GetXaxis()->SetBinLabel(eWhichSpecificCuts, Form("WhichSpecificCuts = %s", tc.fWhichSpecificCuts.Data()));
+    fBasePro->GetXaxis()->SetBinLabel(eSequentialBailout, "fSequentialBailout");
+    fBasePro->Fill(eSequentialBailout, static_cast<double>(tc.fSequentialBailout));
 
-  fBasePro->GetXaxis()->SetBinLabel(eSkipTheseRuns, Form("SkipTheseRuns = %s", tc.fSkipTheseRuns.Data()));
+    fBasePro->GetXaxis()->SetBinLabel(eUseSpecificCuts, "fUseSpecificCuts");
+    fBasePro->Fill(eUseSpecificCuts, static_cast<double>(tc.fUseSpecificCuts));
 
+    fBasePro->GetXaxis()->SetBinLabel(eWhichSpecificCuts, Form("WhichSpecificCuts = %s", tc.fWhichSpecificCuts.Data()));
+
+    fBasePro->GetXaxis()->SetBinLabel(eSkipTheseRuns, Form("SkipTheseRuns = %s", tc.fSkipTheseRuns.Data()));
+
+    fBasePro->GetXaxis()->SetBinLabel(eUseSetBinLabel, "fUseSetBinLabel");
+    fBasePro->Fill(eUseSetBinLabel, static_cast<double>(tc.fUseSetBinLabel));
+
+    fBasePro->GetXaxis()->SetBinLabel(eUseClone, "fUseClone");
+    fBasePro->Fill(eUseClone, static_cast<double>(tc.fUseClone));
+
+    fBasePro->GetXaxis()->SetBinLabel(eUseFormula, "fUseFormula");
+    fBasePro->Fill(eUseFormula, static_cast<double>(tc.fUseFormula));
+
+  } else {
+
+    // d) Define bin labels indirectly by storing them in y-axis title + local executable PostprocessLabels.C.
+    //    Algorithm is documented in the function preamble above.
+
+    TString yAxisTitle = "";
+    yAxisTitle += TString::Format("%d:fTaskIsConfiguredFromJson = %s; ", static_cast<int>(eTaskIsConfiguredFromJson), tc.fTaskIsConfiguredFromJson.Data());
+
+    yAxisTitle += TString::Format("%d:fTaskName = %s; ", static_cast<int>(eTaskName), tc.fTaskName.Data());
+
+    yAxisTitle += TString::Format("%d:fRunNumber = %s; ", static_cast<int>(eRunNumber), "__RUN_NUMBER__");
+    // I have to do it this way via placeholder, because run number is available only when i start to process data.
+    // Then, I replace placeholder with run number in PropagateRunNumber(...)
+
+    yAxisTitle += TString::Format("%d:fDryRun; ", static_cast<int>(eDryRun));
+    fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
+
+    yAxisTitle += TString::Format("%d:fVerbose; ", static_cast<int>(eVerbose));
+    fBasePro->Fill(eVerbose, static_cast<double>(tc.fVerbose));
+
+    yAxisTitle += TString::Format("%d:fVerboseUtility; ", static_cast<int>(eVerboseUtility));
+    fBasePro->Fill(eVerboseUtility, static_cast<double>(tc.fVerboseUtility));
+
+    yAxisTitle += TString::Format("%d:fVerboseForEachParticle; ", static_cast<int>(eVerboseForEachParticle));
+    fBasePro->Fill(eVerboseForEachParticle, static_cast<double>(tc.fVerboseForEachParticle));
+
+    yAxisTitle += TString::Format("%d:fVerboseEventCounter; ", static_cast<int>(eVerboseEventCounter));
+    fBasePro->Fill(eVerboseEventCounter, static_cast<double>(tc.fVerboseEventCounter));
+
+    yAxisTitle += TString::Format("%d:fPlainPrintout; ", static_cast<int>(ePlainPrintout));
+    fBasePro->Fill(ePlainPrintout, static_cast<double>(tc.fPlainPrintout));
+
+    yAxisTitle += TString::Format("%d:fDoAdditionalInsanityChecks; ", static_cast<int>(eDoAdditionalInsanityChecks));
+    fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<double>(tc.fDoAdditionalInsanityChecks));
+
+    yAxisTitle += TString::Format("%d:fInsanityCheckForEachParticle; ", static_cast<int>(eInsanityCheckForEachParticle));
+    fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
+
+    yAxisTitle += TString::Format("%d:fWhichProcess = %s; ", static_cast<int>(eWhichProcess), tc.fWhichProcess.Data());
+
+    yAxisTitle += TString::Format("%d:fRandomSeed; ", static_cast<int>(eRandomSeed));
+    fBasePro->Fill(eRandomSeed, static_cast<double>(tc.fRandomSeed));
+
+    yAxisTitle += TString::Format("%d:fUseFisherYates; ", static_cast<int>(eUseFisherYates));
+    fBasePro->Fill(eUseFisherYates, static_cast<double>(tc.fUseFisherYates));
+
+    yAxisTitle += TString::Format("%d:fFixedNumberOfRandomlySelectedTracks; ", static_cast<int>(eFixedNumberOfRandomlySelectedTracks));
+    fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<double>(tc.fFixedNumberOfRandomlySelectedTracks));
+
+    yAxisTitle += TString::Format("%d:fUseStopwatch; ", static_cast<int>(eUseStopwatch));
+    fBasePro->Fill(eUseStopwatch, static_cast<double>(tc.fUseStopwatch));
+
+    yAxisTitle += TString::Format("%d:fFloatingPointPrecision; ", static_cast<int>(eFloatingPointPrecision));
+    fBasePro->Fill(eFloatingPointPrecision, static_cast<double>(tc.fFloatingPointPrecision));
+
+    yAxisTitle += TString::Format("%d:fSequentialBailout; ", static_cast<int>(eSequentialBailout));
+    fBasePro->Fill(eSequentialBailout, static_cast<double>(tc.fSequentialBailout));
+
+    yAxisTitle += TString::Format("%d:fUseSpecificCuts; ", static_cast<int>(eUseSpecificCuts));
+    fBasePro->Fill(eUseSpecificCuts, static_cast<double>(tc.fUseSpecificCuts));
+
+    yAxisTitle += TString::Format("%d:fWhichSpecificCuts = %s; ", static_cast<int>(eWhichSpecificCuts), tc.fWhichSpecificCuts.Data());
+
+    yAxisTitle += TString::Format("%d:fSkipTheseRuns = %s; ", static_cast<int>(eSkipTheseRuns), tc.fSkipTheseRuns.Data());
+
+    yAxisTitle += TString::Format("%d:fUseSetBinLabel; ", static_cast<int>(eUseSetBinLabel));
+    fBasePro->Fill(eUseSetBinLabel, static_cast<double>(tc.fUseSetBinLabel));
+
+    yAxisTitle += TString::Format("%d:fUseClone; ", static_cast<int>(eUseClone));
+    fBasePro->Fill(eUseClone, static_cast<double>(tc.fUseClone));
+
+    yAxisTitle += TString::Format("%d:fUseFormula; ", static_cast<int>(eUseFormula));
+    fBasePro->Fill(eUseFormula, static_cast<double>(tc.fUseFormula));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() != static_cast<int>(eConfiguration_N)) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d !=  eConfiguration_N = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), static_cast<int>(eConfiguration_N));
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    fBasePro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
+  // e) Add configured base TProfile to the list:
   fBaseList->Add(fBasePro);
 
   if (tc.fVerbose) {
@@ -146,6 +261,7 @@ void DefaultConfiguration()
   tc.fTaskName = TString(cf_tc.cfTaskName);
   tc.fDryRun = cf_tc.cfDryRun;
   tc.fVerbose = cf_tc.cfVerbose;
+
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__); // yes, here
   }
@@ -228,6 +344,9 @@ void DefaultConfiguration()
   tc.fUseSpecificCuts = cf_tc.cfUseSpecificCuts;
   tc.fWhichSpecificCuts = cf_tc.cfWhichSpecificCuts;
   tc.fSkipTheseRuns = cf_tc.cfSkipTheseRuns;
+  tc.fUseSetBinLabel = cf_tc.cfUseSetBinLabel;
+  tc.fUseClone = cf_tc.cfUseClone;
+  tc.fUseFormula = cf_tc.cfUseFormula;
 
   // *) Event histograms (for QA see below):
   eh.fEventHistogramsName[eNumberOfEvents] = "NumberOfEvents";
@@ -1424,35 +1543,35 @@ void DefaultBinning()
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
-  if (cf_res.cfUseVariableLength_mult_bins) {
+  if (cf_res.cfUseVariableLengthMultBins) {
     this->InitializeVariableLengthBins(AFO_MULTIPLICITY);
   }
   // *) Variable-length binning vs. centrality:
-  if (cf_res.cfUseVariableLength_cent_bins) {
+  if (cf_res.cfUseVariableLengthCentBins) {
     this->InitializeVariableLengthBins(AFO_CENTRALITY);
   }
   // *) Variable-length binning vs. pt:
-  if (cf_res.cfUseVariableLength_pt_bins) {
+  if (cf_res.cfUseVariableLengthPtBins) {
     this->InitializeVariableLengthBins(AFO_PT);
   }
   // *) Variable-length binning vs. eta:
-  if (cf_res.cfUseVariableLength_eta_bins) {
+  if (cf_res.cfUseVariableLengthEtaBins) {
     this->InitializeVariableLengthBins(AFO_ETA);
   }
   // *) Variable-length binning vs. occupancy:
-  if (cf_res.cfUseVariableLength_occu_bins) {
+  if (cf_res.cfUseVariableLengthOccuBins) {
     this->InitializeVariableLengthBins(AFO_OCCUPANCY);
   }
   // *) Variable-length binning vs. interaction rate:
-  if (cf_res.cfUseVariableLength_ir_bins) {
+  if (cf_res.cfUseVariableLengthIRBins) {
     this->InitializeVariableLengthBins(AFO_INTERACTIONRATE);
   }
   // *) Variable-length binning vs. run duration:
-  if (cf_res.cfUseVariableLength_crd_bins) {
+  if (cf_res.cfUseVariableLengthCRDBins) {
     this->InitializeVariableLengthBins(AFO_CURRENTRUNDURATION);
   }
   // *) Variable-length binning vs. vertex z position:
-  if (cf_res.cfUseVariableLength_vz_bins) {
+  if (cf_res.cfUseVariableLengthVzBins) {
     this->InitializeVariableLengthBins(AFO_VZ);
   }
 
@@ -1478,35 +1597,35 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY: {
-      lFixedLength_bins = cf_res.cfFixedLength_mult_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthMultBins.value;
       break;
     }
     case AFO_CENTRALITY: {
-      lFixedLength_bins = cf_res.cfFixedLength_cent_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthCentBins.value;
       break;
     }
     case AFO_PT: {
-      lFixedLength_bins = cf_res.cfFixedLength_pt_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthPtBins.value;
       break;
     }
     case AFO_ETA: {
-      lFixedLength_bins = cf_res.cfFixedLength_eta_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthEtaBins.value;
       break;
     }
     case AFO_OCCUPANCY: {
-      lFixedLength_bins = cf_res.cfFixedLength_occu_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthOccuBins.value;
       break;
     }
     case AFO_INTERACTIONRATE: {
-      lFixedLength_bins = cf_res.cfFixedLength_ir_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthIRBins.value;
       break;
     }
     case AFO_CURRENTRUNDURATION: {
-      lFixedLength_bins = cf_res.cfFixedLength_crd_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthCRDBins.value;
       break;
     }
     case AFO_VZ: {
-      lFixedLength_bins = cf_res.cfFixedLength_vz_bins.value;
+      lFixedLength_bins = cf_res.cfFixedLengthVzBins.value;
       break;
     }
     // ...
@@ -1550,35 +1669,35 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY: {
-      lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthMultBins.value;
       break;
     }
     case AFO_CENTRALITY: {
-      lVariableLength_bins = cf_res.cfVariableLength_cent_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthCentBins.value;
       break;
     }
     case AFO_PT: {
-      lVariableLength_bins = cf_res.cfVariableLength_pt_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthPtBins.value;
       break;
     }
     case AFO_ETA: {
-      lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthEtaBins.value;
       break;
     }
     case AFO_OCCUPANCY: {
-      lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthOccuBins.value;
       break;
     }
     case AFO_INTERACTIONRATE: {
-      lVariableLength_bins = cf_res.cfVariableLength_ir_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthIRBins.value;
       break;
     }
     case AFO_CURRENTRUNDURATION: {
-      lVariableLength_bins = cf_res.cfVariableLength_crd_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthCRDBins.value;
       break;
     }
     case AFO_VZ: {
-      lVariableLength_bins = cf_res.cfVariableLength_vz_bins.value;
+      lVariableLength_bins = cf_res.cfVariableLengthVzBins.value;
       break;
     }
     // ...
@@ -2899,13 +3018,10 @@ void InsanityChecksAfterBooking()
   // a) Insanity checks on booking:
 
   // **) Check that the last bin is not empty in fBasePro, and that there is no underflow or overflow bins:
-  if (TString(fBasePro->GetXaxis()->GetBinLabel(eConfiguration_N - 1)).EqualTo("")) {
-    LOGF(fatal, "\033[1;31m%s at line %d : The very last bin of \"fBasePro\" doesn't have the title, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
-  }
-  if (TMath::Abs(fBasePro->GetBinContent(0)) > 0.) {
+  if (std::abs(fBasePro->GetBinContent(0)) > 0.) {
     LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the underflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
   }
-  if (TMath::Abs(fBasePro->GetBinContent(eConfiguration_N)) > 0.) {
+  if (std::abs(fBasePro->GetBinContent(eConfiguration_N)) > 0.) {
     LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the overflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
   }
 
@@ -3172,22 +3288,66 @@ void BookQAHistograms()
   qa.fQAHistogramsPro->SetStats(false);
   qa.fQAHistogramsPro->SetLineColor(eColor);
   qa.fQAHistogramsPro->SetFillColor(eFillColor);
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(1, "fCheckUnderflowAndOverflow");
-  qa.fQAHistogramsPro->Fill(0.5, static_cast<int>(qa.fCheckUnderflowAndOverflow));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(2, "fFillQAEventHistograms2D");
-  qa.fQAHistogramsPro->Fill(1.5, static_cast<int>(qa.fFillQAEventHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(3, "fFillQAParticleHistograms2D");
-  qa.fQAHistogramsPro->Fill(2.5, static_cast<int>(qa.fFillQAParticleHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(4, "fFillQAParticleEventHistograms2D");
-  qa.fQAHistogramsPro->Fill(3.5, static_cast<int>(qa.fFillQAParticleEventHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(5, "fFillQACorrelationsVsHistograms2D");
-  qa.fQAHistogramsPro->Fill(4.5, static_cast<int>(qa.fFillQACorrelationsVsHistograms2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fFillQACorrelationsVsInteractionRateVsProfiles2D");
-  qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fFillQACorrelationsVsInteractionRateVsProfiles2D));
-  qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(7, "fRebin");
-  qa.fQAHistogramsPro->Fill(6.5, static_cast<int>(qa.fRebin));
 
-  // ...
+  if (tc.fUseSetBinLabel) {
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(1, "fCheckUnderflowAndOverflow");
+    qa.fQAHistogramsPro->Fill(0.5, static_cast<int>(qa.fCheckUnderflowAndOverflow));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(2, "fFillQAEventHistograms2D");
+    qa.fQAHistogramsPro->Fill(1.5, static_cast<int>(qa.fFillQAEventHistograms2D));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(3, "fFillQAParticleHistograms2D");
+    qa.fQAHistogramsPro->Fill(2.5, static_cast<int>(qa.fFillQAParticleHistograms2D));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(4, "fFillQAParticleEventHistograms2D");
+    qa.fQAHistogramsPro->Fill(3.5, static_cast<int>(qa.fFillQAParticleEventHistograms2D));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(5, "fFillQACorrelationsVsHistograms2D");
+    qa.fQAHistogramsPro->Fill(4.5, static_cast<int>(qa.fFillQACorrelationsVsHistograms2D));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(6, "fFillQACorrelationsVsInteractionRateVsProfiles2D");
+    qa.fQAHistogramsPro->Fill(5.5, static_cast<int>(qa.fFillQACorrelationsVsInteractionRateVsProfiles2D));
+    qa.fQAHistogramsPro->GetXaxis()->SetBinLabel(7, "fRebin");
+    qa.fQAHistogramsPro->Fill(6.5, static_cast<int>(qa.fRebin));
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCheckUnderflowAndOverflow; ", 1);
+    qa.fQAHistogramsPro->Fill(0.5, static_cast<double>(qa.fCheckUnderflowAndOverflow));
+
+    yAxisTitle += TString::Format("%d:fFillQAEventHistograms2D; ", 2);
+    qa.fQAHistogramsPro->Fill(1.5, static_cast<double>(qa.fFillQAEventHistograms2D));
+
+    yAxisTitle += TString::Format("%d:fFillQAParticleHistograms2D; ", 3);
+    qa.fQAHistogramsPro->Fill(2.5, static_cast<double>(qa.fFillQAParticleHistograms2D));
+
+    yAxisTitle += TString::Format("%d:fFillQAParticleEventHistograms2D; ", 4);
+    qa.fQAHistogramsPro->Fill(3.5, static_cast<double>(qa.fFillQAParticleEventHistograms2D));
+
+    yAxisTitle += TString::Format("%d:fFillQACorrelationsVsHistograms2D; ", 5);
+    qa.fQAHistogramsPro->Fill(4.5, static_cast<double>(qa.fFillQACorrelationsVsHistograms2D));
+
+    yAxisTitle += TString::Format("%d:fFillQACorrelationsVsInteractionRateVsProfiles2D; ", 6);
+    qa.fQAHistogramsPro->Fill(5.5, static_cast<double>(qa.fFillQACorrelationsVsInteractionRateVsProfiles2D));
+
+    yAxisTitle += TString::Format("%d:fRebin; ", 7);
+    qa.fQAHistogramsPro->Fill(6.5, static_cast<double>(qa.fRebin));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != qa.fQAHistogramsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != qa.fQAHistogramsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), qa.fQAHistogramsPro->GetNbinsX());
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    qa.fQAHistogramsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
 
   qa.fQAList->Add(qa.fQAHistogramsPro);
 
@@ -3846,18 +4006,8 @@ void BookQAHistograms()
         TString::Format("fParticleEventProEbyE[%s][%s]", gc.srs[rs].Data(), gc.sba[ba].Data()),
         TString::Format("%s, %s", gc.srs_long[rs].Data(), gc.sba_long[ba].Data()),
         eQAParticleEventProEbyE_N, 0., eQAParticleEventProEbyE_N);
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsEbyE, "#LTitsNCls#GT"); // TBI 20241214 this bin labeling is not really needed, as I never save this TProfile persistently
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsNegEtaEbyE, "#LTitsNClsNegEta#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eitsNClsPosEtaEbyE, "#LTitsNClsPosEta#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eEta0804EbyE, "#LTEta0804EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eEta0400EbyE, "#LTEta0400EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eEta0004EbyE, "#LTEta0004EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(eEta0408EbyE, "#LTEta0408EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(ePt0005EbyE, "#LTPt0005EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(ePt0510EbyE, "#LTPt0510EbyE#GT");
-      qa.fQAParticleEventProEbyE[rs][ba]->GetXaxis()->SetBinLabel(ePt1050EbyE, "#LTPt1050EbyE#GT");
-    }
-  }
+    } // for (int ba = 0; ba < 2; ba++) // before/after cuts
+  } // for (int rs = 0; rs < 2; rs++) // reco/sim
 
   // f) Book specific QA 2D "correlations vs." histograms:
 
@@ -4198,9 +4348,37 @@ void BookEventHistograms()
   eh.fEventHistogramsPro->SetStats(false);
   eh.fEventHistogramsPro->SetLineColor(eColor);
   eh.fEventHistogramsPro->SetFillColor(eFillColor);
-  eh.fEventHistogramsPro->GetXaxis()->SetBinLabel(1, "fFillEventHistograms");
-  eh.fEventHistogramsPro->Fill(0.5, static_cast<int>(eh.fFillEventHistograms));
-  // ...
+
+  if (tc.fUseSetBinLabel) {
+    eh.fEventHistogramsPro->GetXaxis()->SetBinLabel(1, "fFillEventHistograms");
+    eh.fEventHistogramsPro->Fill(0.5, static_cast<int>(eh.fFillEventHistograms));
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fFillEventHistograms; ", 1);                   // TBI 20250411 hardwired 1
+    eh.fEventHistogramsPro->Fill(0.5, static_cast<double>(eh.fFillEventHistograms)); // TBI 20250411 hardwired 0.5
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != eh.fEventHistogramsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != eh.fEventHistogramsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), eh.fEventHistogramsPro->GetNbinsX());
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    eh.fEventHistogramsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   eh.fEventHistogramsList->Add(eh.fEventHistogramsPro);
 
   // b) Book specific control event histograms 1D:
@@ -4271,10 +4449,37 @@ void BookEventCutsHistograms()
   ec.fEventCutsPro->SetLineColor(eColor);
   ec.fEventCutsPro->SetFillColor(eFillColor);
   ec.fEventCutsPro->GetXaxis()->SetLabelSize(0.020);
+
+  TString yAxisTitle = ""; // TBI 20250413 when I fall back on using SetBinLabel(...), this variable is declared but will be unused
   for (int cut = 0; cut < eEventCuts_N; cut++) {
-    ec.fEventCutsPro->GetXaxis()->SetBinLabel(1 + cut, ec.fEventCutName[cut].Data()); // Remark: check always if bin labels here correspond to ordering in enum eEventCuts
+
+    if (tc.fUseSetBinLabel) {
+      ec.fEventCutsPro->GetXaxis()->SetBinLabel(1 + cut, ec.fEventCutName[cut].Data()); // Remark: check always if bin labels here correspond to ordering in enum eEventCuts
+    } else {
+      // Workaround for SetBinLabel() large memory consumption:
+      yAxisTitle += TString::Format("%d:%s; ", 1 + cut, ec.fEventCutName[cut].Data());
+    }
+
     ec.fEventCutsPro->Fill(cut, static_cast<int>(ec.fUseEventCuts[cut]));
-  }
+
+  } // for (int cut = 0; cut < eEventCuts_N; cut++) {
+
+  // *) Insanity check on the number of fields in this specially crafted y-axis title:
+  if (!tc.fUseSetBinLabel) {
+
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != ec.fEventCutsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d != ec.fEventCutsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), ec.fEventCutsPro->GetNbinsX());
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    ec.fEventCutsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+  } // if(!tc.fUseSetBinLabel)
+
   ec.fEventCutsList->Add(ec.fEventCutsPro);
 
   // b) Book event cut counter maps:
@@ -4321,27 +4526,126 @@ void BookEventCutsHistograms()
 
   //  **) eRefMultVsNContrUp:
   if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
-    ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula] = new TFormula("RefMultVsNContrUp_Formula", ec.fsEventCuts[eRefMultVsNContrUp].Data());
-    // As a quick insanity check, try immediately to evaluate something from this formula:
-    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(1.44))) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-    }
-  }
+    if (tc.fUseFormula) {
+      ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula] = new TFormula("RefMultVsNContrUp_Formula", ec.fsEventCuts[eRefMultVsNContrUp].Data());
+
+      LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TFormula() !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+
+      // As a quick insanity check, try immediately to evaluate something from this formula:
+      if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(1.44))) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    } else {
+      // This is a workaround to evaluate upper boundary of HMO cut, until large-memory consumption with TFormula is resolved.
+
+      // Algorithm: 1. ec.fsEventCuts[eRefMultVsNContrUp].Data() is linear expression in the mandatory format "p0 + p1*x".
+      //            2. Then I extract p0 and p1, and store them in float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}
+      //            3. Those values are then used in temporary function float RefMultVsNContr(const float &refMult, ...)
+
+      this->GetP0P1(ec.fsEventCuts[eRefMultVsNContrUp].ReplaceAll(" ", ""), eRefMultVsNContrUp_Formula);
+
+    } // else
+
+  } // if (ec.fUseEventCuts[eRefMultVsNContrUp])
 
   //  **) eRefMultVsNContrLow:
   if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
-    ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula] = new TFormula("RefMultVsNContrLow_Formula", ec.fsEventCuts[eRefMultVsNContrLow].Data());
-    // As a quick insanity check, try immediately to evaluate something from this formula:
-    if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(1.44))) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    if (tc.fUseFormula) {
+      ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula] = new TFormula("RefMultVsNContrLow_Formula", ec.fsEventCuts[eRefMultVsNContrLow].Data());
+
+      LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TFormula() !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+
+      // As a quick insanity check, try immediately to evaluate something from this formula:
+      if (std::isnan(ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(1.44))) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    } else {
+      // This is a workaround to evaluate upper boundary of HMO cut, until large-memory consumption with TFormula is resolved.
+
+      // Algorithm: See above for eRefMultVsNContrUp
+      this->GetP0P1(ec.fsEventCuts[eRefMultVsNContrLow].ReplaceAll(" ", ""), eRefMultVsNContrLow_Formula);
     }
-  }
+
+  } // if (ec.fUseEventCuts[eRefMultVsNContrLow])
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
 } // void BookEventCutsHistograms()
+
+//============================================================
+
+void GetP0P1(const char* formula, eEventCutsFormulas whichCutFormula)
+{
+  // This is a sort of temporary parser, which extracts from linear expression p0 + p1*x coefficients p0 and p1, and stores them into float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}
+  // Remark #0: I need all this gym until large memory consumption with TFormula is resolved;
+  // Remark #1: Remove all blanks in 'formula' before calling this function;
+  // Remark #2: If I need to go beyond p1, use recursion instead.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  TString signP0 = "";
+  TString signP1 = "";
+  TString P0 = "";
+  TString P1 = "";
+
+  // P0 signature parser:
+  int offset = 0;
+  if (TString(formula[0]).EqualTo("-")) {
+    signP0 = "-";
+    offset = 1;
+  }
+
+  // P0 parser + P1 signature parser:
+  int c1 = 0;
+  for (int c = 0 + offset; c < static_cast<int>(strlen(formula)); c++) {
+    if (!(TString(formula[c]).EqualTo("-") || TString(formula[c]).EqualTo("+") || TString(formula[c]).EqualTo("*"))) {
+      P0 += formula[c];
+      continue;
+    } else {
+      signP1 = formula[c];
+      c1 = c;
+      break;
+    }
+  }
+  // P1 parser:
+  for (int c = c1 + 1; c < static_cast<int>(strlen(formula)); c++) {
+    if (TString(formula[c]).EqualTo("-") || TString(formula[c]).EqualTo("+") || TString(formula[c]).EqualTo("*")) {
+      break;
+    }
+    P1 += formula[c];
+  }
+
+  // Okay, finally merge signature and value, cast into floats and store:
+  signP0 += P0;
+  ec.fdEventCutsFormulas[whichCutFormula][0] = signP0.Atof();
+
+  signP1 += P1;
+  ec.fdEventCutsFormulas[whichCutFormula][1] = signP1.Atof();
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void GetP0P1(const char *formula, eEventCutsFormulas whichCutFormula)
+
+//============================================================
+
+float RefMultVsNContr(const float& refMult, eEventCutsFormulas whichCutFormula)
+{
+  // Temporary workaround for p0 + p1 * x formula until large memory consumption with TFormula is resolved.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // Evaluate p0 + p1 * x:
+  return ec.fdEventCutsFormulas[whichCutFormula][0] + (ec.fdEventCutsFormulas[whichCutFormula][1]) * refMult;
+
+} // float RefMultVsNContr(const float &refMult, eEventCutsFormulas whichCutFormula)
 
 //============================================================
 
@@ -4366,9 +4670,36 @@ void BookParticleHistograms()
   ph.fParticleHistogramsPro->SetLineColor(eColor);
   ph.fParticleHistogramsPro->SetFillColor(eFillColor);
   ph.fParticleHistogramsPro->GetXaxis()->SetLabelSize(0.025);
-  ph.fParticleHistogramsPro->GetXaxis()->SetBinLabel(1, "fFillParticleHistograms");
-  ph.fParticleHistogramsPro->Fill(0.5, static_cast<int>(ph.fFillParticleHistograms));
-  // ...
+
+  if (tc.fUseSetBinLabel) {
+    ph.fParticleHistogramsPro->GetXaxis()->SetBinLabel(1, "fFillParticleHistograms");
+    ph.fParticleHistogramsPro->Fill(0.5, static_cast<int>(ph.fFillParticleHistograms));
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fFillParticleHistograms; ", 1);                      // TBI 20250411 hardwired 1
+    ph.fParticleHistogramsPro->Fill(0.5, static_cast<double>(ph.fFillParticleHistograms)); // TBI 20250411 hardwired 0.5
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != ph.fParticleHistogramsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d !=  ph.fParticleHistogramsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), ph.fParticleHistogramsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    ph.fParticleHistogramsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   ph.fParticleHistogramsList->Add(ph.fParticleHistogramsPro);
 
   // b) Book specific particle histograms 1D:
@@ -4701,10 +5032,36 @@ void BookParticleCutsHistograms()
   pc.fParticleCutsPro->SetStats(false);
   pc.fParticleCutsPro->SetLineColor(eColor);
   pc.fParticleCutsPro->SetFillColor(eFillColor);
+
+  TString yAxisTitle = ""; // TBI 20250413 when I fall back on using SetBinLabel(...), this variable is declared but will be unused
   for (int cut = 0; cut < eParticleCuts_N; cut++) {
-    pc.fParticleCutsPro->GetXaxis()->SetBinLabel(1 + cut, pc.fParticleCutName[cut].Data()); // Remark: check always if bin labels here correspond to ordering in enum eParticleCuts
+    if (tc.fUseSetBinLabel) {
+      pc.fParticleCutsPro->GetXaxis()->SetBinLabel(1 + cut, pc.fParticleCutName[cut].Data()); // Remark: check always if bin labels here correspond to ordering in enum eParticleCuts
+    } else {
+      // Workaround for SetBinLabel() large memory consumption:
+      yAxisTitle += TString::Format("%d:%s; ", 1 + cut, pc.fParticleCutName[cut].Data());
+    }
+
     pc.fParticleCutsPro->Fill(cut, static_cast<int>(pc.fUseParticleCuts[cut]));
-  }
+
+  } // for (int cut = 0; cut < eParticleCuts_N; cut++)s
+
+  // *) Insanity check on the number of fields in this specially crafted y-axis title:
+  if (!tc.fUseSetBinLabel) {
+
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != pc.fParticleCutsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d != pc.fParticleCutsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), pc.fParticleCutsPro->GetNbinsX());
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    pc.fParticleCutsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+  } // if(!tc.fUseSetBinLabel)
+
   pc.fParticleCutsList->Add(pc.fParticleCutsPro);
 
   // b) Book particle cut counter maps:
@@ -4734,7 +5091,7 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1I(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
+      pc.fParticleCutCounterHist[rs][cc] = new TH1F(TString::Format("fParticleCutCounterHist[%s][%s]", gc.srs[rs].Data(), gc.scc[cc].Data()), TString::Format("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", gc.srs_long[rs].Data(), gc.scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
       // I cast in double the last argument, because that's what this particular TH1I constructor expects
       // Yes, +0.5, because eParticleCuts kicks off from 0
       pc.fParticleCutCounterHist[rs][cc]->SetStats(false);
@@ -4751,6 +5108,9 @@ void BookParticleCutsHistograms()
   // d) Book the formula for pt-dependent DCAxy cut:
   if (pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
     pc.fPtDependentDCAxyFormula = new TFormula("fPtDependentDCAxyFormula", pc.fsParticleCuts[ePtDependentDCAxyParameterization].Data());
+
+    LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TFormula() !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+
     // As a quick insanity check, try immediately to evaluate something from this formula:
     if (std::isnan(pc.fPtDependentDCAxyFormula->Eval(1.44))) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -4784,12 +5144,47 @@ void BookQvectorHistograms()
   qv.fQvectorFlagsPro->SetLineColor(eColor);
   qv.fQvectorFlagsPro->SetFillColor(eFillColor);
   qv.fQvectorFlagsPro->GetXaxis()->SetLabelSize(0.05);
-  qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateQvectors");
-  qv.fQvectorFlagsPro->Fill(0.5, qv.fCalculateQvectors);
-  qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(2, "gMaxHarmonic");
-  qv.fQvectorFlagsPro->Fill(1.5, gMaxHarmonic);
-  qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(3, "gMaxCorrelator");
-  qv.fQvectorFlagsPro->Fill(2.5, gMaxCorrelator);
+
+  if (tc.fUseSetBinLabel) {
+
+    qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateQvectors");
+    qv.fQvectorFlagsPro->Fill(0.5, qv.fCalculateQvectors);
+    qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(2, "gMaxHarmonic");
+    qv.fQvectorFlagsPro->Fill(1.5, gMaxHarmonic);
+    qv.fQvectorFlagsPro->GetXaxis()->SetBinLabel(3, "gMaxCorrelator");
+    qv.fQvectorFlagsPro->Fill(2.5, gMaxCorrelator);
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCalculateQvectors; ", 1);
+    qv.fQvectorFlagsPro->Fill(0.5, static_cast<double>(qv.fCalculateQvectors));
+
+    yAxisTitle += TString::Format("%d:gMaxHarmonic; ", 2);
+    qv.fQvectorFlagsPro->Fill(1.5, static_cast<double>(gMaxHarmonic));
+
+    yAxisTitle += TString::Format("%d:gMaxCorrelator; ", 3);
+    qv.fQvectorFlagsPro->Fill(2.5, static_cast<double>(gMaxCorrelator));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != qv.fQvectorFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != qv.fQvectorFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), qv.fQvectorFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    qv.fQvectorFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   qv.fQvectorList->Add(qv.fQvectorFlagsPro);
 
   // b) Book multiplicity distributions in A and B, for each eta separation:
@@ -4857,9 +5252,36 @@ void BookCorrelationsHistograms()
   mupa.fCorrelationsFlagsPro->SetLineColor(eColor);
   mupa.fCorrelationsFlagsPro->SetFillColor(eFillColor);
   mupa.fCorrelationsFlagsPro->GetXaxis()->SetLabelSize(0.05);
-  mupa.fCorrelationsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateCorrelations");
-  mupa.fCorrelationsFlagsPro->Fill(0.5, mupa.fCalculateCorrelations);
-  // ...
+
+  if (tc.fUseSetBinLabel) {
+    mupa.fCorrelationsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateCorrelations");
+    mupa.fCorrelationsFlagsPro->Fill(0.5, mupa.fCalculateCorrelations);
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCalculateCorrelations; ", 1);
+    mupa.fCorrelationsFlagsPro->Fill(0.5, static_cast<double>(mupa.fCalculateCorrelations));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != mupa.fCorrelationsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != mupa.fCorrelationsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), mupa.fCorrelationsFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    mupa.fCorrelationsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   mupa.fCorrelationsList->Add(mupa.fCorrelationsFlagsPro);
 
   if (!mupa.fCalculateCorrelations) {
@@ -4913,7 +5335,20 @@ void BookCorrelationsHistograms()
         if (!res.fResultsPro[v]) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
-        mupa.fCorrelationsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fCorrelationsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()))); // yes
+
+        if (tc.fUseClone) {
+          mupa.fCorrelationsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fCorrelationsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()))); // yes
+        } else {
+          // TBI 20250412 this branch is temporary workaround until hist->Clone(...) large memory consumption is resolved
+          if (res.fUseResultsProVariableLengthBins[v]) {
+            // per demand, variable-length binning:
+            mupa.fCorrelationsPro[k][n][v] = new TProfile(Form("fCorrelationsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()), "", res.fResultsProVariableLengthBins[v]->GetSize() - 1, res.fResultsProVariableLengthBins[v]->GetArray());
+          } else {
+            // the default fixed-length binning:
+            mupa.fCorrelationsPro[k][n][v] = new TProfile(Form("fCorrelationsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()), "", static_cast<int>(res.fResultsProFixedLengthBins[v][0]), res.fResultsProFixedLengthBins[v][1], res.fResultsProFixedLengthBins[v][2]);
+          } // else
+        } // else
+
         mupa.fCorrelationsPro[k][n][v]->SetStats(false);
         mupa.fCorrelationsPro[k][n][v]->Sumw2();
         mupa.fCorrelationsPro[k][n][v]->GetXaxis()->SetTitle(FancyFormatting(res.fResultsProXaxisTitle[v].Data()));
@@ -4958,25 +5393,69 @@ void BookWeightsHistograms()
   pw.fWeightsFlagsPro->SetLineColor(eColor);
   pw.fWeightsFlagsPro->SetFillColor(eFillColor);
   pw.fWeightsFlagsPro->GetXaxis()->SetLabelSize(0.035);
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(1, "w_{#varphi}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(2, "w_{p_{t}}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(3, "w_{#eta}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "(w_{#varphi})_{| p_{T}}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}");  // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
 
-  // **) differential phi weights using sparse:
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(6, "(w_{#varphi})_{phi axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(7, "(w_{#varphi})_{p_{T} axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(8, "(w_{#varphi})_{#eta axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(9, "(w_{#varphi})_{charge axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(10, "(w_{#varphi})_{centrality axis (sparse)}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{VertexZ axis (sparse)}");
+  if (tc.fUseSetBinLabel) {
 
-  // **) differential pt weights using sparse:
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(12, "(w_{p_{T}})_{pt axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(1, "w_{#varphi}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(2, "w_{p_{t}}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(3, "w_{#eta}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "(w_{#varphi})_{| p_{T}}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}");  // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
 
-  // **) differential eta weights using sparse:
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(13, "(w_{#eta})_{eta axis (sparse)}");
+    // **) differential phi weights using sparse:
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(6, "(w_{#varphi})_{phi axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(7, "(w_{#varphi})_{p_{T} axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(8, "(w_{#varphi})_{#eta axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(9, "(w_{#varphi})_{charge axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(10, "(w_{#varphi})_{centrality axis (sparse)}");
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(11, "(w_{#varphi})_{VertexZ axis (sparse)}");
+
+    // **) differential pt weights using sparse:
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(12, "(w_{p_{T}})_{pt axis (sparse)}");
+
+    // **) differential eta weights using sparse:
+    pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(13, "(w_{#eta})_{eta axis (sparse)}");
+
+  } else {
+
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:w_{#varphi}; ", 1);
+    yAxisTitle += TString::Format("%d:w_{p_{t}}}; ", 2);
+    yAxisTitle += TString::Format("%d:w_{#eta}; ", 3);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{| p_{T}}}; ", 4);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{| #eta}; ", 5);
+
+    // **) differential phi weights using sparse:
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{phi axis (sparse)}; ", 6);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{p_{T} axis (sparse)}; ", 7);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{#eta axis (sparse)}; ", 8);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{charge axis (sparse)}; ", 9);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{centrality axis (sparse)}; ", 10);
+    yAxisTitle += TString::Format("%d:(w_{#varphi})_{VertexZ axis (sparse)}; ", 11);
+
+    // **) differential pt weights using sparse:
+    yAxisTitle += TString::Format("%d:(w_{p_{T}})_{pt axis (sparse)}; ", 12);
+
+    // **) differential eta weights using sparse:
+    yAxisTitle += TString::Format("%d:(w_{#eta})_{eta axis (sparse)}; ", 13);
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != pw.fWeightsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != pw.fWeightsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), pw.fWeightsFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    pw.fWeightsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
 
   for (int w = 0; w < eWeights_N; w++) // use weights [phi,pt,eta]
   {
@@ -5062,7 +5541,33 @@ void BookCentralityWeightsHistograms()
   cw.fCentralityWeightsFlagsPro->SetLineColor(eColor);
   cw.fCentralityWeightsFlagsPro->SetFillColor(eFillColor);
   cw.fCentralityWeightsFlagsPro->GetXaxis()->SetLabelSize(0.05);
-  cw.fCentralityWeightsFlagsPro->GetXaxis()->SetBinLabel(1, TString::Format("Use centrality weights for estimator %s", ec.fsEventCuts[eCentralityEstimator].Data()));
+
+  if (tc.fUseSetBinLabel) {
+    cw.fCentralityWeightsFlagsPro->GetXaxis()->SetBinLabel(1, TString::Format("Use centrality weights for estimator %s", ec.fsEventCuts[eCentralityEstimator].Data()));
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:Use centrality weights for estimator %s; ", 1, ec.fsEventCuts[eCentralityEstimator].Data());
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != cw.fCentralityWeightsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != cw.fCentralityWeightsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), cw.fCentralityWeightsFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    cw.fCentralityWeightsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+  }
+
   if (cw.fUseCentralityWeights) {
     cw.fCentralityWeightsFlagsPro->Fill(0.5, 1.); // TBI 20241118 shall I automate this?
   }
@@ -5101,14 +5606,50 @@ void BookNestedLoopsHistograms()
   nl.fNestedLoopsFlagsPro->SetLineColor(eColor);
   nl.fNestedLoopsFlagsPro->SetFillColor(eFillColor);
   nl.fNestedLoopsFlagsPro->GetXaxis()->SetLabelSize(0.03);
-  nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateNestedLoops");
-  nl.fNestedLoopsFlagsPro->Fill(0.5, nl.fCalculateNestedLoops);
-  nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(2, "fCalculateCustomNestedLoops");
-  nl.fNestedLoopsFlagsPro->Fill(1.5, nl.fCalculateCustomNestedLoops);
-  nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(3, "fCalculateKineCustomNestedLoops");
-  nl.fNestedLoopsFlagsPro->Fill(2.5, nl.fCalculateKineCustomNestedLoops);
-  nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(4, "fMaxNestedLoop");
-  nl.fNestedLoopsFlagsPro->Fill(3.5, nl.fMaxNestedLoop);
+
+  if (tc.fUseSetBinLabel) {
+    nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateNestedLoops");
+    nl.fNestedLoopsFlagsPro->Fill(0.5, nl.fCalculateNestedLoops);
+    nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(2, "fCalculateCustomNestedLoops");
+    nl.fNestedLoopsFlagsPro->Fill(1.5, nl.fCalculateCustomNestedLoops);
+    nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(3, "fCalculateKineCustomNestedLoops");
+    nl.fNestedLoopsFlagsPro->Fill(2.5, nl.fCalculateKineCustomNestedLoops);
+    nl.fNestedLoopsFlagsPro->GetXaxis()->SetBinLabel(4, "fMaxNestedLoop");
+    nl.fNestedLoopsFlagsPro->Fill(3.5, nl.fMaxNestedLoop);
+
+    // ...
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCalculateNestedLoops; ", 1);
+    nl.fNestedLoopsFlagsPro->Fill(0.5, nl.fCalculateNestedLoops);
+
+    yAxisTitle += TString::Format("%d:fCalculateCustomNestedLoops; ", 2);
+    nl.fNestedLoopsFlagsPro->Fill(1.5, nl.fCalculateCustomNestedLoops);
+
+    yAxisTitle += TString::Format("%d:fCalculateKineCustomNestedLoops; ", 3);
+    nl.fNestedLoopsFlagsPro->Fill(2.5, nl.fCalculateKineCustomNestedLoops);
+
+    yAxisTitle += TString::Format("%d:fMaxNestedLoop; ", 4);
+    nl.fNestedLoopsFlagsPro->Fill(3.5, nl.fMaxNestedLoop);
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != nl.fNestedLoopsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != nl.fNestedLoopsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), nl.fNestedLoopsFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    nl.fNestedLoopsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   nl.fNestedLoopsList->Add(nl.fNestedLoopsFlagsPro);
 
   if (!(nl.fCalculateNestedLoops || nl.fCalculateCustomNestedLoops || nl.fCalculateKineCustomNestedLoops)) {
@@ -5159,7 +5700,20 @@ void BookNestedLoopsHistograms()
         if (!res.fResultsPro[v]) {
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
-        nl.fNestedLoopsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fNestedLoopsPro[%d][%d][%d]", k, n, v))); // yes
+
+        if (tc.fUseClone) {
+          nl.fNestedLoopsPro[k][n][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fNestedLoopsPro[%d][%d][%d]", k, n, v))); // yes
+        } else {
+          // TBI 20250412 this branch is temporary workaround until hist->Clone(...) large memory consumption is resolved
+          if (res.fUseResultsProVariableLengthBins[v]) {
+            // per demand, variable-length binning:
+            nl.fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()), "", res.fResultsProVariableLengthBins[v]->GetSize() - 1, res.fResultsProVariableLengthBins[v]->GetArray());
+          } else {
+            // the default fixed-length binning:
+            nl.fNestedLoopsPro[k][n][v] = new TProfile(Form("fNestedLoopsPro[%d][%d][%s]", k, n, res.fResultsProRawName[v].Data()), "", static_cast<int>(res.fResultsProFixedLengthBins[v][0]), res.fResultsProFixedLengthBins[v][1], res.fResultsProFixedLengthBins[v][2]);
+          } // else
+        } // else
+
         nl.fNestedLoopsPro[k][n][v]->SetTitle(Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()));
         nl.fNestedLoopsPro[k][n][v]->SetStats(false);
         nl.fNestedLoopsPro[k][n][v]->Sumw2();
@@ -5217,10 +5771,46 @@ void BookNUAHistograms()
   nua.fNUAFlagsPro->SetLineColor(eColor);
   nua.fNUAFlagsPro->SetFillColor(eFillColor);
   nua.fNUAFlagsPro->GetXaxis()->SetLabelSize(0.03);
+
   // TBI 20240429 the binning below is a bit fragile, but ok...
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePhiNUAPDF), "fApplyNUAPDF[phi]");
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePtNUAPDF), "fApplyNUAPDF[pt]");
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eEtaNUAPDF), "fApplyNUAPDF[eta]");
+  if (tc.fUseSetBinLabel) {
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePhiNUAPDF), "fApplyNUAPDF[phi]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + ePtNUAPDF), "fApplyNUAPDF[pt]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(1 + eEtaNUAPDF), "fApplyNUAPDF[eta]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
+    nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
+
+    // ...
+
+  } else {
+
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fApplyNUAPDF[phi]; ", static_cast<int>(1 + ePhiNUAPDF));
+    yAxisTitle += TString::Format("%d:fApplyNUAPDF[pt]; ", static_cast<int>(1 + ePtNUAPDF));
+    yAxisTitle += TString::Format("%d:fApplyNUAPDF[eta]; ", static_cast<int>(1 + eEtaNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[phi]; ", static_cast<int>(4 + ePhiNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[pt]; ", static_cast<int>(4 + ePtNUAPDF));
+    yAxisTitle += TString::Format("%d:fUseDefaultNUAPDF[eta]; ", static_cast<int>(4 + eEtaNUAPDF));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != nua.fNUAFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != nua.fNUAFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), nua.fNUAFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    nua.fNUAFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
+
   if (nua.fApplyNUAPDF[ePhiNUAPDF]) {
     nua.fNUAFlagsPro->Fill(static_cast<int>(1 + ePhiNUAPDF), 1.);
   }
@@ -5230,9 +5820,6 @@ void BookNUAHistograms()
   if (nua.fApplyNUAPDF[eEtaNUAPDF]) {
     nua.fNUAFlagsPro->Fill(static_cast<int>(1 + eEtaNUAPDF), 1.);
   }
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePhiNUAPDF), "fUseDefaultNUAPDF[phi]");
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + ePtNUAPDF), "fUseDefaultNUAPDF[pt]");
-  nua.fNUAFlagsPro->GetXaxis()->SetBinLabel(static_cast<int>(4 + eEtaNUAPDF), "fUseDefaultNUAPDF[eta]");
   if (nua.fUseDefaultNUAPDF[ePhiNUAPDF]) {
     nua.fNUAFlagsPro->Fill(static_cast<int>(4 + ePhiNUAPDF), 1.);
   }
@@ -5362,14 +5949,45 @@ void BookInternalValidationHistograms()
   iv.fInternalValidationFlagsPro->GetXaxis()->SetLabelSize(0.04);
   iv.fInternalValidationList->Add(iv.fInternalValidationFlagsPro);
 
-  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(1, "fUseInternalValidation");
-  iv.fInternalValidationFlagsPro->Fill(0.5, iv.fUseInternalValidation);
-  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(2, "fnEventsInternalValidation");
-  iv.fInternalValidationFlagsPro->Fill(1.5, iv.fnEventsInternalValidation);
-  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(3, "fRescaleWithTheoreticalInput");
-  iv.fInternalValidationFlagsPro->Fill(2.5, iv.fRescaleWithTheoreticalInput);
-  iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(4, TString::Format("option = %s", iv.fHarmonicsOptionInternalValidation->Data()));
-  iv.fInternalValidationFlagsPro->Fill(3.5, 1); // redundant, because here I only care about bin label, but preserves symmetry in this code snippet...
+  if (tc.fUseSetBinLabel) {
+    iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(1, "fUseInternalValidation");
+    iv.fInternalValidationFlagsPro->Fill(0.5, iv.fUseInternalValidation);
+    iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(2, "fnEventsInternalValidation");
+    iv.fInternalValidationFlagsPro->Fill(1.5, iv.fnEventsInternalValidation);
+    iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(3, "fRescaleWithTheoreticalInput");
+    iv.fInternalValidationFlagsPro->Fill(2.5, iv.fRescaleWithTheoreticalInput);
+    iv.fInternalValidationFlagsPro->GetXaxis()->SetBinLabel(4, TString::Format("option = %s", iv.fHarmonicsOptionInternalValidation->Data()));
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fUseInternalValidation; ", 1);
+    iv.fInternalValidationFlagsPro->Fill(0.5, static_cast<double>(iv.fUseInternalValidation));
+
+    yAxisTitle += TString::Format("%d:fnEventsInternalValidation; ", 2);
+    iv.fInternalValidationFlagsPro->Fill(1.5, static_cast<double>(iv.fnEventsInternalValidation));
+
+    yAxisTitle += TString::Format("%d:fRescaleWithTheoreticalInput; ", 3);
+    iv.fInternalValidationFlagsPro->Fill(2.5, static_cast<double>(iv.fRescaleWithTheoreticalInput));
+
+    yAxisTitle += TString::Format("%d:option = %s; ", 4, iv.fHarmonicsOptionInternalValidation->Data());
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != iv.fInternalValidationFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != iv.fInternalValidationFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), iv.fInternalValidationFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    iv.fInternalValidationFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+  } // else
 
   // *) Book object beyond this line only if internal validation was requested:
   if (!iv.fUseInternalValidation) {
@@ -5452,7 +6070,7 @@ TComplex TheoreticalValue(TArrayI* harmonics, TArrayD* amplitudes, TArrayD* plan
   TComplex value = TComplex(1., 0., true); // yes, polar representation
   for (int h = 0; h < harmonics->GetSize(); h++) {
     //  Using polar form of TComplex (double re, double im=0, bool polar=false):
-    value *= TComplex(amplitudes->GetAt(TMath::Abs(harmonics->GetAt(h)) - 1), 1. * harmonics->GetAt(h) * planes->GetAt(TMath::Abs(harmonics->GetAt(h)) - 1), true);
+    value *= TComplex(amplitudes->GetAt(std::abs(harmonics->GetAt(h)) - 1), 1. * harmonics->GetAt(h) * planes->GetAt(std::abs(harmonics->GetAt(h)) - 1), true);
   } // for(int h=0;h<harmonics->GetSize();h++)
 
   // c) Return value:
@@ -5519,7 +6137,7 @@ void InternalValidation()
     // For this option, vn's and psin's are constant for all simulated events, therefore I can configure fPhiPDF outside of loop over events.
     // Remark: The last parameter [18] is a random reaction plane, keep in sync with fPhiPDF->SetParameter(18,fReactionPlane); below
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[1]-[18]) + 2.*[2]*TMath::Cos(2.*(x-[3]-[18])) + 2.*[4]*TMath::Cos(3.*(x-[5]-[18])) + 2.*[6]*TMath::Cos(4.*(x-[7]-[18])) + 2.*[8]*TMath::Cos(5.*(x-[9]-[18])) + 2.*[10]*TMath::Cos(6.*(x-[11]-[18])) + 2.*[12]*TMath::Cos(7.*(x-[13]-[18])) + 2.*[14]*TMath::Cos(8.*(x-[15]-[18])) + 2.*[16]*TMath::Cos(9.*(x-[17]-[18]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[1]-[18]) + 2.*[2]*cos(2.*(x-[3]-[18])) + 2.*[4]*cos(3.*(x-[5]-[18])) + 2.*[6]*cos(4.*(x-[7]-[18])) + 2.*[8]*cos(5.*(x-[9]-[18])) + 2.*[10]*cos(6.*(x-[11]-[18])) + 2.*[12]*cos(7.*(x-[13]-[18])) + 2.*[14]*cos(8.*(x-[15]-[18])) + 2.*[16]*cos(9.*(x-[17]-[18]))", 0., o2::constants::math::TwoPI);
     for (int h = 0; h < gMaxHarmonic; h++) {
       fPhiPDF->SetParName(2 * h, TString::Format("v_{%d}", h + 1));       // set name v_n
       fPhiPDF->SetParName(2 * h + 1, TString::Format("Psi_{%d}", h + 1)); // set name psi_n
@@ -5552,7 +6170,7 @@ void InternalValidation()
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
 
     // Azimuthal angles are sampled from this pdf:
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[3]) + 2.*[1]*TMath::Cos(2.*(x-[3])) + 2.*[2]*TMath::Cos(3.*(x-[3]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[3]) + 2.*[1]*cos(2.*(x-[3])) + 2.*[2]*cos(3.*(x-[3]))", 0., o2::constants::math::TwoPI);
     // With this parameterization, I have:
     //  [0] => v1
     //  [1] => v2
@@ -5577,7 +6195,7 @@ void InternalValidation()
     //         Keep also in sync with const int gMaxHarmonic = 9; in *GlobalConstants.h
 
     // Azimuthal angles are sampled from this pdf:
-    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*TMath::Cos(x-[3]) + 2.*[1]*TMath::Cos(2.*(x-[4])) + 2.*[2]*TMath::Cos(3.*(x-[5]))", 0., o2::constants::math::TwoPI);
+    fPhiPDF = new TF1("fPhiPDF", "1 + 2.*[0]*cos(x-[3]) + 2.*[1]*cos(2.*(x-[4])) + 2.*[2]*cos(3.*(x-[5]))", 0., o2::constants::math::TwoPI);
     // With this parameterization, I have:
     //  [0] => v1
     //  [1] => v2
@@ -5882,9 +6500,8 @@ void BookTest0Histograms()
 
   // a) Book the profile holding flags;
   // b) Book placeholder and make sure all labels are stored in the placeholder;
-  // c) Retrieve labels from placeholder;
-  // d) Book what needs to be booked;
-  // e) Few quick insanity checks on booking.
+  // c) Book what needs to be booked;
+  // d) Few quick insanity checks on booking.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -5894,7 +6511,37 @@ void BookTest0Histograms()
   t0.fTest0FlagsPro = new TProfile("fTest0FlagsPro", "flags for Test0", 1, 0., 1.);
   t0.fTest0FlagsPro->SetStats(false);
   t0.fTest0FlagsPro->GetXaxis()->SetLabelSize(0.04);
-  t0.fTest0FlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateTest0");
+
+  if (tc.fUseSetBinLabel) {
+    t0.fTest0FlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateTest0");
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCalculateTest0; ", 1);
+    t0.fTest0FlagsPro->Fill(0.5, static_cast<double>(t0.fCalculateTest0));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != t0.fTest0FlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != t0.fTest0FlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), t0.fTest0FlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    t0.fTest0FlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+    // ...
+
+  } // else
+
   t0.fTest0FlagsPro->Fill(0.5, t0.fCalculateTest0);
   t0.fTest0List->Add(t0.fTest0FlagsPro);
 
@@ -5904,16 +6551,8 @@ void BookTest0Histograms()
 
   // b) Book placeholder and make sure all labels are stored in the placeholder:
   this->StoreLabelsInPlaceholder();
-  if (t0.fTest0LabelsPlaceholder) {
-    t0.fTest0List->Add(t0.fTest0LabelsPlaceholder);
-  }
 
-  // c) Retrieve labels from placeholder:
-  if (!(this->RetrieveCorrelationsLabels())) {
-    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // d) Book what needs to be booked:
+  // c) Book what needs to be booked:
   for (int mo = 0; mo < gMaxCorrelator; mo++) {
     for (int mi = 0; mi < gMaxIndex; mi++) {
       if (!t0.fTest0Labels[mo][mi]) {
@@ -5954,18 +6593,25 @@ void BookTest0Histograms()
             LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
           }
 
-          t0.fTest0Pro[mo][mi][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fTest0Pro[%d][%d][%s]", mo, mi, res.fResultsProRawName[v].Data()))); // yes
+          if (tc.fUseClone) {
+            t0.fTest0Pro[mo][mi][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fTest0Pro[%d][%d][%s]", mo, mi, res.fResultsProRawName[v].Data()))); // yes
+          } else {
+            // TBI 20250412 this branch is temporary workaround until hist->Clone(...) large memory consumption is resolved
+            if (res.fUseResultsProVariableLengthBins[v]) {
+              // per demand, variable-length binning:
+              t0.fTest0Pro[mo][mi][v] = new TProfile(Form("fTest0Pro[%d][%d][%s]", mo, mi, res.fResultsProRawName[v].Data()), "", res.fResultsProVariableLengthBins[v]->GetSize() - 1, res.fResultsProVariableLengthBins[v]->GetArray());
+            } else {
+              // the default fixed-length binning:
+              t0.fTest0Pro[mo][mi][v] = new TProfile(Form("fTest0Pro[%d][%d][%s]", mo, mi, res.fResultsProRawName[v].Data()), "", static_cast<int>(res.fResultsProFixedLengthBins[v][0]), res.fResultsProFixedLengthBins[v][1], res.fResultsProFixedLengthBins[v][2]);
+            } // else
+          } // else
+
           t0.fTest0Pro[mo][mi][v]->SetStats(false);
           t0.fTest0Pro[mo][mi][v]->Sumw2();
           t0.fTest0Pro[mo][mi][v]->SetTitle(t0.fTest0Labels[mo][mi]->Data());
           t0.fTest0Pro[mo][mi][v]->GetXaxis()->SetTitle(FancyFormatting(res.fResultsProXaxisTitle[v].Data()));
-          /*
-                if(fUseFixedNumberOfRandomlySelectedParticles && 1==v) // just a warning for the meaning of multiplicity in this special case
-                {
-                 fTest0Pro[mo][mi][1]->GetXaxis()->SetTitle("WARNING: for each multiplicity, fFixedNumberOfRandomlySelectedParticles is selected randomly in Q-vector");
-                }
-          */
           t0.fTest0List->Add(t0.fTest0Pro[mo][mi][v]); // yes, this has to be here
+
         } // for(int v=0;v<eAsFunctionOf_N;v++) // variable, see content of enum eAsFunctionOf
       } // if(fTest0Labels[mo][mi])
     } // for(int mi=0;mi<gMaxIndex;mi++)
@@ -6005,7 +6651,36 @@ void BookEtaSeparationsHistograms()
   es.fEtaSeparationsFlagsPro->SetLineColor(eColor);
   es.fEtaSeparationsFlagsPro->SetFillColor(eFillColor);
   es.fEtaSeparationsFlagsPro->GetXaxis()->SetLabelSize(0.04);
-  es.fEtaSeparationsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateEtaSeparations");
+
+  if (tc.fUseSetBinLabel) {
+    es.fEtaSeparationsFlagsPro->GetXaxis()->SetBinLabel(1, "fCalculateEtaSeparations");
+
+    // ...
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fCalculateEtaSeparations; ", 1);
+    es.fEtaSeparationsFlagsPro->Fill(0.5, static_cast<double>(es.fCalculateEtaSeparations));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != es.fEtaSeparationsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() - 1 = %d != es.fEtaSeparationsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), es.fEtaSeparationsFlagsPro->GetNbinsX());
+    }
+
+    // *) Okay, set the title:
+    es.fEtaSeparationsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+    // ...
+
+  } // else
+
   es.fEtaSeparationsFlagsPro->Fill(0.5, es.fCalculateEtaSeparations);
   es.fEtaSeparationsList->Add(es.fEtaSeparationsFlagsPro);
 
@@ -6053,7 +6728,19 @@ void BookEtaSeparationsHistograms()
           LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
         }
 
-        es.fEtaSeparationsPro[h][e][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fEtaSeparationsPro[%d][%d][%s]", h, e, res.fResultsProRawName[v].Data()))); // yes
+        if (tc.fUseClone) {
+          es.fEtaSeparationsPro[h][e][v] = reinterpret_cast<TProfile*>(res.fResultsPro[v]->Clone(Form("fEtaSeparationsPro[%d][%d][%s]", h, e, res.fResultsProRawName[v].Data()))); // yes
+        } else {
+          // TBI 20250412 this branch is temporary workaround until hist->Clone(...) large memory consumption is resolved
+          if (res.fUseResultsProVariableLengthBins[v]) {
+            // per demand, variable-length binning:
+            es.fEtaSeparationsPro[h][e][v] = new TProfile(Form("fEtaSeparationsPro[%d][%d][%s]", h, e, res.fResultsProRawName[v].Data()), "", res.fResultsProVariableLengthBins[v]->GetSize() - 1, res.fResultsProVariableLengthBins[v]->GetArray());
+          } else {
+            // the default fixed-length binning:
+            es.fEtaSeparationsPro[h][e][v] = new TProfile(Form("fEtaSeparationsPro[%d][%d][%s]", h, e, res.fResultsProRawName[v].Data()), "", static_cast<int>(res.fResultsProFixedLengthBins[v][0]), res.fResultsProFixedLengthBins[v][1], res.fResultsProFixedLengthBins[v][2]);
+          } // else
+        } // else
+
         es.fEtaSeparationsPro[h][e][v]->SetStats(false);
         es.fEtaSeparationsPro[h][e][v]->Sumw2();
         es.fEtaSeparationsPro[h][e][v]->SetTitle(Form("%d -%d, |#Delta#eta| > %.2f", h + 1, h + 1, es.fEtaSeparationsValues[e]));
@@ -6095,9 +6782,35 @@ void BookResultsHistograms()
   res.fResultsFlagsPro->SetStats(false);
   res.fResultsFlagsPro->SetLineColor(eColor);
   res.fResultsFlagsPro->SetFillColor(eFillColor);
-  res.fResultsFlagsPro->GetXaxis()->SetBinLabel(1, "fSaveResultsHistograms");
-  res.fResultsFlagsPro->Fill(0.5, res.fSaveResultsHistograms);
-  // ...
+
+  if (tc.fUseSetBinLabel) {
+    res.fResultsFlagsPro->GetXaxis()->SetBinLabel(1, "fSaveResultsHistograms");
+    res.fResultsFlagsPro->Fill(0.5, res.fSaveResultsHistograms);
+
+    // ...
+
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString yAxisTitle = "";
+
+    yAxisTitle += TString::Format("%d:fSaveResultsHistograms; ", 1);
+    res.fResultsFlagsPro->Fill(0.5, static_cast<double>(res.fSaveResultsHistograms));
+
+    // ...
+
+    // *) Insanity check on the number of fields in this specially crafted y-axis title:
+    TObjArray* oa = yAxisTitle.Tokenize(";");
+    if (!oa) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+    }
+    if (oa->GetEntries() - 1 != res.fResultsFlagsPro->GetNbinsX()) {
+      LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d != res.fResultsFlagsPro->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), res.fResultsFlagsPro->GetNbinsX());
+    }
+    delete oa;
+
+    // *) Okay, set the title:
+    res.fResultsFlagsPro->GetYaxis()->SetTitle(yAxisTitle.Data());
+  }
   res.fResultsList->Add(res.fResultsFlagsPro);
 
   // b) Book results histograms, which in addition act as a sort of "abstract" interface, which defines common binning, etc., for other groups of histograms:
@@ -6177,6 +6890,7 @@ void Preprocess(T1 const& collision, T2 const& bcs)
     DetermineRunNumber<rs>(collision, bcs);
     PropagateRunNumber();
   }
+
   if (tc.fDoAdditionalInsanityChecks && tc.fRunNumberIsDetermined) {
     CheckCurrentRunNumber<rs>(collision, bcs);
   }
@@ -6198,6 +6912,7 @@ void Preprocess(T1 const& collision, T2 const& bcs)
 
     // integrated weights and differentials weights without sparse histograms (the latter is becoming obsolete):
     if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA] || pw.fUseDiffWeights[wPHIPT] || pw.fUseDiffWeights[wPHIETA]) {
+      GetParticleWeights();
       pw.fParticleWeightsAreFetched = true;
     }
 
@@ -6308,7 +7023,13 @@ void PropagateRunNumber()
   }
 
   // *) base:
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", tc.fRunNumber.Data()));
+  if (tc.fUseSetBinLabel) {
+    fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", tc.fRunNumber.Data()));
+  } else {
+    // Workaround for SetBinLabel() large memory consumption:
+    TString tmp = fBasePro->GetYaxis()->GetTitle();
+    fBasePro->GetYaxis()->SetTitle(tmp.ReplaceAll("__RUN_NUMBER__", tc.fRunNumber.Data()));
+  } // else
 
   // *) common title var:
   TString histTitle = "";
@@ -6556,6 +7277,7 @@ void CheckCurrentRunNumber(T1 const& collision, T2 const&)
   if constexpr (rs == eRec || rs == eRec_Run2 || rs == eQA) {
 
     // **) Check run number:
+
     auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
     if (!tc.fRunNumber.EqualTo(Form("%d", bc.runNumber()))) {
       LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
@@ -6786,18 +7508,48 @@ void EventCutsCounters(T1 const& collision, T2 const& tracks)
         if (!ec.fEventCutCounterHist[rec_sim][cc]) {
           continue;
         }
-        for (int bin = 1; bin < ec.fEventCutCounterBinNumber[rec_sim]; bin++) // implemented and used cuts in this analysis
-        {
-          ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, FancyFormatting(ec.fEventCutName[ec.fEventCutCounterMap[rec_sim]->GetValue(bin)].Data()));
-        }
-        for (int bin = ec.fEventCutCounterBinNumber[rec_sim]; bin <= eEventCuts_N; bin++) // implemented, but unused cuts in this analysis
-        {
-          ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, Form("binNo = %d (unused cut)", bin));
-          // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
-          // I get this harmless but annoying warning during merging:
-          //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fEventCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
-          // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
-        }
+
+        if (tc.fUseSetBinLabel) {
+          for (int bin = 1; bin < ec.fEventCutCounterBinNumber[rec_sim]; bin++) // implemented and used cuts in this analysis
+          {
+            ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, FancyFormatting(ec.fEventCutName[ec.fEventCutCounterMap[rec_sim]->GetValue(bin)].Data()));
+          }
+          for (int bin = ec.fEventCutCounterBinNumber[rec_sim]; bin <= eEventCuts_N; bin++) // implemented, but unused cuts in this analysis
+          {
+            ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, TString::Format("binNo = %d (unused cut)", bin));
+            // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
+            // I get this harmless but annoying warning during merging:
+            //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fEventCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
+            // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
+          }
+        } else {
+
+          // Workaround for SetBinLabel() large memory consumption:
+          TString yAxisTitle = "";
+          for (int bin = 1; bin < ec.fEventCutCounterBinNumber[rec_sim]; bin++) // implemented and used cuts in this analysis
+          {
+            yAxisTitle += TString::Format("%d:%s; ", bin, FancyFormatting(ec.fEventCutName[ec.fEventCutCounterMap[rec_sim]->GetValue(bin)].Data()));
+          }
+          for (int bin = ec.fEventCutCounterBinNumber[rec_sim]; bin <= eEventCuts_N; bin++) // implemented, but unused cuts in this analysis
+          {
+            yAxisTitle += TString::Format("%d:%s; ", bin, TString::Format("binNo = %d (unused cut)", bin).Data());
+          }
+
+          // *) Insanity check on the number of fields in this specially crafted y-axis title:
+          TObjArray* oa = yAxisTitle.Tokenize(";");
+          if (!oa) {
+            LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+          }
+          if (oa->GetEntries() - 1 != ec.fEventCutCounterHist[rec_sim][cc]->GetNbinsX()) {
+            LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d != ec.fEventCutCounterHist[rec_sim][cc]->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), ec.fEventCutCounterHist[rec_sim][cc]->GetNbinsX());
+          }
+          delete oa;
+
+          // *) Okay, set the title:
+          ec.fEventCutCounterHist[rec_sim][cc]->GetYaxis()->SetTitle(yAxisTitle.Data());
+
+        } // else
+
         // All cuts which were implemeted, but not used I simply do not show (i can always UnZoom x-axis in TBrowser, if I want to see 'em):
         ec.fEventCutCounterHist[rec_sim][cc]->GetXaxis()->SetRangeUser(ec.fEventCutCounterHist[rec_sim][cc]->GetBinLowEdge(1), ec.fEventCutCounterHist[rec_sim][cc]->GetBinLowEdge(ec.fEventCutCounterBinNumber[rec_sim]));
       }
@@ -6845,7 +7597,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 {
   // Event cuts on reconstructed and simulated data. Supports event cut counters, both absolute and sequential.
   // There is also a related enum eEventCuts.
-  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision ,
+  // Remark: I have added to all if statemets below which deals with floats, e.g. std::abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision ,
   //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Event cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
@@ -6908,7 +7660,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || std::abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return false;
         }
@@ -6924,7 +7676,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eReferenceMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eReferenceMultiplicity, eCutCounterBinning);
-      } else if (ebye.fReferenceMultiplicity < ec.fdEventCuts[eReferenceMultiplicity][eMin] || ebye.fReferenceMultiplicity > ec.fdEventCuts[eReferenceMultiplicity][eMax] || TMath::Abs(ebye.fReferenceMultiplicity - ec.fdEventCuts[eReferenceMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fReferenceMultiplicity < ec.fdEventCuts[eReferenceMultiplicity][eMin] || ebye.fReferenceMultiplicity > ec.fdEventCuts[eReferenceMultiplicity][eMax] || std::abs(ebye.fReferenceMultiplicity - ec.fdEventCuts[eReferenceMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eReferenceMultiplicity, cutModus)) {
           return false;
         }
@@ -6936,7 +7688,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || std::abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return false;
         }
@@ -6947,7 +7699,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertexX, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || std::abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertexX, cutModus)) {
           return false;
         }
@@ -6958,7 +7710,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertexY, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || std::abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertexY, cutModus)) {
           return false;
         }
@@ -6969,7 +7721,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertexZ, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || std::abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
@@ -6991,7 +7743,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eNContributors]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNContributors, eCutCounterBinning);
-      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax] || TMath::Abs(collision.numContrib() - ec.fdEventCuts[eNContributors][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax] || std::abs(collision.numContrib() - ec.fdEventCuts[eNContributors][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eNContributors, cutModus)) {
           return false;
         }
@@ -7002,7 +7754,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eRefMultVsNContrUp]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eRefMultVsNContrUp, eCutCounterBinning);
-      } else if (collision.numContrib() > ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+      } else if (collision.numContrib() > (tc.fUseFormula ? ec.fEventCutsFormulas[eRefMultVsNContrUp_Formula]->Eval(ebye.fReferenceMultiplicity) : RefMultVsNContr(ebye.fReferenceMultiplicity, eRefMultVsNContrUp_Formula))) {
         if (!EventCut(eRec, eRefMultVsNContrUp, cutModus)) {
           return false;
         }
@@ -7013,7 +7765,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eRefMultVsNContrLow]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eRefMultVsNContrLow, eCutCounterBinning);
-      } else if (collision.numContrib() < ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(ebye.fReferenceMultiplicity)) {
+      } else if (collision.numContrib() < (tc.fUseFormula ? ec.fEventCutsFormulas[eRefMultVsNContrLow_Formula]->Eval(ebye.fReferenceMultiplicity) : RefMultVsNContr(ebye.fReferenceMultiplicity, eRefMultVsNContrLow_Formula))) {
         if (!EventCut(eRec, eRefMultVsNContrLow, cutModus)) {
           return false;
         }
@@ -7064,7 +7816,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eImpactParameter]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eImpactParameter, eCutCounterBinning);
-      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax] || TMath::Abs(collision.impactParameter() - ec.fdEventCuts[eImpactParameter][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax] || std::abs(collision.impactParameter() - ec.fdEventCuts[eImpactParameter][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eImpactParameter, cutModus)) {
           return false;
         }
@@ -7075,7 +7827,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eEventPlaneAngle]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eEventPlaneAngle, eCutCounterBinning);
-      } else if (collision.eventPlaneAngle() < ec.fdEventCuts[eEventPlaneAngle][eMin] || collision.eventPlaneAngle() > ec.fdEventCuts[eEventPlaneAngle][eMax] || TMath::Abs(collision.eventPlaneAngle() - ec.fdEventCuts[eEventPlaneAngle][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.eventPlaneAngle() < ec.fdEventCuts[eEventPlaneAngle][eMin] || collision.eventPlaneAngle() > ec.fdEventCuts[eEventPlaneAngle][eMax] || std::abs(collision.eventPlaneAngle() - ec.fdEventCuts[eEventPlaneAngle][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eEventPlaneAngle, cutModus)) {
           return false;
         }
@@ -7094,7 +7846,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexX]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertexX, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertexX][eMin] || collision.posX() > ec.fdEventCuts[eVertexX][eMax] || std::abs(collision.posX() - ec.fdEventCuts[eVertexX][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertexX, cutModus)) {
           return false;
         }
@@ -7105,7 +7857,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexY]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertexY, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertexY][eMin] || collision.posY() > ec.fdEventCuts[eVertexY][eMax] || std::abs(collision.posY() - ec.fdEventCuts[eVertexY][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertexY, cutModus)) {
           return false;
         }
@@ -7116,7 +7868,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertexZ, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || std::abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertexZ, cutModus)) {
           return false;
         }
@@ -7157,7 +7909,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eOccupancy]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eOccupancy, eCutCounterBinning);
-      } else if (ebye.fOccupancy < ec.fdEventCuts[eOccupancy][eMin] || ebye.fOccupancy > ec.fdEventCuts[eOccupancy][eMax] || TMath::Abs(ebye.fOccupancy - ec.fdEventCuts[eOccupancy][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fOccupancy < ec.fdEventCuts[eOccupancy][eMin] || ebye.fOccupancy > ec.fdEventCuts[eOccupancy][eMax] || std::abs(ebye.fOccupancy - ec.fdEventCuts[eOccupancy][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eOccupancy, cutModus)) {
           return false;
         }
@@ -7168,7 +7920,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eInteractionRate]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eInteractionRate, eCutCounterBinning);
-      } else if (ebye.fInteractionRate < ec.fdEventCuts[eInteractionRate][eMin] || ebye.fInteractionRate > ec.fdEventCuts[eInteractionRate][eMax] || TMath::Abs(ebye.fInteractionRate - ec.fdEventCuts[eInteractionRate][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fInteractionRate < ec.fdEventCuts[eInteractionRate][eMin] || ebye.fInteractionRate > ec.fdEventCuts[eInteractionRate][eMax] || std::abs(ebye.fInteractionRate - ec.fdEventCuts[eInteractionRate][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eInteractionRate, cutModus)) {
           return false;
         }
@@ -7179,7 +7931,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCurrentRunDuration]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCurrentRunDuration, eCutCounterBinning);
-      } else if (ebye.fCurrentRunDuration < ec.fdEventCuts[eCurrentRunDuration][eMin] || ebye.fCurrentRunDuration > ec.fdEventCuts[eCurrentRunDuration][eMax] || TMath::Abs(ebye.fCurrentRunDuration - ec.fdEventCuts[eCurrentRunDuration][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fCurrentRunDuration < ec.fdEventCuts[eCurrentRunDuration][eMin] || ebye.fCurrentRunDuration > ec.fdEventCuts[eCurrentRunDuration][eMax] || std::abs(ebye.fCurrentRunDuration - ec.fdEventCuts[eCurrentRunDuration][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCurrentRunDuration, cutModus)) {
           return false;
         }
@@ -7488,7 +8240,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || std::abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return false;
         }
@@ -7499,7 +8251,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertexZ]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertexZ, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertexZ][eMin] || collision.posZ() > ec.fdEventCuts[eVertexZ][eMax] || std::abs(collision.posZ() - ec.fdEventCuts[eVertexZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertexZ, cutModus)) {
           return false;
         }
@@ -7510,7 +8262,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || std::abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return false;
         }
@@ -7609,7 +8361,7 @@ bool RemainingEventCuts()
 
   // *) Multiplicity: (see documentation for ebye.fMultiplicity for its definition)
   if (ec.fUseEventCuts[eMultiplicity]) {
-    if (ebye.fMultiplicity < ec.fdEventCuts[eMultiplicity][eMin] || ebye.fMultiplicity > ec.fdEventCuts[eMultiplicity][eMax] || TMath::Abs(ebye.fMultiplicity - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
+    if (ebye.fMultiplicity < ec.fdEventCuts[eMultiplicity][eMin] || ebye.fMultiplicity > ec.fdEventCuts[eMultiplicity][eMax] || std::abs(ebye.fMultiplicity - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
       // Remark: I have to implement RemainingEventCuts() in a slightly different way as EventCuts()
       EventCut(rs, eMultiplicity, eCut);      // just a printout that this event didn't survive this cut
       if (ec.fUseEventCutCounterSequential) { // yes, this is important. Otherwise fEventCutCounterHist can be used in EventCut(...), even though it's NULL
@@ -8334,15 +9086,26 @@ bool CentralityCorrelationCut()
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
+    LOGF(info, "\033[1;33m%s at line %d : ec.fsEventCuts[eCentralityCorrelationsCut] = %s \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityCorrelationsCut].Data());
   }
 
   bool alright = true; // this local variable holds the return value for this function
 
   // Algorithm: I extract e.g. from "CentFT0C_CentFT0M" that the first estimator is "CentFT0C" and second "CentFT0M", and for each estimator I fetch the corresponding centrality percentile:
+  if (!ec.fsEventCuts[eCentralityCorrelationsCut].Contains("_")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : ec.fsEventCuts[eCentralityCorrelationsCut] = %s \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityCorrelationsCut].Data());
+  }
+
   TObjArray* oa = ec.fsEventCuts[eCentralityCorrelationsCut].Tokenize("_"); // TBI 20250331 let's see for how long I can use "_" safely as IFS ...
-  if (!oa) {
+  if (!oa || 2 != oa->GetEntries()) {
     LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL , s = %s. Example format is e.g. \"CentFT0C_CentFT0M\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityCorrelationsCut].Data());
   }
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;33m%s at line %d : oa->At(0)->GetName() = %s \033[0m", __FUNCTION__, __LINE__, oa->At(0)->GetName());
+    LOGF(info, "\033[1;33m%s at line %d : oa->At(1)->GetName() = %s \033[0m", __FUNCTION__, __LINE__, oa->At(1)->GetName());
+  }
+
   ec.fCentralityValues[0] = GetCentralityPercentile(oa->At(0)->GetName());
   ec.fCentralityValues[1] = GetCentralityPercentile(oa->At(1)->GetName());
   delete oa; // yes
@@ -8353,11 +9116,11 @@ bool CentralityCorrelationCut()
   // *) ...
   if (ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.) {
     if (ec.fCentralityCorrelationsCutVersion.EqualTo("Relative")) {
-      if (TMath::Abs((ec.fCentralityValues[0] - ec.fCentralityValues[1]) / (ec.fCentralityValues[0] + ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
+      if (std::abs((ec.fCentralityValues[0] - ec.fCentralityValues[1]) / (ec.fCentralityValues[0] + ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
         alright = false;
       }
     } else if (ec.fCentralityCorrelationsCutVersion.EqualTo("Absolute")) {
-      if (TMath::Abs((ec.fCentralityValues[0] - ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
+      if (std::abs((ec.fCentralityValues[0] - ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
         alright = false;
       }
     } else {
@@ -8399,17 +9162,47 @@ void ParticleCutsCounters(T const& track)
         if (!pc.fParticleCutCounterHist[rec_sim][cc]) {
           continue;
         }
-        for (int bin = 1; bin < pc.fParticleCutCounterBinNumber[rec_sim]; bin++) // implemented and used particle cuts in this analysis
-        {
-          pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, FancyFormatting(pc.fParticleCutName[pc.fParticleCutCounterMap[rec_sim]->GetValue(bin)].Data()));
-        }
-        for (int bin = pc.fParticleCutCounterBinNumber[rec_sim]; bin <= eParticleCuts_N; bin++) // implemented, but unused particle cuts in this analysis
-        {
-          pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, Form("binNo = %d (unused cut)", bin));
-          // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
-          // I get this harmless but annoying warning during merging:
-          //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fParticleCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
-          // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
+
+        if (tc.fUseSetBinLabel) {
+
+          for (int bin = 1; bin < pc.fParticleCutCounterBinNumber[rec_sim]; bin++) // implemented and used particle cuts in this analysis
+          {
+            pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, FancyFormatting(pc.fParticleCutName[pc.fParticleCutCounterMap[rec_sim]->GetValue(bin)].Data()));
+          }
+          for (int bin = pc.fParticleCutCounterBinNumber[rec_sim]; bin <= eParticleCuts_N; bin++) // implemented, but unused particle cuts in this analysis
+          {
+            pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetBinLabel(bin, Form("binNo = %d (unused cut)", bin));
+            // Remark: I have to write here something concrete as a bin label, if I leave "TBI" for all bin labels here for cuts which were not used,
+            // I get this harmless but annoying warning during merging:
+            //   Warning in <TH1Merger::CheckForDuplicateLabels>: Histogram fParticleCutCounterHist[rec][seq] has duplicate labels in the x axis. Bin contents will be merged in a single bin
+            // TBI 20241130 as a better solution, I shall re-define this histogram with the narower range on x-axis...
+          }
+
+        } else {
+
+          // Workaround for SetBinLabel() large memory consumption:
+          TString yAxisTitle = "";
+          for (int bin = 1; bin < pc.fParticleCutCounterBinNumber[rec_sim]; bin++) // implemented and used cuts in this analysis
+          {
+            yAxisTitle += TString::Format("%d:%s; ", bin, FancyFormatting(pc.fParticleCutName[pc.fParticleCutCounterMap[rec_sim]->GetValue(bin)].Data()));
+          }
+          for (int bin = pc.fParticleCutCounterBinNumber[rec_sim]; bin <= eParticleCuts_N; bin++) // implemented, but unused cuts in this analysis
+          {
+            yAxisTitle += TString::Format("%d:%s; ", bin, TString::Format("binNo = %d (unused cut)", bin).Data());
+          }
+
+          // *) Insanity check on the number of fields in this specially crafted y-axis title:
+          TObjArray* oa = yAxisTitle.Tokenize(";");
+          if (!oa) {
+            LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL\033[0m", __FUNCTION__, __LINE__);
+          }
+          if (oa->GetEntries() - 1 != pc.fParticleCutCounterHist[rec_sim][cc]->GetNbinsX()) {
+            LOGF(fatal, "\033[1;31m%s at line %d : oa->GetEntries() = %d != pc.fParticleCutCounterHist[rec_sim][cc]->GetNbinsX() = %d\033[0m", __FUNCTION__, __LINE__, oa->GetEntries(), pc.fParticleCutCounterHist[rec_sim][cc]->GetNbinsX());
+          }
+          delete oa;
+
+          // *) Okay, set the title:
+          pc.fParticleCutCounterHist[rec_sim][cc]->GetYaxis()->SetTitle(yAxisTitle.Data());
         }
         // All cuts which were implemeted, but not used I simply do not show (i can always UnZoom x-axis in TBrowser, if I want to see 'em).
         pc.fParticleCutCounterHist[rec_sim][cc]->GetXaxis()->SetRangeUser(pc.fParticleCutCounterHist[rec_sim][cc]->GetBinLowEdge(1), pc.fParticleCutCounterHist[rec_sim][cc]->GetBinLowEdge(pc.fParticleCutCounterBinNumber[rec_sim]));
@@ -8445,7 +9238,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
 {
   // Particle cuts on reconstructed and simulated data. Supports particle cut counters, both absolute and sequential.
   // There is also a related enum eParticleCuts.
-  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision ,
+  // Remark: I have added to all if statemets below which deals with floats, e.g. std::abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision ,
   //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Particle cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
@@ -8470,7 +9263,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || std::abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return false;
         }
@@ -8481,7 +9274,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || std::abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return false;
         }
@@ -8492,7 +9285,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || std::abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return false;
         }
@@ -8593,7 +9386,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcCrossedRowsOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcCrossedRowsOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] || TMath::Abs(track.tpcCrossedRowsOverFindableCls() - pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] || std::abs(track.tpcCrossedRowsOverFindableCls() - pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcCrossedRowsOverFindableCls, cutModus)) {
           return false;
         }
@@ -8604,7 +9397,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFoundOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFoundOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] || TMath::Abs(track.tpcFoundOverFindableCls() - pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] || std::abs(track.tpcFoundOverFindableCls() - pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFoundOverFindableCls, cutModus)) {
           return false;
         }
@@ -8615,7 +9408,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFractionSharedCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFractionSharedCls, eCutCounterBinning);
-      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax] || TMath::Abs(track.tpcFractionSharedCls() - pc.fdParticleCuts[etpcFractionSharedCls][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax] || std::abs(track.tpcFractionSharedCls() - pc.fdParticleCuts[etpcFractionSharedCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFractionSharedCls, cutModus)) {
           return false;
         }
@@ -8626,7 +9419,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcChi2NCl]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcChi2NCl, eCutCounterBinning);
-      } else if (track.tpcChi2NCl() < pc.fdParticleCuts[etpcChi2NCl][eMin] || track.tpcChi2NCl() > pc.fdParticleCuts[etpcChi2NCl][eMax] || TMath::Abs(track.tpcChi2NCl() - pc.fdParticleCuts[etpcChi2NCl][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.tpcChi2NCl() < pc.fdParticleCuts[etpcChi2NCl][eMin] || track.tpcChi2NCl() > pc.fdParticleCuts[etpcChi2NCl][eMax] || std::abs(track.tpcChi2NCl() - pc.fdParticleCuts[etpcChi2NCl][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcChi2NCl, cutModus)) {
           return false;
         }
@@ -8637,7 +9430,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaXY]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaXY, eCutCounterBinning);
-      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax] || TMath::Abs(track.dcaXY() - pc.fdParticleCuts[edcaXY][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax] || std::abs(track.dcaXY() - pc.fdParticleCuts[edcaXY][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaXY, cutModus)) {
           return false;
         }
@@ -8648,7 +9441,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaZ]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaZ, eCutCounterBinning);
-      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax] || TMath::Abs(track.dcaZ() - pc.fdParticleCuts[edcaZ][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax] || std::abs(track.dcaZ() - pc.fdParticleCuts[edcaZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaZ, cutModus)) {
           return false;
         }
@@ -8747,7 +9540,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePtDependentDCAxyParameterization, eCutCounterBinning);
-      } else if (TMath::Abs(track.dcaXY()) > pc.fPtDependentDCAxyFormula->Eval(track.pt())) {
+      } else if (std::abs(track.dcaXY()) > pc.fPtDependentDCAxyFormula->Eval(track.pt())) {
         if (!ParticleCut(eRec, ePtDependentDCAxyParameterization, cutModus)) {
           return false;
         }
@@ -8814,7 +9607,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || std::abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePhi, cutModus)) {
           return false;
         }
@@ -8825,7 +9618,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || std::abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePt, cutModus)) {
           return false;
         }
@@ -8836,7 +9629,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || std::abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, eEta, cutModus)) {
           return false;
         }
@@ -8945,7 +9738,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || std::abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return false;
         }
@@ -8956,7 +9749,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || std::abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return false;
         }
@@ -8967,7 +9760,7 @@ bool ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || std::abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return false;
         }
@@ -9129,7 +9922,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
   }
 
   if (tc.fInsanityCheckForEachParticle) {
-    if (1 != TMath::Abs(weight)) {
+    if (1 != std::abs(weight)) {
       LOGF(fatal, "\033[1;31m%s at line %d : in the current implementation, weight for particle histograms can be only +1 or -1, weight = %d\033[0m", __FUNCTION__, __LINE__, weight);
     }
   }
@@ -9143,15 +9936,35 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, int weight = 1)
     // 1D:
     if (ph.fFillParticleHistograms) {
       // From o2::aod::Tracks
+
+      // memStatus ~120
+
       !ph.fParticleHistograms[ePhi][eRec][ba] ? true : ph.fParticleHistograms[ePhi][eRec][ba]->Fill(track.phi(), weight);
+
+      // memStatus ~125
+
       !ph.fParticleHistograms[ePt][eRec][ba] ? true : ph.fParticleHistograms[ePt][eRec][ba]->Fill(track.pt(), weight);
+
+      // memStatus ~127
+
       !ph.fParticleHistograms[eEta][eRec][ba] ? true : ph.fParticleHistograms[eEta][eRec][ba]->Fill(track.eta(), weight);
+
+      // memStatus ~133
+
       !ph.fParticleHistograms[eCharge][eRec][ba] ? true : ph.fParticleHistograms[eCharge][eRec][ba]->Fill(track.sign(), weight);
+
+      // memStatus ~139
 
       // From o2::aod::TracksExtra_001
       !ph.fParticleHistograms[etpcNClsFindable][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsFindable][eRec][ba]->Fill(track.tpcNClsFindable(), weight);
       !ph.fParticleHistograms[etpcNClsShared][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsShared][eRec][ba]->Fill(track.tpcNClsShared(), weight);
+
+      // memStatus ~140
+
       !ph.fParticleHistograms[eitsChi2NCl][eRec][ba] ? true : ph.fParticleHistograms[eitsChi2NCl][eRec][ba]->Fill(track.itsChi2NCl(), weight);
+
+      // memStatus ~146
+
       !ph.fParticleHistograms[etpcNClsFound][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsFound][eRec][ba]->Fill(track.tpcNClsFound(), weight);
       !ph.fParticleHistograms[etpcNClsCrossedRows][eRec][ba] ? true : ph.fParticleHistograms[etpcNClsCrossedRows][eRec][ba]->Fill(track.tpcNClsCrossedRows(), weight);
       !ph.fParticleHistograms[eitsNCls][eRec][ba] ? true : ph.fParticleHistograms[eitsNCls][eRec][ba]->Fill(track.itsNCls(), weight);
@@ -9502,7 +10315,7 @@ void CalculateCorrelations()
       harmonics->SetAt(h, 0);
       harmonics->SetAt(-h, 1);
       double nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > tc.fFloatingPointPrecision) {
+      if (std::abs(nestedLoopValue) > 0. && std::abs(twoC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as twoC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, twoC);
       } else {
         LOGF(info, "\033[1;32m ebye check (integrated) with CustomNestedLoops is OK for isotropic 2-p, harmonic %d\033[0m", h);
@@ -9512,7 +10325,7 @@ void CalculateCorrelations()
     } // if(nl.fCalculateCustomNestedLoops)
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
-    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
+    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
       twoC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 2.);
     }
 
@@ -9571,7 +10384,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 2);
       harmonics->SetAt(-h, 3);
       double nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > tc.fFloatingPointPrecision) {
+      if (std::abs(nestedLoopValue) > 0. && std::abs(fourC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as fourC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, fourC);
       } else {
         LOGF(info, "\033[1;32m ebye check (integrated) with CustomNestedLoops is OK for isotropic 4-p, harmonic %d\033[0m", h);
@@ -9581,7 +10394,7 @@ void CalculateCorrelations()
     } // if(nl.fCalculateCustomNestedLoops)
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
-    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
+    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
       fourC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 4.);
     }
 
@@ -9642,7 +10455,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 4);
       harmonics->SetAt(-h, 5);
       double nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > tc.fFloatingPointPrecision) {
+      if (std::abs(nestedLoopValue) > 0. && std::abs(sixC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as sixC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, sixC);
       } else {
         LOGF(info, "\033[1;32m ebye check (integrated) with CustomNestedLoops is OK for isotropic 6-p, harmonic %d\033[0m", h);
@@ -9652,7 +10465,7 @@ void CalculateCorrelations()
     } // if(nl.fCalculateCustomNestedLoops)
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
-    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
+    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
       sixC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 6.);
     }
 
@@ -9715,7 +10528,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 6);
       harmonics->SetAt(-h, 7);
       double nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > tc.fFloatingPointPrecision) {
+      if (std::abs(nestedLoopValue) > 0. && std::abs(eightC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as eightC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, eightC);
       } else {
         LOGF(info, "\033[1;32m ebye check (integrated) with CustomNestedLoops is OK for isotropic 8-p, harmonic %d\033[0m", h);
@@ -9725,7 +10538,7 @@ void CalculateCorrelations()
     } // if(nl.fCalculateCustomNestedLoops)
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
-    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
+    if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
       eightC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 8.);
     }
 
@@ -9984,9 +10797,9 @@ void CalculateTest0()
             harmonics->SetAt(n[i], i);
           }
           double nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-          if (!(TMath::Abs(nestedLoopValue) > 0.)) {
+          if (!(std::abs(nestedLoopValue) > 0.)) {
             LOGF(info, "  ebye check (integrated) with CustomNestedLoops was NOT calculated for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
-          } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
+          } else if (std::abs(nestedLoopValue) > 0. && std::abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
             LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0.fTest0Labels[mo][mi]->Data());
           } else {
             LOGF(info, "\033[1;32m ebye check (integrated) with CustomNestedLoops is OK for %d-p Test0 corr. %s\033[0m", mo + 1, t0.fTest0Labels[mo][mi]->Data());
@@ -10002,7 +10815,7 @@ void CalculateTest0()
             harmonics->SetAt(n[i], i);
           }
           TComplex theoreticalValue = this->TheoreticalValue(harmonics, iv.fInternalValidationVnPsin[eVn], iv.fInternalValidationVnPsin[ePsin]);
-          if (TMath::Abs(theoreticalValue.Re()) > 0.) {
+          if (std::abs(theoreticalValue.Re()) > 0.) {
             correlation /= theoreticalValue.Re();
           }
           // TBI 20240424 for the time being, I do not do anything with imaginary part, but I could eventually...
@@ -10092,7 +10905,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
   for (int b = 0; b < nBins; b++) {
 
     // *) Ensures that in each bin of interest, I have the same cut on number of particles, like in integrated analysis:
-    if ((qv.fqVectorEntries[qvKine][b] < ec.fdEventCuts[eMultiplicity][eMin]) || (qv.fqVectorEntries[qvKine][b] > ec.fdEventCuts[eMultiplicity][eMax] || TMath::Abs(qv.fqVectorEntries[qvKine][b] - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision)) {
+    if ((qv.fqVectorEntries[qvKine][b] < ec.fdEventCuts[eMultiplicity][eMin]) || (qv.fqVectorEntries[qvKine][b] > ec.fdEventCuts[eMultiplicity][eMax] || std::abs(qv.fqVectorEntries[qvKine][b] - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision)) {
       if (tc.fVerbose) {
         LOGF(info, "\033[1;31m%s eMultiplicity cut in bin = %d, for qvKine = %d\033[0m", __FUNCTION__, b, static_cast<int>(qvKine));
       }
@@ -10206,9 +11019,9 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
               LOGF(fatal, "\033[1;31m%s at line %d : is perhaps order of some requested correlator bigger than the number of particles? Correlator = %s \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data());
             }
             double nestedLoopValue = this->CalculateKineCustomNestedLoops(harmonics, AFO_variable, b);
-            if (!(TMath::Abs(nestedLoopValue) > 0.)) {
+            if (!(std::abs(nestedLoopValue) > 0.)) {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops was NOT calculated for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
-            } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
+            } else if (std::abs(nestedLoopValue) > 0. && std::abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
               LOGF(fatal, "\033[1;31m%s at line %d : correlator: %s \n correlation: %f \n custom loop: %f \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data(), correlation / weight, nestedLoopValue);
             } else {
               LOGF(info, "\033[1;32m ebye check (differential) with CalculateKineCustomNestedLoops is OK for %d-p Test0 corr. %s, bin = %d\033[0m", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
@@ -10224,7 +11037,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
               harmonics->SetAt(n[i], i);
             }
             TComplex theoreticalValue = TheoreticalValue(harmonics, iv.fInternalValidationVnPsin[eVn], iv.fInternalValidationVnPsin[ePsin]);
-            if (TMath::Abs(theoreticalValue.Re()) > 0.) {
+            if (std::abs(theoreticalValue.Re()) > 0.) {
               correlation /= theoreticalValue.Re();
             }
             // TBI 20240424 for the time being, I do not do anything with imaginary part, but I could eventually...
@@ -10297,7 +11110,7 @@ void CalculateEtaSeparations()
       weight = qv.fMab[0][e] * qv.fMab[1][e];
 
       // for on-the-fly and internal validation, rescale results with theoretical value:
-      if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
+      if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
         correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
       }
 
@@ -10386,7 +11199,7 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
     /* TBI 20241206 Do I need to adapt and apply this cut, also for Qa and Qb? If so, most likely I would need to apply it on sum, i.e. on entries in Qa + Qb
 
         // *) Ensures that in each bin of interest, I have the same cut on number of particles, like in integrated analysis:
-        if ((qv.fqVectorEntries[qvKine][b] < ec.fdEventCuts[eMultiplicity][eMin]) || (qv.fqVectorEntries[qvKine][b] > ec.fdEventCuts[eMultiplicity][eMax] || TMath::Abs(qv.fqVectorEntries[qvKine][b] - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision)) {
+        if ((qv.fqVectorEntries[qvKine][b] < ec.fdEventCuts[eMultiplicity][eMin]) || (qv.fqVectorEntries[qvKine][b] > ec.fdEventCuts[eMultiplicity][eMax] || std::abs(qv.fqVectorEntries[qvKine][b] - ec.fdEventCuts[eMultiplicity][eMax]) < tc.fFloatingPointPrecision)) {
           if (tc.fVerbose) {
             LOGF(info, "\033[1;31m%s eMultiplicity cut in bin = %d, for qvKine = %d\033[0m", __FUNCTION__, b, static_cast<int>(qvKine));
           }
@@ -10414,7 +11227,7 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
         weight = qv.fmab[0][b][e] * qv.fmab[1][b][e];
 
         // for on-the-fly and internal validation, rescale results with theoretical value:
-        if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && TMath::Abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
+        if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
           correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
         }
 
@@ -10446,7 +11259,7 @@ void FillNestedLoopsContainers(const int& particleIndex, const double& dPhi, con
     if (particleIndex < 0) {
       LOGF(fatal, "\033[1;31m%s at line %d : particleIndex = %d\033[0m", __FUNCTION__, __LINE__, particleIndex);
     }
-    if (!(TMath::Abs(nl.ftaNestedLoops[0]->GetAt(particleIndex - 1)) > 0.)) {
+    if (!(std::abs(nl.ftaNestedLoops[0]->GetAt(particleIndex - 1)) > 0.)) {
       LOGF(fatal, "\033[1;31m%s at line %d : there are empty elements in nl.ftaNestedLoops[0] \033[0m", __FUNCTION__, __LINE__);
       // I need this protection, to ensure that all array entries are filled. If not, most likely a particle passed all
       // selection criteria, and it wasn't added to the nested loops containers
@@ -10508,8 +11321,8 @@ void CalculateNestedLoops()
    nParticles = 0;
    for(int i=0;i<ftaNestedLoops[0]->GetSize();i++)
    {
-    if(TMath::Abs(ftaNestedLoops[0]->GetAt(i)) > 0. &&
-  TMath::Abs(ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
+    if(std::abs(ftaNestedLoops[0]->GetAt(i)) > 0. &&
+  std::abs(ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
    }
   }
    cout<<"nParticles = "<<nParticles<<endl;
@@ -10536,38 +11349,38 @@ void CalculateNestedLoops()
         // fill cos, 2p, integreated:
         if (nl.fNestedLoopsPro[0][h][AFO_INTEGRATED]) {
           nl.fNestedLoopsPro[0][h][AFO_INTEGRATED]->Fill(
-            0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            0.5, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. multiplicity:
         if (nl.fNestedLoopsPro[0][h][AFO_MULTIPLICITY]) {
           nl.fNestedLoopsPro[0][h][AFO_MULTIPLICITY]->Fill(
-            ebye.fMultiplicity + 0.5, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)),
+            ebye.fMultiplicity + 0.5, std::cos((h + 1.) * (dPhi1 - dPhi2)),
             dW1 * dW2);
         }
         // fill cos, 2p, vs. centrality:
         if (nl.fNestedLoopsPro[0][h][AFO_CENTRALITY]) {
           nl.fNestedLoopsPro[0][h][AFO_CENTRALITY]->Fill(
-            ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            ebye.fCentrality, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. occupancy:
         if (nl.fNestedLoopsPro[0][h][AFO_OCCUPANCY]) {
           nl.fNestedLoopsPro[0][h][AFO_OCCUPANCY]->Fill(
-            ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            ebye.fOccupancy, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. interaction rate:
         if (nl.fNestedLoopsPro[0][h][AFO_INTERACTIONRATE]) {
           nl.fNestedLoopsPro[0][h][AFO_INTERACTIONRATE]->Fill(
-            ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            ebye.fInteractionRate, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. current run duration:
         if (nl.fNestedLoopsPro[0][h][AFO_CURRENTRUNDURATION]) {
           nl.fNestedLoopsPro[0][h][AFO_CURRENTRUNDURATION]->Fill(
-            ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            ebye.fCurrentRunDuration, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
         // fill cos, 2p, vs. vertex z position:
         if (nl.fNestedLoopsPro[0][h][AFO_VZ]) {
           nl.fNestedLoopsPro[0][h][AFO_VZ]->Fill(
-            ebye.fVz, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+            ebye.fVz, std::cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
 
       } // for(int h=1; h<=6; h++)
@@ -10607,31 +11420,31 @@ void CalculateNestedLoops()
           for (int h = 0; h < gMaxHarmonic; h++) {
             // fill cos, 4p, integreated:
             if (nl.fNestedLoopsPro[1][h][AFO_INTEGRATED]) {
-              nl.fNestedLoopsPro[1][h][AFO_INTEGRATED]->Fill(0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_INTEGRATED]->Fill(0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. M:
             if (nl.fNestedLoopsPro[1][h][AFO_MULTIPLICITY]) {
-              nl.fNestedLoopsPro[1][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. centrality:
             if (nl.fNestedLoopsPro[1][h][AFO_CENTRALITY]) {
-              nl.fNestedLoopsPro[1][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. occupancy:
             if (nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]) {
-              nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. interaction rate:
             if (nl.fNestedLoopsPro[1][h][AFO_INTERACTIONRATE]) {
-              nl.fNestedLoopsPro[1][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. current run duratione:
             if (nl.fNestedLoopsPro[1][h][AFO_CURRENTRUNDURATION]) {
-              nl.fNestedLoopsPro[1][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
             // fill cos, 4p, all harmonics, vs. vertex z position:
             if (nl.fNestedLoopsPro[1][h][AFO_VZ]) {
-              nl.fNestedLoopsPro[1][h][AFO_VZ]->Fill(ebye.fVz, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+              nl.fNestedLoopsPro[1][h][AFO_VZ]->Fill(ebye.fVz, std::cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
           } // for(int h=0; h<gMaxHarmonic; h++)
         } // for(int i4=0; i4<nParticles; i4++)
@@ -10684,31 +11497,31 @@ void CalculateNestedLoops()
               for (int h = 0; h < gMaxHarmonic; h++) {
                 // fill cos, 6p, integreated:
                 if (nl.fNestedLoopsPro[2][h][AFO_INTEGRATED]) {
-                  nl.fNestedLoopsPro[2][h][AFO_INTEGRATED]->Fill(0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_INTEGRATED]->Fill(0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. M:
                 if (nl.fNestedLoopsPro[2][h][AFO_MULTIPLICITY]) {
-                  nl.fNestedLoopsPro[2][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. centrality:
                 if (nl.fNestedLoopsPro[2][h][AFO_CENTRALITY]) {
-                  nl.fNestedLoopsPro[2][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. occupancy:
                 if (nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]) {
-                  nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. interaction rate:
                 if (nl.fNestedLoopsPro[2][h][AFO_INTERACTIONRATE]) {
-                  nl.fNestedLoopsPro[2][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. current run duration:
                 if (nl.fNestedLoopsPro[2][h][AFO_CURRENTRUNDURATION]) {
-                  nl.fNestedLoopsPro[2][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
                 // fill cos, 6p, all harmonics, vs. vertex z position:
                 if (nl.fNestedLoopsPro[2][h][AFO_VZ]) {
-                  nl.fNestedLoopsPro[2][h][AFO_VZ]->Fill(ebye.fVz, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                  nl.fNestedLoopsPro[2][h][AFO_VZ]->Fill(ebye.fVz, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
               } // for(int h=0; h<gMaxHarmonic; h++)
             } // if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
@@ -10775,31 +11588,31 @@ void CalculateNestedLoops()
                   for (int h = 0; h < gMaxHarmonic; h++) {
                     // fill cos, 8p, integreated:
                     if (nl.fNestedLoopsPro[3][h][AFO_INTEGRATED]) {
-                      nl.fNestedLoopsPro[3][h][AFO_INTEGRATED]->Fill(0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_INTEGRATED]->Fill(0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. M:
                     if (nl.fNestedLoopsPro[3][h][AFO_MULTIPLICITY]) {
-                      nl.fNestedLoopsPro[3][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_MULTIPLICITY]->Fill(ebye.fMultiplicity + 0.5, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. centrality:
                     if (nl.fNestedLoopsPro[3][h][AFO_CENTRALITY]) {
-                      nl.fNestedLoopsPro[3][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. occupancy:
                     if (nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]) {
-                      nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. interaction rate:
                     if (nl.fNestedLoopsPro[3][h][AFO_INTERACTIONRATE]) {
-                      nl.fNestedLoopsPro[3][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. current run duration:
                     if (nl.fNestedLoopsPro[3][h][AFO_CURRENTRUNDURATION]) {
-                      nl.fNestedLoopsPro[3][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                     // fill cos, 8p, all harmonics, vs. vertex z position:
                     if (nl.fNestedLoopsPro[3][h][AFO_VZ]) {
-                      nl.fNestedLoopsPro[3][h][AFO_VZ]->Fill(ebye.fVz, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                      nl.fNestedLoopsPro[3][h][AFO_VZ]->Fill(ebye.fVz, std::cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                   } // for(int h=0; h<gMaxHarmonic; h++)
                 } // for(int i8=0; i8<nParticles; i8++)
@@ -10854,14 +11667,14 @@ void ComparisonNestedLoopsVsCorrelations()
           if (nl.fNestedLoopsPro[o][h][v]) {
             valueNL = nl.fNestedLoopsPro[o][h][v]->GetBinContent(b);
           }
-          if (TMath::Abs(valueQV) > 0. && TMath::Abs(valueNL) > 0.) {
+          if (std::abs(valueQV) > 0. && std::abs(valueNL) > 0.) {
             LOGF(info, "   bin=%d, h=%d, Q-vectors:    %f", b, h + 1, valueQV);
             LOGF(info, "   bin=%d, h=%d, Nested loops: %f", b, h + 1, valueNL);
-            if (TMath::Abs(valueQV - valueNL) > tc.fFloatingPointPrecision) {
+            if (std::abs(valueQV - valueNL) > tc.fFloatingPointPrecision) {
               LOGF(info, "\n\033[1;33m[%d][%d][%d] \033[0m\n", o, h, v);
               LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
-          } // if(TMath::Abs(valueQV)>0. && TMath::Abs(valueNL)>0.)
+          } // if(std::abs(valueQV)>0. && std::abs(valueNL)>0.)
         } // for(int b=1;b<=nBinsQV;b++)
       } // for (int h = 0; h < gMaxHarmonic; h++) {
       LOGF(info, ""); // new line
@@ -11582,11 +12395,11 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     }
 
     // Compare with min and max value stored in external weights.root file using MakeWeights.C:
-    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
+    if (!(std::abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), max);
     }
-    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
+    if (!(std::abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), min);
     }
@@ -11863,11 +12676,11 @@ THnSparseF* GetSparseHistogramWithWeights(const char* filePath, const char* runN
       }
 
       // Compare with min and max value stored in external weights.root file using MakeWeights.C:
-      if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
+      if (!(std::abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
         LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
         LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), max);
       }
-      if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
+      if (!(std::abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
         LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
         LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), min);
       }
@@ -12180,6 +12993,205 @@ TObjArray* GetDefaultObjArrayWithLabels(const char* whichDefaultLabels)
       TObjString* objstr = new TObjString(labels[l].Data());
       arr->Add(objstr);
     }
+  } else if (TString(whichDefaultLabels).EqualTo("Set_0")) {
+    // From ~/scratch/O2/master/Labels/Set_0/labels_Set_0.root
+    const int nLabels = 57; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {
+      "1 -1 ",
+      "2 -2 ",
+      "3 -3 ",
+      "4 -4 ",
+      "5 -5 ",
+      "6 -6 ",
+      "2 1 -1 -2 ",
+      "3 1 -1 -3 ",
+      "3 2 -2 -3 ",
+      "4 1 -1 -4 ",
+      "4 2 -2 -4 ",
+      "4 3 -3 -4 ",
+      "5 1 -1 -5 ",
+      "5 2 -2 -5 ",
+      "5 3 -3 -5 ",
+      "5 4 -4 -5 ",
+      "6 1 -1 -6 ",
+      "6 2 -2 -6 ",
+      "6 3 -3 -6 ",
+      "6 4 -4 -6 ",
+      "6 5 -5 -6 ",
+      "3 2 1 -1 -2 -3 ",
+      "4 2 1 -1 -2 -4 ",
+      "4 3 1 -1 -3 -4 ",
+      "4 3 2 -2 -3 -4 ",
+      "5 2 1 -1 -2 -5 ",
+      "5 3 1 -1 -3 -5 ",
+      "5 3 2 -2 -3 -5 ",
+      "5 4 1 -1 -4 -5 ",
+      "5 4 2 -2 -4 -5 ",
+      "5 4 3 -3 -4 -5 ",
+      "6 2 1 -1 -2 -6 ",
+      "6 3 1 -1 -3 -6 ",
+      "6 3 2 -2 -3 -6 ",
+      "6 4 1 -1 -4 -6 ",
+      "6 4 2 -2 -4 -6 ",
+      "6 4 3 -3 -4 -6 ",
+      "6 5 1 -1 -5 -6 ",
+      "6 5 2 -2 -5 -6 ",
+      "6 5 3 -3 -5 -6 ",
+      "6 5 4 -4 -5 -6 ",
+      "2 2 -2 -2",
+      "3 3 -3 -3",
+      "4 4 -4 -4",
+      "2 2 2 -2 -2 -2",
+      "3 3 2 -2 -3 -3",
+      "3 2 2 -2 -2 -3 ",
+      "3 3 3 -3 -3 -3",
+      "4 4 2 -2 -4 -4",
+      "4 2 2 -2 -2 -4",
+      "4 4 3 -3 -4 -4",
+      "4 3 3 -3 -3 -4",
+      "4 4 3 2 -2 -3 -4 -4",
+      "4 3 3 2 -2 -3 -3 -4",
+      "4 3 2 2 -2 -2 -3 -4",
+      "3 3 3 2 -2 -3 -3 -3",
+      "3 2 2 2 -2 -2 -2 -3"};
+    for (int l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("Set_1")) {
+    // From ~/scratch/O2/master/Labels/Set_1/labels_Set_1.root
+    const int nLabels = 56; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {
+      "1 -1 ",
+      "2 -2 ",
+      "3 -3 ",
+      "4 -4 ",
+      "5 -5 ",
+      "6 -6 ",
+      "2 1 -1 -2 ",
+      "3 1 -1 -3 ",
+      "3 2 -2 -3 ",
+      "4 1 -1 -4 ",
+      "4 2 -2 -4 ",
+      "4 3 -3 -4 ",
+      "5 1 -1 -5 ",
+      "5 2 -2 -5 ",
+      "5 3 -3 -5 ",
+      "5 4 -4 -5 ",
+      "6 1 -1 -6 ",
+      "6 2 -2 -6 ",
+      "6 3 -3 -6 ",
+      "6 4 -4 -6 ",
+      "6 5 -5 -6 ",
+      "3 2 1 -1 -2 -3 ",
+      "4 2 1 -1 -2 -4 ",
+      "4 3 1 -1 -3 -4 ",
+      "4 3 2 -2 -3 -4 ",
+      "5 2 1 -1 -2 -5 ",
+      "5 3 1 -1 -3 -5 ",
+      "5 3 2 -2 -3 -5 ",
+      "5 4 1 -1 -4 -5 ",
+      "5 4 2 -2 -4 -5 ",
+      "5 4 3 -3 -4 -5 ",
+      "6 2 1 -1 -2 -6 ",
+      "6 3 1 -1 -3 -6 ",
+      "6 3 2 -2 -3 -6 ",
+      "6 4 1 -1 -4 -6 ",
+      "6 4 2 -2 -4 -6 ",
+      "6 4 3 -3 -4 -6 ",
+      "6 5 1 -1 -5 -6 ",
+      "6 5 2 -2 -5 -6 ",
+      "6 5 3 -3 -5 -6 ",
+      "6 5 4 -4 -5 -6 ",
+      "4 3 2 1 -1 -2 -3 -4 ",
+      "5 3 2 1 -1 -2 -3 -5 ",
+      "5 4 2 1 -1 -2 -4 -5 ",
+      "5 4 3 1 -1 -3 -4 -5 ",
+      "5 4 3 2 -2 -3 -4 -5 ",
+      "6 3 2 1 -1 -2 -3 -6 ",
+      "6 4 2 1 -1 -2 -4 -6 ",
+      "6 4 3 1 -1 -3 -4 -6 ",
+      "6 4 3 2 -2 -3 -4 -6 ",
+      "6 5 2 1 -1 -2 -5 -6 ",
+      "6 5 3 1 -1 -3 -5 -6 ",
+      "6 5 3 2 -2 -3 -5 -6 ",
+      "6 5 4 1 -1 -4 -5 -6 ",
+      "6 5 4 2 -2 -4 -5 -6 ",
+      "6 5 4 3 -3 -4 -5 -6 "};
+    for (int l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
+  } else if (TString(whichDefaultLabels).EqualTo("Set_2")) {
+    // From ~/scratch/O2/master/Labels/Set_2/labels_Set_2.root
+    const int nLabels = 62; // yes, because I do not care about 1-p
+    TString labels[nLabels] = {
+      "1 -1 ",
+      "2 -2 ",
+      "3 -3 ",
+      "4 -4 ",
+      "5 -5 ",
+      "6 -6 ",
+      "2 1 -1 -2 ",
+      "3 1 -1 -3 ",
+      "3 2 -2 -3 ",
+      "4 1 -1 -4 ",
+      "4 2 -2 -4 ",
+      "4 3 -3 -4 ",
+      "5 1 -1 -5 ",
+      "5 2 -2 -5 ",
+      "5 3 -3 -5 ",
+      "5 4 -4 -5 ",
+      "6 1 -1 -6 ",
+      "6 2 -2 -6 ",
+      "6 3 -3 -6 ",
+      "6 4 -4 -6 ",
+      "6 5 -5 -6 ",
+      "3 2 1 -1 -2 -3 ",
+      "4 2 1 -1 -2 -4 ",
+      "4 3 1 -1 -3 -4 ",
+      "4 3 2 -2 -3 -4 ",
+      "5 2 1 -1 -2 -5 ",
+      "5 3 1 -1 -3 -5 ",
+      "5 3 2 -2 -3 -5 ",
+      "5 4 1 -1 -4 -5 ",
+      "5 4 2 -2 -4 -5 ",
+      "5 4 3 -3 -4 -5 ",
+      "6 2 1 -1 -2 -6 ",
+      "6 3 1 -1 -3 -6 ",
+      "6 3 2 -2 -3 -6 ",
+      "6 4 1 -1 -4 -6 ",
+      "6 4 2 -2 -4 -6 ",
+      "6 4 3 -3 -4 -6 ",
+      "6 5 1 -1 -5 -6 ",
+      "6 5 2 -2 -5 -6 ",
+      "6 5 3 -3 -5 -6 ",
+      "6 5 4 -4 -5 -6 ",
+      "4 3 2 1 -1 -2 -3 -4 ",
+      "5 3 2 1 -1 -2 -3 -5 ",
+      "5 4 2 1 -1 -2 -4 -5 ",
+      "5 4 3 1 -1 -3 -4 -5 ",
+      "5 4 3 2 -2 -3 -4 -5 ",
+      "6 3 2 1 -1 -2 -3 -6 ",
+      "6 4 2 1 -1 -2 -4 -6 ",
+      "6 4 3 1 -1 -3 -4 -6 ",
+      "6 4 3 2 -2 -3 -4 -6 ",
+      "6 5 2 1 -1 -2 -5 -6 ",
+      "6 5 3 1 -1 -3 -5 -6 ",
+      "6 5 3 2 -2 -3 -5 -6 ",
+      "6 5 4 1 -1 -4 -5 -6 ",
+      "6 5 4 2 -2 -4 -5 -6 ",
+      "6 5 4 3 -3 -4 -5 -6 ",
+      "5 4 3 2 1 -1 -2 -3 -4 -5 ",
+      "6 4 3 2 1 -1 -2 -3 -4 -6 ",
+      "6 5 3 2 1 -1 -2 -3 -5 -6 ",
+      "6 5 4 2 1 -1 -2 -4 -5 -6 ",
+      "6 5 4 3 1 -1 -3 -4 -5 -6 ",
+      "6 5 4 3 2 -2 -3 -4 -5 -6 "};
+    for (int l = 0; l < nLabels; l++) {
+      TObjString* objstr = new TObjString(labels[l].Data());
+      arr->Add(objstr);
+    }
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : whichDefaultLabels = %s is not supported yet \033[0m", __FUNCTION__, __LINE__, whichDefaultLabels);
   }
@@ -12207,7 +13219,8 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
   // b) Determine from filePath if the file in on a local machine, or in AliEn;
   // c) Handle the AliEn case;
   // d) Handle the CCDB case;
-  // e) Handle the local case.
+  // e) Handle the local case;
+  // f) Clean up.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -12280,11 +13293,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
-    oa = reinterpret_cast<TObjArray*>(ccdb->get<TObjArray>(
-      TString(filePath)
-        .ReplaceAll("/alice-ccdb.cern.ch/", "")
-        .Data()));
-
+    oa = reinterpret_cast<TObjArray*>(ccdb->get<TObjArray>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data())); // TBI 20250414 memory blow-up
     if (!oa) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -12327,7 +13336,14 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
     ExitFunction(__FUNCTION__);
   }
 
-  return oa;
+  // f) Clean up:
+  if (oaFile) {
+    oaFile->Close();
+    delete oaFile;
+    oaFile = nullptr;
+  }
+
+  return oa; // "292535" (local) + 294291 (ccdb)
 
 } // TObjArray* GetObjArrayWithLabels(const char *filePath)
 
@@ -12483,13 +13499,12 @@ void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
 
 void StoreLabelsInPlaceholder()
 {
-  // Storal all Test0 labels in the temporary placeholder.
+  // Storal all Test0 labels in the placeholder.
 
   // a) Initialize all counters;
-  // b) Fetch TObjArray with labels from an external file;
-  // c) Book the placeholder fTest0LabelsPlaceholder for all labels;
-  // d) Finally, store the labels from external source into placeholder;
-  // e) Insanity check on labels.
+  // b) Fetch TObjArray with labels from an external file or from local hardwired values;
+  // c) Insanity check on labels;
+  // d) Finally, store the labels from external source into the placeholder.
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
@@ -12501,12 +13516,24 @@ void StoreLabelsInPlaceholder()
     counter[o] = 0;
   } // now it's safe :-)
 
-  // b) Fetch TObjArray with labels from an external file:
+  // b) Fetch TObjArray with labels from an external file or from local hardwired values:
   TObjArray* oa = NULL;
   if (t0.fUseDefaultLabels) {
     oa = GetDefaultObjArrayWithLabels(t0.fWhichDefaultLabels.Data());
   } else {
+
+    LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when calling function GetObjArrayWithLabels(...) !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+
     oa = GetObjArrayWithLabels(t0.fFileWithLabels.Data());
+    // TBI 20250412 There is a large memory penalty in this call, confirmed for "local" and "ccdb" cases (most likely also for "alien", but I didn't test it yet)
+    //              a) For the "local" case, it's related to the following minimal reproducer:
+    //                   TFile *f = new TFile("tmp.root", "read"); // memory blows up by > 50 MB
+    //                   f->Close(); delete f; f = nullptr;        // memory stays > 50 MB
+    //              b) Not clear why there is a blow-up for "ccdb" case, but it can be reproduced with this line:
+    //                   Service<ccdb::BasicCCDBManager> ccdb;
+    //                   ccdb->get<TObjArray>("somePath");
+    //              c) TBI 20250412 document eventually also the "alien" case here
+    //                 ...
   }
   if (!oa) {
     LOGF(info, "\033[1;33m fFileWithLabels = %s \033[0m",
@@ -12514,16 +13541,26 @@ void StoreLabelsInPlaceholder()
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
-  // c) Book the placeholder fTest0LabelsPlaceholder for all labels:
+  // c) Insanity check on labels:
   int nLabels = oa->GetEntries();
-  t0.fTest0LabelsPlaceholder =
-    new TH1I("fTest0LabelsPlaceholder",
-             Form("placeholder for all labels, %d in total", nLabels),
-             nLabels, 0, nLabels);
-  t0.fTest0LabelsPlaceholder->SetStats(false);
+  //    c1) Insanity check on number of labels:
+  if (nLabels <= 0) {
+    LOGF(fatal, "\033[1;31m%s at line %d : nLabels = %d \033[0m", __FUNCTION__, __LINE__, nLabels);
+  }
+  //    c2) Here I am merely checking that harmonic larger than gMaxHarmonic was not requested:
+  for (int e = 0; e < nLabels; e++) {
+    TObjArray* temp = TString(oa->At(e)->GetName()).Tokenize(" ");
+    for (int h = 0; h < temp->GetEntries(); h++) {
+      if (std::abs(TString(temp->At(h)->GetName()).Atoi()) > gMaxHarmonic) {
+        LOGF(info, "\033[1;31m e = %d, label = %s, gMaxHarmonic = %d\033[0m", e, temp->At(h)->GetName(), static_cast<int>(gMaxHarmonic));
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      } // if(TString(temp->At(h)->GetName()).Atoi() > gMaxHarmonic) {
+    } // for(int h = 0; h < temp->GetEntries(); h++) {
+    delete temp; // yes, otherwise it's a memory leak
+  } // for (int e = 0; e < nLabels; e++) {
+  // ...
 
-  // d) Finally, store the labels from external source into placeholder:
-  int bin = 1; // used only for fTest0LabelsPlaceholder
+  // d) Finally, store the labels from external source into the placeholder:
   int order = -44;
   for (int e = 0; e < nLabels; e++) {
     TObjArray* temp = TString(oa->At(e)->GetName()).Tokenize(" ");
@@ -12536,78 +13573,16 @@ void StoreLabelsInPlaceholder()
       continue;
     } // empty lines, or the label format which is not supported
     // 1-p => 0, 2-p => 1, etc.:
-    t0.fTest0Labels[order - 1][counter[order - 1]] =
-      new TString(oa->At(e)->GetName()); // okay...
-    t0.fTest0LabelsPlaceholder->GetXaxis()->SetBinLabel(
-      bin++, t0.fTest0Labels[order - 1][counter[order - 1]]->Data());
-    // cout<<__LINE__<<":
-    // "<<t0.fTest0Labels[order-1][counter[order-1]]->Data()<<endl;
+    t0.fTest0Labels[order - 1][counter[order - 1]] = new TString(oa->At(e)->GetName()); // okay...
     counter[order - 1]++;
-    // cout<<TString(line).Data()<<endl;
-    // cout<<oa->GetEntries()<<endl;
   } // for(int e=0; e<nLabels; e++)
-
-  // e) Insanity check on labels:
-  //    Here I am merely checking that harmonic larget than gMaxHarmonic was not requested.
-  for (int b = 1; b <= t0.fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
-    TObjArray* temp = TString(t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)).Tokenize(" ");
-    for (int h = 0; h < temp->GetEntries(); h++) {
-      if (TMath::Abs(TString(temp->At(h)->GetName()).Atoi()) > gMaxHarmonic) {
-        LOGF(info, "\033[1;31m bin = %d, label = %s, gMaxHarmonic = %d\033[0m", b, t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b), static_cast<int>(gMaxHarmonic));
-        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-      } // if(TString(temp->At(h)->GetName()).Atoi() > gMaxHarmonic) {
-    } // for(int h = 0; h < temp->GetEntries(); h++) {
-    delete temp; // yes, otherwise it's a memory leak
-  } // for(int b = 1; b <= t0.fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
+  delete oa;
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
 } // void StoreLabelsInPlaceholder()
-
-//============================================================
-
-bool RetrieveCorrelationsLabels()
-{
-  // Generate the labels of all correlations of interest, i.e. retrieve them
-  // from TH1I *t0.fTest0LabelsPlaceholder
-
-  if (tc.fVerbose) {
-    StartFunction(__FUNCTION__);
-  }
-
-  int counter[gMaxCorrelator] = {0}; // is this safe?
-  for (int o = 0; o < gMaxCorrelator; o++) {
-    counter[o] = 0;
-  } // now it's safe :-)
-
-  int nBins = t0.fTest0LabelsPlaceholder->GetXaxis()->GetNbins();
-
-  int order = -44;
-  for (int b = 1; b <= nBins; b++) {
-    TObjArray* oa = TString(t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b))
-                      .Tokenize(" ");
-    if (!oa) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
-    }
-    order = oa->GetEntries();
-    delete oa; // yes, otherwise it's a memory leak
-    if (0 == order) {
-      continue;
-    } // empty lines, or the label format which is not supported
-    // 1-p => 0, 2-p => 1, etc.:
-    t0.fTest0Labels[order - 1][counter[order - 1]] = new TString(t0.fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)); // okay...
-    counter[order - 1]++;
-  } // for(int b=1;b<=nBins;b++)
-
-  if (tc.fVerbose) {
-    ExitFunction(__FUNCTION__);
-  }
-
-  return true;
-
-} // bool RetrieveCorrelationsLabels()
 
 //============================================================
 
@@ -13384,7 +14359,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
    nParticles = 0;
    for(int i=0;i<nl.ftaNestedLoops[0]->GetSize();i++)
    {
-    if(TMath::Abs(nl.ftaNestedLoops[0]->GetAt(i)) > 0. && TMath::Abs(nl.ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
+    if(std::abs(nl.ftaNestedLoops[0]->GetAt(i)) > 0. && std::abs(nl.ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
    }
   }
   */
@@ -13408,7 +14383,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
     double dPhi1 = nl.ftaNestedLoops[0]->GetAt(i1);
     double dW1 = nl.ftaNestedLoops[1]->GetAt(i1);
     if (1 == order) {
-      value = TMath::Cos(harmonics->GetAt(0) * dPhi1);
+      value = std::cos(harmonics->GetAt(0) * dPhi1);
       weight = dW1;
       profile->Fill(0.5, value, weight);
       continue;
@@ -13420,7 +14395,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
       double dPhi2 = nl.ftaNestedLoops[0]->GetAt(i2);
       double dW2 = nl.ftaNestedLoops[1]->GetAt(i2);
       if (2 == order) {
-        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
+        value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
         weight = dW1 * dW2;
         profile->Fill(0.5, value, weight);
         continue;
@@ -13432,7 +14407,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
         double dPhi3 = nl.ftaNestedLoops[0]->GetAt(i3);
         double dW3 = nl.ftaNestedLoops[1]->GetAt(i3);
         if (3 == order) {
-          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
+          value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
           weight = dW1 * dW2 * dW3;
           profile->Fill(0.5, value, weight);
           continue;
@@ -13444,7 +14419,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
           double dPhi4 = nl.ftaNestedLoops[0]->GetAt(i4);
           double dW4 = nl.ftaNestedLoops[1]->GetAt(i4);
           if (4 == order) {
-            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
+            value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
             weight = dW1 * dW2 * dW3 * dW4;
             profile->Fill(0.5, value, weight);
             continue;
@@ -13456,7 +14431,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
             double dPhi5 = nl.ftaNestedLoops[0]->GetAt(i5);
             double dW5 = nl.ftaNestedLoops[1]->GetAt(i5);
             if (5 == order) {
-              value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
+              value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
               weight = dW1 * dW2 * dW3 * dW4 * dW5;
               profile->Fill(0.5, value, weight);
               continue;
@@ -13468,7 +14443,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
               double dPhi6 = nl.ftaNestedLoops[0]->GetAt(i6);
               double dW6 = nl.ftaNestedLoops[1]->GetAt(i6);
               if (6 == order) {
-                value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
+                value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
                 weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6;
                 profile->Fill(0.5, value, weight);
                 continue;
@@ -13480,7 +14455,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                 double dPhi7 = nl.ftaNestedLoops[0]->GetAt(i7);
                 double dW7 = nl.ftaNestedLoops[1]->GetAt(i7);
                 if (7 == order) {
-                  value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
+                  value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
                   weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7;
                   profile->Fill(0.5, value, weight);
                   continue;
@@ -13492,7 +14467,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                   double dPhi8 = nl.ftaNestedLoops[0]->GetAt(i8);
                   double dW8 = nl.ftaNestedLoops[1]->GetAt(i8);
                   if (8 == order) {
-                    value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
+                    value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
                     weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8;
                     profile->Fill(0.5, value, weight);
                     continue;
@@ -13504,7 +14479,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                     double dPhi9 = nl.ftaNestedLoops[0]->GetAt(i9);
                     double dW9 = nl.ftaNestedLoops[1]->GetAt(i9);
                     if (9 == order) {
-                      value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
+                      value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
                       weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9;
                       profile->Fill(0.5, value, weight);
                       continue;
@@ -13516,7 +14491,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                       double dPhi10 = nl.ftaNestedLoops[0]->GetAt(i10);
                       double dW10 = nl.ftaNestedLoops[1]->GetAt(i10);
                       if (10 == order) {
-                        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
+                        value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
                         weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10;
                         profile->Fill(0.5, value, weight);
                         continue;
@@ -13528,7 +14503,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                         double dPhi11 = nl.ftaNestedLoops[0]->GetAt(i11);
                         double dW11 = nl.ftaNestedLoops[1]->GetAt(i11);
                         if (11 == order) {
-                          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
+                          value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
                           weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11;
                           profile->Fill(0.5, value, weight);
                           continue;
@@ -13540,7 +14515,7 @@ double CalculateCustomNestedLoops(TArrayI* harmonics)
                           double dPhi12 = nl.ftaNestedLoops[0]->GetAt(i12);
                           double dW12 = nl.ftaNestedLoops[1]->GetAt(i12);
                           if (12 == order) {
-                            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
+                            value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
                             weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11 * dW12;
                             profile->Fill(0.5, value, weight);
                             continue;
@@ -13624,7 +14599,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
   // Get the number of particles in this kine bin:
   int nParticles = 0;
   for (int i = 0; i < nl.ftaNestedLoopsKine[qvKine][bin][0]->GetSize(); i++) {
-    if (TMath::Abs(nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i)) > 0.) {
+    if (std::abs(nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i)) > 0.) {
       nParticles++;
     }
   }
@@ -13659,7 +14634,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
     double dPhi1 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i1);
     double dW1 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i1);
     if (1 == order) {
-      value = TMath::Cos(harmonics->GetAt(0) * dPhi1);
+      value = std::cos(harmonics->GetAt(0) * dPhi1);
       weight = dW1;
       profile->Fill(0.5, value, weight);
       continue;
@@ -13671,7 +14646,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
       double dPhi2 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i2);
       double dW2 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i2);
       if (2 == order) {
-        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
+        value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
         weight = dW1 * dW2;
         profile->Fill(0.5, value, weight);
         continue;
@@ -13683,7 +14658,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
         double dPhi3 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i3);
         double dW3 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i3);
         if (3 == order) {
-          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
+          value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
           weight = dW1 * dW2 * dW3;
           profile->Fill(0.5, value, weight);
           continue;
@@ -13695,7 +14670,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
           double dPhi4 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i4);
           double dW4 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i4);
           if (4 == order) {
-            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
+            value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
             weight = dW1 * dW2 * dW3 * dW4;
             profile->Fill(0.5, value, weight);
             continue;
@@ -13707,7 +14682,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
             double dPhi5 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i5);
             double dW5 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i5);
             if (5 == order) {
-              value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
+              value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
               weight = dW1 * dW2 * dW3 * dW4 * dW5;
               profile->Fill(0.5, value, weight);
               continue;
@@ -13719,7 +14694,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
               double dPhi6 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i6);
               double dW6 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i6);
               if (6 == order) {
-                value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
+                value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
                 weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6;
                 profile->Fill(0.5, value, weight);
                 continue;
@@ -13731,7 +14706,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                 double dPhi7 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i7);
                 double dW7 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i7);
                 if (7 == order) {
-                  value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
+                  value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
                   weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7;
                   profile->Fill(0.5, value, weight);
                   continue;
@@ -13743,7 +14718,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                   double dPhi8 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i8);
                   double dW8 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i8);
                   if (8 == order) {
-                    value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
+                    value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
                     weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8;
                     profile->Fill(0.5, value, weight);
                     continue;
@@ -13755,7 +14730,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                     double dPhi9 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i9);
                     double dW9 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i9);
                     if (9 == order) {
-                      value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
+                      value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
                       weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9;
                       profile->Fill(0.5, value, weight);
                       continue;
@@ -13767,7 +14742,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                       double dPhi10 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i10);
                       double dW10 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i10);
                       if (10 == order) {
-                        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
+                        value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
                         weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10;
                         profile->Fill(0.5, value, weight);
                         continue;
@@ -13779,7 +14754,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                         double dPhi11 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i11);
                         double dW11 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i11);
                         if (11 == order) {
-                          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
+                          value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
                           weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11;
                           profile->Fill(0.5, value, weight);
                           continue;
@@ -13791,7 +14766,7 @@ double CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_vari
                           double dPhi12 = nl.ftaNestedLoopsKine[qvKine][bin][0]->GetAt(i12);
                           double dW12 = nl.ftaNestedLoopsKine[qvKine][bin][1]->GetAt(i12);
                           if (12 == order) {
-                            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
+                            value = std::cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
                             weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11 * dW12;
                             profile->Fill(0.5, value, weight);
                             continue;
@@ -14113,20 +15088,27 @@ void DetermineInteractionRateAndCurrentRunDuration(T1 const& collision, T2 const
     StartFunction(__FUNCTION__);
   }
 
-  // a1) Determine interaction rate only for eRec:
   if constexpr (rs == eRec || rs == eQA) {         // TBI 20250112 check still eRecSim mode here
     auto bc = collision.template foundBC_as<T2>(); // I have the same code snippet at other places, keep in sync.
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, static_cast<uint64_t>(bc.timestamp()), static_cast<int>(bc.runNumber()), "ZNC hadronic") * 1.e-3;
-    if (hadronicRate > 0.) {
-      ebye.fInteractionRate = static_cast<float>(hadronicRate);
-    } else {
-      LOGF(warning, "\033[1;31m%s at line %d : hadronicRate = %f is meaningless \033[0m", __FUNCTION__, __LINE__, hadronicRate);
-      // I hit indeed at negative hadronic rate in LHC24ar/559545/apass1 dataset. But I do not really need to bail out here, because that collision in
-      // any case will not pass a cut in configurable cfInteractionRate . Therefore, I print a warning, and then can grep it from the log, if necessary.
-    }
+
+    // a1) Determine interaction rate only for eRec:
+    if (ec.fUseEventCuts[eInteractionRate] || qa.fFillQAEventHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D || mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE] || t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] || es.fCalculateEtaSeparationsAsFunctionOf[AFO_INTERACTIONRATE]) {
+
+      LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up of ~130 MB when calling mRateFetcher.fetch(...) !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, static_cast<uint64_t>(bc.timestamp()), static_cast<int>(bc.runNumber()), "ZNC hadronic") * 1.e-3; // TBI 20250414 memory blow-up
+      if (hadronicRate > 0.) {
+        ebye.fInteractionRate = static_cast<float>(hadronicRate);
+      } else {
+        LOGF(warning, "\033[1;31m%s at line %d : hadronicRate = %f is meaningless \033[0m", __FUNCTION__, __LINE__, hadronicRate);
+        // I hit indeed at negative hadronic rate in LHC24ar/559545/apass1 dataset. But I do not really need to bail out here, because that collision in
+        // any case will not pass a cut in configurable cfInteractionRate . Therefore, I print a warning, and then can grep it from the log, if necessary.
+      }
+    } // if(...)
 
     // a2) Determine the current run duration:
     // TBI 20250107 I could move this to a separate function?
+    // TBI 20250415 I do not see any memory penalty here, so I keep it
     ebye.fCurrentRunDuration = std::floor(bc.timestamp() * 0.001) - tc.fRunTime[eStartOfRun];
     if (ebye.fCurrentRunDuration > tc.fRunTime[eDurationInSec]) {
       LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than tc.fRunTime[eDurationInSec] = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(tc.fRunTime[eDurationInSec]));
@@ -14586,9 +15568,9 @@ void FillQvector(const double& dPhi, const double& dPt, const double& dEta)
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
           wToPowerP = pow(wPhi * wPt * wEta, wp);
-          qv.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi)); // Q-vector with weights
+          qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
-          qv.fQvector[h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // bare Q-vector without weights
+          qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
         }
       } // for(int wp=0;wp<gMaxCorrelator+1;wp++)
     } // for(int h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
@@ -14603,7 +15585,7 @@ void FillQvector(const double& dPhi, const double& dPt, const double& dEta)
             if (es.fEtaSeparationsSkipHarmonics[h]) {
               continue;
             }
-            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * TMath::Cos((h + 1) * dPhi), wPhi * wPt * wEta * TMath::Sin((h + 1) * dPhi));
+            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * dPhi), wPhi * wPt * wEta * std::sin((h + 1) * dPhi));
           }
         } // for (int h = 0; h < gMaxHarmonic; h++) {
       } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -14616,7 +15598,7 @@ void FillQvector(const double& dPhi, const double& dPt, const double& dEta)
               if (es.fEtaSeparationsSkipHarmonics[h]) {
                 continue;
               }
-              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * TMath::Cos((h + 1) * dPhi), wPhi * wPt * wEta * TMath::Sin((h + 1) * dPhi));
+              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * dPhi), wPhi * wPt * wEta * std::sin((h + 1) * dPhi));
             }
           } // for (int h = 0; h < gMaxHarmonic; h++) {
         } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -14718,9 +15700,9 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
           wToPowerP = pow(wPhi * wPt * wEta, wp);
-          qv.fQvector[h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi)); // Q-vector with weights
+          qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
-          qv.fQvector[h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // bare Q-vector without weights
+          qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
         }
       } // for(int wp=0;wp<gMaxCorrelator+1;wp++)
     } // for(int h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
@@ -14735,7 +15717,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
             if (es.fEtaSeparationsSkipHarmonics[h]) {
               continue;
             }
-            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * TMath::Cos((h + 1) * dPhi), wPhi * wPt * wEta * TMath::Sin((h + 1) * dPhi));
+            qv.fQabVector[0][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * dPhi), wPhi * wPt * wEta * std::sin((h + 1) * dPhi));
           }
         } // for (int h = 0; h < gMaxHarmonic; h++) {
       } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -14748,7 +15730,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
               if (es.fEtaSeparationsSkipHarmonics[h]) {
                 continue;
               }
-              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * TMath::Cos((h + 1) * dPhi), wPhi * wPt * wEta * TMath::Sin((h + 1) * dPhi));
+              qv.fQabVector[1][h][e] += TComplex(wPhi * wPt * wEta * std::cos((h + 1) * dPhi), wPhi * wPt * wEta * std::sin((h + 1) * dPhi));
             }
           } // for (int h = 0; h < gMaxHarmonic; h++) {
         } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -14847,9 +15829,9 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
         // TBI 20240212 supported at the moment: e.g. q-vector vs pt can be weighted only with diff. phi(pt) and integrated pt weights.
         // It cannot be weighted in addition with eta weights, since in any case I anticipate I will do always 1-D analysis, by integrating out all other dependencies
         wToPowerP = pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
-        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * TMath::Cos(h * dPhi), wToPowerP * TMath::Sin(h * dPhi)); // q-vector with weights
+        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // q-vector with weights
       } else {
-        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(TMath::Cos(h * dPhi), TMath::Sin(h * dPhi)); // bare q-vector without weights
+        qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare q-vector without weights
       }
     } // for(int wp=0;wp<gMaxCorrelator+1;wp++)
   } // for(int h=0;h<gMaxHarmonic*gMaxCorrelator+1;h++)
@@ -14878,7 +15860,7 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
             if (es.fEtaSeparationsSkipHarmonics[h]) {
               continue;
             }
-            qv.fqabVector[0][bin - 1][h][e] += TComplex(diffPhiWeightsForThisKineVar * kineVarWeight * TMath::Cos((h + 1) * dPhi), diffPhiWeightsForThisKineVar * kineVarWeight * TMath::Sin((h + 1) * dPhi)); // Remark: I can hardwire linear weight like this only for 2-p correlation
+            qv.fqabVector[0][bin - 1][h][e] += TComplex(diffPhiWeightsForThisKineVar * kineVarWeight * std::cos((h + 1) * dPhi), diffPhiWeightsForThisKineVar * kineVarWeight * std::sin((h + 1) * dPhi)); // Remark: I can hardwire linear weight like this only for 2-p correlation
           }
         } // for (int h = 0; h < gMaxHarmonic; h++) {
       } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -14891,7 +15873,7 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
               if (es.fEtaSeparationsSkipHarmonics[h]) {
                 continue;
               }
-              qv.fqabVector[1][bin - 1][h][e] += TComplex(diffPhiWeightsForThisKineVar * kineVarWeight * TMath::Cos((h + 1) * dPhi), diffPhiWeightsForThisKineVar * kineVarWeight * TMath::Sin((h + 1) * dPhi)); // Remark: I can hardwire linear weight like this only for 2-p correlation
+              qv.fqabVector[1][bin - 1][h][e] += TComplex(diffPhiWeightsForThisKineVar * kineVarWeight * std::cos((h + 1) * dPhi), diffPhiWeightsForThisKineVar * kineVarWeight * std::sin((h + 1) * dPhi)); // Remark: I can hardwire linear weight like this only for 2-p correlation
             }
           } // for (int h = 0; h < gMaxHarmonic; h++) {
         } // for (int e = 0; e < gMaxNumberEtaSeparations; e++) { // eta separation
@@ -15068,25 +16050,35 @@ void MainLoopOverParticles(T const& tracks)
       continue;
     }
 
+    // memStatus ~120 (with 'continue')
+
     // *) Fill particle histograms before particle cuts:
     if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D || qa.fFillQAParticleHistograms2D) {
       FillParticleHistograms<rs>(track, eBefore);
     }
+
+    // memStatus ~163 (with 'continue')
 
     // *) Particle cuts counters (use only during QA, as this is computationally heavy):
     if (pc.fUseParticleCutCounterAbsolute || pc.fUseParticleCutCounterSequential) {
       ParticleCutsCounters<rs>(track);
     }
 
+    // memStatus ~164 (with 'continue')
+
     // *) Particle cuts:
     if (!ParticleCuts<rs>(track, eCut)) { // Main call for event cuts.
       continue;                           // not return!!
     }
 
+    // memStatus ~162 (with 'continue')
+
     // *) Fill particle histograms after particle cuts:
     if (ph.fFillParticleHistograms || ph.fFillParticleHistograms2D || qa.fFillQAParticleHistograms2D) {
       FillParticleHistograms<rs>(track, eAfter);
     }
+
+    // memStatus ~164 (with 'continue')
 
     // *) Intitialize local kinematic variables:
     //    Remark: for "eRecSim" processing, kinematics is taken from "reconstructed".
@@ -15214,22 +16206,26 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
   DetermineOccupancy<rs>(collision);
 
   // *) Determine collision interaction rate and current run duration:
-  DetermineInteractionRateAndCurrentRunDuration<rs>(collision, bcs);
+  DetermineInteractionRateAndCurrentRunDuration<rs>(collision, bcs); // TBI 20250414 temporary commented out, because of memory blow-up
 
   // *) Determine vertex z position:
   DetermineVertexZ<rs>(collision);
 
   // *) Determine additional QA thingies:
   if (qa.fFillQAEventHistograms2D || qa.fFillQAParticleHistograms2D || qa.fFillQAParticleEventHistograms2D || qa.fFillQACorrelationsVsHistograms2D || qa.fFillQACorrelationsVsInteractionRateVsProfiles2D) {
-    // Remark: I implement ideally here only the getters for which the subsription to additional non-standard tables was needed for QA purposes.
+    // Remark: I implement ideally here only the getters for which the subscription to additional non-standard tables was needed for QA purposes.
     DetermineQAThingies<rs>(collision, bcs);
   }
+
+  // memStatus: ~116
 
   // *) Fill event histograms before event cuts:
   if (eh.fFillEventHistograms || qa.fFillQAEventHistograms2D || qa.fFillQAParticleEventHistograms2D) {
     // Remark: I do not above the flag fFillQACorrelationsVsHistograms2D, because as a part of QA I calculate <2> only after cuts in any case
     FillEventHistograms<rs>(collision, tracks, eBefore);
   }
+
+  // memStatus: ~117
 
   // *) Print info on the current event number (total, before cuts):
   if (tc.fVerboseEventCounter) {
@@ -15241,13 +16237,19 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
     EventCutsCounters<rs>(collision, tracks);
   }
 
+  // memStatus: ~117
+
   // *) Event cuts:
   if (!EventCuts<rs>(collision, tracks, eCut)) { // Main call for event cuts
     return;
   }
 
+  // memStatus: ~117
+
   // *) Main loop over particles:
   MainLoopOverParticles<rs>(tracks);
+
+  // memStatus: ~162 (all particle histograms), ~133 (only phi, pt, eta)
 
   // *) Determine multiplicity of this event, for all "vs. mult" results:
   DetermineMultiplicity();
@@ -15297,6 +16299,8 @@ void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
     LOGF(info, "\033[1;32m=> Global timer: Steer ends ... %.6f\033[0m\n", tc.fTimer[eGlobal]->RealTime());
     tc.fTimer[eGlobal]->Continue(); // yes
   }
+
+  // memStatus: ~160 +- 5
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
