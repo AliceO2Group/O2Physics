@@ -126,6 +126,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Helium3")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Helium3", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("Helium3Primary")) {
     MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);

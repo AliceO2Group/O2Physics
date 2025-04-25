@@ -302,6 +302,9 @@ struct HfDataCreatorCharmResoReduced {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
   }
 
   /// Basic track quality selections for V0 daughters
