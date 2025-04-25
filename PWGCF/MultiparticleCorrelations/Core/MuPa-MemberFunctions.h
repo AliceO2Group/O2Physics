@@ -4574,7 +4574,7 @@ void BookEventCutsHistograms()
 
 void GetP0P1(const char* formula, eEventCutsFormulas whichCutFormula)
 {
-  // This is a sort of temporary parser, which extracts from linear expression p0 + p1*x coefficients p0 and p1, and store them into float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}
+  // This is a sort of temporary parser, which extracts from linear expression p0 + p1*x coefficients p0 and p1, and stores them into float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}
   // Remark #0: I need all this gym until large memory consumption with TFormula is resolved;
   // Remark #1: Remove all blanks in 'formula' before calling this function;
   // Remark #2: If I need to go beyond p1, use recursion instead.

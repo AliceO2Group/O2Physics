@@ -184,7 +184,7 @@ struct EventCuts {
   int fEventCutCounterBinNumber[2] = {1, 1};                   // bin counter for set bin labels in fEventCutCounterHist
   float fdEventCuts[eEventCuts_N][2] = {{0.}};                 // event cuts defined via [min,max)
   TString fsEventCuts[eEventCuts_N] = {""};                    // event cuts defined via string
-  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}};     //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each event cut triggered
+  TH1F* fEventCutCounterHist[2][eCutCounter_N] = {{NULL}};     //!<! [rec,sim][see enum eCutCounter] histogram to store how many times each event cut triggered
   int fBeforeAfterColor[2] = {kRed, kGreen};                   // color code before and after cuts
   float fCentralityCorrelationsCutTreshold = 5.;               // see bool CentralityCorrelationCut()
   TString fCentralityCorrelationsCutVersion = "Absolute";      // see bool CentralityCorrelationCut()

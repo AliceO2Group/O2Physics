@@ -153,7 +153,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
-    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms TBI 20250412 this is true only if I can use Clone()
+    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms TBI 20250412 this is true only if I can use Clone()
     BookQAHistograms();
     BookEventHistograms();
     BookEventCutsHistograms();
