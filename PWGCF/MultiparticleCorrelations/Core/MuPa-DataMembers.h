@@ -33,7 +33,8 @@ TString sBaseListName = "Default list name"; // yes, I declare it separately, be
 OutputObj<TList> fBaseList{sBaseListName.Data(),
                            OutputObjHandlingPolicy::AnalysisObject,
                            OutputObjSourceType::OutputObjSource};
-TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
+TProfile* fBasePro = NULL;           //!<! keeps flags relevant for the whole analysis
+TObjArray* fBaseProBinLabels = NULL; // helper for fBasePro to hold bin labels, until SetBinLabel(...) large memory consumption is resolved
 
 // *) Task configuration:
 struct TaskConfiguration {
@@ -65,12 +66,16 @@ struct TaskConfiguration {
 
   bool fUseStopwatch = false;            // do some basing profiling with TStopwatch for where the execution time is going
   TStopwatch* fTimer[eTimer_N] = {NULL}; // stopwatch, global (overal execution time) and local
-  float fFloatingPointPrecision = 1.e-6; // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
+  float fFloatingPointPrecision = 1.e-6; // two floats are the same if abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
   int fSequentialBailout = 0;            // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
   bool fUseSpecificCuts = false;         // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
   TString fWhichSpecificCuts = "";       // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
   TString fSkipTheseRuns = "";           // comma-separated list of runs which will be skipped during analysis in hl (a.k.a. "bad runs")
   bool fSkipRun = false;                 // based on the content of fWhichSpecificCuts, skip or not the current run
+  bool fUseSetBinLabel = false;          // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
+                                         // See also local executable PostprocessLabels.C
+  bool fUseClone = false;                // until Clone(...) large memory consumption is resolved, do not use hist->Clone(...), see ROOT Forum
+  bool fUseFormula = false;              // until TFormula large memory consumption is resolved, do not use, see ROOT Forum
 } tc;                                    // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
@@ -184,7 +189,9 @@ struct EventCuts {
   float fCentralityCorrelationsCutTreshold = 5.;               // see bool CentralityCorrelationCut()
   TString fCentralityCorrelationsCutVersion = "Absolute";      // see bool CentralityCorrelationCut()
   float fCentralityValues[2] = {0.};                           // [0] value of first cent. estimator, [1] = value of second cent. estimator, when CentralityCorrelationsCut is requested
-  TFormula* fEventCutsFormulas[eEventCutsFormulas_N] = {NULL}; // see enum
+  TFormula* fEventCutsFormulas[eEventCutsFormulas_N] = {NULL}; // see enum TBI 20250415 I do not use it for the time being, due to memory blow-up in TFormula
+  float fdEventCutsFormulas[eEventCutsFormulas_N][2] = {{0.}}; // I need this only temporarily until large memory consumption with TFormula is resolved.
+                                                               // I support at the moment only linear cut in the format p0 + p1*x. Then, [0] = p0, [1] = p1.
 } ec;                                                          // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
@@ -235,7 +242,7 @@ struct ParticleCuts {
   int fParticleCutCounterBinNumber[2] = {1, 1};               // bin counter for set bin labels in fParticleCutCounterHist
   float fdParticleCuts[eParticleCuts_N][2] = {{0.}};          // particles cuts defined via [min,max) . Remark: I use here eParticleHistograms_N , not to duplicate these enums for ParticleCuts.
   TString fsParticleCuts[eParticleCuts_N] = {""};             // particles cuts defined via booleans via string
-  TH1I* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
+  TH1F* fParticleCutCounterHist[2][eCutCounter_N] = {{NULL}}; //!<! [rec,sim][see enum eCutCounter] histogram to store how many any times each particle cut triggered
   TFormula* fPtDependentDCAxyFormula = NULL;                  // the actual formula, used to evaluate for a given pT, the corresponding DCAxy, where the parameterization is given by configurable cfPtDependentDCAxyParameterization
 } pc;                                                         // "pc" is a common label for objects in this struct
 
@@ -356,7 +363,6 @@ struct Test0 {
   TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
   bool fUseDefaultLabels = false;                                               // use default labels hardwired in GetDefaultObjArrayWithLabels(), the choice is made with cfWhichDefaultLabels
   TString fWhichDefaultLabels = "";                                             // only for testing purposes, select one set of default labels, see GetDefaultObjArrayWithLabels for supported options
-  TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
 } t0;                                                                           // "t0" labels an instance of this group of histograms
 
 // *) Eta separations:

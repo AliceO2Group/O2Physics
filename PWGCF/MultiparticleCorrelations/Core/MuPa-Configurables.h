@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file MuPa-Configurables.h
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
 
@@ -34,11 +38,14 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseFisherYates{"cfUseFisherYates", false, "use or not Fisher-Yates algorithm to randomize particle indices"};
   Configurable<int> cfFixedNumberOfRandomlySelectedTracks{"cfFixedNumberOfRandomlySelectedTracks", -1, "set to some integer > 0, to apply and use. Set to <=0, to ignore."};
   Configurable<bool> cfUseStopwatch{"cfUseStopwatch", false, "if true, some basic info on time execution is printed, here and there. Very loosely, this can be used for execution time profiling."};
-  Configurable<float> cfFloatingPointPrecision{"cfFloatingPointPrecision", 0.000001, "two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision"};
+  Configurable<float> cfFloatingPointPrecision{"cfFloatingPointPrecision", 0.000001, "two floats are the same if abs(f1 - f2) < fFloatingPointPrecision"};
   Configurable<int> cfSequentialBailout{"cfSequentialBailout", 0, "if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV"};
   Configurable<bool> cfUseSpecificCuts{"cfUseSpecificCuts", false, "if true, analysis-specific cuts set via configurable cfWhichSpecificCuts are applied after DefaultCuts(). "};
   Configurable<std::string> cfWhichSpecificCuts{"cfWhichSpecificCuts", "some supported set of analysis-specific cuts (e.g. LHC23zzh, ...)", "determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts"};
   Configurable<std::string> cfSkipTheseRuns{"cfSkipTheseRuns", "", "Set here via comma-separated list which runs will be skipped during hl analysis (a.k.a. \"bad runs\"). Leave empty to ignore. Example format and list for LHC23zzh: \"544116,544091\""};
+  Configurable<bool> cfUseSetBinLabel{"cfUseSetBinLabel", false, "until hist->SetBinLabel(...) large memory consumption is resolved, for each histogram dump all that info in the y-axis title. See also local executable PostprocessLabels.C, where I do the final bin labeling offline"};
+  Configurable<bool> cfUseClone{"cfUseClone", false, "until hist->Clone(...) large memory consumption is resolved, do not use cloning. See ROOT Forum thread."};
+  Configurable<bool> cfUseFormula{"cfUseFormula", false, "until TFormula large memory consumption is resolved, do not use this class. See ROOT Forum thread."};
 } cf_tc;
 
 // *) QA:
@@ -116,8 +123,8 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseNoPileupFromSPD{"cfUseNoPileupFromSPD", false, "TBI 20250318 explanation"};
   Configurable<bool> cfUseNoSPDOnVsOfPileup{"cfUseNoSPDOnVsOfPileup", false, "TBI 20250318 explanation"};
   Configurable<std::string> cfOccupancyEstimator{"cfOccupancyEstimator", "FT0COccupancyInTimeRange", "set here some supported occupancy estimator (TrackOccupancyInTimeRange, FT0COccupancyInTimeRange, ..."};
-  Configurable<std::string> cfRefMultVsNContrUp{"cfRefMultVsNContrUp", "1200. + 0.20*x", "set here some TF1 formula for the upper boundary cut in RefMult_vs_NContr correlation"};
-  Configurable<std::string> cfRefMultVsNContrLow{"cfRefMultVsNContrLow", "-650. + 0.08*x", "set here some TF1 formula for the lower boundary cut in RefMult_vs_NContr correlation"};
+  Configurable<std::string> cfRefMultVsNContrUp{"cfRefMultVsNContrUp", "1200. + 0.20*x", "set here some formula in the mandatory format \"p0 + p1*x\" for the upper boundary cut in RefMult_vs_NContr correlation"};
+  Configurable<std::string> cfRefMultVsNContrLow{"cfRefMultVsNContrLow", "-650. + 0.08*x", "set here some in the mandatory format \"p0 + p1*x\" for the lower boundary cut in RefMult_vs_NContr correlation"};
   Configurable<std::string> cfCentralityCorrelationsCut{"cfCentralityCorrelationsCut", "CentFT0C_CentFT0M", "Indicate two centrality estimators for the calculation of centrality correlation cut"};
   Configurable<float> cfCentralityCorrelationsCutTreshold{"cfCentralityCorrelationsCutTreshold", 10.0, "set the treshold for centrality correlation cut"};
   Configurable<std::string> cfCentralityCorrelationsCutVersion{"cfCentralityCorrelationsCutVersion", "Absolute", "set the version of centrality correlation cut. Supported: \"Relative\" and \"Absolute\""};
@@ -274,14 +281,14 @@ struct : ConfigurableGroup {
   Configurable<bool> cfSaveResultsHistograms{"cfSaveResultsHistograms", false, "save or not results histograms"};
 
   // Fixed-length binning (default):
-  Configurable<std::vector<float>> cfFixedLength_mult_bins{"cfFixedLength_mult_bins", {2000, 0., 20000.}, "nMultBins, multMin, multMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_cent_bins{"cfFixedLength_cent_bins", {110, 0., 110.}, "nCentBins, centMin, centMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_pt_bins{"cfFixedLength_pt_bins", {1000, 0., 10.}, "nPtBins, ptMin, ptMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_eta_bins{"cfFixedLength_eta_bins", {80, -2., 2.}, "nEtaBins, etaMin, etaMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_occu_bins{"cfFixedLength_occu_bins", {200, 0., 60000.}, "nOccuBins, occuMin, occuMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_ir_bins{"cfFixedLength_ir_bins", {1000, 0., 100.}, "nirBins, irMin, irMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_crd_bins{"cfFixedLength_crd_bins", {100000, 0., 100000.}, "ncrdBins, crdMin, crdMax (only for results histograms)"};
-  Configurable<std::vector<float>> cfFixedLength_vz_bins{"cfFixedLength_vz_bins", {400, -20., 20.}, "nvzBins, vzMin, vzMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthMultBins{"cfFixedLengthMultBins", {2000, 0., 20000.}, "nMultBins, multMin, multMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthCentBins{"cfFixedLengthCentBins", {110, 0., 110.}, "nCentBins, centMin, centMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthPtBins{"cfFixedLengthPtBins", {1000, 0., 10.}, "nPtBins, ptMin, ptMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthEtaBins{"cfFixedLengthEtaBins", {80, -2., 2.}, "nEtaBins, etaMin, etaMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthOccuBins{"cfFixedLengthOccuBins", {200, 0., 60000.}, "nOccuBins, occuMin, occuMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthIRBins{"cfFixedLengthIRBins", {1000, 0., 100.}, "nirBins, irMin, irMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthCRDBins{"cfFixedLengthCRDBins", {100000, 0., 100000.}, "ncrdBins, crdMin, crdMax (only for results histograms)"};
+  Configurable<std::vector<float>> cfFixedLengthVzBins{"cfFixedLengthVzBins", {400, -20., 20.}, "nvzBins, vzMin, vzMax (only for results histograms)"};
 
   // Variable-length binning (per request):
   Configurable<bool> cfUseVariableLength_mult_bins{"cfUseVariableLength_mult_bins", false, "use or not variable-length multiplicity bins"};

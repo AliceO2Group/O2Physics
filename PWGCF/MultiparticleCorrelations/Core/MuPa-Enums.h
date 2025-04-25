@@ -34,6 +34,9 @@ enum eConfiguration {
   eUseSpecificCuts,
   eWhichSpecificCuts,
   eSkipTheseRuns,
+  eUseSetBinLabel, // Use or not setter SetBinLabel(...)
+  eUseClone,       // Use or not ->Clone()
+  eUseFormula,     // Use or not class TFormula
   eConfiguration_N
 };
 
