@@ -1929,25 +1929,25 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       registry.add("hV0DauNegXDelta", "x^{#pi^{-}} - x^{MC}", kTH1D, {axisPull});
       registry.add("hV0DauNegYDelta", "y^{#pi^{-}} - y^{MC}", kTH1D, {axisPull});
       registry.add("hV0DauNegZDelta", "z^{#pi^{-}} - z^{MC}", kTH1D, {axisPull});
-      registry.add("hV0XDelta", "x^{#Lambda^{0}} - x^{MC}", kTH1D, {axisPull});
-      registry.add("hV0YDelta", "y^{#Lambda^{0}} - y^{MC}", kTH1D, {axisPull});
-      registry.add("hV0ZDelta", "z^{#Lambda^{0}} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hV0XDelta", "x^{#Lambda} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hV0YDelta", "y^{#Lambda} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hV0ZDelta", "z^{#Lambda} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXiBachelorXDelta", "x^{Bachelor} - x^{MC}", kTH1D, {axisPull});
-      registry.add("hXiBachelorYDelta", "y^{Bachelor} - y^{MC}", kTH1D, {axisPull});
-      registry.add("hXiBachelorZDelta", "z^{Bachelor} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hXiBachelorXDelta", "x^{#pi^{-} from #Xi^{-}} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXiBachelorYDelta", "y^{#pi^{-} from #Xi^{-}} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXiBachelorZDelta", "z^{#pi^{-} from #Xi^{-}} - z^{MC}", kTH1D, {axisPull});
 
       registry.add("hXiXDelta", "x^{#Xi^{-}} - x^{MC}", kTH1D, {axisPull});
       registry.add("hXiYDelta", "y^{#Xi^{-}} - y^{MC}", kTH1D, {axisPull});
       registry.add("hXiZDelta", "z^{#Xi^{-}} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXic0BachelorXDelta", "x^{CharmBachelor} - x^{MC}", kTH1D, {axisPull});
-      registry.add("hXic0BachelorYDelta", "y^{CharmBachelor} - y^{MC}", kTH1D, {axisPull});
-      registry.add("hXic0BachelorZDelta", "z^{CharmBachelor} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorXDelta", "x^{#pi^{+} from #Xi_{c}^{0}} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorYDelta", "y^{#pi^{+} from #Xi_{c}^{0}} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0BachelorZDelta", "z^{#pi^{+} from #Xi_{c}^{0}} - z^{MC}", kTH1D, {axisPull});
 
-      registry.add("hXic0XDelta", "x^{#Xi_c^0} - x^{MC}", kTH1D, {axisPull});
-      registry.add("hXic0YDelta", "y^{#Xi_c^0} - y^{MC}", kTH1D, {axisPull});
-      registry.add("hXic0ZDelta", "z^{#Xi_c^0} - z^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0XDelta", "x^{#Xi_(c)^(0)} - x^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0YDelta", "y^{#Xi_(c)^(0)} - y^{MC}", kTH1D, {axisPull});
+      registry.add("hXic0ZDelta", "z^{#Xi_(c)^(0)} - z^{MC}", kTH1D, {axisPull});
       // delta over pt
       registry.add("hV0DauPosXDeltaVsPt", "#Delta_{x}(p) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hV0DauPosYDeltaVsPt", "#Delta_{y}(p) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
@@ -1955,21 +1955,21 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       registry.add("hV0DauNegXDeltaVsPt", "#Delta_{x}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hV0DauNegYDeltaVsPt", "#Delta_{y}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hV0DauNegZDeltaVsPt", "#Delta_{z}(#pi) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hV0XDeltaVsPt", "#Delta_{x}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hV0YDeltaVsPt", "#Delta_{y}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hV0ZDeltaVsPt", "#Delta_{z}(#Lambda^(0)) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0XDeltaVsPt", "#Delta_{x}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0YDeltaVsPt", "#Delta_{y}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hV0ZDeltaVsPt", "#Delta_{z}(#Lambda) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXiBachelorXDeltaVsPt", "#Delta_{x}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hXiBachelorYDeltaVsPt", "#Delta_{y}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hXiBachelorZDeltaVsPt", "#Delta_{z}(Bachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorXDeltaVsPt", "#Delta_{x}(#pi^{-} from #Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorYDeltaVsPt", "#Delta_{y}(#pi^{-} from #Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXiBachelorZDeltaVsPt", "#Delta_{z}(#pi^{-} from #Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
       registry.add("hXiXDeltaVsPt", "#Delta_{x}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hXiYDeltaVsPt", "#Delta_{y}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hXiZDeltaVsPt", "#Delta_{z}(#Xi^{-}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
-      registry.add("hXic0BachelorXDeltaVsPt", "#Delta_{x}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
-      registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(CharmBachelor) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorXDeltaVsPt", "#Delta_{x}(#pi^{+} from #Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorYDeltaVsPt", "#Delta_{y}(#pi^{+} from #Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
+      registry.add("hXic0BachelorZDeltaVsPt", "#Delta_{z}(#pi^{+} from #Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
 
       registry.add("hXic0XDeltaVsPt", "#Delta_{x}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
       registry.add("hXic0YDeltaVsPt", "#Delta_{y}(#Xi_{c}^{0}) vs. p_{T}", HistType::kTH2D, {axisPt, axisPull});
@@ -2036,6 +2036,15 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       registry.add("hCascXDelta", "x^{#Xi^{-}} - x^{MC}(Default)", kTH1D, {axisPull});
       registry.add("hCascYDelta", "y^{#Xi^{-}} - y^{MC}(Default)", kTH1D, {axisPull});
       registry.add("hCascZDelta", "z^{#Xi^{-}} - z^{MC}(Default)", kTH1D, {axisPull});
+
+      // Pt Resolution
+      registry.add("hV0DauPosPtRes", "Pt Resolution (p)", kTH1D, {axisPull});
+      registry.add("hV0DauNegPtRes", "Pt Resolution (#pi^{-} from #Lambda)", kTH1D, {axisPull});
+      registry.add("hV0PtRes", "Pt Resolution (V0)", kTH1D, {axisPull});
+      registry.add("hXiBachelorPtRes", "Pt Resolution (#pi^{-} from #Xi^{-})", kTH1D, {axisPull});
+      registry.add("hXiPtRes", "Pt Resolution (#Xi^{-})", kTH1D, {axisPull});
+      registry.add("hXic0BachelorPtRes", "Pt Resolution (#pi^{+} from #Xi_{c}^{0})", kTH1D, {axisPull});
+      registry.add("hXic0PtRes", "Pt Resolution (#Xi_{c}^{0})", kTH1D, {axisPull});
     }
   }
 
@@ -2647,6 +2656,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             registry.fill(HIST("hLambdaXDelta"), lambdaXDelta);
             registry.fill(HIST("hLambdaYDelta"), lambdaYDelta);
             registry.fill(HIST("hLambdaZDelta"), lambdaZDelta);
+
+            registry.fill(HIST("hV0DauPosPtRes"), (candidate.v0DauPosPt() - mcV0DauPos.pt()) / candidate.v0DauPosPt());
+            registry.fill(HIST("hV0DauNegPtRes"), (candidate.v0DauNegPt() - mcV0DauNeg.pt()) / candidate.v0DauNegPt());
+            registry.fill(HIST("hV0PtRes"), (candidate.v0Pt() - mcV0.pt()) / candidate.v0Pt());
           }
           // Xi- → pi pi p
           indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
@@ -2710,6 +2723,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
               registry.fill(HIST("hCascXDelta"), cascXDelta);
               registry.fill(HIST("hCascYDelta"), cascYDelta);
               registry.fill(HIST("hCascZDelta"), cascZDelta);
+
+              registry.fill(HIST("hXiBachelorPtRes"), (candidate.xiBachelorPt() - mcXiBachelor.pt()) / candidate.xiBachelorPt());
+              registry.fill(HIST("hXiPtRes"), (candidate.xiPt() - mcXi.pt()) / candidate.xiPt());
             }
 
             // Xic → pi pi pi p
@@ -2765,6 +2781,9 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                 registry.fill(HIST("hXic0XPullVsPt"), xic0Pt, xic0XPull);
                 registry.fill(HIST("hXic0YPullVsPt"), xic0Pt, xic0YPull);
                 registry.fill(HIST("hXic0ZPullVsPt"), xic0Pt, xic0ZPull);
+
+                registry.fill(HIST("hXic0BachelorPtRes"), (candidate.xic0BachelorPt() - mcXic0Bachelor.pt()) / candidate.xic0BachelorPt());
+                registry.fill(HIST("hXic0PtRes"), (candidate.xic0Pt() - mcXic0.pt()) / candidate.xic0Pt());
               }
             }
           }
