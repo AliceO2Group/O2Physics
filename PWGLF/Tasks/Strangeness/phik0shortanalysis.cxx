@@ -2033,7 +2033,7 @@ struct Phik0shortanalysis {
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processPhiMCGen, "Process function for Phi in MCGen", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiMCGen, "Process function for Phi in MCGen (to be removed)", false);
 
   void processPhiK0SMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
   {
@@ -2269,11 +2269,11 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          dataPhiK0SHist.fill(HIST("h5PhiK0SData"), 0, multiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), 1.0);
+          dataPhiK0SHist.fill(HIST("h5PhiK0SData"), 0, multiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
           for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
             if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
               continue;
-            dataPhiK0SHist.fill(HIST("h5PhiK0SData"), i + 1, multiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), 1.0);
+            dataPhiK0SHist.fill(HIST("h5PhiK0SData"), i + 1, multiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
           }
         }
 
@@ -2289,11 +2289,11 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          dataPhiPionHist.fill(HIST("h6PhiPiData"), 0, multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), 1.0);
+          dataPhiPionHist.fill(HIST("h6PhiPiData"), 0, multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
           for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
             if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
               continue;
-            dataPhiPionHist.fill(HIST("h6PhiPiData"), i + 1, multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), 1.0);
+            dataPhiPionHist.fill(HIST("h6PhiPiData"), i + 1, multiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
           }
         }
       }
@@ -2380,11 +2380,11 @@ struct Phik0shortanalysis {
           if (std::abs(v0.yK0Short()) > cfgYAcceptance)
             continue;
 
-          closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), 0, genmultiplicity, v0.pt(), Vv00.mK0Short(), recPhi.M(), 1.0);
+          closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), 0, genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
           for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
             if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
               continue;
-            closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), i + 1, genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M(), 1.0);
+            closureMCPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), i + 1, genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
           }
         }
 
@@ -2406,11 +2406,11 @@ struct Phik0shortanalysis {
 
           float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
-          closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), 0, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), 1.0);
+          closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), 0, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
           for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
             if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
               continue;
-            closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), i + 1, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M(), 1.0);
+            closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), i + 1, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
           }
         }
       }
@@ -2421,6 +2421,143 @@ struct Phik0shortanalysis {
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionMCClosure2D, "Process function for Phi-K0S and Phi-Pion Correlations in MCClosure2D", false);
+
+  void processPhiK0SPionMCReco2D(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const&)
+  {
+    if (!acceptEventQA<true>(collision, true))
+      return;
+
+    float multiplicity = collision.centFT0M();
+    mcEventHist.fill(HIST("hRecMCMultiplicityPercent"), multiplicity);
+
+    if (!collision.has_mcCollision())
+      return;
+    mcEventHist.fill(HIST("hRecMCEventSelection"), 6); // with at least a gen collision
+
+    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+    float genmultiplicity = mcCollision.centFT0M();
+    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+
+    // Defining positive and negative tracks for phi reconstruction
+    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    bool isCountedPhi = false;
+
+    // Loop over all positive tracks
+    for (const auto& track1 : posThisColl) {
+      if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
+        continue; // topological and PID selection
+
+      auto track1ID = track1.globalIndex();
+
+      if (!track1.has_mcParticle())
+        continue;
+      auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+      if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
+        continue;
+
+      // Loop over all negative tracks
+      for (const auto& track2 : negThisColl) {
+        if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+          continue; // topological and PID selection
+
+        auto track2ID = track2.globalIndex();
+        if (track2ID == track1ID)
+          continue; // condition to avoid double counting of pair
+
+        if (!track2.has_mcParticle())
+          continue;
+        auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
+        if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+          continue;
+
+        bool isMCMotherPhi = false;
+        for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
+          for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
+            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+              continue;
+            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
+              continue;
+            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+              continue;
+            isMCMotherPhi = true;
+          }
+        }
+        if (!isMCMotherPhi)
+          continue;
+
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
+          continue;
+
+        mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
+
+        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          continue;
+
+        if (!isCountedPhi) {
+          mcEventHist.fill(HIST("hRecMCEventSelection"), 7); // at least a Phi in the event
+          isCountedPhi = true;
+        }
+
+        // V0 already reconstructed by the builder
+        for (const auto& v0 : V0s) {
+          if (!v0.has_mcParticle()) {
+            continue;
+          }
+
+          auto v0mcparticle = v0.mcParticle();
+          if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
+            continue;
+
+          const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
+          const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
+
+          // Cut on V0 dynamic columns
+          if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+            continue;
+          if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+            continue;
+
+          if (std::abs(v0.yK0Short()) > cfgYAcceptance)
+            continue;
+
+          mcPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), 0, genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
+          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(v0.yK0Short() - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+              continue;
+            mcPhiK0SHist.fill(HIST("h5PhiK0SMCClosure"), i + 1, genmultiplicity, v0.pt(), v0.mK0Short(), recPhi.M());
+          }
+        }
+
+        // Loop over all primary pion candidates
+        for (const auto& track : fullMCTracks) {
+          if (!track.has_mcParticle())
+            continue;
+
+          auto mcTrack = track.mcParticle_as<aod::McParticles>();
+          if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus || !mcTrack.isPhysicalPrimary())
+            continue;
+
+          if (!selectionPion<true, true>(track, false))
+            continue;
+
+          if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
+            continue;
+
+          closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), 0, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
+          for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
+            if (std::abs(track.rapidity(massPi) - recPhi.Rapidity()) > cfgDeltaYAcceptanceBins->at(i))
+              continue;
+            closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), i + 1, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionMCReco2D, "Process function for Phi-K0S and Phi-Pion Correlations Efficiency correction in MCReco2D", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
