@@ -2546,14 +2546,8 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     int8_t sign = -9;
     int8_t signCasc = -9;
     int8_t signV0 = -9;
-    int8_t flag = 0;
-    McMatchFlag debug{McMatchFlag::None};
 
     for (const auto& candidate : candidates) {
-
-      flag = 0;
-      debug = McMatchFlag::None;
-      std::vector<int> idxBhadMothers{};
 
       auto arrayDaughters = std::array{candidate.template bachelorFromCharmBaryon_as<MyTracksWMc>(), // bachelor <- charm baryon
                                        candidate.template bachelor_as<MyTracksWMc>(),                // bachelor <- cascade
@@ -2572,225 +2566,204 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
       // Xic0 -> xi pi matching
       if constexpr (decayChannel != aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-        LOGF(info, "ERROR: Quality validation is restricted to Xic0 → Xi Pi decay processes at this stage");
+        LOGF(fatal, "ERROR: Quality validation is restricted to Xic0 → Xi Pi decay processes at this stage");
       }
       if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         // Lambda → p pi
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
-        if (indexRec == -1) {
-          debug = McMatchFlag::V0Unmatched;
-        }
-        if (indexRec > -1) {
-          if (signV0 == 1) {
-            auto mcV0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+        if (indexRec > -1 && signV0 == 1) {
+          auto mcV0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
 
-            float v0MassPull = (candidate.invMassLambda() - MassLambda0) / candidate.invMassV0Err();
-            registry.fill(HIST("hV0MassPullVsPt"), candidate.v0Pt(), v0MassPull);
+          float v0MassPull = (candidate.invMassLambda() - MassLambda0) / candidate.invMassV0Err();
+          registry.fill(HIST("hV0MassPullVsPt"), candidate.v0Pt(), v0MassPull);
 
-            float v0DauPosXDelta = candidate.v0DauPosX() - mcV0DauPos.vx();
-            float v0DauPosYDelta = candidate.v0DauPosY() - mcV0DauPos.vy();
-            float v0DauPosZDelta = candidate.v0DauPosZ() - mcV0DauPos.vz();
-            float v0DauPosPt = mcV0DauPos.pt();
-            float v0DauPosXPull = v0DauPosXDelta / candidate.v0DauPosXError();
-            float v0DauPosYPull = v0DauPosYDelta / candidate.v0DauPosYError();
-            float v0DauPosZPull = v0DauPosZDelta / candidate.v0DauPosZError();
+          float v0DauPosXDelta = candidate.v0DauPosX() - mcV0DauPos.vx();
+          float v0DauPosYDelta = candidate.v0DauPosY() - mcV0DauPos.vy();
+          float v0DauPosZDelta = candidate.v0DauPosZ() - mcV0DauPos.vz();
+          float v0DauPosPt = mcV0DauPos.pt();
+          float v0DauPosXPull = v0DauPosXDelta / candidate.v0DauPosXError();
+          float v0DauPosYPull = v0DauPosYDelta / candidate.v0DauPosYError();
+          float v0DauPosZPull = v0DauPosZDelta / candidate.v0DauPosZError();
 
-            float v0DauNegXDelta = candidate.v0DauNegX() - mcV0DauNeg.vx();
-            float v0DauNegYDelta = candidate.v0DauNegY() - mcV0DauNeg.vy();
-            float v0DauNegZDelta = candidate.v0DauNegZ() - mcV0DauNeg.vz();
-            float v0DauNegPt = mcV0DauNeg.pt();
-            float v0DauNegXPull = v0DauNegXDelta / candidate.v0DauNegXError();
-            float v0DauNegYPull = v0DauNegYDelta / candidate.v0DauNegYError();
-            float v0DauNegZPull = v0DauNegZDelta / candidate.v0DauNegZError();
+          float v0DauNegXDelta = candidate.v0DauNegX() - mcV0DauNeg.vx();
+          float v0DauNegYDelta = candidate.v0DauNegY() - mcV0DauNeg.vy();
+          float v0DauNegZDelta = candidate.v0DauNegZ() - mcV0DauNeg.vz();
+          float v0DauNegPt = mcV0DauNeg.pt();
+          float v0DauNegXPull = v0DauNegXDelta / candidate.v0DauNegXError();
+          float v0DauNegYPull = v0DauNegYDelta / candidate.v0DauNegYError();
+          float v0DauNegZPull = v0DauNegZDelta / candidate.v0DauNegZError();
 
-            float v0XDelta = candidate.v0VtxX() - mcV0DauNeg.vx();
-            float v0YDelta = candidate.v0VtxY() - mcV0DauNeg.vy();
-            float v0ZDelta = candidate.v0VtxZ() - mcV0DauNeg.vz();
-            float v0Pt = mcV0.pt();
-            float v0XPull = v0XDelta / candidate.v0XError();
-            float v0YPull = v0YDelta / candidate.v0YError();
-            float v0ZPull = v0ZDelta / candidate.v0ZError();
+          float v0XDelta = candidate.v0VtxX() - mcV0DauNeg.vx();
+          float v0YDelta = candidate.v0VtxY() - mcV0DauNeg.vy();
+          float v0ZDelta = candidate.v0VtxZ() - mcV0DauNeg.vz();
+          float v0Pt = mcV0.pt();
+          float v0XPull = v0XDelta / candidate.v0XError();
+          float v0YPull = v0YDelta / candidate.v0YError();
+          float v0ZPull = v0ZDelta / candidate.v0ZError();
 
-            float lambdaXDelta = candidate.v0X() - mcV0DauNeg.vx();
-            float lambdaYDelta = candidate.v0Y() - mcV0DauNeg.vy();
-            float lambdaZDelta = candidate.v0Z() - mcV0DauNeg.vz();
-            registry.fill(HIST("hV0DauPosXDelta"), v0DauPosXDelta);
-            registry.fill(HIST("hV0DauPosYDelta"), v0DauPosYDelta);
-            registry.fill(HIST("hV0DauPosZDelta"), v0DauPosZDelta);
-            registry.fill(HIST("hV0DauPosXDeltaVsPt"), v0DauPosPt, v0DauPosXDelta);
-            registry.fill(HIST("hV0DauPosYDeltaVsPt"), v0DauPosPt, v0DauPosYDelta);
-            registry.fill(HIST("hV0DauPosZDeltaVsPt"), v0DauPosPt, v0DauPosZDelta);
-            registry.fill(HIST("hV0DauPosXPull"), v0DauPosXPull);
-            registry.fill(HIST("hV0DauPosYPull"), v0DauPosYPull);
-            registry.fill(HIST("hV0DauPosZPull"), v0DauPosZPull);
-            registry.fill(HIST("hV0DauPosXPullVsPt"), v0DauPosPt, v0DauPosXPull);
-            registry.fill(HIST("hV0DauPosYPullVsPt"), v0DauPosPt, v0DauPosYPull);
-            registry.fill(HIST("hV0DauPosZPullVsPt"), v0DauPosPt, v0DauPosZPull);
+          float lambdaXDelta = candidate.v0X() - mcV0DauNeg.vx();
+          float lambdaYDelta = candidate.v0Y() - mcV0DauNeg.vy();
+          float lambdaZDelta = candidate.v0Z() - mcV0DauNeg.vz();
+          registry.fill(HIST("hV0DauPosXDelta"), v0DauPosXDelta);
+          registry.fill(HIST("hV0DauPosYDelta"), v0DauPosYDelta);
+          registry.fill(HIST("hV0DauPosZDelta"), v0DauPosZDelta);
+          registry.fill(HIST("hV0DauPosXDeltaVsPt"), v0DauPosPt, v0DauPosXDelta);
+          registry.fill(HIST("hV0DauPosYDeltaVsPt"), v0DauPosPt, v0DauPosYDelta);
+          registry.fill(HIST("hV0DauPosZDeltaVsPt"), v0DauPosPt, v0DauPosZDelta);
+          registry.fill(HIST("hV0DauPosXPull"), v0DauPosXPull);
+          registry.fill(HIST("hV0DauPosYPull"), v0DauPosYPull);
+          registry.fill(HIST("hV0DauPosZPull"), v0DauPosZPull);
+          registry.fill(HIST("hV0DauPosXPullVsPt"), v0DauPosPt, v0DauPosXPull);
+          registry.fill(HIST("hV0DauPosYPullVsPt"), v0DauPosPt, v0DauPosYPull);
+          registry.fill(HIST("hV0DauPosZPullVsPt"), v0DauPosPt, v0DauPosZPull);
 
-            registry.fill(HIST("hV0DauNegXDelta"), v0DauNegXDelta);
-            registry.fill(HIST("hV0DauNegYDelta"), v0DauNegYDelta);
-            registry.fill(HIST("hV0DauNegZDelta"), v0DauNegZDelta);
-            registry.fill(HIST("hV0DauNegXDeltaVsPt"), v0DauNegPt, v0DauNegXDelta);
-            registry.fill(HIST("hV0DauNegYDeltaVsPt"), v0DauNegPt, v0DauNegYDelta);
-            registry.fill(HIST("hV0DauNegZDeltaVsPt"), v0DauNegPt, v0DauNegZDelta);
-            registry.fill(HIST("hV0DauNegXPull"), v0DauNegXPull);
-            registry.fill(HIST("hV0DauNegYPull"), v0DauNegYPull);
-            registry.fill(HIST("hV0DauNegZPull"), v0DauNegZPull);
-            registry.fill(HIST("hV0DauNegXPullVsPt"), v0DauNegPt, v0DauNegXPull);
-            registry.fill(HIST("hV0DauNegYPullVsPt"), v0DauNegPt, v0DauNegYPull);
-            registry.fill(HIST("hV0DauNegZPullVsPt"), v0DauNegPt, v0DauNegZPull);
+          registry.fill(HIST("hV0DauNegXDelta"), v0DauNegXDelta);
+          registry.fill(HIST("hV0DauNegYDelta"), v0DauNegYDelta);
+          registry.fill(HIST("hV0DauNegZDelta"), v0DauNegZDelta);
+          registry.fill(HIST("hV0DauNegXDeltaVsPt"), v0DauNegPt, v0DauNegXDelta);
+          registry.fill(HIST("hV0DauNegYDeltaVsPt"), v0DauNegPt, v0DauNegYDelta);
+          registry.fill(HIST("hV0DauNegZDeltaVsPt"), v0DauNegPt, v0DauNegZDelta);
+          registry.fill(HIST("hV0DauNegXPull"), v0DauNegXPull);
+          registry.fill(HIST("hV0DauNegYPull"), v0DauNegYPull);
+          registry.fill(HIST("hV0DauNegZPull"), v0DauNegZPull);
+          registry.fill(HIST("hV0DauNegXPullVsPt"), v0DauNegPt, v0DauNegXPull);
+          registry.fill(HIST("hV0DauNegYPullVsPt"), v0DauNegPt, v0DauNegYPull);
+          registry.fill(HIST("hV0DauNegZPullVsPt"), v0DauNegPt, v0DauNegZPull);
 
-            registry.fill(HIST("hV0XDelta"), v0XDelta);
-            registry.fill(HIST("hV0YDelta"), v0YDelta);
-            registry.fill(HIST("hV0ZDelta"), v0ZDelta);
-            registry.fill(HIST("hV0XDeltaVsPt"), v0Pt, v0XDelta);
-            registry.fill(HIST("hV0YDeltaVsPt"), v0Pt, v0YDelta);
-            registry.fill(HIST("hV0ZDeltaVsPt"), v0Pt, v0ZDelta);
-            registry.fill(HIST("hV0XPull"), v0XPull);
-            registry.fill(HIST("hV0YPull"), v0YPull);
-            registry.fill(HIST("hV0ZPull"), v0ZPull);
-            registry.fill(HIST("hV0XPullVsPt"), v0Pt, v0XPull);
-            registry.fill(HIST("hV0YPullVsPt"), v0Pt, v0YPull);
-            registry.fill(HIST("hV0ZPullVsPt"), v0Pt, v0ZPull);
+          registry.fill(HIST("hV0XDelta"), v0XDelta);
+          registry.fill(HIST("hV0YDelta"), v0YDelta);
+          registry.fill(HIST("hV0ZDelta"), v0ZDelta);
+          registry.fill(HIST("hV0XDeltaVsPt"), v0Pt, v0XDelta);
+          registry.fill(HIST("hV0YDeltaVsPt"), v0Pt, v0YDelta);
+          registry.fill(HIST("hV0ZDeltaVsPt"), v0Pt, v0ZDelta);
+          registry.fill(HIST("hV0XPull"), v0XPull);
+          registry.fill(HIST("hV0YPull"), v0YPull);
+          registry.fill(HIST("hV0ZPull"), v0ZPull);
+          registry.fill(HIST("hV0XPullVsPt"), v0Pt, v0XPull);
+          registry.fill(HIST("hV0YPullVsPt"), v0Pt, v0YPull);
+          registry.fill(HIST("hV0ZPullVsPt"), v0Pt, v0ZPull);
 
-            registry.fill(HIST("hLambdaXDelta"), lambdaXDelta);
-            registry.fill(HIST("hLambdaYDelta"), lambdaYDelta);
-            registry.fill(HIST("hLambdaZDelta"), lambdaZDelta);
+          registry.fill(HIST("hLambdaXDelta"), lambdaXDelta);
+          registry.fill(HIST("hLambdaYDelta"), lambdaYDelta);
+          registry.fill(HIST("hLambdaZDelta"), lambdaZDelta);
 
-            registry.fill(HIST("hV0DauPosPtRes"), (candidate.v0DauPosPt() - mcV0DauPos.pt()) / candidate.v0DauPosPt());
-            registry.fill(HIST("hV0DauNegPtRes"), (candidate.v0DauNegPt() - mcV0DauNeg.pt()) / candidate.v0DauNegPt());
-            registry.fill(HIST("hV0PtRes"), (candidate.v0Pt() - mcV0.pt()) / candidate.v0Pt());
-          }
+          registry.fill(HIST("hV0DauPosPtRes"), (candidate.v0DauPosPt() - mcV0DauPos.pt()) / candidate.v0DauPosPt());
+          registry.fill(HIST("hV0DauNegPtRes"), (candidate.v0DauNegPt() - mcV0DauNeg.pt()) / candidate.v0DauNegPt());
+          registry.fill(HIST("hV0PtRes"), (candidate.v0Pt() - mcV0.pt()) / candidate.v0Pt());
           // Xi- → pi pi p
           indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, &signCasc, 2);
-          if (indexRec == -1) {
-            debug = McMatchFlag::CascUnmatched;
-          }
-          if (indexRec > -1) {
+          if (indexRec > -1 && signCasc == 1) {
             // QA
-            if (signCasc == 1) {
-              float xiMassPull = (candidate.invMassCascade() - MassXiMinus) / candidate.invMassXiErr();
-              registry.fill(HIST("hXiMassPullVsPt"), candidate.xiPt(), xiMassPull);
+            float xiMassPull = (candidate.invMassCascade() - MassXiMinus) / candidate.invMassXiErr();
+            registry.fill(HIST("hXiMassPullVsPt"), candidate.xiPt(), xiMassPull);
 
-              float xiBachelorXDelta = candidate.xiBachelorX() - mcXiBachelor.vx();
-              float xiBachelorYDelta = candidate.xiBachelorY() - mcXiBachelor.vy();
-              float xiBachelorZDelta = candidate.xiBachelorZ() - mcXiBachelor.vz();
-              float xiBachelorPt = mcXiBachelor.pt();
-              float xiBachelorXPull = xiBachelorXDelta / candidate.xiBachelorXError();
-              float xiBachelorYPull = xiBachelorYDelta / candidate.xiBachelorYError();
-              float xiBachelorZPull = xiBachelorZDelta / candidate.xiBachelorZError();
+            float xiBachelorXDelta = candidate.xiBachelorX() - mcXiBachelor.vx();
+            float xiBachelorYDelta = candidate.xiBachelorY() - mcXiBachelor.vy();
+            float xiBachelorZDelta = candidate.xiBachelorZ() - mcXiBachelor.vz();
+            float xiBachelorPt = mcXiBachelor.pt();
+            float xiBachelorXPull = xiBachelorXDelta / candidate.xiBachelorXError();
+            float xiBachelorYPull = xiBachelorYDelta / candidate.xiBachelorYError();
+            float xiBachelorZPull = xiBachelorZDelta / candidate.xiBachelorZError();
 
-              auto mcXi = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+            auto mcXi = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
 
-              float xiXDelta = candidate.xiX() - mcXiBachelor.vx();
-              float xiYDelta = candidate.xiY() - mcXiBachelor.vy();
-              float xiZDelta = candidate.xiZ() - mcXiBachelor.vz();
-              float xiPt = mcXi.pt();
-              float xiXPull = xiXDelta / candidate.xiXError();
-              float xiYPull = xiYDelta / candidate.xiYError();
-              float xiZPull = xiZDelta / candidate.xiZError();
+            float xiXDelta = candidate.xiX() - mcXiBachelor.vx();
+            float xiYDelta = candidate.xiY() - mcXiBachelor.vy();
+            float xiZDelta = candidate.xiZ() - mcXiBachelor.vz();
+            float xiPt = mcXi.pt();
+            float xiXPull = xiXDelta / candidate.xiXError();
+            float xiYPull = xiYDelta / candidate.xiYError();
+            float xiZPull = xiZDelta / candidate.xiZError();
 
-              float cascXDelta = candidate.xDecayVtxCascade() - mcXiBachelor.vx();
-              float cascYDelta = candidate.yDecayVtxCascade() - mcXiBachelor.vy();
-              float cascZDelta = candidate.zDecayVtxCascade() - mcXiBachelor.vz();
+            float cascXDelta = candidate.xDecayVtxCascade() - mcXiBachelor.vx();
+            float cascYDelta = candidate.yDecayVtxCascade() - mcXiBachelor.vy();
+            float cascZDelta = candidate.zDecayVtxCascade() - mcXiBachelor.vz();
 
-              registry.fill(HIST("hXiBachelorXDelta"), xiBachelorXDelta);
-              registry.fill(HIST("hXiBachelorYDelta"), xiBachelorYDelta);
-              registry.fill(HIST("hXiBachelorZDelta"), xiBachelorZDelta);
-              registry.fill(HIST("hXiBachelorXDeltaVsPt"), xiBachelorPt, xiBachelorXDelta);
-              registry.fill(HIST("hXiBachelorYDeltaVsPt"), xiBachelorPt, xiBachelorYDelta);
-              registry.fill(HIST("hXiBachelorZDeltaVsPt"), xiBachelorPt, xiBachelorZDelta);
-              registry.fill(HIST("hXiBachelorXPull"), xiBachelorXPull);
-              registry.fill(HIST("hXiBachelorYPull"), xiBachelorYPull);
-              registry.fill(HIST("hXiBachelorZPull"), xiBachelorZPull);
-              registry.fill(HIST("hXiBachelorXPullVsPt"), xiBachelorPt, xiBachelorXPull);
-              registry.fill(HIST("hXiBachelorYPullVsPt"), xiBachelorPt, xiBachelorYPull);
-              registry.fill(HIST("hXiBachelorZPullVsPt"), xiBachelorPt, xiBachelorZPull);
+            registry.fill(HIST("hXiBachelorXDelta"), xiBachelorXDelta);
+            registry.fill(HIST("hXiBachelorYDelta"), xiBachelorYDelta);
+            registry.fill(HIST("hXiBachelorZDelta"), xiBachelorZDelta);
+            registry.fill(HIST("hXiBachelorXDeltaVsPt"), xiBachelorPt, xiBachelorXDelta);
+            registry.fill(HIST("hXiBachelorYDeltaVsPt"), xiBachelorPt, xiBachelorYDelta);
+            registry.fill(HIST("hXiBachelorZDeltaVsPt"), xiBachelorPt, xiBachelorZDelta);
+            registry.fill(HIST("hXiBachelorXPull"), xiBachelorXPull);
+            registry.fill(HIST("hXiBachelorYPull"), xiBachelorYPull);
+            registry.fill(HIST("hXiBachelorZPull"), xiBachelorZPull);
+            registry.fill(HIST("hXiBachelorXPullVsPt"), xiBachelorPt, xiBachelorXPull);
+            registry.fill(HIST("hXiBachelorYPullVsPt"), xiBachelorPt, xiBachelorYPull);
+            registry.fill(HIST("hXiBachelorZPullVsPt"), xiBachelorPt, xiBachelorZPull);
 
-              registry.fill(HIST("hXiXDelta"), xiXDelta);
-              registry.fill(HIST("hXiYDelta"), xiYDelta);
-              registry.fill(HIST("hXiZDelta"), xiZDelta);
-              registry.fill(HIST("hXiXDeltaVsPt"), xiPt, xiXDelta);
-              registry.fill(HIST("hXiYDeltaVsPt"), xiPt, xiYDelta);
-              registry.fill(HIST("hXiZDeltaVsPt"), xiPt, xiZDelta);
-              registry.fill(HIST("hXiXPull"), xiXPull);
-              registry.fill(HIST("hXiYPull"), xiYPull);
-              registry.fill(HIST("hXiZPull"), xiZPull);
-              registry.fill(HIST("hXiXPullVsPt"), xiPt, xiXPull);
-              registry.fill(HIST("hXiYPullVsPt"), xiPt, xiYPull);
-              registry.fill(HIST("hXiZPullVsPt"), xiPt, xiZPull);
+            registry.fill(HIST("hXiXDelta"), xiXDelta);
+            registry.fill(HIST("hXiYDelta"), xiYDelta);
+            registry.fill(HIST("hXiZDelta"), xiZDelta);
+            registry.fill(HIST("hXiXDeltaVsPt"), xiPt, xiXDelta);
+            registry.fill(HIST("hXiYDeltaVsPt"), xiPt, xiYDelta);
+            registry.fill(HIST("hXiZDeltaVsPt"), xiPt, xiZDelta);
+            registry.fill(HIST("hXiXPull"), xiXPull);
+            registry.fill(HIST("hXiYPull"), xiYPull);
+            registry.fill(HIST("hXiZPull"), xiZPull);
+            registry.fill(HIST("hXiXPullVsPt"), xiPt, xiXPull);
+            registry.fill(HIST("hXiYPullVsPt"), xiPt, xiYPull);
+            registry.fill(HIST("hXiZPullVsPt"), xiPt, xiZPull);
 
-              registry.fill(HIST("hCascXDelta"), cascXDelta);
-              registry.fill(HIST("hCascYDelta"), cascYDelta);
-              registry.fill(HIST("hCascZDelta"), cascZDelta);
+            registry.fill(HIST("hCascXDelta"), cascXDelta);
+            registry.fill(HIST("hCascYDelta"), cascYDelta);
+            registry.fill(HIST("hCascZDelta"), cascZDelta);
 
-              registry.fill(HIST("hXiBachelorPtRes"), (candidate.xiBachelorPt() - mcXiBachelor.pt()) / candidate.xiBachelorPt());
-              registry.fill(HIST("hXiPtRes"), (candidate.xiPt() - mcXi.pt()) / candidate.xiPt());
-            }
+            registry.fill(HIST("hXiBachelorPtRes"), (candidate.xiBachelorPt() - mcXiBachelor.pt()) / candidate.xiBachelorPt());
+            registry.fill(HIST("hXiPtRes"), (candidate.xiPt() - mcXi.pt()) / candidate.xiPt());
 
             // Xic → pi pi pi p
             indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kXiC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
-            if (indexRec == -1) {
-              debug = McMatchFlag::CharmbaryonUnmatched;
-            }
-            if (indexRec > -1) {
-              flag = sign * (1 << aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi);
+            if (indexRec > -1 && sign == 1) {
+              auto mcXic0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
+              float xic0MassPull = (candidate.invMassCharmBaryon() - MassXiC0) / candidate.invMassXic0Err();
+              registry.fill(HIST("hXic0MassPullVsPt"), candidate.xic0Pt(), xic0MassPull);
 
-              if (sign == 1) {
-                auto mcXic0 = mcParticles.rawIteratorAt(indexRec - mcParticles.offset());
-                float xic0MassPull = (candidate.invMassCharmBaryon() - MassXiC0) / candidate.invMassXic0Err();
-                registry.fill(HIST("hXic0MassPullVsPt"), candidate.xic0Pt(), xic0MassPull);
+              float xic0BachelorXDelta = candidate.xic0BachelorX() - mcXic0Bachelor.vx();
+              float xic0BachelorYDelta = candidate.xic0BachelorY() - mcXic0Bachelor.vy();
+              float xic0BachelorZDelta = candidate.xic0BachelorZ() - mcXic0Bachelor.vz();
+              float xic0BachelorPt = mcXic0Bachelor.pt();
+              float xic0BachelorXPull = xic0BachelorXDelta / candidate.xic0BachelorXError();
+              float xic0BachelorYPull = xic0BachelorYDelta / candidate.xic0BachelorYError();
+              float xic0BachelorZPull = xic0BachelorZDelta / candidate.xic0BachelorZError();
 
-                float xic0BachelorXDelta = candidate.xic0BachelorX() - mcXic0Bachelor.vx();
-                float xic0BachelorYDelta = candidate.xic0BachelorY() - mcXic0Bachelor.vy();
-                float xic0BachelorZDelta = candidate.xic0BachelorZ() - mcXic0Bachelor.vz();
-                float xic0BachelorPt = mcXic0Bachelor.pt();
-                float xic0BachelorXPull = xic0BachelorXDelta / candidate.xic0BachelorXError();
-                float xic0BachelorYPull = xic0BachelorYDelta / candidate.xic0BachelorYError();
-                float xic0BachelorZPull = xic0BachelorZDelta / candidate.xic0BachelorZError();
+              float xic0XDelta = candidate.xDecayVtxCharmBaryon() - mcXic0Bachelor.vx();
+              float xic0YDelta = candidate.yDecayVtxCharmBaryon() - mcXic0Bachelor.vy();
+              float xic0ZDelta = candidate.zDecayVtxCharmBaryon() - mcXic0Bachelor.vz();
+              float xic0Pt = mcXic0.pt();
+              float xic0XPull = xic0XDelta / candidate.xic0XError();
+              float xic0YPull = xic0YDelta / candidate.xic0YError();
+              float xic0ZPull = xic0ZDelta / candidate.xic0ZError();
+              registry.fill(HIST("hXic0BachelorXDelta"), xic0BachelorXDelta);
+              registry.fill(HIST("hXic0BachelorYDelta"), xic0BachelorYDelta);
+              registry.fill(HIST("hXic0BachelorZDelta"), xic0BachelorZDelta);
+              registry.fill(HIST("hXic0BachelorXDeltaVsPt"), xic0BachelorPt, xic0BachelorXDelta);
+              registry.fill(HIST("hXic0BachelorYDeltaVsPt"), xic0BachelorPt, xic0BachelorYDelta);
+              registry.fill(HIST("hXic0BachelorZDeltaVsPt"), xic0BachelorPt, xic0BachelorZDelta);
+              registry.fill(HIST("hXic0BachelorXPull"), xic0BachelorXPull);
+              registry.fill(HIST("hXic0BachelorYPull"), xic0BachelorYPull);
+              registry.fill(HIST("hXic0BachelorZPull"), xic0BachelorZPull);
+              registry.fill(HIST("hXic0BachelorXPullVsPt"), xic0BachelorPt, xic0BachelorXPull);
+              registry.fill(HIST("hXic0BachelorYPullVsPt"), xic0BachelorPt, xic0BachelorYPull);
+              registry.fill(HIST("hXic0BachelorZPullVsPt"), xic0BachelorPt, xic0BachelorZPull);
 
-                float xic0XDelta = candidate.xDecayVtxCharmBaryon() - mcXic0Bachelor.vx();
-                float xic0YDelta = candidate.yDecayVtxCharmBaryon() - mcXic0Bachelor.vy();
-                float xic0ZDelta = candidate.zDecayVtxCharmBaryon() - mcXic0Bachelor.vz();
-                float xic0Pt = mcXic0.pt();
-                float xic0XPull = xic0XDelta / candidate.xic0XError();
-                float xic0YPull = xic0YDelta / candidate.xic0YError();
-                float xic0ZPull = xic0ZDelta / candidate.xic0ZError();
-                registry.fill(HIST("hXic0BachelorXDelta"), xic0BachelorXDelta);
-                registry.fill(HIST("hXic0BachelorYDelta"), xic0BachelorYDelta);
-                registry.fill(HIST("hXic0BachelorZDelta"), xic0BachelorZDelta);
-                registry.fill(HIST("hXic0BachelorXDeltaVsPt"), xic0BachelorPt, xic0BachelorXDelta);
-                registry.fill(HIST("hXic0BachelorYDeltaVsPt"), xic0BachelorPt, xic0BachelorYDelta);
-                registry.fill(HIST("hXic0BachelorZDeltaVsPt"), xic0BachelorPt, xic0BachelorZDelta);
-                registry.fill(HIST("hXic0BachelorXPull"), xic0BachelorXPull);
-                registry.fill(HIST("hXic0BachelorYPull"), xic0BachelorYPull);
-                registry.fill(HIST("hXic0BachelorZPull"), xic0BachelorZPull);
-                registry.fill(HIST("hXic0BachelorXPullVsPt"), xic0BachelorPt, xic0BachelorXPull);
-                registry.fill(HIST("hXic0BachelorYPullVsPt"), xic0BachelorPt, xic0BachelorYPull);
-                registry.fill(HIST("hXic0BachelorZPullVsPt"), xic0BachelorPt, xic0BachelorZPull);
+              registry.fill(HIST("hXic0XDelta"), xic0XDelta);
+              registry.fill(HIST("hXic0YDelta"), xic0YDelta);
+              registry.fill(HIST("hXic0ZDelta"), xic0ZDelta);
+              registry.fill(HIST("hXic0XDeltaVsPt"), xic0Pt, xic0XDelta);
+              registry.fill(HIST("hXic0YDeltaVsPt"), xic0Pt, xic0YDelta);
+              registry.fill(HIST("hXic0ZDeltaVsPt"), xic0Pt, xic0ZDelta);
+              registry.fill(HIST("hXic0XPull"), xic0XPull);
+              registry.fill(HIST("hXic0YPull"), xic0YPull);
+              registry.fill(HIST("hXic0ZPull"), xic0ZPull);
+              registry.fill(HIST("hXic0XPullVsPt"), xic0Pt, xic0XPull);
+              registry.fill(HIST("hXic0YPullVsPt"), xic0Pt, xic0YPull);
+              registry.fill(HIST("hXic0ZPullVsPt"), xic0Pt, xic0ZPull);
 
-                registry.fill(HIST("hXic0XDelta"), xic0XDelta);
-                registry.fill(HIST("hXic0YDelta"), xic0YDelta);
-                registry.fill(HIST("hXic0ZDelta"), xic0ZDelta);
-                registry.fill(HIST("hXic0XDeltaVsPt"), xic0Pt, xic0XDelta);
-                registry.fill(HIST("hXic0YDeltaVsPt"), xic0Pt, xic0YDelta);
-                registry.fill(HIST("hXic0ZDeltaVsPt"), xic0Pt, xic0ZDelta);
-                registry.fill(HIST("hXic0XPull"), xic0XPull);
-                registry.fill(HIST("hXic0YPull"), xic0YPull);
-                registry.fill(HIST("hXic0ZPull"), xic0ZPull);
-                registry.fill(HIST("hXic0XPullVsPt"), xic0Pt, xic0XPull);
-                registry.fill(HIST("hXic0YPullVsPt"), xic0Pt, xic0YPull);
-                registry.fill(HIST("hXic0ZPullVsPt"), xic0Pt, xic0ZPull);
-
-                registry.fill(HIST("hXic0BachelorPtRes"), (candidate.xic0BachelorPt() - mcXic0Bachelor.pt()) / candidate.xic0BachelorPt());
-                registry.fill(HIST("hXic0PtRes"), (candidate.xic0Pt() - mcXic0.pt()) / candidate.xic0Pt());
-              }
+              registry.fill(HIST("hXic0BachelorPtRes"), (candidate.xic0BachelorPt() - mcXic0Bachelor.pt()) / candidate.xic0BachelorPt());
+              registry.fill(HIST("hXic0PtRes"), (candidate.xic0Pt() - mcXic0.pt()) / candidate.xic0Pt());
             }
           }
-        }
-
-        if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
-          LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
       }
     }
