@@ -2534,7 +2534,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
                           BCsInfo const&)
   {
     int indexRec = -1;
-    int indexRecCharmBaryon = -1;
     int8_t sign = -9;
     int8_t signCasc = -9;
     int8_t signV0 = -9;
@@ -2715,7 +2714,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
             // Xic → pi pi pi p
             indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughters, +kXiC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
-            indexRecCharmBaryon = indexRec;
             if (indexRec == -1) {
               debug = McMatchFlag::CharmbaryonUnmatched;
             }
@@ -2771,10 +2769,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             }
           }
         }
-        // Check whether the charm baryon is non-prompt (from a b quark).
-        if (flag != 0) {
-          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
-        }
+
         if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Xic0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
