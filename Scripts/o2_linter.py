@@ -1149,15 +1149,10 @@ class TestNameUpperCamelCase(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not line.startswith(f"{self.keyword} "):
+        if not (match := re.match(rf"{self.keyword}( (class|struct))? (\w+)", line)):
             return True
         # Extract object name.
-        words = line.split()
-        if not words[1].isalnum():  # "struct : ...", "enum { ..."
-            return True
-        object_name = words[1]
-        if object_name in ("class", "struct") and len(words) > 2:  # enum class ... or enum struct
-            object_name = words[2]
+        object_name = match.group(3)
         # The actual test comes here.
         return is_upper_camel_case(object_name)
 
