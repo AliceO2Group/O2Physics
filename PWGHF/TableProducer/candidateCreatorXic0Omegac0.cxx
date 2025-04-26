@@ -119,7 +119,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
   Configurable<bool> kfUseV0MassConstraint{"kfUseV0MassConstraint", false, "KF: use Lambda mass constraint"};
   Configurable<bool> kfUseCascadeMassConstraint{"kfUseCascadeMassConstraint", false, "KF: use Cascade mass constraint"};
-  Configurable<bool> kfResolutionQA{"kfResolutionQA", true, "KF: KFParticle Quality Assurance"};
+  Configurable<bool> kfResolutionQA{"kfResolutionQA", false, "KF: KFParticle Quality Assurance"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
