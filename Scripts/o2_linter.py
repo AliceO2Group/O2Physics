@@ -1475,27 +1475,16 @@ class TestNameConfigurable(TestSpec):
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
-        if not line.startswith("Configurable"):
-            return True
+        if not (match := re.match(r"Configurable(\w+|<.+>) (\w+)( = )?{([^,{]+),", line)):
+            return not line.startswith("Configurable")
         # Extract Configurable name.
-        words = line.split()
-        if len(words) < 2:
-            return False
-        if len(words) > 2 and words[2] == "=":  # expecting Configurable... nameCpp = {"nameJson",
-            name_cpp = words[1]  # nameCpp
-            name_json = words[3][1:]  # expecting "nameJson",
-        else:
-            names = words[1].split("{")  # expecting Configurable... nameCpp{"nameJson",
-            if len(names) < 2:
-                return False
-            name_cpp = names[0]  # nameCpp
-            name_json = names[1]  # expecting "nameJson",
-            if not name_json:
-                return False
+        name_cpp = match.group(2)  # nameCpp
+        name_json = match.group(4)  # expecting "nameJson"
         if name_json[0] != '"':  # JSON name is not a literal string.
             return True
-        name_json = name_json.strip('",')  # expecting nameJson
+        name_json = name_json[1:-1]  # expecting nameJson
         # The actual test comes here.
+        # print(f"Compare {name_cpp} vs {name_json}")
         return is_lower_camel_case(name_cpp) and name_cpp == name_json
 
 
