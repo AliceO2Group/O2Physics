@@ -2536,7 +2536,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     } // close loop on MCCollisions
   } // close process
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename TMyRecoCand>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, aod::hf_cand_xic0_omegac0::DecayType decayChannel, typename TMyRecoCand>
   void runXic0Omegac0McQa(TMyRecoCand const& candidates,
                           MyTracksWMc const&,
                           aod::McParticles const& mcParticles,
