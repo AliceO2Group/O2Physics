@@ -1484,7 +1484,6 @@ class TestNameConfigurable(TestSpec):
             return True
         name_json = name_json[1:-1]  # Strip away quotation marks.
         # The actual test comes here.
-        # print(f"Compare {name_cpp} vs {name_json}")
         return is_lower_camel_case(name_cpp) and name_cpp == name_json
 
 
