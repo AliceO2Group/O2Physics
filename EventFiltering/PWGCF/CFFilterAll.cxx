@@ -1267,11 +1267,27 @@ struct CFFilterAll {
 
     auto tracksWithItsPid = soa::Attach<cf_trigger::FullTracks, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe>(tracks);
 
+    // reset all arrays
+    keepEventTightLimit.fill(false);
+    keepEventLooseLimit.fill(false);
+    signalTightLimit.fill(0);
+    signalLooseLimit.fill(0);
+
     registryTriggerQA.fill(HIST("fProcessedEvents"), 0);
     registryParticleQA.fill(HIST("EventQA/Before/fMultiplicity"), col.multNTracksPV());
     registryParticleQA.fill(HIST("EventQA/Before/fZvtx"), col.posZ());
 
     if (!checkEvent(col)) {
+      tags(keepEventTightLimit[cf_trigger::kPPP], keepEventLooseLimit[cf_trigger::kPPP],
+           keepEventTightLimit[cf_trigger::kPPL], keepEventLooseLimit[cf_trigger::kPPL],
+           keepEventTightLimit[cf_trigger::kPLL], keepEventLooseLimit[cf_trigger::kPLL],
+           keepEventTightLimit[cf_trigger::kLLL], keepEventLooseLimit[cf_trigger::kLLL],
+           keepEventTightLimit[cf_trigger::kPPPhi], keepEventLooseLimit[cf_trigger::kPPPhi],
+           keepEventTightLimit[cf_trigger::kPPRho], keepEventLooseLimit[cf_trigger::kPPRho],
+           keepEventTightLimit[cf_trigger::kPD], keepEventLooseLimit[cf_trigger::kPD],
+           keepEventTightLimit[cf_trigger::kLD], keepEventLooseLimit[cf_trigger::kLD],
+           keepEventTightLimit[cf_trigger::kPhiD], keepEventLooseLimit[cf_trigger::kPhiD],
+           keepEventTightLimit[cf_trigger::kRhoD], keepEventLooseLimit[cf_trigger::kRhoD]);
       return;
     }
 
@@ -1816,12 +1832,6 @@ struct CFFilterAll {
         }
       }
     }
-
-    // reset all arrays
-    keepEventTightLimit.fill(false);
-    keepEventLooseLimit.fill(false);
-    signalTightLimit.fill(0);
-    signalLooseLimit.fill(0);
 
     float q3 = 999.f, kstar = 999.f;
 
