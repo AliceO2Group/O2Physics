@@ -60,7 +60,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct OnTheFlyTOFPID {
+struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofMC> upgradeTofMC;
   Produces<aod::UpgradeTof> upgradeTof;
 
@@ -773,7 +773,4 @@ struct OnTheFlyTOFPID {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<OnTheFlyTOFPID>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<OnTheFlyTofPid>(cfgc)}; }
