@@ -256,7 +256,7 @@ struct OnTheFlyTOFPID {
     float centerDistance = std::hypot(trcCircle.xC, trcCircle.yC);
 
     // condition of circles touching - if not satisfied returned length will be -100
-    if (centerDistance < trcCircle.rC + radius && centerDistance > fabs(trcCircle.rC - radius)) {
+    if (centerDistance < trcCircle.rC + radius && centerDistance > std::fabs(trcCircle.rC - radius)) {
       length = 0.0f;
 
       // base radical direction
@@ -299,7 +299,7 @@ struct OnTheFlyTOFPID {
       }
       cosAngle /= modulus;
       length = trcCircle.rC * TMath::ACos(cosAngle);
-      length *= sqrt(1.0f + track.getTgl() * track.getTgl());
+      length *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
     }
     return length;
   }
@@ -384,7 +384,7 @@ struct OnTheFlyTOFPID {
     }
 
     tzero[0] = sum / sumw;
-    tzero[1] = sqrt(1. / sumw);
+    tzero[1] = std::sqrt(1. / sumw);
     return true;
   }
 
