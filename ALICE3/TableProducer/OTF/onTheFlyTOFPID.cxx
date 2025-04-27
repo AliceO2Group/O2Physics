@@ -361,7 +361,7 @@ struct OnTheFlyTofPid {
       const float etof = track.mInnerTOFTime.second;    // [ps]
       const float L = track.mTrackLengthInnerTOF.first; // [cm]
       float p = track.mMomentum.first;                  // [GeV/c]
-      p *= abs(pdgInfo->Charge()) / 3.;                 // Total momentum
+      p *= std::abs(pdgInfo->Charge()) / 3.;            // Total momentum
       const float ep = track.mMomentum.second;          // [GeV/c]
       const float p2 = p * p;
       const float Lc = L * o2::constants::physics::invLightSpeedCm2PS;
@@ -754,11 +754,11 @@ struct OnTheFlyTofPid {
         }
       }
 
-      float deltaTrackLengthInnerTOF = abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
+      float deltaTrackLengthInnerTOF = std::abs(trackLengthInnerTOF - trackLengthRecoInnerTOF);
       if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0) {
         histos.fill(HIST("h2dDeltaTrackLengthInnerVsPt"), noSmearingPt, deltaTrackLengthInnerTOF);
       }
-      float deltaTrackLengthOuterTOF = abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
+      float deltaTrackLengthOuterTOF = std::abs(trackLengthOuterTOF - trackLengthRecoOuterTOF);
       if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0) {
         histos.fill(HIST("h2dDeltaTrackLengthOuterVsPt"), noSmearingPt, deltaTrackLengthOuterTOF);
       }
