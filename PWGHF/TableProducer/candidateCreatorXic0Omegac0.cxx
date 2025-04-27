@@ -2565,9 +2565,6 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       auto mcXic0Bachelor = arrayDaughters[0].mcParticle();
 
       // Xic0 -> xi pi matching
-      if constexpr (decayChannel != aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
-        LOGF(fatal, "ERROR: Quality validation is restricted to Xic0 → Xi Pi decay processes at this stage");
-      }
       if constexpr (decayChannel == aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi) {
         // Lambda → p pi
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1);
