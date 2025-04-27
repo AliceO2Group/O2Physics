@@ -150,8 +150,9 @@ struct OnTheFlyTOFPID {
 
     if (plotsConfig.doQAplots) {
       histos.add("h2dEventTime", "h2dEventTime", kTH2F, {{200, -1000, 1000, "computed"}, {200, -1000, 1000, "generated"}});
-      histos.add("h2dEventTimegen", "h2dEventTimegen", kTH1F, {{200, -1000, 1000, "generated"}});
-      histos.add("h2dEventTimerec", "h2dEventTimerec", kTH1F, {{200, -1000, 1000, "computed"}});
+      histos.add("h1dEventTimegen", "h1dEventTimegen", kTH1F, {{200, -1000, 1000, "generated"}});
+      histos.add("h1dEventTimerec", "h1dEventTimerec", kTH1F, {{200, -1000, 1000, "computed"}});
+      histos.add("h1dEventTimeres", "h1dEventTimeres", kTH1F, {{300, 0, 300, "resolution"}});
 
       const AxisSpec axisMomentum{static_cast<int>(plotsConfig.nBinsP), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisMomentumSmall{static_cast<int>(plotsConfig.nBinsP), 0.0f, +1.0f, "#it{p} (GeV/#it{c})"};
@@ -524,8 +525,9 @@ struct OnTheFlyTOFPID {
 
     if (plotsConfig.doQAplots) {
       histos.fill(HIST("h2dEventTime"), tzero[0], eventCollisionTimePS);
-      histos.fill(HIST("h2dEventTimegen"), eventCollisionTimePS);
-      histos.fill(HIST("h2dEventTimerec"), tzero[0]);
+      histos.fill(HIST("h1dEventTimegen"), eventCollisionTimePS);
+      histos.fill(HIST("h1dEventTimerec"), tzero[0]);
+      histos.fill(HIST("h1dEventTimeres"), tzero[1]);
     }
 
     // Then we do a second loop to compute the measured quantities with the measured event time
@@ -657,9 +659,9 @@ struct OnTheFlyTOFPID {
         // and not the tracking itself. It's *probably* a fair assumption
         // but it should be tested further! --> FIXED IN THIS VERSION
         if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0)
-          nSigmaInnerTOF[ii] = deltaTimeInnerTOF[ii] / innerTotalTimeReso;
+          nSigmaInnerTOF[ii] = deltaTimeInnerTOF[ii] / std::sqrt(innerTotalTimeReso * innerTotalTimeReso + tzero[1] * tzero[1]);
         if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0)
-          nSigmaOuterTOF[ii] = deltaTimeOuterTOF[ii] / outerTotalTimeReso;
+          nSigmaOuterTOF[ii] = deltaTimeOuterTOF[ii] / std::sqrt(outerTotalTimeReso * outerTotalTimeReso + tzero[1] * tzero[1]);
       }
 
       if (plotsConfig.doQAplots) {
@@ -762,7 +764,8 @@ struct OnTheFlyTOFPID {
       }
 
       // Sigmas have been fully calculated. Please populate the NSigma helper table (once per track)
-      upgradeTof(nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
+      upgradeTof(tzero[0], tzero[1],
+                 nSigmaInnerTOF[0], nSigmaInnerTOF[1], nSigmaInnerTOF[2], nSigmaInnerTOF[3], nSigmaInnerTOF[4],
                  measuredTimeInnerTOF, trackLengthRecoInnerTOF,
                  nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4],
                  measuredTimeOuterTOF, trackLengthRecoOuterTOF);

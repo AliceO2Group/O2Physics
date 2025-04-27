@@ -32,6 +32,8 @@ DECLARE_SOA_COLUMN(InnerTOFTrackLength, innerTOFTrackLength, float); //! track l
 DECLARE_SOA_COLUMN(OuterTOFTrackTime, outerTOFTrackTime, float);     //! Track time generated at the OuterTOF
 DECLARE_SOA_COLUMN(OuterTOFTrackLength, outerTOFTrackLength, float); //! track length for calculation of OuterTOF (generated)
 
+DECLARE_SOA_COLUMN(TOFEventTime, tofEventTime, float);                       //! Event time reconstructed with the TOF
+DECLARE_SOA_COLUMN(TOFEventTimeErr, tofEventTimeErr, float);                 //! Uncertainty on the event time reconstructed with the TOF
 DECLARE_SOA_COLUMN(NSigmaElectronInnerTOF, nSigmaElectronInnerTOF, float);   //! NSigma electron InnerTOF
 DECLARE_SOA_COLUMN(NSigmaMuonInnerTOF, nSigmaMuonInnerTOF, float);           //! NSigma muon InnerTOF
 DECLARE_SOA_COLUMN(NSigmaPionInnerTOF, nSigmaPionInnerTOF, float);           //! NSigma pion InnerTOF
@@ -55,6 +57,8 @@ DECLARE_SOA_TABLE(UpgradeTofMCs, "AOD", "UPGRADETOFMC",
                   upgrade_tof::OuterTOFTrackLength);
 
 DECLARE_SOA_TABLE(UpgradeTofs, "AOD", "UPGRADETOF",
+                  upgrade_tof::TOFEventTime,
+                  upgrade_tof::TOFEventTimeErr,
                   upgrade_tof::NSigmaElectronInnerTOF,
                   upgrade_tof::NSigmaMuonInnerTOF,
                   upgrade_tof::NSigmaPionInnerTOF,
