@@ -56,7 +56,6 @@ using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTrack
 using MFTTracksExtra = soa::Join<aod::MFTTracks>;
 
 struct HfTaskSingleMuonMult {
-  Configurable<float> etaCh{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
   Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
