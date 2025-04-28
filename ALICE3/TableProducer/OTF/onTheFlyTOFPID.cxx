@@ -8,10 +8,18 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-//
-// Task to add a table of track parameters propagated to the primary vertex
-//
+/// \file onTheFlyTOFPID.cxx
+///
+/// \brief This task goes straight from a combination of track table and mcParticles
+/// and a custom TOF configuration to a table of TOF NSigmas for the particles
+/// being analysed. It currently contemplates 5 particle types:
+/// electrons, pions, kaons, protons and muons
+///
+/// More particles could be added but would have to be added to the LUT
+/// being used in the onTheFly tracker task.
+///
+/// \author David Dobrigkeit Chinellato, UNICAMP
+/// \author Nicola Nicassio, University and INFN Bari
 
 #include <utility>
 #include <map>
@@ -44,18 +52,6 @@
 #include "DetectorsVertexing/HelixHelper.h"
 #include "TableHelper.h"
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
-
-/// \file onTheFlyTOFPID.cxx
-///
-/// \brief This task goes straight from a combination of track table and mcParticles
-/// and a custom TOF configuration to a table of TOF NSigmas for the particles
-/// being analysed. It currently contemplates 5 particle types:
-/// electrons, pions, kaons, protons and muons
-///
-/// More particles could be added but would have to be added to the LUT
-/// being used in the onTheFly tracker task.
-///
-/// \author David Dobrigkeit Chinellato, UNICAMP, Nicola Nicassio, University and INFN Bari
 
 using namespace o2;
 using namespace o2::framework;
@@ -427,7 +423,7 @@ struct OnTheFlyTofPid {
 
     std::array<float, 6> mcPvCov = {0.};
     o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
-    const float eventCollisionTimePS = collision.collisionTime() * 1e3; // convert ns to ps
+    const float eventCollisionTimePS = (considerEventTime.value ? collision.collisionTime() * 1e3 : 0.f); // convert ns to ps
     if (collision.has_mcCollision()) {
       auto mcCollision = collision.mcCollision();
       mcPvVtx.setX(mcCollision.posX());
@@ -519,9 +515,11 @@ struct OnTheFlyTofPid {
     // Now we compute the event time for the tracks
 
     std::array<float, 2> tzero = {0.f, 0.f};
-    const bool etStatus = eventTime(tracksWithTime, tzero);
-    if (!etStatus) {
-      LOG(warning) << "Event time calculation failed with " << tracksWithTime.size() << " tracks";
+    if (considerEventTime.value) {
+      const bool etStatus = eventTime(tracksWithTime, tzero);
+      if (!etStatus) {
+        LOG(warning) << "Event time calculation failed with " << tracksWithTime.size() << " tracks";
+      }
     }
 
     if (plotsConfig.doQAplots) {
