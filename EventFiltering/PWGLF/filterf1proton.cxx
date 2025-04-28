@@ -24,6 +24,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -477,10 +478,11 @@ struct filterf1proton {
   // using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using EventCandidates = aod::Collisions;
   using ResoV0s = aod::V0Datas;
-  using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCovIU, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                          aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                          aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                          aod::pidTPCFullPr, aod::pidTOFFullPr>>;
+  using PrimaryTrackCandidatesIU = soa::Filtered<soa::Join<aod::TracksCovIU, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void processF1Proton(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
   {
@@ -699,31 +701,12 @@ struct filterf1proton {
   }
   PROCESS_SWITCH(filterf1proton, processF1Proton, "Process for trigger", false);
   TLorentzVector v0Dummy;
-  void processF1ProtonHelper(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, aod::V0s const& V0s)
+  void processF1ProtonHelper(EventCandidates::iterator const& collision, aod::BCs const&, PrimaryTrackCandidatesIU const& tracks, aod::V0s const& V0s)
   {
     initCCDB(collision.bc().runNumber());
     bool keepEventF1Proton = false;
     int numberF1 = 0;
     if (isSelectedEvent(collision)) {
-      if (ConfUseManualPIDproton || ConfUseManualPIDkaon || ConfUseManualPIDpion) {
-        currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
-        if (currentRunNumber != lastRunNumber) {
-          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-          if (ConfUseManualPIDproton) {
-            BBProton = setValuesBB(ccdbApi, bc, ConfPIDBBProton);
-            BBAntiproton = setValuesBB(ccdbApi, bc, ConfPIDBBAntiProton);
-          }
-          if (ConfUseManualPIDpion) {
-            BBPion = setValuesBB(ccdbApi, bc, ConfPIDBBPion);
-            BBAntipion = setValuesBB(ccdbApi, bc, ConfPIDBBAntiPion);
-          }
-          if (ConfUseManualPIDkaon) {
-            BBKaon = setValuesBB(ccdbApi, bc, ConfPIDBBKaon);
-            BBAntikaon = setValuesBB(ccdbApi, bc, ConfPIDBBAntiKaon);
-          }
-          lastRunNumber = currentRunNumber;
-        }
-      }
 
       // keep track of indices
       std::vector<int> PionIndex = {};
@@ -749,27 +732,6 @@ struct filterf1proton {
         qaRegistry.fill(HIST("hPhi"), track.phi());
         double nTPCSigmaP[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
         double nTPCSigmaN[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-        if (ConfUseManualPIDproton) {
-          auto bgScalingProton = 1 / massPr; // momentum scaling?
-          if (BBProton.size() == 6)
-            nTPCSigmaP[2] = updatePID(track, bgScalingProton, BBProton);
-          if (BBAntiproton.size() == 6)
-            nTPCSigmaN[2] = updatePID(track, bgScalingProton, BBAntiproton);
-        }
-        if (ConfUseManualPIDkaon) {
-          auto bgScalingKaon = 1 / massKa; // momentum scaling?
-          if (BBKaon.size() == 6)
-            nTPCSigmaP[1] = updatePID(track, bgScalingKaon, BBKaon);
-          if (BBAntikaon.size() == 6)
-            nTPCSigmaN[1] = updatePID(track, bgScalingKaon, BBAntikaon);
-        }
-        if (ConfUseManualPIDpion) {
-          auto bgScalingPion = 1 / massPi; // momentum scaling?
-          if (BBPion.size() == 6)
-            nTPCSigmaP[0] = updatePID(track, bgScalingPion, BBPion);
-          if (BBAntipion.size() == 6)
-            nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
-        }
 
         if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
@@ -829,8 +791,8 @@ struct filterf1proton {
 
       for (auto& v0 : V0s) {
 
-        auto postrack = v0.template posTrack_as<PrimaryTrackCandidates>();
-        auto negtrack = v0.template negTrack_as<PrimaryTrackCandidates>();
+        auto postrack = v0.template posTrack_as<PrimaryTrackCandidatesIU>();
+        auto negtrack = v0.template negTrack_as<PrimaryTrackCandidatesIU>();
         auto trackparpos = getTrackParCov(postrack);
         auto trackparneg = getTrackParCov(negtrack);
         if (!mStraHelper.buildV0Candidate(v0.collisionId(), collision.posX(), collision.posY(), collision.posZ(), postrack, negtrack, trackparpos, trackparneg)) {
@@ -864,13 +826,6 @@ struct filterf1proton {
         }
         double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
         double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
-        if (ConfUseManualPIDdaughterPion) {
-          auto bgScalingPion = 1 / massPi; // momentum scaling?
-          if (BBPion.size() == 6)
-            nTPCSigmaPos[0] = updatePID(postrack, bgScalingPion, BBPion);
-          if (BBAntipion.size() == 6)
-            nTPCSigmaNeg[0] = updatePID(negtrack, bgScalingPion, BBAntipion);
-        }
         if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
           continue;
         }
