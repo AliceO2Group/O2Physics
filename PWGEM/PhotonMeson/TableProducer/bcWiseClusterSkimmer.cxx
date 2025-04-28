@@ -18,6 +18,7 @@
 
 #include <limits>
 #include <vector>
+#include <map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -63,6 +64,12 @@ struct bcWiseClusterSkimmer {
   Configurable<float> cfgMinTime{"cfgMinTime", -25, "Minimum time of selected clusters (ns)"};
   Configurable<float> cfgMaxTime{"cfgMaxTime", 25, "Maximum time of selected clusters (ns)"};
   Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.8f, "Maximum absolute rapidity of counted generated particles"};
+  // Configurable<float> cfgMinPtGenPi0{"cfgMinPtGenPi0", 0., "Minimum pT for stored generated pi0s (reduce disk space of derived data)"};
+
+  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", false, "Only store kTVXinEMC triggered BCs"};
+  Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
+
+  aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
 
   expressions::Filter energyFilter = aod::emcalcluster::energy > cfgMinClusterEnergy;
   expressions::Filter m02Filter = (aod::emcalcluster::nCells == 1 || (aod::emcalcluster::m02 > cfgMinM02 && aod::emcalcluster::m02 < cfgMaxM02));
@@ -70,6 +77,8 @@ struct bcWiseClusterSkimmer {
   expressions::Filter emccellfilter = aod::calo::caloType == 1;
 
   HistogramRegistry mHistManager{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+
+  std::map<int32_t, int32_t> fMapPi0Index; // Map to connect the MC index of the pi0 to the one saved in the derived table
 
   void init(framework::InitContext&)
   {
@@ -79,15 +88,13 @@ struct bcWiseClusterSkimmer {
     for (int iBin = 0; iBin < nEventBins; iBin++)
       mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
 
-    mHistManager.add("hAmplitudeVsCentrality", "FT0M AmplitudeVsCentrality;FT0M Centrality;FT0M Amplitude", HistType::kTH2F, {{105, 0, 105}, {400, 0, 200000}});
-    mHistManager.add("sumAmp", "Sum Amplitude", HistType::kTH1F, {{1000, 0., 10.}});
-    mHistManager.add("nCells", "Number of EMCal cells", HistType::kTH1F, {{5000, -0.5, 5000.5}});
-
     LOG(info) << "| Timing cut: " << cfgMinTime << " < t < " << cfgMaxTime;
     LOG(info) << "| M02 cut: " << cfgMinM02 << " < M02 < " << cfgMaxM02;
     LOG(info) << "| E cut: E > " << cfgMinClusterEnergy;
 
     o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+    if (cfgRequireGoodRCTQuality)
+      isFT0EMCGoodRCTChecker.init({aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad});
   }
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
@@ -129,28 +136,32 @@ struct bcWiseClusterSkimmer {
   {
     for (const auto& cluster : clusters) {
       float clusterInducerEnergy = 0.;
-      int pi0MCIndex = -1;
+      int32_t pi0MCIndex = -1;
       if (cluster.amplitudeA().size() > 0) {
         int clusterInducerId = cluster.mcParticleIds()[0];
         auto clusterInducer = mcParticles.iteratorAt(clusterInducerId);
         clusterInducerEnergy = clusterInducer.e();
         int daughterId = aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(clusterInducer, mcParticles, std::vector<int>{111});
-        if (daughterId > 0) {
+        if (daughterId > 0)
           pi0MCIndex = mcParticles.iteratorAt(daughterId).mothersIds()[0];
-        }
       }
-      mcclusterTable(bcID, convertForStorage<uint16_t>(clusterInducerEnergy, kEnergy), pi0MCIndex);
+      if (pi0MCIndex > 0)
+        pi0MCIndex = fMapPi0Index[pi0MCIndex];
+      mcclusterTable(bcID, pi0MCIndex, convertForStorage<uint16_t>(clusterInducerEnergy, kEnergy));
     }
+  }
+
+  bool isBCSelected(const auto& bc)
+  {
+    if (cfgRequirekTVXinEMC && !bc.selection_bit(aod::evsel::kIsTriggerTVX))
+      return false;
+    if (cfgRequireGoodRCTQuality && !isFT0EMCGoodRCTChecker(bc))
+      return false;
+    return true;
   }
 
   void processEventProperties(const auto& bc, const auto& collisionsInBC, const auto& cellsInBC)
   {
-    float sumAmp = 0.;
-    for (const auto& cell : cellsInBC)
-      sumAmp += cell.amplitude();
-    mHistManager.fill(HIST("sumAmp"), sumAmp);
-    mHistManager.fill(HIST("nCells"), cellsInBC.size());
-
     bool hasFT0 = bc.has_foundFT0();
     bool hasTVX = bc.selection_bit(aod::evsel::kIsTriggerTVX);
     bool haskTVXinEMC = bc.alias_bit(kTVXinEMC);
@@ -170,15 +181,11 @@ struct bcWiseClusterSkimmer {
 
     float ft0Amp = hasFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
 
-    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<unsigned int>(ft0Amp, kFT0Amp), convertForStorage<unsigned int>(cellsInBC.size(), kNCells), convertForStorage<float>(sumAmp, kCellAmpSum));
+    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint16_t>(ft0Amp, kFT0Amp));
 
     for (const auto& collision : collisionsInBC) {
       collisionTable(bcTable.lastIndex(), convertForStorage<uint8_t>(collision.centFT0M(), kFT0MCent), convertForStorage<int16_t>(collision.posZ(), kZVtx));
-      mHistManager.fill(HIST("hAmplitudeVsCentrality"), collision.centFT0M(), ft0Amp);
     }
-
-    if (collisionsInBC.size() == 0)
-      mHistManager.fill(HIST("hAmplitudeVsCentrality"), 103, ft0Amp);
   }
 
   template <typename TMCParticle, typename TMCParticles>
@@ -218,6 +225,8 @@ struct bcWiseClusterSkimmer {
   void processData(MyBCs const& bcs, MyCollisions const& collisions, aod::FT0s const&, SelectedCells const& cells, SelectedUniqueClusters const& uClusters, SelectedAmbiguousClusters const& aClusters)
   {
     for (const auto& bc : bcs) {
+      if (!isBCSelected(bc))
+        continue;
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerBC, bc.globalIndex());
 
@@ -240,6 +249,8 @@ struct bcWiseClusterSkimmer {
   void processMC(MyBCs const& bcs, MyMCCollisions const& collisions, aod::McCollisions const& mcCollisions, aod::FT0s const&, SelectedCells const& cells, SelectedUniqueMCClusters const& uClusters, SelectedAmbiguousMCClusters const& aClusters, aod::McParticles const& mcParticles)
   {
     for (const auto& bc : bcs) {
+      if (!isBCSelected(bc))
+        continue;
       auto collisionsInBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerBC, bc.globalIndex());
 
@@ -249,11 +260,12 @@ struct bcWiseClusterSkimmer {
       for (const auto& mcCollision : mcCollisionsBC) {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
         for (const auto& mcParticle : mcParticlesInColl) {
-          if (mcParticle.pdgCode() != 111 || fabs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles))
+          if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles))
             continue;
           bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
-          mcpi0Table(bc.globalIndex(), mcParticle.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+          mcpi0Table(bc.globalIndex(), convertForStorage<uint16_t>(mcParticle.pt(), kpT), isAccepted(mcParticle, mcParticles), isPrimary, isFromWD);
+          fMapPi0Index[mcParticle.globalIndex()] = static_cast<int32_t>(mcpi0Table.lastIndex());
         }
       }
 
@@ -266,6 +278,7 @@ struct bcWiseClusterSkimmer {
         processClusters(clustersInBC, bcTable.lastIndex());
         processClusterMCInfo(clustersInBC, bc.globalIndex(), mcParticles);
       }
+      fMapPi0Index.clear();
     }
   }
   PROCESS_SWITCH(bcWiseClusterSkimmer, processMC, "Run skimming for MC", false);
