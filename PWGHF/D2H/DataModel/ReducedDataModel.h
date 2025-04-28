@@ -364,7 +364,37 @@ DECLARE_SOA_TABLE_VERSIONED(HfRed3ProngsMl_001, "AOD", "HFRED3PRONGML", 1, //! T
 
 using HfRed3ProngsMl = HfRed3ProngsMl_001;
 
-DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
+DECLARE_SOA_TABLE(HfRedPidDau0s_000, "AOD", "HFREDPIDDAU0", //!
+                  hf_track_pid_reduced::TPCNSigmaPiProng0,
+                  hf_track_pid_reduced::TOFNSigmaPiProng0,
+                  hf_track_pid_reduced::TPCNSigmaKaProng0,
+                  hf_track_pid_reduced::TOFNSigmaKaProng0,
+                  hf_track_vars_reduced::HasTOFProng0,
+                  hf_track_vars_reduced::HasTPCProng0,
+                  hf_track_pid_reduced::TPCTOFNSigmaPiProng0<hf_track_pid_reduced::TPCNSigmaPiProng0, hf_track_pid_reduced::TOFNSigmaPiProng0>,
+                  hf_track_pid_reduced::TPCTOFNSigmaKaProng0<hf_track_pid_reduced::TPCNSigmaKaProng0, hf_track_pid_reduced::TOFNSigmaKaProng0>);
+
+DECLARE_SOA_TABLE(HfRedPidDau1s_000, "AOD", "HFREDPIDDAU1", //!
+                  hf_track_pid_reduced::TPCNSigmaPiProng1,
+                  hf_track_pid_reduced::TOFNSigmaPiProng1,
+                  hf_track_pid_reduced::TPCNSigmaKaProng1,
+                  hf_track_pid_reduced::TOFNSigmaKaProng1,
+                  hf_track_vars_reduced::HasTOFProng1,
+                  hf_track_vars_reduced::HasTPCProng1,
+                  hf_track_pid_reduced::TPCTOFNSigmaPiProng1<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
+                  hf_track_pid_reduced::TPCTOFNSigmaKaProng1<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>);
+
+DECLARE_SOA_TABLE(HfRedPidDau2s_000, "AOD", "HFREDPIDDAU2", //!
+                  hf_track_pid_reduced::TPCNSigmaPiProng2,
+                  hf_track_pid_reduced::TOFNSigmaPiProng2,
+                  hf_track_pid_reduced::TPCNSigmaKaProng2,
+                  hf_track_pid_reduced::TOFNSigmaKaProng2,
+                  hf_track_vars_reduced::HasTOFProng2,
+                  hf_track_vars_reduced::HasTPCProng2,
+                  hf_track_pid_reduced::TPCTOFNSigmaPiProng2<hf_track_pid_reduced::TPCNSigmaPiProng2, hf_track_pid_reduced::TOFNSigmaPiProng2>,
+                  hf_track_pid_reduced::TPCTOFNSigmaKaProng2<hf_track_pid_reduced::TPCNSigmaKaProng2, hf_track_pid_reduced::TOFNSigmaKaProng2>);
+
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau0s_001, "AOD", "HFREDPIDDAU0", 1, //!
                   hf_track_pid_reduced::TPCNSigmaPiProng0,
                   hf_track_pid_reduced::TOFNSigmaPiProng0,
                   hf_track_pid_reduced::TPCNSigmaKaProng0,
@@ -375,9 +405,10 @@ DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
                   hf_track_vars_reduced::HasTPCProng0,
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng0<hf_track_pid_reduced::TPCNSigmaPiProng0, hf_track_pid_reduced::TOFNSigmaPiProng0>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng0<hf_track_pid_reduced::TPCNSigmaKaProng0, hf_track_pid_reduced::TOFNSigmaKaProng0>,
-                  hf_track_pid_reduced::TPCTOFNSigmaPrProng0<hf_track_pid_reduced::TPCNSigmaPrProng0, hf_track_pid_reduced::TOFNSigmaPrProng0>);
+                  hf_track_pid_reduced::TPCTOFNSigmaPrProng0<hf_track_pid_reduced::TPCNSigmaPrProng0, hf_track_pid_reduced::TOFNSigmaPrProng0>,
+                  o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau1s_001, "AOD", "HFREDPIDDAU1", 1, //!
                   hf_track_pid_reduced::TPCNSigmaPiProng1,
                   hf_track_pid_reduced::TOFNSigmaPiProng1,
                   hf_track_pid_reduced::TPCNSigmaKaProng1,
@@ -388,9 +419,10 @@ DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
                   hf_track_vars_reduced::HasTPCProng1,
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng1<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng1<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>,
-                  hf_track_pid_reduced::TPCTOFNSigmaPrProng1<hf_track_pid_reduced::TPCNSigmaPrProng1, hf_track_pid_reduced::TOFNSigmaPrProng1>);
+                  hf_track_pid_reduced::TPCTOFNSigmaPrProng1<hf_track_pid_reduced::TPCNSigmaPrProng1, hf_track_pid_reduced::TOFNSigmaPrProng1>,
+                  o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau2s_001, "AOD", "HFREDPIDDAU2", 1, //!
                   hf_track_pid_reduced::TPCNSigmaPiProng2,
                   hf_track_pid_reduced::TOFNSigmaPiProng2,
                   hf_track_pid_reduced::TPCNSigmaKaProng2,
@@ -401,8 +433,16 @@ DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
                   hf_track_vars_reduced::HasTPCProng2,
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng2<hf_track_pid_reduced::TPCNSigmaPiProng2, hf_track_pid_reduced::TOFNSigmaPiProng2>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng2<hf_track_pid_reduced::TPCNSigmaKaProng2, hf_track_pid_reduced::TOFNSigmaKaProng2>,
-                  hf_track_pid_reduced::TPCTOFNSigmaPrProng2<hf_track_pid_reduced::TPCNSigmaPrProng2, hf_track_pid_reduced::TOFNSigmaPrProng2>);
+                  hf_track_pid_reduced::TPCTOFNSigmaPrProng2<hf_track_pid_reduced::TPCNSigmaPrProng2, hf_track_pid_reduced::TOFNSigmaPrProng2>,
+                  o2::soa::Marker<1>);
 
+using HfRedPidDau0s = HfRedPidDau0s_001;
+using HfRedPidDau1s = HfRedPidDau1s_001;
+using HfRedPidDau2s = HfRedPidDau2s_001;
+
+using HfRedPidDau0 = HfRedPidDau0s::iterator;
+using HfRedPidDau1 = HfRedPidDau1s::iterator;
+using HfRedPidDau2 = HfRedPidDau2s::iterator;
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
 {
