@@ -244,7 +244,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       //----------------create cascade track------------------------------------------------------------
       constexpr std::array<int, 6> MomInd = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (int i = 0; i < MomInd.size(); i++) {
+      for (auto i = 0u; i < MomInd.size(); i++) {
         covCasc[MomInd[i]] = casc.momentumCovMat()[i];
         covCasc[i] = casc.positionCovMat()[i];
       }
@@ -498,7 +498,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
       std::array<float, 6> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
       float parPosMom[6];
-      for (int i{0}; i < xyzpxpypz.size(); ++i) {
+      for (auto i = 0u; i < xyzpxpypz.size(); ++i) {
         parPosMom[i] = xyzpxpypz[i];
       }
       // create KFParticle
