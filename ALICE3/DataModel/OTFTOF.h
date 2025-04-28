@@ -41,6 +41,13 @@ DECLARE_SOA_COLUMN(NSigmaKaonInnerTOF, nSigmaKaonInnerTOF, float);           //!
 DECLARE_SOA_COLUMN(NSigmaProtonInnerTOF, nSigmaProtonInnerTOF, float);       //! NSigma proton InnerTOF
 DECLARE_SOA_COLUMN(InnerTOFTrackTimeReco, innerTOFTrackTimeReco, float);     //! Track time measured at the InnerTOF
 DECLARE_SOA_COLUMN(InnerTOFTrackLengthReco, innerTOFTrackLengthReco, float); //! track length for calculation of InnerTOF (reconstructed)
+
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeEl, innerTOFExpectedTimeEl, float); //! Reconstructed expected time at the InnerTOF for the Electron mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeMu, innerTOFExpectedTimeMu, float); //! Reconstructed expected time at the InnerTOF for the Muon mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimePi, innerTOFExpectedTimePi, float); //! Reconstructed expected time at the InnerTOF for the Pion mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimeKa, innerTOFExpectedTimeKa, float); //! Reconstructed expected time at the InnerTOF for the Kaon mass hypotheses
+DECLARE_SOA_COLUMN(InnerTOFExpectedTimePr, innerTOFExpectedTimePr, float); //! Reconstructed expected time at the InnerTOF for the Proton mass hypotheses
+
 DECLARE_SOA_COLUMN(NSigmaElectronOuterTOF, nSigmaElectronOuterTOF, float);   //! NSigma electron OuterTOF
 DECLARE_SOA_COLUMN(NSigmaMuonOuterTOF, nSigmaMuonOuterTOF, float);           //! NSigma muon OuterTOF
 DECLARE_SOA_COLUMN(NSigmaPionOuterTOF, nSigmaPionOuterTOF, float);           //! NSigma pion OuterTOF
@@ -48,6 +55,12 @@ DECLARE_SOA_COLUMN(NSigmaKaonOuterTOF, nSigmaKaonOuterTOF, float);           //!
 DECLARE_SOA_COLUMN(NSigmaProtonOuterTOF, nSigmaProtonOuterTOF, float);       //! NSigma proton OuterTOF
 DECLARE_SOA_COLUMN(OuterTOFTrackTimeReco, outerTOFTrackTimeReco, float);     //! Track time measured at the OuterTOF
 DECLARE_SOA_COLUMN(OuterTOFTrackLengthReco, outerTOFTrackLengthReco, float); //! track length for calculation of OuterTOF (reconstructed)
+
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeEl, outerTOFExpectedTimeEl, float); //! Reconstructed expected time at the OuterTOF for the Electron mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeMu, outerTOFExpectedTimeMu, float); //! Reconstructed expected time at the OuterTOF for the Muon mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimePi, outerTOFExpectedTimePi, float); //! Reconstructed expected time at the OuterTOF for the Pion mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimeKa, outerTOFExpectedTimeKa, float); //! Reconstructed expected time at the OuterTOF for the Kaon mass hypotheses
+DECLARE_SOA_COLUMN(OuterTOFExpectedTimePr, outerTOFExpectedTimePr, float); //! Reconstructed expected time at the OuterTOF for the Proton mass hypotheses
 } // namespace upgrade_tof
 
 DECLARE_SOA_TABLE(UpgradeTofMCs, "AOD", "UPGRADETOFMC",
@@ -74,8 +87,21 @@ DECLARE_SOA_TABLE(UpgradeTofs, "AOD", "UPGRADETOF",
                   upgrade_tof::OuterTOFTrackTimeReco,
                   upgrade_tof::OuterTOFTrackLengthReco);
 
-using UpgradeTof = UpgradeTofs::iterator;
+DECLARE_SOA_TABLE(UpgradeTofExpectedTimes, "AOD", "UPGRADETOFEXPT",
+                  upgrade_tof::InnerTOFExpectedTimeEl,
+                  upgrade_tof::InnerTOFExpectedTimeMu,
+                  upgrade_tof::InnerTOFExpectedTimePi,
+                  upgrade_tof::InnerTOFExpectedTimeKa,
+                  upgrade_tof::InnerTOFExpectedTimePr,
+                  upgrade_tof::OuterTOFExpectedTimeEl,
+                  upgrade_tof::OuterTOFExpectedTimeMu,
+                  upgrade_tof::OuterTOFExpectedTimePi,
+                  upgrade_tof::OuterTOFExpectedTimeKa,
+                  upgrade_tof::OuterTOFExpectedTimePr);
+
 using UpgradeTofMC = UpgradeTofMCs::iterator;
+using UpgradeTof = UpgradeTofs::iterator;
+using UpgradeTofExpectedTime = UpgradeTofExpectedTimes::iterator;
 
 } // namespace o2::aod
 
