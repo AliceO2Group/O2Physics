@@ -1075,12 +1075,18 @@ struct JetTaggerHFQA {
       varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
       varImpXYZSig = dcaXYZ / sigmadcaXYZ;
 
-      registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
-      registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);
-      registry.fill(HIST("h_impact_parameter_z"), varImpZ);
-      registry.fill(HIST("h_impact_parameter_z_significance"), varImpZSig);
-      registry.fill(HIST("h_impact_parameter_xyz"), varImpXYZ);
-      registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
+      if (fillIPxy) {
+        registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
+        registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);
+      }
+      if (fillIPz) {
+        registry.fill(HIST("h_impact_parameter_z"), varImpZ);
+        registry.fill(HIST("h_impact_parameter_z_significance"), varImpZSig);
+      }
+      if (fillIPxyz) {
+        registry.fill(HIST("h_impact_parameter_xyz"), varImpXYZ);
+        registry.fill(HIST("h_impact_parameter_xyz_significance"), varImpXYZSig);
+      }
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
