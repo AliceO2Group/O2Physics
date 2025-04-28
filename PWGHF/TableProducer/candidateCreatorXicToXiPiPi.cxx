@@ -243,8 +243,8 @@ struct HfCandidateCreatorXicToXiPiPi {
       std::array<float, 21> covCasc = {0.};
 
       //----------------create cascade track------------------------------------------------------------
-      constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (int i = 0; i < 6; i++) {
+      constexpr std::array<int, 6> MomInd = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+      for (int i = 0; i < MomInd.size(); i++) {
         covCasc[MomInd[i]] = casc.momentumCovMat()[i];
         covCasc[i] = casc.positionCovMat()[i];
       }
@@ -498,7 +498,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
       std::array<float, 6> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
       float parPosMom[6];
-      for (int i{0}; i < 6; ++i) {
+      for (int i{0}; i < xyzpxpypz.size(); ++i) {
         parPosMom[i] = xyzpxpypz[i];
       }
       // create KFParticle
@@ -778,7 +778,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                                             TracksWCovExtraPidPrPi const& tracks,
                                             aod::BCsWithTimestamps const& bcs)
   {
-  runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
+    runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0C>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0CXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0C.", false);
 
@@ -789,7 +789,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                                             TracksWCovExtraPidPrPi const& tracks,
                                             aod::BCsWithTimestamps const& bcs)
   {
-  runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
+    runXicplusCreatorWithKFParticle<o2::hf_centrality::CentralityEstimator::FT0M>(collisions, rowsTrackIndexXicPlus, kfCascadesLinked, kfCascadesFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processCentFT0MXicplusWithKFParticle, "Run candidate creator with KFParticle with centrality selection on FT0M.", false);
 
@@ -872,7 +872,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
   HfEventSelectionMc hfEvSelMc;
 
-  void init(InitContext& initContext) {
+  void init(InitContext& initContext)
+  {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic-to-xi-pi-pi") == 0) {
@@ -942,7 +943,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
           }
           if (indexRec > -1) {
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
-            if (arrDaughIndex.size() == 2) {
+            if (arrDaughIndex.size() == arrXiResonance.size()) {
               for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                 arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
@@ -1010,7 +1011,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == arrXiResonance.size()) {
             auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
               cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
@@ -1022,7 +1023,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
               debug = 3;
-              if (arrDaughIndex.size() == 2) {
+              if (arrDaughIndex.size() == arrXiResonance.size()) {
                 for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
                   auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                   arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
