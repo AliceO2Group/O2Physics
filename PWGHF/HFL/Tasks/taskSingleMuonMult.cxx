@@ -56,6 +56,7 @@ using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTrack
 using MFTTracksExtra = soa::Join<aod::MFTTracks>;
 
 struct HfTaskSingleMuonMult {
+  Configurable<float> etaCh{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
   Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
   Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
@@ -173,10 +174,12 @@ struct HfTaskSingleMuonMult {
     int nMu{0};
     constexpr std::size_t nTypes{5};
     int nMuTrackType[nTypes] = {0};
+    constexpr float etaCh{0.8};
+    constexpr float pTMinCh{0.15};
 
     std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
     for (const auto& track : tracks) {
-      if (track.isGlobalTrack() && std::abs(track.eta()) < 0.8 && track.pt() > 0.15) {
+      if (track.isGlobalTrack() && std::abs(track.eta()) < etaCh && track.pt() > pTMinCh) {
         chTracks.push_back(track);
       }
     }
