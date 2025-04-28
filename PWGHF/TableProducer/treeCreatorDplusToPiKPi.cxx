@@ -252,7 +252,6 @@ struct HfTreeCreatorDplusToPiKPi {
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
-  Configurable<bool> fillOnlySignalMl{"fillOnlySignalMl", false, "Flag to fill derived tables with MC and ML info"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
@@ -485,87 +484,6 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
-  void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const&,
-                 SelectedCandidatesMc const& candidates,
-                 MatchedGenCandidatesMc const& particles,
-                 SelectedCandidatesMcWithMl const&,
-                 TracksWPid const&)
-  {
-    // Filling event properties
-    rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, 0, 1);
-    }
-
-    // Filling candidate properties
-    if (fillOnlySignal) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandSig.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandSig.size());
-      }
-      for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<aod::Collisions, true>(candidate);
-      }
-    } else if (fillOnlySignalMl) {
-      rowCandidateMl.reserve(reconstructedCandSigMl.size());
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandSigMl.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandSigMl.size());
-      }
-      for (const auto& candidate : reconstructedCandSigMl) {
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-            continue;
-          }
-        }
-        fillCandidateTable<aod::Collisions, true, true>(candidate);
-      }
-    } else if (fillOnlyBackground) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandBkg.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandBkg.size());
-      }
-      for (const auto& candidate : reconstructedCandBkg) {
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-            continue;
-          }
-        }
-        fillCandidateTable<aod::Collisions, true>(candidate);
-      }
-    } else {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size());
-      } else {
-        rowCandidateFull.reserve(candidates.size());
-      }
-      for (const auto& candidate : candidates) {
-        fillCandidateTable<aod::Collisions, true>(candidate);
-      }
-    }
-
-    // Filling particle properties
-    rowCandidateFullParticles.reserve(particles.size());
-    for (const auto& particle : particles) {
-      rowCandidateFullParticles(
-        particle.mcCollision().bcId(),
-        particle.pt(),
-        particle.eta(),
-        particle.phi(),
-        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus),
-        particle.flagMcMatchGen(),
-        particle.originMcGen());
-    }
-  }
-
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
-
   void processDataWCent(CollisionsCent const& collisions,
                         soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
                         TracksWPid const&)
@@ -595,12 +513,12 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
-  void processMcWCent(CollisionsCent const& collisions,
-                      aod::McCollisions const&,
-                      SelectedCandidatesMc const& candidates,
-                      MatchedGenCandidatesMc const& particles,
-                      SelectedCandidatesMcWithMl const&,
-                      TracksWPid const&)
+  template <bool applyMl = false, typename CandType, typename CollType>
+  void fillMcTables(CollType const& collisions,
+                    aod::McCollisions const&,
+                    CandType const& candidates,
+                    MatchedGenCandidatesMc const& particles,
+                    TracksWPid const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -609,55 +527,19 @@ struct HfTreeCreatorDplusToPiKPi {
     }
 
     // Filling candidate properties
-    if (fillOnlySignal) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandSig.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandSig.size());
-      }
-      for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<CollisionsCent, true>(candidate);
-      }
-    } else if (fillOnlySignalMl) {
-      rowCandidateMl.reserve(reconstructedCandSigMl.size());
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandSigMl.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandSigMl.size());
-      }
-      for (const auto& candidate : reconstructedCandSigMl) {
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-            continue;
-          }
-        }
-        fillCandidateTable<CollisionsCent, true, true>(candidate);
-      }
-    } else if (fillOnlyBackground) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(reconstructedCandBkg.size());
-      } else {
-        rowCandidateFull.reserve(reconstructedCandBkg.size());
-      }
-      for (const auto& candidate : reconstructedCandBkg) {
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-            continue;
-          }
-        }
-        fillCandidateTable<CollisionsCent, true>(candidate);
-      }
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
     } else {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size());
-      } else {
-        rowCandidateFull.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size());
+    }
+    for (const auto& candidate : candidates) {
+      if (downSampleBkgFactor < 1.) {
+        float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+          continue;
+        }
       }
-      for (const auto& candidate : candidates) {
-        fillCandidateTable<CollisionsCent, true>(candidate);
-      }
+      fillCandidateTable<CollType, true, applyMl>(candidate);
     }
 
     // Filling particle properties
@@ -674,7 +556,61 @@ struct HfTreeCreatorDplusToPiKPi {
     }
   }
 
+  void processMc(aod::Collisions const& collisions,
+                 aod::McCollisions const& mccollisions,
+                 SelectedCandidatesMc const& candidates,
+                 MatchedGenCandidatesMc const& particles,
+                 TracksWPid const& tracks)
+  {
+    if (fillOnlySignal) {
+      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks);
+    } else if (fillOnlyBackground) {
+      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks);
+    } else {
+      fillMcTables(collisions, mccollisions, candidates, particles, tracks);
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMc, "Process MC", false);
+
+  void processMcWCent(CollisionsCent const& collisions,
+                      aod::McCollisions const& mccollisions,
+                      SelectedCandidatesMc const& candidates,
+                      MatchedGenCandidatesMc const& particles,
+                      TracksWPid const& tracks)
+  {
+    if (fillOnlySignal) {
+      fillMcTables(collisions, mccollisions, reconstructedCandSig, particles, tracks);
+    } else if (fillOnlyBackground) {
+      fillMcTables(collisions, mccollisions, reconstructedCandBkg, particles, tracks);
+    } else {
+      fillMcTables(collisions, mccollisions, candidates, particles, tracks);
+    }
+  }
+
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
+
+  void processMcSgnWMl(aod::Collisions const& collisions,
+                       aod::McCollisions const& mccollisions,
+                       SelectedCandidatesMcWithMl const&,
+                       MatchedGenCandidatesMc const& particles,
+                       TracksWPid const& tracks)
+  {
+    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
+
+  void processMcSgnWCentMl(CollisionsCent const& collisions,
+                           aod::McCollisions const& mccollisions,
+                           SelectedCandidatesMcWithMl const&,
+                           MatchedGenCandidatesMc const& particles,
+                           TracksWPid const& tracks)
+  {
+    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

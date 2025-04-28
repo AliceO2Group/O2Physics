@@ -69,7 +69,7 @@ DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, unsigned int); //! 
 DECLARE_SOA_COLUMN(StoredEMCalnCells, storedEMCalnCells, unsigned int);     //! number of emcal cells
 DECLARE_SOA_COLUMN(StoredEMCalCellEnergy, storedEMCalCellEnergy, float);    //! sum of energy in emcal cells
 } // namespace bcwisebc
-DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBCS", //! table of bc wise centrality estimation and event selection input
+DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBC", //! table of bc wise centrality estimation and event selection input
                   o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::HasNoTFROFBorder,
                   bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredEMCalnCells, bcwisebc::StoredEMCalCellEnergy);
 
@@ -83,7 +83,7 @@ DECLARE_SOA_COLUMN(StoredZVtx, storedZVtx, int16_t);             //! Z-vertex po
 DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent]; }); //! Centrality (0-100)
 DECLARE_SOA_DYNAMIC_COLUMN(ZVtx, zVtx, [](uint8_t storedzvtx) -> float { return storedzvtx / emdownscaling::downscalingFactors[emdownscaling::kZVtx]; });                             //! Centrality (0-100)
 } // namespace bcwisecollision
-DECLARE_SOA_TABLE(BCWiseCollisions, "AOD", "BCWISECOLLS", //! table of skimmed EMCal clusters
+DECLARE_SOA_TABLE(BCWiseCollisions, "AOD", "BCWISECOLL", //! table of skimmed EMCal clusters
                   o2::soa::Index<>, BCWiseBCId, bcwisecollision::StoredCentrality, bcwisecollision::StoredZVtx,
                   bcwisecollision::Centrality<bcwisecollision::StoredCentrality>, bcwisecollision::ZVtx<bcwisecollision::StoredZVtx>);
 
@@ -110,7 +110,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsExotic, isExotic, [](bool storedIsExotic) -> bool {
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float storedE, float storedEta) -> float { return storedE / emdownscaling::downscalingFactors[emdownscaling::kEnergy] / std::cosh(storedEta / emdownscaling::downscalingFactors[emdownscaling::kEta]); }); //! cluster pt, assuming m=0 (photons)
 } // namespace bcwisecluster
 
-DECLARE_SOA_TABLE(BCWiseClusters, "AOD", "BCWISECLUSTERS", //! table of skimmed EMCal clusters
+DECLARE_SOA_TABLE(BCWiseClusters, "AOD", "BCWISECLUSTER", //! table of skimmed EMCal clusters
                   o2::soa::Index<>, BCWiseBCId, bcwisecluster::StoredDefinition, bcwisecluster::StoredE, bcwisecluster::StoredEta, bcwisecluster::StoredPhi, bcwisecluster::StoredNCells, bcwisecluster::StoredM02, bcwisecluster::StoredTime, bcwisecluster::StoredIsExotic,
                   bcwisecluster::Definition<bcwisecluster::StoredDefinition>, bcwisecluster::E<bcwisecluster::StoredE>, bcwisecluster::Eta<bcwisecluster::StoredEta>, bcwisecluster::Phi<bcwisecluster::StoredPhi>, bcwisecluster::NCells<bcwisecluster::StoredNCells>, bcwisecluster::M02<bcwisecluster::StoredM02>, bcwisecluster::Time<bcwisecluster::StoredTime>, bcwisecluster::IsExotic<bcwisecluster::StoredIsExotic>,
                   bcwisecluster::Pt<bcwisecluster::StoredE, bcwisecluster::StoredEta>);
@@ -126,7 +126,7 @@ DECLARE_SOA_COLUMN(IsFromWD, isFromWD, bool);          //! Pi0 from a weak decay
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t storedpt) -> float { return storedpt / emdownscaling::downscalingFactors[emdownscaling::kpT]; }); //! pT of pi0 (GeV)
 } // namespace bcwisemcpi0s
 
-DECLARE_SOA_TABLE(BCWiseMCPi0s, "AOD", "BCWISEMCPI0S", //! table of pi0s on MC level
+DECLARE_SOA_TABLE(BCWiseMCPi0s, "AOD", "BCWISEMCPI0", //! table of pi0s on MC level
                   o2::soa::Index<>, BCWiseBCId, bcwisemcpi0s::ParticleIdPi0, bcwisemcpi0s::StoredPt, bcwisemcpi0s::IsAccepted, bcwisemcpi0s::IsPrimary, bcwisemcpi0s::IsFromWD,
                   bcwisemcpi0s::Pt<bcwisemcpi0s::StoredPt>);
 

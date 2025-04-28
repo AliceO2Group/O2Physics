@@ -90,9 +90,6 @@ struct UccZdc {
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
-  Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
-  Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
-  Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
@@ -108,6 +105,7 @@ struct UccZdc {
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
 
+  Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
   Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
   Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
   Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
@@ -296,13 +294,13 @@ struct UccZdc {
 
       registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFV0, 0., maxAmpFV0}});
+      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
 
       registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsMeanPt", ";#it{N}_{ch} (|#eta|<0.8);#LT[#it{p}_{T}]#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);#LT ITS+TPC tracks #GT (|#eta|<0.8);", kTProfile, {{6000, -0.5, 5999.5}});
-      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;#LTITS+TPC tracks#GT (|#eta|<0.8);", kTProfile, {{6000, -0.5, 5999.5}});
+      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
       registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
       registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
       registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
@@ -544,13 +542,15 @@ struct UccZdc {
     registry.fill(HIST("NchVsFT0M"), (aT0A + aT0C) / 100., glbTracks);
 
     registry.fill(HIST("NchVsEt"), et, glbTracks);
-    registry.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
     registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), glbTracks);
     registry.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
     registry.fill(HIST("ZNAVsNch"), glbTracks, znA);
     registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
     registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
     registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
+    if (glbTracks >= minNchSel) {
+      registry.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
+    }
   }
   PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
 
@@ -633,7 +633,7 @@ struct UccZdc {
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
     getPTpowers(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
     const double nch{static_cast<double>(pTs.size())};
-    if (!(nch != 0.)) {
+    if (nch < minNchSel) {
       return;
     }
 
@@ -723,7 +723,7 @@ struct UccZdc {
         }
 
         const double nch{static_cast<double>(pTs.size())};
-        if (!(nch != 0.)) {
+        if (nch < minNchSel) {
           return;
         }
 
@@ -778,6 +778,10 @@ struct UccZdc {
         }
 
         const double nchMC{static_cast<double>(pTsMC.size())};
+        if (nchMC < minNchSel) {
+          return;
+        }
+
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
         p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
         getPTpowers(pTsMC, wIsMC, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);

@@ -497,6 +497,7 @@ struct StrangenessBuilder {
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
+        listOfRequestors[i] = "manual enabling";
       }
       if (f == -1) {
         // autodetect this table in other devices

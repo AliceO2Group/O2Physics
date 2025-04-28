@@ -28,9 +28,6 @@ bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
-std::map<int, int> VarManager::fgRunMap;
-TString VarManager::fgRunStr = "";
-std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
@@ -111,69 +108,6 @@ void VarManager::ResetValues(int startValue, int endValue, float* values)
 }
 
 //__________________________________________________________________
-void VarManager::SetRunNumbers(int n, int* runs)
-{
-  //
-  // maps the list of runs such that one can plot the list of runs nicely in a histogram axis
-  //
-  for (int i = 0; i < n; ++i) {
-    fgRunMap[runs[i]] = i + 1;
-    fgRunStr += Form("%d;", runs[i]);
-  }
-}
-
-//__________________________________________________________________
-void VarManager::SetRunNumbers(std::vector<int> runs)
-{
-  //
-  // maps the list of runs such that one can plot the list of runs nicely in a histogram axis
-  //
-  int i = 0;
-  for (auto run = runs.begin(); run != runs.end(); run++, i++) {
-    fgRunMap[*run] = i + 1;
-    fgRunStr += Form("%d;", *run);
-  }
-  fgRunList = runs;
-}
-
-//__________________________________________________________________
-void VarManager::SetDummyRunlist(int InitRunnumber)
-{
-  //
-  // runlist for the different periods
-  fgRunList.clear();
-  fgRunList.push_back(InitRunnumber);
-  fgRunList.push_back(InitRunnumber + 100);
-}
-
-//__________________________________________________________________
-int VarManager::GetDummyFirst()
-{
-  //
-  // Get the fist index of the vector of run numbers
-  //
-  return fgRunList[0];
-}
-//__________________________________________________________________
-int VarManager::GetDummyLast()
-{
-  //
-  // Get the last index of the vector of run numbers
-  //
-  return fgRunList[fgRunList.size() - 1];
-}
-//_________________________________________________________________
-float VarManager::GetRunIndex(double Runnumber)
-{
-  //
-  // Get the index of RunNumber in it's runlist
-  //
-  int runNumber = static_cast<int>(Runnumber);
-  auto runIndex = std::find(fgRunList.begin(), fgRunList.end(), runNumber);
-  float index = std::distance(fgRunList.begin(), runIndex);
-  return index;
-}
-//__________________________________________________________________
 void VarManager::SetCollisionSystem(TString system, float energy)
 {
   //
@@ -191,15 +125,12 @@ void VarManager::SetCollisionSystem(TString system, float energy)
 }
 
 //__________________________________________________________________
-void VarManager::FillEventDerived(float* values)
-{
-  //
-  // Fill event-wise derived quantities (these are all quantities which can be computed just based on the values already filled in the FillEvent() function)
-  //
-  if (fgUsedVars[kRunId]) {
-    values[kRunId] = (fgRunMap.size() > 0 ? fgRunMap[static_cast<int>(values[kRunNo])] : 0);
-  }
-}
+// void VarManager::FillEventDerived(float* values)
+// {
+//   //
+//   // Fill event-wise derived quantities (these are all quantities which can be computed just based on the values already filled in the FillEvent() function)
+//   //
+// }
 
 //__________________________________________________________________
 void VarManager::FillTrackDerived(float* values)
@@ -230,8 +161,6 @@ void VarManager::SetDefaultVarNames()
 
   fgVariableNames[kRunNo] = "Run number";
   fgVariableUnits[kRunNo] = "";
-  fgVariableNames[kRunId] = "Run number";
-  fgVariableUnits[kRunId] = "";
   fgVariableNames[kBC] = "Bunch crossing";
   fgVariableUnits[kBC] = "";
   fgVariableNames[kTimeFromSOR] = "time since SOR";
@@ -991,7 +920,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhi] = "rad.";
   fgVariableNames[kDeltaPhiSym] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiSym] = "rad.";
-  fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
+  fgVariableNames[kCosThetaHE] = "cos#it{#theta}_{HE}";
   fgVariableUnits[kCosThetaHE] = "";
   fgVariableNames[kPhiHE] = "#varphi_{HE}";
   fgVariableUnits[kPhiHE] = "rad.";
@@ -999,6 +928,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCosThetaCS] = "";
   fgVariableNames[kPhiCS] = "#varphi_{CS}";
   fgVariableUnits[kPhiCS] = "rad.";
+  fgVariableNames[kCosThetaPP] = "cos#it{#theta}_{PP}";
+  fgVariableUnits[kCosThetaPP] = "";
+  fgVariableNames[kPhiPP] = "#varphi_{PP}";
+  fgVariableUnits[kPhiPP] = "rad.";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1095,8 +1028,6 @@ void VarManager::SetDefaultVarNames()
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
   fgVarNamesMap["kRunNo"] = kRunNo;
-  fgVarNamesMap["kRunId"] = kRunId;
-  fgVarNamesMap["kRunIndex"] = kRunIndex;
   fgVarNamesMap["kNRunWiseVariables"] = kNRunWiseVariables;
   fgVarNamesMap["kTimestamp"] = kTimestamp;
   fgVarNamesMap["kTimeFromSOR"] = kTimeFromSOR;
@@ -1540,8 +1471,10 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kVertexingChi2PCA"] = kVertexingChi2PCA;
   fgVarNamesMap["kCosThetaHE"] = kCosThetaHE;
   fgVarNamesMap["kCosThetaCS"] = kCosThetaCS;
+  fgVarNamesMap["kCosThetaPP"] = kCosThetaPP;
   fgVarNamesMap["kPhiHE"] = kPhiHE;
   fgVarNamesMap["kPhiCS"] = kPhiCS;
+  fgVarNamesMap["kPhiPP"] = kPhiPP;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
