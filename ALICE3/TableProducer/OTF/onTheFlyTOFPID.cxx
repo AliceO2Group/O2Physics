@@ -63,6 +63,7 @@ using namespace o2::framework;
 struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofMC> upgradeTofMC;
   Produces<aod::UpgradeTof> upgradeTof;
+  Produces<aod::UpgradeTofExpectedTime> upgradeTofExpectedTime;
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -141,7 +142,7 @@ struct OnTheFlyTofPid {
       mapPdgLut.insert(std::make_pair(321, lutKaChar));
       mapPdgLut.insert(std::make_pair(2212, lutPrChar));
 
-      for (auto e : mapPdgLut) {
+      for (const auto& e : mapPdgLut) {
         if (!mSmearer.loadTable(e.first, e.second)) {
           LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
@@ -350,7 +351,7 @@ struct OnTheFlyTofPid {
     float sum = 0.;
     float sumw = 0.;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto pdgInfo = pdg->GetParticle(track.mPdgCode);
       if (pdgInfo == nullptr) {
         continue;
@@ -549,8 +550,9 @@ struct OnTheFlyTofPid {
       const float noSmearingPt = trkWithTime.mNoSmearingPt;
 
       // Straight to Nsigma
-      float deltaTimeInnerTOF[5], nSigmaInnerTOF[5];
-      float deltaTimeOuterTOF[5], nSigmaOuterTOF[5];
+      static std::array<float, 5> expectedTimeInnerTOF, expectedTimeOuterTOF;
+      static std::array<float, 5> deltaTimeInnerTOF, deltaTimeOuterTOF;
+      static std::array<float, 5> nSigmaInnerTOF, nSigmaOuterTOF;
       static constexpr int lpdg_array[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[5];
 
@@ -576,8 +578,13 @@ struct OnTheFlyTofPid {
 
         auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
         masses[ii] = pdgInfoThis->Mass();
-        deltaTimeInnerTOF[ii] = trackLengthRecoInnerTOF / velocity(momentum, masses[ii]) - measuredTimeInnerTOF;
-        deltaTimeOuterTOF[ii] = trackLengthRecoOuterTOF / velocity(momentum, masses[ii]) - measuredTimeOuterTOF;
+        const float v = velocity(momentum, masses[ii]);
+
+        expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
+        expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
+
+        deltaTimeInnerTOF[ii] = measuredTimeInnerTOF - expectedTimeInnerTOF[ii];
+        deltaTimeOuterTOF[ii] = measuredTimeOuterTOF - expectedTimeInnerTOF[ii];
 
         // Evaluate total sigma (layer + tracking resolution)
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
@@ -769,6 +776,8 @@ struct OnTheFlyTofPid {
                  measuredTimeInnerTOF, trackLengthRecoInnerTOF,
                  nSigmaOuterTOF[0], nSigmaOuterTOF[1], nSigmaOuterTOF[2], nSigmaOuterTOF[3], nSigmaOuterTOF[4],
                  measuredTimeOuterTOF, trackLengthRecoOuterTOF);
+      upgradeTofExpectedTime(expectedTimeInnerTOF[0], expectedTimeInnerTOF[1], expectedTimeInnerTOF[2], expectedTimeInnerTOF[3], expectedTimeInnerTOF[4],
+                             expectedTimeOuterTOF[0], expectedTimeOuterTOF[1], expectedTimeOuterTOF[2], expectedTimeOuterTOF[3], expectedTimeOuterTOF[4]);
     }
   }
 };
