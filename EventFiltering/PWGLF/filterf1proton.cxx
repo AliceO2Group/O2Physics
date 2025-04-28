@@ -482,7 +482,7 @@ struct filterf1proton {
                                                          aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                          aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                          aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-  using PrimaryTrackCandidatesIU = soa::Filtered<soa::Join<aod::TracksCovIU, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
+  using PrimaryTrackCandidatesIU = soa::Filtered<soa::Join<aod::TracksCovIU, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
 
   void processF1Proton(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, ResoV0s const& V0s)
   {
@@ -701,7 +701,7 @@ struct filterf1proton {
   }
   PROCESS_SWITCH(filterf1proton, processF1Proton, "Process for trigger", false);
   TLorentzVector v0Dummy;
-  void processF1ProtonHelper(EventCandidates::iterator const& collision, aod::BCs const&, PrimaryTrackCandidates const& tracks, PrimaryTrackCandidatesIU const& tracksIU, aod::V0s const& V0s)
+  void processF1ProtonHelper(EventCandidates::iterator const& collision, aod::BCs const&, PrimaryTrackCandidatesIU const& tracks, aod::V0s const& V0s)
   {
     initCCDB(collision.bc().runNumber());
     bool keepEventF1Proton = false;
