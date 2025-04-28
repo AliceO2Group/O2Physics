@@ -17,12 +17,19 @@
 #include <Framework/Configurable.h>
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
 #include <fairlogger/Logger.h>
 #include <iostream>
 #include <iterator>
 #include <string>
-
+#include <vector>
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "../filterTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -36,6 +43,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/strangenessBuilderHelper.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -151,8 +160,22 @@ struct filterf1proton {
                                            },
                                OutputObjHandlingPolicy::AnalysisObject};
 
+  // helper object
+  o2::pwglf::strangenessBuilderHelper mStraHelper;
+  int mRunNumber = 0;
+  float mBz = 0.;
+
   void init(o2::framework::InitContext&)
   {
+    // set V0 parameters in the helper
+    mStraHelper.v0selections.minCrossedRows = ConfDaughTPCnclsMin;
+    mStraHelper.v0selections.dcanegtopv = ConfDaughDCAMin;
+    mStraHelper.v0selections.dcapostopv = ConfDaughDCAMin; // get the minimum one
+    mStraHelper.v0selections.v0cospa = ConfV0CPAMin;
+    mStraHelper.v0selections.dcav0dau = ConfV0DCADaughMax;
+    mStraHelper.v0selections.v0radius = ConfV0TranRadV0Min;
+    mStraHelper.v0selections.maxDaughterEta = ConfDaughEta;
+
     ccdb->setURL(url.value);
     ccdbApi.init(url);
     ccdb->setCaching(true);
@@ -161,6 +184,26 @@ struct filterf1proton {
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "All events");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events with F1");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, aod::filtering::TriggerEventF1Proton::columnLabel());
+  }
+
+  void initCCDB(int run)
+  {
+    if (run != mRunNumber) {
+      mRunNumber = run;
+      o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", run);
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      mBz = static_cast<float>(grpmag->getNominalL3Field());
+      mStraHelper.fitter.setBz(mBz);
+    }
+    if (!mStraHelper.lut) { /// done only once
+      ccdb->setURL(url.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(true);
+      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      mStraHelper.lut = lut;
+    }
   }
 
   template <typename T>
@@ -257,10 +300,10 @@ struct filterf1proton {
   bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0Daughter)
   {
     const auto eta = track.eta();
-    const auto tpcNClsF = track.tpcNClsFound();
+    // const auto tpcNClsF = track.tpcNClsFound();
+    const auto tpcNClsF = track.tpcNClsCrossedRows();
     const auto dcaXY = track.dcaXY();
     const auto sign = track.sign();
-
     if (charge < 0 && sign > 0) {
       return false;
     }
@@ -276,7 +319,6 @@ struct filterf1proton {
     if (std::abs(dcaXY) < ConfDaughDCAMin) {
       return false;
     }
-
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
@@ -435,7 +477,7 @@ struct filterf1proton {
   // using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
   using EventCandidates = aod::Collisions;
   using ResoV0s = aod::V0Datas;
-  using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using PrimaryTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksCovIU, aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                          aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                          aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                          aod::pidTPCFullPr, aod::pidTOFFullPr>>;
@@ -572,8 +614,8 @@ struct filterf1proton {
         if (!SelectionV0(collision, v0)) {
           continue;
         }
-        auto postrack = v0.template posTrack_as<PrimaryTrackCandidates>();
-        auto negtrack = v0.template negTrack_as<PrimaryTrackCandidates>();
+        auto postrack = v0.posTrack_as<PrimaryTrackCandidates>();
+        auto negtrack = v0.negTrack_as<PrimaryTrackCandidates>();
         double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
         double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
         if (ConfUseManualPIDdaughterPion) {
@@ -655,7 +697,254 @@ struct filterf1proton {
     }
     tags(keepEventF1Proton);
   }
-  PROCESS_SWITCH(filterf1proton, processF1Proton, "Process for trigger", true);
+  PROCESS_SWITCH(filterf1proton, processF1Proton, "Process for trigger", false);
+  TLorentzVector v0Dummy;
+  void processF1ProtonHelper(EventCandidates::iterator const& collision, aod::BCsWithTimestamps const&, PrimaryTrackCandidates const& tracks, aod::V0s const& V0s)
+  {
+    initCCDB(collision.bc().runNumber());
+    bool keepEventF1Proton = false;
+    int numberF1 = 0;
+    if (isSelectedEvent(collision)) {
+      if (ConfUseManualPIDproton || ConfUseManualPIDkaon || ConfUseManualPIDpion) {
+        currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+        if (currentRunNumber != lastRunNumber) {
+          auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+          if (ConfUseManualPIDproton) {
+            BBProton = setValuesBB(ccdbApi, bc, ConfPIDBBProton);
+            BBAntiproton = setValuesBB(ccdbApi, bc, ConfPIDBBAntiProton);
+          }
+          if (ConfUseManualPIDpion) {
+            BBPion = setValuesBB(ccdbApi, bc, ConfPIDBBPion);
+            BBAntipion = setValuesBB(ccdbApi, bc, ConfPIDBBAntiPion);
+          }
+          if (ConfUseManualPIDkaon) {
+            BBKaon = setValuesBB(ccdbApi, bc, ConfPIDBBKaon);
+            BBAntikaon = setValuesBB(ccdbApi, bc, ConfPIDBBAntiKaon);
+          }
+          lastRunNumber = currentRunNumber;
+        }
+      }
+
+      // keep track of indices
+      std::vector<int> PionIndex = {};
+      std::vector<int> KaonIndex = {};
+      std::vector<int> ProtonIndex = {};
+
+      // keep charge of track
+      std::vector<float> PionCharge = {};
+      std::vector<float> KaonCharge = {};
+      std::vector<float> ProtonCharge = {};
+
+      // Prepare vectors for different species
+      std::vector<ROOT::Math::PtEtaPhiMVector> protons, kaons, pions, kshorts;
+      float kstar = 999.f;
+
+      for (auto& track : tracks) {
+
+        if (!isSelectedTrack(track))
+          continue;
+        qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
+        qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
+        qaRegistry.fill(HIST("hEta"), track.eta());
+        qaRegistry.fill(HIST("hPhi"), track.phi());
+        double nTPCSigmaP[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+        double nTPCSigmaN[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+        if (ConfUseManualPIDproton) {
+          auto bgScalingProton = 1 / massPr; // momentum scaling?
+          if (BBProton.size() == 6)
+            nTPCSigmaP[2] = updatePID(track, bgScalingProton, BBProton);
+          if (BBAntiproton.size() == 6)
+            nTPCSigmaN[2] = updatePID(track, bgScalingProton, BBAntiproton);
+        }
+        if (ConfUseManualPIDkaon) {
+          auto bgScalingKaon = 1 / massKa; // momentum scaling?
+          if (BBKaon.size() == 6)
+            nTPCSigmaP[1] = updatePID(track, bgScalingKaon, BBKaon);
+          if (BBAntikaon.size() == 6)
+            nTPCSigmaN[1] = updatePID(track, bgScalingKaon, BBAntikaon);
+        }
+        if (ConfUseManualPIDpion) {
+          auto bgScalingPion = 1 / massPi; // momentum scaling?
+          if (BBPion.size() == 6)
+            nTPCSigmaP[0] = updatePID(track, bgScalingPion, BBPion);
+          if (BBAntipion.size() == 6)
+            nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
+        }
+
+        if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
+          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
+          pions.push_back(temp);
+          PionIndex.push_back(track.globalIndex());
+          PionCharge.push_back(track.sign());
+          if (track.sign() > 0) {
+            qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
+          }
+          if (track.sign() < 0) {
+            qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaN[0], track.pt());
+          }
+          if (track.hasTOF()) {
+            qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
+          }
+        }
+
+        if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
+          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
+          kaons.push_back(temp);
+          KaonIndex.push_back(track.globalIndex());
+          KaonCharge.push_back(track.sign());
+          if (track.sign() > 0) {
+            qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
+          }
+          if (track.sign() < 0) {
+            qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
+          }
+          if (track.hasTOF()) {
+            qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
+          }
+        }
+
+        if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
+          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
+          qaRegistry.fill(HIST("hMommentumCorr"), track.p() / track.sign(), track.p() - track.tpcInnerParam());
+          if (ConfFakeProton && !isFakeProton(track)) {
+            protons.push_back(temp);
+            ProtonIndex.push_back(track.globalIndex());
+            ProtonCharge.push_back(track.sign());
+          }
+          if (track.sign() > 0) {
+            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
+          }
+          if (track.sign() < 0) {
+            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaN[2], track.pt());
+          }
+          if (track.hasTOF()) {
+            qaRegistry.fill(HIST("hNsigmaPtprotonTOF"), track.tofNSigmaPr(), track.pt());
+          }
+        }
+      } // track loop end
+
+      // keep track of daugher indices to avoid selfcorrelations
+      std::vector<int> KshortPosDaughIndex = {};
+      std::vector<int> KshortNegDaughIndex = {};
+
+      for (auto& v0 : V0s) {
+
+        auto postrack = v0.template posTrack_as<PrimaryTrackCandidates>();
+        auto negtrack = v0.template negTrack_as<PrimaryTrackCandidates>();
+        auto trackparpos = getTrackParCov(postrack);
+        auto trackparneg = getTrackParCov(negtrack);
+        if (!mStraHelper.buildV0Candidate(v0.collisionId(), collision.posX(), collision.posY(), collision.posZ(), postrack, negtrack, trackparpos, trackparneg)) {
+          continue;
+        }
+
+        if (fabs(mStraHelper.v0.dcaToPV) > cMaxV0DCA) {
+          continue;
+        }
+        auto v0px = mStraHelper.v0.momentum[0];
+        auto v0py = mStraHelper.v0.momentum[1];
+        auto v0pz = mStraHelper.v0.momentum[2];
+        auto pT = std::sqrt(v0px * v0px + v0py * v0py);
+        if (pT < ConfV0PtMin) {
+          continue;
+        }
+        if (std::hypot(mStraHelper.v0.position[0], mStraHelper.v0.position[1]) < ConfV0TranRadV0Min) {
+          continue;
+        }
+        if (std::hypot(mStraHelper.v0.position[0], mStraHelper.v0.position[1]) > ConfV0TranRadV0Max) {
+          continue;
+        }
+        double distovertotmom = std::hypot(mStraHelper.v0.position[0] - collision.posX(), mStraHelper.v0.position[1] - collision.posY(), mStraHelper.v0.position[2] - collision.posZ()) / (std::hypot(mStraHelper.v0.momentum[0], mStraHelper.v0.momentum[1], mStraHelper.v0.momentum[2]) + 1e-13);
+        if (distovertotmom * o2::constants::physics::MassK0Short > cMaxV0LifeTime) {
+          continue;
+        }
+        float lowmasscutks0 = 0.497 - 2.0 * cSigmaMassKs0;
+        float highmasscutks0 = 0.497 + 2.0 * cSigmaMassKs0;
+        if (mStraHelper.v0.massK0Short < lowmasscutks0 || mStraHelper.v0.massK0Short > highmasscutks0) {
+          continue;
+        }
+        double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
+        double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
+        if (ConfUseManualPIDdaughterPion) {
+          auto bgScalingPion = 1 / massPi; // momentum scaling?
+          if (BBPion.size() == 6)
+            nTPCSigmaPos[0] = updatePID(postrack, bgScalingPion, BBPion);
+          if (BBAntipion.size() == 6)
+            nTPCSigmaNeg[0] = updatePID(negtrack, bgScalingPion, BBAntipion);
+        }
+        if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
+          continue;
+        }
+        if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0])) {
+          continue;
+        }
+        v0Dummy.SetXYZM(v0px, v0py, v0pz, mStraHelper.v0.massK0Short);
+        qaRegistry.fill(HIST("hInvMassk0"), v0Dummy.M(), pT);
+        ROOT::Math::PtEtaPhiMVector temp(pT, v0Dummy.Eta(), v0Dummy.Phi(), mStraHelper.v0.massK0Short);
+        kshorts.push_back(temp);
+        KshortPosDaughIndex.push_back(postrack.globalIndex());
+        KshortNegDaughIndex.push_back(negtrack.globalIndex());
+      }
+
+      if (pions.size() != 0 && kaons.size() != 0 && kshorts.size() != 0) {
+        for (auto ipion = pions.begin(); ipion != pions.end(); ++ipion) {
+          for (auto ikaon = kaons.begin(); ikaon != kaons.end(); ++ikaon) {
+            auto i1 = std::distance(pions.begin(), ipion);
+            auto i2 = std::distance(kaons.begin(), ikaon);
+            // if(PionCharge.at(i1)*KaonCharge.at(i2)>0)continue;
+            if (PionIndex.at(i1) == KaonIndex.at(i2))
+              continue;
+            for (auto ikshort = kshorts.begin(); ikshort != kshorts.end(); ++ikshort) {
+              auto i3 = std::distance(kshorts.begin(), ikshort);
+              if (PionIndex.at(i1) == KshortPosDaughIndex.at(i3))
+                continue;
+              if (PionIndex.at(i1) == KshortNegDaughIndex.at(i3))
+                continue;
+              KKs0Vector = kaons.at(i2) + kshorts.at(i3);
+              if (KKs0Vector.M() > cMaxMassKKs0)
+                continue;
+              F1Vector = KKs0Vector + pions.at(i1);
+              if (F1Vector.M() > cMaxMassF1)
+                continue;
+              if (F1Vector.Pt() < cMinF1Pt)
+                continue;
+              if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
+                qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
+                continue;
+              }
+              qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
+              numberF1 = numberF1 + 1;
+              for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
+                auto i4 = std::distance(protons.begin(), iproton);
+                if (ProtonIndex.at(i4) == PionIndex.at(i1))
+                  continue;
+                if (ProtonIndex.at(i4) == KaonIndex.at(i2))
+                  continue;
+                if (ProtonIndex.at(i4) == KshortPosDaughIndex.at(i3))
+                  continue;
+                if (ProtonIndex.at(i4) == KshortNegDaughIndex.at(i3))
+                  continue;
+                kstar = getkstar(F1Vector, *iproton);
+                qaRegistry.fill(HIST("hkstarDist"), kstar);
+                if (kstar > cMaxRelMom)
+                  continue;
+                qaRegistry.fill(HIST("hInvMassf1kstar"), F1Vector.M(), F1Vector.Pt(), kstar);
+                keepEventF1Proton = true;
+              }
+            }
+          }
+        }
+      }
+    }
+    hProcessedEvents->Fill(0.5);
+    if (numberF1 > 0) {
+      hProcessedEvents->Fill(1.5);
+    }
+    if (keepEventF1Proton) {
+      hProcessedEvents->Fill(2.5);
+    }
+    tags(keepEventF1Proton);
+  }
+  PROCESS_SWITCH(filterf1proton, processF1ProtonHelper, "Process for trigger with helper v0 task", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
