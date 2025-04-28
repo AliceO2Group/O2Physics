@@ -237,7 +237,6 @@ struct JetTaggerHFTask {
     }
     if (useJetProb) {
       if constexpr (isMC) {
-        std::cout << "before calculate Jet Probability .... " << std::endl;
         jetProb = calculateJetProbability(origin, jet, tracks, isMC);
         if (trackProbQA) {
           evaluateTrackProbQA(origin, jet, tracks, isMC);
@@ -290,14 +289,16 @@ struct JetTaggerHFTask {
     std::map<std::string, std::string> metadata;
     resoFuncMatch = resoFuncMatching;
 
+    const int IPmethod_resolution_function_size = 7;
+
     auto loadCCDBforIP = [&](const std::vector<std::string>& paths, std::vector<TF1*>& targetVec, const std::string& name) {
-      if (paths.size() != 7) {
+      if (paths.size() != IPmethod_resolution_function_size) {
         usepTcategorize.value = false;
         LOG(info) << name << " does not have 7 entries. Disabling pT categorization (usepTcategorize = false).";
         resoFuncMatch = 0;
         return;
       }
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < IPmethod_resolution_function_size; i++) {
         targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
       }
     };
@@ -322,6 +323,7 @@ struct JetTaggerHFTask {
     }
 
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
+    const int IPmethod_numOfParameters = 9;
 
     // Set up the resolution function
     switch (resoFuncMatch) {
@@ -387,7 +389,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncBeautyCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncBeautyCCDB[j]) {
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < IPmethod_numOfParameters; i++) {
               params.emplace_back(resoFuncBeautyCCDB[j]->GetParameter(i));
             }
           }
@@ -396,7 +398,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncCharmCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncCharmCCDB[j]) {
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < IPmethod_numOfParameters; i++) {
               params.emplace_back(resoFuncCharmCCDB[j]->GetParameter(i));
             }
           }
@@ -405,7 +407,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncLfCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncLfCCDB[j]) {
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < IPmethod_numOfParameters; i++) {
               params.emplace_back(resoFuncLfCCDB[j]->GetParameter(i));
             }
           }
