@@ -56,6 +56,15 @@
 using namespace o2;
 using namespace o2::framework;
 
+std::array<std::shared_ptr<TH2>, 5> h2dInnerTimeResTrack;
+std::array<std::shared_ptr<TH2>, 5> h2dInnerTimeResTotal;
+std::array<std::shared_ptr<TH2>, 5> h2dOuterTimeResTrack;
+std::array<std::shared_ptr<TH2>, 5> h2dOuterTimeResTotal;
+std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dInnerNsigmaTrue;
+std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dOuterNsigmaTrue;
+std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dInnerDeltaTrue;
+std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dOuterDeltaTrue;
+
 struct OnTheFlyTofPid {
   Produces<aod::UpgradeTofMC> upgradeTofMC;
   Produces<aod::UpgradeTof> upgradeTof;
@@ -97,6 +106,10 @@ struct OnTheFlyTofPid {
     Configurable<int> nBinsNsigmaWrongSpecies{"nBinsNsigmaWrongSpecies", 200, "number of bins in Nsigma plot (wrong species)"};
     Configurable<float> minNsigmaRange{"minNsigmaRange", -10, "lower limit for the nsigma axis"};
     Configurable<float> maxNsigmaRange{"maxNsigmaRange", +10, "upper limit for the nsigma axis"};
+    Configurable<int> nBinsDeltaCorrectSpecies{"nBinsDeltaCorrectSpecies", 200, "number of bins in Delta plot (correct speies)"};
+    Configurable<int> nBinsDeltaWrongSpecies{"nBinsDeltaWrongSpecies", 200, "number of bins in Delta plot (wrong species)"};
+    Configurable<float> minDeltaRange{"minDeltaRange", -100, "lower limit for the nsigma axis"};
+    Configurable<float> maxDeltaRange{"maxDeltaRange", +100, "upper limit for the nsigma axis"};
     Configurable<int> nBinsTimeRes{"nBinsTimeRes", 400, "number of bins plots time resolution"};
     Configurable<int> nBinsRelativeEtaPt{"nBinsRelativeEtaPt", 400, "number of bins plots pt and eta relative errors"};
     Configurable<int> nBinsEta{"nBinsEta", 400, "number of bins plot relative eta error"};
@@ -187,24 +200,34 @@ struct OnTheFlyTofPid {
         std::string name_title_outer_total_res = "h2dOuterTimeResTotal" + particle_names2[i_true] + "VsP";
         const AxisSpec axisTrackTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Track time resolution - " + particle_names1[i_true] + " (ps)"};
         const AxisSpec axisTotalTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Total time resolution - " + particle_names1[i_true] + " (ps)"};
-        histos.add(name_title_inner_track_res.c_str(), name_title_inner_track_res.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
-        histos.add(name_title_inner_total_res.c_str(), name_title_inner_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
-        histos.add(name_title_outer_track_res.c_str(), name_title_outer_track_res.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
-        histos.add(name_title_outer_total_res.c_str(), name_title_outer_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
+        h2dInnerTimeResTrack[i_true] = histos.add<TH2>(name_title_inner_track_res.c_str(), name_title_inner_track_res.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
+        h2dInnerTimeResTotal[i_true] = histos.add<TH2>(name_title_inner_total_res.c_str(), name_title_inner_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
+        h2dOuterTimeResTrack[i_true] = histos.add<TH2>(name_title_outer_track_res.c_str(), name_title_outer_track_res.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
+        h2dOuterTimeResTotal[i_true] = histos.add<TH2>(name_title_outer_total_res.c_str(), name_title_outer_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
       }
 
       for (int i_true = 0; i_true < 5; i_true++) {
         for (int i_hyp = 0; i_hyp < 5; i_hyp++) {
           std::string name_title_inner = "h2dInnerNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           std::string name_title_outer = "h2dOuterNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
+          std::string name_title_inner_delta = "h2dInnerDeltaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
+          std::string name_title_outer_delta = "h2dOuterDeltaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           if (i_true == i_hyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(plotsConfig.nBinsNsigmaCorrectSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            histos.add(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
-            histos.add(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
+
+            const AxisSpec axisDeltaCorrect{static_cast<int>(plotsConfig.nBinsDeltaCorrectSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisMomentum, axisDeltaCorrect});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisMomentum, axisDeltaCorrect});
           } else {
             const AxisSpec axisNsigmaWrong{static_cast<int>(plotsConfig.nBinsNsigmaWrongSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            histos.add(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
-            histos.add(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
+
+            const AxisSpec axisDeltaWrong{static_cast<int>(plotsConfig.nBinsDeltaWrongSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisMomentum, axisDeltaWrong});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisMomentum, axisDeltaWrong});
           }
         }
       }
@@ -298,7 +321,7 @@ struct OnTheFlyTofPid {
         cosAngle = (point2[0] - trcCircle.xC) * (startPoint[0] - trcCircle.xC) + (point2[1] - trcCircle.yC) * (startPoint[1] - trcCircle.yC);
       }
       cosAngle /= modulus;
-      length = trcCircle.rC * TMath::ACos(cosAngle);
+      length = trcCircle.rC * std::acos(cosAngle);
       length *= std::sqrt(1.0f + track.getTgl() * track.getTgl());
     }
     return length;
@@ -307,7 +330,7 @@ struct OnTheFlyTofPid {
   /// returns velocity in centimeters per picoseconds
   /// \param momentum the momentum of the tarck
   /// \param mass the mass of the particle
-  float velocity(float momentum, float mass)
+  float particleVelocity(float momentum, float mass)
   {
     const float a = momentum / mass;
     // uses light speed in cm/ps so output is in those units
@@ -408,7 +431,7 @@ struct OnTheFlyTofPid {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
     double a0 = mass * mass;
-    double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2PS);
+    double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
     double a2 = (det_radius * 0.01) * (det_radius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
     double dtof_on_dpt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
     double dtof_on_deta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
@@ -487,7 +510,7 @@ struct OnTheFlyTofPid {
       if (pdgInfo == nullptr) {
         continue;
       }
-      const float v = velocity(o2track.getP(), pdgInfo->Mass());
+      const float v = particleVelocity(o2track.getP(), pdgInfo->Mass());
       const float expectedTimeInnerTOF = trackLengthInnerTOF / v + eventCollisionTimePS; // arrival time to the Inner TOF in ps
       const float expectedTimeOuterTOF = trackLengthOuterTOF / v + eventCollisionTimePS; // arrival time to the Outer TOF in ps
       upgradeTofMC(expectedTimeInnerTOF, trackLengthInnerTOF, expectedTimeOuterTOF, trackLengthOuterTOF);
@@ -559,7 +582,7 @@ struct OnTheFlyTofPid {
       static std::array<float, 5> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, 5> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, 5> nSigmaInnerTOF, nSigmaOuterTOF;
-      static constexpr int lpdg_array[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+      static constexpr int pdgArray[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[5];
 
       if (plotsConfig.doQAplots) {
@@ -582,9 +605,9 @@ struct OnTheFlyTofPid {
         nSigmaInnerTOF[ii] = -100;
         nSigmaOuterTOF[ii] = -100;
 
-        auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
+        auto pdgInfoThis = pdg->GetParticle(pdgArray[ii]);
         masses[ii] = pdgInfoThis->Mass();
-        const float v = velocity(momentum, masses[ii]);
+        const float v = particleVelocity(momentum, masses[ii]);
 
         expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
         expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
@@ -608,60 +631,18 @@ struct OnTheFlyTofPid {
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
           if (plotsConfig.doQAplots) {
-            if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[ii])->PdgCode()) {
+            if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(pdgArray[ii])->PdgCode()) {
               if (trackLengthRecoInnerTOF > 0) {
-                switch (ii) {
-                  case 0:
-                    histos.fill(HIST("h2dInnerTimeResTrackElecVsP"), momentum, innerTrackTimeReso);
-                    histos.fill(HIST("h2dInnerTimeResTotalElecVsP"), momentum, innerTotalTimeReso);
-                    break;
-                  case 1:
-                    histos.fill(HIST("h2dInnerTimeResTrackMuonVsP"), momentum, innerTrackTimeReso);
-                    histos.fill(HIST("h2dInnerTimeResTotalMuonVsP"), momentum, innerTotalTimeReso);
-                    break;
-                  case 2:
-                    histos.fill(HIST("h2dInnerTimeResTrackPionVsP"), momentum, innerTrackTimeReso);
-                    histos.fill(HIST("h2dInnerTimeResTotalPionVsP"), momentum, innerTotalTimeReso);
-                    break;
-                  case 3:
-                    histos.fill(HIST("h2dInnerTimeResTrackKaonVsP"), momentum, innerTrackTimeReso);
-                    histos.fill(HIST("h2dInnerTimeResTotalKaonVsP"), momentum, innerTotalTimeReso);
-                    break;
-                  case 4:
-                    histos.fill(HIST("h2dInnerTimeResTrackProtVsP"), momentum, innerTrackTimeReso);
-                    histos.fill(HIST("h2dInnerTimeResTotalProtVsP"), momentum, innerTotalTimeReso);
-                    break;
-                  default:
-                    break;
-                }
+                h2dInnerTimeResTrack[ii]->Fill(momentum, innerTrackTimeReso);
+                h2dInnerTimeResTotal[ii]->Fill(momentum, innerTotalTimeReso);
               }
               if (trackLengthRecoOuterTOF > 0) {
                 float transverse_momentum = momentum / std::cosh(pseudorapidity);
-                switch (ii) {
-                  case 0:
-                    histos.fill(HIST("h2dOuterTimeResTrackElecVsP"), momentum, outerTrackTimeReso);
-                    histos.fill(HIST("h2dOuterTimeResTotalElecVsP"), momentum, outerTotalTimeReso);
-                    break;
-                  case 1:
-                    histos.fill(HIST("h2dOuterTimeResTrackMuonVsP"), momentum, outerTrackTimeReso);
-                    histos.fill(HIST("h2dOuterTimeResTotalMuonVsP"), momentum, outerTotalTimeReso);
-                    break;
-                  case 2:
-                    histos.fill(HIST("h2dOuterTimeResTrackPionVsP"), momentum, outerTrackTimeReso);
-                    histos.fill(HIST("h2dOuterTimeResTotalPionVsP"), momentum, outerTotalTimeReso);
-                    histos.fill(HIST("h2dRelativePtResolution"), transverse_momentum, 100.0 * pt_resolution / transverse_momentum);
-                    histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / (std::fabs(pseudorapidity) + 1e-6));
-                    break;
-                  case 3:
-                    histos.fill(HIST("h2dOuterTimeResTrackKaonVsP"), momentum, outerTrackTimeReso);
-                    histos.fill(HIST("h2dOuterTimeResTotalKaonVsP"), momentum, outerTotalTimeReso);
-                    break;
-                  case 4:
-                    histos.fill(HIST("h2dOuterTimeResTrackProtVsP"), momentum, outerTrackTimeReso);
-                    histos.fill(HIST("h2dOuterTimeResTotalProtVsP"), momentum, outerTotalTimeReso);
-                    break;
-                  default:
-                    break;
+                h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
+                h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
+                if (ii == 2) {
+                  histos.fill(HIST("h2dRelativePtResolution"), transverse_momentum, 100.0 * pt_resolution / transverse_momentum);
+                  histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / (std::fabs(pseudorapidity) + 1e-6));
                 }
               }
             }
@@ -679,89 +660,19 @@ struct OnTheFlyTofPid {
 
       if (plotsConfig.doQAplots) {
         for (int ii = 0; ii < 5; ii++) {
-          if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(lpdg_array[ii])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(pdgArray[ii])->PdgCode()) {
             continue;
           }
           if (trackLengthRecoInnerTOF > 0) {
-            switch (ii) {
-              case 0:
-                histos.fill(HIST("h2dInnerNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
-                histos.fill(HIST("h2dInnerNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
-                histos.fill(HIST("h2dInnerNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
-                histos.fill(HIST("h2dInnerNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
-                histos.fill(HIST("h2dInnerNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
-                break;
-              case 1:
-                histos.fill(HIST("h2dInnerNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
-                histos.fill(HIST("h2dInnerNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
-                histos.fill(HIST("h2dInnerNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
-                histos.fill(HIST("h2dInnerNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
-                histos.fill(HIST("h2dInnerNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
-                break;
-              case 2:
-                histos.fill(HIST("h2dInnerNsigmaTruePionVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
-                histos.fill(HIST("h2dInnerNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
-                histos.fill(HIST("h2dInnerNsigmaTruePionVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
-                histos.fill(HIST("h2dInnerNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
-                histos.fill(HIST("h2dInnerNsigmaTruePionVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
-                break;
-              case 3:
-                histos.fill(HIST("h2dInnerNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
-                histos.fill(HIST("h2dInnerNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
-                histos.fill(HIST("h2dInnerNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
-                histos.fill(HIST("h2dInnerNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
-                histos.fill(HIST("h2dInnerNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
-                break;
-              case 4:
-                histos.fill(HIST("h2dInnerNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaInnerTOF[0]);
-                histos.fill(HIST("h2dInnerNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaInnerTOF[1]);
-                histos.fill(HIST("h2dInnerNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaInnerTOF[2]);
-                histos.fill(HIST("h2dInnerNsigmaTrueProtVsKaonHypothesis"), momentum, nSigmaInnerTOF[3]);
-                histos.fill(HIST("h2dInnerNsigmaTrueProtVsProtHypothesis"), momentum, nSigmaInnerTOF[4]);
-                break;
-              default:
-                break;
+            for (int iii = 0; iii < 5; iii++) {
+              h2dInnerNsigmaTrue[ii][iii]->Fill(momentum, nSigmaInnerTOF[iii]);
+              h2dInnerDeltaTrue[ii][iii]->Fill(momentum, deltaTimeInnerTOF[iii]);
             }
           }
           if (trackLengthRecoOuterTOF > 0) {
-            switch (ii) {
-              case 0:
-                histos.fill(HIST("h2dOuterNsigmaTrueElecVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
-                histos.fill(HIST("h2dOuterNsigmaTrueElecVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
-                histos.fill(HIST("h2dOuterNsigmaTrueElecVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
-                histos.fill(HIST("h2dOuterNsigmaTrueElecVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
-                histos.fill(HIST("h2dOuterNsigmaTrueElecVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
-                break;
-              case 1:
-                histos.fill(HIST("h2dOuterNsigmaTrueMuonVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
-                histos.fill(HIST("h2dOuterNsigmaTrueMuonVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
-                histos.fill(HIST("h2dOuterNsigmaTrueMuonVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
-                histos.fill(HIST("h2dOuterNsigmaTrueMuonVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
-                histos.fill(HIST("h2dOuterNsigmaTrueMuonVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
-                break;
-              case 2:
-                histos.fill(HIST("h2dOuterNsigmaTruePionVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
-                histos.fill(HIST("h2dOuterNsigmaTruePionVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
-                histos.fill(HIST("h2dOuterNsigmaTruePionVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
-                histos.fill(HIST("h2dOuterNsigmaTruePionVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
-                histos.fill(HIST("h2dOuterNsigmaTruePionVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
-                break;
-              case 3:
-                histos.fill(HIST("h2dOuterNsigmaTrueKaonVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
-                histos.fill(HIST("h2dOuterNsigmaTrueKaonVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
-                histos.fill(HIST("h2dOuterNsigmaTrueKaonVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
-                histos.fill(HIST("h2dOuterNsigmaTrueKaonVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
-                histos.fill(HIST("h2dOuterNsigmaTrueKaonVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
-                break;
-              case 4:
-                histos.fill(HIST("h2dOuterNsigmaTrueProtVsElecHypothesis"), momentum, nSigmaOuterTOF[0]);
-                histos.fill(HIST("h2dOuterNsigmaTrueProtVsMuonHypothesis"), momentum, nSigmaOuterTOF[1]);
-                histos.fill(HIST("h2dOuterNsigmaTrueProtVsPionHypothesis"), momentum, nSigmaOuterTOF[2]);
-                histos.fill(HIST("h2dOuterNsigmaTrueProtVsKaonHypothesis"), momentum, nSigmaOuterTOF[3]);
-                histos.fill(HIST("h2dOuterNsigmaTrueProtVsProtHypothesis"), momentum, nSigmaOuterTOF[4]);
-                break;
-              default:
-                break;
+            for (int iii = 0; iii < 5; iii++) {
+              h2dOuterNsigmaTrue[ii][iii]->Fill(momentum, nSigmaOuterTOF[iii]);
+              h2dOuterDeltaTrue[ii][iii]->Fill(momentum, deltaTimeOuterTOF[iii]);
             }
           }
         }
