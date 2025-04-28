@@ -146,10 +146,13 @@ struct OnTheFlyTofPid {
     }
 
     if (plotsConfig.doQAplots) {
+      const AxisSpec axisdNdeta{200, 0.0f, 1000.0f, Form("dN/d#eta in |#eta| < %f", simConfig.multiplicityEtaRange.value)};
+
+      histos.add("h1dNdeta", "h2dNdeta", kTH1F, {axisdNdeta});
       histos.add("h2dEventTime", "h2dEventTime", kTH2F, {{200, -1000, 1000, "computed"}, {200, -1000, 1000, "generated"}});
       histos.add("h1dEventTimegen", "h1dEventTimegen", kTH1F, {{200, -1000, 1000, "generated"}});
       histos.add("h1dEventTimerec", "h1dEventTimerec", kTH1F, {{200, -1000, 1000, "computed"}});
-      histos.add("h1dEventTimeres", "h1dEventTimeres", kTH1F, {{300, 0, 300, "resolution"}});
+      histos.add("h2dEventTimeres", "h2dEventTimeres", kTH2F, {axisdNdeta, {300, 0, 300, "resolution"}});
 
       const AxisSpec axisMomentum{static_cast<int>(plotsConfig.nBinsP), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisMomentumSmall{static_cast<int>(plotsConfig.nBinsP), 0.0f, +1.0f, "#it{p} (GeV/#it{c})"};
@@ -347,6 +350,7 @@ struct OnTheFlyTofPid {
     float sum = 0.;
     float sumw = 0.;
 
+    // Todo: check the different mass hypothesis iteratively
     for (const auto& track : tracks) {
       auto pdgInfo = pdg->GetParticle(track.mPdgCode);
       if (pdgInfo == nullptr) {
@@ -423,7 +427,7 @@ struct OnTheFlyTofPid {
 
     std::array<float, 6> mcPvCov = {0.};
     o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, mcPvCov);
-    const float eventCollisionTimePS = (considerEventTime.value ? collision.collisionTime() * 1e3 : 0.f); // convert ns to ps
+    const float eventCollisionTimePS = (simConfig.considerEventTime.value ? collision.collisionTime() * 1e3 : 0.f); // convert ns to ps
     if (collision.has_mcCollision()) {
       auto mcCollision = collision.mcCollision();
       mcPvVtx.setX(mcCollision.posX());
@@ -454,6 +458,9 @@ struct OnTheFlyTofPid {
         }
         dNdEta += 1.f;
       }
+    }
+    if (plotsConfig.doQAplots) {
+      histos.fill(HIST("h1dNdeta"), dNdEta);
     }
 
     tracksWithTime.clear(); // clear the vector of tracks with time to prepare the cache for the next event
@@ -515,7 +522,7 @@ struct OnTheFlyTofPid {
     // Now we compute the event time for the tracks
 
     std::array<float, 2> tzero = {0.f, 0.f};
-    if (considerEventTime.value) {
+    if (simConfig.considerEventTime.value) {
       const bool etStatus = eventTime(tracksWithTime, tzero);
       if (!etStatus) {
         LOG(warning) << "Event time calculation failed with " << tracksWithTime.size() << " tracks";
@@ -526,7 +533,7 @@ struct OnTheFlyTofPid {
       histos.fill(HIST("h2dEventTime"), tzero[0], eventCollisionTimePS);
       histos.fill(HIST("h1dEventTimegen"), eventCollisionTimePS);
       histos.fill(HIST("h1dEventTimerec"), tzero[0]);
-      histos.fill(HIST("h1dEventTimeres"), tzero[1]);
+      histos.fill(HIST("h2dEventTimeres"), dNdEta, tzero[1]);
     }
 
     // Then we do a second loop to compute the measured quantities with the measured event time
@@ -541,6 +548,7 @@ struct OnTheFlyTofPid {
       const float trackLengthRecoOuterTOF = trkWithTime.mTrackLengthOuterTOF.first;
       const float trackLengthInnerTOF = trkWithTime.mTrackLengthInnerTOF.second;
       const float trackLengthOuterTOF = trkWithTime.mTrackLengthOuterTOF.second;
+      // Todo: remove the bias of the track used in the event time calculation for low multiplicity events
       const float measuredTimeInnerTOF = trkWithTime.mInnerTOFTime.first - tzero[0];
       const float measuredTimeOuterTOF = trkWithTime.mOuterTOFTime.first - tzero[0];
       const float momentum = trkWithTime.mMomentum.first;
