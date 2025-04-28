@@ -18,6 +18,7 @@
 
 #include <limits>
 #include <vector>
+#include <map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -259,7 +260,7 @@ struct bcWiseClusterSkimmer {
       for (const auto& mcCollision : mcCollisionsBC) {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
         for (const auto& mcParticle : mcParticlesInColl) {
-          if (mcParticle.pdgCode() != 111 || fabs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles))
+          if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles))
             continue;
           bool isPrimary = mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator();
           bool isFromWD = (aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcCollision, mcParticle, mcParticles)) > 0;
