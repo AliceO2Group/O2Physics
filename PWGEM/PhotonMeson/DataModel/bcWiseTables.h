@@ -37,7 +37,6 @@ enum Observables {
   kFT0MCent,
   kZVtx,
   kFT0Amp,
-  kCellAmpSum,
   kpT,
   nObservables
 };
@@ -53,25 +52,24 @@ const float downscalingFactors[nObservables]{
   1E2,  // Cluster time
   2E0,  // FT0M centrality
   1E3,  // Z-vertex position
-  1E0,  // FT0M amplitude
-  1E0,  // Cell energy
+  1E-1, // FT0M amplitude
   1E3}; // MC pi0 pt
 } // namespace emdownscaling
 
 namespace bcwisebc
 {
-DECLARE_SOA_COLUMN(HasFT0, hasFT0, bool);                                   //! has_foundFT0()
-DECLARE_SOA_COLUMN(HasTVX, hasTVX, bool);                                   //! has the TVX trigger flag
-DECLARE_SOA_COLUMN(HaskTVXinEMC, haskTVXinEMC, bool);                       //! kTVXinEMC
-DECLARE_SOA_COLUMN(HasEMCCell, hasEMCCell, bool);                           //! at least one EMCal cell in the BC
-DECLARE_SOA_COLUMN(HasNoTFROFBorder, hasNoTFROFBorder, bool);               //! not in the TF border or ITS ROF border region
-DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, unsigned int); //! ft0a+c amplitude
-DECLARE_SOA_COLUMN(StoredEMCalnCells, storedEMCalnCells, unsigned int);     //! number of emcal cells
-DECLARE_SOA_COLUMN(StoredEMCalCellEnergy, storedEMCalCellEnergy, float);    //! sum of energy in emcal cells
+DECLARE_SOA_COLUMN(HasFT0, hasFT0, bool);                               //! has_foundFT0()
+DECLARE_SOA_COLUMN(HasTVX, hasTVX, bool);                               //! has the TVX trigger flag
+DECLARE_SOA_COLUMN(HaskTVXinEMC, haskTVXinEMC, bool);                   //! kTVXinEMC
+DECLARE_SOA_COLUMN(HasEMCCell, hasEMCCell, bool);                       //! at least one EMCal cell in the BC
+DECLARE_SOA_COLUMN(HasNoTFROFBorder, hasNoTFROFBorder, bool);           //! not in the TF border or ITS ROF border region
+DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, uint16_t); //! ft0a+c amplitude
+
+DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp]; }); //! FT0M amplitude
 } // namespace bcwisebc
 DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBC", //! table of bc wise centrality estimation and event selection input
                   o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::HasNoTFROFBorder,
-                  bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredEMCalnCells, bcwisebc::StoredEMCalCellEnergy);
+                  bcwisebc::StoredFT0MAmplitude, bcwisebc::FT0MAmplitude<bcwisebc::StoredFT0MAmplitude>);
 
 DECLARE_SOA_INDEX_COLUMN(BCWiseBC, bcWiseBC); //! bunch crossing ID used as index
 
@@ -117,29 +115,29 @@ DECLARE_SOA_TABLE(BCWiseClusters, "AOD", "BCWISECLUSTER", //! table of skimmed E
 
 namespace bcwisemcpi0s
 {
-DECLARE_SOA_COLUMN(ParticleIdPi0, particleIdPi0, int); //! ID of the pi0 in the MC stack
-DECLARE_SOA_COLUMN(StoredPt, storedPt, uint16_t);      //! Transverse momentum of generated pi0 (10 MeV)
-DECLARE_SOA_COLUMN(IsAccepted, isAccepted, bool);      //! Both decay photons are within the EMCal acceptance
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);        //! mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator()
-DECLARE_SOA_COLUMN(IsFromWD, isFromWD, bool);          //! Pi0 from a weak decay according to pwgem::photonmeson::utils::mcutil::IsFromWD
+DECLARE_SOA_COLUMN(StoredPt, storedPt, uint16_t); //! Transverse momentum of generated pi0 (1 MeV -> Maximum pi0 pT of ~65 GeV)
+DECLARE_SOA_COLUMN(IsAccepted, isAccepted, bool); //! Both decay photons are within the EMCal acceptance
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);   //! mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator()
+DECLARE_SOA_COLUMN(IsFromWD, isFromWD, bool);     //! Pi0 from a weak decay according to pwgem::photonmeson::utils::mcutil::IsFromWD
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t storedpt) -> float { return storedpt / emdownscaling::downscalingFactors[emdownscaling::kpT]; }); //! pT of pi0 (GeV)
 } // namespace bcwisemcpi0s
 
 DECLARE_SOA_TABLE(BCWiseMCPi0s, "AOD", "BCWISEMCPI0", //! table of pi0s on MC level
-                  o2::soa::Index<>, BCWiseBCId, bcwisemcpi0s::ParticleIdPi0, bcwisemcpi0s::StoredPt, bcwisemcpi0s::IsAccepted, bcwisemcpi0s::IsPrimary, bcwisemcpi0s::IsFromWD,
+                  o2::soa::Index<>, BCWiseBCId, bcwisemcpi0s::StoredPt, bcwisemcpi0s::IsAccepted, bcwisemcpi0s::IsPrimary, bcwisemcpi0s::IsFromWD,
                   bcwisemcpi0s::Pt<bcwisemcpi0s::StoredPt>);
 
 namespace bcwisemccluster
 {
-DECLARE_SOA_COLUMN(StoredE, storedE, uint16_t); //! energy of cluster inducing particle (1 MeV precision)
+DECLARE_SOA_COLUMN(Pi0ID, pi0ID, int32_t);              //! Index of the mother pi0 (-1 if not from pi0)
+DECLARE_SOA_COLUMN(StoredTrueE, storedTrueE, uint16_t); //! energy of cluster inducing particle (1 MeV -> Maximum cluster energy of ~65 GeV)
 
-DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](uint16_t storedE) -> float { return storedE / emdownscaling::downscalingFactors[emdownscaling::kEnergy]; }); //! energy of cluster inducing particle (GeV)
+DECLARE_SOA_DYNAMIC_COLUMN(TrueE, trueE, [](uint16_t storedTrueE) -> float { return storedTrueE / emdownscaling::downscalingFactors[emdownscaling::kEnergy]; }); //! energy of cluster inducing particle (GeV)
 } // namespace bcwisemccluster
 
 DECLARE_SOA_TABLE(BCWiseMCClusters, "AOD", "BCWISEMCCLS", //! table of MC information for clusters -> To be joined with the cluster table
-                  o2::soa::Index<>, BCWiseBCId, bcwisemccluster::StoredE, bcwisemcpi0s::ParticleIdPi0,
-                  bcwisemccluster::E<bcwisemccluster::StoredE>);
+                  o2::soa::Index<>, BCWiseBCId, bcwisemccluster::Pi0ID, bcwisemccluster::StoredTrueE,
+                  bcwisemccluster::TrueE<bcwisemccluster::StoredTrueE>);
 
 } // namespace o2::aod
 
