@@ -1654,6 +1654,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MassD0region_Rapidity_AveragePt", "", true, 140, 1.5, 2.2, VarManager::kMass, 10, -0.8, 0.8, VarManager::kRap, 150, 0.0, 30.0, VarManager::kPt);
         hm->AddHistogram(histClass, "MassD0region_Pt_ITStrackOccupancy", "Pair mass vs pair Pt vs event ITS occupancy", false, 70, 1.5, 2.2, VarManager::kMass, 160, 0., 20., VarManager::kPt, 200, 0., 20000., VarManager::kTrackOccupancyInTimeRange);
         hm->AddHistogram(histClass, "MassD0region_TPCnSigKa_pIN", "Pair mass vs kaon cand. pIN vs kaon cand. TPC n-#sigma(K)", false, 140, 1.5, 2.2, VarManager::kMass, 100, 0.0, 10.0, VarManager::kPin_leg1, 20, -5.0, 5.0, VarManager::kTPCnSigmaKa_leg1);
+        hm->AddHistogram(histClass, "Mass_Pt_Ft0cOccupancy", "", false, 150, 0.0, 5.0, VarManager::kMass, 10, 0., 10., VarManager::kPt, 20, 0., 20000., VarManager::kFT0COccupancyInTimeRange);
+        hm->AddHistogram(histClass, "Mass_Pt_ITStrackOccupancy", "", false, 150, 0.0, 5.0, VarManager::kMass, 10, 0., 10., VarManager::kPt, 20, 0., 20000., VarManager::kTrackOccupancyInTimeRange);
       }
       if (subGroupStr.Contains("lambdac")) {
         hm->AddHistogram(histClass, "MassLambdacRegion", "", false, 50, 2.15, 2.4, VarManager::kMass);
