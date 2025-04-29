@@ -8,12 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file trackedCascadeProperties.cxx
+///
+/// \brief task to study the average cluster size of tracked cascades
 ///
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch)
 /// \since May 31, 2024
 
-#include <TDatabasePDG.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -21,6 +23,7 @@
 #include <TVector3.h>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -37,8 +40,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/DCA.h"
-#define mXi 1.32171
-#define mOmega 1.67245
 
 using namespace std;
 using namespace o2;
@@ -51,7 +52,7 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
-struct tracked_cascade_properties {
+struct TrackedCascadeProperties {
 
   // QC Histograms
   HistogramRegistry registryQC{
@@ -72,15 +73,11 @@ struct tracked_cascade_properties {
   // Global Parameters
   Configurable<float> zVtx{"zVtx", 10.0f, "z vertex cut"};
 
-  // Cascade Parameters
-  Configurable<float> minimumCascRadius{"minimumCascRadius", 5.0f, "Minimum Cascade Radius"};
-  Configurable<float> maximumCascRadius{"maximumCascRadius", 18.0f, "Maximum Cascade Radius"};
-
   // Mass Cuts
-  Configurable<float> mMin_xi{"mMin_xi", 1.315f, "mMin Xi"};
-  Configurable<float> mMax_xi{"mMax_xi", 1.328f, "mMax Xi"};
-  Configurable<float> mMin_omega{"mMin_omega", 1.665f, "mMin Omega"};
-  Configurable<float> mMax_omega{"mMax_omega", 1.680f, "mMax Omega"};
+  Configurable<float> massMinXi{"massMinXi", 1.315f, "mMin Xi"};
+  Configurable<float> massMaxXi{"massMaxXi", 1.328f, "mMax Xi"};
+  Configurable<float> massMinOmega{"massMinOmega", 1.665f, "mMin Omega"};
+  Configurable<float> massMaxOmega{"massMaxOmega", 1.680f, "mMax Omega"};
 
   void init(InitContext const&)
   {
@@ -118,15 +115,25 @@ struct tracked_cascade_properties {
     registryData.add("omega_mass_neg", "omega_mass_neg", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
   }
 
-  double track_inclination(double eta)
+  double trackInclination(double eta)
   {
     double lambda(0);
-    double theta = 2.0 * atan(exp(-eta));
-    if (theta <= TMath::Pi() / 2.0)
-      lambda = 0.5 * TMath::Pi() - theta;
-    if (theta > TMath::Pi() / 2.0)
-      lambda = theta - 0.5 * TMath::Pi();
+    double theta = 2.0 * std::atan(std::exp(-eta));
+    if (theta <= o2::constants::math::PIHalf)
+      lambda = o2::constants::math::PIHalf - theta;
+    if (theta > o2::constants::math::PIHalf)
+      lambda = theta - o2::constants::math::PIHalf;
     return lambda;
+  }
+
+  int findBin(const std::vector<double>& edges, double value)
+  {
+    auto it = std::upper_bound(edges.begin(), edges.end(), value);
+    int index = static_cast<int>(it - edges.begin()) - 1;
+    if (index < 0 || index >= static_cast<int>(edges.size()) - 1) {
+      return -1; // value is out of bounds
+    }
+    return index;
   }
 
   void processData(SelectedCollisions::iterator const& collision, aod::AssignedTrackedCascades const& trackedCascades,
@@ -137,10 +144,12 @@ struct tracked_cascade_properties {
       return;
 
     registryData.fill(HIST("number_of_events_data"), 1.5);
-    if (abs(collision.posZ()) > zVtx)
+    if (std::abs(collision.posZ()) > zVtx)
       return;
 
     registryData.fill(HIST("number_of_events_data"), 2.5);
+
+    std::vector<double> edgesItsLayers = {0.0, 2.2, 2.8, 3.6, 20.0, 22.0, 37.0, 39.0, 100.0};
 
     for (const auto& trackedCascade : trackedCascades) {
 
@@ -151,7 +160,9 @@ struct tracked_cascade_properties {
       registryQC.fill(HIST("deltaP"), track.p() - trackITS.p());
       registryQC.fill(HIST("deltaEta"), track.eta() - trackITS.eta());
       registryQC.fill(HIST("deltaNclsITS"), track.itsNCls() - trackITS.itsNCls());
-      for (int i = 0; i < 7; i++) {
+
+      const int nItsLayers = 7;
+      for (int i = 0; i < nItsLayers; i++) {
         registryQC.fill(HIST("deltaClsSize"), track.itsClsSizeInLayer(i) - trackITS.itsClsSizeInLayer(i));
       }
 
@@ -159,9 +170,8 @@ struct tracked_cascade_properties {
       const auto& btrack = casc.bachelor_as<FullTracks>();
       double dx = trackedCascade.decayX();
       double dy = trackedCascade.decayY();
-      double r = sqrt(dx * dx + dy * dy);
-      if (r < minimumCascRadius || r > maximumCascRadius)
-        continue;
+      double r = std::sqrt(dx * dx + dy * dy);
+      int nClsCascade = findBin(edgesItsLayers, r);
 
       registryQC.fill(HIST("matchingChi2"), trackedCascade.matchingChi2());
       registryQC.fill(HIST("topologyChi2"), trackedCascade.topologyChi2());
@@ -170,7 +180,7 @@ struct tracked_cascade_properties {
       // Calculate (Average) Cluster Size
       double averageClusterSize(0);
       int nCls(0);
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < nClsCascade; i++) {
         int clusterSize = trackITS.itsClsSizeInLayer(i);
         averageClusterSize += static_cast<double>(clusterSize);
         if (clusterSize > 0)
@@ -190,20 +200,20 @@ struct tracked_cascade_properties {
       }
 
       // Track Inclination
-      double lambda = track_inclination(track.eta());
+      double lambda = trackInclination(track.eta());
 
       // Xi
-      if (trackedCascade.xiMass() > mMin_xi && trackedCascade.xiMass() < mMax_xi) {
+      if (trackedCascade.xiMass() > massMinXi && trackedCascade.xiMass() < massMaxXi) {
         registryQC.fill(HIST("nITScls_vs_p_xi"), track.p(), trackITS.itsNCls());
         if (btrack.sign() > 0) {
           registryData.fill(HIST("xi_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
-          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
+          registryData.fill(HIST("xi_pos_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("xi_pos_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiPlusBar, averageClusterSize * std::cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("xi_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
-          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("xi_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mXi, averageClusterSize * cos(lambda));
+          registryData.fill(HIST("xi_neg_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("xi_neg_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassXiMinus, averageClusterSize * std::cos(lambda));
         }
         continue;
       }
@@ -217,25 +227,25 @@ struct tracked_cascade_properties {
       }
 
       // Omega
-      if (trackedCascade.omegaMass() > mMin_omega && trackedCascade.omegaMass() < mMax_omega) {
+      if (trackedCascade.omegaMass() > massMinOmega && trackedCascade.omegaMass() < massMaxOmega) {
         registryQC.fill(HIST("nITScls_vs_p_omega"), track.p(), trackITS.itsNCls());
         if (btrack.sign() > 0) {
           registryData.fill(HIST("omega_pos_avgclustersize"), track.p(), averageClusterSize, track.eta());
-          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_pos_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
+          registryData.fill(HIST("omega_pos_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("omega_pos_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassOmegaPlusBar, averageClusterSize * std::cos(lambda));
         }
         if (btrack.sign() < 0) {
           registryData.fill(HIST("omega_neg_avgclustersize"), track.p(), averageClusterSize, track.eta());
-          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * cos(lambda));
-          registryData.fill(HIST("omega_neg_avgclustersize_cosL_vs_betagamma"), track.p() / mOmega, averageClusterSize * cos(lambda));
+          registryData.fill(HIST("omega_neg_avgclustersize_cosL"), track.p(), averageClusterSize * std::cos(lambda));
+          registryData.fill(HIST("omega_neg_avgclustersize_cosL_vs_betagamma"), track.p() / o2::constants::physics::MassOmegaMinus, averageClusterSize * std::cos(lambda));
         }
       }
     }
   }
-  PROCESS_SWITCH(tracked_cascade_properties, processData, "Process data", true);
+  PROCESS_SWITCH(TrackedCascadeProperties, processData, "Process data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<tracked_cascade_properties>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TrackedCascadeProperties>(cfgc)};
 }
