@@ -341,7 +341,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.add("hKFcosPaV0ToCasc", "hKFcosPaV0ToCasc", kTH1D, {{5000, 0.8f, 1.1f}});
       registry.add("hKFcosPaCascToOmegac", "hKFcosPaCascToOmegac", kTH1D, {{5000, 0.8f, 1.1f}});
     }
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -1879,11 +1881,11 @@ struct HfCandidateCreatorXic0Omegac0Mc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-    hfEvSelMc.addHistograms(registry); // particles monitoring
 
     hGenCharmBaryonPtRapidityTightXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityTightXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.5
     hGenCharmBaryonPtRapidityLooseXicToXiPi = registry.add<TH1>("hGenCharmBaryonPtRapidityLooseXicToXiPi", "Generated charm baryon #it{p}_{T};#it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1D, {{20, 0.0, 20.0}}}); // keep track of generated candidates pt when |y|<0.8

@@ -85,6 +85,9 @@ struct HfCandidateCreator3Prong {
   Configurable<bool> createDs{"createDs", false, "enable Ds+/- candidate creation"};
   Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
   Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
+  // KF
+  Configurable<bool> applyTopoConstraint{"applyTopoConstraint", false, "apply origin from PV hypothesis for created candidate, works only in KF mode"};
+  Configurable<bool> applyInvMassConstraint{"applyInvMassConstraint", false, "apply particle type hypothesis to recalculate created candidate's momentum, works only in KF mode"};
 
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
@@ -149,6 +152,10 @@ struct HfCandidateCreator3Prong {
       LOGP(fatal, "At least one particle specie should be enabled for the creation.");
     }
 
+    if (createLc && createXic && applyInvMassConstraint) {
+      LOGP(fatal, "Unable to apply invariant mass constraint due to ambiguity of mass hypothesis: only one of Lc and Xic can be reconstructed.");
+    }
+
     // histograms
     registry.add("hMass3PKPi", "3-prong candidates;inv. mass (pK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 1.8, 3.0}}});
     registry.add("hMass3PiKP", "3-prong candidates;inv. mass (#pi Kp) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{1200, 1.8, 3.0}}});
@@ -168,7 +175,9 @@ struct HfCandidateCreator3Prong {
     registry.add("hDcaXYProngs", "DCAxy of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     registry.add("hDcaZProngs", "DCAz of 3-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     massP = MassProton;
     massPi = MassPiPlus;
@@ -487,6 +496,15 @@ struct HfCandidateCreator3Prong {
       kfCandPiKK.SetConstructMethod(2);
       kfCandPiKK.Construct(kfDaughtersPiKK, 3);
 
+      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
+
+      if (applyTopoConstraint) { // constraints applied after chi2topo getter - to preserve unbiased value of chi2topo
+        for (const auto& kfCand : std::array<KFParticle*, 5>{&kfCandPKPi, &kfCandPiKP, &kfCandPiKPi, &kfCandKKPi, &kfCandPiKK}) {
+          kfCand->SetProductionVertex(kfpV);
+          kfCand->TransportToDecayVertex();
+        }
+      }
+
       KFParticle kfPairKPi;
       const KFParticle* kfDaughtersKPi[3] = {&kfSecondKaon, &kfThirdPion};
       kfPairKPi.SetConstructMethod(2);
@@ -505,8 +523,15 @@ struct HfCandidateCreator3Prong {
       const float massKPi = kfPairKPi.GetMass();
       const float massPiK = kfPairPiK.GetMass();
 
+      if (applyInvMassConstraint) { // constraints applied after minv getters - to preserve unbiased values of minv
+        kfCandPKPi.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKP.SetNonlinearMassConstraint(createLc ? MassLambdaCPlus : MassXiCPlus);
+        kfCandPiKPi.SetNonlinearMassConstraint(MassDPlus);
+        kfCandKKPi.SetNonlinearMassConstraint(MassDS);
+        kfCandPiKK.SetNonlinearMassConstraint(MassDS);
+      }
+
       const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
-      const float chi2topo = kfCalculateChi2ToPrimaryVertex(kfCandPKPi, kfpV);
       const std::pair<float, float> ldl = kfCalculateLdL(kfCandPKPi, kfpV);
 
       std::array<float, 3> pProng0 = kfCalculateProngMomentumInSecondaryVertex(kfFirstProton, kfCandPiKP);
@@ -787,6 +812,8 @@ struct HfCandidateCreator3ProngExpressions {
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
 
+  constexpr static std::size_t NDaughtersResonant{2u};
+
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -813,12 +840,11 @@ struct HfCandidateCreator3ProngExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-3prong") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// Performs MC matching.
@@ -924,7 +950,7 @@ struct HfCandidateCreator3ProngExpressions {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
           RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
@@ -970,7 +996,7 @@ struct HfCandidateCreator3ProngExpressions {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
           RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());

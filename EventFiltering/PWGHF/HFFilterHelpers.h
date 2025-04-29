@@ -298,9 +298,9 @@ constexpr float cutsPtThresholdsForFemto[1][2] = {{8., 1.4}}; // proton, deutero
 static const std::vector<std::string> labelsColumnsPtThresholdsForFemto = {"Proton", "Deuteron"};
 
 // min and max pT for all tracks combined  (except for V0 and cascades)
-constexpr float cutsPt[2][9] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5, 0.3},
-                                {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi, Lc*->D0p
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi", "PrForLcReso"};
+constexpr float cutsPt[2][10] = {{1., 0.1, 0.8, 0.5, 0.1, 0.2, 0.4, 0.5, 0.3, 0.3},
+                                 {100000., 100000., 5., 100000., 100000., 100000., 100000., 100000., 100000., 100000.}}; // beauty, D*, femto, SigmaC, Xic*+ -> SigmaC++K-, beauty to JPsi, Lc*->D0p
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "PrForFemto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC", "DeForFemto", "BeautyToJPsi", "PrForLcReso", "PrForThetaC"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
@@ -481,6 +481,11 @@ class HfFilterHelper
     mPtMinLcResonanceBachelor = minPt;
     mPtMaxLcResonanceBachelor = maxPt;
   }
+  void setPtLimitsThetaCBachelor(float minPt, float maxPt)
+  {
+    mPtMinThetaCBachelor = minPt;
+    mPtMaxThetaCBachelor = maxPt;
+  }
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
@@ -628,8 +633,8 @@ class HfFilterHelper
   bool isSelectedXiBach(T const& trackParCasc, T const& trackParBachelor, int8_t isSelBachelor, C const& collision, o2::vertexing::DCAFitterN<2>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPi, H2 hMassVsPtXiKa);
   template <int Nprongs, typename T, typename C, typename H2>
   bool isSelectedXiBachBach(T const& trackParCasc, std::array<T, 2> const& trackParBachelor, C const& collision, o2::vertexing::DCAFitterN<Nprongs>& dcaFitter, const int& activateQA, H2 hMassVsPtXiPiPi);
-  template <typename T>
-  bool isSelectedProtonFromLcReso(const T& track);
+  template <bool is4ThetaC = false, typename T>
+  bool isSelectedProtonFromLcResoOrThetaC(const T& track);
   // helpers
   template <typename T>
   T computeRelativeMomentum(const std::array<T, 3>& pTrack, const std::array<T, 3>& CharmCandMomentum, const T& CharmMass);
@@ -682,6 +687,7 @@ class HfFilterHelper
   float mPtMinDeuteronForFemto{0.8};                                              // minimum pt for the deuteron for femto
   float mPtMinCharmBaryonBachelor{0.5};                                           // minimum pt for the bachelor pion from Xic/Omegac decays
   float mPtMinLcResonanceBachelor{0.3};                                           // minimum pt for the bachelor proton from Lc resonance decays
+  float mPtMinThetaCBachelor{0.3};                                                // minimum pt for the bachelor proton from ThetaC decays
   float mPtMaxSoftPionForDstar{2.};                                               // maximum pt for the D*+ soft pion
   float mPtMaxBeautyBachelor{100000.};                                            // maximum pt for the b-hadron pion daughter
   float mPtMaxBeautyToJPsiBachelor{100000.};                                      // maximum pt for the b-hadron -> JPsi X daughters (not the muons)
@@ -689,6 +695,7 @@ class HfFilterHelper
   float mPtMaxDeuteronForFemto{5.0};                                              // maximum pt for the deuteron for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                       // maximum pt for the bachelor pion from Xic/Omegac decays
   float mPtMaxLcResonanceBachelor{100000.};                                       // maximum pt for the bachelor proton from Lc resonance decays
+  float mPtMaxThetaCBachelor{100000.};                                            // maximum pt for the bachelor proton from ThetaC decays
   float mPtThresholdProtonForFemto{8.};                                           // pt threshold to change strategy for proton PID for femto
   float mPtThresholdDeuteronForFemto{1.4};                                        // pt threshold to change strategy for deuteron PID for femto
   float mPtMinSigmaCZero{0.f};                                                    // pt min SigmaC0 candidate
@@ -1945,18 +1952,21 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3ProngOrBeautyToJPsi(const T& tr
 /// Basic selection of proton candidates forLc and ThetaC decays
 /// \param track is a track
 /// \return true if track passes all cuts
-template <typename T>
-inline bool HfFilterHelper::isSelectedProtonFromLcReso(const T& track)
+template <bool is4ThetaC, typename T>
+inline bool HfFilterHelper::isSelectedProtonFromLcResoOrThetaC(const T& track)
 {
 
   // pt selections
   float pt = track.pt();
-  if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
-    return false;
+  if constexpr (is4ThetaC) {
+    if (pt < mPtMinThetaCBachelor || pt > mPtMaxThetaCBachelor) {
+      return false;
+    }
+  } else {
+    if (pt < mPtMinLcResonanceBachelor || pt > mPtMaxLcResonanceBachelor) {
+      return false;
+    }
   }
-
-  /// PID selection
-  return isSelectedProton4CharmOrBeautyBaryons<false>(track);
 
   return true;
 }

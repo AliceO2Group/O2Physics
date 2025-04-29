@@ -65,6 +65,7 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
   Produces<o2::aod::EMCALMCClusters> mcclusters;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
+  Produces<o2::aod::EMCALAmbiguousMCClusters> mcclustersAmbiguous;
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
@@ -702,6 +703,10 @@ struct EmcalCorrectionTask {
   {
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
+    if (mClusterLabels.size() > 0) {
+      mcclustersAmbiguous.reserve(mClusterLabels.size());
+    }
+    unsigned int iCluster = 0;
     for (const auto& cluster : mAnalysisClusters) {
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{0., 0., 0.};
@@ -730,12 +735,16 @@ struct EmcalCorrectionTask {
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
         cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(iClusterizer)));
+      if (mClusterLabels.size() > 0) {
+        mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
+      }
       clustercellsambiguous.reserve(cluster.getNCells());
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         clustercellsambiguous(clustersAmbiguous.lastIndex(),
                               cellIndicesBC[cellindex]);
       } // end of cells of cluster loop
+      iCluster++;
     } // end of cluster loop
   }
 

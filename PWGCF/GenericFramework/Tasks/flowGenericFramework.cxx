@@ -295,6 +295,7 @@ struct FlowGenericFramework {
       registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
       registry.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
       registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+
       registry.addClone("trackQA/before/", "trackQA/after/");
       registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, ptreflow, ptrefup}}});
       registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, ptpoilow, ptpoiup}}});
@@ -374,7 +375,6 @@ struct FlowGenericFramework {
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
     }
-
     if (cfgUseDensityDependentCorrection) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
       hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
