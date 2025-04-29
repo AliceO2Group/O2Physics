@@ -94,7 +94,7 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaVtxz, bool, false, "Use Phi, Eta, VertexZ dependent NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiPtCent, bool, false, "Use Phi, Pt, Centrality dependent NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaPt, bool, true, "Use Phi, Eta, Pt dependent NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS for PID instead of TPC")
+  O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
 
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
@@ -254,7 +254,7 @@ struct FlowPbpbPikp {
     // reference particles
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
 
     // pt dependent charged particles
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128); // Negative poi eta range
@@ -366,7 +366,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPID(TTrack track)
+  int getNsigmaPIDTpcTof(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -380,11 +380,17 @@ struct FlowPbpbPikp {
       return -1;
 
     const int numSpecies = 3;
+    int pidCount = 0;
     // Select particle with the lowest nsigma
     for (int i = 0; i < numSpecies; ++i) {
       if (std::abs(nSigmaToUse[i]) < nsigma) {
+        if (pidCount > 0 && cfgUseStrictPID)
+          return -1; // more than one particle with low nsigma
+
+        pidCount++;
         pid = i;
-        nsigma = std::abs(nSigmaToUse[i]);
+        if (!cfgUseStrictPID)
+          nsigma = std::abs(nSigmaToUse[i]);
       }
     }
     return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
@@ -693,7 +699,7 @@ struct FlowPbpbPikp {
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
       // pidIndex = getBayesPIDIndex(track);
-      pidIndex = getNsigmaPID(track);
+      pidIndex = getNsigmaPIDTpcTof(track);
 
       weff = 1; // Initializing weff for each track
       // NUA weights
@@ -724,15 +730,12 @@ struct FlowPbpbPikp {
       if (withinPtRef) {
         histos.fill(HIST("hPhiWeighted"), track.phi(), waccRef);
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 1);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 512);
       }
       if (withinPtPOI) {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 128);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 1024);
       }
       if (withinPtPOI && withinPtRef) {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 256);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 2048);
       }
 
       if (pidIndex) {
