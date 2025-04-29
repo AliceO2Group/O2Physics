@@ -863,12 +863,12 @@ struct HfTreeCreatorLcToPKPi {
                     soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
   {
 
-    constexpr bool isMc = true;
+    constexpr bool IsMc = true;
 
-    fillEventProperties<useCentrality, isMc>(collisions);
+    fillEventProperties<useCentrality, IsMc>(collisions);
 
     const size_t candidatesSize = candidates.size();
-    reserveTables<reconstructionType>(candidatesSize, isMc);
+    reserveTables<reconstructionType>(candidatesSize, IsMc);
 
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
@@ -885,9 +885,9 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -1042,12 +1042,12 @@ struct HfTreeCreatorLcToPKPi {
                       TracksWPid const&, aod::BCs const&)
   {
 
-    constexpr bool isMc = false;
+    constexpr bool IsMc = false;
 
-    fillEventProperties<useCentrality, isMc>(collisions);
+    fillEventProperties<useCentrality, IsMc>(collisions);
 
     const size_t candidatesSize = candidates.size();
-    reserveTables<reconstructionType>(candidatesSize, isMc);
+    reserveTables<reconstructionType>(candidatesSize, IsMc);
 
     // Filling candidate properties
 
@@ -1061,9 +1061,9 @@ struct HfTreeCreatorLcToPKPi {
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
