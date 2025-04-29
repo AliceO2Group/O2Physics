@@ -112,8 +112,8 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
 
-  std::vector<double> TofNsigmaCut = cfgTofNsigmaCut;
-  std::vector<double> ItsNsigmaCut = cfgItsNsigmaCut;
+  std::vector<double> tofNsigmaCut = cfgTofNsigmaCut;
+  std::vector<double> itsNsigmaCut = cfgItsNsigmaCut;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
