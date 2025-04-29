@@ -794,10 +794,10 @@ struct JetChargedV2 {
           float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
 
           bool jetWasInCone = false;
-          while ((randomConeLeadJetDeltaR <= 0 && (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR)) || (randomConeLeadJetDeltaR > 0 && (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < randomConeLeadJetDeltaR))) {
+          while ((randomConeLeadJetDeltaR <= 0 && (std::sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR)) || (randomConeLeadJetDeltaR > 0 && (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < randomConeLeadJetDeltaR))) {
             jetWasInCone = true;
             randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-            randomConePhi = randomNumber.Uniform(0.0, 2 * o2::constants::math::TwoPI);
+            randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
             dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
             dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
           }
@@ -807,7 +807,7 @@ struct JetChargedV2 {
               if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > randomConeR)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
                 float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
                 float dEta = track.eta() - randomConeEta;
-                if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+                if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
                   randomConePt += track.pt();
                 }
               }
