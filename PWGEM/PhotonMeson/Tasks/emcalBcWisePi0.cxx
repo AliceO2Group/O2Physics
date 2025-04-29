@@ -45,12 +45,12 @@ struct EmcalBcWisePi0 {
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct pi0s only in kTVXinEMC triggered BCs"};
   Configurable<int> cfgSelectOnlyUniqueAmbiguous{"cfgSelectOnlyUniqueAmbiguous", 0, "0: all clusters, 1: only unique clusters, 2: only ambiguous clusters"};
 
-  Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 10, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
-  Configurable<float> cfgMinClusterEnergy{"cfgMinClusterEnergy", 0.7, "Minimum energy of selected clusters (GeV)"};
-  Configurable<float> cfgMinM02{"cfgMinM02", 0.1, "Minimum M02 of selected clusters"};
-  Configurable<float> cfgMaxM02{"cfgMaxM02", 0.7, "Maximum M02 of selected clusters"};
-  Configurable<float> cfgMinTime{"cfgMinTime", -15, "Minimum time of selected clusters (ns)"};
-  Configurable<float> cfgMaxTime{"cfgMaxTime", 15, "Maximum time of selected clusters (ns)"};
+  Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 13, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
+  Configurable<int16_t> cfgMinClusterEnergy{"cfgMinClusterEnergy", 700, "Minimum energy of selected clusters (MeV)"};
+  Configurable<int16_t> cfgMinM02{"cfgMinM02", 1000, "Minimum M02 of selected clusters (x1000)"};
+  Configurable<int16_t> cfgMaxM02{"cfgMaxM02", 7000, "Maximum M02 of selected clusters (x1000)"};
+  Configurable<int16_t> cfgMinTime{"cfgMinTime", -1500, "Minimum time of selected clusters (10 ps)"};
+  Configurable<int16_t> cfgMaxTime{"cfgMaxTime", 1500, "Maximum time of selected clusters (10 ps)"};
   Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.8f, "Maximum absolute rapidity of counted particles"};
   Configurable<float> cfgMinOpenAngle{"cfgMinOpenAngle", 0.0202, "Minimum opening angle between photons"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
@@ -61,10 +61,10 @@ struct EmcalBcWisePi0 {
 
   Configurable<bool> cfgIsMC{"cfgIsMC", false, "Flag to indicate if the task is running on MC data and should fill MC histograms"};
 
-  Filter clusterDefinitionFilter = aod::bcwisecluster::storedDefinition == static_cast<uint8_t>(cfgClusterDefinition);
-  Filter energyFilter = aod::bcwisecluster::storedE > static_cast<uint16_t>(cfgMinClusterEnergy* aod::emdownscaling::downscalingFactors[aod::emdownscaling::kEnergy]);
-  Filter m02Filter = (aod::bcwisecluster::storedNCells == static_cast<uint8_t>(1) || (aod::bcwisecluster::storedM02 > static_cast<uint16_t>(cfgMinM02 * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kM02]) && aod::bcwisecluster::storedM02 < static_cast<uint16_t>(cfgMaxM02 * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kM02])));
-  Filter timeFilter = (aod::bcwisecluster::storedTime > static_cast<int16_t>(cfgMinTime * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kTime]) && aod::bcwisecluster::storedTime < static_cast<int16_t>(cfgMaxTime * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kTime]));
+  Filter clusterDefinitionFilter = aod::bcwisecluster::storedDefinition == cfgClusterDefinition;
+  Filter energyFilter = aod::bcwisecluster::storedE > cfgMinClusterEnergy;
+  Filter m02Filter = (aod::bcwisecluster::storedNCells == 1 || (aod::bcwisecluster::storedM02 > cfgMinM02 && aod::bcwisecluster::storedM02 < cfgMaxM02));
+  Filter timeFilter = (aod::bcwisecluster::storedTime > cfgMinTime && aod::bcwisecluster::storedTime < cfgMaxTime);
 
   emcal::Geometry* emcalGeom;
 
@@ -91,8 +91,8 @@ struct EmcalBcWisePi0 {
     mHistManager.add("Cluster/Exotic", "Is cluster exotic?;#bf{Exotic?};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{2, -0.5, 1.5}});
     mHistManager.add("Cluster/EtaPhi", "Eta/Phi distribution of clusters;#eta;#phi", HistType::kTH2F, {{400, -0.8, 0.8}, {400, 0, constants::math::TwoPI}});
 
-    mHistManager.add("invMassVsPt", "Invariant mass and pT of meson candidates", HistType::kTH2F, {{200, 0., 0.4}, {200, 0., 20.}});
-    mHistManager.add("invMassVsPtBackground", "Invariant mass and pT of background meson candidates", HistType::kTH2F, {{200, 0., 0.4}, {200, 0., 20.}});
+    mHistManager.add("GG/invMassVsPt", "Invariant mass and pT of meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{200, 0., 0.4}, {200, 0., 20.}});
+    mHistManager.add("GG/invMassVsPtBackground", "Invariant mass and pT of background meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})}", HistType::kTH2F, {{200, 0., 0.4}, {200, 0., 20.}});
 
     if (cfgIsMC) {
       mHistManager.add("True/clusterERecVsETrue", "True vs reconstructed energy of cluster inducing particle;#bf{#it{E}_{rec} (GeV)};#bf{#it{E}_{true}^{cls inducing part} (GeV)}", HistType::kTH2F, {{200, 0, 20}, {200, 0, 20}});
@@ -151,7 +151,7 @@ struct EmcalBcWisePi0 {
     mHistManager.fill(HIST("Event/nCollPerBC"), collisions.size());
     if (collisions.size() == 2) {
       mHistManager.fill(HIST("Event/Z1VsZ2"), collisions.iteratorAt(0).zVtx(), collisions.iteratorAt(1).zVtx());
-      mHistManager.fill(HIST("Event/dZ"), std::abs(collisions.iteratorAt(0).zVtx() - collisions.iteratorAt(1).zVtx()));
+      mHistManager.fill(HIST("Event/dZ"), collisions.iteratorAt(0).zVtx() - collisions.iteratorAt(1).zVtx());
     }
   }
 
@@ -180,7 +180,7 @@ struct EmcalBcWisePi0 {
       if (openingAngle12 < cfgMinOpenAngle)
         continue;
 
-      mHistManager.fill(HIST("invMassVsPt"), v12.M(), v12.Pt());
+      mHistManager.fill(HIST("GG/invMassVsPt"), v12.M(), v12.Pt());
 
       if (clusters.size() < 3)
         continue;
@@ -216,7 +216,7 @@ struct EmcalBcWisePi0 {
 
           ROOT::Math::PtEtaPhiMVector vBG = v3 + vi;
 
-          mHistManager.fill(HIST("invMassVsPtBackground"), vBG.M(), vBG.Pt());
+          mHistManager.fill(HIST("GG/invMassVsPtBackground"), vBG.M(), vBG.Pt());
         }
       }
     }
@@ -237,8 +237,7 @@ struct EmcalBcWisePi0 {
       if (openingAngle12 < cfgMinOpenAngle)
         continue;
 
-      int g1Pi0ID = g1.pi0ID() - mcPi0s.iteratorAt(0).globalIndex();
-      const auto& mcPi0 = mcPi0s.iteratorAt(g1Pi0ID);
+      const auto& mcPi0 = mcPi0s.iteratorAt(g1.pi0ID() - mcPi0s.offset());
 
       mHistManager.fill(HIST("True/PtRecVsPtTrue"), v12.Pt(), mcPi0.pt());
 
@@ -300,6 +299,9 @@ struct EmcalBcWisePi0 {
       LOG(fatal) << "MC processing is not enabled, but the task is running on MC data. Please set cfgIsMC to true.";
       return;
     }
+
+    fillGeneratedPi0Hists(mcPi0s, bc); // Fill before BC selection to also store pi0s in BCs that were not triggered
+
     if (!isBCSelected(bc, collisions))
       return;
 
@@ -307,8 +309,6 @@ struct EmcalBcWisePi0 {
       mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE());
 
     reconstructTrueMesons(clusters, mcPi0s);
-
-    fillGeneratedPi0Hists(mcPi0s, bc);
   }
   PROCESS_SWITCH(EmcalBcWisePi0, processMCInfo, "Run true and gen", false);
 };
