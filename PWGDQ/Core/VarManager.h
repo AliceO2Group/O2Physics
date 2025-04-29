@@ -3277,7 +3277,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
   ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
   ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
- 
+
   if (fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]) {
     ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
     ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
