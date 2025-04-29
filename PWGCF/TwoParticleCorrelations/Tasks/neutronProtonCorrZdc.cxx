@@ -34,7 +34,7 @@ enum EventCounter { kNoSelection = 0,
                     kNoCollInTimeRangeStandard = 4,
                     kMaxCentralitySelection = 5,
                     kZDCSelection = 6,
-                    kTimeDifferenceZDC = 7};
+                    kTimeDifferenceZDC = 7 };
 
 struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
@@ -152,7 +152,7 @@ struct NeutronProtonCorrZdc {
     histos.add("CentvsZNCvsZPC", "CentvsZNCvsZPC", kTH3F, {cfgAxisCent, axisZNCSignal, axisZPCSignal});
     histos.add("CentvsZNvsZP", "CentvsZNvsZP", kTH3F, {cfgAxisCent, axisZNSignal, axisZPSignal});
 
-    if(cfgFillMultiplicityQAHistograms){
+    if (cfgFillMultiplicityQAHistograms) {
       histos.add("MultiplicityHistograms/FV0A", "FV0A", kTH1F, {axisMultiplicityF0A});
       histos.add("MultiplicityHistograms/FT0A", "FT0A", kTH1F, {axisMultiplicityF0A});
       histos.add("MultiplicityHistograms/FT0C", "FT0C", kTH1F, {axisMultiplicityF0C});
@@ -207,7 +207,6 @@ struct NeutronProtonCorrZdc {
     histos.fill(HIST("eventCounter"), EventCounter::kMaxCentralitySelection);
 
     return 1;
-
   }
 
   template <int mult, typename C>
@@ -289,26 +288,25 @@ struct NeutronProtonCorrZdc {
       histos.fill(HIST("TimingZPAvsCent"), cent, tZPA);
       histos.fill(HIST("TimingZPCvsCent"), cent, tZPC);
 
-      //Selection on timing for the ZDC
-      if(cfgZDCTimingInformationCut){
-        if (tZNA <= cfgTDCZNmincut || tZNA >= cfgTDCZNmaxcut){
+      // Selection on timing for the ZDC
+      if (cfgZDCTimingInformationCut) {
+        if (tZNA <= cfgTDCZNmincut || tZNA >= cfgTDCZNmaxcut) {
           return;
         }
-        if (tZNC <= cfgTDCZNmincut || tZNC >= cfgTDCZNmaxcut){
+        if (tZNC <= cfgTDCZNmincut || tZNC >= cfgTDCZNmaxcut) {
           return;
         }
-        if (tZPA <= cfgTDCZPmincut || tZPA >= cfgTDCZPmaxcut){
+        if (tZPA <= cfgTDCZPmincut || tZPA >= cfgTDCZPmaxcut) {
           return;
         }
-        if (tZPC <= cfgTDCZPmincut || tZPC >= cfgTDCZPmaxcut){
+        if (tZPC <= cfgTDCZPmincut || tZPC >= cfgTDCZPmaxcut) {
           return;
         }
       }
       histos.fill(HIST("eventCounter"), EventCounter::kTimeDifferenceZDC);
       histos.fill(HIST("CentralityPercentile"), cent);
 
-
-      if(cfgFillMultiplicityQAHistograms){
+      if (cfgFillMultiplicityQAHistograms) {
         static_for<0, 6>([&](auto i) {
           fillMultHistosRun3<i>(collision); // Fill multiplicity histograms
         });
@@ -373,8 +371,6 @@ struct NeutronProtonCorrZdc {
 
       histos.fill(HIST("eventCounter"), EventCounter::kZDCSelection);
       histos.fill(HIST("CentralityPercentile"), cent);
-
-
 
       static_for<0, 1>([&](auto i) {
         fillZDCSideCommonHistos<i>(cent, zdcread); // Fill i-side common channels
