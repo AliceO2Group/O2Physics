@@ -19,4 +19,5 @@ o2physics_target_root_dictionary(AnalysisCCDB
               HEADERS EventSelectionParams.h
               HEADERS TriggerAliases.h
               HEADERS ctpRateFetcher.h
+              HEADERS RCTSelectionFlags.h
               LINKDEF AnalysisCCDBLinkDef.h)
