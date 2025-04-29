@@ -76,7 +76,8 @@ struct matchingMFT {
   Configurable<bool> requireTrueAssociation{"requireTrueAssociation", false, "flag to require true mc collision association"};
   Configurable<float> maxDEta{"maxDEta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
   Configurable<float> maxDPhi{"maxDPhi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
-  Configurable<std::vector<int>> requireMFTDisks{"requireMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
+  Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to require MFT hit map"};
+  Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
@@ -148,10 +149,12 @@ struct matchingMFT {
     hMuonType->GetXaxis()->SetBinLabel(4, "MCH-MID");
     hMuonType->GetXaxis()->SetBinLabel(5, "MCH standalone");
 
+    const AxisSpec axis_pt{{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "p_{T}^{gl} (GeV/c)"};
+
     fRegistry.add("MFTMCHMID/primary/correct/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{100, 0.0f, 10}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {100, -6.f, -1.f}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {100, -6.f, -1.f}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hDeltaEtaDeltaPhi", "#Delta#eta vs. #Delta#varphi;#Delta#varphi (rad.);#Delta#eta", kTH2F, {{180, -M_PI / 2, M_PI / 2}, {200, -1.f, +1.f}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {80, -5.f, -1.f}}, false);
+    fRegistry.add("MFTMCHMID/primary/correct/hsDelta", "diff. between GL and associated SA;p_{T}^{gl} (GeV/c);#Delta#eta;#Delta#varphi (rad.);", kTHnSparseF, {axis_pt, {100, -0.5, +0.5}, {90, -M_PI / 4, M_PI / 4}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDiffCollId", "difference in collision index;collisionId_{TTCA} - collisionId_{MP}", kTH1F, {{41, -20.5, +20.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hSign", "sign;sign", kTH1F, {{3, -1.5, +1.5}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hNclusters", "Nclusters;Nclusters", kTH1F, {{21, -0.5f, 20.5}}, false);
@@ -171,9 +174,6 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxResolutionvsPt", "DCA_{x} resolution vs. p_{T};p_{T} (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAyResolutionvsPt", "DCA_{y} resolution vs. p_{T};p_{T} (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt", "DCA_{xy} resolution vs. p_{T};p_{T} (GeV/c);DCA_{xy} resolution (#mum);", kTH2F, {{100, 0, 10.f}, {500, 0, 500}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hDCAxResolutionvsP", "DCA_{x} resolution vs. p;p (GeV/c);DCA_{x} resolution (#mum);", kTH2F, {{100, 0, 100.f}, {500, 0, 500}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hDCAyResolutionvsP", "DCA_{y} resolution vs. p;p (GeV/c);DCA_{y} resolution (#mum);", kTH2F, {{100, 0, 100.f}, {500, 0, 500}}, false);
-    fRegistry.add("MFTMCHMID/primary/correct/hDCAxyResolutionvsP", "DCA_{xy} resolution vs. p;p (GeV/c);DCA_{xy} resolution (#mum);", kTH2F, {{100, 0, 100.f}, {500, 0, 500}}, false);
 
     fRegistry.add("MFTMCHMID/primary/correct/hProdVtxZ", "prod. vtx Z of muon;V_{z} (cm)", kTH1F, {{200, -100, 100}}, false);
     fRegistry.add("MFTMCHMID/primary/correct/hRelDeltaPt", "pT resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 10}, {400, -1, +1}}, false);
@@ -183,8 +183,7 @@ struct matchingMFT {
     fRegistry.add("MFTMCHMID/primary/correct/hDeltaPhi_Neg", "#varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 10}, {400, -0.2, +0.2}}, false);
     fRegistry.addClone("MFTMCHMID/primary/correct/", "MFTMCHMID/primary/wrong/");
     fRegistry.addClone("MFTMCHMID/primary/", "MFTMCHMID/secondary/");
-
-    fRegistry.add("Generated/primary/hs", "gen. info;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0.0f, 10}, {60, -5, -2}, {90, 0, 2.f * M_PI}}, false);
+    // fRegistry.add("Generated/primary/hs", "gen. info;p_{T} (GeV/c);#eta;#varphi (rad.)", kTHnSparseF, {{100, 0.0f, 10}, {60, -5, -2}, {90, 0, 2.f * M_PI}}, false);
   }
 
   bool isSelected(const float pt, const float eta, const float rAtAbsorberEnd, const float pDCA, const float chi2, const uint8_t trackType, const float dcaXY)
@@ -296,7 +295,6 @@ struct matchingMFT {
     o2::dataformats::GlobalFwdTrack propmuonAtPV = propagateMuon(fwdtrack, collision, propagationPoint::kToVertex);
     o2::dataformats::GlobalFwdTrack propmuonAtDCA = propagateMuon(fwdtrack, collision, propagationPoint::kToDCA);
 
-    float p = propmuonAtPV.getP();
     float pt = propmuonAtPV.getPt();
     float eta = propmuonAtPV.getEta();
     float phi = propmuonAtPV.getPhi();
@@ -355,10 +353,12 @@ struct matchingMFT {
       return;
     }
 
-    std::vector<bool> hasMFTs{hasMFT<0, 1>(mfttrack), hasMFT<2, 3>(mfttrack), hasMFT<4, 5>(mfttrack), hasMFT<6, 7>(mfttrack), hasMFT<8, 9>(mfttrack)};
-    for (int i = 0; i < static_cast<int>(requireMFTDisks->size()); i++) {
-      if (!hasMFTs[requireMFTDisks->at(i)]) {
-        return;
+    if (requireMFTHitMap) {
+      std::vector<bool> hasMFTs{hasMFT<0, 1>(mfttrack), hasMFT<2, 3>(mfttrack), hasMFT<4, 5>(mfttrack), hasMFT<6, 7>(mfttrack), hasMFT<8, 9>(mfttrack)};
+      for (int i = 0; i < static_cast<int>(requiredMFTDisks->size()); i++) {
+        if (!hasMFTs[requiredMFTDisks->at(i)]) {
+          return;
+        }
       }
     }
 
@@ -368,7 +368,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDeltaEtaDeltaPhi"), dphi, deta);
+        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hsDelta"), pt, deta, dphi);
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hNclusters"), fwdtrack.nClusters());
@@ -388,9 +388,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxResolutionvsP"), p, std::sqrt(cXXatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAyResolutionvsP"), p, std::sqrt(cYYatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/correct/hDCAxyResolutionvsP"), p, sigma_dcaXY * 1e+4);          // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
 
         fRegistry.fill(HIST("MFTMCHMID/primary/correct/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
@@ -405,7 +402,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDeltaEtaDeltaPhi"), dphi, deta);
+        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hsDelta"), pt, deta, dphi);
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hNclusters"), fwdtrack.nClusters());
@@ -425,9 +422,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxResolutionvsP"), p, std::sqrt(cXXatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAyResolutionvsP"), p, std::sqrt(cYYatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hDCAxyResolutionvsP"), p, sigma_dcaXY * 1e+4);          // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
         fRegistry.fill(HIST("MFTMCHMID/primary/wrong/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
         if (mcParticle_MFTMCHMID.pdgCode() > 0) {
@@ -443,7 +437,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDeltaEtaDeltaPhi"), dphi, deta);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hsDelta"), pt, deta, dphi);
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hNclusters"), fwdtrack.nClusters());
@@ -463,9 +457,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxResolutionvsP"), p, std::sqrt(cXXatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAyResolutionvsP"), p, std::sqrt(cYYatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hDCAxyResolutionvsP"), p, sigma_dcaXY * 1e+4);          // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
         fRegistry.fill(HIST("MFTMCHMID/secondary/correct/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
         if (mcParticle_MFTMCHMID.pdgCode() > 0) {
@@ -479,7 +470,7 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hPt"), pt);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hEtaPhi_MatchedMCHMID"), phiMatchedMCHMID, etaMatchedMCHMID);
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDeltaEtaDeltaPhi"), dphi, deta);
+        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hsDelta"), pt, deta, dphi);
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDiffCollId"), collision.globalIndex() - fwdtrack.collisionId());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hSign"), fwdtrack.sign());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hNclusters"), fwdtrack.nClusters());
@@ -499,9 +490,6 @@ struct matchingMFT {
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsPt"), pt, std::sqrt(cXXatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsPt"), pt, std::sqrt(cYYatDCA) * 1e+4); // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsPt"), pt, sigma_dcaXY * 1e+4);        // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxResolutionvsP"), p, std::sqrt(cXXatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAyResolutionvsP"), p, std::sqrt(cYYatDCA) * 1e+4);   // convert cm to um
-        fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hDCAxyResolutionvsP"), p, sigma_dcaXY * 1e+4);          // convert cm to um
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hProdVtxZ"), mcParticle_MFTMCHMID.vz());
         fRegistry.fill(HIST("MFTMCHMID/secondary/wrong/hRelDeltaPt"), mcParticle_MFTMCHMID.pt(), (pt - mcParticle_MFTMCHMID.pt()) / mcParticle_MFTMCHMID.pt());
         if (mcParticle_MFTMCHMID.pdgCode() > 0) {
@@ -529,24 +517,24 @@ struct matchingMFT {
     fRegistry.fill(HIST("Event/hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
   }
 
-  template <typename TMCParticles>
-  void runGen(TMCParticles const& mcParticles)
-  {
-    for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.pdgCode()) != 13) { // select true muon
-        continue;
-      }
-      if (!(mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator())) {
-        continue;
-      }
-      if (mcParticle.eta() < minEtaGL || maxEtaGL < mcParticle.eta()) {
-        continue;
-      }
+  // template <typename TMCParticles>
+  // void runGen(TMCParticles const& mcParticles)
+  // {
+  //   for (const auto& mcParticle : mcParticles) {
+  //     if (std::abs(mcParticle.pdgCode()) != 13) { // select true muon
+  //       continue;
+  //     }
+  //     if (!(mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator())) {
+  //       continue;
+  //     }
+  //     if (mcParticle.eta() < minEtaGL || maxEtaGL < mcParticle.eta()) {
+  //       continue;
+  //     }
 
-      fRegistry.fill(HIST("Generated/primary/hs"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
+  //     fRegistry.fill(HIST("Generated/primary/hs"), mcParticle.pt(), mcParticle.eta(), mcParticle.phi());
 
-    } // end of mc particles
-  }
+  //   } // end of mc particles
+  // }
 
   SliceCache cache;
   PresliceUnsorted<aod::FwdTracks> perMFTTrack = o2::aod::fwdtrack::matchMFTTrackId;
@@ -558,7 +546,7 @@ struct matchingMFT {
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
-  void processWithoutFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
+  void processWithoutFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -582,11 +570,11 @@ struct matchingMFT {
         fillHistograms(collision, fwdtrack, fwdtracks, mfttracks);
       } // end of fwdtrack loop
     } // end of collision loop
-    runGen(mcParticles);
+    // runGen(mcParticles);
   }
   PROCESS_SWITCH(matchingMFT, processWithoutFTTCA, "process without FTTCA", false);
 
-  void processWithFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McParticles const& mcParticles)
+  void processWithFTTCA(FilteredMyCollisions const& collisions, MyFwdTracks const& fwdtracks, MyMFTTracks const& mfttracks, aod::BCsWithTimestamps const&, aod::FwdTrackAssoc const& fwdtrackIndices, aod::McParticles const&)
   {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -611,7 +599,7 @@ struct matchingMFT {
         fillHistograms(collision, fwdtrack, fwdtracks, mfttracks);
       } // end of fwdtrack loop
     } // end of collision loop
-    runGen(mcParticles);
+    // runGen(mcParticles);
   }
   PROCESS_SWITCH(matchingMFT, processWithFTTCA, "process with FTTCA", true);
 };
