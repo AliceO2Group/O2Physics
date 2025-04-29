@@ -649,7 +649,7 @@ struct HeavyionMultiplicity {
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processStrangeYield, "Strange particle yield", false);
 
-  void processppData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks)
+  void processppData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator const& cols, FilTrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
       return;
@@ -688,7 +688,7 @@ struct HeavyionMultiplicity {
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppData, "process pp data", false);
 
-  void processppMonteCarlo(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  void processppMonteCarlo(CollisionMCTrueTable::iterator const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>> const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
