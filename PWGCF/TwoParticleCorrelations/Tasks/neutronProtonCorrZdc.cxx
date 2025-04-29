@@ -40,7 +40,7 @@ struct NeutronProtonCorrZdc {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<float> cfgZVertexCut{"cfgZVertexCut", 10.,"Cut on Z vertex position"};
+  Configurable<float> cfgZVertexCut{"cfgZVertexCut", 10., "Cut on Z vertex position"};
   Configurable<bool> cfgNoSameBunchPileupCut{"cfgNoSameBunchPileupCut", true, "kNoSameBunchPileUp Cut"};
   Configurable<bool> cfgIsGoodZvtxFT0vsPV{"cfgIsGoodZvtxFT0vsPV", true, "kIsGoodZvtxFT0vsPV Cut"};
   Configurable<bool> cfgNoCollInTimeRangeStandard{"cfgNoCollInTimeRangeStandard", true, "kNoCollInTimeRangeStandard Cut"};
