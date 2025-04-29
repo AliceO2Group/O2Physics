@@ -41,7 +41,6 @@
 #include "EventFiltering/ZorroSummary.h"
 
 #include "ReconstructionDataFormats/Track.h"
-
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
