@@ -139,6 +139,9 @@ struct HfFemtoDreamProducer {
   std::vector<float> outputMlPiKP = {};
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  o2::base::MatLayerCylSet* lut;
+  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 
   float magField;
   int runNumber;
@@ -160,10 +163,6 @@ struct HfFemtoDreamProducer {
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  o2::base::MatLayerCylSet* lut;
-  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 
   void init(InitContext&)
   {
