@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDplusHadrons.cxx
+/// \brief D+-Hadrons correlator task - data-like, MC-reco and MC-Gen analyses
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
 #include <vector>
@@ -161,6 +162,7 @@ struct HfCorrelatorDplusHadrons {
   Produces<aod::TrkRecInfoDplus> entryTrackRecoInfo;
   Produces<aod::Dplus> entryDplus;
   Produces<aod::Hadron> entryHadron;
+  static constexpr std::size_t NDaughters{3u};
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -182,19 +184,9 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<float>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for D+ meson"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
-  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
-  ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "#it{#eta}"};
-  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
-  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
-  ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
 
   HfHelper hfHelper;
   SliceCache cache;
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   // Event Mixing for the Data Mode
   using SelCollisionsWithDplus = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
@@ -215,9 +207,16 @@ struct HfCorrelatorDplusHadrons {
   Filter dplusFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) != static_cast<uint8_t>(0)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
   // Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == 411 || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
-
-  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
-
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
+  ConfigurableAxis binsBdtScore{"binsBdtScore", {100, 0., 1.}, "Bdt output scores"};
+  ConfigurableAxis binsEta{"binsEta", {50, -2., 2.}, "#it{#eta}"};
+  ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
+  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsMassD{"binsMassD", {200, 1.7, 2.10}, "inv. mass (#pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
@@ -344,7 +343,7 @@ struct HfCorrelatorDplusHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-        entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
+        entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]); // 0: BkgBDTScore, 1:PromptBDTScore, 2: FDScore
         entryDplus(candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDplusToPiKPi(candidate), poolBin, gCollisionId, timeStamp);
 
         // Dplus-Hadron correlation dedicated section
@@ -366,7 +365,7 @@ struct HfCorrelatorDplusHadrons {
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), false);
           entryDplusHadronGenInfo(false, false, 0);
-          entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          entryDplusHadronMlInfo(outputMl[0], outputMl[1], outputMl[2]);
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
           if (cntDplus == 0) {
             entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
@@ -458,7 +457,7 @@ struct HfCorrelatorDplusHadrons {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
           }
           registry.fill(HIST("hMassDplusMcRecSig"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), efficiencyWeightD);
-          entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1]);
+          entryDplusCandRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
           entryDplusCandGenInfo(isDplusPrompt);
         } else {
           registry.fill(HIST("hPtCandMcRecBkg"), candidate.pt());
@@ -487,7 +486,7 @@ struct HfCorrelatorDplusHadrons {
                                candidate.pt(),
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
-          entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+          entryDplusHadronMlInfo(outputMl[0], outputMl[1], outputMl[2]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -555,12 +554,12 @@ struct HfCorrelatorDplusHadrons {
 
       // prompt and non-prompt division
       std::vector<int> listDaughters{};
-      std::array<int, 3> arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
-      std::array<int, 3> prongsId;
+      std::array<int, NDaughters> arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> prongsId;
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() == 3) {
+      if (listDaughters.size() == NDaughters) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
@@ -695,7 +694,7 @@ struct HfCorrelatorDplusHadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-        entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
+        entryDplusHadronMlInfo(outputMl[0], outputMl[1], outputMl[2]);
         entryTrackRecoInfo(pAssoc.dcaXY(), pAssoc.dcaZ(), pAssoc.tpcNClsCrossedRows());
       }
     }

@@ -139,13 +139,11 @@ struct taskFwdTrackPid {
   template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
   void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
   {
-    uint32_t mcDecision = 0;
-
     fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
-        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(), mcDecision);
+        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(), 0);
       }
     }
     if constexpr (TMatchedOnly == false) {
@@ -157,7 +155,7 @@ struct taskFwdTrackPid {
               continue;
             }
           }
-          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999, mcDecision);
+          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999, 0);
         }
       }
     }
@@ -169,31 +167,16 @@ struct taskFwdTrackPid {
   {
     fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
-      uint32_t mcDecision = 0;
-      int isig = 0;
-      for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-        if ((*sig).CheckSignal(false, muon.reducedMCTrack())) {
-          mcDecision |= (uint32_t(1) << isig);
-        }
-      }
-
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracksMC>();
-        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(), mcDecision);
+        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(), muon.mcReducedFlags());
       }
     }
 
     if constexpr (TMatchedOnly == false) {
       for (const auto& mftTrack : mftTracks) {
-        uint32_t mcDecision = 0;
-        int isig = 0;
-        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
-          if ((*sig).CheckSignal(false, mftTrack.reducedMCTrack())) {
-            mcDecision |= (uint32_t(1) << isig);
-          }
-        }
         if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
-          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999, mcDecision);
+          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999, mftTrack.mcReducedFlags());
         }
       }
     }
@@ -206,19 +189,10 @@ struct taskFwdTrackPid {
     for (auto& mctrack : groupedMCTracks) {
       VarManager::FillTrackMC(groupedMCTracks, mctrack);
 
-      for (auto& sig : fGenMCSignals) {
-        if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
-          continue;
-        }
-        bool checked = false;
-        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
-          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
-          checked = sig.CheckSignal(false, mctrack_raw);
-        } else {
-          checked = sig.CheckSignal(false, mctrack);
-        }
-        if (checked) {
-          fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
+      int isig = 0;
+      for (auto sig = fGenMCSignals.begin(); sig != fGenMCSignals.end(); sig++, isig++) {
+        if (mctrack.mcReducedFlags() & (static_cast<uint16_t>(1) << isig)) {
+          fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
         }
       }
     }
@@ -287,8 +261,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt_Rapidity", "MC generator p_{T}, y distribution", false, 120, 0.0, 30.0, VarManager::kMCPt, 150, 2.5, 4.0, VarManager::kMCY);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, 2.5, 4.0, VarManager::kMCEta);
-      // histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
+      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 200, -5.0, 5.0, VarManager::kMCEta);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
 
