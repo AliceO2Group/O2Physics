@@ -131,6 +131,17 @@ struct HfFemtoDreamProducer {
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
+  FemtoDreamTrackSelection trackCuts;
+
+  HfHelper hfHelper;
+  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  std::vector<float> outputMlPKPi = {};
+  std::vector<float> outputMlPiKP = {};
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::hf_evsel::HfEventSelection hfEvSel;
+
+  float magField;
+  int runNumber;
   using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
   using CandidateLcMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
@@ -145,22 +156,10 @@ struct HfFemtoDreamProducer {
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  FemtoDreamTrackSelection trackCuts;
-
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  HfHelper hfHelper;
-  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
-  std::vector<float> outputMlPKPi = {};
-  std::vector<float> outputMlPiKP = {};
-  o2::ccdb::CcdbApi ccdbApi;
-  o2::hf_evsel::HfEventSelection hfEvSel;
-
-  float magField;
-  int runNumber;
+  HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
   o2::base::MatLayerCylSet* lut;
@@ -173,8 +172,8 @@ struct HfFemtoDreamProducer {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
-    TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
     constexpr int kEventTypes = kPairSelected + 1;
@@ -207,7 +206,7 @@ struct HfFemtoDreamProducer {
     trackCuts.setSelection(trkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(trkPIDspecies);
     trackCuts.setnSigmaPIDOffset(trkPIDnSigmaOffsetTPC, trkPIDnSigmaOffsetTOF);
-    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &TrackRegistry);
+    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &trackRegistry);
 
     runNumber = 0;
     magField = 0.0;
@@ -352,7 +351,7 @@ struct HfFemtoDreamProducer {
     // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     bool fIsTrackFilled = false;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
