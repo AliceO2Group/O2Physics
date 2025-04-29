@@ -451,7 +451,7 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to fill event properties
   /// \param collisions Collision table
-  template <bool useCentrality, bool isMc, typename Colls>
+  template <bool useCentrality, bool IsMc, typename Colls>
   void fillEventProperties(Colls const& collisions)
   {
     // Filling event properties
@@ -476,7 +476,7 @@ struct HfTreeCreatorLcToPKPi {
       float mcPosZ{UndefValueFloat};
       int mcCollId{-1};
 
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
 
         mcPosX = mcCollision.posX();
@@ -513,9 +513,9 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to reserve tables size
   /// \param candidatesSize size of the candidates table
-  /// \param isMc boolean flag whether MC or data is processed
+  /// \param IsMc boolean flag whether MC or data is processed
   template <int reconstructionType>
-  void reserveTables(size_t candidatesSize, bool isMc)
+  void reserveTables(size_t candidatesSize, bool IsMc)
   {
     if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
       if (fillCandidateLiteTable) {
@@ -530,7 +530,7 @@ struct HfTreeCreatorLcToPKPi {
       /// save also candidate collision indices
       rowCollisionId.reserve(candidatesSize);
     }
-    if (isMc && fillCandidateMcTable) {
+    if (IsMc && fillCandidateMcTable) {
       rowCandidateMC.reserve(candidatesSize * 2);
     }
   }
@@ -559,7 +559,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
   /// \param trackPos2 3-d prong (positive track; negative for c.c.)
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
+  template <bool IsMc, int reconstructionType, typename CandType, typename TrackType>
   void fillLiteTable(CandType const& candidate,
                      TrackType const& trackPos1,
                      TrackType const& trackNeg,
@@ -575,7 +575,7 @@ struct HfTreeCreatorLcToPKPi {
     int8_t functionIsCandidateSwapped{0};
     int8_t functionFlagMcDecayChanRec{-1};
 
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       functionFlagMcMatchRec = candidate.flagMcMatchRec();
       functionOriginMcRec = candidate.originMcRec();
       functionIsCandidateSwapped = candidate.isCandidateSwapped();
@@ -639,7 +639,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
   /// \param trackPos2 3-d prong (positive track; negative for c.c.)
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
+  template <bool IsMc, int reconstructionType, typename CandType, typename TrackType>
   void fillFullTable(CandType const& candidate,
                      TrackType const& trackPos1,
                      TrackType const& trackNeg,
@@ -656,7 +656,7 @@ struct HfTreeCreatorLcToPKPi {
     int8_t functionIsCandidateSwapped{0};
     int8_t functionFlagMcDecayChanRec{-1};
 
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       functionFlagMcMatchRec = candidate.flagMcMatchRec();
       functionOriginMcRec = candidate.originMcRec();
       functionIsCandidateSwapped = candidate.isCandidateSwapped();
@@ -863,12 +863,12 @@ struct HfTreeCreatorLcToPKPi {
                     soa::Join<TracksWPid, o2::aod::McTrackLabels> const&, aod::BCs const&)
   {
 
-    constexpr bool isMc = true;
+    constexpr bool IsMc = true;
 
-    fillEventProperties<useCentrality, isMc>(collisions);
+    fillEventProperties<useCentrality, IsMc>(collisions);
 
     const size_t candidatesSize = candidates.size();
-    reserveTables<reconstructionType>(candidatesSize, isMc);
+    reserveTables<reconstructionType>(candidatesSize, IsMc);
 
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
@@ -885,9 +885,9 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -1042,12 +1042,12 @@ struct HfTreeCreatorLcToPKPi {
                       TracksWPid const&, aod::BCs const&)
   {
 
-    constexpr bool isMc = false;
+    constexpr bool IsMc = false;
 
-    fillEventProperties<useCentrality, isMc>(collisions);
+    fillEventProperties<useCentrality, IsMc>(collisions);
 
     const size_t candidatesSize = candidates.size();
-    reserveTables<reconstructionType>(candidatesSize, isMc);
+    reserveTables<reconstructionType>(candidatesSize, IsMc);
 
     // Filling candidate properties
 
@@ -1061,9 +1061,9 @@ struct HfTreeCreatorLcToPKPi {
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
-            fillFullTable<isMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
