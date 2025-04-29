@@ -720,11 +720,11 @@ struct nucleiInJets {
           jetHist.fill(HIST("tracks/deuteron/dca/after/hDCAxyVsPtDeuteron_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/deuteron/dca/after/hDCAzVsPtDeuteron_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (cEnableTritonQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
           jetHist.fill(HIST("tracks/triton/dca/after/hDCAxyVsPtTriton_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/triton/dca/after/hDCAzVsPtTriton_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDTr) {
+        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracks/helium/dca/after/hDCAxyVsPtHelium_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/helium/dca/after/hDCAzVsPtHelium_jet"), trk.dcaZ(), trk.pt());
         }
@@ -758,12 +758,12 @@ struct nucleiInJets {
               jetHist.fill(HIST("tracks/deuteron/h2TofNsigmaDeuteronVsPt_jet"), trk.tofNSigmaDe(), trk.pt());
               jetHist.fill(HIST("tracks/deuteron/h3TpcNsigmaTofNsigmaDeuteronVsPt_jet"), trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.pt());
             }
-            if (std::fabs(trk.tpcNSigmaTr()) < cfgnTPCPIDHe) {
+            if (std::fabs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/triton/h2TOFmassTritonVsPt_jet"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TOFmass2TritonVsPt_jet"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
               jetHist.fill(HIST("tracks/triton/h2TofNsigmaTritonVsPt_jet"), trk.tofNSigmaTr(), trk.pt());
             }
-            if (std::fabs(trk.tpcNSigmaHe()) < cfgnTPCPIDTr) {
+            if (std::fabs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/helium/h2TOFmassHeliumVsPt_jet"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TOFmass2HeliumVsPt_jet"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
               jetHist.fill(HIST("tracks/helium/h2TofNsigmaHeliumVsPt_jet"), trk.tofNSigmaHe(), trk.pt());
@@ -807,11 +807,11 @@ struct nucleiInJets {
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAxyVsPtantiDeuteron_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiDeuteron/dca/after/hDCAzVsPtantiDeuteron_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
+        if (cEnableHeliumQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAxyVsPtantiTriton_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiTriton/dca/after/hDCAzVsPtantiTriton_jet"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDTr) {
+        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAxyVsPtantiHelium_jet"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/antiHelium/dca/after/hDCAzVsPtantiHelium_jet"), trk.dcaZ(), trk.pt());
         }
@@ -917,7 +917,7 @@ struct nucleiInJets {
           jetHist.fill(HIST("tracks/deuteron/dca/after/hDCAxyVsPtDeuteron"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/deuteron/dca/after/hDCAzVsPtDeuteron"), trk.dcaZ(), trk.pt());
         }
-        if (cEnableTritonQA && std::abs(trk.tpcNSigmaHe()) < cfgnTPCPIDTr) {
+        if (cEnableTritonQA && std::abs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
           jetHist.fill(HIST("tracks/triton/dca/after/hDCAxyVsPtTriton"), trk.dcaXY(), trk.pt());
           jetHist.fill(HIST("tracks/triton/dca/after/hDCAzVsPtTriton"), trk.dcaZ(), trk.pt());
         }
@@ -1046,14 +1046,14 @@ struct nucleiInJets {
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiDeuteron/h2TofNsigmaantiDeuteronVsPt"), trk.tofNSigmaDe(), trk.pt());
             }
-            if (std::fabs(trk.tpcNSigmaTr()) < cfgnTPCPIDHe) {
+            if (std::fabs(trk.tpcNSigmaTr()) < cfgnTPCPIDTr) {
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmassantiTritonVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TOFmass2antiTritonVsPt"), massTOF * massTOF - gMassTriton * gMassTriton, trk.pt());
               jetHist.fill(HIST("tracks/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
               if (jetFlagPerpCone && isWithLeadingJet)
                 jetHist.fill(HIST("tracks/perpCone/antiTriton/h2TofNsigmaantiTritonVsPt"), trk.tofNSigmaTr(), trk.pt());
             }
-            if (std::fabs(trk.tpcNSigmaHe()) < cfgnTPCPIDTr) {
+            if (std::fabs(trk.tpcNSigmaHe()) < cfgnTPCPIDHe) {
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmassantiHeliumVsPt"), massTOF, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TOFmass2antiHeliumVsPt"), massTOF * massTOF - gMassHelium * gMassHelium, trk.pt());
               jetHist.fill(HIST("tracks/antiHelium/h2TofNsigmaantiHeliumVsPt"), trk.tofNSigmaHe(), trk.pt());
