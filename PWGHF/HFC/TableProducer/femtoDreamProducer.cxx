@@ -37,14 +37,17 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::analysis;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 using namespace o2::hf_evsel;
@@ -58,6 +61,13 @@ enum Event : uint8_t {
   kTrackSelected,
   kCharmSelected,
   kPairSelected
+};
+
+// ml modes
+enum MlMode : uint8_t {
+  kNoMl = 0,
+  kFillMlFromSelector,
+  kFillMlFromNewBDT
 };
 
 struct HfFemtoDreamProducer {
@@ -81,6 +91,11 @@ struct HfFemtoDreamProducer {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTLc"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_LcToPKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // Configurable<bool> isForceGRP{"isForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
@@ -108,7 +123,28 @@ struct HfFemtoDreamProducer {
   Configurable<std::vector<float>> trkTPCsCls{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kTPCsClsMax, "trk"), std::vector<float>{0.1f, 160.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kTPCsClsMax, "Track selection: ")};
   Configurable<std::vector<float>> trkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "trk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> trkITSnclsMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsMin, "trk"), std::vector<float>{-1.f, 2.f, 4.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsMin, "Track selection: ")};
+  // ML inference
+  Configurable<int> applyMlMode{"applyMlMode", 1, "Occupancy estimation (None: 0, BDT model from Lc selector: 1, New BDT model on Top of Lc selector: 2)"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
+  FemtoDreamTrackSelection trackCuts;
+
+  HfHelper hfHelper;
+  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  std::vector<float> outputMlPKPi = {};
+  std::vector<float> outputMlPiKP = {};
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::hf_evsel::HfEventSelection hfEvSel;
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  o2::base::MatLayerCylSet* lut;
+  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
+
+  float magField;
+  int runNumber;
   using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
   using CandidateLcMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
@@ -116,39 +152,27 @@ struct HfFemtoDreamProducer {
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
 
   using GeneratedMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  FemtoDreamTrackSelection trackCuts;
-
   Filter filterSelectCandidateLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  HfHelper hfHelper;
-  o2::hf_evsel::HfEventSelection hfEvSel;
-
-  float magField;
-  int runNumber;
-
-  Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  o2::base::MatLayerCylSet* lut;
-  // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
+  HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
-    std::array<bool, 5> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessDataCharmHadWithML, doprocessMcCharmHadWithML, doprocessMcCharmHadGen};
+    std::array<bool, 3> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessMcCharmHadGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    int CutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
-    TrackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{CutBits + 1, -0.5, CutBits + 0.5}});
+    int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
     constexpr int kEventTypes = kPairSelected + 1;
@@ -181,7 +205,7 @@ struct HfFemtoDreamProducer {
     trackCuts.setSelection(trkPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(trkPIDspecies);
     trackCuts.setnSigmaPIDOffset(trkPIDnSigmaOffsetTPC, trkPIDnSigmaOffsetTOF);
-    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &TrackRegistry);
+    trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, aod::femtodreamparticle::cutContainerType>(&qaRegistry, &trackRegistry);
 
     runNumber = 0;
     magField = 0.0;
@@ -194,6 +218,18 @@ struct HfFemtoDreamProducer {
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+
+    if (applyMlMode) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
@@ -314,7 +350,7 @@ struct HfFemtoDreamProducer {
     // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     bool fIsTrackFilled = false;
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -395,27 +431,45 @@ struct HfFemtoDreamProducer {
     // Filling candidate properties
     rowCandCharmHad.reserve(sizeCand);
     bool isTrackFilled = false;
+    bool isSelectedMlLcToPKPi = true;
+    bool isSelectedMlLcToPiKP = true;
     for (const auto& candidate : candidates) {
-      std::array<float, 3> outputMlPKPi{-1., -1., -1.};
-      std::array<float, 3> outputMlPiKP{-1., -1., -1.};
-      if constexpr (useCharmMl) {
-        /// fill with ML information
-        /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
-        if (candidate.mlProbLcToPKPi().size() > 0) {
-          outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
-          outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
-          outputMlPKPi.at(2) = candidate.mlProbLcToPKPi()[2]; /// non-prompt score
-        }
-        if (candidate.mlProbLcToPiKP().size() > 0) {
-          outputMlPiKP.at(0) = candidate.mlProbLcToPiKP()[0]; /// bkg score
-          outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
-          outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
-        }
-      }
+
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
 
+      if constexpr (useCharmMl) {
+        /// fill with ML information
+        /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
+        if (applyMlMode == kFillMlFromSelector) {
+          if (candidate.mlProbLcToPKPi().size() > 0) {
+            outputMlPKPi.at(0) = candidate.mlProbLcToPKPi()[0]; /// bkg score
+            outputMlPKPi.at(1) = candidate.mlProbLcToPKPi()[1]; /// prompt score
+            outputMlPKPi.at(2) = candidate.mlProbLcToPKPi()[2]; /// non-prompt score
+          }
+          if (candidate.mlProbLcToPiKP().size() > 0) {
+            outputMlPiKP.at(0) = candidate.mlProbLcToPiKP()[0]; /// bkg score
+            outputMlPiKP.at(1) = candidate.mlProbLcToPiKP()[1]; /// prompt score
+            outputMlPiKP.at(2) = candidate.mlProbLcToPiKP()[2]; /// non-prompt score
+          }
+        } else if (applyMlMode == kFillMlFromNewBDT) {
+          isSelectedMlLcToPKPi = false;
+          isSelectedMlLcToPiKP = false;
+          if (candidate.mlProbLcToPKPi().size() > 0) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+            isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
+          }
+          if (candidate.mlProbLcToPiKP().size() > 0) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+            isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
+          }
+          if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP)
+            continue;
+        } else {
+          LOGF(fatal, "Please check your Ml configuration!!");
+        }
+      }
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float BDTScoreBkg,
