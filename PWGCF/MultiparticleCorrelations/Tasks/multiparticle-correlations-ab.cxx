@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file multiparticle-correlations-ab.cxx
+/// \brief ... TBI 20250425
+/// \author Ante.Bilandzic@cern.ch
+
 // O2:
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -135,6 +139,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultCuts();                                // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
                                                   // or values for cuts provided via configurables are taken into account
                                                   // Remark: DefaultCuts() has to be called after DefaultBinning()
+
     // *) Specific cuts:
     if (tc.fUseSpecificCuts) {
       SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()
@@ -152,7 +157,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
     // *) Book all remaining objects;
     BookAndNestAllLists();
-    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms
+    BookResultsHistograms(); // yes, this one has to be booked first, because it defines the common binning for other groups of histograms TBI 20250412 this is true only if I can use Clone()
     BookQAHistograms();
     BookEventHistograms();
     BookEventCutsHistograms();
@@ -167,7 +172,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookEtaSeparationsHistograms();
-    BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
+    BookTheRest(); // I book everything that was not sorted (yet) in the specific functions above
 
     // *) Insanity checks after booking:
     InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects

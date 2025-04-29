@@ -98,18 +98,32 @@ struct ResonanceMergeDF {
 
   std::vector<std::tuple<float, float, float, float, float, float, int>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
-                                     signed char, unsigned char, unsigned char,
+                                     unsigned char, unsigned char,
                                      int16_t, int16_t, int8_t, int8_t, int8_t,
                                      int8_t, int8_t, int8_t, float,
                                      uint8_t>>>
     vecOfVecOfTuples;
+  std::vector<std::vector<std::tuple<float, float, float, float,
+                                     int*,
+                                     int8_t, int8_t, int8_t, // TPC Pos Trk
+                                     int8_t, int8_t, int8_t, // TPC Neg Trk
+                                     int8_t, int8_t, int8_t, // TPC Bach Trk
+                                     int8_t, int8_t, int8_t, // TOF Pos Trk
+                                     int8_t, int8_t, int8_t, // TOF Neg Trk
+                                     int8_t, int8_t, int8_t, // TOF Bach Trk
+                                     float, float, float, float,
+                                     float, float, float, float,
+                                     float, float, int, float,
+                                     float, float, float,
+                                     float, float, float>>>
+    vecOfVecOfTuplesCasc;
   void processTrackDataDF(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
 
     int nCollisions = nDF;
     vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0));
     std::vector<std::tuple<float, float, float, float,
-                           signed char, unsigned char, unsigned char,
+                           unsigned char, unsigned char,
                            int16_t, int16_t, int8_t, int8_t, int8_t,
                            int8_t, int8_t, int8_t, float,
                            uint8_t>>
@@ -143,7 +157,6 @@ struct ResonanceMergeDF {
         track.px(),
         track.py(),
         track.pz(),
-        track.sign(),
         (uint8_t)track.tpcNClsCrossedRows(),
         (uint8_t)track.tpcNClsFound(),
         static_cast<int16_t>(track.dcaXY() * 10000),
@@ -196,10 +209,212 @@ struct ResonanceMergeDF {
     }
 
     vecOfTuples.clear();
-    vecOfVecOfTuples.clear(); //
+    vecOfVecOfTuples.clear();
   }
 
   PROCESS_SWITCH(ResonanceMergeDF, processTrackDataDF, "Process for data merged DF", true);
+
+  void processTrackDataDFCasc(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks, aod::ResoCascades const& trackCascs)
+  {
+
+    int nCollisions = nDF;
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), 0, 0, 0));
+    std::vector<std::tuple<float, float, float, float,
+                           unsigned char, unsigned char,
+                           int16_t, int16_t, int8_t, int8_t, int8_t,
+                           int8_t, int8_t, int8_t, float,
+                           uint8_t>>
+      innerVector;
+    std::vector<std::tuple<float, float, float, float,
+                           int*,
+                           int8_t, int8_t, int8_t, // TPC Pos Trk
+                           int8_t, int8_t, int8_t, // TPC Neg Trk
+                           int8_t, int8_t, int8_t, // TPC Bach Trk
+                           int8_t, int8_t, int8_t, // TOF Pos Trk
+                           int8_t, int8_t, int8_t, // TOF Neg Trk
+                           int8_t, int8_t, int8_t, // TOF Bach Trk
+                           float, float, float, float,
+                           float, float, float, float,
+                           float, float, int, float,
+                           float, float, float,
+                           float, float, float>>
+      innerVectorCasc;
+    for (const auto& track : tracks) {
+      if (cpidCut) {
+        if (!track.hasTOF()) {
+          if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
+            continue;
+
+          if (crejtpc && (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi())))
+            continue;
+
+        } else {
+          if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
+            continue;
+
+          if (crejtof && (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi())))
+            continue;
+        }
+
+        if (std::abs(track.dcaXY()) > cDCAXY)
+          continue;
+        if (std::abs(track.dcaZ()) > cDCAZ)
+          continue;
+      }
+
+      innerVector.push_back(std::make_tuple(
+        //  track.trackId(),
+        track.pt(),
+        track.px(),
+        track.py(),
+        track.pz(),
+        (uint8_t)track.tpcNClsCrossedRows(),
+        (uint8_t)track.tpcNClsFound(),
+        static_cast<int16_t>(track.dcaXY() * 10000),
+        static_cast<int16_t>(track.dcaZ() * 10000),
+        (int8_t)(track.tpcNSigmaPi() * 10),
+        (int8_t)(track.tpcNSigmaKa() * 10),
+        (int8_t)(track.tpcNSigmaPr() * 10),
+        (int8_t)(track.tofNSigmaPi() * 10),
+        (int8_t)(track.tofNSigmaKa() * 10),
+        (int8_t)(track.tofNSigmaPr() * 10),
+        (int8_t)(track.tpcSignal() * 10),
+        track.trackFlags()));
+    }
+
+    for (const auto& trackCasc : trackCascs) {
+      innerVectorCasc.push_back(std::make_tuple(
+        trackCasc.pt(),
+        trackCasc.px(),
+        trackCasc.py(),
+        trackCasc.pz(),
+        const_cast<int*>(trackCasc.cascadeIndices()),
+        (int8_t)(trackCasc.daughterTPCNSigmaPosPi() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaPosKa() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaPosPr() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaNegPi() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaNegKa() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaNegPr() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaBachPi() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaBachKa() * 10),
+        (int8_t)(trackCasc.daughterTPCNSigmaBachPr() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaPosPi() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaPosKa() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaPosPr() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaNegPi() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaNegKa() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaNegPr() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaBachPi() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaBachKa() * 10),
+        (int8_t)(trackCasc.daughterTOFNSigmaBachPr() * 10),
+        trackCasc.v0CosPA(),
+        trackCasc.cascCosPA(),
+        trackCasc.daughDCA(),
+        trackCasc.cascDaughDCA(),
+        trackCasc.dcapostopv(),
+        trackCasc.dcanegtopv(),
+        trackCasc.dcabachtopv(),
+        trackCasc.dcav0topv(),
+        trackCasc.dcaXYCascToPV(),
+        trackCasc.dcaZCascToPV(),
+        trackCasc.sign(),
+        trackCasc.mLambda(),
+        trackCasc.mXi(),
+        trackCasc.transRadius(), trackCasc.cascTransRadius(), trackCasc.decayVtxX(), trackCasc.decayVtxY(), trackCasc.decayVtxZ()));
+    }
+
+    vecOfVecOfTuples.push_back(innerVector);
+    vecOfVecOfTuplesCasc.push_back(innerVectorCasc);
+    innerVector.clear();
+    innerVectorCasc.clear();
+
+    df++;
+    LOGF(info, "collisions: df = %i", df);
+    if (df < nCollisions)
+      return;
+    df = 0;
+
+    for (size_t i = 0; i < vecOfTuples.size(); ++i) {
+      const auto& tuple = vecOfTuples[i];
+      const auto& innerVector = vecOfVecOfTuples[i];
+      const auto& innerVectorCasc = vecOfVecOfTuplesCasc[i];
+
+      histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, std::get<6>(tuple));
+      //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
+
+      for (const auto& tuple : innerVector) {
+        reso2trksdf(resoCollisionsdf.lastIndex(),
+                    std::get<0>(tuple),
+                    std::get<1>(tuple),
+                    std::get<2>(tuple),
+                    std::get<3>(tuple),
+                    std::get<4>(tuple),
+                    std::get<5>(tuple),
+                    std::get<6>(tuple),
+                    std::get<7>(tuple),
+                    std::get<8>(tuple),
+                    std::get<9>(tuple),
+                    std::get<10>(tuple),
+                    std::get<11>(tuple),
+                    std::get<12>(tuple),
+                    std::get<13>(tuple),
+                    std::get<14>(tuple),
+                    std::get<15>(tuple));
+      }
+
+      for (const auto& tuple : innerVectorCasc) {
+        reso2cascadesdf(resoCollisionsdf.lastIndex(),
+                        std::get<0>(tuple),
+                        std::get<1>(tuple),
+                        std::get<2>(tuple),
+                        std::get<3>(tuple),
+                        std::get<4>(tuple),
+                        std::get<5>(tuple),
+                        std::get<6>(tuple),
+                        std::get<7>(tuple),
+                        std::get<8>(tuple),
+                        std::get<9>(tuple),
+                        std::get<10>(tuple),
+                        std::get<11>(tuple),
+                        std::get<12>(tuple),
+                        std::get<13>(tuple),
+                        std::get<14>(tuple),
+                        std::get<15>(tuple),
+                        std::get<16>(tuple),
+                        std::get<17>(tuple),
+                        std::get<18>(tuple),
+                        std::get<19>(tuple),
+                        std::get<20>(tuple),
+                        std::get<21>(tuple),
+                        std::get<22>(tuple),
+                        std::get<23>(tuple),
+                        std::get<24>(tuple),
+                        std::get<25>(tuple),
+                        std::get<26>(tuple),
+                        std::get<27>(tuple),
+                        std::get<28>(tuple),
+                        std::get<29>(tuple),
+                        std::get<30>(tuple),
+                        std::get<31>(tuple),
+                        std::get<32>(tuple),
+                        std::get<33>(tuple),
+                        std::get<34>(tuple),
+                        std::get<35>(tuple),
+                        std::get<36>(tuple),
+                        std::get<37>(tuple),
+                        std::get<38>(tuple),
+                        std::get<39>(tuple),
+                        std::get<40>(tuple));
+      }
+    }
+
+    vecOfTuples.clear();
+    vecOfVecOfTuples.clear();
+    vecOfVecOfTuplesCasc.clear(); //
+  }
+
+  PROCESS_SWITCH(ResonanceMergeDF, processTrackDataDFCasc, "Process for data merged DF for cascade", false);
 
   void processLambdaStarCandidate(aod::ResoCollisions::iterator const& collision, aod::ResoTracks const& tracks)
   {
