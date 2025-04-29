@@ -115,6 +115,20 @@ struct doublephimeson {
     return 0.5 * trackRelK.P();
   }
 
+  float deepangle2(const ROOT::Math::PtEtaPhiMVector candidate1,
+                   const ROOT::Math::PtEtaPhiMVector candidate2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = candidate1.Pt();
+    pt2 = candidate2.Pt();
+    pz1 = candidate1.Pz();
+    pz2 = candidate2.Pz();
+    p1 = candidate1.P();
+    p2 = candidate2.P();
+    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    return angle;
+  }
+
   float deepangle(const TLorentzVector candidate1,
                   const TLorentzVector candidate2)
   {
@@ -366,6 +380,159 @@ struct doublephimeson {
       }
     }
   }
+
+  void processopti(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
+  {
+    std::vector<ROOT::Math::PtEtaPhiMVector> exoticresonance, phiresonanced1, phiresonanced2;
+    std::vector<int> d1trackid = {};
+    std::vector<int> d2trackid = {};
+    std::vector<int> d3trackid = {};
+    std::vector<int> d4trackid = {};
+    if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
+      return;
+    }
+    int phimult = 0;
+
+    for (auto phitrackd1 : phitracks) {
+      if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
+        continue;
+      }
+      auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
+      auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+      if (kaonplusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (kaonminusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
+        continue;
+      }
+      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
+        continue;
+      }
+      phimult = phimult + 1;
+    }
+    for (auto phitrackd1 : phitracks) {
+      if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
+        continue;
+      }
+      auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
+      auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+      if (kaonplusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (kaonminusd1pt > maxKaonPt) {
+        continue;
+      }
+      if (!selectionPID(phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), phitrackd1.phid1TOFHit(), strategyPID1, kaonplusd1pt)) {
+        continue;
+      }
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlus"), phitrackd1.phid1TPC(), kaonplusd1pt);
+      if (!selectionPID(phitrackd1.phid2TPC(), phitrackd1.phid2TOF(), phitrackd1.phid2TOFHit(), strategyPID1, kaonminusd1pt)) {
+        continue;
+      }
+      histos.fill(HIST("hnsigmaTPCKaonMinus"), phitrackd1.phid2TPC(), kaonminusd1pt);
+      histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
+      auto phid1id = phitrackd1.index();
+      Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
+      for (auto phitrackd2 : phitracks) {
+        auto phid2id = phitrackd2.index();
+        if (phid2id <= phid1id) {
+          continue;
+        }
+        if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
+          continue;
+        }
+        auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
+        auto kaonminusd2pt = TMath::Sqrt(phitrackd2.phid2Px() * phitrackd2.phid2Px() + phitrackd2.phid2Py() * phitrackd2.phid2Py());
+        if (kaonplusd2pt > maxKaonPt) {
+          continue;
+        }
+        if (kaonminusd2pt > maxKaonPt) {
+          continue;
+        }
+        if (!selectionPID(phitrackd2.phid1TPC(), phitrackd2.phid1TOF(), phitrackd2.phid1TOFHit(), strategyPID2, kaonplusd2pt)) {
+          continue;
+        }
+        if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID2, kaonminusd2pt)) {
+          continue;
+        }
+        if ((phitrackd1.phid1Index() == phitrackd2.phid1Index()) || (phitrackd1.phid2Index() == phitrackd2.phid2Index())) {
+          continue;
+        }
+
+        Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
+        exotic = Phid1 + Phid2;
+
+        if (exotic.M() < minExoticMass || exotic.M() > maxExoticMass) {
+          continue;
+        }
+
+        ROOT::Math::PtEtaPhiMVector temp1(exotic.Pt(), exotic.Eta(), exotic.Phi(), exotic.M());
+        ROOT::Math::PtEtaPhiMVector temp2(Phid1.Pt(), Phid1.Eta(), Phid1.Phi(), Phid1.M());
+        ROOT::Math::PtEtaPhiMVector temp3(Phid2.Pt(), Phid2.Eta(), Phid2.Phi(), Phid2.M());
+        exoticresonance.push_back(temp1);
+        phiresonanced1.push_back(temp2);
+        phiresonanced2.push_back(temp3);
+        d1trackid.push_back(phitrackd1.phid1Index());
+        d2trackid.push_back(phitrackd2.phid1Index());
+        d3trackid.push_back(phitrackd1.phid2Index());
+        d4trackid.push_back(phitrackd2.phid2Index());
+      }
+    }
+    if (exoticresonance.size() == 0) {
+      return;
+    }
+    // LOGF(info, "Total number of exotic: %d", exoticresonance.size());
+    if (exoticresonance.size() == 2) {
+      for (auto if1 = exoticresonance.begin(); if1 != exoticresonance.end(); ++if1) {
+        auto i5 = std::distance(exoticresonance.begin(), if1);
+        auto exotic1phi1 = phiresonanced1.at(i5);
+        auto exotic1phi2 = phiresonanced2.at(i5);
+        auto exotic1 = exoticresonance.at(i5);
+        auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
+        auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
+        for (auto if2 = if1 + 1; if2 != exoticresonance.end(); ++if2) {
+          auto i6 = std::distance(exoticresonance.begin(), if2);
+          auto exotic2phi1 = phiresonanced1.at(i6);
+          auto exotic2phi2 = phiresonanced2.at(i6);
+          auto exotic2 = exoticresonance.at(i6);
+          auto deltam2 = TMath::Sqrt(TMath::Power(exotic2phi1.M() - 1.0192, 2.0) + TMath::Power(exotic2phi2.M() - 1.0192, 2.0));
+          auto deltaR2 = TMath::Sqrt(TMath::Power(exotic2phi1.Phi() - exotic2phi2.Phi(), 2.0) + TMath::Power(exotic2phi1.Eta() - exotic2phi2.Eta(), 2.0));
+          // LOGF(info, "exotic 1 kaon ids %d , %d, %d, %d", d1trackid.at(i5), d2trackid.at(i5), d3trackid.at(i5), d4trackid.at(i5));
+          // LOGF(info, "exotic 2 kaon ids %d , %d, %d, %d", d1trackid.at(i6), d2trackid.at(i6), d3trackid.at(i6), d4trackid.at(i6));
+          if ((d1trackid.at(i5) == d1trackid.at(i6) || d1trackid.at(i5) == d2trackid.at(i6)) &&
+              (d2trackid.at(i5) == d1trackid.at(i6) || d2trackid.at(i5) == d2trackid.at(i6)) &&
+              (d3trackid.at(i5) == d3trackid.at(i6) || d3trackid.at(i5) == d4trackid.at(i6)) &&
+              (d4trackid.at(i5) == d3trackid.at(i6) || d4trackid.at(i5) == d4trackid.at(i6))) {
+            // LOGF(info, "Find Pair %f %f", deltam2, deltam1);
+            if (deltam2 < deltam1) {
+              histos.fill(HIST("SEMassUnlike"), exotic2.M(), exotic2.Pt(), deltaR2, deepangle2(exotic2phi1, exotic2phi2), deltam2, exoticresonance.size());
+              // LOGF(info, "Fill exotic Id %d which is pair of Id %d", i6, i5);
+            } else {
+              histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deepangle2(exotic1phi1, exotic1phi2), deltam1, exoticresonance.size());
+              // LOGF(info, "Fill exotic Id %d which is pair of Id %d", i6, i5);
+            }
+          } else {
+            histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deepangle2(exotic1phi1, exotic1phi2), deltam1, exoticresonance.size());
+          }
+        }
+      }
+    } else {
+      for (auto if1 = exoticresonance.begin(); if1 != exoticresonance.end(); ++if1) {
+        auto i5 = std::distance(exoticresonance.begin(), if1);
+        auto exotic1phi1 = phiresonanced1.at(i5);
+        auto exotic1phi2 = phiresonanced2.at(i5);
+        auto exotic1 = exoticresonance.at(i5);
+        auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
+        auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
+        histos.fill(HIST("SEMassUnlike"), exotic1.M(), exotic1.Pt(), deltaR1, deepangle2(exotic1phi1, exotic1phi2), deltam1, exoticresonance.size());
+      }
+    }
+  }
+  PROCESS_SWITCH(doublephimeson, processopti, "Process Optimized same event", false);
 
   SliceCache cache;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
