@@ -92,7 +92,7 @@ struct TrackedCascadeProperties {
     registryQC.add("deltaNclsITS", "deltaNclsITS", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
     registryQC.add("deltaNclsITS_track", "deltaNclsITS_track", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
     registryQC.add("deltaNclsITS_itstrack", "deltaNclsITS_itstrack", HistType::kTH1F, {{20, -10, 10, "#DeltaN"}});
-      
+
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{5, 0, 5, "Event Cuts"}});
     registryData.add("xi_pos_avgclustersize", "xi_pos_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
     registryData.add("xi_neg_avgclustersize", "xi_neg_avgclustersize", HistType::kTH3F, {{100, 0.0, 10.0, "#it{p} (GeV/#it{c})"}, {100, 0.0, 20.0, "#LT ITS cluster size #GT"}, {16, -0.8, 0.8, "#eta"}});
@@ -160,7 +160,7 @@ struct TrackedCascadeProperties {
       registryQC.fill(HIST("deltaP"), track.p() - trackITS.p());
       registryQC.fill(HIST("deltaEta"), track.eta() - trackITS.eta());
       registryQC.fill(HIST("deltaNclsITS"), track.itsNCls() - trackITS.itsNCls());
-      
+
       const int nItsLayers = 7;
       for (int i = 0; i < nItsLayers; i++) {
         registryQC.fill(HIST("deltaClsSize"), track.itsClsSizeInLayer(i) - trackITS.itsClsSizeInLayer(i));
