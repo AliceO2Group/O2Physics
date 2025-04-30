@@ -338,5 +338,3 @@ struct JetChargedTriggerQA {
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetChargedTriggerQA>(cfgc)}; }
-
-jet - charged - trigger - qa
