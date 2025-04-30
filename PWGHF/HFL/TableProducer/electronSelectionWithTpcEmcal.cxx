@@ -161,34 +161,34 @@ struct HfElectronSelectionWithTpcEmcal {
     AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta #eta = #eta_{trk}- #eta_{cluster}"};
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{trk}- #varphi_{cluster}"};
 
-    registry.add("hZvertex", "z vertex", {HistType::kTH1F, {axisPosZ}});
-    registry.add("hNevents", "No of events", {HistType::kTH1F, {{3, 1, 4}}});
-    registry.add("hLikeMass", "Like mass", {HistType::kTH1F, {{axisMass}}});
-    registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1F, {{axisMass}}});
-    registry.add("hLikeSignPt", "Like sign Momentum ", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1F, {{axisPt}}});
+    registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
+    registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
+    registry.add("hLikeMass", "Like mass", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hUnLikeMass", "unLike mass", {HistType::kTH1D, {{axisMass}}});
+    registry.add("hLikeSignPt", "Like sign Momentum ", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hUnLikeSignPt", "UnLike sign Momentum", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hMcgenInElectron", "Mc Gen Inclusive Electron", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hMcgenAllNonHfeElectron", "Mc Gen All NonHf Electron", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hMcgenNonHfeElectron", "Mc Gen NonHf  Electron with mother", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hPi0eEmbTrkPt", "Mc Gen  Pi0 mother NonHf Electron", {HistType::kTH1D, {{axisPt}}});
 
-    registry.add("hEtaeEmbTrkPt", "Mc Gen  Eta mother  NonHf Electron", {HistType::kTH1F, {{axisPt}}});
-    registry.add("hEmcClusterM02", "m02", {HistType::kTH1F, {{axisM02}}});
-    registry.add("hEmcClusterM20", "m20", {HistType::kTH1F, {{axisM20}}});
+    registry.add("hEtaeEmbTrkPt", "Mc Gen  Eta mother  NonHf Electron", {HistType::kTH1D, {{axisPt}}});
+    registry.add("hEmcClusterM02", "m02", {HistType::kTH1D, {{axisM02}}});
+    registry.add("hEmcClusterM20", "m20", {HistType::kTH1D, {{axisM20}}});
     registry.add("hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{axisEta}, {axisPhi}, {axisPassEMcal}}});
     registry.add("hTrackEnergyLossVsP", " TPC Energy loss info vs P; dE/dx;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH3F, {{axisdEdx}, {axisPt}, {axisPassEMcal}}});
     registry.add("hTrackEnergyLossVsPt", "TPC Energy loss info vs Pt; dE/dx;#it{p}_{T} (GeV#it{/c});passEMcal;", {HistType::kTH3F, {{axisdEdx}, {axisPt}, {axisPassEMcal}}});
     registry.add("hTracknSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH3F, {{axisnSigma}, {axisPt}, {axisPassEMcal}}});
     registry.add("hTracknSigmaVsPt", "  TPC nSigma info vs Pt; n#sigma;#it{p}_{T} (GeV#it{/c});passEMcal;", {HistType::kTH3F, {{axisnSigma}, {axisPt}, {axisPassEMcal}}});
-    registry.add("hEmcClusterEnergy", "EMCal Cluster Info before match Energy; Energy (GeV); entries;", {HistType::kTH1F, {{axisEmcEnergy}}});
+    registry.add("hEmcClusterEnergy", "EMCal Cluster Info before match Energy; Energy (GeV); entries;", {HistType::kTH1D, {{axisEmcEnergy}}});
     registry.add("hEmcClusterEtaPhi", "EMCal Cluster Info before match Eta  and Phi; #eta;#varphi;", {HistType::kTH2F, {{axisEta}, {axisPhi}}});
     registry.add("hEmcClusterEnergyCell", "EMCal Cluster Info before match Energy vs nCells; Energy (GeV);ncell;", {HistType::kTH2F, {{axisEmcEnergy}, {axisEmcClsNCells}}});
     registry.add("hEmcClusterEnergyTime", "EMCal Cluster Info before match Energy vs time; Energy (GeV); sec;", {HistType::kTH2F, {{axisEmcEnergy}, {axisEmcClsTime}}});
-    registry.add("hEmcClusterAfterMatchEnergy", "EMCal Cluster Info After match Energy; Energy (GeV); entries;", {HistType::kTH1F, {{axisEmcEnergy}}});
+    registry.add("hEmcClusterAfterMatchEnergy", "EMCal Cluster Info After match Energy; Energy (GeV); entries;", {HistType::kTH1D, {{axisEmcEnergy}}});
     registry.add("hEmcClusterAfterMatchEtaPhi", "EMCal Cluster Info After match Eta  and Phi; #eta;#varphi;", {HistType::kTH2F, {{axisEta}, {axisPhi}}});
     registry.add("hEmcClusterAfterMatchEnergyCells", "EMCal Cluster Info After match Energy vs nCells; Energy (GeV);ncell;", {HistType::kTH2F, {{axisEmcEnergy}, {axisEmcClsNCells}}});
     registry.add("hEmcClusterAfterMatchEnergyTime", "EMCal Cluster Info After match Energy vs time; Energy (GeV); sec;", {HistType::kTH2F, {{axisEmcEnergy}, {axisEmcClsTime}}});
-    registry.add("hAfterMatchSigmaVsEoP", "PID Info after  match EoP vs Sigma ; E/P;#it{p}_{T} (GeV#it{/c});n#sigma; m02; m20;", {HistType::kTHnSparseD, {{axisEoP}, {axisPt}, {axisnSigma}, {axisM02}, {axisM20}}});
+    registry.add("hAfterMatchSigmaVsEoP", "PID Info after  match EoP vs Sigma ; E/P;#it{p}_{T} (GeV#it{/c});n#sigma; m02; m20;", {HistType::kTHnSparseF, {{axisEoP}, {axisPt}, {axisnSigma}, {axisM02}, {axisM20}}});
     registry.add("hAfterMatchEoPVsP", "PID Info after match  EoP vs P; E/P;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{axisEoP}, {axisPt}}});
     registry.add("hAfterMatchSigmaVsP", "PID Info after match Sigma vs Momentum ; n#sigma; #it{p} (GeV#it{/c}; ", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
     registry.add("hAfterMatchEtaPhi", "PID Info after match Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{axisEta}, {axisPhi}}});
@@ -197,7 +197,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
     registry.add("hAfterPIDEtaPhi", "PID Info after PID Cuts Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{axisEta}, {axisPhi}}});
     registry.add("hEPRatioAfterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{axisPt}, {axisEmcEnergy}}});
-    registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseD, {{binsEoP}, {binsPt}, {binsnSigma}, {binsM02}, {binsM20}}});
+    registry.add("hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", {HistType::kTHnSparseF, {{binsEoP}, {binsPt}, {binsnSigma}, {binsM02}, {binsM20}}});
     registry.add("hEmcClsTrkEtaPhiDiffTime", "EmcClsTrkEtaPhiDiffTime;#Delta#eta;#Delta#varphi;Sec;", {HistType::kTH3F, {{binsDeltaEta}, {binsDeltaPhi}, {binsEmcClsTime}}});
   }
   // Track Selection Cut
