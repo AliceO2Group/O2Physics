@@ -89,6 +89,7 @@ struct doublephimeson {
     const AxisSpec thnAxisNumPhi{configThnAxisNumPhi, "Number of phi meson"};
 
     histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
+    histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassDeltaPhi, thnAxisNumPhi});
     histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisDeltaR, thnAxisCosTheta, thnAxisInvMassDeltaPhi});
   }
 
@@ -274,9 +275,10 @@ struct doublephimeson {
   }
 
   TLorentzVector exotic, Phid1, Phid2;
+  TLorentzVector exoticlike, Phi1kaonplus, Phi1kaonminus, Phi2kaonplus, Phi2kaonminus, Phid1like, Phid2like;
   // TLorentzVector exoticRot, Phid1Rot;
 
-  void process(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
+  void processSE(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
   {
     if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
       return;
@@ -303,9 +305,6 @@ struct doublephimeson {
       phimult = phimult + 1;
     }
     for (auto phitrackd1 : phitracks) {
-      if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
-        continue;
-      }
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
       if (kaonplusd1pt > maxKaonPt) {
@@ -326,12 +325,11 @@ struct doublephimeson {
       histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
       auto phid1id = phitrackd1.index();
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
+      Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
+      Phi1kaonminus.SetXYZM(phitrackd1.phid2Px(), phitrackd1.phid2Py(), phitrackd1.phid2Pz(), 0.493);
       for (auto phitrackd2 : phitracks) {
         auto phid2id = phitrackd2.index();
         if (phid2id <= phid1id) {
-          continue;
-        }
-        if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
           continue;
         }
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
@@ -348,12 +346,6 @@ struct doublephimeson {
         if (!selectionPID(phitrackd2.phid2TPC(), phitrackd2.phid2TOF(), phitrackd2.phid2TOFHit(), strategyPID2, kaonminusd2pt)) {
           continue;
         }
-        // if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
-        // continue;
-        // }
-        // if (phitrackd1.phid2Index() == phitrackd2.phid2Index()) {
-        // continue;
-        // }
         if (phitrackd1.phid1Index() == phitrackd2.phid1Index()) {
           continue;
         }
@@ -361,6 +353,30 @@ struct doublephimeson {
           continue;
         }
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
+        Phi2kaonplus.SetXYZM(phitrackd2.phid1Px(), phitrackd2.phid1Py(), phitrackd2.phid1Pz(), 0.493);
+        Phi2kaonminus.SetXYZM(phitrackd2.phid2Px(), phitrackd2.phid2Py(), phitrackd2.phid2Pz(), 0.493);
+
+        // Like
+        Phid1like = Phi1kaonplus + Phi2kaonplus;
+        Phid2like = Phi1kaonminus + Phi2kaonminus;
+        exoticlike = Phid1like + Phid2like;
+        auto deltaRlike = TMath::Sqrt(TMath::Power(Phid1like.Phi() - Phid2like.Phi(), 2.0) + TMath::Power(Phid1like.Eta() - Phid2like.Eta(), 2.0));
+        auto costhetalike = (Phid1like.Px() * Phid2like.Px() + Phid1like.Py() * Phid2like.Py() + Phid1like.Pz() * Phid2like.Pz()) / (Phid1like.P() * Phid2like.P());
+        auto deltamlike = TMath::Sqrt(TMath::Power(Phid1like.M() - 1.0192, 2.0) + TMath::Power(Phid2like.M() - 1.0192, 2.0));
+        if (!isDeep) {
+          histos.fill(HIST("SEMassLike"), exoticlike.M(), exoticlike.Pt(), deltaRlike, costhetalike, deltamlike, phimult);
+        }
+        if (isDeep) {
+          histos.fill(HIST("SEMassLike"), exoticlike.M(), exoticlike.Pt(), deltaRlike, deepangle(Phid1like, Phid2like), deltamlike, phimult);
+        }
+
+        // Unlike
+        if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
+          continue;
+        }
+        if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
+          continue;
+        }
         exotic = Phid1 + Phid2;
         if (exotic.M() < minExoticMass || exotic.M() > maxExoticMass) {
           continue;
@@ -380,7 +396,7 @@ struct doublephimeson {
       }
     }
   }
-
+  PROCESS_SWITCH(doublephimeson, processSE, "Process Same Event", false);
   void processopti(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
   {
     std::vector<ROOT::Math::PtEtaPhiMVector> exoticresonance, phiresonanced1, phiresonanced2;
@@ -414,9 +430,6 @@ struct doublephimeson {
       phimult = phimult + 1;
     }
     for (auto phitrackd1 : phitracks) {
-      if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
-        continue;
-      }
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
       if (kaonplusd1pt > maxKaonPt) {
@@ -437,12 +450,11 @@ struct doublephimeson {
       histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
       auto phid1id = phitrackd1.index();
       Phid1.SetXYZM(phitrackd1.phiPx(), phitrackd1.phiPy(), phitrackd1.phiPz(), phitrackd1.phiMass());
+      Phi1kaonplus.SetXYZM(phitrackd1.phid1Px(), phitrackd1.phid1Py(), phitrackd1.phid1Pz(), 0.493);
+      Phi1kaonminus.SetXYZM(phitrackd1.phid2Px(), phitrackd1.phid2Py(), phitrackd1.phid2Pz(), 0.493);
       for (auto phitrackd2 : phitracks) {
         auto phid2id = phitrackd2.index();
         if (phid2id <= phid1id) {
-          continue;
-        }
-        if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
           continue;
         }
         auto kaonplusd2pt = TMath::Sqrt(phitrackd2.phid1Px() * phitrackd2.phid1Px() + phitrackd2.phid1Py() * phitrackd2.phid1Py());
@@ -462,14 +474,35 @@ struct doublephimeson {
         if ((phitrackd1.phid1Index() == phitrackd2.phid1Index()) || (phitrackd1.phid2Index() == phitrackd2.phid2Index())) {
           continue;
         }
-
         Phid2.SetXYZM(phitrackd2.phiPx(), phitrackd2.phiPy(), phitrackd2.phiPz(), phitrackd2.phiMass());
-        exotic = Phid1 + Phid2;
+        Phi2kaonplus.SetXYZM(phitrackd2.phid1Px(), phitrackd2.phid1Py(), phitrackd2.phid1Pz(), 0.493);
+        Phi2kaonminus.SetXYZM(phitrackd2.phid2Px(), phitrackd2.phid2Py(), phitrackd2.phid2Pz(), 0.493);
 
+        // Like
+        Phid1like = Phi1kaonplus + Phi2kaonplus;
+        Phid2like = Phi1kaonminus + Phi2kaonminus;
+        exoticlike = Phid1like + Phid2like;
+        auto deltaRlike = TMath::Sqrt(TMath::Power(Phid1like.Phi() - Phid2like.Phi(), 2.0) + TMath::Power(Phid1like.Eta() - Phid2like.Eta(), 2.0));
+        auto costhetalike = (Phid1like.Px() * Phid2like.Px() + Phid1like.Py() * Phid2like.Py() + Phid1like.Pz() * Phid2like.Pz()) / (Phid1like.P() * Phid2like.P());
+        auto deltamlike = TMath::Sqrt(TMath::Power(Phid1like.M() - 1.0192, 2.0) + TMath::Power(Phid2like.M() - 1.0192, 2.0));
+        if (!isDeep) {
+          histos.fill(HIST("SEMassLike"), exoticlike.M(), exoticlike.Pt(), deltaRlike, costhetalike, deltamlike, phimult);
+        }
+        if (isDeep) {
+          histos.fill(HIST("SEMassLike"), exoticlike.M(), exoticlike.Pt(), deltaRlike, deepangle(Phid1like, Phid2like), deltamlike, phimult);
+        }
+
+        // unlike
+        if (phitrackd1.phiMass() < minPhiMass || phitrackd1.phiMass() > maxPhiMass) {
+          continue;
+        }
+        if (phitrackd2.phiMass() < minPhiMass || phitrackd2.phiMass() > maxPhiMass) {
+          continue;
+        }
+        exotic = Phid1 + Phid2;
         if (exotic.M() < minExoticMass || exotic.M() > maxExoticMass) {
           continue;
         }
-
         ROOT::Math::PtEtaPhiMVector temp1(exotic.Pt(), exotic.Eta(), exotic.Phi(), exotic.M());
         ROOT::Math::PtEtaPhiMVector temp2(Phid1.Pt(), Phid1.Eta(), Phid1.Phi(), Phid1.M());
         ROOT::Math::PtEtaPhiMVector temp3(Phid2.Pt(), Phid2.Eta(), Phid2.Phi(), Phid2.M());
