@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \authors Filip Krizek, Kotliarov Artem
+/// \author Filip Krizek, Kotliarov Artem
 /// \file chJetTriggerQATask.cxx
 /// \brief QA of charged-jet trigger performance
 
@@ -65,7 +65,7 @@ float dcaXYPtCut(float tracPt)
 // b) from events selected by EPN
 // It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
-struct ChJetTriggerQATask {
+struct JetChargedTriggerQA {
 
   Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
@@ -337,9 +337,6 @@ struct ChJetTriggerQATask {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetChargedTriggerQA>(cfgc)}; }
 
-  return WorkflowSpec{adaptAnalysisTask<ChJetTriggerQATask>(
-    cfgc, TaskName{"jet-charged-trigger-qa"})};
-}
+jet - charged - trigger - qa
