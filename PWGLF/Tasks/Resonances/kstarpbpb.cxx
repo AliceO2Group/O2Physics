@@ -651,7 +651,9 @@ struct kstarpbpb {
             auto angleend = confMaxRot;
             auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
             auto rotangle = anglestart + nrotbkg * anglestep;
-            histos.fill(HIST("hRotation"), rotangle);
+            if (!fillSA) {
+              histos.fill(HIST("hRotation"), rotangle);
+            }
             auto rotkaonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
             auto rotkaonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
             kaonrot = ROOT::Math::PxPyPzMVector(rotkaonPx, rotkaonPy, track1.pz(), massKa);
@@ -667,9 +669,9 @@ struct kstarpbpb {
             if (!useSP) {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
-            if (!fillSA)
+            if (!fillSA) {
               histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
-
+            }
             if (fillSA) {
               if (track1Sign * track2Sign < 0) {
                 ROOT::Math::Boost boost{kstarrot.BoostToCM()};
