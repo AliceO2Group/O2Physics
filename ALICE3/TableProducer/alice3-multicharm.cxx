@@ -568,8 +568,6 @@ struct alice3multicharm {
 
           histos.fill(HIST("hCharmBuilding"), 1.0f);
 
-          
-
           const std::array<float, 3> momentumC = {
             thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0],
             thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1],
@@ -579,7 +577,7 @@ struct alice3multicharm {
           double xicDecayRadius2D = std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]);
           if (xicDecayRadius2D < minXiCRadius)
             continue; // do not take if radius too small, likely a primary combination
-          
+
           histos.fill(HIST("hXiRadiusVsXicRadius"), xiCand.cascRadius() * 1e+4, xicDecayRadius2D * 1e+4);
           if (xicDecayRadius2D > xiCand.cascRadius())
             continue;
