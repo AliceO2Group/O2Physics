@@ -29,7 +29,7 @@
 //                           task will adapt algorithm to spare / spend CPU accordingly
 //  -- mc_findableMode ....: 0: only found (default), 1: add findable to found, 2: all findable
 //                           When using findables, refer to FoundTag bools for checking if found
-//  -- v0builderopts ......: V0-specific building options (topological, etc)
+//  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
 //  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
 #include <string>
@@ -1016,9 +1016,6 @@ struct StrangenessBuilder {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
           auto const& v0 = cascade.v0();
-          if (v0.v0Type() > 1) {
-            continue; // skip any unexpected stuff (FIXME: follow-up)
-          }
           currentCascadeEntry.globalId = cascade.globalIndex();
           currentCascadeEntry.collisionId = cascade.collisionId();
           currentCascadeEntry.v0Id = ao2dV0toV0List[v0.globalIndex()];
