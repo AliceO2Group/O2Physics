@@ -32,6 +32,7 @@
 
 using namespace o2;
 using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
@@ -54,9 +55,6 @@ struct HfCandidateCreatorLbReduced {
   Configurable<float> invMassWindowLcPiTolerance{"invMassWindowLcPiTolerance", 0.01, "invariant-mass window tolerance for LcPi pair preselections (GeV/c2)"};
 
   float myInvMassWindowLcPi{1.}; // variable that will store the value of invMassWindowLcPi
-  float massPi{0.};
-  float massLc{0.};
-  float massLb{0.};
   float bz{0.};
 
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
@@ -76,11 +74,6 @@ struct HfCandidateCreatorLbReduced {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
-
-    // invariant-mass window cut
-    massPi = o2::constants::physics::MassPiPlus;
-    massLc = o2::constants::physics::MassLambdaCPlus;
-    massLb = o2::constants::physics::MassLambdaB0;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);
@@ -137,7 +130,7 @@ struct HfCandidateCreatorLbReduced {
         std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
-        auto invMass2LcPi = RecoDecay::m2(std::array{pVecLc, pVecPion}, std::array{massLc, massPi});
+        auto invMass2LcPi = RecoDecay::m2(std::array{pVecLc, pVecPion}, std::array{MassLambdaCPlus, MassPiPlus});
         if ((invMass2LcPi < invMass2LcPiMin) || (invMass2LcPi > invMass2LcPiMax)) {
           continue;
         }
@@ -221,8 +214,8 @@ struct HfCandidateCreatorLbReduced {
     }
     // invMassWindowLcPiTolerance is used to apply a slightly tighter cut than in LcPi pair preselection
     // to avoid accepting LcPi pairs that were not formed in LcPi pair creator
-    float invMass2LcPiMin = (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
-    float invMass2LcPiMax = (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
+    float invMass2LcPiMin = (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
+    float invMass2LcPiMax = (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -255,8 +248,8 @@ struct HfCandidateCreatorLbReduced {
     }
     // invMassWindowLcPiTolerance is used to apply a slightly tighter cut than in LcPi pair preselection
     // to avoid accepting LcPi pairs that were not formed in LcPi pair creator
-    float invMass2LcPiMin = (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (massLb - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
-    float invMass2LcPiMax = (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (massLb + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
+    float invMass2LcPiMin = (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
+    float invMass2LcPiMax = (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
