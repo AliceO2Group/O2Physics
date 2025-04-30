@@ -9,15 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet Trigger QA Task
-//
-/// \author Filip Krizek <Filip.Krizek@cern.ch>
+/// \authors Filip Krizek, Kotliarov Artem
+/// \file chJetTriggerQATask.cxx
+/// \brief QA of charged-jet trigger performance
+
 #include <cmath>
 #include <string>
 #include <vector>
 #include <TMath.h>
 #include <TVector2.h>
-#include <TLorentzVector.h>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -45,14 +45,14 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using filteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
-using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
-using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
-using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using FilteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
+using FilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+using JoinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 
-float DcaXYPtCut(float tracPt)
+float dcaXYPtCut(float tracPt)
 {
-  return 0.0105f + 0.0350f / pow(tracPt, 1.1f);
+  return 0.0105f + 0.0350f / std::pow(tracPt, 1.1f);
 }
 
 // What this task should do
@@ -85,12 +85,12 @@ struct ChJetTriggerQATask {
   Configurable<bool> bStudyPhiTrack{"bStudyPhiTrack", false, "add histos for detailed study of track phi distribution"};
 
   Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
-  Configurable<float> dcaXY_multFact{"dcaXY_multFact", 3., "mult factor to relax pT dependent dcaXY cut for quality tracks"};
-  Configurable<float> dcaZ_cut{"dcaZ_cut", 3., "cut on dcaZ for quality tracks"};
+  Configurable<float> dcaXYMultFact{"dcaXYMultFact", 3., "mult factor to relax pT dependent dcaXY cut for quality tracks"};
+  Configurable<float> dcaZCut{"dcaZCut", 3., "cut on dcaZ for quality tracks"};
 
   float twoPi = constants::math::TwoPI;
-  ConfigurableAxis dcaXY_Binning{"dcaXY_Binning", {100, -5., 5.}, ""};
-  ConfigurableAxis dcaZ_Binning{"dcaZ_Binning", {100, -3., 3.}, ""};
+  ConfigurableAxis dcaXYBinning{"dcaXYBinning", {100, -5., 5.}, ""};
+  ConfigurableAxis dcaZBinning{"dcaZBinning", {100, -3., 3.}, ""};
 
   ConfigurableAxis xPhiAxis{"xPhiAxis", {40, 0., twoPi}, ""};
   ConfigurableAxis yQ1pTAxis{"yQ1pTAxis", {200, -0.5, 0.5}, ""};
@@ -147,8 +147,8 @@ struct ChJetTriggerQATask {
       spectra.add("globalP_tpcglobalPDiff_phirestrict", "difference of global and TPC inner momentum vs global momentum with selection applied restricted phi", kTH2F, {{100, 0., 100.}, {200, -100., 100.}});
       spectra.add("global1overP_tpcglobalPDiff_phirestrict", "difference of 1/p global and TPC inner momentum vs global momentum with selection applied restricted phi", kTH2F, {{100, 0., 100.}, {500, -8., 8.}});
 
-      spectra.add("DCAxy_track_Phi_pT", "track DCAxy vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaXY_Binning, {40, 0., twoPi}, {100, 0., 100.}});
-      spectra.add("DCAz_track_Phi_pT", "track DCAz vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaZ_Binning, {40, 0., twoPi}, {100, 0., 100.}});
+      spectra.add("DCAxy_track_Phi_pT", "track DCAxy vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaXYBinning, {40, 0., twoPi}, {100, 0., 100.}});
+      spectra.add("DCAz_track_Phi_pT", "track DCAz vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaZBinning, {40, 0., twoPi}, {100, 0., 100.}});
       spectra.add("nITSClusters_TrackPt", "Number of ITS hits vs phi & pT of tracks", kTH3F, {{7, 1., 8.}, {40, 0., twoPi}, {100, 0., 100.}});
       spectra.add("ptphiQualityTracks", "pT vs phi of quality tracks", kTH2F, {{100, 0., 100.}, {40, 0, twoPi}});
       spectra.add("ptphiAllTracks", "pT vs phi of all tracks", kTH2F, {{100, 0., 100.}, {40, 0, twoPi}});
@@ -165,7 +165,7 @@ struct ChJetTriggerQATask {
   // declare filters on jets
   Filter jetRadiusSelection = (aod::jet::r == nround(cfgJetR.node() * 100.0f));
 
-  void process(filteredColl const& collision, filteredJTracks const& tracks, filteredJets const& jets, joinedTracks const&)
+  void process(FilteredColl const& collision, FilteredJTracks const& tracks, FilteredJets const& jets, JoinedTracks const&)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
@@ -202,7 +202,7 @@ struct ChJetTriggerQATask {
       // loop over filtered tracks in full TPC volume having pT > 100 MeV
       for (auto const& track : tracks) {
 
-        auto const& originalTrack = track.track_as<joinedTracks>();
+        auto const& originalTrack = track.track_as<JoinedTracks>();
 
         if (bStudyPhiTrack) {
 
@@ -223,7 +223,8 @@ struct ChJetTriggerQATask {
         if (bAddSupplementHistosToOutput) {
           spectra.fill(HIST("phietaTrackAllInclGood"), track.eta(), track.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
 
-          if (track.pt() > 5.0) {
+          float trackPtCut = 5.0;
+          if (track.pt() > trackPtCut) {
             spectra.fill(HIST("phietaTrackHighPtInclGood"), track.eta(), track.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
           }
         }
@@ -238,8 +239,10 @@ struct ChJetTriggerQATask {
           spectra.fill(HIST("phi_Q1pT"), originalTrack.phi(), originalTrack.sign() / originalTrack.pt());
           spectra.fill(HIST("ptphiQualityTracks"), track.pt(), track.phi());
 
-          bool bDcaCondition = (fabs(track.dcaZ()) < dcaZ_cut) && (fabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
-          if (originalTrack.itsNCls() >= 4 && bDcaCondition) { // correspond to number of track hits in ITS layers
+          bool bDcaCondition = (std::fabs(track.dcaZ()) < dcaZCut) && (std::fabs(track.dcaXY()) < dcaXYMultFact * dcaXYPtCut(track.pt()));
+
+          int nITSClusters = 4;
+          if (originalTrack.itsNCls() >= nITSClusters && bDcaCondition) { // correspond to number of track hits in ITS layers
             spectra.fill(HIST("DCAxy_track_Phi_pT"), track.dcaXY(), track.phi(), track.pt());
             spectra.fill(HIST("DCAz_track_Phi_pT"), track.dcaZ(), track.phi(), track.pt());
           }
@@ -273,8 +276,8 @@ struct ChJetTriggerQATask {
       }
 
       // Find leading jet pT in full TPC volume
-      for (auto& jet : jets) {
-        if (fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
+      for (const auto& jet : jets) {
+        if (std::fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
 
           if (jet.pt() > leadingJetPt) {
             leadingJetPt = jet.pt();
@@ -296,22 +299,24 @@ struct ChJetTriggerQATask {
       }
 
       // Inclusive Jet pT spectrum in Fiducial volume
-      for (auto& jet : jets) {
-        if (fabs(jet.eta()) < fiducialVolume) {
+      for (const auto& jet : jets) {
+        if (std::fabs(jet.eta()) < fiducialVolume) {
           spectra.fill(HIST("ptJetChInclFidVol"), jet.pt());
           spectra.fill(HIST("ptphiJetChInclFidVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFidVol"), jet.pt(), jet.eta());
 
           if (bAddSupplementHistosToOutput) {
             spectra.fill(HIST("phietaJetChInclFidVol"), jet.eta(), jet.phi());
-            if (jet.pt() > 10.0) {
+
+            float jetPtCut = 10.0;
+            if (jet.pt() > jetPtCut) {
               spectra.fill(HIST("phietaJetChInclHighPtFidVol"), jet.eta(), jet.phi());
             }
             spectra.fill(HIST("jetAreaFidVol"), jet.pt(), jet.area());
           }
         }
 
-        if (fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
+        if (std::fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
           spectra.fill(HIST("ptphiJetChInclFullVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFullVol"), jet.pt(), jet.eta());
 
@@ -319,7 +324,9 @@ struct ChJetTriggerQATask {
             spectra.fill(HIST("ptJetChInclFullVol"), jet.pt());
 
             spectra.fill(HIST("phietaJetChInclFullVol"), jet.eta(), jet.phi());
-            if (jet.pt() > 10.0) {
+
+            float jetPtCut = 10.0;
+            if (jet.pt() > jetPtCut) {
               spectra.fill(HIST("phietaJetChInclHighPtFullVol"), jet.eta(), jet.phi());
             }
             spectra.fill(HIST("jetAreaFullVol"), jet.pt(), jet.area());
