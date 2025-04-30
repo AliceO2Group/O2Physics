@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidML.h
+/// \file pidMl.h
 /// \brief Data model for PID ML training.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -19,6 +19,8 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 namespace o2::aod
 {
@@ -32,16 +34,16 @@ DECLARE_SOA_COLUMN(Py, py, float);                                 //! Non-dynam
 DECLARE_SOA_COLUMN(Pz, pz, float);                                 //! Non-dynamic column with track z-momentum
 DECLARE_SOA_COLUMN(Sign, sign, float);                             //! Non-dynamic column with track sign
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t); //!
-DECLARE_SOA_COLUMN(TOFExpSignalDiffEl, tofExpSignalDiffEl, float); //! Difference between signal and expected for electron
-DECLARE_SOA_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, float); //! Difference between signal and expected for electron
-DECLARE_SOA_COLUMN(TOFExpSignalDiffMu, tofExpSignalDiffMu, float); //! Difference between signal and expected for muon
-DECLARE_SOA_COLUMN(TPCExpSignalDiffMu, tpcExpSignalDiffMu, float); //! Difference between signal and expected for muon
-DECLARE_SOA_COLUMN(TOFExpSignalDiffPi, tofExpSignalDiffPi, float); //! Difference between signal and expected for pion
-DECLARE_SOA_COLUMN(TPCExpSignalDiffPi, tpcExpSignalDiffPi, float); //! Difference between signal and expected for pion
-DECLARE_SOA_COLUMN(TOFExpSignalDiffKa, tofExpSignalDiffKa, float); //! Difference between signal and expected for kaon
-DECLARE_SOA_COLUMN(TPCExpSignalDiffKa, tpcExpSignalDiffKa, float); //! Difference between signal and expected for kaon
-DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float); //! Difference between signal and expected for proton
-DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
+DECLARE_SOA_COLUMN(TofExpSignalDiffEl, tofExpSignalDiffEl, float); //! Difference between signal and expected for electron
+DECLARE_SOA_COLUMN(TpcExpSignalDiffEl, tpcExpSignalDiffEl, float); //! Difference between signal and expected for electron
+DECLARE_SOA_COLUMN(TofExpSignalDiffMu, tofExpSignalDiffMu, float); //! Difference between signal and expected for muon
+DECLARE_SOA_COLUMN(TpcExpSignalDiffMu, tpcExpSignalDiffMu, float); //! Difference between signal and expected for muon
+DECLARE_SOA_COLUMN(TofExpSignalDiffPi, tofExpSignalDiffPi, float); //! Difference between signal and expected for pion
+DECLARE_SOA_COLUMN(TpcExpSignalDiffPi, tpcExpSignalDiffPi, float); //! Difference between signal and expected for pion
+DECLARE_SOA_COLUMN(TofExpSignalDiffKa, tofExpSignalDiffKa, float); //! Difference between signal and expected for kaon
+DECLARE_SOA_COLUMN(TpcExpSignalDiffKa, tpcExpSignalDiffKa, float); //! Difference between signal and expected for kaon
+DECLARE_SOA_COLUMN(TofExpSignalDiffPr, tofExpSignalDiffPr, float); //! Difference between signal and expected for proton
+DECLARE_SOA_COLUMN(TpcExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
 } // namespace pidtracks
 DECLARE_SOA_TABLE(PidTracksDataMl, "AOD", "PIDTRACKSDATAML", //! Data tracks for prediction and domain adaptation
                   aod::track::TPCSignal,
@@ -63,7 +65,6 @@ DECLARE_SOA_TABLE(PidTracksDataMl, "AOD", "PIDTRACKSDATAML", //! Data tracks for
                   aod::track::DcaXY,
                   aod::track::DcaZ);
 DECLARE_SOA_TABLE(PidTracksData, "AOD", "PIDTRACKSDATA", //! Data tracks for comparative analysis
-                  aod::cent::CentRun2V0M,
                   aod::mult::MultFV0A, aod::mult::MultFV0C, pidtracks::MultFV0M,
                   aod::mult::MultFT0A, aod::mult::MultFT0C, pidtracks::MultFT0M,
                   aod::mult::MultZNA, aod::mult::MultZNC,
@@ -90,34 +91,34 @@ DECLARE_SOA_TABLE(PidTracksData, "AOD", "PIDTRACKSDATA", //! Data tracks for com
                   aod::track::DcaZ,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCExpSigmaEl,
-                  pidtracks::TPCExpSignalDiffEl,
+                  pidtracks::TpcExpSignalDiffEl,
                   pidtof::TOFNSigmaEl,
                   pidtof::TOFExpSigmaEl,
-                  pidtracks::TOFExpSignalDiffEl,
+                  pidtracks::TofExpSignalDiffEl,
                   pidtpc::TPCNSigmaMu,
                   pidtpc::TPCExpSigmaMu,
-                  pidtracks::TPCExpSignalDiffMu,
+                  pidtracks::TpcExpSignalDiffMu,
                   pidtof::TOFNSigmaMu,
                   pidtof::TOFExpSigmaMu,
-                  pidtracks::TOFExpSignalDiffMu,
+                  pidtracks::TofExpSignalDiffMu,
                   pidtpc::TPCNSigmaPi,
                   pidtpc::TPCExpSigmaPi,
-                  pidtracks::TPCExpSignalDiffPi,
+                  pidtracks::TpcExpSignalDiffPi,
                   pidtof::TOFNSigmaPi,
                   pidtof::TOFExpSigmaPi,
-                  pidtracks::TOFExpSignalDiffPi,
+                  pidtracks::TofExpSignalDiffPi,
                   pidtpc::TPCNSigmaKa,
                   pidtpc::TPCExpSigmaKa,
-                  pidtracks::TPCExpSignalDiffKa,
+                  pidtracks::TpcExpSignalDiffKa,
                   pidtof::TOFNSigmaKa,
                   pidtof::TOFExpSigmaKa,
-                  pidtracks::TOFExpSignalDiffKa,
+                  pidtracks::TofExpSignalDiffKa,
                   pidtpc::TPCNSigmaPr,
                   pidtpc::TPCExpSigmaPr,
-                  pidtracks::TPCExpSignalDiffPr,
+                  pidtracks::TpcExpSignalDiffPr,
                   pidtof::TOFNSigmaPr,
                   pidtof::TOFExpSigmaPr,
-                  pidtracks::TOFExpSignalDiffPr);
+                  pidtracks::TofExpSignalDiffPr);
 DECLARE_SOA_TABLE(PidTracksMcMl, "AOD", "PIDTRACKSMCML", //! MC tracks for training
                   aod::track::TPCSignal,
                   aod::track::TRDSignal, aod::track::TRDPattern,
@@ -140,7 +141,6 @@ DECLARE_SOA_TABLE(PidTracksMcMl, "AOD", "PIDTRACKSMCML", //! MC tracks for train
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for comparative analysis
-                  aod::cent::CentRun2V0M,
                   aod::mult::MultFV0A, aod::mult::MultFV0C, pidtracks::MultFV0M,
                   aod::mult::MultFT0A, aod::mult::MultFT0C, pidtracks::MultFT0M,
                   aod::mult::MultZNA, aod::mult::MultZNC,
@@ -167,34 +167,34 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for comparati
                   aod::track::DcaZ,
                   pidtpc::TPCNSigmaEl,
                   pidtpc::TPCExpSigmaEl,
-                  pidtracks::TPCExpSignalDiffEl,
+                  pidtracks::TpcExpSignalDiffEl,
                   pidtof::TOFNSigmaEl,
                   pidtof::TOFExpSigmaEl,
-                  pidtracks::TOFExpSignalDiffEl,
+                  pidtracks::TofExpSignalDiffEl,
                   pidtpc::TPCNSigmaMu,
                   pidtpc::TPCExpSigmaMu,
-                  pidtracks::TPCExpSignalDiffMu,
+                  pidtracks::TpcExpSignalDiffMu,
                   pidtof::TOFNSigmaMu,
                   pidtof::TOFExpSigmaMu,
-                  pidtracks::TOFExpSignalDiffMu,
+                  pidtracks::TofExpSignalDiffMu,
                   pidtpc::TPCNSigmaPi,
                   pidtpc::TPCExpSigmaPi,
-                  pidtracks::TPCExpSignalDiffPi,
+                  pidtracks::TpcExpSignalDiffPi,
                   pidtof::TOFNSigmaPi,
                   pidtof::TOFExpSigmaPi,
-                  pidtracks::TOFExpSignalDiffPi,
+                  pidtracks::TofExpSignalDiffPi,
                   pidtpc::TPCNSigmaKa,
                   pidtpc::TPCExpSigmaKa,
-                  pidtracks::TPCExpSignalDiffKa,
+                  pidtracks::TpcExpSignalDiffKa,
                   pidtof::TOFNSigmaKa,
                   pidtof::TOFExpSigmaKa,
-                  pidtracks::TOFExpSignalDiffKa,
+                  pidtracks::TofExpSignalDiffKa,
                   pidtpc::TPCNSigmaPr,
                   pidtpc::TPCExpSigmaPr,
-                  pidtracks::TPCExpSignalDiffPr,
+                  pidtracks::TpcExpSignalDiffPr,
                   pidtof::TOFNSigmaPr,
                   pidtof::TOFExpSigmaPr,
-                  pidtracks::TOFExpSignalDiffPr,
+                  pidtracks::TofExpSignalDiffPr,
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 } // namespace o2::aod

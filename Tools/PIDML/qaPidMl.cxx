@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file qaPidMl.cxx
 /// \brief Task to check ML PID efficiency. Based on Maja's simpleApplyPidOnnxModel.cxx code
 /// \author Łukasz Sawicki
 /// \since
@@ -22,13 +23,14 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
+#include <TPDGCode.h>
 #include "Tools/PIDML/pidOnnxModel.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct QaPidML {
+struct QaPidMl {
   static const int maxP = 5;
   // nb of bins for TH1 hists
   static const int binsNb = 100;
@@ -36,8 +38,8 @@ struct QaPidML {
   static const int binsNb2D = 1000;
   static const int numParticles = 3;
 
-  static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
-  static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
+  static constexpr std::string_view PidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321"};
+  static constexpr std::string_view PidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321"};
 
   static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321"};
   static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321"};
@@ -46,11 +48,11 @@ struct QaPidML {
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321"};
 
   // available particles: 211, 2212, 321
-  static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
+  static constexpr int ParticlesPdgCode[numParticles] = {211, 2212, 321};
 
   // values of track momentum when to switch from only TPC signal to combined TPC and TOF signal and to TPC+TOF+TRD
   // i-th momentum corresponds to the i-th particle
-  static constexpr double pSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
+  static constexpr double PSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
 
   HistogramRegistry histReg{
     "allHistograms",
@@ -130,113 +132,119 @@ struct QaPidML {
      {"TOFPidFalse/2212", "PID false p;p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}},
      {"TOFPidFalse/321", "PID false K^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
+  enum ContaminationIn {
+    kPion,
+    kProton,
+    kKaon
+  };
+
   void fillContaminationRegistry(int i, int pdgCode, double pt)
   {
-    if (i == 0) {
-      if (pdgCode == 211) {
+    if (i == ContaminationIn::kPion) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in211"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in211"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in211"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in211"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in211"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in211"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in211"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in211"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in211"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in211"), pt);
       }
 
-    } else if (i == 1) {
-      if (pdgCode == 211) {
+    } else if (i == ContaminationIn::kProton) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in2212"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in2212"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in2212"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in2212"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in2212"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in2212"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in2212"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in2212"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in2212"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in2212"), pt);
       }
 
-    } else if (i == 2) {
-      if (pdgCode == 211) {
+    } else if (i == ContaminationIn::kKaon) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in321"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in321"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in321"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in321"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in321"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in321"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in321"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in321"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in321"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in321"), pt);
       }
     }
@@ -245,34 +253,34 @@ struct QaPidML {
   template <typename T>
   void fillMcHistos(const T& track, const int pdgCode)
   {
-    if (pdgCode == 211) {
+    if (pdgCode == PDG_t::kPiPlus) {
       // pions
       histReg.fill(HIST("MC/211"), track.pt());
-    } else if (pdgCode == -211) {
+    } else if (pdgCode == PDG_t::kPiMinus) {
       // antipions
       histReg.fill(HIST("MC/0211"), track.pt());
-    } else if (pdgCode == 2212) {
+    } else if (pdgCode == PDG_t::kProton) {
       // protons
       histReg.fill(HIST("MC/2212"), track.pt());
-    } else if (pdgCode == -2212) {
+    } else if (pdgCode == PDG_t::kProtonBar) {
       // antiprotons
       histReg.fill(HIST("MC/02212"), track.pt());
-    } else if (pdgCode == 321) {
+    } else if (pdgCode == PDG_t::kKPlus) {
       // kaons
       histReg.fill(HIST("MC/321"), track.pt());
-    } else if (pdgCode == -321) {
+    } else if (pdgCode == PDG_t::kKMinus) {
       // antikaons
       histReg.fill(HIST("MC/0321"), track.pt());
-    } else if (pdgCode == 11) {
+    } else if (pdgCode == PDG_t::kElectron) {
       // electrons
       histReg.fill(HIST("MC/11"), track.pt());
-    } else if (pdgCode == -11) {
+    } else if (pdgCode == PDG_t::kPositron) {
       // positrons
       histReg.fill(HIST("MC/011"), track.pt());
-    } else if (pdgCode == 13) {
+    } else if (pdgCode == PDG_t::kMuonMinus) {
       // muons
       histReg.fill(HIST("MC/13"), track.pt());
-    } else if (pdgCode == -13) {
+    } else if (pdgCode == PDG_t::kMuonPlus) {
       // antimuons
       histReg.fill(HIST("MC/013"), track.pt());
     } else {
@@ -284,13 +292,13 @@ struct QaPidML {
   void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
   {
     if (isPidTrue) {
-      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidTrueRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
       histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
     } else {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidFalseRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
@@ -301,26 +309,28 @@ struct QaPidML {
     }
   }
 
+  static constexpr float kCertaintyThreshold = 0.5f;
+
   int getParticlePdg(float pidCertainties[])
   {
     // index of the biggest value in an array
     int index = 0;
     // index of the second biggest value in an array
-    int smaller_index = 0;
+    int smallerIndex = 0;
 
     for (int j = 1; j < numParticles; j++) {
       if (pidCertainties[j] > pidCertainties[index]) {
         // assign new indexes
-        smaller_index = index;
+        smallerIndex = index;
         index = j;
       }
     }
 
     // return 0 if certainty with index 'index' is below 0.5 or two indexes have the same value, else map index to particle pdgCode
-    if ((pidCertainties[index] < 0.5f) | ((pidCertainties[index] == pidCertainties[smaller_index]) & (smaller_index != 0))) {
+    if ((pidCertainties[index] < kCertaintyThreshold) | ((pidCertainties[index] == pidCertainties[smallerIndex]) & (smallerIndex != 0))) {
       return 0;
     } else {
-      return particlesPdgCode[index];
+      return ParticlesPdgCode[index];
     }
   }
 
@@ -333,8 +343,8 @@ struct QaPidML {
     pidCertainties[2] = model321.applyModel(track);
     int pid = getParticlePdg(pidCertainties);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
-    if (pid == particlesPdgCode[i] && track.sign() == 1) {
-      if (pdgCodeMC == particlesPdgCode[i]) {
+    if (pid == ParticlesPdgCode[i] && track.sign() == 1) {
+      if (pdgCodeMC == ParticlesPdgCode[i]) {
         fillPidHistos<i>(track, pdgCodeMC, true);
       } else {
         fillPidHistos<i>(track, pdgCodeMC, false);
@@ -342,42 +352,43 @@ struct QaPidML {
     }
   }
 
-  // one model for one particle
-  PidONNXModel model211;
-  PidONNXModel model2212;
-  PidONNXModel model321;
-
-  Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
-  Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
-  Configurable<bool> cfgUseCCDB{"useCCDB", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
-  Configurable<std::string> cfgPathLocal{"local-path", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
+  Configurable<bool> useCcdb{"useCcdb", true, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
+  Configurable<std::string> localPath{"localPath", "/home/mkabus/PIDML/", "base path to the local directory with ONNX models"};
 
   o2::ccdb::CcdbApi ccdbApi;
   int currentRunNumber = -1;
 
+  Filter trackFilter = requireGlobalTrackInFilter();
+  using PidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
+
+  // one model for one particle
+  PidONNXModel<PidTracks> model211;
+  PidONNXModel<PidTracks> model2212;
+  PidONNXModel<PidTracks> model321;
+
   void init(InitContext const&)
   {
-    if (cfgUseCCDB) {
-      ccdbApi.init(cfgCCDBURL);
+    if (useCcdb) {
+      ccdbApi.init(ccdbUrl);
     } else {
-      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, 0.5f, pSwitchValue[0]);
-      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, 0.5f, pSwitchValue[1]);
-      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, 0.5f, pSwitchValue[2]);
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kPiPlus, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kProton, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, -1, PDG_t::kKPlus, 0.5f, PSwitchValue[2]);
     }
   }
 
-  Filter trackFilter = requireGlobalTrackInFilter();
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::TOFSignal>>;
-  void process(aod::Collisions const& collisions, pidTracks const& tracks, aod::McParticles const& /*mcParticles*/, aod::BCsWithTimestamps const&)
+  void process(aod::Collisions const& collisions, PidTracks const& tracks, aod::McParticles const& /*mcParticles*/, aod::BCsWithTimestamps const&)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
-    if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, 0.5f, pSwitchValue[0]);
-      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, 0.5f, pSwitchValue[1]);
-      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, 0.5f, pSwitchValue[2]);
+    if (useCcdb && bc.runNumber() != currentRunNumber) {
+      model211 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kPiPlus, 0.5f, PSwitchValue[0]);
+      model2212 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kProton, 0.5f, PSwitchValue[1]);
+      model321 = PidONNXModel<PidTracks>(localPath.value, ccdbPath.value, useCcdb.value, ccdbApi, bc.timestamp(), PDG_t::kKPlus, 0.5f, PSwitchValue[2]);
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCodeMC = particle.pdgCode();
 
@@ -394,6 +405,6 @@ struct QaPidML {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<QaPidML>(cfgc),
+    adaptAnalysisTask<QaPidMl>(cfgc),
   };
 }
