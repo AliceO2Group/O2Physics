@@ -94,22 +94,22 @@ struct HfCorrelatorHfeHadrons {
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
 
-    registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hptElectron", "hptElectron", {HistType::kTH1F, {axisPt}});
+    registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
 
-    registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMixEventULSEHCorrel", "Sparse for mix event Delta phi and Delta eta Unlike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMixEventMcGenInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Mc gen  Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hMixEventMcGenNonHfEHCorrl", "Sparse for mix event Delta phi and Delta eta Mc gen Non Hf Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseD, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hElectronBin", "Electron bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hLSElectronBin", "Electron bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hULSElectronBin", "Electron bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hTracksBin", "Particles associated pool bin", {HistType::kTH1F, {axisPoolBin}});
+    registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMixEventULSEHCorrel", "Sparse for mix event Delta phi and Delta eta Unlike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMixEventMcGenInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Mc gen  Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hMixEventMcGenNonHfEHCorrl", "Sparse for mix event Delta phi and Delta eta Mc gen Non Hf Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
+    registry.add("hElectronBin", "Electron bin", {HistType::kTH1D, {axisPoolBin}});
+    registry.add("hLSElectronBin", "Electron bin", {HistType::kTH1D, {axisPoolBin}});
+    registry.add("hULSElectronBin", "Electron bin", {HistType::kTH1D, {axisPoolBin}});
+    registry.add("hTracksBin", "Particles associated pool bin", {HistType::kTH1D, {axisPoolBin}});
   }
 
   // Associated Hadron Selection Cut
