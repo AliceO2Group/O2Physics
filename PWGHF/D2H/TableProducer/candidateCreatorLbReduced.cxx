@@ -194,7 +194,7 @@ struct HfCandidateCreatorLbReduced {
                          pVecLc[0], pVecLc[1], pVecLc[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaLc.getY(), dcaPion.getY(),
-                         std::sqrt(dcaLc.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()), candLc.globalIndex(), trackPion.globalIndex());
+                         std::sqrt(dcaLc.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()), candLc.globalIndex(), trackPion.globalIndex(), -999.);
 
         rowCandidateProngs(candLc.globalIndex(), trackPion.globalIndex());
 
