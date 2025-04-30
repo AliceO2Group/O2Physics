@@ -26,7 +26,7 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_Lb(FEATURE)                                       \
+#define FILL_MAP_LB(FEATURE)                                       \
   {                                                                \
     #FEATURE, static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE) \
   }
@@ -162,34 +162,34 @@ class HfMlResponseLbToLcPi : public HfMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_Lb(ptProng0),
-      FILL_MAP_Lb(ptProng1),
-      FILL_MAP_Lb(impactParameter0),
-      FILL_MAP_Lb(impactParameter1),
-      FILL_MAP_Lb(impactParameterProduct),
-      FILL_MAP_Lb(chi2PCA),
-      FILL_MAP_Lb(decayLength),
-      FILL_MAP_Lb(decayLengthXY),
-      FILL_MAP_Lb(decayLengthNormalised),
-      FILL_MAP_Lb(decayLengthXYNormalised),
-      FILL_MAP_Lb(cpa),
-      FILL_MAP_Lb(cpaXY),
-      FILL_MAP_Lb(maxNormalisedDeltaIP),
-      FILL_MAP_Lb(prong0MlScoreBkg),
-      FILL_MAP_Lb(prong0MlScorePrompt),
-      FILL_MAP_Lb(prong0MlScoreNonprompt),
+      FILL_MAP_LB(ptProng0),
+      FILL_MAP_LB(ptProng1),
+      FILL_MAP_LB(impactParameter0),
+      FILL_MAP_LB(impactParameter1),
+      FILL_MAP_LB(impactParameterProduct),
+      FILL_MAP_LB(chi2PCA),
+      FILL_MAP_LB(decayLength),
+      FILL_MAP_LB(decayLengthXY),
+      FILL_MAP_LB(decayLengthNormalised),
+      FILL_MAP_LB(decayLengthXYNormalised),
+      FILL_MAP_LB(cpa),
+      FILL_MAP_LB(cpaXY),
+      FILL_MAP_LB(maxNormalisedDeltaIP),
+      FILL_MAP_LB(prong0MlScoreBkg),
+      FILL_MAP_LB(prong0MlScorePrompt),
+      FILL_MAP_LB(prong0MlScoreNonprompt),
       // TPC PID variable
-      FILL_MAP_Lb(tpcNSigmaPi1),
+      FILL_MAP_LB(tpcNSigmaPi1),
       // TOF PID variable
-      FILL_MAP_Lb(tofNSigmaPi1),
+      FILL_MAP_LB(tofNSigmaPi1),
       // Combined PID variable
-      FILL_MAP_Lb(tpcTofNSigmaPi1)};
+      FILL_MAP_LB(tpcTofNSigmaPi1)};
   }
 };
 
 } // namespace o2::analysis
 
-#undef FILL_MAP_Lb
+#undef FILL_MAP_LB
 #undef CHECK_AND_FILL_VEC_Lb_FULL
 #undef CHECK_AND_FILL_VEC_Lb_FUNC
 #undef CHECK_AND_FILL_VEC_Lb
