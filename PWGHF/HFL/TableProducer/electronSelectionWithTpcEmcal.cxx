@@ -265,8 +265,8 @@ struct HfElectronSelectionWithTpcEmcal {
   template <typename ElectronType, typename TracksType>
   void nonHfe(ElectronType const& electron, TracksType const& tracks, bool isEMcal)
   {
-    int isLSElectronFound = 0;
-    int isULSElectronFound = 0;
+    int lsElCounts = 0;
+    int ulsElCounts = 0;
     bool isLSElectron = false;
     bool isULSElectron = false;
     float invMassElectron = 0.;
@@ -335,7 +335,7 @@ struct HfElectronSelectionWithTpcEmcal {
       // for like charge
       if (isLSElectron && (invMassElectron <= invariantMass)) {
         massLike = invMassElectron;
-        ++isLSElectronFound;
+        ++lsElCounts;
         if (isEMcal) {
           registry.fill(HIST("hLikeSignPt"), electron.pt());
         }
@@ -343,14 +343,14 @@ struct HfElectronSelectionWithTpcEmcal {
       // for unlike charge
       if (isULSElectron && (invMassElectron <= invariantMass)) {
         massUnLike = invMassElectron;
-        ++isULSElectronFound;
+        ++ulsElCounts;
         if (isEMcal) {
           registry.fill(HIST("hUnLikeSignPt"), electron.pt());
         }
       }
     }
     // Pass multiplicities and other required parameters for this electron
-    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), isLSElectronFound, isULSElectronFound, isEMcal);
+    hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), lsElCounts, ulsElCounts, isEMcal);
   }
   // Electron Identification
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
