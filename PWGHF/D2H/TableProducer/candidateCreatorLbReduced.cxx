@@ -15,6 +15,7 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
 #include <memory>
+#include <utility>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
