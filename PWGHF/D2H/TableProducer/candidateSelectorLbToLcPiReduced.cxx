@@ -104,7 +104,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (pionPidMethod==PidMethod::TpcOrTof || pionPidMethod==PidMethod::TpcAndTof) {
+    if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -187,7 +187,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
       // track-level PID selection
       auto trackPi = hfCandLb.template prong1Track_as<TracksPion>();
-      if (pionPidMethod==PidMethod::TpcOrTof || pionPidMethod==PidMethod::TpcAndTof) {
+      if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
         if (pionPidMethod == PidMethod::TpcOrTof) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
