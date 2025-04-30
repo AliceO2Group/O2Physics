@@ -1368,6 +1368,58 @@ DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 DECLARE_SOA_COLUMN(CascRejectInvmass, cascRejectInvmass, float);
 
+// Kf QA results:
+DECLARE_SOA_COLUMN(InvMassV0Err, invMassV0Err, float);
+DECLARE_SOA_COLUMN(InvMassXiErr, invMassXiErr, float);
+DECLARE_SOA_COLUMN(InvMassXic0Err, invMassXic0Err, float);
+DECLARE_SOA_COLUMN(V0DauPosX, v0DauPosX, float);
+DECLARE_SOA_COLUMN(V0DauPosY, v0DauPosY, float);
+DECLARE_SOA_COLUMN(V0DauPosZ, v0DauPosZ, float);
+DECLARE_SOA_COLUMN(V0DauPosXError, v0DauPosXError, float);
+DECLARE_SOA_COLUMN(V0DauPosYError, v0DauPosYError, float);
+DECLARE_SOA_COLUMN(V0DauPosZError, v0DauPosZError, float);
+DECLARE_SOA_COLUMN(V0DauPosPt, v0DauPosPt, float);
+DECLARE_SOA_COLUMN(V0DauNegX, v0DauNegX, float);
+DECLARE_SOA_COLUMN(V0DauNegY, v0DauNegY, float);
+DECLARE_SOA_COLUMN(V0DauNegZ, v0DauNegZ, float);
+DECLARE_SOA_COLUMN(V0DauNegXError, v0DauNegXError, float);
+DECLARE_SOA_COLUMN(V0DauNegYError, v0DauNegYError, float);
+DECLARE_SOA_COLUMN(V0DauNegZError, v0DauNegZError, float);
+DECLARE_SOA_COLUMN(V0DauNegPt, v0DauNegPt, float);
+
+DECLARE_SOA_COLUMN(V0VtxX, v0VtxX, float);
+DECLARE_SOA_COLUMN(V0VtxY, v0VtxY, float);
+DECLARE_SOA_COLUMN(V0VtxZ, v0VtxZ, float);
+DECLARE_SOA_COLUMN(V0XError, v0XError, float);
+DECLARE_SOA_COLUMN(V0YError, v0YError, float);
+DECLARE_SOA_COLUMN(V0ZError, v0ZError, float);
+DECLARE_SOA_COLUMN(V0Pt, v0Pt, float);
+DECLARE_SOA_COLUMN(XiBachelorX, xiBachelorX, float);
+DECLARE_SOA_COLUMN(XiBachelorY, xiBachelorY, float);
+DECLARE_SOA_COLUMN(XiBachelorZ, xiBachelorZ, float);
+DECLARE_SOA_COLUMN(XiBachelorPt, xiBachelorPt, float);
+DECLARE_SOA_COLUMN(XiBachelorXError, xiBachelorXError, float);
+DECLARE_SOA_COLUMN(XiBachelorYError, xiBachelorYError, float);
+DECLARE_SOA_COLUMN(XiBachelorZError, xiBachelorZError, float);
+DECLARE_SOA_COLUMN(XiX, xiX, float);
+DECLARE_SOA_COLUMN(XiY, xiY, float);
+DECLARE_SOA_COLUMN(XiZ, xiZ, float);
+DECLARE_SOA_COLUMN(XiXError, xiXError, float);
+DECLARE_SOA_COLUMN(XiYError, xiYError, float);
+DECLARE_SOA_COLUMN(XiZError, xiZError, float);
+DECLARE_SOA_COLUMN(XiPt, xiPt, float);
+DECLARE_SOA_COLUMN(Xic0BachelorX, xic0BachelorX, float);
+DECLARE_SOA_COLUMN(Xic0BachelorY, xic0BachelorY, float);
+DECLARE_SOA_COLUMN(Xic0BachelorZ, xic0BachelorZ, float);
+DECLARE_SOA_COLUMN(Xic0BachelorPt, xic0BachelorPt, float);
+DECLARE_SOA_COLUMN(Xic0BachelorXError, xic0BachelorXError, float);
+DECLARE_SOA_COLUMN(Xic0BachelorYError, xic0BachelorYError, float);
+DECLARE_SOA_COLUMN(Xic0BachelorZError, xic0BachelorZError, float);
+DECLARE_SOA_COLUMN(Xic0Pt, xic0Pt, float);
+DECLARE_SOA_COLUMN(Xic0XError, xic0XError, float);
+DECLARE_SOA_COLUMN(Xic0YError, xic0YError, float);
+DECLARE_SOA_COLUMN(Xic0ZError, xic0ZError, float);
+
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -1556,6 +1608,19 @@ DECLARE_SOA_TABLE(HfCandToXiPiKf, "AOD", "HFCANDTOXIPIKF", //!
                   hf_cand_xic0_omegac0::MassV0Ndf, hf_cand_xic0_omegac0::MassCascNdf,
                   hf_cand_xic0_omegac0::V0Chi2OverNdf, hf_cand_xic0_omegac0::CascChi2OverNdf, hf_cand_xic0_omegac0::XicChi2OverNdf,
                   hf_cand_xic0_omegac0::MassV0Chi2OverNdf, hf_cand_xic0_omegac0::MassCascChi2OverNdf);
+
+DECLARE_SOA_TABLE(HfCandToXiPiKfQa, "AOD", "HFCANDTOXIPIKFQA",
+                  o2::soa::Index<>,
+                  hf_cand_xic0_omegac0::InvMassLambda, hf_cand_xic0_omegac0::InvMassCascade, hf_cand_xic0_omegac0::InvMassCharmBaryon, hf_cand_xic0_omegac0::InvMassV0Err, hf_cand_xic0_omegac0::InvMassXiErr, hf_cand_xic0_omegac0::InvMassXic0Err,
+                  hf_cand_xic0_omegac0::CollisionId, hf_track_index::V0Id, v0data::PosTrackId, v0data::NegTrackId, hf_cand_xic0_omegac0::CascadeId, hf_cand_xic0_omegac0::BachelorFromCharmBaryonId, cascdata::BachelorId,
+                  hf_cand_xic0_omegac0::V0DauPosX, hf_cand_xic0_omegac0::V0DauPosY, hf_cand_xic0_omegac0::V0DauPosZ, hf_cand_xic0_omegac0::V0DauPosXError, hf_cand_xic0_omegac0::V0DauPosYError, hf_cand_xic0_omegac0::V0DauPosZError, hf_cand_xic0_omegac0::V0DauPosPt,
+                  hf_cand_xic0_omegac0::V0DauNegX, hf_cand_xic0_omegac0::V0DauNegY, hf_cand_xic0_omegac0::V0DauNegZ, hf_cand_xic0_omegac0::V0DauNegXError, hf_cand_xic0_omegac0::V0DauNegYError, hf_cand_xic0_omegac0::V0DauNegZError, hf_cand_xic0_omegac0::V0DauNegPt,
+                  hf_cand_xic0_omegac0::V0VtxX, hf_cand_xic0_omegac0::V0VtxY, hf_cand_xic0_omegac0::V0VtxZ, hf_cand_xic0_omegac0::V0XError, hf_cand_xic0_omegac0::V0YError, hf_cand_xic0_omegac0::V0ZError, hf_cand_xic0_omegac0::V0Pt,
+                  hf_cand_xic0_omegac0::XiBachelorX, hf_cand_xic0_omegac0::XiBachelorY, hf_cand_xic0_omegac0::XiBachelorZ, hf_cand_xic0_omegac0::XiBachelorXError, hf_cand_xic0_omegac0::XiBachelorYError, hf_cand_xic0_omegac0::XiBachelorZError, hf_cand_xic0_omegac0::XiBachelorPt,
+                  hf_cand_xic0_omegac0::XiX, hf_cand_xic0_omegac0::XiY, hf_cand_xic0_omegac0::XiZ, hf_cand_xic0_omegac0::XiXError, hf_cand_xic0_omegac0::XiYError, hf_cand_xic0_omegac0::XiZError, hf_cand_xic0_omegac0::XiPt,
+                  hf_cand_xic0_omegac0::Xic0BachelorX, hf_cand_xic0_omegac0::Xic0BachelorY, hf_cand_xic0_omegac0::Xic0BachelorZ, hf_cand_xic0_omegac0::Xic0BachelorXError, hf_cand_xic0_omegac0::Xic0BachelorYError, hf_cand_xic0_omegac0::Xic0BachelorZError, hf_cand_xic0_omegac0::Xic0BachelorPt,
+                  hf_cand_xic0_omegac0::XDecayVtxCharmBaryon, hf_cand_xic0_omegac0::YDecayVtxCharmBaryon, hf_cand_xic0_omegac0::ZDecayVtxCharmBaryon, hf_cand_xic0_omegac0::Xic0XError, hf_cand_xic0_omegac0::Xic0YError, hf_cand_xic0_omegac0::Xic0ZError, hf_cand_xic0_omegac0::Xic0Pt,
+                  hf_cand_casc::V0X, hf_cand_casc::V0Y, hf_cand_casc::V0Z, hf_cand_xic0_omegac0::XDecayVtxCascade, hf_cand_xic0_omegac0::YDecayVtxCascade, hf_cand_xic0_omegac0::ZDecayVtxCascade);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfXicToXiPiMCRec, "AOD", "HFXICXIPIMCREC", //!
