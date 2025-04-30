@@ -167,10 +167,14 @@ struct FlowPbpbPikp {
     histos.add("c22_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_full_pr", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_ch", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full_ch", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -216,18 +220,18 @@ struct FlowPbpbPikp {
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("PrFull22_pt_%i", i + 1), "PrFull22_pTDiff"));
 
-    oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
+    oba->Add(new TNamed("Ch08FGap22", "Ch08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
-    oba->Add(new TNamed("Pi08Gap22", "Pi08Gap22"));
+      oba->Add(new TNamed(Form("Ch08FGap22_pt_%i", i + 1), "Ch08FGap22_pTDiff"));
+    oba->Add(new TNamed("Pi08FGap22", "Pi08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pi08Gap22_pt_%i", i + 1), "Pi08Gap22_pTDiff"));
-    oba->Add(new TNamed("Ka08Gap22", "Ka08Gap22"));
+      oba->Add(new TNamed(Form("Pi08FGap22_pt_%i", i + 1), "Pi08FGap22_pTDiff"));
+    oba->Add(new TNamed("Ka08FGap22", "Ka08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ka08Gap22_pt_%i", i + 1), "Ka08Gap22_pTDiff"));
-    oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
+      oba->Add(new TNamed(Form("Ka08FGap22_pt_%i", i + 1), "Ka08FGap22_pTDiff"));
+    oba->Add(new TNamed("Pr08FGap22", "Pr08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
+      oba->Add(new TNamed(Form("Pr08FGap22_pt_%i", i + 1), "Pr08FGap22_pTDiff"));
 
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
@@ -242,9 +246,18 @@ struct FlowPbpbPikp {
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("PrFull24_pt_%i", i + 1), "PrFull24_pTDiff"));
 
+    oba->Add(new TNamed("Ch08BGap22", "Ch08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch08BGap22_pt_%i", i + 1), "Ch08BGap22_pTDiff"));
     oba->Add(new TNamed("Pi08BGap22", "Pi08BGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pi08BGap22_pt_%i", i + 1), "Pi08BGap22_pTDiff"));
+    oba->Add(new TNamed("Ka08BGap22", "Ka08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ka08BGap22_pt_%i", i + 1), "Ka08BGap22_pTDiff"));
+    oba->Add(new TNamed("Pr08BGap22", "Pr08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pr08BGap22_pt_%i", i + 1), "Pr08BGap22_pTDiff"));
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -259,6 +272,9 @@ struct FlowPbpbPikp {
     // pt dependent charged particles
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128); // Negative poi eta range
     fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 256);  // Negative overlap eta range
+
+    fGFW->AddRegion("poiP", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 128); // Positive poi eta range
+    fGFW->AddRegion("olP", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 256);  // Positive overlap eta range
 
     fGFW->AddRegion("poi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 128); // Full poi eta range
     fGFW->AddRegion("ol", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 256);  // Full overlap eta range
@@ -298,10 +314,14 @@ struct FlowPbpbPikp {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "PiFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "KaFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "PrFull22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pr08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pr08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Ch08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Pi08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Ka08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Pr08BGap22", kFALSE)); // Backward correlations
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "PiFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "KaFull24", kFALSE));
@@ -312,18 +332,21 @@ struct FlowPbpbPikp {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpi full | olfullpi {2 -2}", "PiFull22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullk full | olfullk {2 -2}", "KaFull22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpr full | olfullpr {2 -2}", "PrFull22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08Gap22", kTRUE));
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08FGap22", kTRUE));     // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08FGap22", kTRUE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08FGap22", kTRUE));   // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08FGap22", kTRUE)); // Forward correlations
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiP refP08 | olP {2} refN08 {-2}", "Ch08BGap22", kTRUE));     // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpi refP08 | olPpi {2} refN08 {-2}", "Pi08BGap22", kTRUE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPk refP08 | olPk {2} refN08 {-2}", "Ka08BGap22", kTRUE));   // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpr refP08 | olPpr {2} refN08 {-2}", "Pr08BGap22", kTRUE)); // Backward correlations
+
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 2 -2 -2}", "ChFull24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpi full | olfullpi {2 2 -2 -2}", "PiFull24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullk full | olfullk {2 2 -2 -2}", "KaFull24", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpr full | olfullpr {2 2 -2 -2}", "PrFull24", kTRUE));
-
-    // Backward correlations
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08BGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpi refP08 | olPpi {2} refN08 {-2}", "Pi08BGap22", kTRUE));
 
     fGFW->CreateRegions();
 
@@ -752,14 +775,18 @@ struct FlowPbpbPikp {
     fillProfile(corrconfigs.at(1), HIST("c22_full_pi"), cent);
     fillProfile(corrconfigs.at(2), HIST("c22_full_ka"), cent);
     fillProfile(corrconfigs.at(3), HIST("c22_full_pr"), cent);
-    fillProfile(corrconfigs.at(4), HIST("c22_gap08_ch"), cent);
-    fillProfile(corrconfigs.at(5), HIST("c22_gap08_pi"), cent);
-    fillProfile(corrconfigs.at(6), HIST("c22_gap08_ka"), cent);
-    fillProfile(corrconfigs.at(7), HIST("c22_gap08_pr"), cent);
-    fillProfile(corrconfigs.at(8), HIST("c24_full_ch"), cent);
-    fillProfile(corrconfigs.at(9), HIST("c24_full_pi"), cent);
-    fillProfile(corrconfigs.at(10), HIST("c24_full_ka"), cent);
-    fillProfile(corrconfigs.at(11), HIST("c24_full_pr"), cent);
+    fillProfile(corrconfigs.at(4), HIST("c22_gap08F_ch"), cent);
+    fillProfile(corrconfigs.at(5), HIST("c22_gap08F_pi"), cent);
+    fillProfile(corrconfigs.at(6), HIST("c22_gap08F_ka"), cent);
+    fillProfile(corrconfigs.at(7), HIST("c22_gap08F_pr"), cent);
+    fillProfile(corrconfigs.at(8), HIST("c22_gap08B_ch"), cent);
+    fillProfile(corrconfigs.at(9), HIST("c22_gap08B_pi"), cent);
+    fillProfile(corrconfigs.at(10), HIST("c22_gap08B_ka"), cent);
+    fillProfile(corrconfigs.at(11), HIST("c22_gap08B_pr"), cent);
+    fillProfile(corrconfigs.at(12), HIST("c24_full_ch"), cent);
+    fillProfile(corrconfigs.at(13), HIST("c24_full_pi"), cent);
+    fillProfile(corrconfigs.at(14), HIST("c24_full_ka"), cent);
+    fillProfile(corrconfigs.at(15), HIST("c24_full_pr"), cent);
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFC(corrconfigs.at(l_ind), cent, lRandom);
