@@ -134,7 +134,7 @@ struct HfDataCreatorCharmHadPiReduced {
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions, for Run3 studies"};
     Configurable<double> ptPionMin{"ptPionMin", 0.5, "minimum pion pT threshold (GeV/c)"};
-    Configurable<double> absEtaPionMax{"etaPionMax", 0.8, "maximum pion absolute eta threshold"};
+    Configurable<double> etaPionMax{"etaPionMax", 0.8, "maximum pion absolute eta threshold"};
     Configurable<std::vector<double>> binsPtPion{"binsPtPion", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for pion DCA XY pT-dependent cut"};
     Configurable<LabeledArray<double>> cutsTrackPionDCA{"cutsTrackPionDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for pions"};
   } trackPionConfigurations;
@@ -340,7 +340,7 @@ struct HfDataCreatorCharmHadPiReduced {
       return false;
     }
     // minimum pT and eta selection
-    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.absEtaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion)) {
+    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.etaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion)) {
       return false;
     }
     // reject pions that are charm-hadron daughters
