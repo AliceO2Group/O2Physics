@@ -65,7 +65,7 @@ float dcaXYPtCut(float tracPt)
 // b) from events selected by EPN
 // It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
-struct JetChargedTriggerQa {
+struct JetTriggerChargedQa {
 
   Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
@@ -337,4 +337,4 @@ struct JetChargedTriggerQa {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetChargedTriggerQa>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetTriggerChargedQa>(cfgc)}; }
