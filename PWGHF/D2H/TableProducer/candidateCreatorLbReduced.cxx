@@ -95,6 +95,25 @@ struct HfCandidateCreatorLbReduced {
     setLabelHistoCands(hCandidates);
   }
 
+  template <typename Config>
+  inline std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
+                                                           float invMassWindowLcPiTolerance)
+  {
+
+    myInvMassWindowLcPi = 0.0f;
+    for (const auto& config : configs) {
+      myInvMassWindowLcPi = config.myInvMassWindowLcPi();
+    }
+
+    float deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
+    float deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
+
+    float invMass2LcPiMin = deltaMin * deltaMin;
+    float invMass2LcPiMax = deltaMax * deltaMax;
+
+    return {invMass2LcPiMin, invMass2LcPiMax};
+  }
+
   /// Main function to perform Lb candidate creation
   /// \param withLcMl is the flag to use the table with ML scores for the Lc daughter (only possible if present in the derived data)
   /// \param collision the collision
@@ -106,8 +125,8 @@ struct HfCandidateCreatorLbReduced {
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsLcThisColl,
                             Pions const& tracksPionThisCollision,
-                            const float& invMass2LcPiMin,
-                            const float& invMass2LcPiMax)
+                            float invMass2LcPiMin,
+                            float invMass2LcPiMax)
   {
     auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
@@ -209,13 +228,9 @@ struct HfCandidateCreatorLbReduced {
                    aod::HfCandLbConfigs const& configs)
   {
     // LcPi invariant-mass window cut
-    for (const auto& config : configs) {
-      myInvMassWindowLcPi = config.myInvMassWindowLcPi();
-    }
     // invMassWindowLcPiTolerance is used to apply a slightly tighter cut than in LcPi pair preselection
     // to avoid accepting LcPi pairs that were not formed in LcPi pair creator
-    float invMass2LcPiMin = (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
-    float invMass2LcPiMax = (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
+    auto [invMass2LcPiMin, invMass2LcPiMax] = computeInvMass2LcPiWindow(configs, invMassWindowLcPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -243,13 +258,9 @@ struct HfCandidateCreatorLbReduced {
                            aod::HfCandLbConfigs const& configs)
   {
     // LcPi invariant-mass window cut
-    for (const auto& config : configs) {
-      myInvMassWindowLcPi = config.myInvMassWindowLcPi();
-    }
     // invMassWindowLcPiTolerance is used to apply a slightly tighter cut than in LcPi pair preselection
     // to avoid accepting LcPi pairs that were not formed in LcPi pair creator
-    float invMass2LcPiMin = (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance) * (MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance);
-    float invMass2LcPiMax = (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance) * (MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance);
+    auto [invMass2LcPiMin, invMass2LcPiMax] = computeInvMass2LcPiWindow(configs, invMassWindowLcPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
