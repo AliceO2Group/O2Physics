@@ -328,6 +328,9 @@ struct LfTaskLambdaSpinCorr {
       int taga = lambdaTag;
       int tagb = aLambdaTag;
 
+      auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
+      auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
+
       // 2nd loop for combination of lambda lambda
       for (const auto& v02 : V0s) {
 
@@ -355,6 +358,13 @@ struct LfTaskLambdaSpinCorr {
 
         int taga2 = lambdaTag2;
         int tagb2 = aLambdaTag2;
+
+        auto postrack2 = v02.template posTrack_as<AllTrackCandidates>();
+        auto negtrack2 = v02.template negTrack_as<AllTrackCandidates>();
+
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
+          continue; // no shared decay products
+        }
 
         if (lambdaTag && lambdaTag2) {
           lambdaLambdapair = lambdadummy + lambdadummy2;
