@@ -41,7 +41,5 @@ struct HfConverterReducedHadronDausPid {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfConverterReducedHadronDausPid>(cfgc),
-  };
+  return WorkflowSpec{adaptAnalysisTask<HfConverterReducedHadronDausPid>(cfgc)};
 }
