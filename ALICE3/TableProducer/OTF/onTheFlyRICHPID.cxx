@@ -118,16 +118,16 @@ struct OnTheFlyRichPid {
   Configurable<float> bRichRefractiveIndexSector18AndNMinus19{"bRichRefractiveIndexSector18AndMinus19", 1.03, "barrel RICH refractive index sector 18 and N-19"};
   Configurable<float> bRichRefractiveIndexSector19AndNMinus20{"bRichRefractiveIndexSector19AndMinus20", 1.03, "barrel RICH refractive index sector 19 and N-20"};
   Configurable<float> bRichRefractiveIndexSector20AndNMinus21{"bRichRefractiveIndexSector20AndMinus21", 1.03, "barrel RICH refractive index sector 20 and N-21"};*/
-  Configurable<float> bRichRefractiveIndexSector0{"bRichRefractiveIndexSector0", 1.03, "barrel RICH refractive index central(s)"}; // central(s)
-  Configurable<float> bRichRefractiveIndexSector1{"bRichRefractiveIndexSector1", 1.03, "barrel RICH refractive index central(s)-1 and central(s)+1"}; // central(s)-1 and central(s)+1
-  Configurable<float> bRichRefractiveIndexSector2{"bRichRefractiveIndexSector2", 1.03, "barrel RICH refractive index central(s)-2 and central(s)+2"}; // central(s)-2 and central(s)+2
-  Configurable<float> bRichRefractiveIndexSector3{"bRichRefractiveIndexSector3", 1.03, "barrel RICH refractive index central(s)-3 and central(s)+3"}; // central(s)-3 and central(s)+3
-  Configurable<float> bRichRefractiveIndexSector4{"bRichRefractiveIndexSector4", 1.03, "barrel RICH refractive index central(s)-4 and central(s)+4"}; // central(s)-4 and central(s)+4
-  Configurable<float> bRichRefractiveIndexSector5{"bRichRefractiveIndexSector5", 1.03, "barrel RICH refractive index central(s)-5 and central(s)+5"}; // central(s)-5 and central(s)+5
-  Configurable<float> bRichRefractiveIndexSector6{"bRichRefractiveIndexSector6", 1.03, "barrel RICH refractive index central(s)-6 and central(s)+6"}; // central(s)-6 and central(s)+6
-  Configurable<float> bRichRefractiveIndexSector7{"bRichRefractiveIndexSector7", 1.03, "barrel RICH refractive index central(s)-7 and central(s)+7"}; // central(s)-7 and central(s)+7
-  Configurable<float> bRichRefractiveIndexSector8{"bRichRefractiveIndexSector8", 1.03, "barrel RICH refractive index central(s)-8 and central(s)+8"}; // central(s)-8 and central(s)+8
-  Configurable<float> bRichRefractiveIndexSector9{"bRichRefractiveIndexSector9", 1.03, "barrel RICH refractive index central(s)-9 and central(s)+9"}; // central(s)-9 and central(s)+9
+  Configurable<float> bRichRefractiveIndexSector0{"bRichRefractiveIndexSector0", 1.03, "barrel RICH refractive index central(s)"};                        // central(s)
+  Configurable<float> bRichRefractiveIndexSector1{"bRichRefractiveIndexSector1", 1.03, "barrel RICH refractive index central(s)-1 and central(s)+1"};     // central(s)-1 and central(s)+1
+  Configurable<float> bRichRefractiveIndexSector2{"bRichRefractiveIndexSector2", 1.03, "barrel RICH refractive index central(s)-2 and central(s)+2"};     // central(s)-2 and central(s)+2
+  Configurable<float> bRichRefractiveIndexSector3{"bRichRefractiveIndexSector3", 1.03, "barrel RICH refractive index central(s)-3 and central(s)+3"};     // central(s)-3 and central(s)+3
+  Configurable<float> bRichRefractiveIndexSector4{"bRichRefractiveIndexSector4", 1.03, "barrel RICH refractive index central(s)-4 and central(s)+4"};     // central(s)-4 and central(s)+4
+  Configurable<float> bRichRefractiveIndexSector5{"bRichRefractiveIndexSector5", 1.03, "barrel RICH refractive index central(s)-5 and central(s)+5"};     // central(s)-5 and central(s)+5
+  Configurable<float> bRichRefractiveIndexSector6{"bRichRefractiveIndexSector6", 1.03, "barrel RICH refractive index central(s)-6 and central(s)+6"};     // central(s)-6 and central(s)+6
+  Configurable<float> bRichRefractiveIndexSector7{"bRichRefractiveIndexSector7", 1.03, "barrel RICH refractive index central(s)-7 and central(s)+7"};     // central(s)-7 and central(s)+7
+  Configurable<float> bRichRefractiveIndexSector8{"bRichRefractiveIndexSector8", 1.03, "barrel RICH refractive index central(s)-8 and central(s)+8"};     // central(s)-8 and central(s)+8
+  Configurable<float> bRichRefractiveIndexSector9{"bRichRefractiveIndexSector9", 1.03, "barrel RICH refractive index central(s)-9 and central(s)+9"};     // central(s)-9 and central(s)+9
   Configurable<float> bRichRefractiveIndexSector10{"bRichRefractiveIndexSector10", 1.03, "barrel RICH refractive index central(s)-10 and central(s)+10"}; // central(s)-10 and central(s)+10
   Configurable<float> bRichRefractiveIndexSector11{"bRichRefractiveIndexSector11", 1.03, "barrel RICH refractive index central(s)-11 and central(s)+11"}; // central(s)-11 and central(s)+11
   Configurable<float> bRichRefractiveIndexSector12{"bRichRefractiveIndexSector12", 1.03, "barrel RICH refractive index central(s)-12 and central(s)+12"}; // central(s)-12 and central(s)+12
@@ -215,7 +215,7 @@ struct OnTheFlyRichPid {
     l_detector_z.resize(number_of_sectors_in_z);
 
     // Odd number of sectors
-    if (number_of_sectors_in_z % 2 != 0){
+    if (number_of_sectors_in_z % 2 != 0) {
       int i_central_mirror = static_cast<int>((number_of_sectors_in_z) / 2.0);
       float m_val = std::tan(0.0);
       theta_bi[i_central_mirror] = std::atan(m_val);
@@ -245,7 +245,7 @@ struct OnTheFlyRichPid {
         l_detector_z[i] = square_size_z;
         l_aerogel_z[i] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
         T_r_plus_g[i] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
-        aerogel_rindex[i] = bRichRefractiveIndexSector[i-i_central_mirror];
+        aerogel_rindex[i] = bRichRefractiveIndexSector[i - i_central_mirror];
         // Backword sectors
         theta_bi[2 * i_central_mirror - i] = -std::atan(m_val);
         R0_tilt[2 * i_central_mirror - i] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
@@ -253,7 +253,7 @@ struct OnTheFlyRichPid {
         l_detector_z[2 * i_central_mirror - i] = square_size_z;
         l_aerogel_z[2 * i_central_mirror - i] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
         T_r_plus_g[2 * i_central_mirror - i] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
-        aerogel_rindex[2 * i_central_mirror - i] = bRichRefractiveIndexSector[i-i_central_mirror];
+        aerogel_rindex[2 * i_central_mirror - i] = bRichRefractiveIndexSector[i - i_central_mirror];
         mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
     }
@@ -269,10 +269,10 @@ struct OnTheFlyRichPid {
         float par_b = 2.0 * R_max / square_size_z;
         m_val = (std::sqrt(par_a * par_a * par_b * par_b + par_b * par_b - 1.0) + par_a * par_b * par_b) / (par_b * par_b - 1.0);
         theta_min[i] = M_PI / 2.0 - std::atan(t);
-        theta_max[2 * i_central_mirror - i -1] = M_PI / 2.0 + std::atan(t);
+        theta_max[2 * i_central_mirror - i - 1] = M_PI / 2.0 + std::atan(t);
         t = std::tan(std::atan(m_val) + std::atan(square_size_z / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - square_size_z * m_val)));
         theta_max[i] = M_PI / 2.0 - std::atan(t);
-        theta_min[2 * i_central_mirror - i -1] = M_PI / 2.0 + std::atan(t);
+        theta_min[2 * i_central_mirror - i - 1] = M_PI / 2.0 + std::atan(t);
         // Forward sectors
         theta_bi[i] = std::atan(m_val);
         R0_tilt[i] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
@@ -280,15 +280,15 @@ struct OnTheFlyRichPid {
         l_detector_z[i] = square_size_z;
         l_aerogel_z[i] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
         T_r_plus_g[i] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
-        aerogel_rindex[i] = bRichRefractiveIndexSector[i-i_central_mirror];
+        aerogel_rindex[i] = bRichRefractiveIndexSector[i - i_central_mirror];
         // Backword sectors
-        theta_bi[2 * i_central_mirror - i -1] = -std::atan(m_val);
-        R0_tilt[2 * i_central_mirror - i -1] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
-        z0_tilt[2 * i_central_mirror - i -1] = -R0_tilt[i] * std::tan(theta_bi[i]);
-        l_detector_z[2 * i_central_mirror - i -1] = square_size_z;
-        l_aerogel_z[2 * i_central_mirror - i -1] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
-        T_r_plus_g[2 * i_central_mirror - i -1] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
-        aerogel_rindex[2 * i_central_mirror - i -1] = bRichRefractiveIndexSector[i-i_central_mirror];
+        theta_bi[2 * i_central_mirror - i - 1] = -std::atan(m_val);
+        R0_tilt[2 * i_central_mirror - i - 1] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
+        z0_tilt[2 * i_central_mirror - i - 1] = -R0_tilt[i] * std::tan(theta_bi[i]);
+        l_detector_z[2 * i_central_mirror - i - 1] = square_size_z;
+        l_aerogel_z[2 * i_central_mirror - i - 1] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_z / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_z);
+        T_r_plus_g[2 * i_central_mirror - i - 1] = std::sqrt(1.0 + m_val * m_val) * (R_max - R_min) - m_val / 2.0 * (square_size_z + l_aerogel_z[i]);
+        aerogel_rindex[2 * i_central_mirror - i - 1] = bRichRefractiveIndexSector[i - i_central_mirror];
         mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
     }
@@ -307,11 +307,13 @@ struct OnTheFlyRichPid {
       gap_thickness[i] = (det_centers[i] - rad_centers[i]).Mag() - bRichRadiatorThickness / 2.0;
     }
     // DEBUG
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
     for (int i = 0; i < number_of_sectors_in_z; i++) {
       std::cout << "Sector " << i << ": Gap = " << gap_thickness[i] << " cm, Index aerogel = " << aerogel_rindex[i] << ", Gap thickness = " << gap_thickness[i] << " cm" << std::endl;
     }
-    std::cout << std::endl << std::endl;
+    std::cout << std::endl
+              << std::endl;
   }
 
   void init(o2::framework::InitContext& initContext)
@@ -572,27 +574,24 @@ struct OnTheFlyRichPid {
     }
   }
 
-/// To account border effects in bRICH
-/// Approximation for analytic calculation: track along projective sector normal (reasonable) 
-/// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
-/// \param tile_z_length the Z-length of the photodetector plane of the considered sector 
-/// \param radius the nominal radius of the Cherenkov ring
-float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius)
-{
+  /// To account border effects in bRICH
+  /// Approximation for analytic calculation: track along projective sector normal (reasonable)
+  /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
+  /// \param tile_z_length the Z-length of the photodetector plane of the considered sector
+  /// \param radius the nominal radius of the Cherenkov ring
+  float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius)
+  {
     float polar = 2.0 * atan(exp(-eta));
     int i_sector = 0;
     bool flag_sector = false;
-    for (int j_sec = 0; j_sec < mNumberSectors; j_sec++)
-    {
-        if (polar > theta_max[j_sec] && polar < theta_min[j_sec])
-        {
-            flag_sector = true;
-            i_sector = j_sec;
-        }
+    for (int j_sec = 0; j_sec < mNumberSectors; j_sec++) {
+      if (polar > theta_max[j_sec] && polar < theta_min[j_sec]) {
+        flag_sector = true;
+        i_sector = j_sec;
+      }
     }
-    if (flag_sector == false)
-    {
-        return error_value; // <-- Returning negative value
+    if (flag_sector == false) {
+      return error_value; // <-- Returning negative value
     }
     float R_sec_rich = rad_centers[i_sector].X();
     float z_sec_rich = rad_centers[i_sector].Z();
@@ -600,18 +599,16 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
     float z_sec_tof = det_centers[i_sector].Z();
     float radius_ripple = (pow(R_sec_rich, 2) + pow(z_sec_rich, 2)) / (R_sec_rich + z_sec_rich / tan(polar));
     float z_ripple = radius_ripple / tan(polar);
-    float absZ = hypot( radius_ripple - R_sec_rich, z_ripple - z_sec_rich); 
+    float absZ = hypot(radius_ripple - R_sec_rich, z_ripple - z_sec_rich);
     float fraction = 1.;
-    if (tile_z_length/2. - absZ < radius )
-    {
-        fraction = fraction - (1./M_PI)*acos((tile_z_length/2. - absZ)/radius);
-        if (tile_z_length/2. + absZ < radius )
-        {
-            fraction = fraction - (1./M_PI)*acos((tile_z_length/2. + absZ)/radius);
-        }
+    if (tile_z_length / 2. - absZ < radius) {
+      fraction = fraction - (1. / M_PI) * acos((tile_z_length / 2. - absZ) / radius);
+      if (tile_z_length / 2. + absZ < radius) {
+        fraction = fraction - (1. / M_PI) * acos((tile_z_length / 2. + absZ) / radius);
+      }
     }
     return fraction;
-}
+  }
 
   /// returns refined ring angular resolution
   /// \param eta the pseudorapidity of the tarck (assuming primary vertex at origin)
@@ -622,7 +619,8 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
   /// \param pixel_size the SiPM pixel size in cm
   /// \param theta_c the Cherenkov angle for the considered track
   /// \param tile_z_length the Z-length of the photodetector plane of the considered sector
-  float extract_ring_angular_resolution(float eta, float n, float n_g, float T_r, float T_g, float pixel_size, float theta_c, float tile_z_length){
+  float extract_ring_angular_resolution(float eta, float n, float n_g, float T_r, float T_g, float pixel_size, float theta_c, float tile_z_length)
+  {
     // Check if input angle is error value
     if (theta_c <= error_value + 1)
       return error_value;
@@ -632,10 +630,10 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
     float sin_theta_c = std::sin(theta_c);
     float cos_theta_c = std::cos(theta_c);
     float x_p = std::sin(theta_p);
-    float z_p = std::cos(theta_p); 
+    float z_p = std::cos(theta_p);
     float sin_phi = std::sin(phi_c);
     float cos_phi = std::cos(phi_c);
-    //float ze = T_r / (2. * z_p);
+    // float ze = T_r / (2. * z_p);
     float az = z_p * cos_theta_c - x_p * sin_theta_c * cos_phi;
     float e3z = std::sqrt(az * az + (n_g / n) * (n_g / n) - 1.);
     float Z = T_g;
@@ -681,13 +679,13 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
     float res_y = d_theta_y * sigma_theta_y;
     float res_ze = d_theta_ze * sigma_theta_ze;
     float res_n = d_theta_n * d_n_w * sigma_w;
-    float single_photon_angular_resolution = std::sqrt(std::pow(res_x,2) + std::pow(res_y,2) + std::pow(res_ze,2) + std::pow(res_n,2));
-    // Fraction of photons in rings (to account loss close to sector boundary in projective geometry) 
-    float radius = (T_r/2.0)*std::tan(theta_c) + T_g * std::tan(std::asin((n/n_g)*std::sin(theta_c)));
-    float N0 = 24. * T_r / 2.; // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
-    float multiplicity_spectrum_factor = std::pow(std::sin(theta_c),2.)/std::pow(std::sin(std::acos(1./1.03)),2.); // scale multiplicity w.r.t. N = 1.03 at saturation
+    float single_photon_angular_resolution = std::sqrt(std::pow(res_x, 2) + std::pow(res_y, 2) + std::pow(res_ze, 2) + std::pow(res_n, 2));
+    // Fraction of photons in rings (to account loss close to sector boundary in projective geometry)
+    float radius = (T_r / 2.0) * std::tan(theta_c) + T_g * std::tan(std::asin((n / n_g) * std::sin(theta_c)));
+    float N0 = 24. * T_r / 2.;                                                                                           // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
+    float multiplicity_spectrum_factor = std::pow(std::sin(theta_c), 2.) / std::pow(std::sin(std::acos(1. / 1.03)), 2.); // scale multiplicity w.r.t. N = 1.03 at saturation
     // Considering average resolution (integrated over the sector)
-    //float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length) - (2.0/(tile_z_length*M_PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
+    // float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length) - (2.0/(tile_z_length*M_PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
     float n_photons = N0 * multiplicity_spectrum_factor * fractionPhotonsProjectiveRICH(eta, tile_z_length, radius);
     if (n_photons <= error_value + 1)
@@ -718,8 +716,8 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision, soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels> const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
-    //for (int i = 0; i < 1000; i++)
-    //  std::cout << "Prova" << std::endl;
+    // for (int i = 0; i < 1000; i++)
+    //   std::cout << "Prova" << std::endl;
 
     o2::dataformats::VertexBase pvVtx({collision.posX(), collision.posY(), collision.posZ()},
                                       {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()});
@@ -780,12 +778,12 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
 
       // find track bRICH sector
       int i_sector = findSector(o2track.getEta());
-      if (i_sector < 0){
+      if (i_sector < 0) {
         continue;
       }
 
-      float expectedAngleBarrelRich = CherenkovAngle(o2track.getP(), pdgInfo->Mass(),aerogel_rindex[i_sector]);
-      //float barrelRICHAngularResolution = AngularResolution(o2track.getEta());
+      float expectedAngleBarrelRich = CherenkovAngle(o2track.getP(), pdgInfo->Mass(), aerogel_rindex[i_sector]);
+      // float barrelRICHAngularResolution = AngularResolution(o2track.getEta());
       float barrelRICHAngularResolution = extract_ring_angular_resolution(o2track.getEta(), aerogel_rindex[i_sector], bRichGapRefractiveIndex, bRichRadiatorThickness, gap_thickness[i_sector], bRICHPixelSize, expectedAngleBarrelRich, photodetrctor_length[i_sector]);
       float projectiveRadiatorRadius = radiusRipple(o2track.getEta(), i_sector);
       bool flagReachesRadiator = false;
@@ -817,7 +815,7 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
 
         auto pdgInfoThis = pdg->GetParticle(lpdg_array[ii]);
         masses[ii] = pdgInfoThis->Mass();
-        float hypothesisAngleBarrelRich = CherenkovAngle(recoTrack.getP(), masses[ii],aerogel_rindex[i_sector]);
+        float hypothesisAngleBarrelRich = CherenkovAngle(recoTrack.getP(), masses[ii], aerogel_rindex[i_sector]);
 
         // Evaluate total sigma (layer + tracking resolution)
         float barrelTotalAngularReso = barrelRICHAngularResolution;
@@ -876,8 +874,8 @@ float fractionPhotonsProjectiveRICH(float eta, float tile_z_length, float radius
         if (barrelRichTheta > error_value + 1. && barrelRICHAngularResolution > error_value + 1. && flagReachesRadiator) {
           histos.fill(HIST("h2dAngleVsMomentumBarrelRICH"), momentum, barrelRichTheta);
           histos.fill(HIST("h2dAngleVsEtaBarrelRICH"), pseudorapidity, barrelRichTheta);
-          histos.fill(HIST("h2dAngularResolutionVsMomentumBarrelRICH"), momentum, 1000*barrelRICHAngularResolution);
-          histos.fill(HIST("h2dAngularResolutionVsEtaBarrelRICH"), pseudorapidity, 1000*barrelRICHAngularResolution);
+          histos.fill(HIST("h2dAngularResolutionVsMomentumBarrelRICH"), momentum, 1000 * barrelRICHAngularResolution);
+          histos.fill(HIST("h2dAngularResolutionVsEtaBarrelRICH"), pseudorapidity, 1000 * barrelRICHAngularResolution);
           histos.fill(HIST("hSectorID"), i_sector);
 
           if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(lpdg_array[0])->PdgCode()) {
