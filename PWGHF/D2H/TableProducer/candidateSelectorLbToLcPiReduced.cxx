@@ -47,7 +47,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<int> pionPidMethod{"pionPidMethod", 1, "PID selection method for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
+  Configurable<int> pionPidMethod{"pionPidMethod", PidMethod::TpcOrTof, "PID selection method for the bachelor pion (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -104,7 +104,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (pionPidMethod) {
+    if (pionPidMethod==PidMethod::TpcOrTof || pionPidMethod==PidMethod::TpcAndTof) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -187,9 +187,9 @@ struct HfCandidateSelectorLbToLcPiReduced {
 
       // track-level PID selection
       auto trackPi = hfCandLb.template prong1Track_as<TracksPion>();
-      if (pionPidMethod) {
+      if (pionPidMethod==PidMethod::TpcOrTof || pionPidMethod==PidMethod::TpcAndTof) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
-        if (pionPidMethod == 1) {
+        if (pionPidMethod == PidMethod::TpcOrTof) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
         } else {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
