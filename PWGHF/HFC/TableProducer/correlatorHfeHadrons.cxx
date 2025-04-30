@@ -157,10 +157,6 @@ struct HfCorrelatorHfeHadrons {
 
       double deltaPhi = -999;
       double deltaEta = -999;
-      double deltaPhi1 = -999;
-      double deltaEta1 = -999;
-      double deltaPhi2 = -999;
-      double deltaEta2 = -999;
       double ptHadron = -999;
       double etaHadron = -999;
       double phiHadron = -999;
@@ -169,25 +165,25 @@ struct HfCorrelatorHfeHadrons {
         continue;
       }
       registry.fill(HIST("hptElectron"), ptElectron);
-      int isLSElectron = 0;
-      int isULSElectron = 0;
-      if (eTrack.isLSElectron() > 0) {
-        for (int i = 0; i < eTrack.isLSElectron(); ++i) {
+      int lsElCounts = 0;
+      int ulsElCounts = 0;
+      if (eTrack.lsElPairCount() > 0) {
+        for (int i = 0; i < eTrack.lsElPairCount(); ++i) {
 
-          ++isLSElectron;
+          ++lsElCounts;
           registry.fill(HIST("hLSElectronBin"), poolBin);
         }
       }
-      if (eTrack.isULSElectron() > 0) {
-        for (int i = 0; i < eTrack.isULSElectron(); ++i) {
+      if (eTrack.ulsElPairCount() > 0) {
+        for (int i = 0; i < eTrack.ulsElPairCount(); ++i) {
 
-          ++isULSElectron;
+          ++ulsElCounts;
           registry.fill(HIST("hULSElectronBin"), poolBin);
         }
       }
 
       registry.fill(HIST("hElectronBin"), poolBin);
-      entryElectron(phiElectron, etaElectron, ptElectron, isLSElectron, isULSElectron, poolBin, gCollisionId, timeStamp);
+      entryElectron(phiElectron, etaElectron, ptElectron, lsElCounts, ulsElCounts, poolBin, gCollisionId, timeStamp);
 
       for (const auto& hTrack : tracks) {
         // Apply Hadron cut
@@ -209,28 +205,27 @@ struct HfCorrelatorHfeHadrons {
         phiHadron = hTrack.phi();
         etaHadron = hTrack.eta();
 
-        deltaPhi1 = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
-        deltaEta1 = etaElectron - etaHadron;
+        deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
+        deltaEta = etaElectron - etaHadron;
         registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-        registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi1, deltaEta1);
-        registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi2, deltaEta2);
 
-        int isLSElectroncorr = 0;
-        int isULSElectroncorr = 0;
-        if (eTrack.isLSElectron() > 0) {
-          for (int i = 0; i < eTrack.isLSElectron(); ++i) {
+        int lsPairElcorr = 0;
+        int ulsPairElcorr = 0;
+        if (eTrack.lsElPairCount() > 0) {
+          for (int i = 0; i < eTrack.lsElPairCount(); ++i) {
 
-            ++isLSElectroncorr;
+            ++lsPairElcorr;
+            registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
           }
         }
-        if (eTrack.isULSElectron() > 0) {
-          for (int i = 0; i < eTrack.isULSElectron(); ++i) {
+        if (eTrack.ulsElPairCount() > 0) {
+          for (int i = 0; i < eTrack.ulsElPairCount(); ++i) {
 
             registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-            ++isULSElectroncorr;
+            ++ulsPairElcorr;
           }
         }
-        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, isLSElectroncorr, isULSElectroncorr);
+        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, lsPairElcorr, ulsPairElcorr);
 
       } // end Hadron Track loop
       cntElectron++;
@@ -276,23 +271,23 @@ struct HfCorrelatorHfeHadrons {
       deltaEtaMix = etaElectronMix - etaHadronMix;
 
       registry.fill(HIST("hMixEventInclusiveEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-      int isLSElectroncorr = 0;
-      int isULSElectroncorr = 0;
-      if (t1.isLSElectron() > 0) {
-        for (int i = 0; i < t1.isLSElectron(); ++i) {
+      int lsElPairCorr = 0;
+      int ulsElPairCorr = 0;
+      if (t1.lsElPairCount() > 0) {
+        for (int i = 0; i < t1.lsElPairCount(); ++i) {
 
           registry.fill(HIST("hMixEventLSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-          ++isLSElectroncorr;
+          ++lsElPairCorr;
         }
       }
-      if (t1.isULSElectron() > 0) {
-        for (int i = 0; i < t1.isULSElectron(); ++i) {
+      if (t1.ulsElPairCount() > 0) {
+        for (int i = 0; i < t1.ulsElPairCount(); ++i) {
 
           registry.fill(HIST("hMixEventULSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-          ++isULSElectroncorr;
+          ++ulsElPairCorr;
         }
       }
-      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, isLSElectroncorr, isULSElectroncorr);
+      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, lsElPairCorr, ulsElPairCorr);
     }
   }
 
