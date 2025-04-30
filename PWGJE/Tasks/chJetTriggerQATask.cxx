@@ -65,7 +65,7 @@ float dcaXYPtCut(float tracPt)
 // b) from events selected by EPN
 // It would be good to run it for several jet radii  e.g. 0.2, 0.4, 0.6
 
-struct JetChargedTriggerQA {
+struct JetChargedTriggerQa {
 
   Configurable<std::string> evSel{"evSel", "sel8", "choose event selection"};
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0, "Accepted z-vertex range"};
@@ -81,7 +81,7 @@ struct JetChargedTriggerQA {
   Configurable<bool> bHighPtTrigger{"bHighPtTrigger", false, "charged jet high pT trigger selection"};
   Configurable<bool> bTrackLowPtTrigger{"bTrackLowPtTrigger", false, "track low pT trigger selection"};
   Configurable<bool> bTrackHighPtTrigger{"bTrackHighPtTrigger", false, "track high pT trigger selection"};
-  Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
+  Configurable<bool> bAddSupplementHistosToOutput{"bAddSupplementHistosToOutput", false, "add supplementary histos to the output"};
   Configurable<bool> bStudyPhiTrack{"bStudyPhiTrack", false, "add histos for detailed study of track phi distribution"};
 
   Configurable<float> phiAngleRestriction{"phiAngleRestriction", 0.3, "angle to restrict track phi for plotting tpc momentum"};
@@ -337,4 +337,4 @@ struct JetChargedTriggerQA {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetChargedTriggerQA>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetChargedTriggerQa>(cfgc)}; }
