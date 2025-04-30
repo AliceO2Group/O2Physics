@@ -127,7 +127,7 @@ struct alice3multicharm {
   ConfigurableAxis axisDCA{"axisDCA", {400, 0, 400}, "DCA (#mum)"};
   ConfigurableAxis axisRadius{"axisRadius", {10000, 0, 10000}, "Decay radius (#mum)"};
   ConfigurableAxis axisRadius2D{"axisRadius2D", {1000, 0, 100000}, "Decay radius (#mum)"};
-  ConfigurableAxis axisRadius2DXi{"axisRadius2D", {1000, 0, 20}, "Decay radius (cm)"};
+  ConfigurableAxis axisRadius2DXi{"axisRadius2DXi", {1000, 0, 20}, "Decay radius (cm)"};
   ConfigurableAxis axisDecayLength{"axisDecayLength", {2000, 0, 2000}, "Decay lenght (#mum)"};
   ConfigurableAxis axisTOFTrack{"axisTOFTrack", {1000, 0, 5000}, "TOF track time"};
 
