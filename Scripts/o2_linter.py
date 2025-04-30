@@ -989,29 +989,42 @@ class TestNameConstant(TestSpec):
     references = references_names
     suffixes = [".h", ".cxx", ".C"]
 
+    def __init__(self) -> None:
+        super().__init__()
+        keyword = r"(.+ )"  # e.g. "static "
+        type_val = r"([\w:<>+\-*\/, ]+ )" # value type e.g. "std::array<Type, n + 1> "
+        prefix = r"(\w+::)"  # prefix with namespace or class, e.g. "MyClass::"
+        name_val = r"(\w+)"  # name of the constant
+        array = r"(\[.*\])" # array declaration: "[...]"
+        assignment = r"( =|\(\d|{)" # value assignment, e.g. " = 2", " = expression", "(2)", "{2}", "{{...}}"
+        self.pattern = re.compile(rf"{keyword}?constexpr {type_val}?{prefix}*{name_val}{array}?{assignment}")
+
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
-        words = line.split()
-        if "constexpr" not in words or "=" not in words:
+        if not (match := self.pattern.match(line)):
             return True
-        # Extract constant name.
-        words = words[: words.index("=")]  # keep only words before "="
-        constant_name = words[-1]  # last word before "="
-        if (
-            constant_name.endswith("]") and "[" not in constant_name
-        ):  # it's an array and we do not have the name before "[" here
-            opens_brackets = ["[" in w for w in words]
-            if not any(opens_brackets):  # The opening "[" is not on this line. We have to give up.
-                return True
-            constant_name = words[opens_brackets.index(True)]  # the name is in the first element with "["
-        if "[" in constant_name:  # Remove brackets for arrays.
-            constant_name = constant_name[: constant_name.index("[")]
-        if "::" in constant_name:  # Remove the class prefix for methods.
-            constant_name = constant_name.split("::")[-1]
-        if "#" in constant_name:  # Remove "#" for strings in macros.
-            constant_name = constant_name[: constant_name.index("#")]
+        constant_name = match.group(4)
+        # words = line.split()
+        # if "constexpr" not in words or "=" not in words:
+        #     return True
+        # # Extract constant name.
+        # words = words[: words.index("=")]  # keep only words before "="
+        # constant_name = words[-1]  # last word before "="
+        # if (
+        #     constant_name.endswith("]") and "[" not in constant_name
+        # ):  # it's an array and we do not have the name before "[" here
+        #     opens_brackets = ["[" in w for w in words]
+        #     if not any(opens_brackets):  # The opening "[" is not on this line. We have to give up.
+        #         return True
+        #     constant_name = words[opens_brackets.index(True)]  # the name is in the first element with "["
+        # if "[" in constant_name:  # Remove brackets for arrays.
+        #     constant_name = constant_name[: constant_name.index("[")]
+        # if "::" in constant_name:  # Remove the class prefix for methods.
+        #     constant_name = constant_name.split("::")[-1]
+        # if "#" in constant_name:  # Remove "#" for strings in macros.
+        #     constant_name = constant_name[: constant_name.index("#")]
         # The actual test comes here.
         if constant_name.startswith("k") and len(constant_name) > 1:  # exception for special constants
             constant_name = constant_name[1:]  # test the name without "k"
