@@ -557,7 +557,7 @@ struct phiInJets {
     }
     JEhistos.fill(HIST("nEvents"), 0.5);
 
-    if (fabs(collision.posZ()) > cfgVtxCut)
+    if (std::fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
@@ -643,14 +643,14 @@ struct phiInJets {
     // # of Events
     //=================
     JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
-    if (fabs(collision.posZ()) > cfgVtxCut)
+    if (std::fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (fabs(track.eta()) < cfgtrkMaxEta) {
+      if (std::fabs(track.eta()) < cfgtrkMaxEta) {
         INELgt0 = true;
         break;
       }
@@ -696,7 +696,7 @@ struct phiInJets {
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         if (cfgPIDQAHists) {
-          if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) {
+          if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.eta()) <= cfgtrkMaxEta) {
             if (abs(mcParticle.pdgCode()) == 211)
               JEhistos.fill(HIST("ptJEHistogramPion"), mcParticle.pt());
             if (abs(mcParticle.pdgCode()) == 321)
@@ -720,7 +720,7 @@ struct phiInJets {
           if (originalTrack.globalIndex() == originalTrack2.globalIndex())
             continue;
         }
-        if (fabs(originalTrack.eta()) > cfgtrkMaxEta || fabs(originalTrack2.eta()) > cfgtrkMaxEta)
+        if (std::fabs(originalTrack.eta()) > cfgtrkMaxEta || std::fabs(originalTrack2.eta()) > cfgtrkMaxEta)
           continue;
 
         double dPhi = TVector2::Phi_mpi_pi(originalTrack.phi() - originalTrack2.phi());
@@ -761,7 +761,7 @@ struct phiInJets {
         lResonance = lDecayDaughter1 + lDecayDaughter2;
         if (cfgIsKstar)
           lRotationalResonance = lDecayDaughter1 + lRotationalTrack;
-        if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
+        if (std::fabs(lResonance.Eta()) > cfgtrkMaxEta)
           continue;
 
         if (cfgDaughterQAHists) {
@@ -837,13 +837,13 @@ struct phiInJets {
         if (track.has_mcParticle() && track2.has_mcParticle()) {
           auto part1 = track.mcParticle();
           auto part2 = track2.mcParticle();
-          if (fabs(part1.pdgCode()) != 321)
+          if (std::fabs(part1.pdgCode()) != 321)
             continue; // Not Kaon
           if (!cfgIsKstar) {
-            if (fabs(part2.pdgCode()) != 321)
+            if (std::fabs(part2.pdgCode()) != 321)
               continue; // Not Kaon
           } else {
-            if (fabs(part2.pdgCode()) != 211)
+            if (std::fabs(part2.pdgCode()) != 211)
               continue; // Not Kaon
           }
 
@@ -983,11 +983,11 @@ struct phiInJets {
         return;
     }
 
-    if (fabs(collision.posZ()) > cfgVtxCut) // bad vertex
+    if (std::fabs(collision.posZ()) > cfgVtxCut) // bad vertex
       return;
     bool INELgt0 = false;
     for (const auto& mcParticle : mcParticles) {
-      if (fabs(mcParticle.eta()) < cfgtrkMaxEta) {
+      if (std::fabs(mcParticle.eta()) < cfgtrkMaxEta) {
         INELgt0 = true;
         break;
       }
@@ -1017,7 +1017,7 @@ struct phiInJets {
 
     // Check pikp and phi
     for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!
+      if (mcParticle.isPhysicalPrimary() && std::fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!
         if (abs(mcParticle.pdgCode()) == 211)
           JEhistos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
         if (abs(mcParticle.pdgCode()) == 321)
@@ -1025,7 +1025,7 @@ struct phiInJets {
         if (abs(mcParticle.pdgCode()) == 2212)
           JEhistos.fill(HIST("ptGeneratedProton"), mcParticle.pt());
       }
-      if (fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!
+      if (std::fabs(mcParticle.eta()) <= cfgtrkMaxEta) { // watch out for context!!!
         TLorentzVector lResonance;
         lResonance.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
 
@@ -1045,12 +1045,12 @@ struct phiInJets {
           if (!cfgIsKstar) {
             if (mcParticle.has_daughters())
               for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
-                if (fabs(dgth.pdgCode()) != 321)
+                if (std::fabs(dgth.pdgCode()) != 321)
                   skip = true;
           } else {
             if (mcParticle.has_daughters())
               for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
-                if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
+                if (std::fabs(dgth.pdgCode()) != 321 || std::fabs(dgth.pdgCode()) != 211)
                   skip = true;
           }
 
@@ -1139,7 +1139,7 @@ struct phiInJets {
 
     JEhistos.fill(HIST("nEvents_MCGen_MATCHED"), 0.5);
 
-    if (fabs(collision.posZ()) > cfgVtxCut)
+    if (std::fabs(collision.posZ()) > cfgVtxCut)
       return;
 
     if (recocolls.size() <= 0) // not reconstructed
@@ -1196,7 +1196,7 @@ struct phiInJets {
 
     // First we do GEN part
     for (const auto& mcParticle : mcParticles) {
-      if (fabs(mcParticle.eta()) > cfgtrkMaxEta)
+      if (std::fabs(mcParticle.eta()) > cfgtrkMaxEta)
         continue;
 
       int GenPID = 0;
@@ -1206,7 +1206,7 @@ struct phiInJets {
       else
         GenPID = 313;
 
-      if (fabs(mcParticle.pdgCode()) == GenPID) {
+      if (std::fabs(mcParticle.pdgCode()) == GenPID) {
         bool skip = false;
         double phi_dgth_px[2] = {0};
         double phi_dgth_py[2] = {0};
@@ -1222,7 +1222,7 @@ struct phiInJets {
         if (!cfgIsKstar) {
           if (mcParticle.has_daughters()) {
             for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>()) {
-              if (fabs(dgth.pdgCode()) != 321) {
+              if (std::fabs(dgth.pdgCode()) != 321) {
                 skip = true;
                 break;
               }
@@ -1230,7 +1230,7 @@ struct phiInJets {
                 auto trk = track.track_as<myCompleteTracks>();
                 if (!trackSelection(trk))
                   continue;
-                if (fabs(trk.eta()) > cfgtrkMaxEta)
+                if (std::fabs(trk.eta()) > cfgtrkMaxEta)
                   continue;
                 if (cfgSimPID) {
                   if (!trackPID(trk, true))
@@ -1261,7 +1261,7 @@ struct phiInJets {
         } else { // check for kstar
           if (mcParticle.has_daughters())
             for (auto& dgth : mcParticle.daughters_as<aod::JetParticles>())
-              if (fabs(dgth.pdgCode()) != 321 || fabs(dgth.pdgCode()) != 211)
+              if (std::fabs(dgth.pdgCode()) != 321 || std::fabs(dgth.pdgCode()) != 211)
                 skip = true;
         }
 
@@ -1351,18 +1351,20 @@ struct phiInJets {
       nprocessRecJEEvents++;
       if ((nprocessRecJEEvents + 1) % 10000 == 0) {
         double histmem = JEhistos.getSize();
+        std::cout << histmem << std::endl;
+        std::cout << "processMatchedRec: " << nprocessRecEvents << std::endl;
       }
     }
     JEhistos.fill(HIST("nEvents_MCRec_MATCHED"), 0.5);
 
-    if (fabs(collision.posZ()) > cfgVtxCut)
+    if (std::fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits))
       return;
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (fabs(track.eta()) < cfgtrkMaxEta) {
+      if (std::fabs(track.eta()) < cfgtrkMaxEta) {
         INELgt0 = true;
         break;
       }
@@ -1414,7 +1416,7 @@ struct phiInJets {
           if (trk1.globalIndex() == trk2.globalIndex())
             continue;
         }
-        if (fabs(trk1.eta()) > cfgtrkMaxEta || fabs(trk2.eta()) > cfgtrkMaxEta)
+        if (std::fabs(trk1.eta()) > cfgtrkMaxEta || std::fabs(trk2.eta()) > cfgtrkMaxEta)
           continue;
         if ((trk1.sign() * trk2.sign()) > 0)
           continue; // Not K+K-
@@ -1428,13 +1430,13 @@ struct phiInJets {
           if (track1.has_mcParticle() && track2.has_mcParticle()) {
             auto part1 = track1.mcParticle();
             auto part2 = track2.mcParticle();
-            if (fabs(part1.pdgCode()) != 321)
+            if (std::fabs(part1.pdgCode()) != 321)
               continue; // Not Kaon
             if (!cfgIsKstar) {
-              if (fabs(part2.pdgCode()) != 321)
+              if (std::fabs(part2.pdgCode()) != 321)
                 continue; // Not Kaon
             } else {
-              if (fabs(part2.pdgCode()) != 211)
+              if (std::fabs(part2.pdgCode()) != 211)
                 continue; // Not Kaon
             }
             if (!part1.has_mothers())
@@ -1481,7 +1483,7 @@ struct phiInJets {
               lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
 
             lResonance = lDecayDaughter1 + lDecayDaughter2;
-            if (fabs(lResonance.Eta()) > cfgtrkMaxEta)
+            if (std::fabs(lResonance.Eta()) > cfgtrkMaxEta)
               continue;
 
             bool jetFlag = false;
