@@ -226,19 +226,19 @@ struct OnTheFlyRichPid {
       l_aerogel_z[i_central_mirror] = std::sqrt(1.0 + m_val * m_val) * R_min * square_size_barrel_cylinder / (std::sqrt(1.0 + m_val * m_val) * R_max - m_val * square_size_barrel_cylinder);
       T_r_plus_g[i_central_mirror] = R_max - R_min;
       float t = std::tan(std::atan(m_val) + std::atan(square_size_barrel_cylinder / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - square_size_barrel_cylinder * m_val)));
-      theta_max[i_central_mirror] = PI / 2.0 - std::atan(t);
-      theta_min[i_central_mirror] = PI / 2.0 + std::atan(t);
+      theta_max[i_central_mirror] = M_PI / 2.0 - std::atan(t);
+      theta_min[i_central_mirror] = M_PI / 2.0 + std::atan(t);
       mProjectiveLengthInner = R_min * t;
       aerogel_rindex[i_central_mirror] = bRichRefractiveIndexSector[0];
       for (int i = i_central_mirror + 1; i < number_of_sectors_in_z; i++) {
         float par_a = t;
         float par_b = 2.0 * R_max / square_size_z;
         m_val = (std::sqrt(par_a * par_a * par_b * par_b + par_b * par_b - 1.0) + par_a * par_b * par_b) / (par_b * par_b - 1.0);
-        theta_min[i] = PI / 2.0 - std::atan(t);
-        theta_max[2 * i_central_mirror - i] = PI / 2.0 + std::atan(t);
+        theta_min[i] = M_PI / 2.0 - std::atan(t);
+        theta_max[2 * i_central_mirror - i] = M_PI / 2.0 + std::atan(t);
         t = std::tan(std::atan(m_val) + std::atan(square_size_z / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - square_size_z * m_val)));
-        theta_max[i] = PI / 2.0 - std::atan(t);
-        theta_min[2 * i_central_mirror - i] = PI / 2.0 + std::atan(t);
+        theta_max[i] = M_PI / 2.0 - std::atan(t);
+        theta_min[2 * i_central_mirror - i] = M_PI / 2.0 + std::atan(t);
         // Forward sectors
         theta_bi[i] = std::atan(m_val);
         R0_tilt[i] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
@@ -269,11 +269,11 @@ struct OnTheFlyRichPid {
         float par_a = t;
         float par_b = 2.0 * R_max / square_size_z;
         m_val = (std::sqrt(par_a * par_a * par_b * par_b + par_b * par_b - 1.0) + par_a * par_b * par_b) / (par_b * par_b - 1.0);
-        theta_min[i] = PI / 2.0 - std::atan(t);
-        theta_max[2 * i_central_mirror - i - 1] = PI / 2.0 + std::atan(t);
+        theta_min[i] = M_PI / 2.0 - std::atan(t);
+        theta_max[2 * i_central_mirror - i - 1] = M_PI / 2.0 + std::atan(t);
         t = std::tan(std::atan(m_val) + std::atan(square_size_z / (2.0 * R_max * std::sqrt(1.0 + m_val * m_val) - square_size_z * m_val)));
-        theta_max[i] = PI / 2.0 - std::atan(t);
-        theta_min[2 * i_central_mirror - i - 1] = PI / 2.0 + std::atan(t);
+        theta_max[i] = M_PI / 2.0 - std::atan(t);
+        theta_min[2 * i_central_mirror - i - 1] = M_PI / 2.0 + std::atan(t);
         // Forward sectors
         theta_bi[i] = std::atan(m_val);
         R0_tilt[i] = R_max - square_size_z / 2.0 * std::sin(std::atan(m_val));
@@ -601,9 +601,9 @@ struct OnTheFlyRichPid {
     float absZ = std::hypot(radius_ripple - R_sec_rich, z_ripple - z_sec_rich);
     float fraction = 1.;
     if (tile_z_length / 2. - absZ < radius) {
-      fraction = fraction - (1. / PI) * std::acos((tile_z_length / 2. - absZ) / radius);
+      fraction = fraction - (1. / M_PI) * std::acos((tile_z_length / 2. - absZ) / radius);
       if (tile_z_length / 2. + absZ < radius) {
-        fraction = fraction - (1. / PI) * std::acos((tile_z_length / 2. + absZ) / radius);
+        fraction = fraction - (1. / M_PI) * std::acos((tile_z_length / 2. + absZ) / radius);
       }
     }
     return fraction;
@@ -684,7 +684,7 @@ struct OnTheFlyRichPid {
     float N0 = 24. * T_r / 2.;                                                                                           // photons for N = 1.03 at saturation ( 24/2 factor per radiator cm )
     float multiplicity_spectrum_factor = std::pow(std::sin(theta_c), 2.) / std::pow(std::sin(std::acos(1. / 1.03)), 2.); // scale multiplicity w.r.t. N = 1.03 at saturation
     // Considering average resolution (integrated over the sector)
-    // float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(PI*tile_z_length) - (2.0/(tile_z_length*PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
+    // float n_photons = (tile_z_length / 2.0 > radius) ? N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length)) : N0 * multiplicity_spectrum_factor * (1.-(2.0*radius)/(M_PI*tile_z_length) - (2.0/(tile_z_length*M_PI))*(-(tile_z_length/(2.0))*std::acos(tile_z_length/(2.0*radius)) + radius*std::sqrt(1.-std::pow(tile_z_length/(2.0*radius),2.0))));
     // Considering "exact" resolution (eta by eta)
     float n_photons = N0 * multiplicity_spectrum_factor * fractionPhotonsProjectiveRICH(eta, tile_z_length, radius);
     if (n_photons <= error_value + 1)
