@@ -82,8 +82,8 @@ DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of th
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
 DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
 DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
-DECLARE_SOA_COLUMN(LSElPairCount, lsElPairCount, int);         //! Number of Like sign electron pair
-DECLARE_SOA_COLUMN(ULSElPairCount, ulsElPairCount, int);       //! Number of UnLike sign electron pair
+DECLARE_SOA_COLUMN(LSElPairCount, lSElPairCount, int);         //! Number of Like sign electron pair
+DECLARE_SOA_COLUMN(ULSElPairCount, uLSElPairCount, int);       //! Number of UnLike sign electron pair
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
 } // namespace hf_corr_sel_electron
 
