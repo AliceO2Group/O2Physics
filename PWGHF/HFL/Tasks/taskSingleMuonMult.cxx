@@ -50,7 +50,8 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::fwdtrack;
 
 struct HfTaskSingleMuonMult {
-  Configurable<float> ptTrackLow{"ptTrackLow", 0.15, "minimum pt of tracks"};
+  Configurable<float> zVtxMax{"zVtxMax", 10., "maxium z of primary vertex [cm]"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.15, "minimum pt of tracks"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "maximum pseudorapidity of tracks"};
   Configurable<float> etaMin{"etaMin", -3.6, "minimum pseudorapidity"};
   Configurable<float> etaMax{"etaMax", -2.5, "maximum pseudorapidity"};
@@ -60,17 +61,14 @@ struct HfTaskSingleMuonMult {
   Configurable<float> rAbsorbMax{"rAbsorbMax", 89.5, "R at absorber end maximum value"};
   Configurable<float> rAbsorbMid{"rAbsorbMid", 26.5, "R at absorber end split point for different p*DCA selections"};
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
-  Configurable<float> zVtxMax{"zVtxMax", 10., "maxium z of primary vertex [cm]"};
-
-  // Track Filter
-  Filter etaTrackFilter = (nabs(o2::aod::track::eta) < etaTrackMax);
-  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == true);
-  Filter ptTrackFilter = (o2::aod::track::pt) > ptTrackLow;
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
   using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
   using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
   using MyTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
+
+  // Filter Global Track for Multiplicty
+  Filter globalTrackFilter = ((o2::aod::track::isGlobalTrack == true) && (nabs(o2::aod::track::eta) < etaTrackMax) && ((o2::aod::track::pt) > ptTrackMin));
 
   HistogramRegistry registry{"registry"};
   static constexpr std::string_view kTrackType[] = {"TrackType0", "TrackType1", "TrackType2", "TrackType3", "TrackType4"};
