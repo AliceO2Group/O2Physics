@@ -49,22 +49,28 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::fwdtrack;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
-using MyTracks = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>;
-using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
-using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-using MFTTracksExtra = soa::Join<aod::MFTTracks>;
-
 struct HfTaskSingleMuonMult {
-  Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
-  Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
-  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
-  Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA maximum value for large Rabs"};
-  Configurable<float> rAbsMin{"rAbsMin", 17.6, "R at absorber end minimum value"};
-  Configurable<float> rAbsMax{"rAbsMax", 89.5, "R at absorber end maximum value"};
-  Configurable<float> rAbsMid{"rAbsMid", 26.5, "R at absorber end split point for different p*DCA selections"};
-  Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
+  Configurable<float> zVtxMax{"zVtxMax", 10., "maxium z of primary vertex [cm]"};
+  Configurable<float> ptTrackLow{"ptTrackLow", 0.15, "minimum pt of tracks"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "maximum pseudorapidity of tracks"};
+  Configurable<float> etaMin{"etaMin", -3.6, "minimum pseudorapidity"};
+  Configurable<float> etaMax{"etaMax", -2.5, "maximum pseudorapidity"};
+  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA value for small Rabsorb"};
+  Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA value for large Rabsorb"};
+  Configurable<float> rAbsorbMin{"rAbsorbMin", 17.6, "R at absorber end minimum value"};
+  Configurable<float> rAbsorbMax{"rAbsorbMax", 89.5, "R at absorber end maximum value"};
+  Configurable<float> rAbsorbMid{"rAbsorbMid", 26.5, "R at absorber end split point for different p*DCA selections"};
   Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
+
+  // Track Filter
+  Filter globalTrackFilter = (o2::aod::track::isGlobalTrack == true);
+  Filter ptTrackFilter = (o2::aod::track::pt) > ptTrackLow;
+  Filter etaTrackFilter = (nabs(o2::aod::track::eta) < etaTrackMax);
+
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
+  using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
+  using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+  using MyTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
 
   HistogramRegistry registry{"registry"};
   static constexpr std::string_view kTrackType[] = {"TrackType0", "TrackType1", "TrackType2", "TrackType3", "TrackType4"};
@@ -76,12 +82,12 @@ struct HfTaskSingleMuonMult {
     AxisSpec axisEventSize{500, 0.5, 500.5, "Event Size"};
     AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
     AxisSpec axisMuTrk{5, 0.5, 5.5, "Muon Selection"};
-    AxisSpec axisNch{500, 0.5, 500.5, "N_{ch}"};
-    AxisSpec axisNmu{20, -0.5, 19.5, "N_{#mu}"};
+    AxisSpec axisNch{500, 0.5, 500.5, "#it{N}_{ch}"};
+    AxisSpec axisNmu{20, -0.5, 19.5, "#it{N}_{#mu}"};
     AxisSpec axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisEta{250, -5., 5., "#it{#eta}"};
     AxisSpec axisTheta{500, 170., 180., "#it{#theta}"};
-    AxisSpec axisRabs{1000, 0., 100., "R_{abs} (cm)"};
+    AxisSpec axisRabsorb{1000, 0., 100., "#it{R}_{absorb} (cm)"};
     AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
     AxisSpec axisChi2MatchMCHMFT{1000, 0., 1000., "MCH-MFT matching #chi^{2}"};
     AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
@@ -98,8 +104,8 @@ struct HfTaskSingleMuonMult {
     HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
 
     HistogramConfigSpec hMuTrkSel{HistType::kTH1F, {axisMuTrk}};
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabs, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10};
-    HistogramConfigSpec hTHnMuDeltaPt{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabs, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10};
+    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10};
+    HistogramConfigSpec hTHnMuDeltaPt{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10};
     HistogramConfigSpec h3DCA{HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}};
     HistogramConfigSpec hTHnCh{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisSign}, 5};
     HistogramConfigSpec h3MultNchNmu{HistType::kTH3F, {axisCent, axisNch, axisNmu}};
@@ -119,7 +125,7 @@ struct HfTaskSingleMuonMult {
     registry.add("h3DCABeforeAccCuts", "", h3DCA);
     registry.add("hMuDeltaPtBeforeAccCuts", "", hTHnMuDeltaPt);
     registry.add("hMuAfterEtaCuts", "", hTHnMu);
-    registry.add("hMuAfterRabsCuts", "", hTHnMu);
+    registry.add("hMuAfterRabsorbCuts", "", hTHnMu);
     registry.add("hMuAfterPdcaCuts", "", hTHnMu);
     registry.add("hMuAfterAccCuts", "", hTHnMu);
     registry.add("h3DCAAfterAccCuts", "", h3DCA);
@@ -138,7 +144,7 @@ struct HfTaskSingleMuonMult {
     auto* xMu = hMustat->GetXaxis();
     xMu->SetBinLabel(1, "noCut");
     xMu->SetBinLabel(2, "etaCut");
-    xMu->SetBinLabel(3, "RabsCut");
+    xMu->SetBinLabel(3, "RabsorbCut");
     xMu->SetBinLabel(4, "pDcaCut");
     xMu->SetBinLabel(5, "chi2Cut");
 
@@ -148,8 +154,9 @@ struct HfTaskSingleMuonMult {
     }
   }
 
-  template <typename TCollision, typename TTracks, typename TMuons>
-  void runMuonSel(TCollision const& collision, TTracks const& tracks, TMuons const& muons)
+  void process(MyCollisions::iterator const& collision,
+               MyTracks const& tracks,
+               MyMuons const& muons)
   {
     registry.fill(HIST("hEvent"), 1);
 
@@ -158,9 +165,8 @@ struct HfTaskSingleMuonMult {
     }
     registry.fill(HIST("hEvent"), 2);
     registry.fill(HIST("hVtxZBeforeSel"), collision.posZ());
-    LOGP(debug, "SAMSUL_{} collisions", collision.globalIndex());
 
-    if (std::abs(collision.posZ()) > zVtx) {
+    if (std::abs(collision.posZ()) > zVtxMax) {
       return;
     }
     registry.fill(HIST("hEvent"), 3);
@@ -173,14 +179,10 @@ struct HfTaskSingleMuonMult {
     int nMu{0};
     constexpr std::size_t nTypes{5};
     int nMuTrackType[nTypes] = {0};
-    constexpr float etaCh{0.8};
-    constexpr float pTMinCh{0.15};
 
     std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
     for (const auto& track : tracks) {
-      if (track.isGlobalTrack() && std::abs(track.eta()) < etaCh && track.pt() > pTMinCh) {
-        chTracks.push_back(track);
-      }
+      chTracks.push_back(track);
     }
     nCh = chTracks.size();
     if (nCh < 1) {
@@ -195,22 +197,22 @@ struct HfTaskSingleMuonMult {
 
     // muons
     for (const auto& muon : muons) {
-      const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbs{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
-      const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
-      const auto muTrackType(muon.trackType());
+      const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
+      const auto dcaXY{RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY())};
+      const auto muTrackType{muon.trackType()};
 
-      registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       // histograms before the acceptance cuts
       registry.fill(HIST("hMuTrkSel"), 1);
-      registry.fill(HIST("hMuBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCABeforeAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
-        auto dpt(muonType3.pt() - pt);
+        auto dpt = muonType3.pt() - pt;
         if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
-          registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
+          registry.fill(HIST("hMuDeltaPtBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, dpt);
         }
       }
 
@@ -220,42 +222,42 @@ struct HfTaskSingleMuonMult {
         continue;
       }
       registry.fill(HIST("hMuTrkSel"), 2);
-      registry.fill(HIST("hMuAfterEtaCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuAfterEtaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
-      // Rabs cuts
-      if ((rAbs < rAbsMin) || (rAbs >= rAbsMax)) {
+      // Rabsorb cuts
+      if ((rAbsorb < rAbsorbMin) || (rAbsorb >= rAbsorbMax)) {
         continue;
       }
       registry.fill(HIST("hMuTrkSel"), 3);
-      registry.fill(HIST("hMuAfterRabsCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuAfterRabsorbCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
-      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
+      if ((rAbsorb < rAbsorbMid) && (pDca >= pDcaMin)) {
         continue;
       }
-      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+      if ((rAbsorb >= rAbsorbMid) && (pDca >= pDcaMax)) {
         continue;
       }
       registry.fill(HIST("hMuTrkSel"), 4);
-      registry.fill(HIST("hMuAfterPdcaCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuAfterPdcaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       //  MCH-MFT matching chi2
-      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+      if (muon.chi2() >= 1e6) {
         continue;
       }
       registry.fill(HIST("hMuTrkSel"), 5);
 
       // histograms after acceptance cuts
-      registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCAAfterAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
       nMu++;
       nMuTrackType[muTrackType]++;
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
-        auto dpt(muonType3.pt() - pt);
+        auto dpt = muonType3.pt() - pt;
 
         if (muTrackType == ForwardTrackTypeEnum::GlobalMuonTrack) {
-          registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbs, dcaXY, pDca, chi2, dpt);
+          registry.fill(HIST("hMuDeltaPtAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, dpt);
         }
       }
     }
@@ -269,13 +271,6 @@ struct HfTaskSingleMuonMult {
       }
     });
     chTracks.clear();
-  }
-
-  void process(MyCollisions::iterator const& collision,
-               MyTracks const& tracks,
-               MyMuons const& muons)
-  {
-    runMuonSel(collision, tracks, muons);
   }
 };
 
