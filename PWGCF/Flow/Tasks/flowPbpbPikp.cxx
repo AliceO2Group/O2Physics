@@ -91,8 +91,16 @@ struct FlowPbpbPikp {
   O2_DEFINE_CONFIGURABLE(cfgITScluster, int, 0, "Number of ITS cluster")
   O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, true, "Use track density efficiency correction")
 
+  O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaVtxz, bool, false, "Use Phi, Eta, VertexZ dependent NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiPtCent, bool, false, "Use Phi, Pt, Centrality dependent NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgUseWeightPhiEtaPt, bool, true, "Use Phi, Eta, Pt dependent NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
+
   Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
   Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
+
+  Configurable<std::vector<double>> cfgTofNsigmaCut{"cfgTofNsigmaCut", std::vector<double>{1.5, 1.5, 1.5}, "TOF n-sigma cut for pions, kaons, protons"};
+  Configurable<std::vector<double>> cfgItsNsigmaCut{"cfgItsNsigmaCut", std::vector<double>{3, 2.5, 2}, "ITS n-sigma cut for pions, kaons, protons"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -103,6 +111,9 @@ struct FlowPbpbPikp {
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {10000, 0, 1000}, "axis for TPC signal"};
+
+  std::vector<double> tofNsigmaCut = cfgTofNsigmaCut;
+  std::vector<double> itsNsigmaCut = cfgItsNsigmaCut;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -152,15 +163,22 @@ struct FlowPbpbPikp {
     histos.add("hPhiWeighted", "", {HistType::kTH1D, {axisPhi}});
     histos.add("hEta", "", {HistType::kTH1D, {axisEta}});
     histos.add("hPt", "", {HistType::kTH1D, {axisPt}});
-    histos.add("c22_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_gap08", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_gap08_pi", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("c24_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_full_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_full_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08F_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c22_gap08B_pr", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c24_full_ch", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c24_full_pi", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c24_full_ka", "", {HistType::kTProfile, {axisMultiplicity}});
+    histos.add("c24_full_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
     histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
     if (cfgOutputNUAWeights && !cfgOutputRunByRun) {
@@ -169,6 +187,18 @@ struct FlowPbpbPikp {
       histos.add<TH3>("NUA/hPhiEtaVtxz_pi", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
       histos.add<TH3>("NUA/hPhiEtaVtxz_ka", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
       histos.add<TH3>("NUA/hPhiEtaVtxz_pr", ";#varphi;#eta;v_{z}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, {40, -10, 10}}});
+
+      histos.add<TH3>("NUA/hPhiPtCent_ref", ";#varphi;p_{T};Cent", {HistType::kTH3D, {axisPhi, axisPt, {20, 0, 100}}});
+      histos.add<TH3>("NUA/hPhiPtCent_ch", ";#varphi;p_{T};Cent", {HistType::kTH3D, {axisPhi, axisPt, {20, 0, 100}}});
+      histos.add<TH3>("NUA/hPhiPtCent_pi", ";#varphi;p_{T};Cent", {HistType::kTH3D, {axisPhi, axisPt, {20, 0, 100}}});
+      histos.add<TH3>("NUA/hPhiPtCent_ka", ";#varphi;p_{T};Cent", {HistType::kTH3D, {axisPhi, axisPt, {20, 0, 100}}});
+      histos.add<TH3>("NUA/hPhiPtCent_pr", ";#varphi;p_{T};Cent", {HistType::kTH3D, {axisPhi, axisPt, {20, 0, 100}}});
+
+      histos.add<TH3>("NUA/hPhiEtaPt_ref", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, axisPt}});
+      histos.add<TH3>("NUA/hPhiEtaPt_ch", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, axisPt}});
+      histos.add<TH3>("NUA/hPhiEtaPt_pi", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, axisPt}});
+      histos.add<TH3>("NUA/hPhiEtaPt_ka", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, axisPt}});
+      histos.add<TH3>("NUA/hPhiEtaPt_pr", ";#varphi;#eta;p_{T}", {HistType::kTH3D, {axisPhi, {64, -1.6, 1.6}, axisPt}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -180,40 +210,54 @@ struct FlowPbpbPikp {
     oba->Add(new TNamed("ChFull22", "ChFull22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+    oba->Add(new TNamed("PiFull22", "PiFull22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("PiFull22_pt_%i", i + 1), "PiFull22_pTDiff"));
+    oba->Add(new TNamed("KaFull22", "KaFull22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("KaFull22_pt_%i", i + 1), "KaFull22_pTDiff"));
+    oba->Add(new TNamed("PrFull22", "PrFull22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("PrFull22_pt_%i", i + 1), "PrFull22_pTDiff"));
 
-    oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
+    oba->Add(new TNamed("Ch08FGap22", "Ch08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ch08Gap22_pt_%i", i + 1), "Ch08Gap22_pTDiff"));
-    oba->Add(new TNamed("Pi08Gap22", "Pi08Gap22"));
+      oba->Add(new TNamed(Form("Ch08FGap22_pt_%i", i + 1), "Ch08FGap22_pTDiff"));
+    oba->Add(new TNamed("Pi08FGap22", "Pi08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pi08Gap22_pt_%i", i + 1), "Pi08Gap22_pTDiff"));
-    oba->Add(new TNamed("Ka08Gap22", "Ka08Gap22"));
+      oba->Add(new TNamed(Form("Pi08FGap22_pt_%i", i + 1), "Pi08FGap22_pTDiff"));
+    oba->Add(new TNamed("Ka08FGap22", "Ka08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ka08Gap22_pt_%i", i + 1), "Ka08Gap22_pTDiff"));
-    oba->Add(new TNamed("Pr08Gap22", "Pr08Gap22"));
+      oba->Add(new TNamed(Form("Ka08FGap22_pt_%i", i + 1), "Ka08FGap22_pTDiff"));
+    oba->Add(new TNamed("Pr08FGap22", "Pr08FGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
+      oba->Add(new TNamed(Form("Pr08FGap22_pt_%i", i + 1), "Pr08FGap22_pTDiff"));
 
     oba->Add(new TNamed("ChFull24", "ChFull24"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
+    oba->Add(new TNamed("PiFull24", "PiFull24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("PiFull24_pt_%i", i + 1), "PiFull24_pTDiff"));
+    oba->Add(new TNamed("KaFull24", "KaFull24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("KaFull24_pt_%i", i + 1), "KaFull24_pTDiff"));
+    oba->Add(new TNamed("PrFull24", "PrFull24"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("PrFull24_pt_%i", i + 1), "PrFull24_pTDiff"));
 
-    oba->Add(new TNamed("Ch08Gap24", "Ch08Gap24"));
+    oba->Add(new TNamed("Ch08BGap22", "Ch08BGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ch08Gap24_pt_%i", i + 1), "Ch08Gap24_pTDiff"));
-    oba->Add(new TNamed("Pi08Gap24", "Pi08Gap24"));
-    for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pi08Gap24_pt_%i", i + 1), "Pi08Gap24_pTDiff"));
-    oba->Add(new TNamed("Ka08Gap24", "Ka08Gap24"));
-    for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Ka08Gap24_pt_%i", i + 1), "Ka08Gap24_pTDiff"));
-    oba->Add(new TNamed("Pr08Gap24", "Pr08Gap24"));
-    for (int i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("Pr08Gap24_pt_%i", i + 1), "Pr08Gap24_pTDiff"));
-
+      oba->Add(new TNamed(Form("Ch08BGap22_pt_%i", i + 1), "Ch08BGap22_pTDiff"));
     oba->Add(new TNamed("Pi08BGap22", "Pi08BGap22"));
     for (int i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pi08BGap22_pt_%i", i + 1), "Pi08BGap22_pTDiff"));
+    oba->Add(new TNamed("Ka08BGap22", "Ka08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ka08BGap22_pt_%i", i + 1), "Ka08BGap22_pTDiff"));
+    oba->Add(new TNamed("Pr08BGap22", "Pr08BGap22"));
+    for (int i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Pr08BGap22_pt_%i", i + 1), "Pr08BGap22_pTDiff"));
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -223,56 +267,86 @@ struct FlowPbpbPikp {
     // reference particles
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
 
     // pt dependent charged particles
-    fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
-    fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 256);
-    fGFW->AddRegion("poi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 1024);
-    fGFW->AddRegion("ol", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2048);
+    fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128); // Negative poi eta range
+    fGFW->AddRegion("olN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 256);  // Negative overlap eta range
+
+    fGFW->AddRegion("poiP", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 128); // Positive poi eta range
+    fGFW->AddRegion("olP", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 256);  // Positive overlap eta range
+
+    fGFW->AddRegion("poi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 128); // Full poi eta range
+    fGFW->AddRegion("ol", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 256);  // Full overlap eta range
 
     // pion
-    fGFW->AddRegion("poiNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("olNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 16);
+    fGFW->AddRegion("poiNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2); // Negative poi eta range
+    fGFW->AddRegion("olNpi", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 16); // Negative overlap eta range
 
-    fGFW->AddRegion("poiPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 2);
-    fGFW->AddRegion("olPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 16);
+    fGFW->AddRegion("poiPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 2); // Positive poi eta range
+    fGFW->AddRegion("olPpi", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 16); // Positive overlap eta range
+
+    fGFW->AddRegion("poifullpi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 2); // Full poi eta range
+    fGFW->AddRegion("olfullpi", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 16); // Full overlap eta range
 
     // kaon
-    fGFW->AddRegion("poiNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4);
-    fGFW->AddRegion("olNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 32);
+    fGFW->AddRegion("poiNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 4); // Negative poi eta range
+    fGFW->AddRegion("olNk", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 32); // Negative overlap eta range
+
+    fGFW->AddRegion("poiPk", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 4); // Positive poi eta range
+    fGFW->AddRegion("olPk", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 32); // Positive overlap eta range
+
+    fGFW->AddRegion("poifullk", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 4); // Full poi eta range
+    fGFW->AddRegion("olfullk", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 32); // Full overlap eta range
 
     // proton
-    fGFW->AddRegion("poiNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 8);
-    fGFW->AddRegion("olNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 64);
+    fGFW->AddRegion("poiNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 8); // Negative poi eta range
+    fGFW->AddRegion("olNpr", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 64); // Negative overlap eta range
+
+    fGFW->AddRegion("poiPpr", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 8); // Positive poi eta range
+    fGFW->AddRegion("olPpr", 0.4, 0.8, 1 + fPtAxis->GetNbins(), 64); // Positive overlap eta range
+
+    fGFW->AddRegion("poifullpr", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 8); // Full poi eta range
+    fGFW->AddRegion("olfullpr", -0.8, 0.8, 1 + fPtAxis->GetNbins(), 64); // Full overlap eta range
 
     // reference particles
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08Gap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pr08Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "PiFull22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "KaFull22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "PrFull22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ka08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pr08FGap22", kFALSE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Ch08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Pi08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Ka08BGap22", kFALSE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {-2} refN08 {2}", "Pr08BGap22", kFALSE)); // Backward correlations
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ch08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Pi08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Ka08Gap24", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2 2} refP08 {-2 -2}", "Pr08Gap24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "PiFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "KaFull24", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "PrFull24", kFALSE));
 
     // pt differential pois
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 -2}", "ChFull22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08Gap22", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 2 -2 -2}", "ChFull24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2 2} refP08 {-2 -2}", "Ch08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2 2} refP08 {-2 -2}", "Pi08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2 2} refP08 {-2 -2}", "Ka08Gap24", kTRUE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2 2} refP08 {-2 -2}", "Pr08Gap24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpi full | olfullpi {2 -2}", "PiFull22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullk full | olfullk {2 -2}", "KaFull22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpr full | olfullpr {2 -2}", "PrFull22", kTRUE));
 
-    // Backward correlations
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Pi08BGap22", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpi refP08 | olPpi {2} refN08 {-2}", "Pi08BGap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN08 | olN {2} refP08 {-2}", "Ch08FGap22", kTRUE));     // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpi refN08 | olNpi {2} refP08 {-2}", "Pi08FGap22", kTRUE)); // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNk refN08 | olNk {2} refP08 {-2}", "Ka08FGap22", kTRUE));   // Forward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiNpr refN08 | olNpr {2} refP08 {-2}", "Pr08FGap22", kTRUE)); // Forward correlations
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiP refP08 | olP {2} refN08 {-2}", "Ch08BGap22", kTRUE));     // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpi refP08 | olPpi {2} refN08 {-2}", "Pi08BGap22", kTRUE)); // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPk refP08 | olPk {2} refN08 {-2}", "Ka08BGap22", kTRUE));   // Backward correlations
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPpr refP08 | olPpr {2} refN08 {-2}", "Pr08BGap22", kTRUE)); // Backward correlations
+
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poi full | ol {2 2 -2 -2}", "ChFull24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpi full | olfullpi {2 2 -2 -2}", "PiFull24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullk full | olfullk {2 2 -2 -2}", "KaFull24", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poifullpr full | olfullpr {2 2 -2 -2}", "PrFull24", kTRUE));
 
     fGFW->CreateRegions();
 
@@ -315,7 +389,7 @@ struct FlowPbpbPikp {
   }
 
   template <typename TTrack>
-  int getNsigmaPID(TTrack track)
+  int getNsigmaPIDTpcTof(TTrack track)
   {
     // Computing Nsigma arrays for pion, kaon, and protons
     std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
@@ -329,11 +403,17 @@ struct FlowPbpbPikp {
       return -1;
 
     const int numSpecies = 3;
+    int pidCount = 0;
     // Select particle with the lowest nsigma
     for (int i = 0; i < numSpecies; ++i) {
       if (std::abs(nSigmaToUse[i]) < nsigma) {
+        if (pidCount > 0 && cfgUseStrictPID)
+          return -1; // more than one particle with low nsigma
+
+        pidCount++;
         pid = i;
-        nsigma = std::abs(nSigmaToUse[i]);
+        if (!cfgUseStrictPID)
+          nsigma = std::abs(nSigmaToUse[i]);
       }
     }
     return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
@@ -482,26 +562,40 @@ struct FlowPbpbPikp {
     correctionsLoaded = true;
   }
 
-  template <typename TTrack>
-  double getAcceptance(TTrack track, const double& vtxz, int index)
-  { // 0 ref, 1 ch, 2 pi, 3 ka, 4 pr
+  template <typename TTrack, typename TCollision>
+  double getAcceptance(TTrack track, const TCollision collision, int index)
+  { // 0 = ref, 1 = ch, 2 = pi, 3 = ka, 4 = pr
     if (index < 0 || index >= kCount_OutputSpecies) {
       return 1;
     }
     double wacc = 1;
+    double cent = collision.centFT0C();
+    double vtxz = collision.posZ();
+
+    if ((cfgUseWeightPhiEtaVtxz && cfgUseWeightPhiPtCent) || (cfgUseWeightPhiEtaPt && cfgUseWeightPhiPtCent) || (cfgUseWeightPhiEtaVtxz && cfgUseWeightPhiEtaPt)) {
+      LOGF(fatal, "Only one of the three weight options can be used at a time");
+    }
+
     if (!mAcceptance.empty() && correctionsLoaded) {
       if (!mAcceptance[index]) {
         LOGF(fatal, "Acceptance weights not loaded for index %d", index);
         return 1;
       }
-      wacc = mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
+      if (cfgUseWeightPhiEtaVtxz)
+        wacc = mAcceptance[index]->getNUA(track.phi(), track.eta(), vtxz);
+      if (cfgUseWeightPhiPtCent)
+        wacc = mAcceptance[index]->getNUA(track.phi(), track.pt(), cent);
+      if (cfgUseWeightPhiEtaPt)
+        wacc = mAcceptance[index]->getNUA(track.phi(), track.eta(), track.pt());
     }
     return wacc;
   }
 
-  template <typename TTrack>
-  void fillWeights(const TTrack track, const double vtxz, const int& pid_index, const int& run)
+  template <typename TTrack, typename TCollision>
+  void fillWeights(const TTrack track, const TCollision collision, const int& pid_index, const int& run)
   {
+    double cent = collision.centFT0C();
+    double vtxz = collision.posZ();
     double pt = track.pt();
     bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
     bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
@@ -512,21 +606,33 @@ struct FlowPbpbPikp {
       if (withinPtPOI)
         th3sList[run][hCharge + pid_index]->Fill(track.phi(), track.eta(), vtxz); // charged and id'ed particle weights
     } else {
-      if (withinPtRef && !pid_index)
+      if (withinPtRef && !pid_index) {
         histos.fill(HIST("NUA/hPhiEtaVtxz_ref"), track.phi(), track.eta(), vtxz); // pt-subset of charged particles for ref flow
+        histos.fill(HIST("NUA/hPhiPtCent_ref"), track.phi(), track.pt(), cent);
+        histos.fill(HIST("NUA/hPhiEtaPt_ref"), track.phi(), track.eta(), track.pt());
+      }
+
       if (withinPtPOI) {
         switch (pid_index) {
           case 0:
             histos.fill(HIST("NUA/hPhiEtaVtxz_ch"), track.phi(), track.eta(), vtxz); // charged particle weights
+            histos.fill(HIST("NUA/hPhiPtCent_ch"), track.phi(), track.pt(), cent);
+            histos.fill(HIST("NUA/hPhiEtaPt_ch"), track.phi(), track.eta(), track.pt());
             break;
           case 1:
             histos.fill(HIST("NUA/hPhiEtaVtxz_pi"), track.phi(), track.eta(), vtxz); // pion weights
+            histos.fill(HIST("NUA/hPhiPtCent_pi"), track.phi(), track.pt(), cent);
+            histos.fill(HIST("NUA/hPhiEtaPt_pi"), track.phi(), track.eta(), track.pt());
             break;
           case 2:
             histos.fill(HIST("NUA/hPhiEtaVtxz_ka"), track.phi(), track.eta(), vtxz); // kaon weights
+            histos.fill(HIST("NUA/hPhiPtCent_ka"), track.phi(), track.pt(), cent);
+            histos.fill(HIST("NUA/hPhiEtaPt_ka"), track.phi(), track.eta(), track.pt());
             break;
           case 3:
             histos.fill(HIST("NUA/hPhiEtaVtxz_pr"), track.phi(), track.eta(), vtxz); // proton weights
+            histos.fill(HIST("NUA/hPhiPtCent_pr"), track.phi(), track.pt(), cent);
+            histos.fill(HIST("NUA/hPhiEtaPt_pr"), track.phi(), track.eta(), track.pt());
             break;
         }
       }
@@ -616,17 +722,17 @@ struct FlowPbpbPikp {
       bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
       // pidIndex = getBayesPIDIndex(track);
-      pidIndex = getNsigmaPID(track);
+      pidIndex = getNsigmaPIDTpcTof(track);
 
       weff = 1; // Initializing weff for each track
       // NUA weights
       if (cfgOutputNUAWeights)
-        fillWeights(track, vtxz, pidIndex, runNumber);
+        fillWeights(track, collision, pidIndex, runNumber);
 
       if (!withinPtPOI && !withinPtRef)
         return;
-      double waccRef = getAcceptance(track, vtxz, 0);
-      double waccPOI = withinPtPOI ? getAcceptance(track, vtxz, pidIndex + 1) : getAcceptance(track, vtxz, 0);
+      double waccRef = getAcceptance(track, collision, 0);
+      double waccPOI = withinPtPOI ? getAcceptance(track, collision, pidIndex + 1) : getAcceptance(track, collision, 0);
       if (withinPtRef && withinPtPOI && pidIndex)
         waccRef = waccPOI; // if particle is both (then it's overlap), override ref with POI
 
@@ -647,15 +753,12 @@ struct FlowPbpbPikp {
       if (withinPtRef) {
         histos.fill(HIST("hPhiWeighted"), track.phi(), waccRef);
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 1);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccRef * weff, 512);
       }
       if (withinPtPOI) {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 128);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 1024);
       }
       if (withinPtPOI && withinPtRef) {
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 256);
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), waccPOI * weff, 2048);
       }
 
       if (pidIndex) {
@@ -668,15 +771,22 @@ struct FlowPbpbPikp {
     } // track loop ends
 
     // Filling cumulants with ROOT TProfile
-    fillProfile(corrconfigs.at(1), HIST("c22_gap08"), cent);
-    fillProfile(corrconfigs.at(2), HIST("c22_gap08_pi"), cent);
-    fillProfile(corrconfigs.at(3), HIST("c22_gap08_ka"), cent);
-    fillProfile(corrconfigs.at(4), HIST("c22_gap08_pr"), cent);
-    fillProfile(corrconfigs.at(5), HIST("c24_full"), cent);
-    fillProfile(corrconfigs.at(6), HIST("c24_gap08"), cent);
-    fillProfile(corrconfigs.at(7), HIST("c24_gap08_pi"), cent);
-    fillProfile(corrconfigs.at(8), HIST("c24_gap08_ka"), cent);
-    fillProfile(corrconfigs.at(9), HIST("c24_gap08_pr"), cent);
+    fillProfile(corrconfigs.at(0), HIST("c22_full_ch"), cent);
+    fillProfile(corrconfigs.at(1), HIST("c22_full_pi"), cent);
+    fillProfile(corrconfigs.at(2), HIST("c22_full_ka"), cent);
+    fillProfile(corrconfigs.at(3), HIST("c22_full_pr"), cent);
+    fillProfile(corrconfigs.at(4), HIST("c22_gap08F_ch"), cent);
+    fillProfile(corrconfigs.at(5), HIST("c22_gap08F_pi"), cent);
+    fillProfile(corrconfigs.at(6), HIST("c22_gap08F_ka"), cent);
+    fillProfile(corrconfigs.at(7), HIST("c22_gap08F_pr"), cent);
+    fillProfile(corrconfigs.at(8), HIST("c22_gap08B_ch"), cent);
+    fillProfile(corrconfigs.at(9), HIST("c22_gap08B_pi"), cent);
+    fillProfile(corrconfigs.at(10), HIST("c22_gap08B_ka"), cent);
+    fillProfile(corrconfigs.at(11), HIST("c22_gap08B_pr"), cent);
+    fillProfile(corrconfigs.at(12), HIST("c24_full_ch"), cent);
+    fillProfile(corrconfigs.at(13), HIST("c24_full_pi"), cent);
+    fillProfile(corrconfigs.at(14), HIST("c24_full_ka"), cent);
+    fillProfile(corrconfigs.at(15), HIST("c24_full_pr"), cent);
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
       fillFC(corrconfigs.at(l_ind), cent, lRandom);
