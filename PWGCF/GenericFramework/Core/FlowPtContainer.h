@@ -115,11 +115,11 @@ class FlowPtContainer : public TNamed
   TList* fCumulantList;
   TList* fCentralMomentList;
 
-  int mpar;                  //!
+  int mpar;
   int fillCounter;           //!
   unsigned int fEventWeight; //!
-  bool fUseCentralMoments;   //!
-  bool fUseGap;              //!
+  bool fUseCentralMoments;
+  bool fUseGap;
   void mergeBSLists(TList* source, TList* target);
   TH1* raiseHistToPower(TH1* inh, double p);
   std::vector<double> sumP;              //!
