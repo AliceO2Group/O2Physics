@@ -18,6 +18,7 @@
 /// \author Luca Aglietta <luca.aglietta@unito.it>, Università and INFN Torino
 
 #include <string>
+#include <memory>
 
 #include "TPDGCode.h"
 
