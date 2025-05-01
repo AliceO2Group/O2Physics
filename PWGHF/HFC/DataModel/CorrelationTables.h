@@ -476,7 +476,7 @@ namespace hf_electron
 DECLARE_SOA_COLUMN(Phi, phi, float);               //! Phi of electron
 DECLARE_SOA_COLUMN(Eta, eta, float);               //! Eta of electron
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float); //! Transverse momentum of electron
-DECLARE_SOA_COLUMN(LSElCount, lSElCount, int);    //! like sign Electron
+DECLARE_SOA_COLUMN(LSElCount, lSElCount, int);     //! like sign Electron
 DECLARE_SOA_COLUMN(ULSElCount, uLSElCount, int);   //! unLike sign Electron
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicit
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
