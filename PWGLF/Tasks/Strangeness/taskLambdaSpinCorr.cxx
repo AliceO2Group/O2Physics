@@ -240,6 +240,9 @@ struct LfTaskLambdaSpinCorr {
     // STAR method
     double cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
 
+    auto lowptcut = 0.5;
+    auto highptcut = 10.0;
+
     if (datatype == 1) {
       if (tag1 && tag3)
         histos.fill(HIST("hSparseLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
@@ -248,7 +251,7 @@ struct LfTaskLambdaSpinCorr {
       if (tag2 && tag4)
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
     } else {
-      if (particle1.Pt() > 0.5 && particle1.Pt() < 10.0 && particle2.Pt() > 0.5 && particle2.Pt() < 10.0) {
+      if (particle1.Pt() > lowptcut && particle1.Pt() < highptcut && particle2.Pt() > lowptcut && particle2.Pt() < highptcut) {
         if (tag1 && tag3)
           histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
         if (tag1 && tag4)
@@ -479,7 +482,7 @@ struct LfTaskLambdaSpinCorr {
   void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& /*RecTracks*/, V0TrackCandidatesMC const& V0s)
   {
 
-    for (auto& RecCollision : RecCollisions) {
+    for (const auto& RecCollision : RecCollisions) {
       if (!RecCollision.sel8()) {
         continue;
       }
@@ -488,7 +491,7 @@ struct LfTaskLambdaSpinCorr {
         continue;
       }
 
-      if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
+      if (std::abs(RecCollision.posZ()) > cfgCutVertex) {
         continue;
       }
 
@@ -586,8 +589,8 @@ struct LfTaskLambdaSpinCorr {
       }
 
       //*******generated****************
-      for (auto& mcParticle : GenParticles) {
-        if (TMath::Abs(mcParticle.y()) > confV0Rap) {
+      for (const auto& mcParticle : GenParticles) {
+        if (std::abs(mcParticle.y()) > confV0Rap) {
           continue;
         }
         if (std::abs(mcParticle.pdgCode()) != PDG_t::kLambda0) {
@@ -606,7 +609,7 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
 
-        for (auto kCurrentDaughter : kDaughters) {
+        for (const auto& kCurrentDaughter : kDaughters) {
 
           if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
             continue;
@@ -636,8 +639,8 @@ struct LfTaskLambdaSpinCorr {
           antiLambdadummymc = antiProtonmc + pionmc;
         }
 
-        for (auto& mcParticle2 : GenParticles) {
-          if (TMath::Abs(mcParticle2.y()) > confV0Rap) {
+        for (const auto& mcParticle2 : GenParticles) {
+          if (std::abs(mcParticle2.y()) > confV0Rap) {
             continue;
           }
           if (std::abs(mcParticle2.pdgCode()) != PDG_t::kLambda0) {
@@ -654,7 +657,7 @@ struct LfTaskLambdaSpinCorr {
             continue;
           }
 
-          for (auto kCurrentDaughter2 : kDaughters2) {
+          for (const auto& kCurrentDaughter2 : kDaughters2) {
             if (std::abs(kCurrentDaughter2.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter2.pdgCode()) != PDG_t::kPiPlus) {
               continue;
             }
