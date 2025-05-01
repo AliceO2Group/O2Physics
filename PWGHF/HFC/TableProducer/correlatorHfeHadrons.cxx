@@ -167,15 +167,15 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hptElectron"), ptElectron);
       int lsElCounts = 0;
       int ulsElCounts = 0;
-      if (eTrack.lsElPairCount() > 0) {
-        for (int i = 0; i < eTrack.lsElPairCount(); ++i) {
+      if (eTrack.lSElPairCount() > 0) {
+        for (int i = 0; i < eTrack.lSElPairCount(); ++i) {
 
           ++lsElCounts;
           registry.fill(HIST("hLSElectronBin"), poolBin);
         }
       }
-      if (eTrack.ulsElPairCount() > 0) {
-        for (int i = 0; i < eTrack.ulsElPairCount(); ++i) {
+      if (eTrack.uLSElPairCount() > 0) {
+        for (int i = 0; i < eTrack.uLSElPairCount(); ++i) {
 
           ++ulsElCounts;
           registry.fill(HIST("hULSElectronBin"), poolBin);
@@ -211,15 +211,15 @@ struct HfCorrelatorHfeHadrons {
 
         int lsPairElcorr = 0;
         int ulsPairElcorr = 0;
-        if (eTrack.lsElPairCount() > 0) {
-          for (int i = 0; i < eTrack.lsElPairCount(); ++i) {
+        if (eTrack.lSElPairCount() > 0) {
+          for (int i = 0; i < eTrack.lSElPairCount(); ++i) {
 
             ++lsPairElcorr;
             registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
           }
         }
-        if (eTrack.ulsElPairCount() > 0) {
-          for (int i = 0; i < eTrack.ulsElPairCount(); ++i) {
+        if (eTrack.uLSElPairCount() > 0) {
+          for (int i = 0; i < eTrack.uLSElPairCount(); ++i) {
 
             registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
             ++ulsPairElcorr;
@@ -273,15 +273,15 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hMixEventInclusiveEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
       int lsElPairCorr = 0;
       int ulsElPairCorr = 0;
-      if (t1.lsElPairCount() > 0) {
-        for (int i = 0; i < t1.lsElPairCount(); ++i) {
+      if (t1.lSElPairCount() > 0) {
+        for (int i = 0; i < t1.lSElPairCount(); ++i) {
 
           registry.fill(HIST("hMixEventLSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
           ++lsElPairCorr;
         }
       }
-      if (t1.ulsElPairCount() > 0) {
-        for (int i = 0; i < t1.ulsElPairCount(); ++i) {
+      if (t1.uLSElPairCount() > 0) {
+        for (int i = 0; i < t1.uLSElPairCount(); ++i) {
 
           registry.fill(HIST("hMixEventULSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
           ++ulsElPairCorr;
