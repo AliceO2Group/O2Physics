@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file lambdaspincorr.cxx
+/// \file taskLambdaSpinCorr.cxx
 /// \brief Analysis task for Lambda spin spin correlation
 ///
 /// \author prottay.das@cern.ch
