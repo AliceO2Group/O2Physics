@@ -20,7 +20,6 @@
 #include <TLorentzVector.h>
 #include <TVector2.h>
 #include <algorithm>
-#include <iostream>
 
 #include "TRandom.h"
 #include "Framework/ASoA.h"
@@ -92,9 +91,9 @@ struct phiInJets {
   Configurable<bool> cfgMCGenMATCHEDHists{"cfgMCGenMATCHEDHists", false, "Enables MCGenMATCHEDHists"};
   Configurable<bool> cfgMCRecMATCHEDHists{"cfgMCRecMATCHEDHists", false, "Enables MCRecMATCHEDHists"};
 
-  Configurable<int> cfgMinvNBins{"cfgMinvNBins", 500, "Number of bins for Minv axis"};
-  Configurable<float> cfgMinvMin{"cfgMinvMin", 0.75, "Minimum Minv value"};
-  Configurable<float> cfgMinvMax{"cfgMinvMax", 1.25, "Maximum Minv value"};
+  Configurable<int> cfgMinvNBins{"cfgMinvNBins", 300, "Number of bins for Minv axis"};
+  Configurable<float> cfgMinvMin{"cfgMinvMin", 0.60, "Minimum Minv value"};
+  Configurable<float> cfgMinvMax{"cfgMinvMax", 1.20, "Maximum Minv value"};
 
   // CONFIG DONE
   /////////////////////////////////////////  //INIT
@@ -168,7 +167,6 @@ struct phiInJets {
         JEhistos.add("ptJEHistogramPhi", "ptJEHistogramPhi", kTH1F, {PtAxis});
         JEhistos.add("ptJEHistogramPhi_JetTrigger", "ptJEHistogramPhi_JetTrigger", kTH1F, {PtAxis});
       }
-
       if (cfgDaughterQAHists) {
         JEhistos.add("hNRealPhiVPhiCand", "hNRealPhiVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
         JEhistos.add("hNRealPhiWithJetVPhiCand", "hNRealPhiWithJetVPhiCand", kTH2F, {{10, 0, 10}, {10, 0, 10}});
@@ -177,37 +175,36 @@ struct phiInJets {
         JEhistos.add("hMCRec_nonmatch_hUSS_Kangle_v_pt", "hMCRec_nonmatch_hUSS_Kangle_v_pt", kTH2F, {axisEta, PtAxis});
         JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", "hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta", kTH2F, {PtAxis, axisEta});
       }
-
       // used for Minv closure tests
       //  MB
       if (cfgMCRecMBHists) {
         JEhistos.add("hMCRec_hUSS", "hMCRec_hUSS", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
         JEhistos.add("hMCRec_hLSS", "hMCRec_hLSS", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
         JEhistos.add("hMCRecTrue_hUSS", "hMCRecTrue_hUSS", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
+      }
+
+      if (cfgMCRecRotationalHists) {
         JEhistos.add("hMCRec_R_distribution", "hMCRec_R_distribution", kTH1F, {{100, 0.0, 2 * TMath::Pi()}});
         JEhistos.add("hMCRec_dPhi_distribution", "hMCRec_dPhi_distribution", kTH1F, {{80, -5.0, 7.0}});
         JEhistos.add("hMCRec_dEta_distribution", "hMCRec_dEta_distribution", kTH1F, {{100, -2.0, 2.0}});
-
-        if (cfgMCRecRotationalHists) {
-          JEhistos.add("hMCRec_hUSS_Rotational", "hMCRec_hUSS_Rotational", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
-          JEhistos.add("hMCRec_R_Rotation_distribution", "hMCRec_R_Rotation_distribution", HistType::kTH1F, {{100, 0.0, 2 * TMath::Pi()}});
-          JEhistos.add("hMCRec_dPhi_rot_distribution", "hMCRec_dPhi_rot_distribution", kTH1F, {{80, -5.0, 7.0}});
-          JEhistos.add("hMCRec_dEta_rot_distribution", "hMCRec_dEta_rot_distribution", kTH1F, {{100, -2.0, 2.0}});
-          JEhistos.add("hMCRec_dEta_qa_rot_distribution", "hMCRec_dEta_qa_rot_distribution", kTH1F, {{100, -4.0, 2.0}});
-        }
+        JEhistos.add("hMCRec_hUSS_Rotational", "hMCRec_hUSS_Rotational", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
+        JEhistos.add("hMCRec_R_Rotation_distribution", "hMCRec_R_Rotation_distribution", HistType::kTH1F, {{100, 0.0, 2 * TMath::Pi()}});
+        JEhistos.add("hMCRec_dPhi_rot_distribution", "hMCRec_dPhi_rot_distribution", kTH1F, {{80, -5.0, 7.0}});
+        JEhistos.add("hMCRec_dEta_rot_distribution", "hMCRec_dEta_rot_distribution", kTH1F, {{100, -2.0, 2.0}});
+        JEhistos.add("hMCRec_dEta_qa_rot_distribution", "hMCRec_dEta_qa_rot_distribution", kTH1F, {{100, -4.0, 2.0}});
       }
+
       // INSIDE
       if (cfgMCRecInsideHists) {
         JEhistos.add("hMCRec_hUSS_INSIDE", "hMCRec_hUSS_INSIDE", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
         JEhistos.add("hMCRec_hLSS_INSIDE", "hMCRec_hLSS_INSIDE", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
         JEhistos.add("hMCRecTrue_hUSS_INSIDE", "hMCRecTrue_hUSS_INSIDE", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
         JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE", "hMCRec_nonmatch_hUSS_INSIDE", kTHnSparseF, {dRAxis, PtAxis, MinvAxis});
-        JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D", "hMCRec_nonmatch_hUSS_INSIDE_1D", kTH1F, {MinvAxis});
-        JEhistos.add("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", "hMCRec_nonmatch_hUSS_INSIDE_1D_2_3", kTH1F, {MinvAxis});
         JEhistos.add("JetVsPhi_REC", "JetVsPhi_REC", kTH2F, {{4000, 0., 200.}, {200, 0, 20.0}});
         JEhistos.add("minvJEHistogramPhi", "minvJEHistogramPhi", kTH1F, {MinvAxis});
       }
     }
+
     if (cfgMCGenHists) {
       JEhistos.add("nEvents_MCGen", "nEvents_MCGen", kTH1F, {{4, 0.0, 4.0}});
 
@@ -728,7 +725,7 @@ struct phiInJets {
 
         double dPhi = TVector2::Phi_mpi_pi(originalTrack.phi() - originalTrack2.phi());
         double dEta = originalTrack.eta() - originalTrack2.eta();
-        if (cfgMCRecMBHists) {
+        if (cfgMCRecRotationalHists) {
           JEhistos.fill(HIST("hMCRec_dPhi_distribution"), dPhi);
           JEhistos.fill(HIST("hMCRec_dEta_distribution"), dEta);
         }
@@ -737,7 +734,6 @@ struct phiInJets {
         TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, lRotationalTrack, lRotationalResonance;
         lDecayDaughter1.SetXYZM(originalTrack.px(), originalTrack.py(), originalTrack.pz(), massKa);
         //-----------------------------------------------------------------------
-
         TRandom* trand = new TRandom();
         double shift = trand->Uniform(TMath::Pi() - TMath::Pi() / 10.0, TMath::Pi() + TMath::Pi() / 10.0);
         //  double shift = TMath::Pi();
@@ -747,23 +743,8 @@ struct phiInJets {
         } else {
           lDecayDaughter2.SetXYZM(originalTrack2.px(), originalTrack2.py(), originalTrack2.pz(), massPi);
 
-          // double pTog = TMath::Sqrt(originalTrack2.px() * originalTrack2.px() + originalTrack2.py() * originalTrack2.py());
-          // double Pxrot = pTog*TMath::Cos(originalTrack2.phi() + shift);
-          // double Pyrot = pTog*TMath::Sin(originalTrack2.phi() + shift);
-
-          // if(gDebug){
-          //   double Ptrot = TMath::Sqrt(Pxrot*Pxrot + Pyrot*Pyrot);
-          //   if(TMath::Abs(Ptrot-pTog)>0.1) {
-          //     std::cout<<"We are jottettta"<<std::endl;
-          //     std::cout<<Ptrot-pTog<<std::endl;
-          //   }
-          // }
-          // lRotationalTrack.SetXYZM(Pxrot, Pyrot,originalTrack.pz(), massPi);
           lRotationalTrack = lDecayDaughter2;
-
-          // JEhistos.fill(HIST("hMCRec_Phi_Before_Shift"), lRotationalTrack.Phi());
           lRotationalTrack.RotateZ(shift);
-          // JEhistos.fill(HIST("hMCRec_Phi_After_Shift"), lRotationalTrack.Phi());
 
           double dPhi_rot = TVector2::Phi_mpi_pi(lDecayDaughter1.Phi() - lRotationalTrack.Phi());
           double dEta_rot = lDecayDaughter1.Eta() - lRotationalTrack.Eta();
@@ -776,7 +757,6 @@ struct phiInJets {
             JEhistos.fill(HIST("hMCRec_dEta_qa_rot_distribution"), dEta_rot_qa);
           }
         }
-
         //-----------------------------------------------------------------------
         lResonance = lDecayDaughter1 + lDecayDaughter2;
         if (cfgIsKstar)
@@ -794,13 +774,10 @@ struct phiInJets {
         if (cfgMCRecMBHists) {
           if (originalTrack.sign() * originalTrack2.sign() < 0) {
             JEhistos.fill(HIST("hMCRec_hUSS"), 1.0, lResonance.Pt(), lResonance.M());
-            // normal R
-            JEhistos.fill(HIST("hMCRec_R_distribution"), dR);
 
-            // switch because of memory
             if (cfgMCRecRotationalHists && cfgIsKstar) {
+              JEhistos.fill(HIST("hMCRec_R_distribution"), dR);
               JEhistos.fill(HIST("hMCRec_hUSS_Rotational"), 1.0, lRotationalResonance.Pt(), lResonance.M());
-              // Rotational R
               JEhistos.fill(HIST("hMCRec_R_Rotation_distribution"), dR_rot);
             }
           } else if (originalTrack.sign() * originalTrack2.sign() > 0) {
@@ -1374,8 +1351,6 @@ struct phiInJets {
       nprocessRecJEEvents++;
       if ((nprocessRecJEEvents + 1) % 10000 == 0) {
         double histmem = JEhistos.getSize();
-        std::cout << histmem << std::endl;
-        std::cout << "processMatched Rec Events: " << nprocessRecJEEvents << std::endl;
       }
     }
     JEhistos.fill(HIST("nEvents_MCRec_MATCHED"), 0.5);
