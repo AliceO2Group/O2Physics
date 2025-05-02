@@ -51,6 +51,16 @@ enum Particle { NotMatched = 0,
                 K0s,
                 Lambda,
                 Omega };
+
+enum TrackQABins { All = 0,
+                   HasIts,
+                   HasTpc,
+                   TpcNClsCrossedRows,
+                   EtaMax,
+                   PtMin,
+                   TpcChi2NCls,
+                   ItsChi2NCls };
+
 // V0s
 DECLARE_SOA_COLUMN(MassK0, massK0, float);                 //! Candidate mass
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Candidate mass
@@ -150,11 +160,11 @@ struct HfTaskPidStudies {
 
   Configurable<bool> applyEvSels{"applyEvSels", true, "Apply event selections"};
   Configurable<bool> applyTrackSels{"applyTrackSels", true, "Apply track selections"};
-  Configurable<float> trackMinTpcNClsCrossedRows{"trackMinTpcNClsCrossedRows", 70, "Minimum number of crossed rows in TPC"};
-  Configurable<float> trackMaxEta{"trackMaxEta", 0.8, "Maximum pseudorapidity"};
-  Configurable<float> trackMinPt{"trackMinPt", 0.1, "Minimum transverse momentum"};
-  Configurable<float> trackMaxTpcChi2NCl{"trackMaxTpcChi2NCl", 4, "Maximum TPC chi2 per number of TPC clusters"};
-  Configurable<float> trackMaxItsChi2NCl{"trackMaxItsChi2NCl", 36, "Maximum ITS chi2 per number of ITS clusters"};
+  Configurable<float> minTrackTpcNClsCrossedRows{"minTrackTpcNClsCrossedRows", 70, "Minimum number of crossed rows in TPC"};
+  Configurable<float> maxTrackEta{"maxTrackEta", 0.8, "Maximum pseudorapidity"};
+  Configurable<float> minTrackPt{"minTrackPt", 0.1, "Minimum transverse momentum"};
+  Configurable<float> maxTrackTpcChi2NCl{"maxTrackTpcChi2NCl", 4, "Maximum TPC chi2 per number of TPC clusters"};
+  Configurable<float> maxTrackItsChi2NCl{"maxTrackItsChi2NCl", 36, "Maximum ITS chi2 per number of ITS clusters"};
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
   Configurable<float> massLambdaMin{"massLambdaMin", 1.0, "Minimum mass for lambda"};
@@ -198,14 +208,14 @@ struct HfTaskPidStudies {
     std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{8, 0, 8}}});
 
     // Set Labels for hTrackSel
-    hTrackSel->GetXaxis()->SetBinLabel(1, "All");
-    hTrackSel->GetXaxis()->SetBinLabel(2, "HasITS");
-    hTrackSel->GetXaxis()->SetBinLabel(3, "HasTPC");
-    hTrackSel->GetXaxis()->SetBinLabel(4, "TPC NCls/CrossedRows");
-    hTrackSel->GetXaxis()->SetBinLabel(5, "#eta");
-    hTrackSel->GetXaxis()->SetBinLabel(6, "#it{p}_{T}");
-    hTrackSel->GetXaxis()->SetBinLabel(7, "TPC #chi^{2}/NCls");
-    hTrackSel->GetXaxis()->SetBinLabel(8, "ITS #chi^{2}/NCls");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::All + 1, "All");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::HasIts + 1, "HasITS");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::HasTpc + 1, "HasTPC");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::TpcNClsCrossedRows + 1, "TPC NCls/CrossedRows");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::EtaMax + 1, "#eta max");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::PtMin + 1, "#it{p}_{T} min");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::TpcChi2NCls + 1, "TPC #chi^{2}/NCls");
+    hTrackSel->GetXaxis()->SetBinLabel(o2::aod::pid_studies::TrackQABins::ItsChi2NCls + 1, "ITS #chi^{2}/NCls");
   }
 
   template <bool isV0, typename Coll, typename Cand>
@@ -328,66 +338,66 @@ struct HfTaskPidStudies {
   {
     const auto& posTrack = candidate.template posTrack_as<PidTracks>();
     const auto& negTrack = candidate.template negTrack_as<PidTracks>();
-    registry.fill(HIST("hTrackSel"), 0);
+    registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::All);
     if constexpr (isV0) {
       if (!posTrack.hasITS() || !negTrack.hasITS()) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 1);
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::HasIts);
       if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 2);
-      if (posTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::HasTpc);
+      if (posTrack.tpcNClsCrossedRows() < minTrackTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < minTrackTpcNClsCrossedRows) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 3);
-      if (std::abs(posTrack.eta()) > trackMaxEta || std::abs(negTrack.eta()) > trackMaxEta) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::TpcNClsCrossedRows);
+      if (std::abs(posTrack.eta()) > maxTrackEta || std::abs(negTrack.eta()) > maxTrackEta) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 4);
-      if (posTrack.pt() < trackMinPt || negTrack.pt() < trackMinPt) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::EtaMax);
+      if (posTrack.pt() < minTrackPt || negTrack.pt() < minTrackPt) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 5);
-      if (posTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || negTrack.tpcChi2NCl() > trackMaxTpcChi2NCl) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::PtMin);
+      if (posTrack.tpcChi2NCl() > maxTrackTpcChi2NCl || negTrack.tpcChi2NCl() > maxTrackTpcChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 6);
-      if (posTrack.itsChi2NCl() > trackMaxItsChi2NCl || negTrack.itsChi2NCl() > trackMaxItsChi2NCl) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::TpcChi2NCls);
+      if (posTrack.itsChi2NCl() > maxTrackItsChi2NCl || negTrack.itsChi2NCl() > maxTrackItsChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 7);
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::ItsChi2NCls);
     } else {
       const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
       if (!posTrack.hasITS() || !negTrack.hasITS() || !bachTrack.hasITS()) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 1);
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::HasIts);
       if (!posTrack.hasTPC() || !negTrack.hasTPC() || !bachTrack.hasTPC()) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 2);
-      if (posTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || bachTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::HasTpc);
+      if (posTrack.tpcNClsCrossedRows() < minTrackTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < minTrackTpcNClsCrossedRows || bachTrack.tpcNClsCrossedRows() < minTrackTpcNClsCrossedRows) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 3);
-      if (std::abs(posTrack.eta()) > trackMaxEta || std::abs(negTrack.eta()) > trackMaxEta || std::abs(bachTrack.eta()) > trackMaxEta) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::TpcNClsCrossedRows);
+      if (std::abs(posTrack.eta()) > maxTrackEta || std::abs(negTrack.eta()) > maxTrackEta || std::abs(bachTrack.eta()) > maxTrackEta) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 4);
-      if (posTrack.pt() < trackMinPt || negTrack.pt() < trackMinPt || bachTrack.pt() < trackMinPt) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::EtaMax);
+      if (posTrack.pt() < minTrackPt || negTrack.pt() < minTrackPt || bachTrack.pt() < minTrackPt) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 5);
-      if (posTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || negTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || bachTrack.tpcChi2NCl() > trackMaxTpcChi2NCl) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::PtMin);
+      if (posTrack.tpcChi2NCl() > maxTrackTpcChi2NCl || negTrack.tpcChi2NCl() > maxTrackTpcChi2NCl || bachTrack.tpcChi2NCl() > maxTrackTpcChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 6);
-      if (posTrack.itsChi2NCl() > trackMaxItsChi2NCl || negTrack.itsChi2NCl() > trackMaxItsChi2NCl || bachTrack.itsChi2NCl() > trackMaxItsChi2NCl) {
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::TpcChi2NCls);
+      if (posTrack.itsChi2NCl() > maxTrackItsChi2NCl || negTrack.itsChi2NCl() > maxTrackItsChi2NCl || bachTrack.itsChi2NCl() > maxTrackItsChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 7);
+      registry.fill(HIST("hTrackSel"), o2::aod::pid_studies::TrackQABins::ItsChi2NCls);
     }
     return true;
   }
