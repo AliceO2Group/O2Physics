@@ -126,10 +126,10 @@ struct OnTheFlyTofPid {
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-      static constexpr int kParticles = 5;
-      std::string particle_names1[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
-      std::string particle_names2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-    static constexpr int kIdPion = 2;
+  static constexpr int kParticles = 5;
+  std::string particle_names1[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
+  std::string particle_names2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
+  static constexpr int kIdPion = 2;
 
   void init(o2::framework::InitContext&)
   {
