@@ -50,7 +50,6 @@ Channel getDecayChannelH4S(TMCParticle const& particle)
   bool haveAntiAlpha = false, haveAntiTriton = false, haveAntiProton = false, haveAntiNeuteron = false;
   bool havePionPlus = false, havePionMinus = false, havePion0 = false;
   auto daughters = particle.template daughters_as<TMCTrackTo>();
-  auto mccollision = particle.template mcCollision_as<aod::McCollisions>();
   for (const auto& mcDaughter : particle.template daughters_as<TMCTrackTo>()) {
     if (mcDaughter.pdgCode() == o2::constants::physics::Pdg::kAlpha) {
       haveAlpha = true;
