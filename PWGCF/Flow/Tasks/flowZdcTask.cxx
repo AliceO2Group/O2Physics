@@ -620,7 +620,6 @@ struct FlowZdcTask {
       return;
     }
     int nTot = tracks.size();
-    int countEvents = 0;        // initialize Counter for the number of events processed
     double ft0aAmp = 0;
     double ft0cAmp = 0;
     float tZNA{0.0};
