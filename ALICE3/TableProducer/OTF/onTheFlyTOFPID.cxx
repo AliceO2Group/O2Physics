@@ -497,9 +497,10 @@ struct OnTheFlyTofPid {
       o2::track::TrackParCov o2track = convertMCParticleToO2Track(mcParticle);
 
       float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
-      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz))
-        xPv = o2track.getX();
-      if (xPv > -99.) {
+      static constexpr float xThreshold = -99.f; // Threshold to consider a good propagation of the track
+      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)){
+        xPv = o2track.getX();}
+      if (xPv > xThreshold) {
         trackLengthInnerTOF = trackLength(o2track, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthOuterTOF = trackLength(o2track, simConfig.outerTOFRadius, simConfig.dBz);
       }
@@ -522,9 +523,9 @@ struct OnTheFlyTofPid {
       // and the (imperfect!) reconstructed track parametrizations
       float trackLengthRecoInnerTOF = -1, trackLengthRecoOuterTOF = -1;
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz))
-        xPv = recoTrack.getX();
-      if (xPv > -99.) {
+      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)){
+        xPv = recoTrack.getX();}
+      if (xPv > xThreshold) {
         trackLengthRecoInnerTOF = trackLength(recoTrack, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthRecoOuterTOF = trackLength(recoTrack, simConfig.outerTOFRadius, simConfig.dBz);
       }
@@ -600,7 +601,7 @@ struct OnTheFlyTofPid {
         }
       }
 
-      for (int ii = 0; ii < 5; ii++) {
+      for (int ii = 0; ii < kParticles; ii++) {
         nSigmaInnerTOF[ii] = -100;
         nSigmaOuterTOF[ii] = -100;
 
@@ -636,10 +637,10 @@ struct OnTheFlyTofPid {
                 h2dInnerTimeResTotal[ii]->Fill(momentum, innerTotalTimeReso);
               }
               if (trackLengthRecoOuterTOF > 0) {
-                float transverse_momentum = momentum / std::cosh(pseudorapidity);
+                const float transverse_momentum = momentum / std::cosh(pseudorapidity);
                 h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
-                if (ii == 2) {
+                if (ii == kPion) {
                   histos.fill(HIST("h2dRelativePtResolution"), transverse_momentum, 100.0 * pt_resolution / transverse_momentum);
                   histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / (std::fabs(pseudorapidity) + 1e-6));
                 }
@@ -658,18 +659,18 @@ struct OnTheFlyTofPid {
       }
 
       if (plotsConfig.doQAplots) {
-        for (int ii = 0; ii < 5; ii++) {
+        for (int ii = 0; ii < kParticles; ii++) {
           if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(pdgArray[ii])->PdgCode()) {
             continue;
           }
           if (trackLengthRecoInnerTOF > 0) {
-            for (int iii = 0; iii < 5; iii++) {
+            for (int iii = 0; iii < kParticles; iii++) {
               h2dInnerNsigmaTrue[ii][iii]->Fill(momentum, nSigmaInnerTOF[iii]);
               h2dInnerDeltaTrue[ii][iii]->Fill(momentum, deltaTimeInnerTOF[iii]);
             }
           }
           if (trackLengthRecoOuterTOF > 0) {
-            for (int iii = 0; iii < 5; iii++) {
+            for (int iii = 0; iii < kParticles; iii++) {
               h2dOuterNsigmaTrue[ii][iii]->Fill(momentum, nSigmaOuterTOF[iii]);
               h2dOuterDeltaTrue[ii][iii]->Fill(momentum, deltaTimeOuterTOF[iii]);
             }
