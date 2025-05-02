@@ -137,7 +137,7 @@ std::array<float, 3> ITSResponse::mITSRespParams = {1.18941, 1.53792, 1.69961};
 std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.35117, 1.80347, 5.14355};
 // relative resolution is modelled with an erf function: [0]*TMath::Erf((x-[1])/[2])
 std::array<float, 3> ITSResponse::mResolutionParams = {1.94669e-01, -2.08616e-01, 1.30753};
-std::array<float, 3> ITSResponse::mResolutionParamsZ2 = {8.74371e-02, -1.82804, 5.06449e-01};
+std::array<float, 3> ITSResponse::mResolutionParamsZ2 = {0.09, -999., -999.};
 bool ITSResponse::mIsInitialized = false;
 
 namespace pidits
