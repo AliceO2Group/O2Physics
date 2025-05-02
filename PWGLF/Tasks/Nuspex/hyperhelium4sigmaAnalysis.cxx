@@ -13,6 +13,8 @@
 /// \brief Simple check for injected hyper-helium4sigma (H4S) in MC productions
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
