@@ -143,7 +143,7 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
   /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
   template <typename T1>
-  std::vector<float> getInputFeatures(T1 const& candidate, bool const& caseXicToPKPi)
+  std::vector<float> getInputFeatures(T1 const& candidate, bool const caseXicToPKPi)
   {
     std::vector<float> inputFeatures;
 

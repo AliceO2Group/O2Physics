@@ -161,7 +161,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
   /// \param caseDsToKKPi used to divide the case DsToKKPi from DsToPiKK
   /// \return inputFeatures vector
   template <typename T1>
-  std::vector<float> getInputFeatures(T1 const& candidate, bool const& caseDsToKKPi)
+  std::vector<float> getInputFeatures(T1 const& candidate, bool const caseDsToKKPi)
   {
     std::vector<float> inputFeatures;
 
