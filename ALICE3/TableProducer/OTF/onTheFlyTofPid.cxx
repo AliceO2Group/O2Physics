@@ -645,7 +645,7 @@ struct OnTheFlyTofPid {
                 const float transverseMomentum = momentum / std::cosh(pseudorapidity);
                 h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
-                if (ii == kPion) {
+                if (ii == kIdPion) {
                   histos.fill(HIST("h2dRelativePtResolution"), transverseMomentum, 100.0 * ptResolution / transverseMomentum);
                   histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * etaResolution / (std::fabs(pseudorapidity) + 1e-6));
                 }
