@@ -73,9 +73,9 @@ struct ITSResponse {
     // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
     if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
-      return mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]);
+      return mResolutionParamsZ2[1] > -999.0 mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]) ? mResolutionParamsZ2[0];
     }
-    return mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]);
+    return mResolutionParams[1] > -999.0 ? mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]) : mResolutionParams[0];
   }
 
   template <o2::track::PID::ID id>
@@ -115,6 +115,14 @@ struct ITSResponse {
     mResolutionParamsZ2[0] = p0_res_Z2;
     mResolutionParamsZ2[1] = p1_res_Z2;
     mResolutionParamsZ2[2] = p2_res_Z2;
+  }
+
+  static void setMCDefaultParameters()
+  {
+    setParameters(1.63806, 1.58847, 2.52275,
+                  2.66505, 1.48405, 6.90453,
+                  1.40487e-01, -4.31078e-01, 1.50052,
+                  0.09, -999., -999.);
   }
 
  private:
