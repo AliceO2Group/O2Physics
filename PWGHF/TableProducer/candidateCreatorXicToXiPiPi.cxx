@@ -243,10 +243,11 @@ struct HfCandidateCreatorXicToXiPiPi {
       std::array<float, 21> covCasc = {0.};
 
       //----------------create cascade track------------------------------------------------------------
-      constexpr std::array<int, 6> MomInd = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (auto i = 0u; i < MomInd.size(); i++) {
-        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
+      constexpr std::size_t NElementsCovMatrix{6u};
+      constexpr std::array<int, NElementsCovMatrix> MomInd = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+      for (auto i = 0u; i < NElementsCovMatrix; i++) {
         covCasc[i] = casc.positionCovMat()[i];
+        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
       }
       // create cascade track
       o2::track::TrackParCov trackCasc;
@@ -496,11 +497,10 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // create Xi as KFParticle object
       // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
-      std::array<float, 6> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
-      float parPosMom[6];
-      for (auto i = 0u; i < xyzpxpypz.size(); ++i) {
-        parPosMom[i] = xyzpxpypz[i];
-      }
+      constexpr std::size_t NElementsStateVector{6};
+      std::array<float, NElementsStateVector> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
+      float parPosMom[NElementsStateVector];
+      std::copy(xyzpxpypz.begin(), xyzpxpypz.end(), parPosMom);
       // create KFParticle
       KFParticle kfXi;
       float massXi = casc.mXi();
@@ -901,8 +901,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     int8_t debug = 0;
     // for resonance matching:
     std::vector<int> arrDaughIndex;
-    std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
+    constexpr std::size_t NDaughtersResonant{2u};
+    std::array<int, NDaughtersResonant> arrPDGDaugh;
+    std::array<int, NDaughtersResonant> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
@@ -943,8 +944,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
           }
           if (indexRec > -1) {
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
-            if (arrDaughIndex.size() == arrXiResonance.size()) {
-              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+            if (arrDaughIndex.size() == NDaughtersResonant) {
+              for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                 arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
               }
@@ -1011,7 +1012,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == arrXiResonance.size()) {
+          if (arrDaughIndex.size() == NDaughtersResonant) {
             auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
               cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
@@ -1023,8 +1024,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
               debug = 3;
-              if (arrDaughIndex.size() == arrXiResonance.size()) {
-                for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+              if (arrDaughIndex.size() == NDaughtersResonant) {
+                for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                   auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
                   arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
                 }
