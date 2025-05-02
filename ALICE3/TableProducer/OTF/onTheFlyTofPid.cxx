@@ -206,11 +206,10 @@ struct OnTheFlyTofPid {
         std::string nameTitleOuterTotalRes = "h2dOuterTimeResTotal" + particleNames2[i_true] + "VsP";
         const AxisSpec axisTrackTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Track time resolution - " + particleNames[i_true] + " (ps)"};
         const AxisSpec axisTotalTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Total time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes, nameTitleInnerTrackRes, kTH2F, {axisMomentum, axisTrackTimeRes});
-        // h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes.c_str(), nameTitleInnerTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
-        h2dInnerTimeResTotal[i_true] = histos.add<TH2>(nameTitleTotalRes.c_str(), nameTitleTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
-        h2dOuterTimeResTrack[i_true] = histos.add<TH2>(nameTitleOuterTrackRes.c_str(), nameTitleOuterTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
-        h2dOuterTimeResTotal[i_true] = histos.add<TH2>(nameTitleOuterTotalRes.c_str(), nameTitleOuterTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
+        h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes, nameTitleInnerTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
+        h2dInnerTimeResTotal[i_true] = histos.add<TH2>(nameTitleTotalRes, nameTitleTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
+        h2dOuterTimeResTrack[i_true] = histos.add<TH2>(nameTitleOuterTrackRes, nameTitleOuterTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
+        h2dOuterTimeResTotal[i_true] = histos.add<TH2>(nameTitleOuterTotalRes, nameTitleOuterTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
         for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
           std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
           std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
@@ -219,20 +218,20 @@ struct OnTheFlyTofPid {
           const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
           if (i_true == i_hyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(plotsConfig.nBinsNsigmaCorrectSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner.c_str(), nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
-            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter.c_str(), nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner, nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter, nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
 
             const AxisSpec axisDeltaCorrect{static_cast<int>(plotsConfig.nBinsDeltaCorrectSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta.c_str(), nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta.c_str(), nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta, nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta, nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
           } else {
             const AxisSpec axisNsigmaWrong{static_cast<int>(plotsConfig.nBinsNsigmaWrongSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner.c_str(), nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaWrong});
-            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter.c_str(), nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaWrong});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner, nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaWrong});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter, nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaWrong});
 
             const AxisSpec axisDeltaWrong{static_cast<int>(plotsConfig.nBinsDeltaWrongSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta.c_str(), nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta.c_str(), nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta, nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta, nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
           }
         }
       }
@@ -587,7 +586,7 @@ struct OnTheFlyTofPid {
       // Straight to Nsigma
       static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
-      static std::array<float, kParticlex> nSigmaInnerTOF, nSigmaOuterTOF;
+      static std::array<float, kParticles> nSigmaInnerTOF, nSigmaOuterTOF;
       static constexpr int kParticlePdgs[kParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[kParticles];
 
