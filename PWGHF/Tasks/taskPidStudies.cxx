@@ -43,25 +43,25 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
 
+enum Particle { NotMatched = 0,
+  K0s,
+  Lambda,
+  Omega };
+
+enum TrackCuts { All = 0,
+   HasIts,
+   HasTpc,
+   TpcNClsCrossedRows,
+   Eta,
+   Pt,
+   TpcChi2NCls,
+   ItsChi2NCls,
+   NCuts };
+
 namespace o2::aod
 {
 namespace pid_studies
 {
-enum Particle { NotMatched = 0,
-                K0s,
-                Lambda,
-                Omega };
-
-enum TrackCuts { All = 0,
-                 HasIts,
-                 HasTpc,
-                 TpcNClsCrossedRows,
-                 Eta,
-                 PtMin,
-                 TpcChi2NCls,
-                 ItsChi2NCls,
-                 NCuts };
-
 // V0s
 DECLARE_SOA_COLUMN(MassK0, massK0, float);                 //! Candidate mass
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Candidate mass
@@ -155,8 +155,6 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
-using namespace o2::aod::pid_studies;
-
 struct HfTaskPidStudies {
   Produces<o2::aod::PidV0s> pidV0;
   Produces<o2::aod::PidCascades> pidCascade;
@@ -217,7 +215,7 @@ struct HfTaskPidStudies {
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::HasTpc + 1, "HasTPC");
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::TpcNClsCrossedRows + 1, "TPC NCls/CrossedRows");
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::Eta + 1, "#eta");
-    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::PtMin + 1, "#it{p}_{T} min");
+    hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::Pt + 1, "#it{p}_{T}");
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::TpcChi2NCls + 1, "TPC #chi^{2}/NCls");
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::ItsChi2NCls + 1, "ITS #chi^{2}/NCls");
   }
@@ -363,7 +361,7 @@ struct HfTaskPidStudies {
       if (posTrack.pt() < ptTrackMin || negTrack.pt() < ptTrackMin) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), TrackCuts::PtMin);
+      registry.fill(HIST("hTrackSel"), TrackCuts::Pt);
       if (posTrack.tpcChi2NCl() > tpcChi2NClTrackMax || negTrack.tpcChi2NCl() > tpcChi2NClTrackMax) {
         return false;
       }
@@ -393,7 +391,7 @@ struct HfTaskPidStudies {
       if (posTrack.pt() < ptTrackMin || negTrack.pt() < ptTrackMin || bachTrack.pt() < ptTrackMin) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), TrackCuts::PtMin);
+      registry.fill(HIST("hTrackSel"), TrackCuts::Pt);
       if (posTrack.tpcChi2NCl() > tpcChi2NClTrackMax || negTrack.tpcChi2NCl() > tpcChi2NClTrackMax || bachTrack.tpcChi2NCl() > tpcChi2NClTrackMax) {
         return false;
       }
