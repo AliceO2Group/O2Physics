@@ -100,7 +100,7 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   tpcNSigmaPr0, // 0
   tpcNSigmaKa0, // 0
   tpcNSigmaPi0, // 0
-  tpcNSigmaPr1,  // 1
+  tpcNSigmaPr1, // 1
   tpcNSigmaKa1, // 1
   tpcNSigmaPi1, // 1
   tpcNSigmaPr2, // 2
