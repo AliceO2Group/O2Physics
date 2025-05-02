@@ -308,11 +308,11 @@ struct OnTheFlyRichPid {
       gap_thickness[i] = (det_centers[i] - rad_centers[i]).Mag() - bRichRadiatorThickness / 2.0;
     }
     // DEBUG
-    //std::cout << std::endl << std::endl;
-    //for (int i = 0; i < number_of_sectors_in_z; i++) {
+    // std::cout << std::endl << std::endl;
+    // for (int i = 0; i < number_of_sectors_in_z; i++) {
     //  std::cout << "Sector " << i << ": Gap = " << gap_thickness[i] << " cm, Index aerogel = " << aerogel_rindex[i] << ", Gap thickness = " << gap_thickness[i] << " cm" << std::endl;
-    //}
-    //std::cout << std::endl << std::endl;
+    // }
+    // std::cout << std::endl << std::endl;
   }
 
   void init(o2::framework::InitContext& /*initContext*/)
