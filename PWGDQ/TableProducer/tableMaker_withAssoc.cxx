@@ -1248,9 +1248,11 @@ struct TableMaker {
         VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
       }
       // recalculte pDca and global muon kinematics
+      int globalClusters = muon.nClusters();
       if (static_cast<int>(muon.trackType()) < 2 && fConfigVariousOptions.fRefitGlobalMuon) {
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
+        globalClusters += mfttrack.nClusters();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
       } else {
@@ -1278,7 +1280,7 @@ struct TableMaker {
         }
       }
       muonBasic(reducedEventIdx, mchIdx, mftIdx, fFwdTrackFilterMap[muon.globalIndex()], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), 0);
-      muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
+      muonExtra(globalClusters, VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
                 VarManager::fgValues[VarManager::kMuonChi2], muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                 muon.matchScoreMCHMFT(),
                 muon.mchBitMap(), muon.midBitMap(),
