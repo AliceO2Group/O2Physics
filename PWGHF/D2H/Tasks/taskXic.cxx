@@ -346,9 +346,9 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, candidate.nSigTofPi1());
       registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, candidate.nSigTofKa1());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, candidate.nSigTpcPr2());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, candidate.nSigTpcPi2());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, candidate.nSigTpcKa2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, candidate.nSigTofPr2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, candidate.nSigTofPi2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, candidate.nSigTofKa2());
 
       // THnSparse
       if (enableTHn) {
