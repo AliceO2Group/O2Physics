@@ -20,12 +20,14 @@
 ///
 
 #include <cstdio>
+#include <string>
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/DelphesO2LutWriter.h"
 #include "iostream"
 #include "TMatrixD.h"
 #include "TVectorD.h"
+#include "TAxis.h"
 #include "TMatrixDSymEigen.h"
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
@@ -40,13 +42,34 @@
 namespace o2::fastsim
 {
 
-void DelphesO2LutWriter::printLutWriterConfiguration()
+void DelphesO2LutWriter::Print() const
 {
-  std::cout << " --- Printing configuration of LUT writer --- " << std::endl;
-  std::cout << "    -> etaMaxBarrel  = " << etaMaxBarrel << std::endl;
-  std::cout << "    -> usePara       = " << usePara << std::endl;
-  std::cout << "    -> useDipole     = " << useDipole << std::endl;
-  std::cout << "    -> useFlatDipole = " << useFlatDipole << std::endl;
+  LOG(info) << " --- Printing configuration of LUT writer --- ";
+  LOG(info) << "    -> etaMaxBarrel  = " << etaMaxBarrel;
+  LOG(info) << "    -> usePara       = " << usePara;
+  LOG(info) << "    -> useDipole     = " << useDipole;
+  LOG(info) << "    -> useFlatDipole = " << useFlatDipole;
+  LOG(info) << "    -> mAtLeastHits  = " << mAtLeastHits;
+  LOG(info) << "    -> mAtLeastCorr  = " << mAtLeastCorr;
+  LOG(info) << "    -> mAtLeastFake  = " << mAtLeastFake;
+  LOG(info) << "    -> Nch Binning: = " << mNchBinning.toString();
+  LOG(info) << "    -> Radius Binning: = " << mRadiusBinning.toString();
+  LOG(info) << "    -> Eta Binning: = " << mEtaBinning.toString();
+  LOG(info) << "    -> Pt Binning: = " << mPtBinning.toString();
+  LOG(info) << " --- End of configuration --- ";
+}
+
+std::string DelphesO2LutWriter::LutBinning::toString() const
+{
+  std::string str = "";
+  str.append(log ? "log" : "lin");
+  str.append(" nbins: ");
+  str.append(std::to_string(nbins));
+  str.append(" min: ");
+  str.append(std::to_string(min));
+  str.append(" max: ");
+  str.append(std::to_string(max));
+  return str;
 }
 
 bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
@@ -55,7 +78,8 @@ bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
                                   const float mass,
                                   int itof,
                                   int otof,
-                                  int q)
+                                  int q,
+                                  const float nch)
 {
   lutEntry.valid = false;
 
@@ -63,13 +87,19 @@ bool DelphesO2LutWriter::fatSolve(lutEntry_t& lutEntry,
   tlv.SetPtEtaPhiM(pt, eta, 0., mass);
   o2::track::TrackParCov trkIn;
   o2::upgrade::convertTLorentzVectorToO2Track(q, tlv, {0., 0., 0.}, trkIn);
-
+  // tlv.Print();
+  // return fmt::format("X:{:+.4e} Alp:{:+.3e} Par: {:+.4e} {:+.4e} {:+.4e} {:+.4e} {:+.4e} |Q|:{:d} {:s}\n",
+  //  getX(), getAlpha(), getY(), getZ(), getSnp(), getTgl(), getQ2Pt(), getAbsCharge(), getPID().getName());
+  // trkIn.print();
   o2::track::TrackParCov trkOut;
-  if (fat.FastTrack(trkIn, trkOut, 1) < 0) {
+  const int status = fat.FastTrack(trkIn, trkOut, nch);
+  if (status <= mAtLeastHits) {
     Printf(" --- fatSolve: FastTrack failed --- \n");
-    tlv.Print();
+    // tlv.Print();
     return false;
   }
+  Printf(" --- fatSolve: FastTrack succeeded %d --- \n", status);
+  // trkOut.print();
   lutEntry.valid = true;
   lutEntry.itof = fat.GetGoodHitProb(itof);
   lutEntry.otof = fat.GetGoodHitProb(otof);
@@ -204,26 +234,21 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
     return;
   }
   lutHeader.field = field;
+  auto setMap = [](map_t& map, LutBinning b) {
+    map.log = b.log;
+    map.nbins = b.nbins;
+    map.min = b.min;
+    map.max = b.max;
+  };
   // nch
-  lutHeader.nchmap.log = true;
-  lutHeader.nchmap.nbins = 20;
-  lutHeader.nchmap.min = 0.5;
-  lutHeader.nchmap.max = 3.5;
+  setMap(lutHeader.nchmap, mNchBinning);
   // radius
-  lutHeader.radmap.log = false;
-  lutHeader.radmap.nbins = 1;
-  lutHeader.radmap.min = 0.;
-  lutHeader.radmap.max = 100.;
+  setMap(lutHeader.radmap, mRadiusBinning);
   // eta
-  lutHeader.etamap.log = false;
-  lutHeader.etamap.nbins = 80;
-  lutHeader.etamap.min = -4.;
-  lutHeader.etamap.max = 4.;
+  setMap(lutHeader.etamap, mEtaBinning);
   // pt
-  lutHeader.ptmap.log = true;
-  lutHeader.ptmap.nbins = 200;
-  lutHeader.ptmap.min = -2;
-  lutHeader.ptmap.max = 2.;
+  setMap(lutHeader.ptmap, mPtBinning);
+
   lutFile.write(reinterpret_cast<char*>(&lutHeader), sizeof(lutHeader));
 
   // entries
@@ -234,6 +259,9 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
   lutEntry_t lutEntry;
 
   // write entries
+  int nCalls = 0;
+  int successfullCalls = 0;
+  int failedCalls = 0;
   for (int inch = 0; inch < nnch; ++inch) {
     Printf(" --- writing nch = %d/%d", inch, nnch);
     auto nch = lutHeader.nchmap.eval(inch);
@@ -246,12 +274,14 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
         auto eta = lutHeader.etamap.eval(ieta);
         lutEntry.eta = lutHeader.etamap.eval(ieta);
         for (int ipt = 0; ipt < npt; ++ipt) {
+          nCalls++;
           Printf(" --- writing ipt = %d/%d", ipt, npt);
           lutEntry.pt = lutHeader.ptmap.eval(ipt);
           lutEntry.valid = true;
           if (std::fabs(eta) <= etaMaxBarrel) { // full lever arm ends at etaMaxBarrel
             Printf("Solving in the barrel");
             // printf(" --- fatSolve: pt = %f, eta = %f, mass = %f, field=%f \n", lutEntry.pt, lutEntry.eta, lutHeader.mass, lutHeader.field);
+            successfullCalls++;
             if (!fatSolve(lutEntry, lutEntry.pt, lutEntry.eta, lutHeader.mass, itof, otof, q)) {
               // printf(" --- fatSolve: error \n");
               lutEntry.valid = false;
@@ -260,6 +290,8 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
               for (int i = 0; i < 15; ++i) {
                 lutEntry.covm[i] = 0.;
               }
+              successfullCalls--;
+              failedCalls++;
             }
           } else {
             Printf("Solving outside the barrel");
@@ -267,6 +299,7 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
             lutEntry.eff = 1.;
             lutEntry.eff2 = 1.;
             bool retval = true;
+            successfullCalls++;
             if (useFlatDipole) { // Using the parametrization at the border of the barrel
               retval = fatSolve(lutEntry, lutEntry.pt, etaMaxBarrel, lutHeader.mass, itof, otof, q);
             } else if (usePara) {
@@ -288,6 +321,8 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
               for (int i = 0; i < 15; ++i) {
                 lutEntry.covm[i] = 0.;
               }
+              successfullCalls--;
+              failedCalls++;
             }
           }
           Printf("Diagonalizing");
@@ -298,6 +333,8 @@ void DelphesO2LutWriter::lutWrite(const char* filename, int pdg, float field, in
       }
     }
   }
+  Printf(" --- finished writing LUT file %s", filename);
+  Printf(" --- successfull calls: %d/%d, failed calls: %d/%d", successfullCalls, nCalls, failedCalls, nCalls);
   lutFile.close();
 }
 
@@ -311,7 +348,7 @@ void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
     }
   }
 
-  m.Print();
+  // m.Print();
   TMatrixDSymEigen eigen(m);
   // eigenvalues vector
   TVectorD eigenVal = eigen.GetEigenValues();
@@ -331,10 +368,13 @@ void DelphesO2LutWriter::diagonalise(lutEntry_t& lutEntry)
 
 TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int vs, float nch, float radius, float eta, float pt)
 {
+  LOGF(info, " --- reading LUT file %s", filename);
+  // vs
   static const int kNch = 0;
   static const int kEta = 1;
   static const int kPt = 2;
 
+  // what
   static const int kEfficiency = 0;
   static const int kEfficiency2 = 1;
   static const int kEfficiencyInnerTOF = 2;
@@ -346,6 +386,7 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   o2::delphes::DelphesO2TrackSmearer smearer;
   smearer.loadTable(pdg, filename);
   auto lutHeader = smearer.getLUTHeader(pdg);
+  lutHeader->print();
   map_t lutMap;
   switch (vs) {
     case kNch:
@@ -360,6 +401,58 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
   }
   auto nbins = lutMap.nbins;
   auto g = new TGraph();
+  g->SetName(Form("lut_%s_%d_vs_%d_what_%d", filename, pdg, vs, what));
+  g->SetTitle(Form("LUT for %s, pdg %d, vs %d, what %d", filename, pdg, vs, what));
+  switch (vs) {
+    case kNch:
+      Printf(" --- vs = kNch");
+      g->GetXaxis()->SetTitle("Nch");
+      break;
+    case kEta:
+      Printf(" --- vs = kEta");
+      g->GetXaxis()->SetTitle("#eta");
+      break;
+    case kPt:
+      Printf(" --- vs = kPt");
+      g->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      break;
+    default:
+      Printf(" --- error: unknown vs %d", vs);
+      return nullptr;
+  }
+  switch (what) {
+    case kEfficiency:
+      Printf(" --- what = kEfficiency");
+      g->GetYaxis()->SetTitle("Efficiency (%)");
+      break;
+    case kEfficiency2:
+      Printf(" --- what = kEfficiency2");
+      g->GetYaxis()->SetTitle("Efficiency2 (%)");
+      break;
+    case kEfficiencyInnerTOF:
+      Printf(" --- what = kEfficiencyInnerTOF");
+      g->GetYaxis()->SetTitle("Inner TOF Efficiency (%)");
+      break;
+    case kEfficiencyOuterTOF:
+      Printf(" --- what = kEfficiencyOuterTOF");
+      g->GetYaxis()->SetTitle("Outer TOF Efficiency (%)");
+      break;
+    case kPtResolution:
+      Printf(" --- what = kPtResolution");
+      g->GetYaxis()->SetTitle("p_{T} Resolution (%)");
+      break;
+    case kRPhiResolution:
+      Printf(" --- what = kRPhiResolution");
+      g->GetYaxis()->SetTitle("R#phi Resolution (#mum)");
+      break;
+    case kZResolution:
+      Printf(" --- what = kZResolution");
+      g->GetYaxis()->SetTitle("Z Resolution (#mum)");
+      break;
+    default:
+      Printf(" --- error: unknown what %d", what);
+      return nullptr;
+  }
 
   bool canBeInvalid = true;
   for (int i = 0; i < nbins; ++i) {

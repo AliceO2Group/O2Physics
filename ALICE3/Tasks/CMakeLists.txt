@@ -39,7 +39,7 @@ o2physics_add_dpl_workflow(alice3-pid-ftof-qa
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(alice3-pid-separation-power
+o2physics_add_dpl_workflow(alice3-separation-power
                     SOURCES alice3SeparationPower.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

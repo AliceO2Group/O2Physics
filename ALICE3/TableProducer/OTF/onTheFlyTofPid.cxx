@@ -66,6 +66,10 @@ std::array<std::shared_ptr<TH2>, 5> h2dInnerTimeResTrack;
 std::array<std::shared_ptr<TH2>, 5> h2dInnerTimeResTotal;
 std::array<std::shared_ptr<TH2>, 5> h2dOuterTimeResTrack;
 std::array<std::shared_ptr<TH2>, 5> h2dOuterTimeResTotal;
+std::array<std::shared_ptr<TH2>, 5> h2dInnerArrivalTime;
+std::array<std::shared_ptr<TH2>, 5> h2dOuterArrivalTime;
+std::array<std::shared_ptr<TH2>, 5> h2dInnerExpectedTime;
+std::array<std::shared_ptr<TH2>, 5> h2dOuterExpectedTime;
 std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dInnerNsigmaTrue;
 std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dOuterNsigmaTrue;
 std::array<std::array<std::shared_ptr<TH2>, 5>, 5> h2dInnerDeltaTrue;
@@ -232,11 +236,12 @@ struct OnTheFlyTofPid {
         const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Total time resolution - " + particleNames[i_true] + " (ps)"};
         h2dInnerTimeResTotal[i_true] = addHistogram("iTOF/res/h2dInnerTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
         h2dOuterTimeResTotal[i_true] = addHistogram("oTOF/res/h2dOuterTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
+        const AxisSpec axisExpectedTime{1000, -1e4, 1e4, "Expected time " + particleNames2[i_true]};
+        h2dInnerArrivalTime[i_true] = addHistogram("iTOF/exp/h2dInnerArrivalTime" + particleNames2[i_true] + "VsP", axisExpectedTime);
+        h2dOuterArrivalTime[i_true] = addHistogram("oTOF/exp/h2dOuterArrivalTime" + particleNames2[i_true] + "VsP", axisExpectedTime);
+        h2dInnerExpectedTime[i_true] = addHistogram("iTOF/exp/h2dInnerExpectedTime" + particleNames2[i_true] + "VsP", axisExpectedTime);
+        h2dOuterExpectedTime[i_true] = addHistogram("oTOF/exp/h2dOuterExpectedTime" + particleNames2[i_true] + "VsP", axisExpectedTime);
         for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
-          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
           const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
           const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
           const AxisSpec axisDeltaCorrect{plotsConfig.nBinsDeltaCorrectSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
@@ -344,7 +349,37 @@ struct OnTheFlyTofPid {
         mTrackLengthOuterTOF(trackLengthOuterTOF),
         mMomentum(momentum),
         mPseudorapidity{pseudorapidity},
-        mNoSmearingPt{noSmearingPt} {}
+        mNoSmearingPt{noSmearingPt}
+    {
+
+      if (mInnerTOFTime.first < -1 && mTrackLengthInnerTOF.second > 0) {
+        LOG(fatal) << "Inner negative time but positive length";
+      }
+      if (mInnerTOFTime.first > 0 && mTrackLengthInnerTOF.second < 0) {
+        LOG(fatal) << "Inner positive time but negative length";
+      }
+      if (mOuterTOFTime.first < -1 && mTrackLengthOuterTOF.second > 0) {
+        LOG(fatal) << "Outer negative time but positive length";
+      }
+      if (mOuterTOFTime.first > 0 && mTrackLengthOuterTOF.second < 0) {
+        LOG(fatal) << "Outer positive time but negative length";
+      }
+#if 1
+      // We do now some sanity checks
+      if (mInnerTOFTime.first < -1) {
+        LOG(fatal) << "Inner TOF time is negative: " << mInnerTOFTime.first;
+      }
+      if (mOuterTOFTime.first < -1) {
+        LOG(fatal) << "Outer TOF time is negative: " << mOuterTOFTime.first;
+      }
+      if (mTrackLengthInnerTOF.first < -100) {
+        LOG(fatal) << "Inner TOF track length is negative: " << mTrackLengthInnerTOF.first;
+      }
+      if (mTrackLengthOuterTOF.first < -100) {
+        LOG(fatal) << "Outer TOF track length is negative: " << mTrackLengthOuterTOF.first;
+      }
+#endif
+    }
 
     int mPdgCode;
     std::pair<float, float> mInnerTOFTime;        // Measured time and expected resolution at the inner TOF [ps]
@@ -395,10 +430,9 @@ struct OnTheFlyTofPid {
       sumw += w;
     }
 
-    static constexpr float kMaxEventTimeResolution = 200.f;
-    if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > kMaxEventTimeResolution) {
+    if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > 200.f) {
       tzero[0] = 0.;    // [ps]
-      tzero[1] = kMaxEventTimeResolution; // [ps]
+      tzero[1] = 200.f; // [ps]
       return false;
     }
 
@@ -425,12 +459,43 @@ struct OnTheFlyTofPid {
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
-    double a0 = mass * mass;
-    double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
-    double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
+    const double pt2 = pt * pt;
+    const double pt3 = pt2 * pt;
+    const double pt4 = pt2 * pt2;
+    const double coshEta = std::cosh(eta);
+    const double coshEta2 = coshEta * coshEta;
+    const double pt2coshEta2 = pt2 * coshEta2;
+    const double a0 = mass * mass;
+    const double radiusConstant = 0.299792458;
+    const double a1 = radiusConstant * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2PS);
+    const double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (radiusConstant) * (radiusConstant) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
+    // Check that the argument of the acos is in the range [-1, 1]
+    if (std::abs(a2 / pt2) > 1.0) {
+      LOG(warning) << "Invalid argument for acos: " << a2 << "/" << pt2 << " = " << a2 / pt2;
+      return -999.f;
+    }
+
+    const double acosA2Pt2 = std::acos(1.0 - a2 / pt2);
+    const double sqrtA0Pt2coshEta2 = std::sqrt(a0 + pt2coshEta2);
+    const double dtofOndPt = (pt4 * coshEta2 * acosA2Pt2 - 2.0 * a2 * pt2 * (a0 + pt2coshEta2) / std::sqrt(a2 * (2.0 * pt2 - a2))) / (a1 * pt3 * sqrtA0Pt2coshEta2);
+    const double dtofOndEta = pt2 * std::sinh(eta) * coshEta * acosA2Pt2 / (a1 * sqrtA0Pt2coshEta2);
+    const double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution,
+                                                  std::fabs(dtofOndEta) * trackEtaResolution);
+#if 1
+    // Check sanity of the result
+    if (std::isnan(trackTimeResolution) || std::isinf(trackTimeResolution)) {
+      LOG(info) << "All parameters:";
+      LOG(info) << "coshEta: " << coshEta;
+      LOG(info) << "a1: " << a1;
+      LOG(info) << "a2: " << a2;
+      LOG(info) << "a2 / pt2: " << a2 << "/" << pt2 << " = " << a2 / pt2;
+      LOG(info) << "acosA2Pt2: " << acosA2Pt2;
+      LOG(info) << "sqrtA0Pt2coshEta2: " << sqrtA0Pt2coshEta2;
+      LOG(info) << "dtofOndPt: " << dtofOndPt;
+      LOG(info) << "dtofOndEta: " << dtofOndEta;
+      LOG(fatal) << "Track time resolution is NaN or Inf " << std::fabs(dtofOndPt) << "*" << trackPtResolution << " " << std::fabs(dtofOndEta) << " * " << trackEtaResolution;
+    }
+#endif
     return trackTimeResolution;
   }
 
@@ -513,13 +578,23 @@ struct OnTheFlyTofPid {
         continue;
       }
       const float v = computeParticleVelocity(o2track.getP(), pdgInfo->Mass());
-      const float expectedTimeInnerTOF = trackLengthInnerTOF / v + eventCollisionTimePS; // arrival time to the Inner TOF in ps
-      const float expectedTimeOuterTOF = trackLengthOuterTOF / v + eventCollisionTimePS; // arrival time to the Outer TOF in ps
-      upgradeTofMC(expectedTimeInnerTOF, trackLengthInnerTOF, expectedTimeOuterTOF, trackLengthOuterTOF);
+      float arrivalTimeInnerTOF = -1, arrivalTimeOuterTOF = -1;
+      if (trackLengthInnerTOF > 0) {
+        arrivalTimeInnerTOF = trackLengthInnerTOF / v + eventCollisionTimePS; // arrival time to the Inner TOF in ps
+      }
+      if (trackLengthOuterTOF > 0) {
+        arrivalTimeOuterTOF = trackLengthOuterTOF / v + eventCollisionTimePS; // arrival time to the Outer TOF in ps
+      }
+      upgradeTofMC(arrivalTimeInnerTOF, trackLengthInnerTOF, arrivalTimeOuterTOF, trackLengthOuterTOF);
 
       // Smear with expected resolutions
-      const float measuredTimeInnerTOF = pRandomNumberGenerator.Gaus(expectedTimeInnerTOF, simConfig.innerTOFTimeReso);
-      const float measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(expectedTimeOuterTOF, simConfig.outerTOFTimeReso);
+      float measuredTimeInnerTOF = -1, measuredTimeOuterTOF = -1;
+      if (arrivalTimeInnerTOF > 0) {
+        measuredTimeInnerTOF = pRandomNumberGenerator.Gaus(arrivalTimeInnerTOF, simConfig.innerTOFTimeReso);
+      }
+      if (arrivalTimeOuterTOF > 0) {
+        measuredTimeOuterTOF = pRandomNumberGenerator.Gaus(arrivalTimeOuterTOF, simConfig.outerTOFTimeReso);
+      }
 
       // Now we calculate the expected arrival time following certain mass hypotheses
       // and the (imperfect!) reconstructed track parametrizations
@@ -575,6 +650,10 @@ struct OnTheFlyTofPid {
         continue;
       }
       const auto& mcParticle = track.mcParticle();
+      if (std::abs(mcParticle.eta()) > 0.1) {
+        trackWithTimeIndex++;
+        continue;
+      }
 
       const auto& trkWithTime = tracksWithTime[trackWithTimeIndex++];
       const float trackLengthRecoInnerTOF = trkWithTime.mTrackLengthInnerTOF.first;
@@ -582,13 +661,30 @@ struct OnTheFlyTofPid {
       const float trackLengthInnerTOF = trkWithTime.mTrackLengthInnerTOF.second;
       const float trackLengthOuterTOF = trkWithTime.mTrackLengthOuterTOF.second;
       // Todo: remove the bias of the track used in the event time calculation for low multiplicity events
+      const bool matchedInnerTOF = (trkWithTime.mInnerTOFTime.first > 0 && trackLengthRecoInnerTOF > 0 && trackLengthInnerTOF > 0);
+      const bool matchedOuterTOF = (trkWithTime.mOuterTOFTime.first > 0 && trackLengthRecoOuterTOF > 0 && trackLengthOuterTOF > 0);
       const float measuredTimeInnerTOF = trkWithTime.mInnerTOFTime.first - tzero[0];
       const float measuredTimeOuterTOF = trkWithTime.mOuterTOFTime.first - tzero[0];
       const float momentum = trkWithTime.mMomentum.first;
       const float pseudorapidity = trkWithTime.mPseudorapidity.first;
       const float noSmearingPt = trkWithTime.mNoSmearingPt;
+#if 1
+      if (matchedInnerTOF && trackLengthInnerTOF < 0) {
+        LOG(fatal) << "Inner TOF time is negative: " << trackLengthInnerTOF;
+      }
+      if (matchedOuterTOF && trackLengthOuterTOF < 0) {
+        LOG(fatal) << "Outer TOF time is negative: " << trackLengthOuterTOF;
+      }
+      // if (trackLengthInnerTOF > 0 && !matchedInnerTOF) {
+      //   LOG(fatal) << "Discrepancy in Inner TOF";
+      // }
+      // if (trackLengthOuterTOF > 0 && !matchedOuterTOF) {
+      //   LOG(fatal) << "Discrepancy in Outer TOF";
+      // }
+#endif
 
       // Straight to Nsigma
+      static std::array<float, kParticles> arrivalTimeInnerTOF, arrivalTimeOuterTOF;
       static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, kParticles> nSigmaInnerTOF, nSigmaOuterTOF;
@@ -623,35 +719,70 @@ struct OnTheFlyTofPid {
         masses[ii] = pdgInfoThis->Mass();
         const float v = computeParticleVelocity(momentum, masses[ii]);
 
-        expectedTimeInnerTOF[ii] = trackLengthInnerTOF / v;
-        expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
-
-        deltaTimeInnerTOF[ii] = measuredTimeInnerTOF - expectedTimeInnerTOF[ii];
-        deltaTimeOuterTOF[ii] = measuredTimeOuterTOF - expectedTimeOuterTOF[ii];
+        arrivalTimeInnerTOF[ii] = trackLengthInnerTOF > 0 ? trackLengthInnerTOF / v : -100;
+        arrivalTimeOuterTOF[ii] = trackLengthOuterTOF > 0 ? trackLengthOuterTOF / v : -100;
+        if (matchedInnerTOF) {
+          expectedTimeInnerTOF[ii] = trackLengthRecoInnerTOF / v;
+          deltaTimeInnerTOF[ii] = measuredTimeInnerTOF - expectedTimeInnerTOF[ii];
+        }
+        if (matchedOuterTOF) {
+          expectedTimeOuterTOF[ii] = trackLengthRecoOuterTOF / v;
+          deltaTimeOuterTOF[ii] = measuredTimeOuterTOF - expectedTimeOuterTOF[ii];
+        }
 
         // Evaluate total sigma (layer + tracking resolution)
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
         float outerTotalTimeReso = simConfig.outerTOFTimeReso;
         if (simConfig.flagIncludeTrackTimeRes) {
-          double ptResolution = std::pow(momentum / std::cosh(pseudorapidity), 2) * std::sqrt(trkWithTime.mMomentum.second);
+          const float coshEta = std::cosh(pseudorapidity);
+          const float momentumOverCoshEta = momentum / coshEta;
+          double ptResolution = momentumOverCoshEta * momentumOverCoshEta * std::sqrt(trkWithTime.mMomentum.second);
           double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
-            ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
-            etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
+            ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentumOverCoshEta);
+            etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentumOverCoshEta);
           }
-          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
-          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
-          innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
-          outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
+
+          float innerTrackTimeReso = -1.f;
+          if (matchedInnerTOF) {
+            innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentumOverCoshEta, pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
+            if (innerTrackTimeReso > 0.f) {
+              innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
+            } else {
+              innerTotalTimeReso = -999.f;
+              LOG(error) << "Some issue with innerTrackTimeReso";
+            }
+          }
+
+          float outerTrackTimeReso = -1.f;
+          if (matchedOuterTOF) {
+            outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentumOverCoshEta, pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
+            if (outerTrackTimeReso > 0.f) {
+              outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
+            } else {
+              outerTotalTimeReso = -999.f;
+              LOG(error) << "Some issue with outerTrackTimeReso";
+            }
+          }
+
+#if 1
+          // Sanity check on the time resolution values
+          if (std::isnan(innerTotalTimeReso)) {
+            LOG(fatal) << "NaN innerTotalTimeReso with " << simConfig.innerTOFTimeReso << " and innerTrackTimeReso " << innerTrackTimeReso;
+          }
+          if (std::isnan(outerTotalTimeReso)) {
+            LOG(fatal) << "NaN outerTotalTimeReso with " << simConfig.outerTOFTimeReso << " and outerTrackTimeReso " << outerTrackTimeReso;
+          }
+#endif
 
           if (plotsConfig.doQAplots) {
             if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(kParticlePdgs[ii])->PdgCode()) {
-              if (trackLengthRecoInnerTOF > 0) {
+              if (matchedInnerTOF) {
                 h2dInnerTimeResTrack[ii]->Fill(momentum, innerTrackTimeReso);
                 h2dInnerTimeResTotal[ii]->Fill(momentum, innerTotalTimeReso);
               }
-              if (trackLengthRecoOuterTOF > 0) {
-                const float transverseMomentum = momentum / std::cosh(pseudorapidity);
+              if (matchedOuterTOF) {
+                const float transverseMomentum = momentumOverCoshEta;
                 h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
                 static constexpr int kIdPion = 2;
@@ -664,13 +795,21 @@ struct OnTheFlyTofPid {
           }
         }
 
-        // Fixme: assumes dominant resolution effect is the TOF resolution
-        // and not the tracking itself. It's *probably* a fair assumption
-        // but it should be tested further! --> FIXED IN THIS VERSION
-        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0)
+        if (trackLengthInnerTOF > 0 && trackLengthRecoInnerTOF > 0 && innerTotalTimeReso > 0.f) {
           nSigmaInnerTOF[ii] = deltaTimeInnerTOF[ii] / std::sqrt(innerTotalTimeReso * innerTotalTimeReso + tzero[1] * tzero[1]);
-        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0)
+        }
+        if (trackLengthOuterTOF > 0 && trackLengthRecoOuterTOF > 0 && outerTotalTimeReso > 0.f) {
           nSigmaOuterTOF[ii] = deltaTimeOuterTOF[ii] / std::sqrt(outerTotalTimeReso * outerTotalTimeReso + tzero[1] * tzero[1]);
+        }
+#if 1
+        // Sanity check on the nSigma values
+        if (std::isnan(nSigmaInnerTOF[ii])) {
+          LOG(fatal) << "NaN nSigmaInnerTOF[" << ii << "] for track with delta " << deltaTimeInnerTOF[ii] << " innerTotalTimeReso " << innerTotalTimeReso << " tzero[1] " << tzero[1];
+        }
+        if (std::isnan(nSigmaOuterTOF[ii])) {
+          LOG(fatal) << "NaN nSigmaOuterTOF[" << ii << "] for track with delta " << deltaTimeOuterTOF[ii] << " outerTotalTimeReso " << outerTotalTimeReso << " tzero[1] " << tzero[1];
+        }
+#endif
       }
 
       if (plotsConfig.doQAplots) {
@@ -678,6 +817,10 @@ struct OnTheFlyTofPid {
           if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(kParticlePdgs[ii])->PdgCode()) {
             continue;
           }
+          h2dInnerArrivalTime[ii]->Fill(momentum, arrivalTimeInnerTOF[ii]);
+          h2dOuterArrivalTime[ii]->Fill(momentum, arrivalTimeOuterTOF[ii]);
+          h2dInnerExpectedTime[ii]->Fill(momentum, expectedTimeInnerTOF[ii]);
+          h2dOuterExpectedTime[ii]->Fill(momentum, expectedTimeOuterTOF[ii]);
           if (trackLengthRecoInnerTOF > 0) {
             for (int iii = 0; iii < kParticles; iii++) {
               h2dInnerNsigmaTrue[ii][iii]->Fill(momentum, nSigmaInnerTOF[iii]);

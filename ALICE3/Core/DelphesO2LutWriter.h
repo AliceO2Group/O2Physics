@@ -22,6 +22,8 @@
 #ifndef ALICE3_CORE_DELPHESO2LUTWRITER_H_
 #define ALICE3_CORE_DELPHESO2LUTWRITER_H_
 
+#include <string>
+
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "TGraph.h"
@@ -34,7 +36,33 @@ class DelphesO2LutWriter
   DelphesO2LutWriter() = default;
   virtual ~DelphesO2LutWriter() = default;
 
+  // Setters
+  void setBinningNch(bool log, int nbins, float min, float max) { mNchBinning = {log, nbins, min, max}; }
+  void setBinningRadius(bool log, int nbins, float min, float max) { mRadiusBinning = {log, nbins, min, max}; }
+  void setBinningEta(bool log, int nbins, float min, float max) { mEtaBinning = {log, nbins, min, max}; }
+  void setBinningPt(bool log, int nbins, float min, float max) { mPtBinning = {log, nbins, min, max}; }
+  void setEtaMaxBarrel(float eta) { etaMaxBarrel = eta; }
+  void SetAtLeastHits(int n) { mAtLeastHits = n; }
+  void SetAtLeastCorr(int n) { mAtLeastCorr = n; }
+  void SetAtLeastFake(int n) { mAtLeastFake = n; }
+  bool fatSolve(lutEntry_t& lutEntry,
+                float pt = 0.1,
+                float eta = 0.0,
+                const float mass = 0.13957000,
+                int itof = 0,
+                int otof = 0,
+                int q = 1,
+                const float nch = 1);
+
+  void Print() const;
+  bool fwdSolve(float* covm, float pt = 0.1, float eta = 0.0, float mass = 0.13957000);
+  bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = 0.13957000, float Bfield = 0.5);
+  void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2, int itof = 0, int otof = 0);
+  TGraph* lutRead(const char* filename, int pdg, int what, int vs, float nch = 0., float radius = 0., float eta = 0., float pt = 0.);
+
   o2::fastsim::FastTracker fat;
+
+ private:
   void diagonalise(lutEntry_t& lutEntry);
   float etaMaxBarrel = 1.75f;
   bool usePara = true;        // use fwd parameterisation
@@ -44,22 +72,19 @@ class DelphesO2LutWriter
   int mAtLeastHits = 4;
   int mAtLeastCorr = 4;
   int mAtLeastFake = 0;
-  void SetAtLeastHits(int n) { mAtLeastHits = n; }
-  void SetAtLeastCorr(int n) { mAtLeastCorr = n; }
-  void SetAtLeastFake(int n) { mAtLeastFake = n; }
 
-  void printLutWriterConfiguration();
-  bool fatSolve(lutEntry_t& lutEntry,
-                float pt = 0.1,
-                float eta = 0.0,
-                const float mass = 0.13957000,
-                int itof = 0,
-                int otof = 0,
-                int q = 1);
-  bool fwdSolve(float* covm, float pt = 0.1, float eta = 0.0, float mass = 0.13957000);
-  bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = 0.13957000, float Bfield = 0.5);
-  void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2, int itof = 0, int otof = 0);
-  TGraph* lutRead(const char* filename, int pdg, int what, int vs, float nch = 0., float radius = 0., float eta = 0., float pt = 0.);
+  // Binning of the LUT to make
+  struct LutBinning {
+    bool log;
+    int nbins;
+    float min;
+    float max;
+    std::string toString() const;
+  };
+  LutBinning mNchBinning = {true, 20, 0.5f, 3.5f};
+  LutBinning mRadiusBinning = {false, 1, 0.0f, 100.0f};
+  LutBinning mEtaBinning = {false, 80, -4.0f, 4.0f};
+  LutBinning mPtBinning = {true, 200, -2.0f, 2.0f};
 
   ClassDef(DelphesO2LutWriter, 1);
 };
