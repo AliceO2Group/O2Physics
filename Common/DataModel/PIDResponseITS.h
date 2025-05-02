@@ -73,7 +73,7 @@ struct ITSResponse {
     // static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
     if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
-      return mResolutionParamsZ2[1] > -999.0 ? mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]) ? mResolutionParamsZ2[0];
+      return mResolutionParamsZ2[1] > -999.0 ? mResolutionParamsZ2[0] * std::erf((bg - mResolutionParamsZ2[1]) / mResolutionParamsZ2[2]) : mResolutionParamsZ2[0];
     }
     return mResolutionParams[1] > -999.0 ? mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]) : mResolutionParams[0];
   }
