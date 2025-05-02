@@ -195,15 +195,17 @@ struct HfTaskPidStudies {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     hfEvSel.addHistograms(registry);
-    std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{6, 0, 6}}});
+    std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{8, 0, 8}}});
 
     // Set Labels for hTrackSel
     hTrackSel->GetXaxis()->SetBinLabel(1, "All");
-    hTrackSel->GetXaxis()->SetBinLabel(2, "TPC NCls/CrossedRows");
-    hTrackSel->GetXaxis()->SetBinLabel(3, "#eta");
-    hTrackSel->GetXaxis()->SetBinLabel(4, "#it{p}_{T}");
-    hTrackSel->GetXaxis()->SetBinLabel(5, "TPC #chi^{2}/NCls");
-    hTrackSel->GetXaxis()->SetBinLabel(6, "ITS #chi^{2}/NCls");
+    hTrackSel->GetXaxis()->SetBinLabel(2, "HasITS");
+    hTrackSel->GetXaxis()->SetBinLabel(3, "HasTPC");
+    hTrackSel->GetXaxis()->SetBinLabel(4, "TPC NCls/CrossedRows");
+    hTrackSel->GetXaxis()->SetBinLabel(5, "#eta");
+    hTrackSel->GetXaxis()->SetBinLabel(6, "#it{p}_{T}");
+    hTrackSel->GetXaxis()->SetBinLabel(7, "TPC #chi^{2}/NCls");
+    hTrackSel->GetXaxis()->SetBinLabel(8, "ITS #chi^{2}/NCls");
   }
 
   template <bool isV0, typename Coll, typename Cand>
@@ -326,49 +328,66 @@ struct HfTaskPidStudies {
   {
     const auto& posTrack = candidate.template posTrack_as<PidTracks>();
     const auto& negTrack = candidate.template negTrack_as<PidTracks>();
+    registry.fill(HIST("hTrackSel"), 0);
     if constexpr (isV0) {
+      if (!posTrack.hasITS() || !negTrack.hasITS()) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), 1);
+      if (!posTrack.hasTPC() || !negTrack.hasTPC()) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), 2);
       if (posTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 1);
+      registry.fill(HIST("hTrackSel"), 3);
       if (std::abs(posTrack.eta()) > trackMaxEta || std::abs(negTrack.eta()) > trackMaxEta) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 2);
+      registry.fill(HIST("hTrackSel"), 4);
       if (posTrack.pt() < trackMinPt || negTrack.pt() < trackMinPt) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 3);
+      registry.fill(HIST("hTrackSel"), 5);
       if (posTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || negTrack.tpcChi2NCl() > trackMaxTpcChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 4);
+      registry.fill(HIST("hTrackSel"), 6);
       if (posTrack.itsChi2NCl() > trackMaxItsChi2NCl || negTrack.itsChi2NCl() > trackMaxItsChi2NCl) {
         return false;
       }
-      registry.fill(HIST("hTrackSel"), 5);
+      registry.fill(HIST("hTrackSel"), 7);
     } else {
       const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
-      if (posTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || bachTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows) {
+      if (!posTrack.hasITS() || !negTrack.hasITS() || !bachTrack.hasITS()) {
         return false;
       }
       registry.fill(HIST("hTrackSel"), 1);
-      if (std::abs(posTrack.eta()) > trackMaxEta || std::abs(negTrack.eta()) > trackMaxEta || std::abs(bachTrack.eta()) > trackMaxEta) {
+      if (!posTrack.hasTPC() || !negTrack.hasTPC() || !bachTrack.hasTPC()) {
         return false;
       }
       registry.fill(HIST("hTrackSel"), 2);
-      if (posTrack.pt() < trackMinPt || negTrack.pt() < trackMinPt || bachTrack.pt() < trackMinPt) {
+      if (posTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || negTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows || bachTrack.tpcNClsCrossedRows() < trackMinTpcNClsCrossedRows) {
         return false;
       }
       registry.fill(HIST("hTrackSel"), 3);
-      if (posTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || negTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || bachTrack.tpcChi2NCl() > trackMaxTpcChi2NCl) {
+      if (std::abs(posTrack.eta()) > trackMaxEta || std::abs(negTrack.eta()) > trackMaxEta || std::abs(bachTrack.eta()) > trackMaxEta) {
         return false;
       }
       registry.fill(HIST("hTrackSel"), 4);
-      if (posTrack.itsChi2NCl() > trackMaxItsChi2NCl || negTrack.itsChi2NCl() > trackMaxItsChi2NCl || bachTrack.itsChi2NCl() > trackMaxItsChi2NCl) {
+      if (posTrack.pt() < trackMinPt || negTrack.pt() < trackMinPt || bachTrack.pt() < trackMinPt) {
         return false;
       }
       registry.fill(HIST("hTrackSel"), 5);
+      if (posTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || negTrack.tpcChi2NCl() > trackMaxTpcChi2NCl || bachTrack.tpcChi2NCl() > trackMaxTpcChi2NCl) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), 6);
+      if (posTrack.itsChi2NCl() > trackMaxItsChi2NCl || negTrack.itsChi2NCl() > trackMaxItsChi2NCl || bachTrack.itsChi2NCl() > trackMaxItsChi2NCl) {
+        return false;
+      }
+      registry.fill(HIST("hTrackSel"), 7);
     }
     return true;
   }
@@ -461,7 +480,6 @@ struct HfTaskPidStudies {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
         continue;
       }
-      registry.fill(HIST("hTrackSel"), 0);
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
         continue;
       }
@@ -484,7 +502,6 @@ struct HfTaskPidStudies {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
         continue;
       }
-      registry.fill(HIST("hTrackSel"), 0);
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
         continue;
       }
@@ -506,7 +523,6 @@ struct HfTaskPidStudies {
       if (applyEvSels && !isCollSelected(casc.collision_as<CollisionsMc>())) {
         continue;
       }
-      registry.fill(HIST("hTrackSel"), 0);
       if (applyTrackSels && !isTrackSelected<false>(casc)) {
         continue;
       }
@@ -529,7 +545,6 @@ struct HfTaskPidStudies {
       if (applyEvSels && !isCollSelected(casc.collision_as<CollSels>())) {
         continue;
       }
-      registry.fill(HIST("hTrackSel"), 0);
       if (applyTrackSels && !isTrackSelected<false>(casc)) {
         continue;
       }
