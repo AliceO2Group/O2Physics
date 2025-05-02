@@ -214,6 +214,23 @@ struct HfCandidateCreator3Prong {
     setLabelHistoCands(hCandidates);
   }
 
+  template <typename TRK, typename TAB0PI, typename TAB0KA, typename TAB0PR, typename TAB1PI, typename TAB1KA, typename TAB1PR, typename TAB2PI, typename TAB2KA, typename TAB2PR>
+  void fillProngsPid(TRK const& track0, TRK const& track1, TRK const& track2,
+                     TAB0PI& rowProng0PidPi, TAB0KA& rowProng0PidKa, TAB0PR& rowProng0PidPr,
+                     TAB1PI& rowProng1PidPi, TAB1KA& rowProng1PidKa, TAB1PR& rowProng1PidPr,
+                     TAB2PI& rowProng2PidPi, TAB2KA& rowProng2PidKa, TAB2PR& rowProng2PidPr)
+  {
+    fillProngPid<HfProngSpecies::Pion>(track0, rowProng0PidPi);
+    fillProngPid<HfProngSpecies::Kaon>(track0, rowProng0PidKa);
+    fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
+    fillProngPid<HfProngSpecies::Pion>(track1, rowProng1PidPi);
+    fillProngPid<HfProngSpecies::Kaon>(track1, rowProng1PidKa);
+    fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
+    fillProngPid<HfProngSpecies::Pion>(track2, rowProng2PidPi);
+    fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
+    fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
+  }
+
   template <bool doPvRefit = false, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
   void runCreator3ProngWithDCAFitterN(Coll const&,
                                       Cand const& rowsTrackIndexProng3,
@@ -358,15 +375,10 @@ struct HfCandidateCreator3Prong {
                        rowTrackIndexProng3.hfflag());
 
       // fill candidate prong PID rows
-      fillProngPid<HfProngSpecies::Pion>(track0, rowProng0PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track0, rowProng0PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
-      fillProngPid<HfProngSpecies::Pion>(track1, rowProng1PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track1, rowProng1PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
-      fillProngPid<HfProngSpecies::Pion>(track2, rowProng2PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
+      fillProngsPid(track0, track1, track2,
+                    rowProng0PidPi, rowProng0PidKa, rowProng0PidPr,
+                    rowProng1PidPi, rowProng1PidKa, rowProng1PidPr,
+                    rowProng2PidPi, rowProng2PidKa, rowProng2PidPr);
 
       // fill histograms
       if (fillHistograms) {
@@ -613,15 +625,10 @@ struct HfCandidateCreator3Prong {
                      chi2geo, ldl.first, ldl.second, chi2topo);
 
       // fill candidate prong PID rows
-      fillProngPid<HfProngSpecies::Pion>(track0, rowProng0PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track0, rowProng0PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
-      fillProngPid<HfProngSpecies::Pion>(track1, rowProng1PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track1, rowProng1PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
-      fillProngPid<HfProngSpecies::Pion>(track2, rowProng2PidPi);
-      fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
-      fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
+      fillProngsPid(track0, track1, track2,
+                    rowProng0PidPi, rowProng0PidKa, rowProng0PidPr,
+                    rowProng1PidPi, rowProng1PidKa, rowProng1PidPr,
+                    rowProng2PidPi, rowProng2PidKa, rowProng2PidPr);
 
       // fill histograms
       if (fillHistograms) {
