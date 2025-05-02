@@ -130,12 +130,12 @@ struct OnTheFlyTofPid {
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int kParticles = 5;
-  std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
-  std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-  static constexpr int kIdPion = 2;
 
   void init(o2::framework::InitContext&)
   {
+    std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
+    std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
+  
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     // Load LUT for pt and eta smearing
@@ -645,6 +645,7 @@ struct OnTheFlyTofPid {
                 const float transverseMomentum = momentum / std::cosh(pseudorapidity);
                 h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
+                static constexpr int kIdPion = 2;
                 if (ii == kIdPion) {
                   histos.fill(HIST("h2dRelativePtResolution"), transverseMomentum, 100.0 * ptResolution / transverseMomentum);
                   histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * etaResolution / (std::fabs(pseudorapidity) + 1e-6));
