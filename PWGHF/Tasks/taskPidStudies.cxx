@@ -44,19 +44,19 @@ using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
 
 enum Particle { NotMatched = 0,
-  K0s,
-  Lambda,
-  Omega };
+                K0s,
+                Lambda,
+                Omega };
 
 enum TrackCuts { All = 0,
-   HasIts,
-   HasTpc,
-   TpcNClsCrossedRows,
-   Eta,
-   Pt,
-   TpcChi2NCls,
-   ItsChi2NCls,
-   NCuts };
+                 HasIts,
+                 HasTpc,
+                 TpcNClsCrossedRows,
+                 Eta,
+                 Pt,
+                 TpcChi2NCls,
+                 ItsChi2NCls,
+                 NCuts };
 
 namespace o2::aod
 {
