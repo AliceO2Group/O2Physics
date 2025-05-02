@@ -82,8 +82,8 @@ DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of th
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
 DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
 DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
-DECLARE_SOA_COLUMN(LSElPairCount, lSElPairCount, int);         //! Number of Like sign electron pair
-DECLARE_SOA_COLUMN(ULSElPairCount, uLSElPairCount, int);       //! Number of UnLike sign electron pair
+DECLARE_SOA_COLUMN(LsElePairCount, lsElePairCount, int);         //! Number of Like sign electron pair
+DECLARE_SOA_COLUMN(UlsElePairCount, ulsElePairCount, int);       //! Number of UnLike sign electron pair
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
 } // namespace hf_corr_sel_electron
 
@@ -95,8 +95,8 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::PtTrack,
                   hf_corr_sel_electron::TpcNSigmaElTrack,
                   hf_corr_sel_electron::TofNSigmaElTrack,
-                  hf_corr_sel_electron::LSElPairCount,
-                  hf_corr_sel_electron::ULSElPairCount,
+                  hf_corr_sel_electron::LsElePairCount,
+                  hf_corr_sel_electron::UlsElePairCount,
                   hf_corr_sel_electron::IsEmcal);
 
 // definition of columns and tables for Mc Gen HfElectron Selection
