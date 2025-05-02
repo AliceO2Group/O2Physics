@@ -132,10 +132,7 @@ struct OnTheFlyTofPid {
   static constexpr int kParticles = 5;
 
   void init(o2::framework::InitContext&)
-  {
-    std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
-    std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-
+  {  
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     // Load LUT for pt and eta smearing
@@ -199,6 +196,8 @@ struct OnTheFlyTofPid {
       histos.add("h2dRelativePtResolution", "h2dRelativePtResolution", kTH2F, {axisPt, axisRelativePt});
       histos.add("h2dRelativeEtaResolution", "h2dRelativeEtaResolution", kTH2F, {axisEta, axisRelativeEta});
 
+      std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
+      std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
       for (int i_true = 0; i_true < kParticles; i_true++) {
         std::string nameTitleInnerTrackRes = "h2dInnerTimeResTrack" + particleNames2[i_true] + "VsP";
         std::string nameTitleTotalRes = "h2dInnerTimeResTotal" + particleNames2[i_true] + "VsP";
