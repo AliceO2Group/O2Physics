@@ -315,7 +315,7 @@ struct OnTheFlyRichPid {
     //std::cout << std::endl << std::endl;
   }
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext& /*initContext*/)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
