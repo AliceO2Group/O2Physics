@@ -135,7 +135,7 @@ struct OnTheFlyTofPid {
   {
     std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
     std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-  
+
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     // Load LUT for pt and eta smearing
