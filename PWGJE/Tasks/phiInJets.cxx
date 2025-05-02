@@ -926,9 +926,8 @@ struct phiInJets {
               }
               if (cfgDaughterQAHists) {
                 JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_pt_v_eta"), lResonance.Pt(), lResonance.Eta());
-                JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D"), lResonance.M());
-                if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
-                  JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
+                // if (lResonance.Pt() > 2.0 && lResonance.Pt() < 3)
+                //   JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE_1D_2_3"), lResonance.M());
                 JEhistos.fill(HIST("hMCRec_nonmatch_hUSS_INSIDE"), jetpt, lResonance.Pt(), lResonance.M());
               }
             }
