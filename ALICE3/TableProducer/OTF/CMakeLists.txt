@@ -24,7 +24,7 @@ o2physics_add_dpl_workflow(onthefly-richpid
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(onthefly-trkpid
+o2physics_add_dpl_workflow(on-the-fly-tracker-pid
                     SOURCES onTheFlyTrackerPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsCommonDataFormats O2Physics::ALICE3Core
                     COMPONENT_NAME Analysis)
