@@ -31,6 +31,11 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -49,13 +54,8 @@
 #include <TH2F.h>
 #include <TProfile.h>
 #include <TLorentzVector.h>
-#include <Math/Vector4D.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -469,7 +469,7 @@ struct cascadeAnalysisMC {
   }
   PROCESS_SWITCH(cascadeAnalysisMC, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
 
-  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, FullTracksExtIUWithPID const&, aod::McParticles const&)
+  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, FullTracksExtIUWithPID const&, aod::McParticles const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -484,7 +484,7 @@ struct cascadeAnalysisMC {
   }
   PROCESS_SWITCH(cascadeAnalysisMC, processRun3WithPID, "Process Run 3 data  with PID", false);
 
-  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, aod::V0sLinked const&, FullTracksExtWithPID const&, aod::McParticles const&)
+  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<LabeledCascades> const& Cascades, FullTracksExtWithPID const&, aod::McParticles const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria
