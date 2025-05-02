@@ -11,7 +11,7 @@
 
 /// \author Filip Krizek <filip.krizek@cern.ch>
 /// \author Kotliarov Artem <artem.kotliarov@cern.ch>
-/// \file jetTriggerChargedQA.cxx
+/// \file jetTriggerChargedQa.cxx
 /// \brief QA of trigger performance for charged jets
 
 #include <cmath>
