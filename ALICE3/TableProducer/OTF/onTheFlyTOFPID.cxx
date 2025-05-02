@@ -383,17 +383,17 @@ struct OnTheFlyTofPid {
       }
       const float mass = pdgInfo->Mass();
       const float mass2 = mass * mass;
-      const float tof = track.mInnerTOFTime.first;      // [ps]
-      const float etof = track.mInnerTOFTime.second;    // [ps]
-      const float L = track.mTrackLengthInnerTOF.first; // [cm]
-      float p = track.mMomentum.first;                  // [GeV/c]
-      p *= std::abs(pdgInfo->Charge()) / 3.;            // Total momentum
-      const float ep = track.mMomentum.second;          // [GeV/c]
+      const float tof = track.mInnerTOFTime.first;           // [ps]
+      const float etof = track.mInnerTOFTime.second;         // [ps]
+      const float length = track.mTrackLengthInnerTOF.first; // [cm]
+      float p = track.mMomentum.first;                       // [GeV/c]
+      p *= std::abs(pdgInfo->Charge()) / 3.;                 // Total momentum
+      const float ep = track.mMomentum.second;               // [GeV/c]
       const float p2 = p * p;
-      const float Lc = L * o2::constants::physics::invLightSpeedCm2PS;
-      const float texp = Lc / p * std::sqrt(mass2 + p2);
+      const float lengthOverC = length * o2::constants::physics::invLightSpeedCm2PS;
+      const float texp = lengthOverC / p * std::sqrt(mass2 + p2);
       // LOG(info) << "TOF: " << tof << " " << etof << " vs " << texp;
-      const float etexp = Lc * mass2 / p2 / std::sqrt(mass2 + p2) * ep;
+      const float etexp = lengthOverC * mass2 / p2 / std::sqrt(mass2 + p2) * ep;
       const float sigma = std::sqrt(etexp * etexp + etof * etof);
       const float deltat = tof - texp;
 
@@ -417,28 +417,28 @@ struct OnTheFlyTofPid {
   /// returns track time resolution
   /// \param pt the transverse momentum of the tarck
   /// \param eta the pseudorapidity of the tarck
-  /// \param track_pt_resolution the absolute resolution on pt
-  /// \param track_pt_resolution the absolute resolution on eta
+  /// \param trackPtResolution the absolute resolution on pt
+  /// \param trackEtaResolution the absolute resolution on eta
   /// \param mass the mass of the particle
-  /// \param det_radius the radius of the cylindrical layer
+  /// \param detRadius the radius of the cylindrical layer
   /// \param magneticField the magnetic field (along Z)
-  double calculate_track_time_resolution_advanced(float pt,
+  double calculateTrackTimeResolutionAdvanced(float pt,
                                                   float eta,
-                                                  float track_pt_resolution,
-                                                  float track_eta_resolution,
+                                                  float trackPtResolution,
+                                                  float trackEtaResolution,
                                                   float mass,
-                                                  float det_radius,
+                                                  float detRadius,
                                                   float magneticField)
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
     double a0 = mass * mass;
     double a1 = 0.299792458 * (0.1 * magneticField) * (0.01 * o2::constants::physics::LightSpeedCm2NS / 1e+3);
-    double a2 = (det_radius * 0.01) * (det_radius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
-    double dtof_on_dpt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double dtof_on_deta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
-    double track_time_resolution = std::hypot(std::fabs(dtof_on_dpt) * track_pt_resolution, std::fabs(dtof_on_deta) * track_eta_resolution);
-    return track_time_resolution;
+    double a2 = (detRadius * 0.01) * (detRadius * 0.01) * (0.299792458) * (0.299792458) * (0.1 * magneticField) * (0.1 * magneticField) / 2.0;
+    double dtofOndPt = (std::pow(pt, 4) * std::pow(std::cosh(eta), 2) * std::acos(1.0 - a2 / std::pow(pt, 2)) - 2.0 * a2 * std::pow(pt, 2) * (a0 + std::pow(pt * std::cosh(eta), 2)) / std::sqrt(a2 * (2.0 * std::pow(pt, 2) - a2))) / (a1 * std::pow(pt, 3) * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    double dtofOndEta = std::pow(pt, 2) * std::sinh(eta) * std::cosh(eta) * std::acos(1.0 - a2 / std::pow(pt, 2)) / (a1 * std::sqrt(a0 + std::pow(pt * std::cosh(eta), 2)));
+    double trackTimeResolution = std::hypot(std::fabs(dtofOndPt) * trackPtResolution, std::fabs(dtofOndEta) * trackEtaResolution);
+    return trackTimeResolution;
   }
 
   void process(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision,
@@ -498,11 +498,11 @@ struct OnTheFlyTofPid {
       o2::track::TrackParCov o2track = convertMCParticleToO2Track(mcParticle);
 
       float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
-      static constexpr float xThreshold = -99.f; // Threshold to consider a good propagation of the track
+      static constexpr float kTrkXThreshold = -99.f; // Threshold to consider a good propagation of the track
       if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)) {
         xPv = o2track.getX();
       }
-      if (xPv > xThreshold) {
+      if (xPv > kTrkXThreshold) {
         trackLengthInnerTOF = trackLength(o2track, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthOuterTOF = trackLength(o2track, simConfig.outerTOFRadius, simConfig.dBz);
       }
@@ -528,7 +528,7 @@ struct OnTheFlyTofPid {
       if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)) {
         xPv = recoTrack.getX();
       }
-      if (xPv > xThreshold) {
+      if (xPv > kTrkXThreshold) {
         trackLengthRecoInnerTOF = trackLength(recoTrack, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthRecoOuterTOF = trackLength(recoTrack, simConfig.outerTOFRadius, simConfig.dBz);
       }
@@ -622,14 +622,14 @@ struct OnTheFlyTofPid {
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
         float outerTotalTimeReso = simConfig.outerTOFTimeReso;
         if (simConfig.flagIncludeTrackTimeRes) {
-          double pt_resolution = std::pow(momentum / std::cosh(pseudorapidity), 2) * std::sqrt(trkWithTime.mMomentum.second);
-          double eta_resolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
+          double ptResolution = std::pow(momentum / std::cosh(pseudorapidity), 2) * std::sqrt(trkWithTime.mMomentum.second);
+          double etaResolution = std::fabs(std::sin(2.0 * std::atan(std::exp(-pseudorapidity)))) * std::sqrt(trkWithTime.mPseudorapidity.second);
           if (simConfig.flagTOFLoadDelphesLUTs) {
-            pt_resolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
-            eta_resolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
+            ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
+            etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
           }
-          float innerTrackTimeReso = calculate_track_time_resolution_advanced(momentum / std::cosh(pseudorapidity), pseudorapidity, pt_resolution, eta_resolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
-          float outerTrackTimeReso = calculate_track_time_resolution_advanced(momentum / std::cosh(pseudorapidity), pseudorapidity, pt_resolution, eta_resolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
+          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
+          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
@@ -640,12 +640,12 @@ struct OnTheFlyTofPid {
                 h2dInnerTimeResTotal[ii]->Fill(momentum, innerTotalTimeReso);
               }
               if (trackLengthRecoOuterTOF > 0) {
-                const float transverse_momentum = momentum / std::cosh(pseudorapidity);
+                const float transverseMomentum = momentum / std::cosh(pseudorapidity);
                 h2dOuterTimeResTrack[ii]->Fill(momentum, outerTrackTimeReso);
                 h2dOuterTimeResTotal[ii]->Fill(momentum, outerTotalTimeReso);
                 if (ii == kPion) {
-                  histos.fill(HIST("h2dRelativePtResolution"), transverse_momentum, 100.0 * pt_resolution / transverse_momentum);
-                  histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * eta_resolution / (std::fabs(pseudorapidity) + 1e-6));
+                  histos.fill(HIST("h2dRelativePtResolution"), transverseMomentum, 100.0 * ptResolution / transverseMomentum);
+                  histos.fill(HIST("h2dRelativeEtaResolution"), pseudorapidity, 100.0 * etaResolution / (std::fabs(pseudorapidity) + 1e-6));
                 }
               }
             }
