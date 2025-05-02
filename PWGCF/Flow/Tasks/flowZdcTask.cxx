@@ -235,8 +235,8 @@ struct FlowZdcTask {
     auto* xAxis = hstat->GetXaxis();
     xAxis->SetBinLabel(1, "All events");
     xAxis->SetBinLabel(2, "SelEigth");
-    xAxis->SetBinLabel(3, "NoSameBunchPileup");  // reject collisions in case of pileup with another collision in the same foundBC
-    xAxis->SetBinLabel(4, "GoodZvtxFT0vsPV"); // small difference between z-vertex from PV and from FT0
+    xAxis->SetBinLabel(3, "NoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
+    xAxis->SetBinLabel(4, "GoodZvtxFT0vsPV");   // small difference between z-vertex from PV and from FT0
     xAxis->SetBinLabel(5, "NoCollInTimeRangeStrict");
     xAxis->SetBinLabel(6, "NoCollInTimeRangeStandard");
     xAxis->SetBinLabel(7, "NoCollInRofStrict");
@@ -559,7 +559,6 @@ struct FlowZdcTask {
       histos.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
     }
   }
-
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
   {
