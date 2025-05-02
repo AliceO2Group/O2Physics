@@ -594,8 +594,8 @@ struct OnTheFlyRichPid {
     }
     float R_sec_rich = rad_centers[i_sector].X();
     float z_sec_rich = rad_centers[i_sector].Z();
-    float R_sec_tof = det_centers[i_sector].X();
-    float z_sec_tof = det_centers[i_sector].Z();
+    // float R_sec_tof = det_centers[i_sector].X();
+    // float z_sec_tof = det_centers[i_sector].Z();
     float radius_ripple = (std::pow(R_sec_rich, 2) + std::pow(z_sec_rich, 2)) / (R_sec_rich + z_sec_rich / std::tan(polar));
     float z_ripple = radius_ripple / std::tan(polar);
     float absZ = std::hypot(radius_ripple - R_sec_rich, z_ripple - z_sec_rich);
