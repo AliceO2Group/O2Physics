@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 // Analysis task for he3-hadron femto analysis
 
-/// \file He3HadronFemto.cxx
+/// \file he3HadronFemto.cxx
 /// \brief Femto analysis task for He3-hadron correlation
 /// \author Your Name (your.email@cern.ch)
 /// \since April 2025
@@ -167,7 +167,7 @@ struct He3HadCandidate {
   int32_t collisionID = 0;
 };
 
-struct He3HadronFemto {
+struct he3HadronFemto {
 
   Produces<aod::he3HadronTable> outputDataTable;
   Produces<aod::he3HadronTableMC> outputMcTable;
@@ -866,7 +866,7 @@ struct He3HadronFemto {
       fillPairs(collisions, tracks, /*isMixedEvent*/ false);
     }
   }
-  PROCESS_SWITCH(He3HadronFemto, processSameEvent, "Process Same event", false);
+  PROCESS_SWITCH(he3HadronFemto, processSameEvent, "Process Same event", false);
 
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
   {
@@ -887,7 +887,7 @@ struct He3HadronFemto {
 
     fillPairs(collisions, tracks, /*isMixedEvent*/ true);
   }
-  PROCESS_SWITCH(He3HadronFemto, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(he3HadronFemto, processMixedEvent, "Process Mixed event", false);
 
   void processMC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
   {
@@ -951,7 +951,7 @@ struct He3HadronFemto {
 
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
-  PROCESS_SWITCH(He3HadronFemto, processMC, "Process MC", false);
+  PROCESS_SWITCH(he3HadronFemto, processMC, "Process MC", false);
 
   void processSameEventPools(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs)
   {
@@ -995,7 +995,7 @@ struct He3HadronFemto {
 
     fillPairs(collisions, tracks, /*isMixedEvent*/ false);
   }
-  PROCESS_SWITCH(He3HadronFemto, processSameEventPools, "Process Same event pools", false);
+  PROCESS_SWITCH(he3HadronFemto, processSameEventPools, "Process Same event pools", false);
 
   void processMcPools(const CollisionsFullMC& collisions, const TrackCandidatesMC& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& mcParticles, const aod::McTrackLabels& mcTrackLabels)
   {
@@ -1078,11 +1078,11 @@ struct He3HadronFemto {
 
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
-  PROCESS_SWITCH(He3HadronFemto, processMcPools, "Process MC pools", false);
+  PROCESS_SWITCH(he3HadronFemto, processMcPools, "Process MC pools", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<He3HadronFemto>(cfgc)};
+    adaptAnalysisTask<he3HadronFemto>(cfgc)};
 }
