@@ -126,6 +126,10 @@ struct OnTheFlyTofPid {
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+      static constexpr int kParticles = 5;
+      std::string particle_names1[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
+      std::string particle_names2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
+    static constexpr int kIdPion = 2;
 
   void init(o2::framework::InitContext&)
   {
@@ -192,9 +196,7 @@ struct OnTheFlyTofPid {
       histos.add("h2dRelativePtResolution", "h2dRelativePtResolution", kTH2F, {axisPt, axisRelativePt});
       histos.add("h2dRelativeEtaResolution", "h2dRelativeEtaResolution", kTH2F, {axisEta, axisRelativeEta});
 
-      std::string particle_names1[5] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
-      std::string particle_names2[5] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-      for (int i_true = 0; i_true < 5; i_true++) {
+      for (int i_true = 0; i_true < kParticles; i_true++) {
         std::string name_title_inner_track_res = "h2dInnerTimeResTrack" + particle_names2[i_true] + "VsP";
         std::string name_title_inner_total_res = "h2dInnerTimeResTotal" + particle_names2[i_true] + "VsP";
         std::string name_title_outer_track_res = "h2dOuterTimeResTrack" + particle_names2[i_true] + "VsP";
@@ -205,10 +207,7 @@ struct OnTheFlyTofPid {
         h2dInnerTimeResTotal[i_true] = histos.add<TH2>(name_title_inner_total_res.c_str(), name_title_inner_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
         h2dOuterTimeResTrack[i_true] = histos.add<TH2>(name_title_outer_track_res.c_str(), name_title_outer_track_res.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
         h2dOuterTimeResTotal[i_true] = histos.add<TH2>(name_title_outer_total_res.c_str(), name_title_outer_total_res.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
-      }
-
-      for (int i_true = 0; i_true < 5; i_true++) {
-        for (int i_hyp = 0; i_hyp < 5; i_hyp++) {
+        for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
           std::string name_title_inner = "h2dInnerNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           std::string name_title_outer = "h2dOuterNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           std::string name_title_inner_delta = "h2dInnerDeltaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
@@ -579,11 +578,11 @@ struct OnTheFlyTofPid {
       const float noSmearingPt = trkWithTime.mNoSmearingPt;
 
       // Straight to Nsigma
-      static std::array<float, 5> expectedTimeInnerTOF, expectedTimeOuterTOF;
-      static std::array<float, 5> deltaTimeInnerTOF, deltaTimeOuterTOF;
-      static std::array<float, 5> nSigmaInnerTOF, nSigmaOuterTOF;
-      static constexpr int pdgArray[5] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
-      float masses[5];
+      static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
+      static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
+      static std::array<float, kParticlex> nSigmaInnerTOF, nSigmaOuterTOF;
+      static constexpr int pdgArray[kParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+      float masses[kParticles];
 
       if (plotsConfig.doQAplots) {
         // unit conversion: length in cm, time in ps
