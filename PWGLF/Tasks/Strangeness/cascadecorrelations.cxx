@@ -104,6 +104,7 @@ struct CascadeSelector {
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
   Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
   Configurable<float> etaTracks{"etaTracks", 1.0, "min/max of eta for tracks"};
+  Configurable<float> etaCascades{"etaCascades", 0.8, "min/max of eta for cascades"};
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -181,8 +182,9 @@ struct CascadeSelector {
     h->GetXaxis()->SetBinLabel(3, "nITS OK");
     h->GetXaxis()->SetBinLabel(4, "Topo OK");
     h->GetXaxis()->SetBinLabel(5, "Track eta OK");
-    h->GetXaxis()->SetBinLabel(6, "V0 PID OK");
-    h->GetXaxis()->SetBinLabel(7, "Bach PID OK");
+    h->GetXaxis()->SetBinLabel(6, "Cascade eta OK");
+    h->GetXaxis()->SetBinLabel(7, "V0 PID OK");
+    h->GetXaxis()->SetBinLabel(8, "Bach PID OK");
 
     auto hEventSel = registry.add<TH1>("hEventSel", "hEventSel", HistType::kTH1I, {{10, 0, 10, "selection criteria"}});
     hEventSel->GetXaxis()->SetBinLabel(1, "All");
@@ -300,6 +302,12 @@ struct CascadeSelector {
       }
       registry.fill(HIST("hSelectionStatus"), 4); // passes track eta
 
+      if (TMath::Abs(casc.eta()) > etaCascades) {
+        cascflags(0);
+        continue;
+      }
+      registry.fill(HIST("hSelectionStatus"), 5); // passes candidate eta
+
       // TODO: TOF (for pT > 2 GeV per track?)
 
       //// TPC PID ////
@@ -327,7 +335,7 @@ struct CascadeSelector {
           continue;
         }
       }
-      registry.fill(HIST("hSelectionStatus"), 5); // passes V0 daughters PID
+      registry.fill(HIST("hSelectionStatus"), 6); // passes V0 daughters PID
       // registry.fill(HIST("hMassXi4"), casc.mXi(), casc.pt());
 
       // Bachelor check
@@ -335,7 +343,7 @@ struct CascadeSelector {
         if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
           // consistent with both!
           cascflags(2);
-          registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
+          registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
           // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
           if (casc.sign() < 0) {
             registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
@@ -347,7 +355,7 @@ struct CascadeSelector {
           continue;
         }
         cascflags(1);
-        registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
+        registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
         // registry.fill(HIST("hMassXi5"), casc.mXi(), casc.pt());
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt(), casc.yXi());
@@ -357,7 +365,7 @@ struct CascadeSelector {
         continue;
       } else if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
         cascflags(3);
-        registry.fill(HIST("hSelectionStatus"), 6); // passes bach PID
+        registry.fill(HIST("hSelectionStatus"), 7); // passes bach PID
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt(), casc.yOmega());
         } else {
@@ -427,10 +435,10 @@ struct CascadeCorrelations {
     mCounter.mSelectPrimaries = true;
   }
 
-  double getEfficiency(TH1D* h, double pT)
-  { // TODO: make 2D (rapidity)
+  double getEfficiency(TH1* h, double pT, double y = 0)
+  {
     // This function returns the value of histogram h corresponding to the x-coordinate pT
-    return h->GetBinContent(h->GetXaxis()->FindFixBin(pT));
+    return h->GetBinContent(h->FindFixBin(pT, y));
   }
 
   HistogramRegistry registry{
