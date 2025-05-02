@@ -521,10 +521,10 @@ struct HfTreeCreatorLcToPKPi {
       rowCandidateMC.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
-      float trackPos1Pt = candidate.ptProng0();
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1Pt * 1000. - static_cast<int64_t>(trackPos1Pt * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
@@ -967,10 +967,10 @@ struct HfTreeCreatorLcToPKPi {
       rowCollisionId.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
-      float trackPos1Pt = candidate.ptProng0();
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1Pt * 1000. - static_cast<int64_t>(trackPos1Pt * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           float functionInvMass, functionInvMassKPi;
