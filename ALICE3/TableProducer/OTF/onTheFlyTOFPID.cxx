@@ -97,8 +97,9 @@ struct OnTheFlyTofPid {
 
   struct : ConfigurableGroup {
     Configurable<bool> doQAplots{"doQAplots", true, "do basic velocity plot qa"};
+    Configurable<bool> doSeparationVsPt{"doSeparationVsPt", true, "Produce plots vs pt or p"};
     Configurable<int> nBinsBeta{"nBinsBeta", 2200, "number of bins in beta"};
-    Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum"};
+    Configurable<int> nBinsP{"nBinsP", 80, "number of bins in momentum/pT depending on doSeparationVsPt"};
     Configurable<int> nBinsTrackLengthInner{"nBinsTrackLengthInner", 300, "number of bins in track length"};
     Configurable<int> nBinsTrackLengthOuter{"nBinsTrackLengthOuter", 300, "number of bins in track length"};
     Configurable<int> nBinsTrackDeltaLength{"nBinsTrackDeltaLength", 100, "number of bins in delta track length"};
@@ -212,22 +213,23 @@ struct OnTheFlyTofPid {
           std::string name_title_outer = "h2dOuterNsigmaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           std::string name_title_inner_delta = "h2dInnerDeltaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
           std::string name_title_outer_delta = "h2dOuterDeltaTrue" + particle_names2[i_true] + "Vs" + particle_names2[i_hyp] + "Hypothesis";
+          const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
           if (i_true == i_hyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(plotsConfig.nBinsNsigmaCorrectSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
-            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaCorrect});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
 
             const AxisSpec axisDeltaCorrect{static_cast<int>(plotsConfig.nBinsDeltaCorrectSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisMomentum, axisDeltaCorrect});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisMomentum, axisDeltaCorrect});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
           } else {
             const AxisSpec axisNsigmaWrong{static_cast<int>(plotsConfig.nBinsNsigmaWrongSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
-            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisMomentum, axisNsigmaWrong});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner.c_str(), name_title_inner.c_str(), kTH2F, {axisX, axisNsigmaWrong});
+            h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer.c_str(), name_title_outer.c_str(), kTH2F, {axisX, axisNsigmaWrong});
 
             const AxisSpec axisDeltaWrong{static_cast<int>(plotsConfig.nBinsDeltaWrongSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particle_names1[i_true] + " vs " + particle_names1[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisMomentum, axisDeltaWrong});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisMomentum, axisDeltaWrong});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_inner_delta.c_str(), name_title_inner_delta.c_str(), kTH2F, {axisX, axisDeltaWrong});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(name_title_outer_delta.c_str(), name_title_outer_delta.c_str(), kTH2F, {axisX, axisDeltaWrong});
           }
         }
       }
@@ -460,27 +462,25 @@ struct OnTheFlyTofPid {
 
     // First we compute the number of charged particles in the event if LUTs are loaded
     float dNdEta = 0.f;
-    if (simConfig.flagTOFLoadDelphesLUTs) {
-      for (const auto& track : tracks) {
-        if (!track.has_mcParticle())
-          continue;
-        auto mcParticle = track.mcParticle();
-        if (std::abs(mcParticle.eta()) > simConfig.multiplicityEtaRange) {
-          continue;
-        }
-        if (mcParticle.has_daughters()) {
-          continue;
-        }
-        const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
-        if (!pdgInfo) {
-          // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
-          continue;
-        }
-        if (pdgInfo->Charge() == 0) {
-          continue;
-        }
-        dNdEta += 1.f;
+    for (const auto& track : tracks) {
+      if (!track.has_mcParticle())
+        continue;
+      auto mcParticle = track.mcParticle();
+      if (std::abs(mcParticle.eta()) > simConfig.multiplicityEtaRange) {
+        continue;
       }
+      if (mcParticle.has_daughters()) {
+        continue;
+      }
+      const auto& pdgInfo = pdg->GetParticle(mcParticle.pdgCode());
+      if (!pdgInfo) {
+        // LOG(warning) << "PDG code " << mcParticle.pdgCode() << " not found in the database";
+        continue;
+      }
+      if (pdgInfo->Charge() == 0) {
+        continue;
+      }
+      dNdEta += 1.f;
     }
     if (plotsConfig.doQAplots) {
       histos.fill(HIST("h1dNdeta"), dNdEta);
