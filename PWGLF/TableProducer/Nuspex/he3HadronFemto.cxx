@@ -393,7 +393,10 @@ struct He3HadronFemto {
     if (std::abs(candidate.eta()) > settingCutEta) {
       return false;
     }
-    const int minTPCNClsFound = 90;const int minTPCNClsCrossedRows = 70;const float crossedRowsToFindableRatio = 0.8f;const float maxChi2NCl = 4.f;
+    const int minTPCNClsFound = 90;
+    const int minTPCNClsCrossedRows = 70;
+    const float crossedRowsToFindableRatio = 0.8f;
+    const float maxChi2NCl = 4.f;
     if (candidate.itsNCls() < settingCutNCls ||
         candidate.tpcNClsFound() < minTPCNClsFound ||
         candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
@@ -406,7 +409,7 @@ struct He3HadronFemto {
 
     return true;
   }
-  
+
   template <typename Ttrack>
   float computeTPCNSigmaHadron(const Ttrack& candidate)
   {
@@ -505,13 +508,13 @@ struct He3HadronFemto {
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
   bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, He3HadCandidate& he3Hadcand, const Ttracks& /*trackTable*/, bool isMixedEvent)
-  { 
+  {
     const int numCoordinates = 3;
     auto trackCovHe3 = getTrackParCov(trackHe3);
     auto trackCovHad = getTrackParCov(trackHad);
     if (!isMixedEvent) {
-      //auto trackCovHe3 = getTrackParCov(trackHe3);
-      //auto trackCovHad = getTrackParCov(trackHad);
+      // auto trackCovHe3 = getTrackParCov(trackHe3);
+      // auto trackCovHad = getTrackParCov(trackHad);
       int nCand = CommonInite;
       try {
         nCand = mFitter.process(trackCovHe3, trackCovHad);
