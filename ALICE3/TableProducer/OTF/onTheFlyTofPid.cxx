@@ -132,7 +132,7 @@ struct OnTheFlyTofPid {
   static constexpr int kParticles = 5;
 
   void init(o2::framework::InitContext&)
-  {  
+  {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     // Load LUT for pt and eta smearing
