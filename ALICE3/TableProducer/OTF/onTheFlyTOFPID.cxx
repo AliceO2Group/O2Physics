@@ -585,7 +585,7 @@ struct OnTheFlyTofPid {
       static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, kParticlex> nSigmaInnerTOF, nSigmaOuterTOF;
-      static constexpr int pdgArray[kParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
+      static constexpr int kParticlePdgs[kParticles] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
       float masses[kParticles];
 
       if (plotsConfig.doQAplots) {
@@ -608,7 +608,7 @@ struct OnTheFlyTofPid {
         nSigmaInnerTOF[ii] = -100;
         nSigmaOuterTOF[ii] = -100;
 
-        auto pdgInfoThis = pdg->GetParticle(pdgArray[ii]);
+        auto pdgInfoThis = pdg->GetParticle(kParticlePdgs[ii]);
         masses[ii] = pdgInfoThis->Mass();
         const float v = particleVelocity(momentum, masses[ii]);
 
@@ -634,7 +634,7 @@ struct OnTheFlyTofPid {
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 
           if (plotsConfig.doQAplots) {
-            if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(pdgArray[ii])->PdgCode()) {
+            if (std::fabs(mcParticle.pdgCode()) == pdg->GetParticle(kParticlePdgs[ii])->PdgCode()) {
               if (trackLengthRecoInnerTOF > 0) {
                 h2dInnerTimeResTrack[ii]->Fill(momentum, innerTrackTimeReso);
                 h2dInnerTimeResTotal[ii]->Fill(momentum, innerTotalTimeReso);
@@ -663,7 +663,7 @@ struct OnTheFlyTofPid {
 
       if (plotsConfig.doQAplots) {
         for (int ii = 0; ii < kParticles; ii++) {
-          if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(pdgArray[ii])->PdgCode()) {
+          if (std::fabs(mcParticle.pdgCode()) != pdg->GetParticle(kParticlePdgs[ii])->PdgCode()) {
             continue;
           }
           if (trackLengthRecoInnerTOF > 0) {
