@@ -203,7 +203,8 @@ struct OnTheFlyTofPid {
         std::string nameTitleOuterTotalRes = "h2dOuterTimeResTotal" + particleNames2[i_true] + "VsP";
         const AxisSpec axisTrackTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Track time resolution - " + particleNames[i_true] + " (ps)"};
         const AxisSpec axisTotalTimeRes{static_cast<int>(plotsConfig.nBinsTimeRes), 0.0f, +200.0f, "Total time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes.c_str(), nameTitleInnerTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
+        h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes, nameTitleInnerTrackRes, kTH2F, {axisMomentum, axisTrackTimeRes});
+        // h2dInnerTimeResTrack[i_true] = histos.add<TH2>(nameTitleInnerTrackRes.c_str(), nameTitleInnerTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
         h2dInnerTimeResTotal[i_true] = histos.add<TH2>(nameTitleTotalRes.c_str(), nameTitleTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
         h2dOuterTimeResTrack[i_true] = histos.add<TH2>(nameTitleOuterTrackRes.c_str(), nameTitleOuterTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
         h2dOuterTimeResTotal[i_true] = histos.add<TH2>(nameTitleOuterTotalRes.c_str(), nameTitleOuterTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
