@@ -498,8 +498,9 @@ struct OnTheFlyTofPid {
 
       float xPv = -100, trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       static constexpr float xThreshold = -99.f; // Threshold to consider a good propagation of the track
-      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)){
-        xPv = o2track.getX();}
+      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)) {
+        xPv = o2track.getX();
+      }
       if (xPv > xThreshold) {
         trackLengthInnerTOF = trackLength(o2track, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthOuterTOF = trackLength(o2track, simConfig.outerTOFRadius, simConfig.dBz);
@@ -523,8 +524,9 @@ struct OnTheFlyTofPid {
       // and the (imperfect!) reconstructed track parametrizations
       float trackLengthRecoInnerTOF = -1, trackLengthRecoOuterTOF = -1;
       auto recoTrack = getTrackParCov(track);
-      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)){
-        xPv = recoTrack.getX();}
+      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)) {
+        xPv = recoTrack.getX();
+      }
       if (xPv > xThreshold) {
         trackLengthRecoInnerTOF = trackLength(recoTrack, simConfig.innerTOFRadius, simConfig.dBz);
         trackLengthRecoOuterTOF = trackLength(recoTrack, simConfig.outerTOFRadius, simConfig.dBz);
