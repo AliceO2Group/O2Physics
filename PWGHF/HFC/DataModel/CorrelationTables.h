@@ -470,23 +470,22 @@ DECLARE_SOA_TABLE(DmesonSelection, "AOD", "DINCOLL", // Selection of D meson in 
                   aod::hf_selection_dmeson_collision::DmesonSel);
 
 // Note: definition of columns and tables for Electron Hadron correlation pairs
-// definition of columns and tables for electron properties
 namespace hf_electron
 {
-DECLARE_SOA_COLUMN(PhiElectron, phiElectron, float);               //! Phi of electron
-DECLARE_SOA_COLUMN(EtaElectron, etaElectron, float);               //! Eta of electron
-DECLARE_SOA_COLUMN(PtElectron, ptElectron, float); //! Transverse momentum of electron
-DECLARE_SOA_COLUMN(NLSEl, nLSEl, int);     //! like sign Electron
-DECLARE_SOA_COLUMN(NULSEl, nULSEl, int);   //! unLike sign Electron
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicit
-DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
-DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
+DECLARE_SOA_COLUMN(PhiElectron, phiElectron, float); //! Phi of electron
+DECLARE_SOA_COLUMN(EtaElectron, etaElectron, float); //! Eta of electron
+DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);   //! Transverse momentum of electron
+DECLARE_SOA_COLUMN(NLSEl, nLSEl, int);               //! like sign Electron
+DECLARE_SOA_COLUMN(NULSEl, nULSEl, int);             //! unLike sign Electron
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin of event defined using zvtx and multiplicit
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);       //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);   //! Timestamp for the collision
 
 } // namespace hf_electron
 
 DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
-                  aod::hf_electron::Phi,
-                  aod::hf_electron::Eta,
+                  aod::hf_electron::PhiElectron,
+                  aod::hf_electron::EtaElectron,
                   aod::hf_electron::PtElectron,
                   aod::hf_electron::NLSEl,
                   aod::hf_electron::NULSEl,
