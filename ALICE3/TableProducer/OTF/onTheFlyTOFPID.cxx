@@ -423,12 +423,12 @@ struct OnTheFlyTofPid {
   /// \param detRadius the radius of the cylindrical layer
   /// \param magneticField the magnetic field (along Z)
   double calculateTrackTimeResolutionAdvanced(float pt,
-                                                  float eta,
-                                                  float trackPtResolution,
-                                                  float trackEtaResolution,
-                                                  float mass,
-                                                  float detRadius,
-                                                  float magneticField)
+                                              float eta,
+                                              float trackPtResolution,
+                                              float trackEtaResolution,
+                                              float mass,
+                                              float detRadius,
+                                              float magneticField)
   {
     // Compute tracking contribution to timing using the error propagation formula
     // Uses light speed in m/ps, magnetic field in T (*0.1 for conversion kGauss -> T)
