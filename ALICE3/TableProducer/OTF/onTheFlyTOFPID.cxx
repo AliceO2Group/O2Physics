@@ -209,27 +209,27 @@ struct OnTheFlyTofPid {
         h2dOuterTimeResTrack[i_true] = histos.add<TH2>(nameTitleOuterTrackRes.c_str(), nameTitleOuterTrackRes.c_str(), kTH2F, {axisMomentum, axisTrackTimeRes});
         h2dOuterTimeResTotal[i_true] = histos.add<TH2>(nameTitleOuterTotalRes.c_str(), nameTitleOuterTotalRes.c_str(), kTH2F, {axisMomentum, axisTotalTimeRes});
         for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
-          std::string nameTitle = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
+          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
           std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitle_delta = "h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuter_delta = "h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
+          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
+          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
           const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
           if (i_true == i_hyp) {
             const AxisSpec axisNsigmaCorrect{static_cast<int>(plotsConfig.nBinsNsigmaCorrectSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitle.c_str(), nameTitle.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner.c_str(), nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
             h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter.c_str(), nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaCorrect});
 
             const AxisSpec axisDeltaCorrect{static_cast<int>(plotsConfig.nBinsDeltaCorrectSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitle_delta.c_str(), nameTitle_delta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter_delta.c_str(), nameTitleOuter_delta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta.c_str(), nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta.c_str(), nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaCorrect});
           } else {
             const AxisSpec axisNsigmaWrong{static_cast<int>(plotsConfig.nBinsNsigmaWrongSpecies), plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitle.c_str(), nameTitle.c_str(), kTH2F, {axisX, axisNsigmaWrong});
+            h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInner.c_str(), nameTitleInner.c_str(), kTH2F, {axisX, axisNsigmaWrong});
             h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter.c_str(), nameTitleOuter.c_str(), kTH2F, {axisX, axisNsigmaWrong});
 
             const AxisSpec axisDeltaWrong{static_cast<int>(plotsConfig.nBinsDeltaWrongSpecies), plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitle_delta.c_str(), nameTitle_delta.c_str(), kTH2F, {axisX, axisDeltaWrong});
-            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuter_delta.c_str(), nameTitleOuter_delta.c_str(), kTH2F, {axisX, axisDeltaWrong});
+            h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleInnerDelta.c_str(), nameTitleInnerDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
+            h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>(nameTitleOuterDelta.c_str(), nameTitleOuterDelta.c_str(), kTH2F, {axisX, axisDeltaWrong});
           }
         }
       }
