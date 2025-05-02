@@ -92,22 +92,22 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   cpa,
   cpaXY,
   chi2PCA,
-  tpcNSigmaP0,  // 0
+  tpcNSigmaPr0, // 0
   tpcNSigmaKa0, // 0
   tpcNSigmaPi0, // 0
-  tpcNSigmaP1,  // 1
+  tpcNSigmaPr1, // 1
   tpcNSigmaKa1, // 1
   tpcNSigmaPi1, // 1
-  tpcNSigmaP2,  // 2
+  tpcNSigmaPr2, // 2
   tpcNSigmaKa2, // 2
   tpcNSigmaPi2, // 2
-  tofNSigmaP0,  //
+  tofNSigmaPr0, //
   tofNSigmaKa0, //
   tofNSigmaPi0, //
-  tofNSigmaP1,
+  tofNSigmaPr1,
   tofNSigmaKa1,
   tofNSigmaPi1,
-  tofNSigmaP2,
+  tofNSigmaPr2,
   tofNSigmaKa2,
   tofNSigmaPi2,
   tpcTofNSigmaPi0,
@@ -165,25 +165,25 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC(cpaXY);
         CHECK_AND_FILL_VEC_XIC(chi2PCA);
         // TPC PID variables
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaP0, nSigTpcPr0);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPr0, nSigTpcPr0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaKa0, nSigTpcKa0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPi0, nSigTpcPi0);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaP1, nSigTpcPr1);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPr1, nSigTpcPr1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaKa1, nSigTpcKa1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPi1, nSigTpcPi1);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaP2, nSigTpcPr2);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPr2, nSigTpcPr2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
         CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
         CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaP0, nSigTofPr0);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPr0, nSigTofPr0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPi0, nSigTofPi0);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaP1, nSigTofPr1);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPr1, nSigTofPr1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaKa1, nSigTofKa1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPi1, nSigTofPi1);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaP2, nSigTofPr2);
+        CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
         CHECK_AND_FILL_VEC_XIC_SIGNED(candidate, tofNSigmaPrExpPr0, nSigTofPr0, nSigTofPr2);
@@ -227,25 +227,25 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(cpaXY),
       FILL_MAP_XIC(chi2PCA),
       // TPC PID variables
-      FILL_MAP_XIC(tpcNSigmaP0),
+      FILL_MAP_XIC(tpcNSigmaPr0),
       FILL_MAP_XIC(tpcNSigmaKa0),
       FILL_MAP_XIC(tpcNSigmaPi0),
-      FILL_MAP_XIC(tpcNSigmaP1),
+      FILL_MAP_XIC(tpcNSigmaPr1),
       FILL_MAP_XIC(tpcNSigmaKa1),
       FILL_MAP_XIC(tpcNSigmaPi1),
-      FILL_MAP_XIC(tpcNSigmaP2),
+      FILL_MAP_XIC(tpcNSigmaPr2),
       FILL_MAP_XIC(tpcNSigmaKa2),
       FILL_MAP_XIC(tpcNSigmaPi2),
       FILL_MAP_XIC(tpcNSigmaPrExpPr0),
       FILL_MAP_XIC(tpcNSigmaPiExpPi2),
       // TOF PID variables
-      FILL_MAP_XIC(tofNSigmaP0),
+      FILL_MAP_XIC(tofNSigmaPr0),
       FILL_MAP_XIC(tofNSigmaKa0),
       FILL_MAP_XIC(tofNSigmaPi0),
-      FILL_MAP_XIC(tofNSigmaP1),
+      FILL_MAP_XIC(tofNSigmaPr1),
       FILL_MAP_XIC(tofNSigmaKa1),
       FILL_MAP_XIC(tofNSigmaPi1),
-      FILL_MAP_XIC(tofNSigmaP2),
+      FILL_MAP_XIC(tofNSigmaPr2),
       FILL_MAP_XIC(tofNSigmaKa2),
       FILL_MAP_XIC(tofNSigmaPi2),
       FILL_MAP_XIC(tofNSigmaPrExpPr0),

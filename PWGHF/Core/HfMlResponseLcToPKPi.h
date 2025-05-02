@@ -106,13 +106,13 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   tpcNSigmaPr2, // 2
   tpcNSigmaKa2, // 2
   tpcNSigmaPi2, // 2
-  tofNSigmaP0,  //
+  tofNSigmaPr0, //
   tofNSigmaKa0, //
   tofNSigmaPi0, //
-  tofNSigmaP1,
+  tofNSigmaPr1,
   tofNSigmaKa1,
   tofNSigmaPi1,
-  tofNSigmaP2,
+  tofNSigmaPr2,
   tofNSigmaKa2,
   tofNSigmaPi2,
   tpcTofNSigmaPi0,
@@ -184,13 +184,13 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaP0, nSigTofPr0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr0, nSigTofPr0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi0, nSigTofPi0);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaP1, nSigTofPr1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr1, nSigTofPr1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa1, nSigTofKa1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi1, nSigTofPi1);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaP2, nSigTofPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
         // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
@@ -250,13 +250,13 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(tpcNSigmaPrExpPr0),
       FILL_MAP_LCTOPKPI(tpcNSigmaPiExpPi2),
       // TOF PID variables
-      FILL_MAP_LCTOPKPI(tofNSigmaP0),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr0),
       FILL_MAP_LCTOPKPI(tofNSigmaKa0),
       FILL_MAP_LCTOPKPI(tofNSigmaPi0),
-      FILL_MAP_LCTOPKPI(tofNSigmaP1),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr1),
       FILL_MAP_LCTOPKPI(tofNSigmaKa1),
       FILL_MAP_LCTOPKPI(tofNSigmaPi1),
-      FILL_MAP_LCTOPKPI(tofNSigmaP2),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr2),
       FILL_MAP_LCTOPKPI(tofNSigmaKa2),
       FILL_MAP_LCTOPKPI(tofNSigmaPi2),
       FILL_MAP_LCTOPKPI(tofNSigmaPrExpPr0),
