@@ -1254,7 +1254,7 @@ struct LambdaTableProducer {
         continue;
       }
 
-      if (std::abs(mcpart.y()) > 0.5) {
+      if (std::abs(mcpart.y()) > cMaxV0Rap) {
         continue;
       }
 
