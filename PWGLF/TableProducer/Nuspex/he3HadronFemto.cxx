@@ -227,7 +227,7 @@ struct he3HadronFemto {
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
-  std::array<float, 6> mBBparamsDe;
+  std::array<float, 6> mBBparamsHe;
 
   std::vector<int> mRecoCollisionIDs;
   std::vector<bool> mGoodCollisions;
@@ -297,9 +297,9 @@ struct he3HadronFemto {
     }
     const int numberParticle = 5;
     for (int i = 0; i < numberParticle; i++) {
-      mBBparamsDe[i] = settingBetheBlochParams->get("He3", Form("p%i", i));
+      mBBparamsHe[i] = settingBetheBlochParams->get("He3", Form("p%i", i));
     }
-    mBBparamsDe[5] = settingBetheBlochParams->get("He3", "resolution");
+    mBBparamsHe[5] = settingBetheBlochParams->get("He3", "resolution");
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -467,9 +467,9 @@ struct he3HadronFemto {
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsDe[0], mBBparamsDe[1], mBBparamsDe[2], mBBparamsDe[3], mBBparamsDe[4]);
+    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(correctedTPCinnerParam * 2.f / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4]);
 
-    double resoTPC{expTPCSignal * mBBparamsDe[5]};
+    double resoTPC{expTPCSignal * mBBparamsHe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
 
