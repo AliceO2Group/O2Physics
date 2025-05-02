@@ -1042,6 +1042,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand3ProngExt, HfCand3ProngBase, "HFCAND3PEXT"
                                 hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz);
 
 using HfCand3Prong = HfCand3ProngExt;
+using HfCand3ProngWPid = soa::Join<HfCand3Prong, HfProng0PidPi, HfProng0PidPr, HfProng0PidKa, HfProng1PidPi, HfProng1PidPr, HfProng1PidKa, HfProng2PidPi, HfProng2PidPr, HfProng2PidKa>;
 
 DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
                   hf_cand_3prong::KfXError, hf_cand_3prong::KfYError, hf_cand_3prong::KfZError,
@@ -2440,6 +2441,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfD0FromDstarExt, HfD0FromDstarBase, "HFD0FRMDST
                                 hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0);
 
 using HfD0FromDstar = HfD0FromDstarExt;
+using HfD0FromDstarWPid = soa::Join<HfD0FromDstar, HfProng0PidPi, HfProng0PidKa, HfProng1PidPi, HfProng1PidKa>;
 
 DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   o2::soa::Index<>,
@@ -2490,6 +2492,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandDstarExt, HfCandDstarBase, "HFCANDDSTREXT"
 
 using HfCandDstars = HfCandDstarExt;
 using HfCandDstar = HfCandDstars::iterator;
+using HfCandDstarsWPid = soa::Join<HfCandDstars, HfProng0PidPi, HfProng0PidKa, HfProng1PidPi, HfProng1PidKa, /*soft pion*/ HfProng2PidPi, /*soft pion*/ HfProng2PidKa>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandDstarMcRec, "AOD", "HFCANDDSTRMCREC",

@@ -71,7 +71,7 @@ struct HfTaskXic {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
-  Partition<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
+  Partition<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
@@ -325,30 +325,30 @@ struct HfTaskXic {
       auto momentumProng2 = trackProng2.p();
 
       // TPC nSigma histograms
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, trackProng0.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, trackProng0.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, trackProng0.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong0"), momentumProng0, candidate.nSigTpcPr0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong0"), momentumProng0, candidate.nSigTpcPi0());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong0"), momentumProng0, candidate.nSigTpcKa0());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, trackProng1.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, trackProng1.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, trackProng1.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong1"), momentumProng1, candidate.nSigTpcPr1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong1"), momentumProng1, candidate.nSigTpcPi1());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong1"), momentumProng1, candidate.nSigTpcKa1());
 
-      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, trackProng2.tpcNSigmaPr());
-      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, trackProng2.tpcNSigmaPi());
-      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, trackProng2.tpcNSigmaKa());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPr_Prong2"), momentumProng2, candidate.nSigTpcPr2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaPi_Prong2"), momentumProng2, candidate.nSigTpcPi2());
+      registry.fill(HIST("Data/hPVsTPCNSigmaKa_Prong2"), momentumProng2, candidate.nSigTpcKa2());
 
       // TOF nSigma histograms
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, trackProng0.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, trackProng0.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, trackProng0.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong0"), momentumProng0, candidate.nSigTofPr0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong0"), momentumProng0, candidate.nSigTofPi0());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong0"), momentumProng0, candidate.nSigTofKa0());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, trackProng1.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, trackProng1.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, trackProng1.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong1"), momentumProng1, candidate.nSigTofPr1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong1"), momentumProng1, candidate.nSigTofPi1());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong1"), momentumProng1, candidate.nSigTofKa1());
 
-      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, trackProng2.tofNSigmaPr());
-      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, trackProng2.tofNSigmaPi());
-      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, trackProng2.tofNSigmaKa());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPr_Prong2"), momentumProng2, candidate.nSigTofPr2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaPi_Prong2"), momentumProng2, candidate.nSigTofPi2());
+      registry.fill(HIST("Data/hPVsTOFNSigmaKa_Prong2"), momentumProng2, candidate.nSigTofKa2());
 
       // THnSparse
       if (enableTHn) {
@@ -383,11 +383,11 @@ struct HfTaskXic {
           }
         }
       } // thn for Xic
-    }   // loop candidates
-  }     // end process data
+    } // loop candidates
+  } // end process data
 
   void processDataStd(aod::Collision const& collision,
-                      soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& candidates,
+                      soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi>> const& candidates,
                       TracksWPid const& tracks)
   {
     analysisData<false>(collision, candidates, tracks);
@@ -395,7 +395,7 @@ struct HfTaskXic {
   PROCESS_SWITCH(HfTaskXic, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(aod::Collision const& collision,
-                         soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, TracksWPid const& tracks)
+                         soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, TracksWPid const& tracks)
   {
     analysisData<true>(collision, candidatesMl, tracks);
   }
@@ -567,7 +567,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/background/hDecLenErrBg"), candidate.errorDecayLength(), ptCandidate);
         registry.fill(HIST("MC/reconstructed/background/hChi2PCARecBg"), candidate.chi2PCA(), ptCandidate);
       } // Xic background
-    }   // candidate loop
+    } // candidate loop
 
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -600,7 +600,7 @@ struct HfTaskXic {
       }
     }
   }
-  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
+  void processMcStd(soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
   {
@@ -608,7 +608,7 @@ struct HfTaskXic {
   }
   PROCESS_SWITCH(HfTaskXic, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
+  void processMcWithMl(soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi, aod::HfCand3ProngMcRec>> const& selectedCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {

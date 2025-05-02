@@ -82,7 +82,7 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3ProngWPid, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
 // Events
@@ -521,12 +521,10 @@ struct HfTreeCreatorLcToPKPi {
       rowCandidateMC.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
-      auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
@@ -561,21 +559,21 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -638,21 +636,21 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -681,13 +679,13 @@ struct HfTreeCreatorLcToPKPi {
             float chi2GeoPionKaon;
             float mass;
             float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
             float valueTpcNSigmaPi;
             float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+            const float valueTofNSigmaKa = candidate.nSigTofKa1();
             float valueTofNSigmaPi;
             float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
             float valueTpcTofNSigmaPi;
             if (candFlag == 0) {
               chi2primProton = candidate.kfChi2PrimProng0();
@@ -697,12 +695,12 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
               chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
               mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos2.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr0();
+              valueTpcNSigmaPi = candidate.nSigTpcPi2();
+              valueTofNSigmaPr = candidate.nSigTofPr0();
+              valueTofNSigmaPi = candidate.nSigTofPi2();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
             } else {
               chi2primProton = candidate.kfChi2PrimProng2();
               chi2primPion = candidate.kfChi2PrimProng0();
@@ -711,12 +709,12 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
               chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
               mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr2();
+              valueTpcNSigmaPi = candidate.nSigTpcPi0();
+              valueTofNSigmaPr = candidate.nSigTofPr2();
+              valueTofNSigmaPi = candidate.nSigTofPi0();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
             }
             const float svX = candidate.xSecondaryVertex();
             const float svY = candidate.ySecondaryVertex();
@@ -847,7 +845,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -863,7 +861,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -880,7 +878,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -896,7 +894,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -969,12 +967,10 @@ struct HfTreeCreatorLcToPKPi {
       rowCollisionId.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
-      auto trackPos1 = candidate.template prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           float functionInvMass, functionInvMassKPi;
@@ -1004,21 +1000,21 @@ struct HfTreeCreatorLcToPKPi {
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -1082,21 +1078,21 @@ struct HfTreeCreatorLcToPKPi {
               candidate.errorImpactParameter0(),
               candidate.errorImpactParameter1(),
               candidate.errorImpactParameter2(),
-              trackPos1.tpcNSigmaPi(),
-              trackPos1.tpcNSigmaPr(),
-              trackPos1.tofNSigmaPi(),
-              trackPos1.tofNSigmaPr(),
-              trackNeg.tpcNSigmaKa(),
-              trackNeg.tofNSigmaKa(),
-              trackPos2.tpcNSigmaPi(),
-              trackPos2.tpcNSigmaPr(),
-              trackPos2.tofNSigmaPi(),
-              trackPos2.tofNSigmaPr(),
-              trackPos1.tpcTofNSigmaPi(),
-              trackPos1.tpcTofNSigmaPr(),
-              trackNeg.tpcTofNSigmaKa(),
-              trackPos2.tpcTofNSigmaPi(),
-              trackPos2.tpcTofNSigmaPr(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
               1 << candFlag,
               functionInvMass,
               candidate.pt(),
@@ -1125,13 +1121,13 @@ struct HfTreeCreatorLcToPKPi {
             float chi2GeoPionKaon;
             float mass;
             float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
             float valueTpcNSigmaPi;
             float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+            const float valueTofNSigmaKa = candidate.nSigTofKa1();
             float valueTofNSigmaPi;
             float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
             float valueTpcTofNSigmaPi;
             if (candFlag == 0) {
               chi2primProton = candidate.kfChi2PrimProng0();
@@ -1141,12 +1137,12 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
               chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
               mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos2.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr0();
+              valueTpcNSigmaPi = candidate.nSigTpcPi2();
+              valueTofNSigmaPr = candidate.nSigTofPr0();
+              valueTofNSigmaPi = candidate.nSigTofPi2();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
             } else {
               chi2primProton = candidate.kfChi2PrimProng2();
               chi2primPion = candidate.kfChi2PrimProng0();
@@ -1155,12 +1151,12 @@ struct HfTreeCreatorLcToPKPi {
               chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
               chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
               mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-              valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-              valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-              valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-              valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-              valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr2();
+              valueTpcNSigmaPi = candidate.nSigTpcPi0();
+              valueTofNSigmaPr = candidate.nSigTofPr2();
+              valueTofNSigmaPi = candidate.nSigTofPi0();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
             }
             const float x = candidate.xSecondaryVertex();
             const float y = candidate.ySecondaryVertex();
@@ -1222,7 +1218,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1235,7 +1231,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1248,7 +1244,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
@@ -1261,7 +1257,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);

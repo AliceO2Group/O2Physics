@@ -108,7 +108,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   // using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
-  using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars>;
+  using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstarsWPid>;
 
   AxisSpec axisBdtScore{100, 0.f, 1.f};
   AxisSpec axisSelStatus{2, -0.5f, 1.5f};
@@ -365,10 +365,6 @@ struct HfCandidateSelectorDstarToD0Pi {
       outputMlDstarToD0Pi.clear();
       auto ptCand = candDstar.pt();
 
-      auto prongPi = candDstar.prongPi_as<TracksSel>();
-      auto prong0 = candDstar.prong0_as<TracksSel>();
-      auto prong1 = candDstar.prong1_as<TracksSel>();
-
       if (!TESTBIT(candDstar.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         if (applyMl) {
@@ -417,16 +413,18 @@ struct HfCandidateSelectorDstarToD0Pi {
       int pidTrackNegKaon = -1;
       int pidTrackNegPion = -1;
 
+      auto prong0 = candDstar.prong0_as<TracksSel>();
+      auto prong1 = candDstar.prong1_as<TracksSel>();
       if (usePidTpcAndTof) {
-        pidTrackPosKaon = selectorKaon.statusTpcAndTof(candDstar.prong0_as<TracksSel>());
-        pidTrackPosPion = selectorPion.statusTpcAndTof(candDstar.prong0_as<TracksSel>());
-        pidTrackNegKaon = selectorKaon.statusTpcAndTof(candDstar.prong1_as<TracksSel>());
-        pidTrackNegPion = selectorPion.statusTpcAndTof(candDstar.prong1_as<TracksSel>());
+        pidTrackPosKaon = selectorKaon.statusTpcAndTof(prong0, candDstar.nSigTpcKa0(), candDstar.nSigTofKa0());
+        pidTrackPosPion = selectorPion.statusTpcAndTof(prong0, candDstar.nSigTpcPi0(), candDstar.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(prong1, candDstar.nSigTpcKa1(), candDstar.nSigTofKa1());
+        pidTrackNegPion = selectorPion.statusTpcAndTof(prong1, candDstar.nSigTpcPi1(), candDstar.nSigTofPi1());
       } else {
-        pidTrackPosKaon = selectorKaon.statusTpcOrTof(candDstar.prong0_as<TracksSel>());
-        pidTrackPosPion = selectorPion.statusTpcOrTof(candDstar.prong0_as<TracksSel>());
-        pidTrackNegKaon = selectorKaon.statusTpcOrTof(candDstar.prong1_as<TracksSel>());
-        pidTrackNegPion = selectorPion.statusTpcOrTof(candDstar.prong1_as<TracksSel>());
+        pidTrackPosKaon = selectorKaon.statusTpcOrTof(prong0, candDstar.nSigTpcKa0(), candDstar.nSigTofKa0());
+        pidTrackPosPion = selectorPion.statusTpcOrTof(prong0, candDstar.nSigTpcPi0(), candDstar.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(prong1, candDstar.nSigTpcKa1(), candDstar.nSigTofKa1());
+        pidTrackNegPion = selectorPion.statusTpcOrTof(prong1, candDstar.nSigTpcPi1(), candDstar.nSigTofPi1());
       }
 
       int pidDstar = -1;
@@ -465,7 +463,7 @@ struct HfCandidateSelectorDstarToD0Pi {
         // ML selections
         bool isSelectedMlDstar = false;
 
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar, prong0, prong1, prongPi);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
 
         hfMlDstarCandidate(outputMlDstarToD0Pi);

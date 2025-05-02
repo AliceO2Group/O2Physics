@@ -145,8 +145,8 @@ struct HfFemtoDreamProducer {
 
   float magField;
   int runNumber;
-  using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
@@ -457,11 +457,11 @@ struct HfFemtoDreamProducer {
           isSelectedMlLcToPKPi = false;
           isSelectedMlLcToPiKP = false;
           if (candidate.mlProbLcToPKPi().size() > 0) {
-            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
             isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
           }
           if (candidate.mlProbLcToPiKP().size() > 0) {
-            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
             isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
           }
           if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP)

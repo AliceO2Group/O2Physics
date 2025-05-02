@@ -35,6 +35,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
@@ -43,6 +44,7 @@ using namespace o2::hf_trkcandsel;
 using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
+using namespace o2::aod::pid_tpc_tof_utils;
 
 namespace o2::aod
 {
@@ -53,6 +55,12 @@ using HfDstarsWithPvRefitInfo = soa::Join<aod::HfDstars, aod::HfPvRefitDstar>;
 struct HfCandidateCreatorDstar {
   Produces<aod::HfD0FromDstarBase> rowCandD0Base;
   Produces<aod::HfCandDstarBase> rowCandDstarBase;
+  Produces<aod::HfProng0PidPi> rowProng0PidPi;
+  Produces<aod::HfProng0PidKa> rowProng0PidKa;
+  Produces<aod::HfProng1PidPi> rowProng1PidPi;
+  Produces<aod::HfProng1PidKa> rowProng1PidKa;
+  Produces<aod::HfProng2PidPi> rowProngSoftPiPidPi;
+  Produces<aod::HfProng2PidKa> rowProngSoftPiPidKa;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
@@ -81,6 +89,8 @@ struct HfCandidateCreatorDstar {
   double bz;
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
   double massPi, massK, massD0;
+
+  using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
@@ -193,10 +203,10 @@ struct HfCandidateCreatorDstar {
         continue;
       }
 
-      auto trackPi = rowTrackIndexDstar.template prong0_as<aod::TracksWCov>();
+      auto trackPi = rowTrackIndexDstar.template prong0_as<TracksWCovExtraPidPiKa>();
       auto prongD0 = rowTrackIndexDstar.template prongD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.template prong0_as<aod::TracksWCov>();
-      auto trackD0Prong1 = prongD0.template prong1_as<aod::TracksWCov>();
+      auto trackD0Prong0 = prongD0.template prong0_as<TracksWCovExtraPidPiKa>();
+      auto trackD0Prong1 = prongD0.template prong1_as<TracksWCovExtraPidPiKa>();
 
       // Extracts primary vertex position and covariance matrix from a collision
       auto primaryVertex = getPrimaryVertex(collision);
@@ -346,6 +356,14 @@ struct HfCandidateCreatorDstar {
                     std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
+      // fill candidate D0 prong PID rows
+      fillProngPid<HfProngSpecies::Pion>(trackD0Prong0, rowProng0PidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackD0Prong0, rowProng0PidKa);
+      fillProngPid<HfProngSpecies::Pion>(trackD0Prong1, rowProng1PidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackD0Prong1, rowProng1PidKa);
+      // fill soft-pion PID rows
+      fillProngPid<HfProngSpecies::Pion>(trackPi, rowProngSoftPiPidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackPi, rowProngSoftPiPidKa);
 
       if (fillHistograms) {
         registry.fill(HIST("QA/hPtD0"), ptD0);

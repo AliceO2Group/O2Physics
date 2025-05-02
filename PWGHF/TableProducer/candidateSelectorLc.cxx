@@ -497,17 +497,17 @@ struct HfCandidateSelectorLc {
         TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
         TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
         if (usePidTpcAndTof) {
-          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         } else {
-          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         }
 
         if (!isSelectedPID(pidTrackPos1Proton, pidTrackNegKaon, pidTrackPos2Pion)) {
@@ -554,11 +554,11 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPiKP = false;
 
         if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
-          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
           isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
         }
         if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
-          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
           isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
         }
 
@@ -588,7 +588,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function w/o Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
+  void processNoBayesPidWithDCAFitterN(aod::HfCand3ProngWPid const& candidates,
                                        TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
@@ -598,7 +598,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function with Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPidWithDCAFitterN(aod::HfCand3Prong const& candidates,
+  void processBayesPidWithDCAFitterN(aod::HfCand3ProngWPid const& candidates,
                                      TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
@@ -608,7 +608,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function w/o Bayes PID with KFParticle
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
+  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngKF> const& candidates,
                                        TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
@@ -618,7 +618,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function with Bayes PID with KFParticle
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF> const& candidates,
+  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngKF> const& candidates,
                                      TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);

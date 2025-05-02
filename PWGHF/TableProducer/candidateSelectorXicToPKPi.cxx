@@ -222,7 +222,7 @@ struct HfCandidateSelectorXicToPKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates,
+  void process(aod::HfCand3ProngWPid const& candidates,
                TracksSel const&)
   {
     // looping over 3-prong candidates
@@ -307,17 +307,17 @@ struct HfCandidateSelectorXicToPKPi {
         TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
         if (usePidTpcAndTof) {
 
-          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         } else {
-          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         }
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
@@ -364,11 +364,11 @@ struct HfCandidateSelectorXicToPKPi {
         bool isSelectedMlXicToPiKP = false;
 
         if (topolXicToPKPi && pidXicToPKPi) {
-          std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+          std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, true);
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
         }
         if (topolXicToPiKP && pidXicToPiKP) {
-          std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+          std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, false);
           isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
         }
 
