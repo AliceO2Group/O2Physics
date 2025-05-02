@@ -8,18 +8,21 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file onTheFlyTOFPID.cxx
+///
+/// \file onTheFlyTofPid.cxx
 ///
 /// \brief This task goes straight from a combination of track table and mcParticles
-/// and a custom TOF configuration to a table of TOF NSigmas for the particles
-/// being analysed. It currently contemplates 5 particle types:
-/// electrons, pions, kaons, protons and muons
+///        and a custom TOF configuration to a table of TOF NSigmas for the particles
+///        being analysed. It currently contemplates 5 particle types:
+///        electrons, pions, kaons, protons and muons
 ///
-/// More particles could be added but would have to be added to the LUT
-/// being used in the onTheFly tracker task.
+///        More particles could be added but would have to be added to the LUT
+///        being used in the onTheFly tracker task.
 ///
 /// \author David Dobrigkeit Chinellato, UNICAMP
 /// \author Nicola Nicassio, University and INFN Bari
+/// \since  May 22, 2024
+///
 
 #include <utility>
 #include <map>
