@@ -181,11 +181,11 @@ struct HfCandidateSelectorLcPidMl {
         pidLcToPiKP = 1;
       } else {
         // track-level PID selection
-        int pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
-        int pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
-        int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-        int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-        int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
+        TrackSelectorPID::Status pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+        TrackSelectorPID::Status pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+        TrackSelectorPID::Status pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        TrackSelectorPID::Status pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+        TrackSelectorPID::Status pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidTrackNegKaon == TrackSelectorPID::Accepted &&

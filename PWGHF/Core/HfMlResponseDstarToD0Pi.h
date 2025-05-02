@@ -208,7 +208,7 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTPCPiPrSoftPi, nSigTpcPi2);
         CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTPCKaPrSoftPi, nSigTpcKa2);
         CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTOFPiPrSoftPi, nSigTofPi2);
-        CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTOFKaPrSoftPi, nSigTofPi2);
+        CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTOFKaPrSoftPi, nSigTofKa2);
         CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTPCTOFPiPrSoftPi, tpcTofNSigmaPi2);
         CHECK_AND_FILL_VEC_DSTAR_GETTER(nSigmaTPCTOFKaPrSoftPi, tpcTofNSigmaKa2);
       }
