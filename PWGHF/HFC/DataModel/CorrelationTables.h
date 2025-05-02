@@ -476,8 +476,8 @@ namespace hf_electron
 DECLARE_SOA_COLUMN(Phi, phi, float);               //! Phi of electron
 DECLARE_SOA_COLUMN(Eta, eta, float);               //! Eta of electron
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float); //! Transverse momentum of electron
-DECLARE_SOA_COLUMN(LSElCount, lSElCount, int);     //! like sign Electron
-DECLARE_SOA_COLUMN(ULSElCount, uLSElCount, int);   //! unLike sign Electron
+DECLARE_SOA_COLUMN(LsElCount, lsElCount, int);     //! like sign Electron
+DECLARE_SOA_COLUMN(UlsElCount, ulsElCount, int);   //! unLike sign Electron
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);         //! Pool Bin of event defined using zvtx and multiplicit
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
@@ -488,8 +488,8 @@ DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
                   aod::hf_electron::Phi,
                   aod::hf_electron::Eta,
                   aod::hf_electron::PtElectron,
-                  aod::hf_electron::LSElCount,
-                  aod::hf_electron::ULSElCount,
+                  aod::hf_electron::LsElCount,
+                  aod::hf_electron::UlsElCount,
                   aod::hf_electron::PoolBin,
                   aod::hf_electron::GIndexCol,
                   aod::hf_electron::TimeStamp);
@@ -501,8 +501,8 @@ DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);           //! DeltaEta between El
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);       //! Transverse momentum of Electron
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);           //! Transverse momentum of Hadron;
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);               //! Pool Bin of event defined using zvtx and multiplicity
-DECLARE_SOA_COLUMN(LSPairEHCount, lSPairEHCount, int);   //! like sign Pair Electron hadron coorelation
-DECLARE_SOA_COLUMN(ULSPairEHCount, uLSPairEHCount, int); //! unLike sign Pair Electron hadron coorelation
+DECLARE_SOA_COLUMN(LsPairEHCount, lsPairEHCount, int);   //! like sign Pair Electron hadron coorelation
+DECLARE_SOA_COLUMN(UlsPairEHCount, ulsPairEHCount, int); //! unLike sign Pair Electron hadron coorelation
 } // namespace hf_correlation_electron_hadron
 DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs Informations
                   hf_correlation_electron_hadron::DeltaPhi,
@@ -510,8 +510,8 @@ DECLARE_SOA_TABLE(HfEHadronPair, "AOD", "HFEHADRONPAIR", //! Hfe-Hadrons pairs I
                   hf_correlation_electron_hadron::PtElectron,
                   hf_correlation_electron_hadron::PtHadron,
                   hf_correlation_electron_hadron::PoolBin,
-                  hf_correlation_electron_hadron::LSPairEHCount,
-                  hf_correlation_electron_hadron::ULSPairEHCount);
+                  hf_correlation_electron_hadron::LsPairEHCount,
+                  hf_correlation_electron_hadron::UlsPairEHCount);
 
 // Note: definition of columns and tables for Electron Hadron correlation pairs for MC Gen
 namespace hf_correlation_mcgenelectron_hadron
