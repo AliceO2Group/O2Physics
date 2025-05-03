@@ -156,7 +156,8 @@ struct UccZdc {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
   Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
+  // Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
@@ -199,11 +200,11 @@ struct UccZdc {
     if (doprocessZdcCollAss) {
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
       registry.add("ZposVsEta", "", kTProfile, {axisZpos});
+      registry.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
       registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
       registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
 
-      registry.add("NchRaw", ";#it{N}_{ch} (|#eta| < 0.8);", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsPt", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);;", kTH2F, {{{nBinsNch, minNch, maxNch}, {axisPt}}});
       registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
@@ -315,10 +316,10 @@ struct UccZdc {
     // This avoids that users can replace objects **while** a train is running
     ccdb->setCreatedNotAfter(noLaterThan.value);
     LOGF(info, "Getting object %s", paTH.value.data());
-    efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, noLaterThan);
-    if (!efficiency) {
-      LOGF(fatal, "Efficiency object not found!");
-    }
+    //        efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, noLaterThan);
+    //        if (!efficiency) {
+    //            LOGF(fatal, "Efficiency object not found!");
+    //        }
   }
 
   template <typename CheckCol>
@@ -562,6 +563,14 @@ struct UccZdc {
     }
 
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+    // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
+
+    // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+    auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    if (!efficiency) {
+      LOGF(fatal, "Efficiency object not found!");
+    }
+
     // has ZDC?
     if (!foundBC.has_zdc()) {
       return;
@@ -669,7 +678,7 @@ struct UccZdc {
     }
 
     registry.fill(HIST("Nch"), w1);
-    registry.fill(HIST("NchRaw"), nch);
+    registry.fill(HIST("ZN"), sumZNs);
     registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
     registry.fill(HIST("NchVsOneParCorrVsZN"), w1, sumZNs, oneParCorr, w1);
     registry.fill(HIST("NchVsTwoParCorrVsZN"), w1, sumZNs, twoParCorr, denTwoParCorr);
@@ -681,8 +690,9 @@ struct UccZdc {
   // Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
   TRandom* randPointer = new TRandom();
-  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
+  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
+
     float rndNum = randPointer->Uniform(0.0, 1.0);
     registry.fill(HIST("RandomNumber"), rndNum);
 
@@ -691,6 +701,15 @@ struct UccZdc {
       registry.fill(HIST("EvtsDivided"), 0);
       //----- MC reconstructed -----//
       for (const auto& collision : collisions) {
+
+        // To use run-by-run efficiency
+        const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+        // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+        auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+        if (!efficiency) {
+          LOGF(fatal, "Efficiency object not found!");
+        }
+
         // Event selection
         if (!isEventSelected(collision)) {
           continue;
@@ -804,7 +823,7 @@ struct UccZdc {
         registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
         registry.fill(HIST("NchvsFourParCorrGen"), nchMC, fourParCorrMC, denFourParCorrMC);
       }
-    } else {
+    } else { // Correction with the remaining half of the sample
       registry.fill(HIST("EvtsDivided"), 1);
       //----- MC reconstructed -----//
       for (const auto& collision : collisions) {
@@ -825,6 +844,12 @@ struct UccZdc {
 
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+
+          // Has MC particle?
           if (!track.has_mcParticle()) {
             continue;
           }
