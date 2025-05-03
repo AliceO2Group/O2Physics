@@ -509,11 +509,9 @@ struct he3HadronFemto {
   bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, He3HadCandidate& he3Hadcand, const Ttracks& /*trackTable*/, bool isMixedEvent)
   {
     const int numCoordinates = 3;
-    auto trackCovHe3 = getTrackParCov(trackHe3);
-    auto trackCovHad = getTrackParCov(trackHad);
     if (!isMixedEvent) {
-      // auto trackCovHe3 = getTrackParCov(trackHe3);
-      // auto trackCovHad = getTrackParCov(trackHad);
+      auto trackCovHe3 = getTrackParCov(trackHe3);
+      auto trackCovHad = getTrackParCov(trackHad);
       int nCand = CommonInite;
       try {
         nCand = mFitter.process(trackCovHe3, trackCovHad);
