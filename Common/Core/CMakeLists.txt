@@ -21,7 +21,7 @@ o2physics_add_library(AnalysisCore
         MetadataHelper.cxx
         CollisionTypeHelper.cxx
         FFitWeights.cxx
-        PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base)
+        PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base O2::DataFormatsTOF)
 
 o2physics_target_root_dictionary(AnalysisCore
         HEADERS TrackSelection.h

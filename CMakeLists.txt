@@ -61,22 +61,9 @@ include(AddRootDictionary)
 
 # Main targets of the project in various subdirectories. Order matters.
 add_subdirectory(Common)
-add_subdirectory(ALICE3)
 add_subdirectory(DPG)
 
-add_subdirectory(PWGCF)
-add_subdirectory(PWGDQ)
-add_subdirectory(PWGEM)
-add_subdirectory(PWGHF)
-add_subdirectory(PWGJE)
-add_subdirectory(PWGLF)
-add_subdirectory(PWGMM)
-add_subdirectory(PWGUD)
-
 add_subdirectory(Tools)
-add_subdirectory(Tutorials)
-add_subdirectory(EventFiltering)
-
 add_subdirectory(Scripts)
 
 # Testing and packaging only needed if we are the top level directory
