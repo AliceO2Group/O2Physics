@@ -106,7 +106,7 @@ struct NucleitpcPbPb {
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
   Configurable<float> cfgtpcNClsFound{"cfgtpcNClsFound", 100.0f, "min. no. of tpcNClsFound"};
   Configurable<float> cfgitsNCls{"cfgitsNCls", 2.0f, "min. no. of itsNCls"};
-  
+
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
