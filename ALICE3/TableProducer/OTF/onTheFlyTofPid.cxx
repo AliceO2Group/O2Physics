@@ -141,7 +141,8 @@ struct OnTheFlyTofPid {
         return;
       }
       if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut.name, lut.value, true)) {
-        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";      }
+        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
+      }
     };
     configLutPath(simConfig.lutEl);
     configLutPath(simConfig.lutMu);
