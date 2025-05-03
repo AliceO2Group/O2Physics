@@ -13,7 +13,7 @@
 #include <limits>
 #include <vector>
 #include <string>
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -77,7 +77,8 @@ struct primParticles {
   {
     resolution = bethe.get(name, "resolution");
     betheParams.clear();
-    for (unsigned int i = 0; i < 5; i++)
+    constexpr unsigned int kNSpecies = 5;
+    for (unsigned int i = 0; i < kNSpecies; i++)
       betheParams.push_back(bethe.get(name, i));
   }
 }; // struct primParticles
@@ -102,6 +103,10 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgFillmass{"cfgFillmass", true, "Fill mass histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
+  Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
+  Configurable<float> cfgtpcNClsFound{"cfgtpcNClsFound", 100.0f, "min. no. of tpcNClsFound"};
+  Configurable<float> cfgitsNCls{"cfgitsNCls", 2.0f, "min. no. of itsNCls"};
+  
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
@@ -192,7 +197,7 @@ struct NucleitpcPbPb {
       for (size_t i = 0; i < primaryParticles.size(); i++) {
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity)
           continue;
-        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
+        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
         if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
           continue;
         if (track.sign() > 0) {
@@ -254,13 +259,14 @@ struct NucleitpcPbPb {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
+    constexpr float kInvalidBField = -990.f;
     auto run3grpTimestamp = bc.timestamp();
     dBz = 0;
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grpTimestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (bField < -990) {
+      if (bField < kInvalidBField) {
         // Fetch magnetic field from ccdb for current collision
         dBz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
@@ -273,7 +279,7 @@ struct NucleitpcPbPb {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grpTimestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (bField < -990) {
+      if (bField < kInvalidBField) {
         // Fetch magnetic field from ccdb for current collision
         dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
@@ -290,7 +296,7 @@ struct NucleitpcPbPb {
     collHasCandidate = false;
     histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
-    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < 10;
+    collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < cfgZvertex;
     occupancy = collision.trackOccupancyInTimeRange();
     if (collPassedEvSel) {
       histos.fill(HIST("histNev"), 1.5);
@@ -311,7 +317,7 @@ struct NucleitpcPbPb {
     if (cfgFillDeDxwithout_cut) {
       hDeDx[2 * species]->Fill(track.sign() * rigidity, track.tpcSignal());
     }
-    if (track.tpcNClsFound() < 100 || track.itsNCls() < 2)
+    if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls)
       return;
     if (cfgFillDeDxwith_cut) {
       hDeDx[2 * species + 1]->Fill(track.sign() * rigidity, track.tpcSignal());
@@ -321,13 +327,15 @@ struct NucleitpcPbPb {
   template <class T>
   void fillnsigma(T const& track, int species)
   {
-    if (track.tpcNClsFound() < 100 || track.itsNCls() < 2)
+    if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls)
       return;
     if (cfgFillnsigma) {
       int i = species;
       const float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
       double momn;
-      if (species == 4 || species == 5) {
+      int species_he3 = 4;
+      int species_he4 = 5;
+      if (species == species_he3 || species == species_he4) {
         momn = 2 * track.pt();
       } else {
         momn = track.pt();
@@ -344,7 +352,7 @@ struct NucleitpcPbPb {
   template <class T>
   void fillhmass(T const& track, int species)
   {
-    if (track.tpcNClsFound() < 100 || track.itsNCls() < 2)
+    if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls)
       return;
     if (cfgFillmass) {
       double mass;
@@ -354,7 +362,9 @@ struct NucleitpcPbPb {
         mass = track.mass();
       }
       double momn;
-      if (species == 4 || species == 5) {
+      int species_he3 = 4;
+      int species_he4 = 5;
+      if (species == species_he3 || species == species_he4) {
         momn = 2 * track.pt();
       } else {
         momn = track.pt();
@@ -417,14 +427,14 @@ struct NucleitpcPbPb {
   template <class T>
   float getRapidity(T const& track, int species)
   {
+    using PtEtaPhiMVector = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>;
     double momn;
-    TLorentzVector lorentzVector_particle;
     if (species == 4 || species == 5) {
       momn = 2 * track.pt();
     } else {
       momn = track.pt();
     }
-    lorentzVector_particle.SetPtEtaPhiM(momn, track.eta(), track.phi(), particleMasses[species]);
+    PtEtaPhiMVector lorentzVector_particle(momn, track.eta(), track.phi(), particleMasses[species]);
     return lorentzVector_particle.Rapidity();
   }
 }; // end of the task here
