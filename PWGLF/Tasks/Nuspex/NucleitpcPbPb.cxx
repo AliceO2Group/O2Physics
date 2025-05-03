@@ -70,13 +70,13 @@ constexpr double trackPIDsettings[nParticles][nTrkSettings]{
   {1, 0, 70, 5.0, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000},
   {1, 0, 75, 1.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000},
   {1, 0, 70, 1.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000}};
-struct primParticles {
+struct PrimParticles {
   TString name;
   int pdgCode, charge;
   double mass, resolution;
   std::vector<double> betheParams;
   bool active;
-  primParticles(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
+  PrimParticles(std::string name_, int pdgCode_, double mass_, int charge_, LabeledArray<double> bethe) : name(name_), pdgCode(pdgCode_), charge(charge_), mass(mass_), active(false)
   {
     resolution = bethe.get(name, "resolution");
     betheParams.clear();
@@ -84,7 +84,7 @@ struct primParticles {
     for (unsigned int i = 0; i < kNSpecies; i++)
       betheParams.push_back(bethe.get(name, i));
   }
-}; // struct primParticles
+}; // struct PrimParticles
 //----------------------------------------------------------------------------------------------------------------
 std::vector<std::shared_ptr<TH2>> hDeDx;
 std::vector<std::shared_ptr<TH2>> hNsigmaPt;
@@ -119,7 +119,7 @@ struct NucleitpcPbPb {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
-  std::vector<primParticles> primaryParticles;
+  std::vector<PrimParticles> primaryParticles;
   std::vector<float> primVtx, cents;
   bool collHasCandidate, collPassedEvSel;
   int mRunNumber, occupancy;
@@ -136,7 +136,7 @@ struct NucleitpcPbPb {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     for (int i = 0; i < nParticles; i++) { // create primaryParticles
-      primaryParticles.push_back(primParticles(particleNames.at(i), particlePdgCodes.at(i), particleMasses.at(i), particleCharge.at(i), cfgBetheBlochParams));
+      primaryParticles.push_back(PrimParticles(particleNames.at(i), particlePdgCodes.at(i), particleMasses.at(i), particleCharge.at(i), cfgBetheBlochParams));
     }
     // define histogram axes
     const AxisSpec axisMagField{10, -10., 10., "magnetic field"};
@@ -384,7 +384,7 @@ struct NucleitpcPbPb {
   }
   //----------------------------------------------------------------------------------------------------------------
   template <class T>
-  float getTPCnSigma(T const& track, primParticles const& particle)
+  float getTPCnSigma(T const& track, PrimParticles const& particle)
   {
     const float rigidity = getRigidity(track);
     if (!track.hasTPC())
@@ -442,8 +442,8 @@ struct NucleitpcPbPb {
     } else {
       momn = track.pt();
     }
-    PtEtaPhiMVector lorentzVector_particle(momn, track.eta(), track.phi(), particleMasses[species]);
-    return lorentzVector_particle.Rapidity();
+    PtEtaPhiMVector lorentzVectorParticle(momn, track.eta(), track.phi(), particleMasses[species]);
+    return lorentzVectorParticle.Rapidity();
   }
 }; // end of the task here
 //----------------------------------------------------------------------------------------------------------------
