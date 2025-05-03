@@ -102,9 +102,9 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
 /// @param value Task configurable to inherit from (name and values are used)
 /// @param verbose if true, print debug messages
 template <typename ValueType>
-bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, o2::framework::Configurable<ValueType>& value, const bool verbose = true)
+bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, ValueType& configurable, const bool verbose = true)
 {
-  return getTaskOptionValue<o2::framework::Configurable<ValueType>>(initContext, taskName, value.name, value.value, true);
+  return getTaskOptionValue(initContext, taskName, configurable.name, configurable.value, verbose);
 }
 
 #endif // COMMON_CORE_TABLEHELPER_H_
