@@ -49,11 +49,10 @@ MetadataHelper metadataInfo;
 
 // Input data types
 using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
-using Run3Cols = aod::Collisions;
 using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
 using Run3TrksWtofWevTime = soa::Join<Run3TrksWtof, aod::TOFEvTime, aod::pidEvTimeFlags>;
 
-using EvTimeCollisions = soa::Join<Run3Cols, aod::EvSels>;
+using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
 
 using Run2Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -91,7 +90,6 @@ struct TOFCalibConfig {
 
   void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
   {
-    mInitMode = 2;
     getCfg(initContext, "ccdb-url", mUrl, task);
     getCfg(initContext, "ccdb-path-grplhcif", mPathGrpLhcIf, task);
     getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
@@ -113,7 +111,6 @@ struct TOFCalibConfig {
   void initSetup(o2::pid::tof::TOFResoParamsV3& mRespParamsV3,
                  CCDBObject ccdb)
   {
-    mInitMode = 1;
     // First we set the CCDB manager
     ccdb->setURL(mUrl);
     ccdb->setTimestamp(mTimestamp);
@@ -323,7 +320,6 @@ struct TOFCalibConfig {
 
  private:
   int mLastRunNumber = -1; // Last run number for which the calibration was loaded
-  int mInitMode = 0;       // 0: no init, 1: init, 2: inherit
 
   // Configurable options
   std::string mUrl;
@@ -365,9 +361,6 @@ struct tofSignal {
   // Output histograms
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   struct : ConfigurableGroup {
     Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
@@ -424,7 +417,6 @@ struct tofSignal {
     if (!doprocessRun2 && !doprocessRun3) {
       LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
     }
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
     if (!enableQaHistograms) {
       return;
     }
@@ -526,8 +518,8 @@ struct tofEventTime {
   bool enableTableTOFEvTime = false;
   bool enableTableEvTimeTOFOnly = false;
   // Detector response and input parameters
-  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::pid::tof::TOFResponse> tofResponse;
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
 
   // Event time configurations
@@ -541,6 +533,7 @@ struct tofEventTime {
 
   void init(o2::framework::InitContext& initContext)
   {
+    LOG(info) << "Initializing the tofEventTime task>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
     mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking that the table is requested in the workflow and enabling it
     enableTableTOFEvTime = isTableRequiredInWorkflow(initContext, "TOFEvTime");
@@ -549,6 +542,8 @@ struct tofEventTime {
       LOG(info) << "Table for TOF Event time (TOFEvTime) is not required, disabling it";
     }
     LOG(info) << "Table TOFEvTime enabled!";
+    mTOFCalibConfig.initSetup(tofResponse->parameters, ccdb); // Getting the parametrization parameters
+    tofResponse->setInit();
 
     enableTableEvTimeTOFOnly = isTableRequiredInWorkflow(initContext, "EvTimeTOFOnly");
     if (enableTableEvTimeTOFOnly) {
@@ -600,8 +595,6 @@ struct tofEventTime {
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
     }
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
-
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
   }
@@ -611,11 +604,13 @@ struct tofEventTime {
   ///
   /// Process function to prepare the event for each track on Run 2 data
   void processRun2(aod::Tracks const& tracks,
-                   aod::Collisions const&)
+                   aod::Collisions const&,
+                   aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
       return;
     }
+    mTOFCalibConfig.processSetup(tofResponse->parameters, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
@@ -654,7 +649,7 @@ struct tofEventTime {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
 
-    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
+    mTOFCalibConfig.processSetup(tofResponse->parameters, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     // Autoset the processing mode for the event time computation
     if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
@@ -695,8 +690,7 @@ struct tofEventTime {
         const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         // Compute the TOF event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
-
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, tofResponse->parameters, kDiamond);
         float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
         float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
 
@@ -771,7 +765,7 @@ struct tofEventTime {
         const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
         // First make table for event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, tofResponse->parameters, kDiamond);
         int nGoodTracksForTOF = 0;
         float et = evTimeMakerTOF.mEventTime;
         float erret = evTimeMakerTOF.mEventTimeError;
@@ -878,8 +872,7 @@ struct tofPidMerge {
   bool enableTableBeta = false;
   bool enableTableMass = false;
 
-  // Detector response parameters
-  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  Service<o2::pid::tof::TOFResponse> tofResponse;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
@@ -901,6 +894,8 @@ struct tofPidMerge {
   std::vector<int> mEnabledParticlesFull; // Vector of enabled PID hypotheses to loop on when making full tables
   void init(o2::framework::InitContext& initContext)
   {
+
+    LOG(info) << "Initializing the TOF PID Merge task>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>";
     mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking the tables are requested in the workflow and enabling them
     for (int i = 0; i < nSpecies; i++) {
@@ -942,7 +937,16 @@ struct tofPidMerge {
         LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
       }
     }
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
+
+    mTOFCalibConfig.initSetup(tofResponse->parameters, ccdb); // Getting the parametrization parameters
+    tofResponse->setInit();
+
+    if (!tofResponse->isInit()) {
+      LOG(fatal) << "TOF response not initialized. Please check the configuration.";
+    } else {
+      LOG(info) << "TOF response initialized <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
+    }
+    // mTOFCalibConfig.initSetup(ccdb); // Getting the parametrization parameters
 
     // Printing enabled tables and enabling QA histograms if needed
     LOG(info) << "++ Enabled tables:";
@@ -1153,7 +1157,7 @@ struct tofPidMerge {
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
   void processRun3(Run3TrksWtofWevTime const& tracks,
-                   Run3Cols const&,
+                   aod::Collisions const&,
                    aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
@@ -1166,7 +1170,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
+    // mTOFCalibConfig.processSetup(ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
@@ -1192,47 +1196,47 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case kIdxEl: {
-            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDEl);
             break;
           }
           case kIdxMu: {
-            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDMu);
             break;
           }
           case kIdxPi: {
-            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPi);
             break;
           }
           case kIdxKa: {
-            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDKa);
             break;
           }
           case kIdxPr: {
-            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPr);
             break;
           }
           case kIdxDe: {
-            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDDe);
             break;
           }
           case kIdxTr: {
-            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDTr);
             break;
           }
           case kIdxHe: {
-            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDHe);
             break;
           }
           case kIdxAl: {
-            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDAl);
             break;
           }
@@ -1247,56 +1251,56 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
           case kIdxEl: {
-            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseEl.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseEl.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
           case kIdxMu: {
-            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseMu.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseMu.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
           case kIdxPi: {
-            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            resolution = responsePi.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responsePi.GetSeparation(tofResponse->parameters, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
           case kIdxKa: {
-            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseKa.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseKa.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
           case kIdxPr: {
-            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responsePr.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responsePr.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
           case kIdxDe: {
-            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseDe.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseDe.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
           case kIdxTr: {
-            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseTr.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseTr.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
           case kIdxHe: {
-            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseHe.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseHe.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
           case kIdxAl: {
-            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseAl.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseAl.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
             break;
           }
@@ -1315,7 +1319,7 @@ struct tofPidMerge {
   template <o2::track::PID::ID pid>
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
   void processRun2(Run2TrksWtofWevTime const& tracks,
-                   Run3Cols const&,
+                   aod::Collisions const&,
                    aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
@@ -1328,7 +1332,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementationRun2<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementationRun2<PID::Alpha>();
 
-    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
+    // mTOFCalibConfig.processSetup(ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
@@ -1354,47 +1358,47 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case kIdxEl: {
-            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDEl);
             break;
           }
           case kIdxMu: {
-            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDMu);
             break;
           }
           case kIdxPi: {
-            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPi);
             break;
           }
           case kIdxKa: {
-            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDKa);
             break;
           }
           case kIdxPr: {
-            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDPr);
             break;
           }
           case kIdxDe: {
-            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDDe);
             break;
           }
           case kIdxTr: {
-            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDTr);
             break;
           }
           case kIdxHe: {
-            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDHe);
             break;
           }
           case kIdxAl: {
-            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(tofResponse->parameters, trk);
             aod::pidtof_tiny::binning::packInTable(nsigma, tablePIDAl);
             break;
           }
@@ -1409,56 +1413,56 @@ struct tofPidMerge {
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
           case kIdxEl: {
-            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseEl.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseEl.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullEl(resolution, nsigma);
             break;
           }
           case kIdxMu: {
-            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseMu.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseMu.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullMu(resolution, nsigma);
             break;
           }
           case kIdxPi: {
-            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            resolution = responsePi.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responsePi.GetSeparation(tofResponse->parameters, trk);
             tablePIDFullPi(resolution, nsigma);
             break;
           }
           case kIdxKa: {
-            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseKa.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseKa.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullKa(resolution, nsigma);
             break;
           }
           case kIdxPr: {
-            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responsePr.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responsePr.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullPr(resolution, nsigma);
             break;
           }
           case kIdxDe: {
-            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseDe.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseDe.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullDe(resolution, nsigma);
             break;
           }
           case kIdxTr: {
-            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseTr.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseTr.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullTr(resolution, nsigma);
             break;
           }
           case kIdxHe: {
-            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseHe.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseHe.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullHe(resolution, nsigma);
             break;
           }
           case kIdxAl: {
-            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
-            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
+            resolution = responseAl.GetExpectedSigma(tofResponse->parameters, trk);
+            nsigma = responseAl.GetSeparation(tofResponse->parameters, trk, resolution);
             tablePIDFullAl(resolution, nsigma);
             break;
           }
@@ -1489,7 +1493,7 @@ struct tofPidMerge {
       }
       if (enableTableMass) {
         if (enableTOFParamsForBetaMass) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * tofResponse->parameters.getMomentumChargeShift(trk.eta())), beta));
         } else {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
@@ -1514,7 +1518,7 @@ struct tofPidMerge {
       }
       if (enableTableMass) {
         if (enableTOFParamsForBetaMass) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * tofResponse->parameters.getMomentumChargeShift(trk.eta())), beta));
         } else {
           tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
