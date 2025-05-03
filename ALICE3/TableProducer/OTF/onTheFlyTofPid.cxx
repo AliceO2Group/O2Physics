@@ -91,11 +91,11 @@ struct OnTheFlyTofPid {
     Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
     Configurable<bool> flagIncludeTrackTimeRes{"flagIncludeTrackTimeRes", true, "flag to include or exclude track time resolution"};
     Configurable<bool> flagTOFLoadDelphesLUTs{"flagTOFLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
-    Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
-    Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
-    Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions"};
-    Configurable<std::string> lutKa{"lutKa", "lutCovm.ka.dat", "LUT for kaons"};
-    Configurable<std::string> lutPr{"lutPr", "lutCovm.pr.dat", "LUT for protons"};
+    Configurable<std::string> lutEl{"lutEl", "inherit", "LUT for electrons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutMu{"lutMu", "inherit", "LUT for muons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutPi{"lutPi", "inherit", "LUT for pions (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutKa{"lutKa", "inherit", "LUT for kaons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutPr{"lutPr", "inherit", "LUT for protons (if inherit, inherits from otf tracker task)"};
   } simConfig;
 
   struct : ConfigurableGroup {
@@ -131,9 +131,24 @@ struct OnTheFlyTofPid {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   static constexpr int kParticles = 5;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+
+    // Check if inheriting the LUT configuration
+    auto configLutPath = [&](Configurable<std::string>& lut) {
+      if (lut.value != "inherit") {
+        return;
+      }
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut.name, lut.value, true)) {
+        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
+      }
+    };
+    configLutPath(simConfig.lutEl);
+    configLutPath(simConfig.lutMu);
+    configLutPath(simConfig.lutPi);
+    configLutPath(simConfig.lutKa);
+    configLutPath(simConfig.lutPr);
 
     // Load LUT for pt and eta smearing
     if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
