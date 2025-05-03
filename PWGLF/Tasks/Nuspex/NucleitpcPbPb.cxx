@@ -8,10 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file NucleitpcPbPb.cxx
-/// \brief Analysis task for light nuclei spectra in Pb–Pb collisions using TPC
-/// \author Jaideep Tanwar, <Jaideep.tanwar@cern.ch>
-/// \since May 2025
+/// file NucleitpcPbPb.cxx
+/// brief Analysis task for light nuclei spectra in Pb–Pb collisions using TPC
+/// author Jaideep Tanwar, <Jaideep.tanwar@cern.ch>
+/// since Jan 2025
 ///
 #include <limits>
 #include <vector>
@@ -336,9 +336,9 @@ struct NucleitpcPbPb {
       int i = species;
       const float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
       double momn;
-      int species_he3 = 4;
-      int species_he4 = 5;
-      if (species == species_he3 || species == species_he4) {
+      int speciesHe3 = 4;
+      int speciesHe4 = 5;
+      if (species == speciesHe3 || species == speciesHe4) {
         momn = 2 * track.pt();
       } else {
         momn = track.pt();
@@ -359,17 +359,17 @@ struct NucleitpcPbPb {
       return;
     if (cfgFillmass) {
       double mass;
-      int species_he3 = 4;
-      int species_he4 = 5;
-      if (species == species_he3 || species == species_he4) {
+      int speciesHe3 = 4;
+      int speciesHe4 = 5;
+      if (species == speciesHe3 || species == speciesHe4) {
         mass = 2 * track.mass();
       } else {
         mass = track.mass();
       }
       double momn;
-      int species_he3 = 4;
-      int species_he4 = 5;
-      if (species == species_he3 || species == species_he4) {
+      int speciesHe3 = 4;
+      int speciesHe4 = 5;
+      if (species == speciesHe3 || species == speciesHe4) {
         momn = 2 * track.pt();
       } else {
         momn = track.pt();
@@ -435,9 +435,9 @@ struct NucleitpcPbPb {
   {
     using PtEtaPhiMVector = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>;
     double momn;
-    int species_he3 = 4;
-    int species_he4 = 5;
-    if (species == species_he3 || species == species_he4) {
+    int speciesHe3 = 4;
+    int speciesHe4 = 5;
+    if (species == speciesHe3 || species == speciesHe4) {
       momn = 2 * track.pt();
     } else {
       momn = track.pt();
