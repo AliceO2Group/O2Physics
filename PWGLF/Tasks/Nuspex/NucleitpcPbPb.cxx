@@ -8,7 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author jaideep tanwar <jaideep.tanwar@cern.ch>
+/// \file NucleitpcPbPb.cxx
+/// \brief Analysis task for light nuclei spectra in Pb–Pb collisions using TPC
+/// \author Jaideep Tanwar, <Jaideep.tanwar@cern.ch>
+/// \since May 2025
 ///
 #include <limits>
 #include <vector>
@@ -84,7 +87,7 @@ struct primParticles {
 }; // struct primParticles
 //----------------------------------------------------------------------------------------------------------------
 std::vector<std::shared_ptr<TH2>> hDeDx;
-std::vector<std::shared_ptr<TH2>> hnsigma_pt;
+std::vector<std::shared_ptr<TH2>> hNsigmaPt;
 std::vector<std::shared_ptr<TH2>> hmass;
 } // namespace
 //----------------------------------------------------------------------------------------------------------------
@@ -97,8 +100,8 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {trackPIDsettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
-  Configurable<bool> cfgFillDeDxwithout_cut{"cfgFillDeDxwithout_cut", false, "Fill without cut beth bloch"};
-  Configurable<bool> cfgFillDeDxwith_cut{"cfgFillDeDxwith_cut", false, "Fill with cut beth bloch"};
+  Configurable<bool> cfgFillDeDxWithoutCut{"cfgFillDeDxWithoutCut", false, "Fill without cut beth bloch"};
+  Configurable<bool> cfgFillDeDxWithCut{"cfgFillDeDxWithCut", false, "Fill with cut beth bloch"};
   Configurable<bool> cfgFillnsigma{"cfgFillnsigma", false, "Fill n-sigma histograms"};
   Configurable<bool> cfgFillmass{"cfgFillmass", true, "Fill mass histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
@@ -161,22 +164,22 @@ struct NucleitpcPbPb {
     histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
     histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
     hDeDx.resize(2 * nParticles + 2);
-    hnsigma_pt.resize(2 * nParticles + 2);
+    hNsigmaPt.resize(2 * nParticles + 2);
     hmass.resize(2 * nParticles + 2);
     for (int i = 0; i < nParticles + 1; i++) {
       TString histName = i < nParticles ? primaryParticles[i].name : "all";
-      if (cfgFillDeDxwithout_cut) {
+      if (cfgFillDeDxWithoutCut) {
         hDeDx[2 * i] = histos.add<TH2>(Form("dedx/histdEdx_%s", histName.Data()), ";p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", HistType::kTH2F, {axisRigidity, axisdEdx});
       }
-      if (cfgFillDeDxwith_cut) {
+      if (cfgFillDeDxWithCut) {
         hDeDx[2 * i + 1] = histos.add<TH2>(Form("dedx/histdEdx_%s_Cuts", histName.Data()), ";p_{TPC}/z (GeV/#it{c}); d#it{E}/d#it{x}", HistType::kTH2F, {axisRigidity, axisdEdx});
       }
     }
     for (int i = 0; i < nParticles; i++) {
       TString histName = primaryParticles[i].name;
       if (cfgFillnsigma) {
-        hnsigma_pt[2 * i] = histos.add<TH2>(Form("histnsigmaTPC_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); TPCnsigma", HistType::kTH2F, {ptAxis, nsigmaAxis});
-        hnsigma_pt[2 * i + 1] = histos.add<TH2>(Form("histnsigmaTPC_anti_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); TPCnsigma", HistType::kTH2F, {ptAxis, nsigmaAxis});
+        hNsigmaPt[2 * i] = histos.add<TH2>(Form("histnsigmaTPC_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); TPCnsigma", HistType::kTH2F, {ptAxis, nsigmaAxis});
+        hNsigmaPt[2 * i + 1] = histos.add<TH2>(Form("histnsigmaTPC_anti_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); TPCnsigma", HistType::kTH2F, {ptAxis, nsigmaAxis});
       }
       if (cfgFillmass) {
         hmass[2 * i] = histos.add<TH2>(Form("histmass_pt/histmass_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); mass^{2}", HistType::kTH2F, {ptAxis, axismass});
@@ -314,12 +317,12 @@ struct NucleitpcPbPb {
   void filldedx(T const& track, int species)
   {
     const float rigidity = getRigidity(track);
-    if (cfgFillDeDxwithout_cut) {
+    if (cfgFillDeDxWithoutCut) {
       hDeDx[2 * species]->Fill(track.sign() * rigidity, track.tpcSignal());
     }
     if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls)
       return;
-    if (cfgFillDeDxwith_cut) {
+    if (cfgFillDeDxWithCut) {
       hDeDx[2 * species + 1]->Fill(track.sign() * rigidity, track.tpcSignal());
     }
   }
@@ -341,10 +344,10 @@ struct NucleitpcPbPb {
         momn = track.pt();
       }
       if (track.sign() > 0) {
-        hnsigma_pt[2 * species]->Fill(momn, tpcNsigma);
+        hNsigmaPt[2 * species]->Fill(momn, tpcNsigma);
       }
       if (track.sign() < 0) {
-        hnsigma_pt[2 * species + 1]->Fill(momn, tpcNsigma);
+        hNsigmaPt[2 * species + 1]->Fill(momn, tpcNsigma);
       }
     }
   }
@@ -356,7 +359,9 @@ struct NucleitpcPbPb {
       return;
     if (cfgFillmass) {
       double mass;
-      if (species == 4 || species == 5) {
+      int species_he3 = 4;
+      int species_he4 = 5;
+      if (species == species_he3 || species == species_he4) {
         mass = 2 * track.mass();
       } else {
         mass = track.mass();
@@ -407,7 +412,8 @@ struct NucleitpcPbPb {
   float getMeanItsClsSize(T const& track)
   {
     int sum = 0, n = 0;
-    for (int i = 0; i < 8; i++) {
+    constexpr int kNITSLayers = 8;
+    for (int i = 0; i < kNITSLayers; i++) {
       sum += (track.itsClusterSizes() >> (4 * i) & 15);
       if (track.itsClusterSizes() >> (4 * i) & 15)
         n++;
@@ -429,7 +435,9 @@ struct NucleitpcPbPb {
   {
     using PtEtaPhiMVector = ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>;
     double momn;
-    if (species == 4 || species == 5) {
+    int species_he3 = 4;
+    int species_he4 = 5;
+    if (species == species_he3 || species == species_he4) {
       momn = 2 * track.pt();
     } else {
       momn = track.pt();
