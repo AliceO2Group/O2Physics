@@ -141,7 +141,7 @@ struct OnTheFlyTofPid {
         return;
       }
       if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lutName, lut.value, true)) {
-        LOG(fatal) << "Could not get loadResponseFromCCDB from tof-event-time task";
+        LOG(fatal) << "Could not get " << lutName << " from on-the-fly-tracker task";
       }
     };
     configLutPath(simConfig.lutEl, "lutEl");
