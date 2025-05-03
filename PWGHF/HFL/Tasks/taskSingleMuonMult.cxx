@@ -80,12 +80,12 @@ struct HfTaskSingleMuonMult {
     AxisSpec axisEventSize{500, 0.5, 500.5, "Event Size"};
     AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
     AxisSpec axisMuTrk{5, 0.5, 5.5, "Muon Selection"};
-    AxisSpec axisNch{500, 0.5, 500.5, "#it{N}_{ch}"};
-    AxisSpec axisNmu{20, -0.5, 19.5, "#it{N}_{#mu}"};
+    AxisSpec axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
+    AxisSpec axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
     AxisSpec axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisEta{250, -5., 5., "#it{#eta}"};
     AxisSpec axisTheta{500, 170., 180., "#it{#theta}"};
-    AxisSpec axisRabsorb{1000, 0., 100., "#it{R}_{absorb} (cm)"};
+    AxisSpec axisRAbsorb{1000, 0., 100., "#it{R}_{Absorb} (cm)"};
     AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
     AxisSpec axisChi2MatchMCHMFT{1000, 0., 1000., "MCH-MFT matching #chi^{2}"};
     AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
@@ -102,11 +102,11 @@ struct HfTaskSingleMuonMult {
     HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
 
     HistogramConfigSpec hMuTrkSel{HistType::kTH1F, {axisMuTrk}};
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10};
-    HistogramConfigSpec hTHnMuDeltaPt{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisTheta, axisRabsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10};
+    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10};
+    HistogramConfigSpec hTHnMuDeltaPt{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10};
     HistogramConfigSpec h3DCA{HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}};
-    HistogramConfigSpec hTHnCh{HistType::kTHnSparseF, {axisCent, axisNch, axisPt, axisEta, axisSign}, 5};
-    HistogramConfigSpec h3MultNchNmu{HistType::kTH3F, {axisCent, axisNch, axisNmu}};
+    HistogramConfigSpec hTHnCh{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisSign}, 5};
+    HistogramConfigSpec h3MultNchNmu{HistType::kTH3F, {axisCent, axisNCh, axisNMu}};
 
     HistogramConfigSpec h2PtMc{HistType::kTH2F, {axisPt, axisPtDif}};
     HistogramConfigSpec h2EtaMc{HistType::kTH2F, {axisEta, axisEtaDif}};
@@ -170,30 +170,26 @@ struct HfTaskSingleMuonMult {
     registry.fill(HIST("hEvent"), 3);
     registry.fill(HIST("hVtxZAfterSel"), collision.posZ());
 
+    // T0M centrality
     const auto cent = collision.centFT0M();
     registry.fill(HIST("hCentrality"), cent);
 
-    std::size_t nCh{0u};
-    int nMu{0};
-    constexpr std::size_t nTypes{5};
-    int nMuTrackType[nTypes] = {0};
-
-    std::vector<typename std::decay_t<decltype(tracks)>::iterator> chTracks;
-    for (const auto& track : tracks) {
-      chTracks.push_back(track);
-    }
-    nCh = chTracks.size();
+    // Charged particles
+    std::size_t nCh{tracks.size()};
     if (nCh < 1) {
       return;
     }
     registry.fill(HIST("hEventSize"), nCh);
 
-    for (std::size_t isize{0u}; isize < nCh; isize++) {
-      auto chTrack = chTracks[isize];
-      registry.fill(HIST("hTHnTrk"), cent, nCh, chTrack.pt(), chTrack.eta(), chTrack.sign());
+    for (const auto& track : tracks) {
+      registry.fill(HIST("hTHnTrk"), cent, nCh, track.pt(), track.eta(), track.sign());
     }
 
     // muons
+    int nMu{0};
+    constexpr std::size_t nTypes{5};
+    int nMuTrackType[nTypes] = {0};
+
     for (const auto& muon : muons) {
       const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
       const auto dcaXY{RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY())};
