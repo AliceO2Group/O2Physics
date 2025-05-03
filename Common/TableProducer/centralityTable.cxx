@@ -120,12 +120,12 @@ struct CentralityTable {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
     Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
     Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+    Configurable<std::string> ccdbPathCent{"ccdbPathCent", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
   } ccdbConfig;
 
   // Configurable centrality
   struct : ConfigurableGroup {
-    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
-    Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
     Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
     ConfigurableAxis binsPercentile{"binsPercentile", {VARIABLE_WIDTH, 0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0}, "Binning of the percentile axis"};
   } centralityConfig;
@@ -229,16 +229,16 @@ struct CentralityTable {
       LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
       TList* calibrationList = nullptr;
       // Check if the ccdb path is a root file
-      if (centralityConfig.ccdbPath.value.find(".root") != std::string::npos) { // File
-        LOG(info) << "Fetching centrality calibration from TFile" << centralityConfig.ccdbPath.value.c_str() << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
-        TFile f(centralityConfig.ccdbPath.value.c_str(), "READ");
+      if (ccdbConfig.ccdbPathCent.value.find(".root") != std::string::npos) { // File
+        LOG(info) << "Fetching centrality calibration from TFile" << ccdbConfig.ccdbPathCent.value.c_str() << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
+        TFile f(ccdbConfig.ccdbPathCent.value.c_str(), "READ");
         f.GetObject(ccdbConfig.reconstructionPass.value.c_str(), calibrationList);
         if (!calibrationList) {
           f.ls();
-          LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << centralityConfig.ccdbPath.value;
+          LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << ccdbConfig.ccdbPathCent.value;
         }
       } else { // CCDB
-        LOG(info) << "Fetching centrality calibration from ccdb" << centralityConfig.ccdbPath.value << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
+        LOG(info) << "Fetching centrality calibration from ccdb" << ccdbConfig.ccdbPathCent.value << " and pass '" << ccdbConfig.reconstructionPass.value << "'";
         std::map<std::string, std::string> metadata;
         if (ccdbConfig.reconstructionPass.value == "") {
           LOG(info) << "No pass required";
@@ -249,7 +249,7 @@ struct CentralityTable {
           }
           metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
         }
-        calibrationList = ccdb->getSpecificForRun<TList>(centralityConfig.ccdbPath, bc.runNumber(), metadata);
+        calibrationList = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPathCent, bc.runNumber(), metadata);
       }
 
       Run2V0MInfo.mCalibrationStored = false;
@@ -311,9 +311,9 @@ struct CentralityTable {
               Run2V0MInfo.mhVtxAmpCorrV0A = getccdbRun2("hVtx_fAmplitude_V0A_Normalized");
               Run2V0MInfo.mhVtxAmpCorrV0C = getccdbRun2("hVtx_fAmplitude_V0C_Normalized");
               Run2V0MInfo.mhMultSelCalib = getccdbRun2("hMultSelCalib_V0M");
-              Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", centralityConfig.genName->c_str()).Data());
+              Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", ccdbConfig.genName->c_str()).Data());
               if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
-                if (centralityConfig.genName->length() != 0) {
+                if (ccdbConfig.genName->length() != 0) {
                   if (Run2V0MInfo.mMCScale != nullptr) {
                     for (int ixpar = 0; ixpar < 6; ++ixpar) {
                       Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
@@ -407,31 +407,31 @@ struct CentralityTable {
               }
               break;
             case centrality::kFV0As:
-              getccdbRun3(fv0aInfo, centralityConfig.genName);
+              getccdbRun3(fv0aInfo, ccdbConfig.genName);
               break;
             case centrality::kFT0Ms:
-              getccdbRun3(ft0mInfo, centralityConfig.genName);
+              getccdbRun3(ft0mInfo, ccdbConfig.genName);
               break;
             case centrality::kFT0As:
-              getccdbRun3(ft0aInfo, centralityConfig.genName);
+              getccdbRun3(ft0aInfo, ccdbConfig.genName);
               break;
             case centrality::kFT0Cs:
-              getccdbRun3(ft0cInfo, centralityConfig.genName);
+              getccdbRun3(ft0cInfo, ccdbConfig.genName);
               break;
             case centrality::kFT0CVariant1s:
-              getccdbRun3(ft0cVariant1Info, centralityConfig.genName);
+              getccdbRun3(ft0cVariant1Info, ccdbConfig.genName);
               break;
             case centrality::kFDDMs:
-              getccdbRun3(fddmInfo, centralityConfig.genName);
+              getccdbRun3(fddmInfo, ccdbConfig.genName);
               break;
             case centrality::kNTPVs:
-              getccdbRun3(ntpvInfo, centralityConfig.genName);
+              getccdbRun3(ntpvInfo, ccdbConfig.genName);
               break;
             case centrality::kNGlobals:
-              getccdbRun3(nGlobalInfo, centralityConfig.genName);
+              getccdbRun3(nGlobalInfo, ccdbConfig.genName);
               break;
             case centrality::kMFTs:
-              getccdbRun3(mftInfo, centralityConfig.genName);
+              getccdbRun3(mftInfo, ccdbConfig.genName);
               break;
             default:
               LOGF(fatal, "Table %d not supported in Run3", table);
@@ -529,9 +529,9 @@ struct CentralityTable {
 
   using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
   void processRun2(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                   BCsWithTimestampsAndRun2Infos const&)
+                   BCsWithTimestampsAndRun2Infos const& bcs)
   {
-    auto bc = collision.bc_as<BCsWithTimestampsAndRun2Infos>();
+    auto bc = bcs.iteratorAt(0);
     initCentCalib(bc);
     auto scaleMC = [](float x, float pars[6]) {
       return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);

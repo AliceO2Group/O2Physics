@@ -663,6 +663,7 @@ struct multiplicityPercentile {
     }
     std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
 
+    LOG(info) << "Initializing centrality table producer";
     /* Checking the tables which are requested in the workflow and enabling them */
     for (int i = 0; i < centrality::kNTables; i++) {
       int f = enabledCentralityTables->get(centrality::tableNames[i].c_str(), "Enable");
