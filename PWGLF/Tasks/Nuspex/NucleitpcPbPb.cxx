@@ -190,10 +190,10 @@ struct NucleitpcPbPb {
         continue;
       histos.fill(HIST("histeta"), track.eta());
       for (size_t i = 0; i < primaryParticles.size(); i++) {
-        if (TMath::Abs(getRapidity(track, i)) > cfgCutRapidity)
+        if (std::abs(getRapidity(track, i)) > cfgCutRapidity)
           continue;
         bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
-        if (!(insideDCAxy) || TMath::Abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
+        if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
           continue;
         if (track.sign() > 0) {
           histos.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
