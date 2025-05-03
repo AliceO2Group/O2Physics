@@ -36,6 +36,8 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/Plugins.h"
+#include "Framework/PID.h"
 
 namespace o2::pid::tof
 {
@@ -289,6 +291,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   template <o2::track::PID::ID pid>
   float getResolution(const float p, const float eta) const
   {
+    // LOG(info) << "Get resolution for " << particleNames[pid] << " with p " << p << " and eta " << eta;
     return mResolution[pid]->Eval(p, eta);
   }
 
@@ -618,6 +621,81 @@ class TOFSignal
         return 0.f;
         break;
     }
+  }
+};
+
+struct TOFResponseImpl {
+  static o2::pid::tof::TOFResoParamsV3 parameters;
+
+  template <o2::track::PID::ID id>
+  static float expectedSigma(const float tofSignal,
+                             const float tofExpMom,
+                             const float momentum,
+                             const float eta,
+                             const float tofEvTimeErr)
+  {
+    if (tofExpMom <= 0.f) {
+      return o2::pid::tof::defaultReturnValue;
+    }
+    if (momentum <= 0) {
+      return o2::pid::tof::defaultReturnValue;
+    }
+    const float trackingReso = TOFResponseImpl::parameters.getResolution<id>(momentum, eta);
+    if (trackingReso > 0) {
+      return std::sqrt(trackingReso * trackingReso +
+                       TOFResponseImpl::parameters[4] * TOFResponseImpl::parameters[4] +
+                       tofEvTimeErr * tofEvTimeErr);
+    }
+    constexpr float massSquared = o2::track::pid_constants::sMasses2[id];
+    const float dpp = TOFResponseImpl::parameters[0] +
+                      TOFResponseImpl::parameters[1] * momentum +
+                      TOFResponseImpl::parameters[2] * o2::constants::physics::MassElectron / momentum;
+    const float sigma = dpp * tofSignal / (1. + momentum * momentum / (massSquared));
+    return std::sqrt(sigma * sigma +
+                     TOFResponseImpl::parameters[3] * TOFResponseImpl::parameters[3] / momentum / momentum +
+                     TOFResponseImpl::parameters[4] * TOFResponseImpl::parameters[4] +
+                     tofEvTimeErr * tofEvTimeErr);
+  }
+
+  template <o2::track::PID::ID id, typename TrackType>
+  static float expectedSigma(const TrackType& track)
+  {
+    return expectedSigma<id>(track.tofSignal(), track.tofExpMom(), track.p(), track.eta(), track.tofEvTimeErr());
+  }
+
+  template <o2::track::PID::ID id>
+  static float nSigma(const float tofSignal,
+                      const float tofExpMom,
+                      const float length,
+                      const float momentum,
+                      const float eta,
+                      const float tofEvTime,
+                      const float tofEvTimeErr)
+  {
+    const float resolution = expectedSigma<id>(tofSignal, tofExpMom, momentum, eta, tofEvTimeErr);
+    const float expTime = o2::framework::pid::tof::MassToExpTime(tofExpMom,
+                                                                 length,
+                                                                 o2::track::pid_constants::sMasses2[id]);
+    const float delta = tofSignal - tofEvTime - expTime;
+    return delta / resolution;
+  }
+
+  template <o2::track::PID::ID id, typename TrackType>
+  static float nSigma(const TrackType& track)
+  {
+    return nSigma<id>(track.tofSignal(), track.tofExpMom(), track.length(), track.p(), track.eta(), track.tofEvTime(), track.tofEvTimeErr());
+  }
+
+  static void setInit(bool value = true) { mIsInit = value; } //! Set the initialization flag
+  static bool isInit() { return mIsInit; }                    //! Get the initialization flag
+
+ private:
+  static bool mIsInit; //! Flag to check if the parameters are initialized
+};
+
+struct TOFResponse : o2::framework::LoadableServicePlugin<TOFResponseImpl> {
+  TOFResponse() : LoadableServicePlugin{"O2PhysicsAnalysisCore:TOFSupport"}
+  {
   }
 };
 

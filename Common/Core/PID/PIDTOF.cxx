@@ -102,3 +102,37 @@ float TOFResoParamsV3::getTimeShift(float eta, int16_t sign) const
 }
 
 } // namespace o2::pid::tof
+
+#include "Framework/Plugins.h"
+#include "Framework/ServiceHandle.h"
+#include "Framework/ServiceSpec.h"
+#include "Framework/CommonServices.h"
+#include "TDatabasePDG.h"
+
+using namespace o2::framework;
+
+o2::pid::tof::TOFResoParamsV3 o2::pid::tof::TOFResponseImpl::parameters;
+bool o2::pid::tof::TOFResponseImpl::mIsInit = false;
+
+struct TOFSupport : o2::framework::ServicePlugin {
+  o2::framework::ServiceSpec* create() final
+  {
+    return new ServiceSpec{
+      .name = "tof-response",
+      .init = [](ServiceRegistryRef, DeviceState&, fair::mq::ProgOptions&) -> ServiceHandle {
+        auto* wrapper = new o2::pid::tof::TOFResponse();
+        auto* ptr = new o2::pid::tof::TOFResponseImpl();
+        wrapper->setInstance(ptr);
+        return ServiceHandle{TypeIdHelpers::uniqueId<o2::pid::tof::TOFResponse>(), wrapper, ServiceKind::Serial, "database-pdg"};
+      },
+      .configure = CommonServices::noConfiguration(),
+      .exit = [](ServiceRegistryRef, void* service) {
+        auto* resp = reinterpret_cast<o2::pid::tof::TOFResponse*>(service);
+        delete resp; },
+      .kind = ServiceKind::Serial};
+  }
+};
+
+DEFINE_DPL_PLUGINS_BEGIN
+DEFINE_DPL_PLUGIN_INSTANCE(TOFSupport, CustomService);
+DEFINE_DPL_PLUGINS_END
