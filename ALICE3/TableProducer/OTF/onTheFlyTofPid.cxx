@@ -136,19 +136,18 @@ struct OnTheFlyTofPid {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
 
     // Check if inheriting the LUT configuration
-    auto configLutPath = [&](Configurable<std::string>& lut, const char* lutName) {
+    auto configLutPath = [&](Configurable<std::string>& lut) {
       if (lut.value != "inherit") {
         return;
       }
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lutName, lut.value, true)) {
-        LOG(fatal) << "Could not get " << lutName << " from on-the-fly-tracker task";
-      }
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut.name, lut.value, true)) {
+        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";      }
     };
-    configLutPath(simConfig.lutEl, "lutEl");
-    configLutPath(simConfig.lutMu, "lutMu");
-    configLutPath(simConfig.lutPi, "lutPi");
-    configLutPath(simConfig.lutKa, "lutKa");
-    configLutPath(simConfig.lutPr, "lutPr");
+    configLutPath(simConfig.lutEl);
+    configLutPath(simConfig.lutMu);
+    configLutPath(simConfig.lutPi);
+    configLutPath(simConfig.lutKa);
+    configLutPath(simConfig.lutPr);
 
     // Load LUT for pt and eta smearing
     if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
