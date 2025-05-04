@@ -233,8 +233,9 @@ struct FlowCorrelationsUpc {
     }
 
     int gapSide = collision.gapSide();
-    // The gapSide are the selection criteria from the UPC from, not `magic number`
-    if (gapSide < 0 || gapSide > 2) { // o2-linter: disable=magic-number
+    const int minGapSide = 0;
+    const int maxGapSide = 2;
+    if (gapSide < minGapSide || gapSide > maxGapSide) {
       return;
     }
 
