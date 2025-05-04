@@ -1136,7 +1136,6 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-
           hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), candC.nSigTpcPr0(), candC.nSigTofPr0(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
           hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), candC.nSigTpcPr1(), candC.nSigTofPr1(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
           hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), candC.nSigTpcPr2(), candC.nSigTofPr2(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
