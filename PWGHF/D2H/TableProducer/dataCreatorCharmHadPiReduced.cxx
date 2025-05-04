@@ -182,10 +182,10 @@ struct HfDataCreatorCharmHadPiReduced {
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
 
-  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
-  using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
-  using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
+  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>>;
+  using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi>>;
+  using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandsD0Filtered = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>>;
   using CandsD0FilteredWithMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
   using CandsLcFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
@@ -1136,9 +1136,10 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          hfCandPidProng0(charmHadDauTracks[0].tpcNSigmaPi(), charmHadDauTracks[0].tofNSigmaPi(), charmHadDauTracks[0].tpcNSigmaKa(), charmHadDauTracks[0].tofNSigmaKa(), charmHadDauTracks[0].tpcNSigmaPr(), charmHadDauTracks[0].tofNSigmaPr(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
-          hfCandPidProng1(charmHadDauTracks[1].tpcNSigmaPi(), charmHadDauTracks[1].tofNSigmaPi(), charmHadDauTracks[1].tpcNSigmaKa(), charmHadDauTracks[1].tofNSigmaKa(), charmHadDauTracks[1].tpcNSigmaPr(), charmHadDauTracks[1].tofNSigmaPr(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
-          hfCandPidProng2(charmHadDauTracks[2].tpcNSigmaPi(), charmHadDauTracks[2].tofNSigmaPi(), charmHadDauTracks[2].tpcNSigmaKa(), charmHadDauTracks[2].tofNSigmaKa(), charmHadDauTracks[2].tpcNSigmaPr(), charmHadDauTracks[2].tofNSigmaPr(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
+
+          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), candC.nSigTpcPr0(), candC.nSigTofPr0(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
+          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), candC.nSigTpcPr1(), candC.nSigTofPr1(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
+          hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), candC.nSigTpcPr2(), candC.nSigTofPr2(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
           if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
