@@ -257,6 +257,9 @@ struct LambdaTableProducer {
   Configurable<float> cMaxV0Pt{"cMaxV0Pt", 4.2, "Minimum V0 pT"};
   Configurable<float> cMaxV0Rap{"cMaxV0Rap", 0.5, "|rap| cut"};
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Do Eta Analysis"};
+  Configurable<bool> cV0TypeSelFlag{"cV0TypeSelFlag", false, "V0 Type Selection Flag"};
+  Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
+  Configurable<bool> cGenProcessFlag{"cGenProcessFlag", true, "Generater Level Table Selection"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -390,7 +393,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2) {
+    if (doprocessMCRun3 || doprocessMCRun2 || doprocessRecoGen) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -982,6 +985,11 @@ struct LambdaTableProducer {
         continue;
       }
 
+      // Select V0 Type Selection
+      if (cV0TypeSelFlag && v0.v0Type() != cV0TypeSelection) {
+        continue;
+      }
+
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
 
       // we have v0 as lambda
@@ -1213,6 +1221,60 @@ struct LambdaTableProducer {
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);
+
+  void processRecoGen(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision,
+                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
+                      McV0Tracks const& V0s, TracksMC const& tracks,
+                      aod::McParticles const& mcParticles)
+  {
+    // Select Collision
+    if (!selCollision<kRun3>(collision) || !collision.has_mcCollision()) {
+      return;
+    }
+
+    // Fill Reco Table
+    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
+
+    // Get Generator Level Collision and Particles
+    auto mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+    auto mcGenParticles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+    if (cGenProcessFlag) {
+      fillLambdaMcGenTables<kRun3>(mcCollision, mcGenParticles);
+      return;
+    }
+
+    // Fill Gen Table
+    lambdaMCGenCollisionTable(mcCollision.centFT0M(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+
+    // initialize track objects
+    ParticleType v0Type = kLambda;
+    for (auto const& mcpart : mcGenParticles) {
+      if (!mcpart.isPhysicalPrimary()) {
+        continue;
+      }
+
+      if (std::abs(mcpart.y()) > cMaxV0Rap) {
+        continue;
+      }
+
+      // check for Lambda first
+      if (mcpart.pdgCode() == kLambda0) {
+        v0Type = kLambda;
+      } else if (mcpart.pdgCode() == kLambda0Bar) {
+        v0Type = kAntiLambda;
+      } else {
+        continue;
+      }
+
+      // Fill Lambda McGen Table
+      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(),
+                            mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), RecoDecay::m(mcpart.p(), mcpart.e()),
+                            99., -97., (int8_t)v0Type, -999., -999., 1.);
+    }
+  }
+
+  PROCESS_SWITCH(LambdaTableProducer, processRecoGen, "Process for MC RecoGen", false);
 };
 
 struct LambdaTracksExtProducer {
