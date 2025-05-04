@@ -76,29 +76,40 @@ struct FlowZdcTask {
   Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
-  Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
+  // configs for process QA
+  Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
+  Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
+  Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
+  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 100, "N bins FV0 amp"};
+  Configurable<float> maxAmpFV0{"maxAmpFV0", 2000, "Max FV0 amp"};
+  Configurable<int> nBinsZDC{"nBinsZDC", 400, "nBinsZDC"};
+  Configurable<int> nBinsZEM{"nBinsZEM", 100, "nBinsZEM"};
+  Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
+  Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
-  Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
   // event selection
-  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
-  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> isApplyVertexITSTPC{"isApplyVertexITSTPC", false, "Enable VertexITSTPC cut"};
-  Configurable<bool> isApplyVertexTOFmatched{"isApplyVertexTOFmatched", false, "Enable VertexTOFmatched cut"};
-  Configurable<bool> isApplyVertexTRDmatched{"isApplyVertexTRDmatched", false, "Enable VertexTRDmatched cut"};
-  Configurable<bool> isApplyExtraCorrCut{"isApplyExtraCorrCut", false, "Enable extra NPVtracks vs FTOC correlation cut"};
-  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
-  Configurable<bool> isGoodITSLayersAll{"isGoodITSLayersAll", false, "Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"};
+  Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
+  Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
+  Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "isNoCollInRofStandard?"};
+  Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "isNoHighMultCollInPrevRof?"};
+  Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", false, "isNoCollInTimeRangeNarrow?"};
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
+  Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
-  Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
+
+  Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
+  Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
+  Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
+  Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
   Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
   Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
-  Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
-  Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
-
+  Configurable<int> minITSnCls{"minITSnCls", 5, "min ITSnCls"};
+  // axis configs
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -114,13 +125,17 @@ struct FlowZdcTask {
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis multHistBin{"multHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis axisCent{"axisCent", {10, 0, 100}, "axisCent"};
+  Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
+  Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
+  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  using TracksSel = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using AodZDCs = soa::Join<aod::ZDCMults, aod::Zdcs>;
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
@@ -130,6 +145,25 @@ struct FlowZdcTask {
   std::complex<double> qZNA{0, 0}; // init qZNA
   std::complex<double> qZNC{0, 0}; // init qZNC
 
+  enum EvCutLabel {
+    All = 1,
+    SelEigth,
+    NoSameBunchPileup,
+    IsGoodZvtxFT0vsPV,
+    NoCollInTimeRangeStrict,
+    NoCollInTimeRangeStandard,
+    NoCollInRofStrict,
+    NoCollInRofStandard,
+    NoHighMultCollInPrevRof,
+    NoCollInTimeRangeNarrow,
+    OccuCut,
+    Centrality,
+    VtxZ,
+    Zdc,
+    TZero,
+    Tdc,
+    Zem
+  };
   // Begin Histogram Registry
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -140,9 +174,6 @@ struct FlowZdcTask {
   OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
   OutputObj<TProfile> pZPratiovscent{TProfile("pZPratiovscent", "Ratio ZPC/ZPA vs FT0C Centrality", 100, 0, 100, 0, 5)};
 
-  double sumCosPsiDiff = 0.0; // Sum of cos(psiZNC) - cos(psiZNA)
-  int countEvents = 0;        // Count of processed events
-
   void init(InitContext const&)
   {
     // define axes
@@ -151,13 +182,16 @@ struct FlowZdcTask {
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
     const AxisSpec axisREQ{100, -1, 1, "real Q"};
     const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
+    const AxisSpec axisEvent{18, 0.5, 18.5, ""};
+    const AxisSpec axisZpos{48, -12., 12., "Vtx_{z} (cm)"};
 
     AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
-    AxisSpec axisEvent{12, 0.5, 12.5, "#Event", "EventAxis"};
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisFT0CMult = {ft0cMultHistBin, "ft0c", "FT0CMultAxis"};
 
     // create histograms
+    histos.add("hEventCounter", "Event counter", kTH1F, {axisEvent});
+    histos.add("zPos", ";;Entries;", kTH1F, {axisZpos});
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
     histos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
 
@@ -200,17 +234,22 @@ struct FlowZdcTask {
     auto hstat = histos.get<TH1>(HIST("eventSelectionSteps"));
     auto* xAxis = hstat->GetXaxis();
     xAxis->SetBinLabel(1, "All events");
-    xAxis->SetBinLabel(2, "sel8");
-    xAxis->SetBinLabel(3, "kNoSameBunchPileup");  // reject collisions in case of pileup with another collision in the same foundBC
-    xAxis->SetBinLabel(4, "kIsGoodZvtxFT0vsPV");  // small difference between z-vertex from PV and from FT0
-    xAxis->SetBinLabel(5, "kIsVertexITSTPC");     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
-    xAxis->SetBinLabel(6, "kIsApplyVertexTOFmatched"); //"Centrality based on no other collisions in this Readout Frame with per-collision multiplicity above threshold tracks"
-    xAxis->SetBinLabel(7, "Occupancy Cuts");
-    xAxis->SetBinLabel(8, "kITSLayersAll");
-    xAxis->SetBinLabel(9, "kTRDVertexMatched");
-    xAxis->SetBinLabel(10, "Centrality cut");
-    xAxis->SetBinLabel(11, "Vertex Z cut");
-    xAxis->SetBinLabel(12, "Extra Correlation Cut");
+    xAxis->SetBinLabel(2, "SelEigth");
+    xAxis->SetBinLabel(3, "NoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
+    xAxis->SetBinLabel(4, "GoodZvtxFT0vsPV");   // small difference between z-vertex from PV and from FT0
+    xAxis->SetBinLabel(5, "NoCollInTimeRangeStrict");
+    xAxis->SetBinLabel(6, "NoCollInTimeRangeStandard");
+    xAxis->SetBinLabel(7, "NoCollInRofStrict");
+    xAxis->SetBinLabel(8, "NoCollInRofStandard");
+    xAxis->SetBinLabel(9, "NoHighMultCollInPrevRof");
+    xAxis->SetBinLabel(10, "NoCollInTimeRangeNarrow");
+    xAxis->SetBinLabel(11, "Occupancy Cut");
+    xAxis->SetBinLabel(12, "Cent. Sel.");
+    xAxis->SetBinLabel(13, "VtxZ cut");
+    xAxis->SetBinLabel(14, "has ZDC?");
+    xAxis->SetBinLabel(15, "has T0?");
+    xAxis->SetBinLabel(16, "Within TDC cut?");
+    xAxis->SetBinLabel(17, "Within ZEM cut?");
 
     histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFT0CMult});
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ});
@@ -253,67 +292,272 @@ struct FlowZdcTask {
       histos.add("hZPvsMult", "ZP Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZP});
       histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
     }
+
+    if (doprocessQA) {
+      histos.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+
+      histos.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
+      histos.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
+      histos.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZn}}});
+
+      histos.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPA", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNC", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPC", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
+      histos.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZp}, {100, -0.5, maxZp}}});
+      histos.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZp}, {30, -0.5, maxZn}}});
+      histos.add("ZNCVsZPC", ";ZPC;ZNC;", kTH2F, {{{20, -0.5, maxZp}, {30, -0.5, maxZn}}});
+      histos.add("ZNCcvsZNCsum", ";ZNC common;ZNC sum towers;", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
+      histos.add("ZNAcvsZNAsum", ";ZNA common;ZNA sum towers;", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
+      histos.add("ZPCcvsZPCsum", ";ZPC common;ZPC sum towers;", kTH2F, {{{30, -0.5, maxZp}, {30, -0.5, maxZp}}});
+      histos.add("ZPAcvsZPAsum", ";ZPA common;ZPA sum towers;", kTH2F, {{{30, -0.5, maxZp}, {30, -0.5, maxZp}}});
+      histos.add("ZNVsZEM", ";ZEM;ZNA+ZNC;", kTH2F, {{{60, -0.5, maxZem}, {60, -0.5, maxZn}}});
+      histos.add("ZNCVstdc", ";t_{ZNC};ZNC;", kTH2F, {{{30, -15., 15.}, {nBinsZDC, -0.5, maxZn}}});
+      histos.add("ZNAVstdc", ";t_{ZNA};ZNA;", kTH2F, {{{30, -15., 15.}, {30, -0.5, maxZn}}});
+      histos.add("ZPCVstdc", ";t_{ZPC};ZPC;", kTH2F, {{{30, -15., 15}, {20, -0.5, maxZp}}});
+      histos.add("ZPAVstdc", ";t_{ZPA};ZPA;", kTH2F, {{{30, -15., 15.}, {20, -0.5, maxZp}}});
+      histos.add("ZEM1Vstdc", ";t_{ZEM1};ZEM1;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
+      histos.add("ZEM2Vstdc", ";t_{ZEM2};ZEM2;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
+      histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
+
+      histos.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
+      histos.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
+      histos.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      histos.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
+
+      histos.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
+      histos.add("NchVsMeanPt", ";#it{N}_{ch} (|#eta|<0.8);#LT[#it{p}_{T}]#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
+      histos.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
+      histos.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
+      histos.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
+      histos.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
+      histos.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
+      histos.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
+    }
   }
   template <typename EventCuts>
   bool isEventSelected(EventCuts const& col)
   {
-    histos.fill(HIST("eventSelectionSteps"), 1);
-
+    histos.fill(HIST("hEventCounter"), EvCutLabel::All);
     if (!col.sel8()) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 2);
+    histos.fill(HIST("hEventCounter"), EvCutLabel::SelEigth);
 
-    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 3);
+    histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
 
-    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 4);
+    histos.fill(HIST("hEventCounter"), EvCutLabel::IsGoodZvtxFT0vsPV);
 
-    if (isApplyVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return false;
+    if (isNoCollInTimeRangeStrict) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeStrict);
     }
-    histos.fill(HIST("eventSelectionSteps"), 5);
 
-    if (isApplyVertexTOFmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      return false;
+    if (isNoCollInTimeRangeStandard) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeStandard);
     }
-    histos.fill(HIST("eventSelectionSteps"), 6);
+
+    if (isNoCollInRofStrict) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoCollInRofStrict);
+    }
+
+    if (isNoCollInRofStandard) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoCollInRofStandard);
+    }
+
+    if (isNoHighMultCollInPrevRof) {
+      if (!col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoHighMultCollInPrevRof);
+    }
+
+    // To be used in combination with FT0C-based occupancy
+    if (isNoCollInTimeRangeNarrow) {
+      if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        return false;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoCollInTimeRangeNarrow);
+    }
 
     if (isOccupancyCut) {
-      auto occuValue{isApplyFT0CbasedOccupancy
-                       ? col.ft0cOccupancyInTimeRange()
-                       : col.trackOccupancyInTimeRange()};
-
-      if (occuValue < minOccCut || occuValue > maxOccCut)
+      auto occuValue{isApplyFT0CbasedOccupancy ? col.ft0cOccupancyInTimeRange() : col.trackOccupancyInTimeRange()};
+      if (occuValue < minOccCut || occuValue > maxOccCut) {
         return false;
+      }
     }
-    histos.fill(HIST("eventSelectionSteps"), 7);
-    if (isGoodITSLayersAll && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    histos.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
+
+    if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 8);
-    if (isApplyVertexTRDmatched && !col.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      return false;
-    }
-    histos.fill(HIST("eventSelectionSteps"), 9);
-    if (col.centFT0C() < 0. || col.centFT0C() > 100.) {
-      return false;
-    }
-    histos.fill(HIST("eventSelectionSteps"), 10);
+    histos.fill(HIST("hEventCounter"), EvCutLabel::Centrality);
+
+    // Z-vertex position cut
     if (std::fabs(col.posZ()) > posZcut) {
       return false;
     }
-    histos.fill(HIST("eventSelectionSteps"), 11);
-    if (isApplyExtraCorrCut && col.multNTracksPV() > npvTracksCut && col.multFT0C() < (10 * col.multNTracksPV() - ft0cCut)) {
-      return false;
-    }
-    histos.fill(HIST("eventSelectionSteps"), 12);
+    histos.fill(HIST("hEventCounter"), EvCutLabel::VtxZ);
+
     return true;
+  }
+
+  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, AodTracks const& tracks)
+  {
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
+    if (!isEventSelected(collision)) {
+      return;
+    }
+    if (!foundBC.has_zdc()) {
+      return;
+    }
+    histos.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
+    auto zdc = foundBC.zdc();
+
+    float aT0A = 0., aT0C = 0., aV0A = 0.;
+    if (foundBC.has_ft0()) {
+      for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+        aT0A += amplitude;
+      }
+      for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+        aT0C += amplitude;
+      }
+    } else {
+      return;
+    }
+    histos.fill(HIST("hEventCounter"), EvCutLabel::TZero);
+    if (foundBC.has_fv0a()) {
+      for (const auto& amplitude : foundBC.fv0a().amplitude()) {
+        aV0A += amplitude;
+      }
+    } else {
+      aV0A = -999.;
+    }
+    float tZNA{zdc.timeZNA()};
+    float tZNC{zdc.timeZNC()};
+    float tZPA{zdc.timeZPA()};
+    float tZPC{zdc.timeZPC()};
+    float tZDCdif{tZNC + tZPC - tZNA - tZPA};
+    float tZDCsum{tZNC + tZPC + tZNA + tZPA};
+
+    // TDC cut
+    if (isTDCcut) {
+      if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
+        return;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
+    }
+
+    float aZEM1{zdc.amplitudeZEM1()};
+    float aZEM2{zdc.amplitudeZEM2()};
+    float sumZEMs{aZEM1 + aZEM2};
+
+    // ZEM cut
+    if (isZEMcut) {
+      if (sumZEMs < zemCut) {
+        return;
+      }
+      histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
+    }
+
+    float znA{zdc.amplitudeZNA()};
+    float znC{zdc.amplitudeZNC()};
+    float zpA{zdc.amplitudeZPA()};
+    float zpC{zdc.amplitudeZPC()};
+    znA /= 2.81;
+    znC /= 2.81;
+    zpA /= 2.81;
+    zpC /= 2.81;
+
+    float tZEM1{zdc.timeZEM1()};
+    float tZEM2{zdc.timeZEM2()};
+    float sumZNs{znA + znC};
+
+    float sumZNC = (zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3];
+    float sumZNA = (zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3];
+    float sumZPC = (zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3];
+    float sumZPA = (zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3];
+
+    int itsTracks = 0, glbTracks = 0;
+    float et = 0., meanpt = 0.;
+    for (const auto& track : tracks) {
+      if (track.hasITS() && track.itsNCls() >= minITSnCls) {
+        itsTracks++;
+      }
+      // Track Selection
+      if (track.isGlobalTrack()) {
+        glbTracks++;
+        meanpt += track.pt();
+        et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+      }
+    }
+
+    histos.fill(HIST("zPos"), collision.posZ());
+    histos.fill(HIST("T0Ccent"), collision.centFT0C());
+
+    histos.fill(HIST("ZNCcvsZNCsum"), sumZNC / 2.81, zdc.energyCommonZNC() / 2.81);
+    histos.fill(HIST("ZNAcvsZNAsum"), sumZNA / 2.81, zdc.energyCommonZNA() / 2.81);
+    histos.fill(HIST("ZPCcvsZPCsum"), sumZPC / 2.81, zdc.energyCommonZPC() / 2.81);
+    histos.fill(HIST("ZPAcvsZPAsum"), sumZPA / 2.81, zdc.energyCommonZPA() / 2.81);
+
+    histos.fill(HIST("ZNA"), znA);
+    histos.fill(HIST("ZNC"), znC);
+    histos.fill(HIST("ZPA"), zpA);
+    histos.fill(HIST("ZPC"), zpC);
+    histos.fill(HIST("ZN"), znA + znC);
+    histos.fill(HIST("ZNAVsZNC"), znC, znA);
+    histos.fill(HIST("ZNAVsZPA"), zpA, znA);
+    histos.fill(HIST("ZNCVsZPC"), zpC, znC);
+    histos.fill(HIST("ZPAVsZPC"), zpC, zpA);
+    histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
+    histos.fill(HIST("ZNCVstdc"), tZNC, znC);
+    histos.fill(HIST("ZNAVstdc"), tZNA, znA);
+    histos.fill(HIST("ZPCVstdc"), tZPC, zpC);
+    histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
+    histos.fill(HIST("ZEM1Vstdc"), tZEM1, aZEM1);
+    histos.fill(HIST("ZEM2Vstdc"), tZEM2, aZEM2);
+    histos.fill(HIST("debunch"), tZDCdif, tZDCsum);
+
+    histos.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
+    histos.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
+    histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
+
+    if (sumZNs > znBasedCut) {
+      return;
+    }
+    histos.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
+    histos.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
+    histos.fill(HIST("NchVsFT0C"), aT0C / 100., glbTracks);
+    histos.fill(HIST("NchVsFT0M"), (aT0A + aT0C) / 100., glbTracks);
+
+    histos.fill(HIST("NchVsEt"), et, glbTracks);
+    histos.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
+    histos.fill(HIST("ZNAVsNch"), glbTracks, znA);
+    histos.fill(HIST("ZNCVsNch"), glbTracks, znC);
+    histos.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
+    histos.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
+    if (glbTracks >= minNchSel) {
+      histos.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
+    }
   }
 
   void processQVector(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::ZDCMults const& /*zdcMults*/)
@@ -376,9 +620,6 @@ struct FlowZdcTask {
       return;
     }
     int nTot = tracks.size();
-    double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
-    double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
-    int countEvents = 0;        // initialize Counter for the number of events processed
     double ft0aAmp = 0;
     double ft0cAmp = 0;
     float tZNA{0.0};
@@ -433,10 +674,10 @@ struct FlowZdcTask {
         }
       }
       // common energies
-      float commonSumZnc = (zdcread.energyCommonZNC()) / acceptanceZnc;
-      float commonSumZna = (zdcread.energyCommonZNA()) / acceptanceZna;
-      float commonSumZpc = (zdcread.energyCommonZPC()) / acceptanceZpc;
-      float commonSumZpa = (zdcread.energyCommonZPA()) / acceptanceZpa;
+      float commonSumZnc = (zdcread.energyCommonZNC());
+      float commonSumZna = (zdcread.energyCommonZNA());
+      float commonSumZpc = (zdcread.energyCommonZPC());
+      float commonSumZpa = (zdcread.energyCommonZPA());
       float sumZN = (sumZNC) + (sumZNA);
       float sumZP = (sumZPC) + (sumZPA);
 
@@ -463,61 +704,6 @@ struct FlowZdcTask {
       pZPvsFT0Ccent->Fill(cent, sumZP);
 
       histos.get<TH2>(HIST("ZDC_energy_vs_ZEM"))->Fill(sumZEM, sumZDC);
-
-      // Spectator plane angle calculations and histograms
-      const auto nTotZna = zdcread.amplitudeZNA();
-      const auto nTotZnc = zdcread.amplitudeZNC();
-      double qZnaReal = 0.0;
-      double qZnaIm = 0.0;
-      double qZncReal = 0.0;
-      double qZncIm = 0.0;
-      const double phiRadians[4] = {45 * o2::constants::math::PI / 180, 135 * o2::constants::math::PI / 180, 225 * o2::constants::math::PI / 180, 315 * o2::constants::math::PI / 180};
-      std::complex<double> qZNA = std::complex<double>(0.0, 0.0);
-      std::complex<double> qZNC = std::complex<double>(0.0, 0.0);
-
-      for (int sector = 0; sector < 4; ++sector) {
-        float energyZNA = zdcread.energySectorZNA()[sector];
-        float energyZNC = zdcread.energySectorZNC()[sector];
-
-        qZNA += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNA / sumZNA, std::sin(2 * phiRadians[sector]) * energyZNA / sumZNA);
-        qZNC += std::complex<double>(std::cos(2 * phiRadians[sector]) * energyZNC / sumZNC, std::sin(2 * phiRadians[sector]) * energyZNC / sumZNC);
-      }
-
-      qZnaReal = qZNA.real() / nTotZna;
-      qZnaIm = qZNA.imag() / nTotZna;
-      qZncReal = qZNC.real() / nTotZnc;
-      qZncIm = qZNC.imag() / nTotZnc;
-
-      histos.fill(HIST("Acorrelations"), qZNA.real(), qZNA.imag());
-      histos.fill(HIST("RealQHistogramZNA"), qZnaReal);
-      histos.fill(HIST("ImagQHistogramZNA"), qZnaIm);
-      histos.fill(HIST("RealQHistogramZNC"), qZncReal);
-      histos.fill(HIST("ImagQHistogramZNC"), qZncIm);
-
-      // Calculate the spectator plane angles for ZNA and ZNC
-      double psiZNA = std::atan2(qZNA.imag(), qZNA.real()) / 2.0;
-      double psiZNC = std::atan2(qZNC.imag(), qZNC.real()) / 2.0;
-
-      // Fill the histograms with the calculated angles
-      histos.fill(HIST("SPAngleZNA"), psiZNA);
-      histos.fill(HIST("SPAngleZNC"), psiZNC);
-
-      double cosPsiDiff = std::cos(psiZNA) - std::cos(psiZNC);
-      double sinPsiDiff = std::sin(psiZNA) - std::sin(psiZNC);
-
-      sumCosPsiDiff += cosPsiDiff;
-      sumSinPsiDiff += sinPsiDiff;
-      ++countEvents;
-
-      if (countEvents > 0) {
-        double runningAverageCosPsiDiff = sumCosPsiDiff / countEvents;
-        double runningAverageSinPsiDiff = sumSinPsiDiff / countEvents;
-        histos.fill(HIST("RunningAverageCosPsiDiff"), runningAverageCosPsiDiff);
-        pCosPsiDifferences->Fill(cent, runningAverageCosPsiDiff);
-        pSinPsiDifferences->Fill(cent, runningAverageSinPsiDiff);
-      }
-      histos.fill(HIST("CosPsiDifferences"), cosPsiDiff);
-      histos.fill(HIST("hSinDifferences"), sinPsiDiff);
     }
   }
 
@@ -541,6 +727,7 @@ struct FlowZdcTask {
   }
 
   PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
   PROCESS_SWITCH(FlowZdcTask, processQVector, "Process before recentering", true);
   PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 
