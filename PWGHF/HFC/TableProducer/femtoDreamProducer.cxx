@@ -166,7 +166,7 @@ struct HfFemtoDreamProducer {
 
   void init(InitContext&)
   {
-    std::array<bool, 3> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessMcCharmHadGen};
+    std::array<bool, 5> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessDataCharmHadWithML, doprocessMcCharmHadWithML, doprocessMcCharmHadGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
