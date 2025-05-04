@@ -225,12 +225,12 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
-   if (std::abs(collision.posZ()) > cfgZVtxCut) {
-	return;
-   } 
-   if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
-       return;
-   }
+    if (std::abs(collision.posZ()) > cfgZVtxCut) {
+      return;
+    }
+    if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
+      return;
+    }
 
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2) {
