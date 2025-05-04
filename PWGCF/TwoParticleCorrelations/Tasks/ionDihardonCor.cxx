@@ -17,6 +17,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include "TRandom3.h"
 #include <vector>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
