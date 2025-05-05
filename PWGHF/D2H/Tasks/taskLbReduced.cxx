@@ -175,11 +175,10 @@ struct HfTaskLbReduced {
 
   HfHelper hfHelper;
 
-  HistogramRegistry registry{"registry"};
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsLc = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
