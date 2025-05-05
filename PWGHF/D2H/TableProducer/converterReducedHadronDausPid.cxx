@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file converterReducedHadronDausPid.cxx
-/// \brief Task for conversion of  daughters pid to version 001
+/// \brief Task for conversion of daughters pid to version 001
 ///
 /// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
