@@ -35,7 +35,7 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_Lb_FULL(OBJECT, FEATURE, GETTER)    \
+#define CHECK_AND_FILL_VEC_LB_FULL(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE): { \
     inputFeatures.emplace_back(OBJECT.GETTER());               \
     break;                                                     \
@@ -45,15 +45,15 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the GETTER function taking OBJECT in argument
-#define CHECK_AND_FILL_VEC_Lb_FUNC(OBJECT, FEATURE, GETTER)    \
+#define CHECK_AND_FILL_VEC_LB_FUNC(OBJECT, FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::FEATURE): { \
     inputFeatures.emplace_back(GETTER(OBJECT));                \
     break;                                                     \
   }
 
-// Specific case of CHECK_AND_FILL_VEC_Lb_FULL(OBJECT, FEATURE, GETTER)
+// Specific case of (OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_Lb(GETTER)                         \
+#define CHECK_AND_FILL_VEC_LB(GETTER)                         \
   case static_cast<uint8_t>(InputFeaturesLbToLcPi::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());           \
     break;                                                    \
@@ -106,50 +106,50 @@ class HfMlResponseLbToLcPi : public HfMlResponse<TypeOutputScore>
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       if constexpr (withDmesMl) {
         switch (idx) {
-          CHECK_AND_FILL_VEC_Lb(ptProng0);
-          CHECK_AND_FILL_VEC_Lb(ptProng1);
-          CHECK_AND_FILL_VEC_Lb(impactParameter0);
-          CHECK_AND_FILL_VEC_Lb(impactParameter1);
-          CHECK_AND_FILL_VEC_Lb(impactParameterProduct);
-          CHECK_AND_FILL_VEC_Lb(chi2PCA);
-          CHECK_AND_FILL_VEC_Lb(decayLength);
-          CHECK_AND_FILL_VEC_Lb(decayLengthXY);
-          CHECK_AND_FILL_VEC_Lb(decayLengthNormalised);
-          CHECK_AND_FILL_VEC_Lb(decayLengthXYNormalised);
-          CHECK_AND_FILL_VEC_Lb(cpa);
-          CHECK_AND_FILL_VEC_Lb(cpaXY);
-          CHECK_AND_FILL_VEC_Lb(maxNormalisedDeltaIP);
-          CHECK_AND_FILL_VEC_Lb(prong0MlScoreBkg);
-          CHECK_AND_FILL_VEC_Lb(prong0MlScorePrompt);
-          CHECK_AND_FILL_VEC_Lb(prong0MlScoreNonprompt);
+          CHECK_AND_FILL_VEC_LB(ptProng0);
+          CHECK_AND_FILL_VEC_LB(ptProng1);
+          CHECK_AND_FILL_VEC_LB(impactParameter0);
+          CHECK_AND_FILL_VEC_LB(impactParameter1);
+          CHECK_AND_FILL_VEC_LB(impactParameterProduct);
+          CHECK_AND_FILL_VEC_LB(chi2PCA);
+          CHECK_AND_FILL_VEC_LB(decayLength);
+          CHECK_AND_FILL_VEC_LB(decayLengthXY);
+          CHECK_AND_FILL_VEC_LB(decayLengthNormalised);
+          CHECK_AND_FILL_VEC_LB(decayLengthXYNormalised);
+          CHECK_AND_FILL_VEC_LB(cpa);
+          CHECK_AND_FILL_VEC_LB(cpaXY);
+          CHECK_AND_FILL_VEC_LB(maxNormalisedDeltaIP);
+          CHECK_AND_FILL_VEC_LB(prong0MlScoreBkg);
+          CHECK_AND_FILL_VEC_LB(prong0MlScorePrompt);
+          CHECK_AND_FILL_VEC_LB(prong0MlScoreNonprompt);
           // TPC PID variable
-          CHECK_AND_FILL_VEC_Lb_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+          (prong1, tpcNSigmaPi1, tpcNSigmaPi);
           // TOF PID variable
-          CHECK_AND_FILL_VEC_Lb_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+          CHECK_AND_FILL_VEC_LB_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
           // Combined PID variables
-          CHECK_AND_FILL_VEC_Lb_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+          CHECK_AND_FILL_VEC_LB_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
         }
       } else {
         switch (idx) {
-          CHECK_AND_FILL_VEC_Lb(ptProng0);
-          CHECK_AND_FILL_VEC_Lb(ptProng1);
-          CHECK_AND_FILL_VEC_Lb(impactParameter0);
-          CHECK_AND_FILL_VEC_Lb(impactParameter1);
-          CHECK_AND_FILL_VEC_Lb(impactParameterProduct);
-          CHECK_AND_FILL_VEC_Lb(chi2PCA);
-          CHECK_AND_FILL_VEC_Lb(decayLength);
-          CHECK_AND_FILL_VEC_Lb(decayLengthXY);
-          CHECK_AND_FILL_VEC_Lb(decayLengthNormalised);
-          CHECK_AND_FILL_VEC_Lb(decayLengthXYNormalised);
-          CHECK_AND_FILL_VEC_Lb(cpa);
-          CHECK_AND_FILL_VEC_Lb(cpaXY);
-          CHECK_AND_FILL_VEC_Lb(maxNormalisedDeltaIP);
+          CHECK_AND_FILL_VEC_LB(ptProng0);
+          CHECK_AND_FILL_VEC_LB(ptProng1);
+          CHECK_AND_FILL_VEC_LB(impactParameter0);
+          CHECK_AND_FILL_VEC_LB(impactParameter1);
+          CHECK_AND_FILL_VEC_LB(impactParameterProduct);
+          CHECK_AND_FILL_VEC_LB(chi2PCA);
+          CHECK_AND_FILL_VEC_LB(decayLength);
+          CHECK_AND_FILL_VEC_LB(decayLengthXY);
+          CHECK_AND_FILL_VEC_LB(decayLengthNormalised);
+          CHECK_AND_FILL_VEC_LB(decayLengthXYNormalised);
+          CHECK_AND_FILL_VEC_LB(cpa);
+          CHECK_AND_FILL_VEC_LB(cpaXY);
+          CHECK_AND_FILL_VEC_LB(maxNormalisedDeltaIP);
           // TPC PID variable
-          CHECK_AND_FILL_VEC_Lb_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+          CHECK_AND_FILL_VEC_LB_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
           // TOF PID variable
-          CHECK_AND_FILL_VEC_Lb_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+          CHECK_AND_FILL_VEC_LB_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
           // Combined PID variables
-          CHECK_AND_FILL_VEC_Lb_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+          CHECK_AND_FILL_VEC_LB_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
         }
       }
     }
@@ -190,8 +190,8 @@ class HfMlResponseLbToLcPi : public HfMlResponse<TypeOutputScore>
 } // namespace o2::analysis
 
 #undef FILL_MAP_LB
-#undef CHECK_AND_FILL_VEC_Lb_FULL
-#undef CHECK_AND_FILL_VEC_Lb_FUNC
-#undef CHECK_AND_FILL_VEC_Lb
+#undef CHECK_AND_FILL_VEC_LB_FULL
+#undef CHECK_AND_FILL_VEC_LB_FUNC
+#undef CHECK_AND_FILL_VEC_LB
 
 #endif // PWGHF_CORE_HFMLRESPONSELBTOLCPI_H_
