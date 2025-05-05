@@ -480,6 +480,10 @@ struct StrangenessBuilder {
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
 
+    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
+    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
+    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
+
     mRunNumber = 0;
 
     mEnabledTables.resize(nTables, 0);
@@ -1462,6 +1466,9 @@ struct StrangenessBuilder {
                   thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
                   thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
                 histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+                histos.fill(HIST("hPrimaryV0s"), 0);
+                if (thisInfo.isPhysicalPrimary)
+                  histos.fill(HIST("hPrimaryV0s"), 1);
               }
               if (mEnabledTables[kV0MCCollRefs]) {
                 products.v0mccollref(thisInfo.mcCollision);
@@ -1593,6 +1600,9 @@ struct StrangenessBuilder {
               info.negP[0], info.negP[1], info.negP[2],
               info.momentum[0], info.momentum[1], info.momentum[2]);
             histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+            histos.fill(HIST("hPrimaryV0s"), 0);
+            if (thisInfo.isPhysicalPrimary)
+              histos.fill(HIST("hPrimaryV0s"), 1);
           }
           if (mEnabledTables[kV0MCCollRefs]) {
             products.v0mccollref(info.mcCollision);
