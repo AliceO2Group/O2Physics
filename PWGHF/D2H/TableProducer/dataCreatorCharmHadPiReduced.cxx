@@ -1122,7 +1122,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         fillHfCandCharm = true;
       } // pion loop
-      if (fillHfCandCharm) {                                                                                                                               // fill candCplus table only once per D candidate
+      if (fillHfCandCharm) { // fill candCplus table only once per D candidate
         constexpr std::size_t NSizeMLScore{3u};
         if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
