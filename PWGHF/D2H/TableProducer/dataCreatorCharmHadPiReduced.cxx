@@ -182,14 +182,14 @@ struct HfDataCreatorCharmHadPiReduced {
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
 
-  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>>;
+  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::, aod::HfSelDplusToPiKPi>>;
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi>>;
   using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandsD0Filtered = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>>;
   using CandsD0FilteredWithMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
-  using CandsLcFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-  using CandsLcFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
+  using CandsLcFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>>;
+  using CandsLcFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfMlLcToPKPi>>;
 
   using CollisionsWCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CollisionsWCentAndMcLabels = soa::Join<CollisionsWCent, aod::McCollisionLabels>;
