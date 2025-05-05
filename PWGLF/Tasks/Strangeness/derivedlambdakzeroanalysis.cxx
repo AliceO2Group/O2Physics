@@ -635,6 +635,10 @@ struct derivedlambdakzeroanalysis {
       hRawCentrality->SetBinContent(ii, value);
     }
 
+    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
+    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
+    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
+
     // histograms versus mass
     if (analyseK0Short) {
       histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
@@ -2299,8 +2303,11 @@ struct derivedlambdakzeroanalysis {
       if (!v0MC.has_straMCCollision())
         continue;
 
+      histos.fill(HIST("hPrimaryV0s"), 0);
       if (!v0MC.isPhysicalPrimary())
         continue;
+
+      histos.fill(HIST("hPrimaryV0s"), 1);
 
       float ptmc = v0MC.ptMC();
       float ymc = 1e3;
