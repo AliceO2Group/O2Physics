@@ -171,7 +171,7 @@ struct HfDataCreatorCharmHadPiReduced {
   double invMass2ChHadPiMin{0.};
   double invMass2ChHadPiMax{0.};
   double bz{0.};
-
+  constexpr std::size_t NDaughtersDs{2u};
   bool isHfCandBhadConfigFilled = false;
 
   // Fitter to redo D-vertex to get extrapolated daughter tracks (2/3-prong vertex filter)
@@ -545,7 +545,6 @@ struct HfDataCreatorCharmHadPiReduced {
     } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
       // Bs → Ds- π+ → (K- K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
-      constexpr std::size_t NDaughtersDs{2u};
       if (indexRec > -1) {
         // Ds- → K- K+ π-
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -1122,7 +1121,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         fillHfCandCharm = true;
       } // pion loop
-      if (fillHfCandCharm) { // fill candCplus table only once per D candidate
+      if (fillHfCandCharm) {                                                                                                                               // fill candCplus table only once per D candidate
         constexpr std::size_t NSizeMLScore{3u};
         if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
@@ -1259,7 +1258,6 @@ struct HfDataCreatorCharmHadPiReduced {
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BsToDsminusPi) {
         // Bs → Ds- π+
-        constexpr std::size_t NDaughtersDs{2u};
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{-static_cast<int>(Pdg::kDS), +kPiPlus}, true)) {
           // Match Ds- -> π- K+ π-
           auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
