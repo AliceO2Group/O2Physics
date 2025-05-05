@@ -1145,7 +1145,7 @@ struct EventSelectionQaTask {
 
       histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
 
-      if (!isLowFlux && col.sel8()) {
+      if (!isLowFlux && col.sel8() && fabs(col.posZ()) < 10) {
         int occupancyByTracks = col.trackOccupancyInTimeRange();
         histos.fill(HIST("occupancyQA/hOccupancyByTracks"), occupancyByTracks);
         float occupancyByFT0C = col.ft0cOccupancyInTimeRange();
