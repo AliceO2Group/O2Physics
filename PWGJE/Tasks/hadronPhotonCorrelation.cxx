@@ -64,6 +64,12 @@ struct HadronPhotonCorrelation {
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
+  Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 70, "tpcNClsCrossedRows"};
+  Configurable<double> tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0.8, "tpcCrossedRowsOverFindableCls"};
+  Configurable<double> tpcNSigmaPi{"tpcNSigmaPi", 2., "tpcNSigmaPi"};
+
+  const int pidCodeHadronCut = 100;
+
   Configurable<float> etaMax{"etaMax", 0.8, "maximum eta cut"};
 
   AxisSpec axisPhi = {72, 0., TwoPI, "#phi"};                       // Axis for phi distribution
@@ -83,7 +89,7 @@ struct HadronPhotonCorrelation {
   AxisSpec axisMult = {100, 0., 99., "N_{ch}"};          // Axis for mutplipicity
   AxisSpec axisAlpha = {100, 0., 1., "alpha"};           // Axis for decay photon pt assymetry
 
-  AxisSpec axisDeltaRDecay = {100, 0., 0.8, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
+  AxisSpec axisDeltaRDecay = {400, 0., 3.2, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
 
   float ptMinTrig;
   float ptMaxTrig;
@@ -138,7 +144,7 @@ struct HadronPhotonCorrelation {
     ////Neutral particles
     registry.add("generated/neutral/hNeutralCorrelGen", "Generated Trigger-Neutral Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPid});
     registry.add("generated/neutral/hNeutralMultGen", "Generated Neutral Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});                                     // Particle ID of neutral hadrons
+    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});
     registry.add("generated/neutral/hNeutralDecayGen", "Generated Neutral Hadron-Decay Photon Correlation", kTHnSparseF, {axisPtAssoc, axisDeltaPt, axisDeltaRDecay, axisAlpha, axisPid}); // Correlation with decay photons
 
     // Reconstructed histograms
@@ -202,6 +208,10 @@ struct HadronPhotonCorrelation {
   {
 
     if (checkIsPrimary && !particle.isPhysicalPrimary()) {
+      return false;
+    }
+
+    if (particle.getGenStatusCode() == -1) {
       return false;
     }
 
@@ -286,11 +296,11 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < 70) {
+    if (track.tpcNClsCrossedRows() < tpcNClsCrossedRows) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableCls) {
       return false;
     }
 
@@ -474,8 +484,9 @@ struct HadronPhotonCorrelation {
       }
 
       auto pdgMother = pdg->GetParticle(mother.pdgCode());
-      if (!pdgMother)
+      if (!pdgMother) {
         continue;
+      }
       int photonGeneration;
       switch (std::abs(origPhoton.getGenStatusCode())) {
         case 23: // prompt direct photons
@@ -572,7 +583,7 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(track_assoc.pdgCode()) < 100) {
+      if (std::abs(track_assoc.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
@@ -618,7 +629,7 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(particle.pdgCode()) < 100) {
+      if (std::abs(particle.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
@@ -671,7 +682,7 @@ struct HadronPhotonCorrelation {
       if (!initTrack(track_assoc)) {
         continue;
       }
-      if (std::abs(track_assoc.tpcNSigmaPi()) > 2) {
+      if (std::abs(track_assoc.tpcNSigmaPi()) > tpcNSigmaPi) {
         continue;
       } // remove non-pions
       registry.fill(HIST("reconstructed/charged/hPionSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
@@ -793,7 +804,7 @@ struct HadronPhotonCorrelation {
       if (pdgParticle->Charge() != 0.) {
         continue;
       } // remove charged particles
-      if (track_assoc.pdgCode() < 100 || (PDG_t)track_assoc.pdgCode() == kNeutron) {
+      if (track_assoc.pdgCode() < pidCodeHadronCut || (PDG_t)track_assoc.pdgCode() == kNeutron) {
         continue;
       } // remove non-hadrons and neutrons
       registry.fill(HIST("generated/neutral/hNeutralSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), pidCodes[pdgParticle->GetName()]);
@@ -802,7 +813,8 @@ struct HadronPhotonCorrelation {
       // Get correlations between neutral hadrons and their respective decay photons
       auto daughters = track_assoc.daughters_as<aod::JMcParticles>();
       double alpha = -1;
-      if (daughters.size() == 2) {
+      int nPhotonsPionDecay = 2;
+      if (daughters.size() == nPhotonsPionDecay) {
         auto daughter = daughters.begin();
         double pt1 = daughter.pt();
         ++daughter;
@@ -811,12 +823,12 @@ struct HadronPhotonCorrelation {
       }
 
       for (const auto& daughter : daughters) {
-        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma)
+        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma) {
           continue;
-        if (!initParticle(daughter, false))
+        }
+        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1) {
           continue;
-        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1)
-          continue;
+        }
         double deltaPt = daughter.pt() / track_assoc.pt();
         double deltaEta = daughter.eta() - track_assoc.eta();
         double deltaPhi = RecoDecay::constrainAngle(daughter.phi() - track_assoc.phi(), -PIHalf);
