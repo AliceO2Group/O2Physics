@@ -238,7 +238,7 @@ struct HfCandidateCreatorLbReduced {
     }
 
     static int ncol = 0;
-    static constexpr int nPrintFrequency = 10000;
+    static constexpr int PrintFrequency = 10000;
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsLcThisColl = candsLc.sliceBy(candsLcPerCollision, thisCollId);
@@ -269,7 +269,7 @@ struct HfCandidateCreatorLbReduced {
     }
 
     static int ncol = 0;
-    static constexpr int nPrintFrequency = 10000;
+    static constexpr int PrintFrequency = 10000;
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsLcThisColl = candsLc.sliceBy(candsLcPerCollision, thisCollId);
