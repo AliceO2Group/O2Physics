@@ -555,16 +555,9 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to fill lite table
   /// \param candidate candidate instance
-  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
-  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
-  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
-  void fillLiteTable(CandType const& candidate,
-                     TrackType const& trackPos1,
-                     TrackType const& trackNeg,
-                     TrackType const& trackPos2,
-                     int candFlag)
+  template <bool isMc, int reconstructionType, typename CandType>
+  void fillLiteTable(CandType const& candidate, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
@@ -597,21 +590,21 @@ struct HfTreeCreatorLcToPKPi {
       candidate.impactParameter0(),
       candidate.impactParameter1(),
       candidate.impactParameter2(),
-      trackPos1.tpcNSigmaPi(),
-      trackPos1.tpcNSigmaPr(),
-      trackPos1.tofNSigmaPi(),
-      trackPos1.tofNSigmaPr(),
-      trackNeg.tpcNSigmaKa(),
-      trackNeg.tofNSigmaKa(),
-      trackPos2.tpcNSigmaPi(),
-      trackPos2.tpcNSigmaPr(),
-      trackPos2.tofNSigmaPi(),
-      trackPos2.tofNSigmaPr(),
-      trackPos1.tpcTofNSigmaPi(),
-      trackPos1.tpcTofNSigmaPr(),
-      trackNeg.tpcTofNSigmaKa(),
-      trackPos2.tpcTofNSigmaPi(),
-      trackPos2.tpcTofNSigmaPr(),
+      candidate.nSigTpcPi0(),
+      candidate.nSigTpcPr0(),
+      candidate.nSigTofPi0(),
+      candidate.nSigTofPr0(),
+      candidate.nSigTpcKa1(),
+      candidate.nSigTofKa1(),
+      candidate.nSigTpcPi2(),
+      candidate.nSigTpcPr2(),
+      candidate.nSigTofPi2(),
+      candidate.nSigTofPr2(),
+      candidate.tpcTofNSigmaPi0(),
+      candidate.tpcTofNSigmaPr0(),
+      candidate.tpcTofNSigmaKa1(),
+      candidate.tpcTofNSigmaPi2(),
+      candidate.tpcTofNSigmaPr2(),
       1 << candFlag,
       functionInvMass,
       candidate.pt(),
@@ -635,16 +628,9 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to fill lite table
   /// \param candidate candidate instance
-  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
-  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
-  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, int reconstructionType, typename CandType, typename TrackType>
-  void fillFullTable(CandType const& candidate,
-                     TrackType const& trackPos1,
-                     TrackType const& trackNeg,
-                     TrackType const& trackPos2,
-                     int candFlag)
+  template <bool isMc, int reconstructionType, typename CandType>
+  void fillFullTable(CandType const& candidate, int candFlag)
   {
     auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
@@ -705,21 +691,21 @@ struct HfTreeCreatorLcToPKPi {
       candidate.errorImpactParameter0(),
       candidate.errorImpactParameter1(),
       candidate.errorImpactParameter2(),
-      trackPos1.tpcNSigmaPi(),
-      trackPos1.tpcNSigmaPr(),
-      trackPos1.tofNSigmaPi(),
-      trackPos1.tofNSigmaPr(),
-      trackNeg.tpcNSigmaKa(),
-      trackNeg.tofNSigmaKa(),
-      trackPos2.tpcNSigmaPi(),
-      trackPos2.tpcNSigmaPr(),
-      trackPos2.tofNSigmaPi(),
-      trackPos2.tofNSigmaPr(),
-      trackPos1.tpcTofNSigmaPi(),
-      trackPos1.tpcTofNSigmaPr(),
-      trackNeg.tpcTofNSigmaKa(),
-      trackPos2.tpcTofNSigmaPi(),
-      trackPos2.tpcTofNSigmaPr(),
+      candidate.nSigTpcPi0(),
+      candidate.nSigTpcPr0(),
+      candidate.nSigTofPi0(),
+      candidate.nSigTofPr0(),
+      candidate.nSigTpcKa1(),
+      candidate.nSigTofKa1(),
+      candidate.nSigTpcPi2(),
+      candidate.nSigTpcPr2(),
+      candidate.nSigTofPi2(),
+      candidate.nSigTofPr2(),
+      candidate.tpcTofNSigmaPi0(),
+      candidate.tpcTofNSigmaPr0(),
+      candidate.tpcTofNSigmaKa1(),
+      candidate.tpcTofNSigmaPi2(),
+      candidate.tpcTofNSigmaPr2(),
       1 << candFlag,
       functionInvMass,
       candidate.pt(),
@@ -741,18 +727,12 @@ struct HfTreeCreatorLcToPKPi {
 
   /// \brief function to fill lite table
   /// \param candidate candidate instance
-  /// \param trackPos1 1-st prong (positive track; negative for c.c.)
-  /// \param trackNeg 2-nd prong (negative track; positive for c.c.)
-  /// \param trackPos2 3-d prong (positive track; negative for c.c.)
   /// \param collision collision, to which the candidate belongs
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   /// \param functionSelection flag indicating if candidate was selected by candidateSelectorLc task
   /// \param sigbgstatus for MC: number indicating if candidate is prompt, non-prompt or background; for data: UndefValueInt
-  template <typename CandType, typename TrackType, typename CollType>
+  template <typename CandType, typename CollType>
   void fillKFTable(CandType const& candidate,
-                   TrackType const& trackPos1,
-                   TrackType const& trackNeg,
-                   TrackType const& trackPos2,
                    CollType const& collision,
                    int candFlag,
                    int functionSelection,
@@ -766,13 +746,13 @@ struct HfTreeCreatorLcToPKPi {
     float chi2GeoPionKaon;
     float mass;
     float valueTpcNSigmaPr;
-    const float valueTpcNSigmaKa = trackNeg.tpcNSigmaKa();
+    const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
     float valueTpcNSigmaPi;
     float valueTofNSigmaPr;
-    const float valueTofNSigmaKa = trackNeg.tofNSigmaKa();
+    const float valueTofNSigmaKa = candidate.nSigTofKa1();
     float valueTofNSigmaPi;
     float valueTpcTofNSigmaPr;
-    const float valueTpcTofNSigmaKa = trackNeg.tpcTofNSigmaKa();
+    const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
     float valueTpcTofNSigmaPi;
     if (candFlag == 0) {
       chi2primProton = candidate.kfChi2PrimProng0();
@@ -782,12 +762,12 @@ struct HfTreeCreatorLcToPKPi {
       chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
       chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
       mass = candidate.kfMassPKPi();
-      valueTpcNSigmaPr = trackPos1.tpcNSigmaPr();
-      valueTpcNSigmaPi = trackPos2.tpcNSigmaPi();
-      valueTofNSigmaPr = trackPos1.tofNSigmaPr();
-      valueTofNSigmaPi = trackPos2.tofNSigmaPi();
-      valueTpcTofNSigmaPr = trackPos1.tpcTofNSigmaPr();
-      valueTpcTofNSigmaPi = trackPos2.tpcTofNSigmaPi();
+      valueTpcNSigmaPr = candidate.nSigTpcPr0();
+      valueTpcNSigmaPi = candidate.nSigTpcPi2();
+      valueTofNSigmaPr = candidate.nSigTofPr0();
+      valueTofNSigmaPi = candidate.nSigTofPi2();
+      valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
+      valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
     } else {
       chi2primProton = candidate.kfChi2PrimProng2();
       chi2primPion = candidate.kfChi2PrimProng0();
@@ -796,12 +776,12 @@ struct HfTreeCreatorLcToPKPi {
       chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
       chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
       mass = candidate.kfMassPiKP();
-      valueTpcNSigmaPr = trackPos2.tpcNSigmaPr();
-      valueTpcNSigmaPi = trackPos1.tpcNSigmaPi();
-      valueTofNSigmaPr = trackPos2.tofNSigmaPr();
-      valueTofNSigmaPi = trackPos1.tofNSigmaPi();
-      valueTpcTofNSigmaPr = trackPos2.tpcTofNSigmaPr();
-      valueTpcTofNSigmaPi = trackPos1.tpcTofNSigmaPi();
+      valueTpcNSigmaPr = candidate.nSigTpcPr2();
+      valueTpcNSigmaPi = candidate.nSigTpcPi0();
+      valueTofNSigmaPr = candidate.nSigTofPr2();
+      valueTofNSigmaPi = candidate.nSigTofPi0();
+      valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
+      valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
     }
     const float svX = candidate.xSecondaryVertex();
     const float svY = candidate.ySecondaryVertex();
@@ -883,233 +863,13 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           if (fillCandidateLiteTable) {
-<<<<<<< HEAD
-            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candFlag);
           } else {
-            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, sigbgstatus);
-=======
-            rowCandidateLite(
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.chi2PCA(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.ptProng0(),
-              candidate.ptProng1(),
-              candidate.ptProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.nSigTpcPi0(),
-              candidate.nSigTpcPr0(),
-              candidate.nSigTofPi0(),
-              candidate.nSigTofPr0(),
-              candidate.nSigTpcKa1(),
-              candidate.nSigTofKa1(),
-              candidate.nSigTpcPi2(),
-              candidate.nSigTpcPr2(),
-              candidate.nSigTofPi2(),
-              candidate.nSigTofPr2(),
-              candidate.tpcTofNSigmaPi0(),
-              candidate.tpcTofNSigmaPr0(),
-              candidate.tpcTofNSigmaKa1(),
-              candidate.tpcTofNSigmaPi2(),
-              candidate.tpcTofNSigmaPr2(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              candidate.flagMcMatchRec(),
-              candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.flagMcDecayChanRec(),
-              functionInvMassKPi);
-
-            if (fillCollIdTable) {
-              /// save also candidate collision indices
-              rowCollisionId(candidate.collisionId());
-            }
-          } else {
-            rowCandidateFull(
-              candidate.collisionId(),
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.xSecondaryVertex(),
-              candidate.ySecondaryVertex(),
-              candidate.zSecondaryVertex(),
-              candidate.errorDecayLength(),
-              candidate.errorDecayLengthXY(),
-              candidate.chi2PCA(),
-              candidate.rSecondaryVertex(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.impactParameterNormalised0(),
-              candidate.ptProng0(),
-              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-              candidate.impactParameterNormalised1(),
-              candidate.ptProng1(),
-              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-              candidate.impactParameterNormalised2(),
-              candidate.ptProng2(),
-              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-              candidate.pxProng0(),
-              candidate.pyProng0(),
-              candidate.pzProng0(),
-              candidate.pxProng1(),
-              candidate.pyProng1(),
-              candidate.pzProng1(),
-              candidate.pxProng2(),
-              candidate.pyProng2(),
-              candidate.pzProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.errorImpactParameter0(),
-              candidate.errorImpactParameter1(),
-              candidate.errorImpactParameter2(),
-              candidate.nSigTpcPi0(),
-              candidate.nSigTpcPr0(),
-              candidate.nSigTofPi0(),
-              candidate.nSigTofPr0(),
-              candidate.nSigTpcKa1(),
-              candidate.nSigTofKa1(),
-              candidate.nSigTpcPi2(),
-              candidate.nSigTpcPr2(),
-              candidate.nSigTofPi2(),
-              candidate.nSigTofPr2(),
-              candidate.tpcTofNSigmaPi0(),
-              candidate.tpcTofNSigmaPr0(),
-              candidate.tpcTofNSigmaKa1(),
-              candidate.tpcTofNSigmaPi2(),
-              candidate.tpcTofNSigmaPr2(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.p(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              functionE,
-              candidate.flagMcMatchRec(),
-              candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.globalIndex(),
-              candidate.flagMcDecayChanRec(),
-              functionInvMassKPi);
-          }
-
-          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            float chi2primProton;
-            float chi2primPion;
-            float dcaProtonKaon;
-            float dcaPionKaon;
-            float chi2GeoProtonKaon;
-            float chi2GeoPionKaon;
-            float mass;
-            float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
-            float valueTpcNSigmaPi;
-            float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = candidate.nSigTofKa1();
-            float valueTofNSigmaPi;
-            float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
-            float valueTpcTofNSigmaPi;
-            if (candFlag == 0) {
-              chi2primProton = candidate.kfChi2PrimProng0();
-              chi2primPion = candidate.kfChi2PrimProng2();
-              dcaProtonKaon = candidate.kfDcaProng0Prong1();
-              dcaPionKaon = candidate.kfDcaProng1Prong2();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
-              mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = candidate.nSigTpcPr0();
-              valueTpcNSigmaPi = candidate.nSigTpcPi2();
-              valueTofNSigmaPr = candidate.nSigTofPr0();
-              valueTofNSigmaPi = candidate.nSigTofPi2();
-              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
-              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
-            } else {
-              chi2primProton = candidate.kfChi2PrimProng2();
-              chi2primPion = candidate.kfChi2PrimProng0();
-              dcaProtonKaon = candidate.kfDcaProng1Prong2();
-              dcaPionKaon = candidate.kfDcaProng0Prong1();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
-              mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = candidate.nSigTpcPr2();
-              valueTpcNSigmaPi = candidate.nSigTpcPi0();
-              valueTofNSigmaPr = candidate.nSigTofPr2();
-              valueTofNSigmaPi = candidate.nSigTofPi0();
-              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
-              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
-            }
-            const float svX = candidate.xSecondaryVertex();
-            const float svY = candidate.ySecondaryVertex();
-            const float svZ = candidate.zSecondaryVertex();
-            const float svErrX = candidate.kfXError();
-            const float svErrY = candidate.kfYError();
-            const float svErrZ = candidate.kfZError();
-            const float pvErrX = candidate.kfXPVError();
-            const float pvErrY = candidate.kfYPVError();
-            const float pvErrZ = candidate.kfZPVError();
-            const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2Geo = candidate.kfChi2Geo();
-            const float chi2Topo = candidate.kfChi2Topo();
-            const float decayLength = candidate.kfDecayLength();
-            const float dl = candidate.kfDecayLengthError();
-            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
-                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
-                                  pt;
-            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
-            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
-                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
-                                 p;
-            const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            rowCandidateKF(
-              svX, svY, svZ, svErrX, svErrY, svErrZ,
-              pvErrX, pvErrY, pvErrZ,
-              chi2primProton, chi2primKaon, chi2primPion,
-              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
-              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
-              mass, p, pt, deltaP, deltaPt,
-              functionSelection, sigbgstatus,
-              collision.multNTracksPV(),
-              valueTpcNSigmaPr,
-              valueTpcNSigmaKa,
-              valueTpcNSigmaPi,
-              valueTofNSigmaPr,
-              valueTofNSigmaKa,
-              valueTofNSigmaPi,
-              valueTpcTofNSigmaPr,
-              valueTpcTofNSigmaKa,
-              valueTpcTofNSigmaPi);
->>>>>>> master
+            fillKFTable(candidate, collision, candFlag, functionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
@@ -1277,234 +1037,13 @@ struct HfTreeCreatorLcToPKPi {
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-<<<<<<< HEAD
-            fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candFlag);
           } else {
-            fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, UndefValueInt);
-=======
-            rowCandidateLite(
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.chi2PCA(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.ptProng0(),
-              candidate.ptProng1(),
-              candidate.ptProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.nSigTpcPi0(),
-              candidate.nSigTpcPr0(),
-              candidate.nSigTofPi0(),
-              candidate.nSigTofPr0(),
-              candidate.nSigTpcKa1(),
-              candidate.nSigTofKa1(),
-              candidate.nSigTpcPi2(),
-              candidate.nSigTpcPr2(),
-              candidate.nSigTofPi2(),
-              candidate.nSigTofPr2(),
-              candidate.tpcTofNSigmaPi0(),
-              candidate.tpcTofNSigmaPr0(),
-              candidate.tpcTofNSigmaKa1(),
-              candidate.tpcTofNSigmaPi2(),
-              candidate.tpcTofNSigmaPr2(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              0.,
-              0.,
-              0.,
-              -1,
-              functionInvMassKPi);
-
-            if (fillCollIdTable) {
-              /// save also candidate collision indices
-              rowCollisionId(candidate.collisionId());
-            }
-
-          } else {
-            rowCandidateFull(
-              candidate.collisionId(),
-              candidate.posX(),
-              candidate.posY(),
-              candidate.posZ(),
-              candidate.nProngsContributorsPV(),
-              candidate.bitmapProngsContributorsPV(),
-              candidate.xSecondaryVertex(),
-              candidate.ySecondaryVertex(),
-              candidate.zSecondaryVertex(),
-              candidate.errorDecayLength(),
-              candidate.errorDecayLengthXY(),
-              candidate.chi2PCA(),
-              candidate.rSecondaryVertex(),
-              candidate.decayLength(),
-              candidate.decayLengthXY(),
-              candidate.decayLengthNormalised(),
-              candidate.decayLengthXYNormalised(),
-              candidate.impactParameterNormalised0(),
-              candidate.ptProng0(),
-              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-              candidate.impactParameterNormalised1(),
-              candidate.ptProng1(),
-              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-              candidate.impactParameterNormalised2(),
-              candidate.ptProng2(),
-              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
-              candidate.pxProng0(),
-              candidate.pyProng0(),
-              candidate.pzProng0(),
-              candidate.pxProng1(),
-              candidate.pyProng1(),
-              candidate.pzProng1(),
-              candidate.pxProng2(),
-              candidate.pyProng2(),
-              candidate.pzProng2(),
-              candidate.impactParameter0(),
-              candidate.impactParameter1(),
-              candidate.impactParameter2(),
-              candidate.errorImpactParameter0(),
-              candidate.errorImpactParameter1(),
-              candidate.errorImpactParameter2(),
-              candidate.nSigTpcPi0(),
-              candidate.nSigTpcPr0(),
-              candidate.nSigTofPi0(),
-              candidate.nSigTofPr0(),
-              candidate.nSigTpcKa1(),
-              candidate.nSigTofKa1(),
-              candidate.nSigTpcPi2(),
-              candidate.nSigTpcPr2(),
-              candidate.nSigTofPi2(),
-              candidate.nSigTofPr2(),
-              candidate.tpcTofNSigmaPi0(),
-              candidate.tpcTofNSigmaPr0(),
-              candidate.tpcTofNSigmaKa1(),
-              candidate.tpcTofNSigmaPi2(),
-              candidate.tpcTofNSigmaPr2(),
-              1 << candFlag,
-              functionInvMass,
-              candidate.pt(),
-              candidate.p(),
-              candidate.cpa(),
-              candidate.cpaXY(),
-              functionCt,
-              candidate.eta(),
-              candidate.phi(),
-              functionY,
-              functionE,
-              0.,
-              0.,
-              0.,
-              candidate.globalIndex(),
-              -1,
-              functionInvMassKPi);
-          }
-
-          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-            float chi2primProton;
-            float chi2primPion;
-            float dcaProtonKaon;
-            float dcaPionKaon;
-            float chi2GeoProtonKaon;
-            float chi2GeoPionKaon;
-            float mass;
-            float valueTpcNSigmaPr;
-            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
-            float valueTpcNSigmaPi;
-            float valueTofNSigmaPr;
-            const float valueTofNSigmaKa = candidate.nSigTofKa1();
-            float valueTofNSigmaPi;
-            float valueTpcTofNSigmaPr;
-            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
-            float valueTpcTofNSigmaPi;
-            if (candFlag == 0) {
-              chi2primProton = candidate.kfChi2PrimProng0();
-              chi2primPion = candidate.kfChi2PrimProng2();
-              dcaProtonKaon = candidate.kfDcaProng0Prong1();
-              dcaPionKaon = candidate.kfDcaProng1Prong2();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
-              mass = candidate.kfMassPKPi();
-              valueTpcNSigmaPr = candidate.nSigTpcPr0();
-              valueTpcNSigmaPi = candidate.nSigTpcPi2();
-              valueTofNSigmaPr = candidate.nSigTofPr0();
-              valueTofNSigmaPi = candidate.nSigTofPi2();
-              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
-              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
-            } else {
-              chi2primProton = candidate.kfChi2PrimProng2();
-              chi2primPion = candidate.kfChi2PrimProng0();
-              dcaProtonKaon = candidate.kfDcaProng1Prong2();
-              dcaPionKaon = candidate.kfDcaProng0Prong1();
-              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
-              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
-              mass = candidate.kfMassPiKP();
-              valueTpcNSigmaPr = candidate.nSigTpcPr2();
-              valueTpcNSigmaPi = candidate.nSigTpcPi0();
-              valueTofNSigmaPr = candidate.nSigTofPr2();
-              valueTofNSigmaPi = candidate.nSigTofPi0();
-              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
-              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
-            }
-            const float x = candidate.xSecondaryVertex();
-            const float y = candidate.ySecondaryVertex();
-            const float z = candidate.zSecondaryVertex();
-            const float errX = candidate.kfXError();
-            const float errY = candidate.kfYError();
-            const float errZ = candidate.kfZError();
-            const float errPVX = candidate.kfXPVError();
-            const float errPVY = candidate.kfYPVError();
-            const float errPVZ = candidate.kfZPVError();
-            const float chi2primKaon = candidate.kfChi2PrimProng1();
-            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
-            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
-            const float chi2Geo = candidate.kfChi2Geo();
-            const float chi2Topo = candidate.kfChi2Topo();
-            const float l = candidate.kfDecayLength();
-            const float dl = candidate.kfDecayLengthError();
-            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
-            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
-                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
-                                  pt;
-            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
-            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
-                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
-                                 p;
-            const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
-            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
-            rowCandidateKF(
-              x, y, z, errX, errY, errZ,
-              errPVX, errPVY, errPVZ,
-              chi2primProton, chi2primKaon, chi2primPion,
-              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
-              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-              chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
-              mass, p, pt, deltaP, deltaPt,
-              functionSelection, UndefValueInt,
-              collision.multNTracksPV(),
-              valueTpcNSigmaPr,
-              valueTpcNSigmaKa,
-              valueTpcNSigmaPi,
-              valueTofNSigmaPr,
-              valueTofNSigmaKa,
-              valueTofNSigmaPi,
-              valueTpcTofNSigmaPr,
-              valueTpcTofNSigmaKa,
-              valueTpcTofNSigmaPi);
->>>>>>> master
+            fillKFTable(candidate, collision, candFlag, functionSelection, UndefValueInt);
           }
         }
       };
