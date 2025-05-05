@@ -290,7 +290,6 @@ struct FlowZdcTask {
       histos.add("hZPvsFT0CAmp", "ZP Energy vs FT0C Amplitude", kTH2F, {axisFT0CAmp, axisZP});
       histos.add("hZNvsMult", "ZN Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZN});
       histos.add("hZPvsMult", "ZP Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZP});
-      histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
     }
 
     if (doprocessQA) {
@@ -693,7 +692,6 @@ struct FlowZdcTask {
       histos.fill(HIST("hZPvsFT0CAmp"), ft0cAmp, sumZP);
       histos.fill(HIST("hZNvsMult"), nTot, sumZN);
       histos.fill(HIST("hZPvsMult"), nTot, sumZP);
-      histos.fill(HIST("debunch"), tZDCdif, tZDCsum);
       histos.fill(HIST("hNchvsNPV"), collision.multNTracksPVeta1(), nTot);
 
       float ratioZN = sumZNC / sumZNA;
