@@ -834,7 +834,7 @@ struct HfDataCreatorCharmHadPiReduced {
                     }
                   }
                 }
-                break; // end of case: all four prongs share same b-hadron mother
+                break; // Early exit: found a valid decay chain with common b-hadron mother
               }
             }
           }
