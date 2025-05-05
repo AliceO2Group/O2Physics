@@ -834,7 +834,7 @@ struct HfDataCreatorCharmHadPiReduced {
                     }
                   }
                 }
-                break;
+                break; // end of case: all four prongs share same b-hadron mother
               }
             }
           }
