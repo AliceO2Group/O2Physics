@@ -621,10 +621,6 @@ struct FlowZdcTask {
     int nTot = tracks.size();
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    float tZNA{0.0};
-    float tZNC{0.0};
-    float tZPA{0.0};
-    float tZPC{0.0};
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -651,10 +647,6 @@ struct FlowZdcTask {
 
       histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
       histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
-      tZNA = foundBC.zdc().timeZNA();
-      tZNC = foundBC.zdc().timeZNC();
-      tZPA = foundBC.zdc().timeZPA();
-      tZPC = foundBC.zdc().timeZPC();
 
       float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
       float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
