@@ -545,6 +545,7 @@ struct HfDataCreatorCharmHadPiReduced {
     } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
       // Bs → Ds- π+ → (K- K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+      constexpr size_t kNumDsDaughters = 2;
       if (indexRec > -1) {
         // Ds- → K- K+ π-
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
@@ -552,7 +553,7 @@ struct HfDataCreatorCharmHadPiReduced {
           std::vector<int> arrDaughDsIndex;
           std::array<int, 2> arrPDGDaughDs;
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
-          if (arrDaughDsIndex.size() == 2) {
+          if (arrDaughDsIndex.size() == kNumDsDaughters) {
             for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
               auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
               arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
@@ -589,7 +590,7 @@ struct HfDataCreatorCharmHadPiReduced {
               std::vector<int> arrDaughDsIndex;
               std::array<int, 2> arrPDGDaughDs;
               RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
-              if (arrDaughDsIndex.size() == 2) {
+              if (arrDaughDsIndex.size() == kNumDsDaughters) {
                 for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
                   auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
                   arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
@@ -712,7 +713,7 @@ struct HfDataCreatorCharmHadPiReduced {
                 // look for common c-hadron mother among prongs 0, 1 and 2
                 for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
                   int8_t depthMax = 2;
-                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == 423 || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
+                  if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDStar0 || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
                     depthMax += 1;
                   }
                   int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
