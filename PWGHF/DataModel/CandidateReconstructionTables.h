@@ -2123,10 +2123,11 @@ DECLARE_SOA_COLUMN(StatusSpreadLcMinvPKPiFromPDG, statusSpreadLcMinvPKPiFromPDG,
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPiKPFromPDG, statusSpreadLcMinvPiKPFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");                //! Λc index
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       //! particle origin, reconstruction level
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       //! particle origin, generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);             //! reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);             //! generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);                   //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);                   //! particle origin, generator level
+DECLARE_SOA_COLUMN(ParticleAntiparticle, particleAntiparticle, int8_t); //! particle or antiparticle
 
 // mapping of decay types
 enum DecayType { Sc0ToPKPiPi = 0,
@@ -2139,6 +2140,9 @@ enum Species : int { Sc2455 = 0,
 enum Decays : int { PKPi = 0,
                     PiKP,
                     NDecays };
+enum Conjugated : int { Particle = 0,
+                        Antiparticle,
+                        NConjugated };
 constexpr int ChargeNull = 0;
 constexpr int ChargePlusPlus = 2;
 } // namespace hf_cand_sigmac
@@ -2195,13 +2199,15 @@ DECLARE_SOA_TABLE(HfCandScMcRec, "AOD", "HFCANDSCMCREC", //!
                   hf_cand_sigmac::FlagMcMatchRec,
                   hf_cand_sigmac::OriginMcRec,
                   hf_cand::PtBhadMotherPart,
-                  hf_cand::PdgBhadMotherPart);
+                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_sigmac::ParticleAntiparticle);
 
 // table with results of generation level MC matching
 DECLARE_SOA_TABLE(HfCandScMcGen, "AOD", "HFCANDSCMCGEN", //!
                   hf_cand_sigmac::FlagMcMatchGen,
                   hf_cand_sigmac::OriginMcGen,
-                  hf_cand::IdxBhadMotherPart);
+                  hf_cand::IdxBhadMotherPart,
+                  hf_cand_sigmac::ParticleAntiparticle);
 
 // specific Σc0,++ candidate properties in cascade channel
 namespace hf_cand_sigmac_to_cascade

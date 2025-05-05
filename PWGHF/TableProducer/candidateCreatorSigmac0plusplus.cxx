@@ -415,6 +415,26 @@ struct HfCandidateSigmac0plusplusMc {
     }
   }
 
+  // @brief function to check whether a matched Sigmac is particle or antiparticle
+  // @tparam particle the MC particle under study, matched with some Sigmac
+  // @param pdgSigmac the pdgcode to look for (either of Sigmac(2455), or of Sigmac(2520))
+  template <typename PART>
+  int8_t isParticleAntiparticle(PART const& particle, int pdgSigmac)
+  {
+
+    int pdgCode = particle.pdgCode();
+    if (pdgCode == pdgSigmac) {
+      // particle
+      return aod::hf_cand_sigmac::Particle;
+    } else if (pdgCode == -pdgSigmac) {
+      // antiparticle
+      return aod::hf_cand_sigmac::Antiparticle;
+    }
+
+    // the current particle is not a Sigmac of this species
+    return -1;
+  }
+
   /// @brief dummy process function, to be run on data
   /// @param
   void process(aod::Tracks const&) {}
@@ -447,11 +467,12 @@ struct HfCandidateSigmac0plusplusMc {
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      int8_t particleAntiparticle = -1;
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
       if (!(std::abs(candLc.flagMcMatchRec()) == BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) { /// (*)
-        rowMCMatchScRec(flag, origin, -1.f, 0);
+        rowMCMatchScRec(flag, origin, -1.f, 0, -1);
         continue;
       }
 
@@ -473,12 +494,18 @@ struct HfCandidateSigmac0plusplusMc {
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaC0);
 
         /// look for Σc0(2520)
         if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStar0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+          }
+          if (particleAntiparticle < 0) {
+            auto particle = mcParticles.rawIteratorAt(indexRec);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStar0);
           }
         }
 
@@ -494,12 +521,18 @@ struct HfCandidateSigmac0plusplusMc {
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
           flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
         }
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCPlusPlus);
 
         /// look for Σc++(2520)
         if (flag == 0) {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStarPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
           if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+          }
+          if (particleAntiparticle < 0) {
+            auto particle = mcParticles.rawIteratorAt(indexRec);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStarPlusPlus);
           }
         }
       }
@@ -512,9 +545,9 @@ struct HfCandidateSigmac0plusplusMc {
       /// fill the table with results of reconstruction level MC matching
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), particleAntiparticle);
       } else {
-        rowMCMatchScRec(flag, origin, -1.f, 0);
+        rowMCMatchScRec(flag, origin, -1.f, 0, particleAntiparticle);
       }
     } /// end loop over reconstructed Σc0,++ candidates
 
@@ -523,6 +556,7 @@ struct HfCandidateSigmac0plusplusMc {
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      int8_t particleAntiparticle = -1;
 
       /// MC ev. selection done w/o centrality estimator
       /// In case of need, readapt the code templetizing the function
@@ -534,7 +568,7 @@ struct HfCandidateSigmac0plusplusMc {
       hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject gen particles from this collision
-        rowMCMatchScGen(flag, origin, -1);
+        rowMCMatchScGen(flag, origin, -1, -1);
         continue;
       }
 
@@ -554,6 +588,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaC0);
             break;
           }
         }
@@ -566,6 +601,7 @@ struct HfCandidateSigmac0plusplusMc {
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCPlusPlus);
             break;
           }
         }
@@ -582,6 +618,7 @@ struct HfCandidateSigmac0plusplusMc {
             if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
               /// Λc+ daughter decaying in pK-π+ found!
               flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+              particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStar0);
               break;
             }
           }
@@ -594,6 +631,7 @@ struct HfCandidateSigmac0plusplusMc {
             if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
               /// Λc+ daughter decaying in pK-π+ found!
               flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+              particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStarPlusPlus);
               break;
             }
           }
@@ -606,9 +644,9 @@ struct HfCandidateSigmac0plusplusMc {
       }
       /// fill the table with results of generation level MC matching
       if (origin == RecoDecay::OriginType::NonPrompt) {
-        rowMCMatchScGen(flag, origin, idxBhadMothers[0]);
+        rowMCMatchScGen(flag, origin, idxBhadMothers[0], particleAntiparticle);
       } else {
-        rowMCMatchScGen(flag, origin, -1);
+        rowMCMatchScGen(flag, origin, -1, particleAntiparticle);
       }
 
       // debug
