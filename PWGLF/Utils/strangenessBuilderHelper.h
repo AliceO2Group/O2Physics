@@ -83,6 +83,9 @@ template <typename T>
 std::vector<V0group> groupDuplicates(const T& V0s)
 {
   std::vector<V0group> v0table;
+  if (V0s.size() == 0) {
+    return v0table;
+  }
   V0group thisV0;
   thisV0.V0Ids.push_back(-1);        // create one single element
   thisV0.collisionIds.push_back(-1); // create one single element
@@ -269,7 +272,8 @@ class strangenessBuilderHelper
                         TTrackParametrization& positiveTrackParam,
                         TTrackParametrization& negativeTrackParam,
                         bool useCollinearFit = false,
-                        bool calculateCovariance = false)
+                        bool calculateCovariance = false,
+                        bool acceptTPCOnly = false)
   {
     if constexpr (useSelections) {
       // verify track quality
@@ -287,6 +291,14 @@ class strangenessBuilderHelper
         return false;
       }
       if (std::fabs(negativeTrack.eta()) > v0selections.maxDaughterEta) {
+        v0 = {};
+        return false;
+      }
+      if (!acceptTPCOnly && !positiveTrack.hasITS()) {
+        v0 = {};
+        return false;
+      }
+      if (!acceptTPCOnly && !negativeTrack.hasITS()) {
         v0 = {};
         return false;
       }
@@ -621,7 +633,7 @@ class strangenessBuilderHelper
     auto posTrackPar = getTrackParCov(positiveTrack);
     auto negTrackPar = getTrackParCov(negativeTrack);
 
-    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, posTrackPar, negTrackPar, false, processCovariances)) {
+    if (!buildV0Candidate(collisionIndex, pvX, pvY, pvZ, positiveTrack, negativeTrack, posTrackPar, negTrackPar, false, processCovariances, false)) {
       return false;
     }
     if (!buildCascadeCandidate(collisionIndex, pvX, pvY, pvZ, v0, positiveTrack, negativeTrack, bachelorTrack, calculateBachelorBaryonVariables, useCascadeMomentumAtPV, processCovariances)) {
