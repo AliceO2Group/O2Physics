@@ -182,7 +182,7 @@ struct HfDataCreatorCharmHadPiReduced {
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
 
-  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::, aod::HfSelDplusToPiKPi>>;
+  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>>;
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi>>;
   using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
