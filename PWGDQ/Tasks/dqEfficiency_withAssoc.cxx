@@ -2017,11 +2017,10 @@ struct AnalysisSameEventPairing {
     }
 
     if (fHasTwoProngGenMCsignals) {
-      uint32_t mcDecision = 0;
-      int isig = 0;
       for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
         auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
         auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+        if(t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()){
         for (auto& sig : fGenMCSignals) {
           if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
             continue;
@@ -2038,6 +2037,8 @@ struct AnalysisSameEventPairing {
           isig++;
         }
       }
+     }
+    }
   } // end runMCGen
 
   void processAllSkimmed(MyEventsVtxCovSelected const& events,
