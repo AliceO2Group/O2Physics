@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3ProngWPid, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
 // Events
@@ -871,12 +871,10 @@ struct HfTreeCreatorLcToPKPi {
     reserveTables<reconstructionType>(candidatesSize, IsMc);
 
     for (const auto& candidate : candidates) {
-      auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
@@ -885,6 +883,7 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal))) {
           if (fillCandidateLiteTable) {
+<<<<<<< HEAD
             fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
             fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
@@ -892,6 +891,225 @@ struct HfTreeCreatorLcToPKPi {
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
             fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, sigbgstatus);
+=======
+            rowCandidateLite(
+              candidate.posX(),
+              candidate.posY(),
+              candidate.posZ(),
+              candidate.nProngsContributorsPV(),
+              candidate.bitmapProngsContributorsPV(),
+              candidate.chi2PCA(),
+              candidate.decayLength(),
+              candidate.decayLengthXY(),
+              candidate.ptProng0(),
+              candidate.ptProng1(),
+              candidate.ptProng2(),
+              candidate.impactParameter0(),
+              candidate.impactParameter1(),
+              candidate.impactParameter2(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
+              1 << candFlag,
+              functionInvMass,
+              candidate.pt(),
+              candidate.cpa(),
+              candidate.cpaXY(),
+              functionCt,
+              candidate.eta(),
+              candidate.phi(),
+              functionY,
+              candidate.flagMcMatchRec(),
+              candidate.originMcRec(),
+              candidate.isCandidateSwapped(),
+              candidate.flagMcDecayChanRec(),
+              functionInvMassKPi);
+
+            if (fillCollIdTable) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+          } else {
+            rowCandidateFull(
+              candidate.collisionId(),
+              candidate.posX(),
+              candidate.posY(),
+              candidate.posZ(),
+              candidate.nProngsContributorsPV(),
+              candidate.bitmapProngsContributorsPV(),
+              candidate.xSecondaryVertex(),
+              candidate.ySecondaryVertex(),
+              candidate.zSecondaryVertex(),
+              candidate.errorDecayLength(),
+              candidate.errorDecayLengthXY(),
+              candidate.chi2PCA(),
+              candidate.rSecondaryVertex(),
+              candidate.decayLength(),
+              candidate.decayLengthXY(),
+              candidate.decayLengthNormalised(),
+              candidate.decayLengthXYNormalised(),
+              candidate.impactParameterNormalised0(),
+              candidate.ptProng0(),
+              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+              candidate.impactParameterNormalised1(),
+              candidate.ptProng1(),
+              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+              candidate.impactParameterNormalised2(),
+              candidate.ptProng2(),
+              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+              candidate.pxProng0(),
+              candidate.pyProng0(),
+              candidate.pzProng0(),
+              candidate.pxProng1(),
+              candidate.pyProng1(),
+              candidate.pzProng1(),
+              candidate.pxProng2(),
+              candidate.pyProng2(),
+              candidate.pzProng2(),
+              candidate.impactParameter0(),
+              candidate.impactParameter1(),
+              candidate.impactParameter2(),
+              candidate.errorImpactParameter0(),
+              candidate.errorImpactParameter1(),
+              candidate.errorImpactParameter2(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
+              1 << candFlag,
+              functionInvMass,
+              candidate.pt(),
+              candidate.p(),
+              candidate.cpa(),
+              candidate.cpaXY(),
+              functionCt,
+              candidate.eta(),
+              candidate.phi(),
+              functionY,
+              functionE,
+              candidate.flagMcMatchRec(),
+              candidate.originMcRec(),
+              candidate.isCandidateSwapped(),
+              candidate.globalIndex(),
+              candidate.flagMcDecayChanRec(),
+              functionInvMassKPi);
+          }
+
+          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+            float chi2primProton;
+            float chi2primPion;
+            float dcaProtonKaon;
+            float dcaPionKaon;
+            float chi2GeoProtonKaon;
+            float chi2GeoPionKaon;
+            float mass;
+            float valueTpcNSigmaPr;
+            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
+            float valueTpcNSigmaPi;
+            float valueTofNSigmaPr;
+            const float valueTofNSigmaKa = candidate.nSigTofKa1();
+            float valueTofNSigmaPi;
+            float valueTpcTofNSigmaPr;
+            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
+            float valueTpcTofNSigmaPi;
+            if (candFlag == 0) {
+              chi2primProton = candidate.kfChi2PrimProng0();
+              chi2primPion = candidate.kfChi2PrimProng2();
+              dcaProtonKaon = candidate.kfDcaProng0Prong1();
+              dcaPionKaon = candidate.kfDcaProng1Prong2();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
+              mass = candidate.kfMassPKPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr0();
+              valueTpcNSigmaPi = candidate.nSigTpcPi2();
+              valueTofNSigmaPr = candidate.nSigTofPr0();
+              valueTofNSigmaPi = candidate.nSigTofPi2();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
+            } else {
+              chi2primProton = candidate.kfChi2PrimProng2();
+              chi2primPion = candidate.kfChi2PrimProng0();
+              dcaProtonKaon = candidate.kfDcaProng1Prong2();
+              dcaPionKaon = candidate.kfDcaProng0Prong1();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
+              mass = candidate.kfMassPiKP();
+              valueTpcNSigmaPr = candidate.nSigTpcPr2();
+              valueTpcNSigmaPi = candidate.nSigTpcPi0();
+              valueTofNSigmaPr = candidate.nSigTofPr2();
+              valueTofNSigmaPi = candidate.nSigTofPi0();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
+            }
+            const float svX = candidate.xSecondaryVertex();
+            const float svY = candidate.ySecondaryVertex();
+            const float svZ = candidate.zSecondaryVertex();
+            const float svErrX = candidate.kfXError();
+            const float svErrY = candidate.kfYError();
+            const float svErrZ = candidate.kfZError();
+            const float pvErrX = candidate.kfXPVError();
+            const float pvErrY = candidate.kfYPVError();
+            const float pvErrZ = candidate.kfZPVError();
+            const float chi2primKaon = candidate.kfChi2PrimProng1();
+            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
+            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
+            const float chi2Geo = candidate.kfChi2Geo();
+            const float chi2Topo = candidate.kfChi2Topo();
+            const float decayLength = candidate.kfDecayLength();
+            const float dl = candidate.kfDecayLengthError();
+            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
+                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
+                                  pt;
+            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
+                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
+                                 p;
+            const float lifetime = decayLength * MassLambdaCPlus / LightSpeedCm2PS / p;
+            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
+            rowCandidateKF(
+              svX, svY, svZ, svErrX, svErrY, svErrZ,
+              pvErrX, pvErrY, pvErrZ,
+              chi2primProton, chi2primKaon, chi2primPion,
+              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
+              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
+              chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
+              mass, p, pt, deltaP, deltaPt,
+              functionSelection, sigbgstatus,
+              collision.multNTracksPV(),
+              valueTpcNSigmaPr,
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
+              valueTofNSigmaPr,
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
+              valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi);
+>>>>>>> master
           }
           if (fillCandidateMcTable) {
             float p, pt, svX, svY, svZ, pvX, pvY, pvZ, decayLength, lifetime;
@@ -976,7 +1194,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -992,7 +1210,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -1009,7 +1227,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -1025,7 +1243,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -1052,15 +1270,14 @@ struct HfTreeCreatorLcToPKPi {
     // Filling candidate properties
 
     for (const auto& candidate : candidates) {
-      auto trackPos1 = candidate.template prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
-      auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
-      auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = trackPos1.pt() * 1000. - static_cast<int64_t>(trackPos1.pt() * 1000);
+        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
+<<<<<<< HEAD
             fillLiteTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
           } else {
             fillFullTable<IsMc, reconstructionType>(candidate, trackPos1, trackNeg, trackPos2, candFlag);
@@ -1068,6 +1285,226 @@ struct HfTreeCreatorLcToPKPi {
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
             fillKFTable(candidate, trackPos1, trackNeg, trackPos2, collision, candFlag, functionSelection, UndefValueInt);
+=======
+            rowCandidateLite(
+              candidate.posX(),
+              candidate.posY(),
+              candidate.posZ(),
+              candidate.nProngsContributorsPV(),
+              candidate.bitmapProngsContributorsPV(),
+              candidate.chi2PCA(),
+              candidate.decayLength(),
+              candidate.decayLengthXY(),
+              candidate.ptProng0(),
+              candidate.ptProng1(),
+              candidate.ptProng2(),
+              candidate.impactParameter0(),
+              candidate.impactParameter1(),
+              candidate.impactParameter2(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
+              1 << candFlag,
+              functionInvMass,
+              candidate.pt(),
+              candidate.cpa(),
+              candidate.cpaXY(),
+              functionCt,
+              candidate.eta(),
+              candidate.phi(),
+              functionY,
+              0.,
+              0.,
+              0.,
+              -1,
+              functionInvMassKPi);
+
+            if (fillCollIdTable) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+
+          } else {
+            rowCandidateFull(
+              candidate.collisionId(),
+              candidate.posX(),
+              candidate.posY(),
+              candidate.posZ(),
+              candidate.nProngsContributorsPV(),
+              candidate.bitmapProngsContributorsPV(),
+              candidate.xSecondaryVertex(),
+              candidate.ySecondaryVertex(),
+              candidate.zSecondaryVertex(),
+              candidate.errorDecayLength(),
+              candidate.errorDecayLengthXY(),
+              candidate.chi2PCA(),
+              candidate.rSecondaryVertex(),
+              candidate.decayLength(),
+              candidate.decayLengthXY(),
+              candidate.decayLengthNormalised(),
+              candidate.decayLengthXYNormalised(),
+              candidate.impactParameterNormalised0(),
+              candidate.ptProng0(),
+              RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+              candidate.impactParameterNormalised1(),
+              candidate.ptProng1(),
+              RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+              candidate.impactParameterNormalised2(),
+              candidate.ptProng2(),
+              RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
+              candidate.pxProng0(),
+              candidate.pyProng0(),
+              candidate.pzProng0(),
+              candidate.pxProng1(),
+              candidate.pyProng1(),
+              candidate.pzProng1(),
+              candidate.pxProng2(),
+              candidate.pyProng2(),
+              candidate.pzProng2(),
+              candidate.impactParameter0(),
+              candidate.impactParameter1(),
+              candidate.impactParameter2(),
+              candidate.errorImpactParameter0(),
+              candidate.errorImpactParameter1(),
+              candidate.errorImpactParameter2(),
+              candidate.nSigTpcPi0(),
+              candidate.nSigTpcPr0(),
+              candidate.nSigTofPi0(),
+              candidate.nSigTofPr0(),
+              candidate.nSigTpcKa1(),
+              candidate.nSigTofKa1(),
+              candidate.nSigTpcPi2(),
+              candidate.nSigTpcPr2(),
+              candidate.nSigTofPi2(),
+              candidate.nSigTofPr2(),
+              candidate.tpcTofNSigmaPi0(),
+              candidate.tpcTofNSigmaPr0(),
+              candidate.tpcTofNSigmaKa1(),
+              candidate.tpcTofNSigmaPi2(),
+              candidate.tpcTofNSigmaPr2(),
+              1 << candFlag,
+              functionInvMass,
+              candidate.pt(),
+              candidate.p(),
+              candidate.cpa(),
+              candidate.cpaXY(),
+              functionCt,
+              candidate.eta(),
+              candidate.phi(),
+              functionY,
+              functionE,
+              0.,
+              0.,
+              0.,
+              candidate.globalIndex(),
+              -1,
+              functionInvMassKPi);
+          }
+
+          if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+            float chi2primProton;
+            float chi2primPion;
+            float dcaProtonKaon;
+            float dcaPionKaon;
+            float chi2GeoProtonKaon;
+            float chi2GeoPionKaon;
+            float mass;
+            float valueTpcNSigmaPr;
+            const float valueTpcNSigmaKa = candidate.nSigTpcKa1();
+            float valueTpcNSigmaPi;
+            float valueTofNSigmaPr;
+            const float valueTofNSigmaKa = candidate.nSigTofKa1();
+            float valueTofNSigmaPi;
+            float valueTpcTofNSigmaPr;
+            const float valueTpcTofNSigmaKa = candidate.tpcTofNSigmaKa1();
+            float valueTpcTofNSigmaPi;
+            if (candFlag == 0) {
+              chi2primProton = candidate.kfChi2PrimProng0();
+              chi2primPion = candidate.kfChi2PrimProng2();
+              dcaProtonKaon = candidate.kfDcaProng0Prong1();
+              dcaPionKaon = candidate.kfDcaProng1Prong2();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng0Prong1();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng1Prong2();
+              mass = candidate.kfMassPKPi();
+              valueTpcNSigmaPr = candidate.nSigTpcPr0();
+              valueTpcNSigmaPi = candidate.nSigTpcPi2();
+              valueTofNSigmaPr = candidate.nSigTofPr0();
+              valueTofNSigmaPi = candidate.nSigTofPi2();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr0();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi2();
+            } else {
+              chi2primProton = candidate.kfChi2PrimProng2();
+              chi2primPion = candidate.kfChi2PrimProng0();
+              dcaProtonKaon = candidate.kfDcaProng1Prong2();
+              dcaPionKaon = candidate.kfDcaProng0Prong1();
+              chi2GeoProtonKaon = candidate.kfChi2GeoProng1Prong2();
+              chi2GeoPionKaon = candidate.kfChi2GeoProng0Prong1();
+              mass = candidate.kfMassPiKP();
+              valueTpcNSigmaPr = candidate.nSigTpcPr2();
+              valueTpcNSigmaPi = candidate.nSigTpcPi0();
+              valueTofNSigmaPr = candidate.nSigTofPr2();
+              valueTofNSigmaPi = candidate.nSigTofPi0();
+              valueTpcTofNSigmaPr = candidate.tpcTofNSigmaPr2();
+              valueTpcTofNSigmaPi = candidate.tpcTofNSigmaPi0();
+            }
+            const float x = candidate.xSecondaryVertex();
+            const float y = candidate.ySecondaryVertex();
+            const float z = candidate.zSecondaryVertex();
+            const float errX = candidate.kfXError();
+            const float errY = candidate.kfYError();
+            const float errZ = candidate.kfZError();
+            const float errPVX = candidate.kfXPVError();
+            const float errPVY = candidate.kfYPVError();
+            const float errPVZ = candidate.kfZPVError();
+            const float chi2primKaon = candidate.kfChi2PrimProng1();
+            const float dcaProtonPion = candidate.kfDcaProng0Prong2();
+            const float chi2GeoProtonPion = candidate.kfChi2GeoProng0Prong2();
+            const float chi2Geo = candidate.kfChi2Geo();
+            const float chi2Topo = candidate.kfChi2Topo();
+            const float l = candidate.kfDecayLength();
+            const float dl = candidate.kfDecayLengthError();
+            const float pt = std::sqrt(candidate.kfPx() * candidate.kfPx() + candidate.kfPy() * candidate.kfPy());
+            const float deltaPt = std::sqrt(candidate.kfPx() * candidate.kfPx() * candidate.kfErrorPx() * candidate.kfErrorPx() +
+                                            candidate.kfPy() * candidate.kfPy() * candidate.kfErrorPy() * candidate.kfErrorPy()) /
+                                  pt;
+            const float p = std::sqrt(pt * pt + candidate.kfPz() * candidate.kfPz());
+            const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
+                                           candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
+                                 p;
+            const float t = l * MassLambdaCPlus / LightSpeedCm2PS / p;
+            const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
+            rowCandidateKF(
+              x, y, z, errX, errY, errZ,
+              errPVX, errPVY, errPVZ,
+              chi2primProton, chi2primKaon, chi2primPion,
+              dcaProtonKaon, dcaProtonPion, dcaPionKaon,
+              chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
+              chi2Geo, chi2Topo, l, dl, l / dl, t, deltaT,
+              mass, p, pt, deltaP, deltaPt,
+              functionSelection, UndefValueInt,
+              collision.multNTracksPV(),
+              valueTpcNSigmaPr,
+              valueTpcNSigmaKa,
+              valueTpcNSigmaPi,
+              valueTofNSigmaPr,
+              valueTofNSigmaKa,
+              valueTofNSigmaPi,
+              valueTpcTofNSigmaPr,
+              valueTpcTofNSigmaKa,
+              valueTpcTofNSigmaPi);
+>>>>>>> master
           }
         }
       };
@@ -1083,7 +1520,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1096,7 +1533,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1109,7 +1546,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
@@ -1122,7 +1559,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);

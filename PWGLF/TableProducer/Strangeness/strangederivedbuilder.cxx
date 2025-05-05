@@ -842,12 +842,14 @@ struct strangederivedbuilder {
 
     //__________________________________________________
     // mark mcParticles for referencing
-    for (auto const& v0 : V0s)
+    for (auto const& v0 : V0s) {
       if (v0.has_mcMotherParticle())
         motherReference[v0.mcMotherParticleId()] = 0;
-    for (auto const& ca : Cascades)
+    }
+    for (auto const& ca : Cascades) {
       if (ca.has_mcMotherParticle())
         motherReference[ca.mcMotherParticleId()] = 0;
+    }
     //__________________________________________________
     // Figure out the numbering of the new mcMother table
     // assume filling per order
@@ -859,10 +861,20 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // populate track references
-    for (auto const& v0 : V0s)
-      v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
-    for (auto const& ca : Cascades)
-      cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+    for (auto const& v0 : V0s) {
+      if (v0.mcMotherParticleId() > -1) {
+        v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
+      } else {
+        v0mothers(-1); // joinable with V0Datas
+      }
+    }
+    for (auto const& ca : Cascades) {
+      if (ca.mcMotherParticleId() > -1) {
+        cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+      } else {
+        cascmothers(-1); // joinable with CascDatas
+      }
+    }
     //__________________________________________________
     // populate motherMCParticles
     for (auto const& tr : mcParticles) {
