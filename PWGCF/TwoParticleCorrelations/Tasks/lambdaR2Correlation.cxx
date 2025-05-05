@@ -248,7 +248,7 @@ struct LambdaTableProducer {
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.01, "Reject K0Short Candidates"};
   Configurable<bool> cKshortRejFlag{"cKshortRejFlag", true, "K0short Mass Rej Flag"};
-  Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Lambda Mass Window"};
+  // Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Lambda Mass Window"};
 
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Mass{"cMinV0Mass", 1.10, "V0 Mass Min"};
@@ -259,7 +259,6 @@ struct LambdaTableProducer {
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Do Eta Analysis"};
   Configurable<bool> cV0TypeSelFlag{"cV0TypeSelFlag", false, "V0 Type Selection Flag"};
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
-  Configurable<bool> cGenProcessFlag{"cGenProcessFlag", true, "Generater Level Table Selection"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -972,7 +971,7 @@ struct LambdaTableProducer {
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
-        if (!v0.has_mcParticle() || !v0.template posTrack_as<T>().has_mcParticle() || !v0.template negTrack_as<T>().has_mcParticle()) {
+        if (!v0.has_mcParticle()) {
           continue;
         }
       }
@@ -1239,11 +1238,6 @@ struct LambdaTableProducer {
     auto mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
     auto mcGenParticles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
-    if (cGenProcessFlag) {
-      fillLambdaMcGenTables<kRun3>(mcCollision, mcGenParticles);
-      return;
-    }
-
     // Fill Gen Table
     lambdaMCGenCollisionTable(mcCollision.centFT0M(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
 
@@ -1478,7 +1472,8 @@ struct LambdaR2Correlation {
     const AxisSpec axisPosZ(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
-    const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
+    const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
+    const AxisSpec axisMassCorr(60, -0.03, 0.03, "M_{#Lambda} - #frac{M_{pair}}{2} (GeV/#it{c}^{2})");
     const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");
@@ -1542,6 +1537,14 @@ struct LambdaR2Correlation {
     histos.add("Reco/h2d_n2_phiphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPhi, axisPhi});
     histos.add("Reco/h2d_n2_phiphi_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPhi, axisPhi});
 
+    // rho2 for numerator of R2 as a function of M_{#Lambda} (To remove background from sidebands) {TESTING PHASE !!!!}
+    histos.add("Reco/h3d_n2_raprapmass_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3D, {axisRap, axisRap, axisMassCorr});
+    histos.add("Reco/h3d_n2_raprapmass_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH3D, {axisRap, axisRap, axisMassCorr});
+    histos.add("Reco/h3d_n2_raprapmass_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3D, {axisRap, axisRap, axisMassCorr});
+    histos.add("Reco/h3d_n2_phiphimass_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
+    histos.add("Reco/h3d_n2_phiphimass_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
+    histos.add("Reco/h3d_n2_phiphimass_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
+
     // rho2 for R2 Rap1Phi1Rap2Phi2
     histos.add("Reco/h2d_n2_rapphi_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisRapPhi, axisRapPhi});
     histos.add("Reco/h2d_n2_rapphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisRapPhi, axisRapPhi});
@@ -1576,11 +1579,17 @@ struct LambdaR2Correlation {
 
     float corfac = p1.corrFact() * p2.corrFact();
 
+    float massParam = MassLambda0 - 0.5 * (p1.mass() + p2.mass());
+
     // fill rho2 histograms
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_ptpt_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.pt(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_etaeta_") + HIST(SubDirHist[part_pair]), p1.eta(), p2.eta(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_raprap_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_phiphi_") + HIST(SubDirHist[part_pair]), p1.phi(), p2.phi(), corfac);
+
+    // fill rho2 3D-histograms with mass
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3d_n2_raprapmass_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), massParam, corfac);
+    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3d_n2_phiphimass_") + HIST(SubDirHist[part_pair]), p1.phi(), p2.phi(), massParam, corfac);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
