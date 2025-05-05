@@ -123,7 +123,7 @@ class HfMlResponseLbToLcPi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_LB(prong0MlScorePrompt);
           CHECK_AND_FILL_VEC_LB(prong0MlScoreNonprompt);
           // TPC PID variable
-          (prong1, tpcNSigmaPi1, tpcNSigmaPi);
+          CHECK_AND_FILL_VEC_LB_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
           // TOF PID variable
           CHECK_AND_FILL_VEC_LB_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
           // Combined PID variables
