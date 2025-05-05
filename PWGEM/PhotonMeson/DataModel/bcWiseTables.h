@@ -19,6 +19,8 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 
+#include <limits>
+
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
@@ -96,14 +98,14 @@ DECLARE_SOA_COLUMN(StoredM02, storedM02, int16_t);              //! shower shape
 DECLARE_SOA_COLUMN(StoredTime, storedTime, int16_t);            //! cluster time (10 ps resolution)
 DECLARE_SOA_COLUMN(StoredIsExotic, storedIsExotic, bool);       //! flag to mark cluster as exotic
 
-DECLARE_SOA_DYNAMIC_COLUMN(Definition, definition, [](int8_t storedDefinition) -> int8_t { return storedDefinition; });                                   //! cluster definition, see EMCALClusterDefinition.h
-DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](int16_t storedE) -> float { return storedE / emdownscaling::downscalingFactors[emdownscaling::kEnergy]; });           //! cluster energy (GeV)
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](int16_t storedEta) -> float { return storedEta / emdownscaling::downscalingFactors[emdownscaling::kEta]; });      //! cluster pseudorapidity
-DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](uint16_t storedPhi) -> float { return storedPhi / emdownscaling::downscalingFactors[emdownscaling::kPhi]; });     //! cluster azimuthal angle (0 to 2pi)
-DECLARE_SOA_DYNAMIC_COLUMN(NCells, nCells, [](int16_t storedNCells) -> int16_t { return storedNCells; });                                                 //! number of cells in cluster
-DECLARE_SOA_DYNAMIC_COLUMN(M02, m02, [](int16_t storedM02) -> float { return storedM02 / emdownscaling::downscalingFactors[emdownscaling::kM02]; });      //! shower shape long axis
-DECLARE_SOA_DYNAMIC_COLUMN(Time, time, [](int16_t storedTime) -> float { return storedTime / emdownscaling::downscalingFactors[emdownscaling::kTime]; }); //! cluster time (ns)
-DECLARE_SOA_DYNAMIC_COLUMN(IsExotic, isExotic, [](bool storedIsExotic) -> bool { return storedIsExotic; });                                               //! flag to mark cluster as exotic
+DECLARE_SOA_DYNAMIC_COLUMN(Definition, definition, [](int8_t storedDefinition) -> int8_t { return storedDefinition; });                                                                           //! cluster definition, see EMCALClusterDefinition.h
+DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](int16_t storedE) -> float { return storedE / emdownscaling::downscalingFactors[emdownscaling::kEnergy] + std::numeric_limits<float>::epsilon(); });           //! cluster energy (GeV)
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](int16_t storedEta) -> float { return storedEta / emdownscaling::downscalingFactors[emdownscaling::kEta] + std::numeric_limits<float>::epsilon(); });      //! cluster pseudorapidity
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](uint16_t storedPhi) -> float { return storedPhi / emdownscaling::downscalingFactors[emdownscaling::kPhi] + std::numeric_limits<float>::epsilon(); });     //! cluster azimuthal angle (0 to 2pi)
+DECLARE_SOA_DYNAMIC_COLUMN(NCells, nCells, [](int16_t storedNCells) -> int16_t { return storedNCells; });                                                                                         //! number of cells in cluster
+DECLARE_SOA_DYNAMIC_COLUMN(M02, m02, [](int16_t storedM02) -> float { return storedM02 / emdownscaling::downscalingFactors[emdownscaling::kM02] + std::numeric_limits<float>::epsilon(); });      //! shower shape long axis
+DECLARE_SOA_DYNAMIC_COLUMN(Time, time, [](int16_t storedTime) -> float { return storedTime / emdownscaling::downscalingFactors[emdownscaling::kTime] + std::numeric_limits<float>::epsilon(); }); //! cluster time (ns)
+DECLARE_SOA_DYNAMIC_COLUMN(IsExotic, isExotic, [](bool storedIsExotic) -> bool { return storedIsExotic; });                                                                                       //! flag to mark cluster as exotic
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float storedE, float storedEta) -> float { return storedE / emdownscaling::downscalingFactors[emdownscaling::kEnergy] / std::cosh(storedEta / emdownscaling::downscalingFactors[emdownscaling::kEta]); }); //! cluster pt, assuming m=0 (photons)
 } // namespace bcwisecluster
@@ -120,7 +122,7 @@ DECLARE_SOA_COLUMN(IsAccepted, isAccepted, bool); //! Both decay photons are wit
 DECLARE_SOA_COLUMN(IsPrimary, isPrimary, bool);   //! mcParticle.isPhysicalPrimary() || mcParticle.producedByGenerator()
 DECLARE_SOA_COLUMN(IsFromWD, isFromWD, bool);     //! Pi0 from a weak decay according to pwgem::photonmeson::utils::mcutil::IsFromWD
 
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t storedpt) -> float { return storedpt / emdownscaling::downscalingFactors[emdownscaling::kpT]; }); //! pT of pi0 (GeV)
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](uint16_t storedpt) -> float { return storedpt / emdownscaling::downscalingFactors[emdownscaling::kpT] + std::numeric_limits<float>::epsilon(); }); //! pT of pi0 (GeV)
 } // namespace bcwisemcpi0s
 
 DECLARE_SOA_TABLE(BCWiseMCPi0s, "AOD", "BCWISEMCPI0", //! table of pi0s on MC level
@@ -132,7 +134,7 @@ namespace bcwisemccluster
 DECLARE_SOA_COLUMN(Pi0ID, pi0ID, int32_t);              //! Index of the mother pi0 (-1 if not from pi0)
 DECLARE_SOA_COLUMN(StoredTrueE, storedTrueE, uint16_t); //! energy of cluster inducing particle (1 MeV -> Maximum cluster energy of ~65 GeV)
 
-DECLARE_SOA_DYNAMIC_COLUMN(TrueE, trueE, [](uint16_t storedTrueE) -> float { return storedTrueE / emdownscaling::downscalingFactors[emdownscaling::kEnergy]; }); //! energy of cluster inducing particle (GeV)
+DECLARE_SOA_DYNAMIC_COLUMN(TrueE, trueE, [](uint16_t storedTrueE) -> float { return storedTrueE / emdownscaling::downscalingFactors[emdownscaling::kEnergy] + std::numeric_limits<float>::epsilon(); }); //! energy of cluster inducing particle (GeV)
 } // namespace bcwisemccluster
 
 DECLARE_SOA_TABLE(BCWiseMCClusters, "AOD", "BCWISEMCCLS", //! table of MC information for clusters -> To be joined with the cluster table
