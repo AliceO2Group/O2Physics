@@ -104,6 +104,7 @@ struct EmcalBcWisePi0 {
       mHistManager.add("Generated/pi0_AllBCs", "pT spectrum of generated pi0s in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH1F, {{200, 0, 20}});
       mHistManager.add("Generated/pi0_TVX", "pT spectrum of generated pi0s in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH1F, {{200, 0, 20}});
       mHistManager.add("Generated/pi0_kTVXinEMC", "pT spectrum of generated pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH1F, {{200, 0, 20}});
+      mHistManager.add("Accepted/pi0_kTVXinEMC", "pT spectrum of accepted pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N}_{#pi^{0}}^{acc}}", HistType::kTH1F, {{200, 0, 20}});
     }
   }
 
@@ -273,11 +274,15 @@ struct EmcalBcWisePi0 {
   void fillGeneratedPi0Hists(const auto& mcPi0s, const auto& bc)
   {
     for (const auto& mcPi0 : mcPi0s) {
-      mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt());
-      if (bc.hasTVX())
-        mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt());
-      if (bc.haskTVXinEMC())
-        mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt());
+      if (mcPi0.isPrimary()) {
+        mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt());
+        if (bc.hasTVX())
+          mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt());
+        if (bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt());
+        if (mcPi0.isAccepted() && bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt());
+      }
     }
   }
 
