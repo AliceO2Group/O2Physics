@@ -238,13 +238,13 @@ struct HfCandidateCreatorLbReduced {
     }
 
     static int ncol = 0;
-    static constexpr int printFrequency = 10000;
+    static constexpr int nPrintFrequency = 10000;
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsLcThisColl = candsLc.sliceBy(candsLcPerCollision, thisCollId);
       auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
       runCandidateCreation<false>(collision, candsLcThisColl, tracksPionThisCollision, invMass2LcPiMin, invMass2LcPiMax);
-      if (ncol % printFrequency == 0) {
+      if (ncol % nPrintFrequency == 0) {
         LOGP(debug, "collisions parsed {}", ncol);
       }
       ncol++;
@@ -269,13 +269,13 @@ struct HfCandidateCreatorLbReduced {
     }
 
     static int ncol = 0;
-    static constexpr int printFrequency = 10000;
+    static constexpr int nPrintFrequency = 10000;
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsLcThisColl = candsLc.sliceBy(candsLcPerCollision, thisCollId);
       auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
       runCandidateCreation<true>(collision, candsLcThisColl, tracksPionThisCollision, invMass2LcPiMin, invMass2LcPiMax);
-      if (ncol % printFrequency == 0) {
+      if (ncol % nPrintFrequency == 0) {
         LOGP(debug, "collisions parsed {}", ncol);
       }
       ncol++;
