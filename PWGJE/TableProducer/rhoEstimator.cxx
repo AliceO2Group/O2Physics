@@ -70,9 +70,6 @@ struct RhoEstimatorTask {
     Configurable<float> bkgPhiMax{"bkgPhiMax", 99., "maximum phi for determining background density"};
     Configurable<bool> doSparse{"doSparse", false, "perfom sparse estimation"};
 
-    Configurable<float> thresholdChargedJetPtMin{"thresholdChargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
-    Configurable<float> thresholdNeutralJetPtMin{"thresholdNeutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
-    Configurable<float> thresholdFullJetPtMin{"thresholdFullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
     Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
     Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<bool> performTriggerTrackSelection{"performTriggerTrackSelection", false, "only accept trigger tracks that pass one of the track selections"};
@@ -141,13 +138,7 @@ struct RhoEstimatorTask {
   void processSelectionObjects(T& selectionObjects)
   {
     float selectionObjectPtMin = 0.0;
-    if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets>) {
-      selectionObjectPtMin = config.thresholdChargedJetPtMin;
-    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets>) {
-      selectionObjectPtMin = config.thresholdNeutralJetPtMin;
-    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullJets>) {
-      selectionObjectPtMin = config.thresholdFullJetPtMin;
-    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
+    if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
       selectionObjectPtMin = config.thresholdTriggerTrackPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JClusters>) {
       selectionObjectPtMin = config.thresholdClusterEnergyMin;
@@ -182,9 +173,6 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processSetupCollisionSelection, "setup the writing for data based on collisions", false);
   PROCESS_SWITCH(RhoEstimatorTask, processSetupEventTriggering, "process software triggers", false);
-  PROCESS_SWITCH_FULL(RhoEstimatorTask, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", false);
-  PROCESS_SWITCH_FULL(RhoEstimatorTask, processSelectionObjects<aod::NeutralJets>, processSelectingNeutralJets, "process neutral jets", false);
-  PROCESS_SWITCH_FULL(RhoEstimatorTask, processSelectionObjects<aod::FullJets>, processSelectingFullJets, "process full jets", false);
   PROCESS_SWITCH_FULL(RhoEstimatorTask, processSelectionObjects<aod::JClusters>, processSelectingClusters, "process EMCal clusters", false);
   PROCESS_SWITCH_FULL(RhoEstimatorTask, processSelectionObjects<aod::JTracks>, processSelectingTracks, "process high pt tracks", false);
 
