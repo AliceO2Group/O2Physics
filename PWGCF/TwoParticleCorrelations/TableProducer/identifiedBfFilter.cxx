@@ -751,6 +751,8 @@ struct IdentifiedBfFilterTracks {
   Configurable<float> maxRejectSigma{"maxRejectSigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
   Configurable<float> tofCut{"tofCut", 0.8, "Momentum under which we don't use TOF PID data"};
+  Configurable<float> tpcCut{"tpcCut", 1.2, "Momentum over which we don't use TPC PID data"};
+
   Configurable<bool> makeNSigmaPlots{"makeNSigmaPlots", false, "Produce the N Sigma Plots for external storage. Default false"};
 
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
@@ -1772,30 +1774,21 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
     }
   }
 
-  if (track.tpcInnerParam() < tofCut && !onlyTOF) {
+  if (track.tpcInnerParam() < tofCut && track.tpcInnerParam() < tpcCut && !onlyTOF) {
 
     for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
       nsigmas[iSp] = actualTPCNSigma[iSp];
     }
-  } else {
-    /* introduce require TOF flag */
-    if (track.hasTOF() && !onlyTOF) {
-      // TODO: Add an output that tells if TOF was used for PID and at what momentum
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
-        nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
-      }
-    } else if (!track.hasTOF() && !reqTOF && !onlyTOF) {
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
-        nsigmas[iSp] = actualTPCNSigma[iSp];
-      }
-
-    } else if (track.hasTOF() && onlyTOF) {
-      for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
-        nsigmas[iSp] = actualTOFNSigma[iSp];
-      }
-    } else {
-      return kWrongSpecies;
+  } else if(track.tpcInnerParam() > tofCut && track.tpcInnerParam() < tpcCut && !onlyTOF && track.hasTOF()){
+    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
+      nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
     }
+  } else if(track.hasTOF() && ((track.tpcInnerParam() > tofCut && track.tpcInnerParam() > tpcCut) || onlyTOF)){
+    for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
+      nsigmas[iSp] = actualTOFNSigma[iSp];
+    }
+  } else{
+    return kWrongSpecies;
   }
 
   if (!pidEl) {
@@ -2174,6 +2167,9 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   } else {
     fhPtNegA[sp]->Fill(track.pt());
     fhPtEtaNegA[sp]->Fill(track.pt(), track.eta());
+  }
+  if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
+    fillRealPIDTrackHistosAfter(track,sp);
   }
 }
 
