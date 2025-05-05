@@ -64,12 +64,18 @@ struct HadronPhotonCorrelation {
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
-  Configurable<float> etaMax{"etaMax", 0.8, "maximum eta cut"};
+  Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 70, "tpcNClsCrossedRows"};
+  Configurable<double> tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0.8, "tpcCrossedRowsOverFindableCls"};
+  Configurable<double> tpcNSigmaPi{"tpcNSigmaPi", 2., "tpcNSigmaPi"};
 
-  AxisSpec axisPhi = {72, 0., TwoPI, "#phi"};                       // Axis for phi distribution
-  AxisSpec axisDeltaPhi = {72, -PIHalf, 3 * PIHalf, "#Delta #phi"}; // Axis for Delta phi in correlations
-  AxisSpec axisEta = {40, -.8, .8, "#eta"};                         // Axis for eta distribution
-  AxisSpec axisDeltaEta = {80, -1.6, 1.6, "#Delta #eta"};           // Axis for Delta eta in correlations
+  const int pidCodeHadronCut = 100;
+
+  Configurable<float> etaMaxTrig{"etaMaxTrig", 0.8, "maximum eta cut for triggers"};
+  Configurable<float> etaMaxAssoc{"etaMaxAssoc", 0.8, "maximum eta cut for associateds"};
+  Configurable<int> etaBinsTrig{"etaBinsTrig", 40, "number of eta bins for triggers"};
+  Configurable<int> etaBinsAssoc{"etaBinsAssoc", 40, "number of eta bins for associateds"};
+  Configurable<int> phiBins{"phiBins", 72, "number of phi bins"};
+
   ConfigurableAxis axisPtTrig = {"axisPtTrig",
                                  {VARIABLE_WIDTH,
                                   3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 9.0f, 11.0f, 15.0f, 20.0f},
@@ -77,13 +83,12 @@ struct HadronPhotonCorrelation {
   ConfigurableAxis axisPtAssoc = {"axisPtAssoc",
                                   {VARIABLE_WIDTH,
                                    0.2, 0.5, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 9.0f, 11.0f, 15.0f},
-                                  "p_{T, assoc} [GeV]"}; // Axis for associated particle pt distribution
-  AxisSpec axisDeltaPt = {200, 0., 1.2, "#Delta p_T"};   // Axis for pt ratio between neutral hadrons and decay photons
-  AxisSpec axisPid = {9, -3.5, 5.5, "pid"};              // Axis for PID of neutral hadrons
-  AxisSpec axisMult = {100, 0., 99., "N_{ch}"};          // Axis for mutplipicity
-  AxisSpec axisAlpha = {100, 0., 1., "alpha"};           // Axis for decay photon pt assymetry
-
-  AxisSpec axisDeltaRDecay = {100, 0., 0.8, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
+                                  "p_{T, assoc} [GeV]"};                              // Axis for associated particle pt distribution
+  ConfigurableAxis axisDeltaPt = {"axisDeltaPt", {200, 0., 1.2}, "#Delta p_T"};       // Axis for pt ratio between neutral hadrons and decay photons
+  AxisSpec axisPid = {9, -3.5, 5.5, "pid"};                                           // Axis for PID of neutral hadrons
+  ConfigurableAxis axisMult = {"axisMult", {100, 0., 99.}, "N_{ch}"};                 // Axis for mutplipicity
+  AxisSpec axisAlpha = {100, 0., 1., "alpha"};                                        // Axis for decay photon pt assymetry
+  ConfigurableAxis axisDeltaRDecay = {"axisDeltaRDecay", {400, 0., 3.2}, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
 
   float ptMinTrig;
   float ptMaxTrig;
@@ -112,56 +117,62 @@ struct HadronPhotonCorrelation {
     ptMinAssoc = axisPtAssoc->at(1);
     ptMaxAssoc = axisPtAssoc->back();
 
+    AxisSpec axisPhi = {phiBins, 0., TwoPI, "#phi"};                                                                            // Axis for phi distribution
+    AxisSpec axisDeltaPhi = {phiBins, -PIHalf, 3 * PIHalf, "#Delta #phi"};                                                      // Axis for Delta phi in correlations
+    AxisSpec axisEtaTrig = {etaBinsTrig, -etaMaxTrig, etaMaxTrig, "#eta"};                                                      // Axis for eta distribution
+    AxisSpec axisEtaAssoc = {etaBinsAssoc, -etaMaxAssoc, etaMaxAssoc, "#eta"};                                                  // Axis for eta distribution
+    AxisSpec axisDeltaEta = {etaBinsTrig + etaBinsAssoc, -(etaMaxTrig + etaMaxAssoc), etaMaxTrig + etaMaxAssoc, "#Delta #eta"}; // Axis for Delta eta in correlations
+
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Generated histograms
     //  Triggers
     registry.add("generated/triggers/hTrigMultGen", "Generated Trigger Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/triggers/hTrigSpectrumGen", "Generated Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEta, axisPhi});
+    registry.add("generated/triggers/hTrigSpectrumGen", "Generated Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEtaTrig, axisPhi});
 
     // Hadrons
     registry.add("generated/hadrons/hHadronCorrelGen", "Generated Trigger-Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("generated/hadrons/hHadronMultGen", "Generated Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/hadrons/hHadronSpectrumGen", "Generated Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("generated/hadrons/hHadronSpectrumGen", "Generated Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     // Photons
     registry.add("generated/photons/hPhotonCorrelGen", "Generated Trigger-Photon Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPid});
     registry.add("generated/photons/hPhotonMultGen", "Generated Photon Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/photons/hPhotonSpectrumGen", "Generated Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});
+    registry.add("generated/photons/hPhotonSpectrumGen", "Generated Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi, axisPid});
 
     // Charged pions
     registry.add("generated/charged/hPionCorrelGen", "Generated Trigger-Pion Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("generated/charged/hPionMultGen", "Generated Pion Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/charged/hPionSpectrumGen", "Generated Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("generated/charged/hPionSpectrumGen", "Generated Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     ////Neutral particles
     registry.add("generated/neutral/hNeutralCorrelGen", "Generated Trigger-Neutral Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPid});
     registry.add("generated/neutral/hNeutralMultGen", "Generated Neutral Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});                                     // Particle ID of neutral hadrons
+    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi, axisPid});
     registry.add("generated/neutral/hNeutralDecayGen", "Generated Neutral Hadron-Decay Photon Correlation", kTHnSparseF, {axisPtAssoc, axisDeltaPt, axisDeltaRDecay, axisAlpha, axisPid}); // Correlation with decay photons
 
     // Reconstructed histograms
     // Triggers
     registry.add("reconstructed/triggers/hTrigMultReco", "Reconstructed Trigger Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/triggers/hTrigSpectrumReco", "Reconstructed Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEta, axisPhi});
+    registry.add("reconstructed/triggers/hTrigSpectrumReco", "Reconstructed Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEtaTrig, axisPhi});
 
     // Hadrons
     registry.add("reconstructed/hadrons/hHadronCorrelReco", "Reconstructed Trigger-Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/hadrons/hHadronMultReco", "Reconstructed Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/hadrons/hHadronSpectrumReco", "Reconstructed Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/hadrons/hHadronSpectrumReco", "Reconstructed Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
     registry.add("reconstructed/hadrons/hHadronPtPrimReco", "Reconstructed Primaries Spectrum", kTH1F, {axisPtAssoc});  // Primary hadron spectrum
     registry.add("reconstructed/hadrons/hHadronPtSecReco", "Reconstructed Secondaries Spectrum", kTH1F, {axisPtAssoc}); // Secondary hadron spectrum
 
     // Photons
     registry.add("reconstructed/photons/hPhotonCorrelReco", "Reconstructed Trigger-Photon Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/photons/hPhotonMultReco", "Reconstructed Photon Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/photons/hPhotonSpectrumReco", "Reconstructed Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/photons/hPhotonSpectrumReco", "Reconstructed Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     // Charged Pions
     registry.add("reconstructed/charged/hPionCorrelReco", "Reconstructed Trigger-Pion Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/charged/hPionMultReco", "Reconstructed Pion Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/charged/hPionSpectrumReco", "Reconstructed Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/charged/hPionSpectrumReco", "Reconstructed Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
   }
 
   // To check if object has has_mcParticle() (i.e. is MC Track or data track)
@@ -185,7 +196,7 @@ struct HadronPhotonCorrelation {
       }
     }
 
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > etaMaxAssoc) {
       return false;
     }
 
@@ -205,7 +216,11 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (std::abs(particle.eta()) > etaMax) {
+    if (particle.getGenStatusCode() == -1) {
+      return false;
+    }
+
+    if (std::abs(particle.eta()) > etaMaxAssoc) {
       return false;
     }
 
@@ -227,7 +242,7 @@ struct HadronPhotonCorrelation {
       }
     }
 
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > etaMaxTrig) {
       return false;
     }
 
@@ -251,7 +266,7 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (std::abs(particle.eta()) > etaMax) {
+    if (std::abs(particle.eta()) > etaMaxTrig) {
       return false;
     }
 
@@ -286,11 +301,11 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < 70) {
+    if (track.tpcNClsCrossedRows() < tpcNClsCrossedRows) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableCls) {
       return false;
     }
 
@@ -402,8 +417,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track.phi() - v0.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), track.eta() - v0.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(v0.phi() - track.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), v0.eta() - track.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/photons/hPhotonMultReco"), nPhotons);
@@ -442,8 +457,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track.phi() - v0.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), track.eta() - v0.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(v0.phi() - track.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), v0.eta() - track.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/photons/hPhotonMultReco"), nPhotons);
@@ -474,8 +489,9 @@ struct HadronPhotonCorrelation {
       }
 
       auto pdgMother = pdg->GetParticle(mother.pdgCode());
-      if (!pdgMother)
+      if (!pdgMother) {
         continue;
+      }
       int photonGeneration;
       switch (std::abs(origPhoton.getGenStatusCode())) {
         case 23: // prompt direct photons
@@ -507,8 +523,8 @@ struct HadronPhotonCorrelation {
         if (!initParticle(track_assoc)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("generated/photons/hPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi, photonGeneration);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("generated/photons/hPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, photonGeneration);
       }
     }
 
@@ -550,8 +566,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/hadrons/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/hadrons/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/hadrons/hHadronMultReco"), nHadrons);
@@ -572,7 +588,7 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(track_assoc.pdgCode()) < 100) {
+      if (std::abs(track_assoc.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
@@ -586,9 +602,9 @@ struct HadronPhotonCorrelation {
         if (track_trig == track_assoc) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("generated/hadrons/hHadronCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("generated/hadrons/hHadronCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("generated/hadrons/hHadronMultGen"), nHadrons);
@@ -618,7 +634,7 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(particle.pdgCode()) < 100) {
+      if (std::abs(particle.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
@@ -641,9 +657,9 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("reconstructed/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("reconstructed/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/hadrons/hHadronMultReco"), nHadrons);
@@ -671,7 +687,7 @@ struct HadronPhotonCorrelation {
       if (!initTrack(track_assoc)) {
         continue;
       }
-      if (std::abs(track_assoc.tpcNSigmaPi()) > 2) {
+      if (std::abs(track_assoc.tpcNSigmaPi()) > tpcNSigmaPi) {
         continue;
       } // remove non-pions
       registry.fill(HIST("reconstructed/charged/hPionSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
@@ -687,8 +703,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/charged/hPionMultReco"), nPions);
@@ -719,9 +735,9 @@ struct HadronPhotonCorrelation {
         if (track_trig == track_assoc) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("generated/charged/hPionCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("generated/charged/hPionCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("generated/charged/hPionMultGen"), nPions);
@@ -764,8 +780,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/charged/hPionMultReco"), nPions);
@@ -793,7 +809,7 @@ struct HadronPhotonCorrelation {
       if (pdgParticle->Charge() != 0.) {
         continue;
       } // remove charged particles
-      if (track_assoc.pdgCode() < 100 || (PDG_t)track_assoc.pdgCode() == kNeutron) {
+      if (track_assoc.pdgCode() < pidCodeHadronCut || (PDG_t)track_assoc.pdgCode() == kNeutron) {
         continue;
       } // remove non-hadrons and neutrons
       registry.fill(HIST("generated/neutral/hNeutralSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), pidCodes[pdgParticle->GetName()]);
@@ -802,7 +818,8 @@ struct HadronPhotonCorrelation {
       // Get correlations between neutral hadrons and their respective decay photons
       auto daughters = track_assoc.daughters_as<aod::JMcParticles>();
       double alpha = -1;
-      if (daughters.size() == 2) {
+      int nPhotonsPionDecay = 2;
+      if (daughters.size() == nPhotonsPionDecay) {
         auto daughter = daughters.begin();
         double pt1 = daughter.pt();
         ++daughter;
@@ -811,12 +828,12 @@ struct HadronPhotonCorrelation {
       }
 
       for (const auto& daughter : daughters) {
-        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma)
+        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma) {
           continue;
-        if (!initParticle(daughter, false))
+        }
+        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1) {
           continue;
-        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1)
-          continue;
+        }
         double deltaPt = daughter.pt() / track_assoc.pt();
         double deltaEta = daughter.eta() - track_assoc.eta();
         double deltaPhi = RecoDecay::constrainAngle(daughter.phi() - track_assoc.phi(), -PIHalf);
