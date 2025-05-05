@@ -625,8 +625,6 @@ struct FlowZdcTask {
     float tZNC{0.0};
     float tZPA{0.0};
     float tZPC{0.0};
-    float tZDCdif{0.0};
-    float tZDCsum{0.0};
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
