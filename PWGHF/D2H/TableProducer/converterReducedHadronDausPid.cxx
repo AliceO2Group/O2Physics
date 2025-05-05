@@ -29,13 +29,13 @@ struct HfConverterReducedHadronDausPid {
   Produces<aod::HfRedPidDau1s_001> hfRedPidDau1s;
   Produces<aod::HfRedPidDau2s_001> hfRedPidDau2s;
 
-  using HfRedPidDaus = soa::Join<aod::HfRedTrkNoParams, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
+  using HfRedPidDaus = soa::Join<aod::HfCand3ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
 
   void process(HfRedPidDaus::iterator const& hfCandPidProngs)
   {
-    hfRedPidDau0s(hfCandPidProngs.tpcNSigmaPiProng0(), hfCandPidProngs.tofNSigmaPiProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tpcNSigmaPr(), hfCandPidProngs.tofNSigmaPr(), hfCandPidProngs.hasTOFProng0(), hfCandPidProngs.hasTPCProng0());
-    hfRedPidDau1s(hfCandPidProngs.tpcNSigmaPiProng1(), hfCandPidProngs.tofNSigmaPiProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tpcNSigmaPr(), hfCandPidProngs.tofNSigmaPr(), hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
-    hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tpcNSigmaPr(), hfCandPidProngs.tofNSigmaPr(), hfCandPidProngs.hasTOFProng2(), hfCandPidProngs.hasTPCProng2());
+    hfRedPidDau0s(hfCandPidProngs.tpcNSigmaPiProng0(), hfCandPidProngs.tofNSigmaPiProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.nSigTpcPr0(), hfCandPidProngs.nSigTofPr0(), hfCandPidProngs.hasTOFProng0(), hfCandPidProngs.hasTPCProng0());
+    hfRedPidDau1s(hfCandPidProngs.tpcNSigmaPiProng1(), hfCandPidProngs.tofNSigmaPiProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.nSigTpcPr1(), hfCandPidProngs.nSigTofPr1(), hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
+    hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.nSigTpcPr2(), hfCandPidProngs.nSigTofPr2(), hfCandPidProngs.hasTOFProng2(), hfCandPidProngs.hasTPCProng2());
   }
 };
 
