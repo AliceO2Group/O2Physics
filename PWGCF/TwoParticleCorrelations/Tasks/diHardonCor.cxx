@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ionDihardonCor.cxx
+/// \file diHardonCor.cxx
 /// \brief di-hardon correlation for O-O, Pb-Pb collisions
 /// \author Zhiyong Lu (zhiyong.lu@cern.ch)
 /// \since  May/03/2025
@@ -45,19 +45,19 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace o2::aod
 {
-namespace ion_dihardon
+namespace di_hardon_cor
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
 }
 DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
-                  ion_dihardon::Multiplicity);
+                  di_hardon_cor::Multiplicity);
 
 } // namespace o2::aod
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct IonDihardonCor {
+struct DiHardonCor {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
@@ -256,14 +256,17 @@ struct IonDihardonCor {
   void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
+    if (system == SameEvent) {
+      registry.fill(HIST("Centrality_used"), cent);
+      registry.fill(HIST("Nch_used"), tracks1.size());
+    }
+
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Centrality_used"), cent);
-        registry.fill(HIST("Nch_used"), tracks1.size());
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
 
@@ -330,7 +333,7 @@ struct IonDihardonCor {
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent);
   }
-  PROCESS_SWITCH(IonDihardonCor, processSame, "Process same event", true);
+  PROCESS_SWITCH(DiHardonCor, processSame, "Process same event", true);
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks, aod::BCsWithTimestamps const&)
@@ -371,12 +374,12 @@ struct IonDihardonCor {
     }
   }
 
-  PROCESS_SWITCH(IonDihardonCor, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(DiHardonCor, processMixed, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<IonDihardonCor>(cfgc),
+    adaptAnalysisTask<DiHardonCor>(cfgc),
   };
 }

@@ -58,8 +58,8 @@ o2physics_add_dpl_workflow(neutron-proton-corr-zdc
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(ion-dihardon-cor
-                           SOURCES ionDihardonCor.cxx
+o2physics_add_dpl_workflow(di-hardon-cor
+                           SOURCES diHardonCor.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
