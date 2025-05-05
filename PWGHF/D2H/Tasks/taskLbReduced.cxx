@@ -41,8 +41,8 @@ DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                              
 DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                   //! Number of ITS clusters of bachelor pion
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);             //! Number of TPC crossed rows of prongs of bachelor pion
 DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                           //! Maximum TPC chi2 of prongs of Lc-baryon daughter candidate
-DECLARE_SOA_COLUMN(PtLcProngMin, ptProngLcMin, float);                               //! Minimum pT of prongs of Lc-baryon daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(AbsEtaLcProngMin, absEtaProngLcMin, float);                       //! Minimum absolute pseudorapidity of prongs of Lc-baryon daughter candidate
+DECLARE_SOA_COLUMN(PtLcProngMin, ptLcProngMin, float);                               //! Minimum pT of prongs of Lc-baryon daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(EtaLcProngMin, etaLcProngMin, float);                             //! Minimum absolute pseudorapidity of prongs of Lc-baryon daughter candidate
 DECLARE_SOA_COLUMN(ItsNClsLcProngMin, itsNClsLcProngMin, int);                       //! Minimum number of ITS clusters of prongs of Lc-baryon daughter candidate
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsLcProngMin, tpcNClsCrossedRowsLcProngMin, int); //! Minimum number of TPC crossed rows of prongs of Lc-baryon daughter candidate
 DECLARE_SOA_COLUMN(TpcChi2NClLcProngMax, tpcChi2NClLcProngMax, float);               //! Maximum TPC chi2 of prongs of Lc-baryon daughter candidate
@@ -108,7 +108,7 @@ DECLARE_SOA_TABLE(HfRedCandLbLites, "AOD", "HFREDCANDLBLITE", //! Table with som
                   hf_cand_lb_lite::DecayLengthXYLc,
                   hf_cand_lb_lite::ImpactParameterLc,
                   hf_cand_lb_lite::PtLcProngMin,
-                  hf_cand_lb_lite::AbsEtaLcProngMin,
+                  hf_cand_lb_lite::EtaLcProngMin,
                   hf_cand_lb_lite::ItsNClsLcProngMin,
                   hf_cand_lb_lite::TpcNClsCrossedRowsLcProngMin,
                   hf_cand_lb_lite::TpcChi2NClLcProngMax,
@@ -175,12 +175,11 @@ struct HfTaskLbReduced {
 
   HfHelper hfHelper;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
-
   HistogramRegistry registry{"registry"};
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
   using CandsLc = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   void init(InitContext&)
   {
