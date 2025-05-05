@@ -1123,6 +1123,7 @@ struct HfDataCreatorCharmHadPiReduced {
         fillHfCandCharm = true;
       } // pion loop
       if (fillHfCandCharm) {                                                                                                                               // fill candCplus table only once per D candidate
+        constexpr std::size_t NSizeMLScore{3u};
         if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
                        indexHfReducedCollision,
@@ -1145,18 +1146,18 @@ struct HfDataCreatorCharmHadPiReduced {
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
               hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2], -1., -1., -1.);
             } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
-              if (candC.mlProbDsToKKPi().size() == 3) {
+              if (candC.mlProbDsToKKPi().size() == NSizeMLScore) {
                 std::copy(candC.mlProbDsToKKPi().begin(), candC.mlProbDsToKKPi().end(), mlScores.begin());
               }
-              if (candC.mlProbDsToPiKK().size() == 3) {
+              if (candC.mlProbDsToPiKK().size() == NSizeMLScore) {
                 std::copy(candC.mlProbDsToPiKK().begin(), candC.mlProbDsToPiKK().end(), mlScores.begin() + 3);
               }
               hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
             } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
-              if (candC.mlProbLcToPKPi().size() == 3) {
+              if (candC.mlProbLcToPKPi().size() == NSizeMLScore) {
                 std::copy(candC.mlProbLcToPKPi().begin(), candC.mlProbLcToPKPi().end(), mlScores.begin());
               }
-              if (candC.mlProbLcToPiKP().size() == 3) {
+              if (candC.mlProbLcToPiKP().size() == NSizeMLScore) {
                 std::copy(candC.mlProbLcToPiKP().begin(), candC.mlProbLcToPiKP().end(), mlScores.begin() + 3);
               }
               hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
@@ -1180,10 +1181,10 @@ struct HfDataCreatorCharmHadPiReduced {
           hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), 0., 0., charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
           if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
-            if (candC.mlProbD0().size() == 3) {
+            if (candC.mlProbD0().size() == NSizeMLScore) {
               std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), mlScores.begin());
             }
-            if (candC.mlProbD0bar().size() == 3) {
+            if (candC.mlProbD0bar().size() == NSizeMLScore) {
               std::copy(candC.mlProbD0bar().begin(), candC.mlProbD0bar().end(), mlScores.begin() + 3);
             }
             hfCand2ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
