@@ -116,6 +116,7 @@ struct QaImpactPar {
   Configurable<int> customITShitmap_exclude{"customITShitmap_exclude", 0, "Custom ITS hitmap of layers to be excluded (consider the binary representation)"};
   Configurable<int> n_customMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
   Configurable<bool> custom_forceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
+  Configurable<float> downsamplingFraction{"downsamplingFraction", 1.1, "Fraction of tracks to be used to fill the output objects"};
 
   /// Custom cut selection objects
   TrackSelection selector_ITShitmap;
@@ -492,6 +493,11 @@ struct QaImpactPar {
     /// loop over tracks
     float pt = -999.f;
     float p = -999.f;
+    float eta = -999.f;
+    float phi = -999.f;
+    int8_t sign = -1;
+    bool isPvContributor = false;
+    int nContributors = -1;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
     float impParRPhiSigma = 999.f;
@@ -511,7 +517,8 @@ struct QaImpactPar {
     int cnt = 0;
     for (const auto& track : tracks) {
 
-      if (keepOnlyPvContrib && !track.isPVContributor()) {
+      isPvContributor = track.isPVContributor();
+      if (keepOnlyPvContrib && !isPvContributor) {
         /// let's skip all tracks that were not PV contributors originally
         /// this let us ignore tracks flagged as ambiguous
         continue;
@@ -710,16 +717,24 @@ struct QaImpactPar {
       }
 
       /// all tracks
-      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      if ((pt * 1000 - static_cast<int>(pt * 1000)) > downsamplingFraction) {
+        // downsampling - do not consider the current track
+        continue;
+      }
+      eta = track.eta();
+      phi = track.phi();
+      sign = track.sign();
+      nContributors = collision.numContrib();
+      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
       if (addTrackIUinfo) {
         histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         // histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
         histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
       }
       if (fEnablePulls) {
-        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
       }
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
@@ -727,8 +742,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Pion"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
         histograms.fill(HIST("Reco/hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
@@ -737,8 +752,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Kaon"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
         histograms.fill(HIST("Reco/hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
       }
@@ -747,8 +762,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Proton"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Reco/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
