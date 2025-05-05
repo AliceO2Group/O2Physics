@@ -47,7 +47,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<int> pionPidMethod{"pionPidMethod", PidMethod::TpcOrTof, "PID selection method for the bachelor pion (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
+  Configurable<int> pionPidMethod{"pionPidMethod", 1, "PID selection method for the bachelor pion (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
