@@ -19,6 +19,8 @@
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_BCWISETABLES_H_
 
+#include <limits>
+
 #include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
