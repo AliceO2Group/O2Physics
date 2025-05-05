@@ -107,7 +107,7 @@ struct bcWiseClusterSkimmer {
   template <typename OutputType, typename InputType>
   OutputType convertForStorage(InputType const& valueIn, Observables observable)
   {
-    double valueToBeChecked = valueIn * downscalingFactors[observable];
+    double valueToBeChecked = std::round(valueIn * downscalingFactors[observable]);
     if (valueToBeChecked < std::numeric_limits<OutputType>::lowest()) {
       LOG(warning) << "Value " << valueToBeChecked << " of observable " << observable << " below lowest possible value of " << typeid(OutputType).name() << ": " << static_cast<float>(std::numeric_limits<OutputType>::lowest());
       valueToBeChecked = static_cast<float>(std::numeric_limits<OutputType>::lowest());
