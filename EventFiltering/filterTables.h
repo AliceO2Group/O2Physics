@@ -196,14 +196,16 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 
 // heavy meson filters
-DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(POmega, hasPPOmega, bool);                    //! Pomega meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(PEtaPrime, hasPEtaPrime, bool);               //! PPEta' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(OmegadOrPP, hasOmegadOrPP, bool);             //! Omegad' meson candidate (3pi) in the collision
-DECLARE_SOA_COLUMN(EtaPrimedOrPP, hasEtaPrimedOrPP, bool);       //! Eta'd meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(PCMOmegaMeson, hasPCMOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(EMCOmegaMeson, hasEMCOmegaMeson, bool);       //! Omega meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(PCMEtaPrimeMeson, hasPCMEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+// DECLARE_SOA_COLUMN(EMCEtaPrimeMeson, hasEMCEtaPrimeMeson, bool); //! Eta' meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(OmegaP, hasOmegaP, bool);         //! omegaP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(OmegaPP, hasOmegaPP, bool);       //! omegaPP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(Omegad, hasOmegad, bool);         //! omegad meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimeP, hasEtaPrimeP, bool);   //! eta'P meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimePP, hasEtaPrimePP, bool); //! eta'PP meson candidate (3pi) in the collision
+DECLARE_SOA_COLUMN(EtaPrimed, hasEtaPrimed, bool);   //! eta'd meson candidate (3pi) in the collision
 
 } // namespace filtering
 
@@ -329,7 +331,7 @@ DECLARE_SOA_TABLE(F1ProtonFilters, "AOD", "F1ProtonFilters", //!
 using F1ProtonFilter = F1ProtonFilters::iterator;
 
 // Double Phi
-DECLARE_SOA_TABLE(DoublePhiFilters, "AOD", "DoublePhiFilters", //!
+DECLARE_SOA_TABLE(DoublePhiFilters, "AOD", "LF2PhiFilters", //!
                   filtering::TriggerEventDoublePhi);
 using DoublePhiFilter = DoublePhiFilters::iterator;
 
@@ -347,10 +349,8 @@ using PhotonFilter = PhotonFilters::iterator;
 
 // heavy mesons
 DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
-                  filtering::PCMOmegaMeson, filtering::EMCOmegaMeson,
-                  filtering::PCMEtaPrimeMeson, filtering::EMCEtaPrimeMeson,
-                  filtering::POmega, filtering::PEtaPrime,
-                  filtering::OmegadOrPP, filtering::EtaPrimedOrPP);
+                  filtering::OmegaP, filtering::OmegaPP, filtering::Omegad,
+                  filtering::EtaPrimeP, filtering::EtaPrimePP, filtering::EtaPrimed);
 
 using HeavyNeutralMesonFilter = HeavyNeutralMesonFilters::iterator;
 
@@ -367,7 +367,7 @@ using BCRange = BCRanges::iterator;
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{14};
 constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "DoublePhiFilters", "HeavyNeutralMesonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "2PhiFilters", "HNMesonFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "JetHFFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters", "LF2PhiFilters", "HNMesonFilters"};
 constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-je-hf-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter", "o2-analysis-lf-doublephi-filter", "o2-analysis-heavy-meson-filter"};
 constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, JetHFFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters, DoublePhiFilters, HeavyNeutralMesonFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
