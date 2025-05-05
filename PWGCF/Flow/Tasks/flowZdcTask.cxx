@@ -655,8 +655,6 @@ struct FlowZdcTask {
       tZNC = foundBC.zdc().timeZNC();
       tZPA = foundBC.zdc().timeZPA();
       tZPC = foundBC.zdc().timeZPC();
-      tZDCdif = tZNC + tZPC - tZNA - tZPA;
-      tZDCsum = tZNC + tZPC + tZNA + tZPA;
 
       float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
       float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
