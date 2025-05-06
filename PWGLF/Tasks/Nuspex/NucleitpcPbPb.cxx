@@ -97,6 +97,10 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", false, "apply rigidity correction"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
+  Configurable<bool> cfgITSrequire{"cfgITSrequire", true, "Additional cut on ITS require"};
+  Configurable<bool> cfgTPCrequire{"cfgTPCrequire", true, "Additional cut on TPC require"};
+  Configurable<bool> cfgPassedITSRefit{"cfgPassedITSRefit", true, "Require ITS refit"};
+  Configurable<bool> cfgPassedTPCRefit{"cfgPassedTPCRefit", true, "Require TPC refit"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {trackPIDsettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<bool> cfgFillDeDxWithoutCut{"cfgFillDeDxWithoutCut", false, "Fill without cut beth bloch"};
@@ -193,23 +197,21 @@ struct NucleitpcPbPb {
     for (const auto& trackId : tracksByColl) {
       const auto& track = tracks.rawIteratorAt(trackId.trackId());
       filldedx(track, nParticles);
+      if (!track.isPVContributor() && cfgUsePVcontributors)
+        continue;
+      if (!track.hasITS() && cfgITSrequire)
+        continue;
+      if (!track.hasTPC() && cfgTPCrequire)
+        continue;
+      if (!track.passedITSRefit() && cfgPassedITSRefit)
+        continue;
+      if (!track.passedTPCRefit() && cfgPassedTPCRefit)
+        continue;
       if (std::abs(track.eta()) > cfgCutEta)
         continue;
-      histos.fill(HIST("histeta"), track.eta());
       for (size_t i = 0; i < primaryParticles.size(); i++) {
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity)
           continue;
-        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
-        if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
-          continue;
-        if (track.sign() > 0) {
-          histos.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_particle"), track.pt(), track.dcaXY());
-        }
-        if (track.sign() < 0) {
-          histos.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), track.pt(), track.dcaXY());
-        }
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
           continue;
         if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2"))
@@ -231,7 +233,19 @@ struct NucleitpcPbPb {
           continue;
         if (cfgTrackPIDsettings->get(i, "TOFrequiredabove") >= 0 && getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (track.mass() < cfgTrackPIDsettings->get(i, "minTOFmass") || track.mass() > cfgTrackPIDsettings->get(i, "maxTOFmass")))
           continue;
+        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
+        if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
+          continue;
+        if (track.sign() > 0) {
+          histos.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_particle"), track.pt(), track.dcaXY());
+        }
+        if (track.sign() < 0) {
+          histos.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), track.pt(), track.dcaXY());
+        }
       }
+      histos.fill(HIST("histeta"), track.eta());
     } // track loop
   }
   //----------------------------------------------------------------------------------------------------------------
