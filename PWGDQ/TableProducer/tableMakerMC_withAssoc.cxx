@@ -937,10 +937,12 @@ struct TableMakerMC {
         if constexpr ((static_cast<bool>(TMuonRealignFillMap)) && static_cast<int>(muon.trackType()) > 2) {
           // refill kinematic info and recalculate propagation in case of using realigned muons
           auto muonRealignSelected = muonsRealign.sliceBy(fwdtrackRealignPerMuon, assoc.fwdtrackId());
+          int realignRemoveFlag = 0;
           if (muonRealignSelected.size() == 1) {
             for (const auto& muonRealign : muonRealignSelected) {
               // refill muon information with realigned tracks
               VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+              realignRemoveFlag = muonRealign.isRemovable();
 
               if (fConfigVariousOptions.fPropMuon) {
                 VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
@@ -948,6 +950,11 @@ struct TableMakerMC {
 
               VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
             }
+
+            if (realignRemoveFlag) {
+              continue;
+            }
+
           } else {
             LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
           }
@@ -1068,10 +1075,12 @@ struct TableMakerMC {
         if constexpr ((static_cast<bool>(TMuonRealignFillMap)) && static_cast<int>(muon.trackType()) > 2) {
           // refill kinematic info and recalculate propagation in case of using realigned muons
           auto muonRealignSelected = muonsRealign.sliceBy(fwdtrackRealignPerMuon, muon.globalIndex());
+          int realignRemoveFlag = 0;
           if (muonRealignSelected.size() == 1) {
             for (const auto& muonRealign : muonRealignSelected) {
               // refill muon information with realigned tracks
               VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+              realignRemoveFlag = muonRealign.isRemovable();
 
               if (fConfigVariousOptions.fPropMuon) {
                 VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
@@ -1079,6 +1088,11 @@ struct TableMakerMC {
 
               VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
             }
+
+            if (realignRemoveFlag) {
+              continue;
+            }
+
           } else {
             LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
           }
