@@ -122,7 +122,7 @@ struct UpcRhoAnalysis {
   Configurable<bool> onlyGoldenRuns{"onlyGoldenRuns", false, "process only golden runs"};
 
   Configurable<float> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
-  Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 8, "max number of contributors cut on collisions"};
+  Configurable<int> collisionsNumContribsMaxCut{"collisionsNumContribsMaxCut", 2, "max number of contributors cut on collisions"};
   Configurable<float> znCommonEnergyCut{"znCommonEnergyCut", 0.0, "ZN common energy cut"};
   Configurable<float> znTimeCut{"znTimeCut", 2.0, "ZN time cut"};
 
