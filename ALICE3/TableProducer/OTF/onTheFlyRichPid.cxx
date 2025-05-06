@@ -32,6 +32,9 @@
 
 #include <utility>
 #include <cmath>
+#include <vector>
+#include <map>
+#include <string>
 
 #include <TPDGCode.h>
 
@@ -257,9 +260,7 @@ struct OnTheFlyRichPid {
         aerogel_rindex[2 * i_central_mirror - i] = bRichRefractiveIndexSector[i - i_central_mirror];
         mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
-    }
-    // Even number of sectors
-    else {
+    } else { // Even number of sectors
       float two_half_gap = 1.0;
       int i_central_mirror = static_cast<int>((number_of_sectors_in_z) / 2.0);
       float m_val = std::tan(0.0);
