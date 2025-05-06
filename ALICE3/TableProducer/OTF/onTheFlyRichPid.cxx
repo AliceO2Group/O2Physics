@@ -8,13 +8,33 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-//
-// Task to add a table of track parameters propagated to the primary vertex
-//
+///
+/// \file onTheFlyRichPid.cxx
+///
+/// \brief This task goes straight from a combination of track table and mcParticles
+///        and a projective bRICH configuration to a table of TOF NSigmas for the particles
+///        being analysed. It currently contemplates 5 particle types:
+///        electrons, pions, kaons, protons and muons
+///
+///        More particles could be added but would have to be added to the LUT
+///        being used in the onTheFly tracker task.
+///
+/// \warning Geometry parameters are configurable, but resolution values should be adapted.
+///          Since angular resolution depends on the specific geometric details, it is better to
+///          calculate it from full simulation and add new input. Alternatively, an analytical
+///          expression can be provided as a function of the main parameters.
+///          Latest version: analytical parametrization of angular resolution !!!
+///
+/// \author David Dobrigkeit Chinellato, UNICAMP
+/// \author Nicola Nicassio, University and INFN Bari
+/// \since  May 22, 2024
+///
 
 #include <utility>
 #include <cmath>
+#include <vector>
+#include <map>
+#include <string>
 
 #include <TPDGCode.h>
 
@@ -42,27 +62,8 @@
 #include "TString.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "DetectorsVertexing/HelixHelper.h"
-
 #include "TableHelper.h"
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
-
-/// \file onTheFlyRichPid.cxx
-///
-/// \brief This task goes straight from a combination of track table and mcParticles
-/// and a projective bRICH configuration to a table of TOF NSigmas for the particles
-/// being analysed. It currently contemplates 5 particle types:
-/// electrons, pions, kaons, protons and muons.
-///
-/// More particles could be added but would have to be added to the LUT
-/// being used in the onTheFly tracker task.
-///
-/// \warning Geometry parameters are configurable, but resolution values should be adapted.
-/// Since angular resolution depends on the specific geometric details, it is better to
-/// calculate it from full simulation and add new input. Alternatively, an analytical
-/// expression can be provided as a function of the main parameters.
-/// Latest version: analytical parametrization of angular resolution !!!
-///
-/// \author David Dobrigkeit Chinellato, UNICAMP, Nicola Nicassio, University and INFN Bari
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,11 +144,13 @@ struct OnTheFlyRichPid {
   Configurable<float> bRICHPixelSize{"bRICHPixelSize", 0.1, "barrel RICH pixel size (cm)"};
   Configurable<float> bRichGapRefractiveIndex{"bRichGapRefractiveIndex", 1.000283, "barrel RICH gap refractive index"};
 
-  Configurable<std::string> lutEl{"lutEl", "lutCovm.el.dat", "LUT for electrons"};
-  Configurable<std::string> lutMu{"lutMu", "lutCovm.mu.dat", "LUT for muons"};
-  Configurable<std::string> lutPi{"lutPi", "lutCovm.pi.dat", "LUT for pions"};
-  Configurable<std::string> lutKa{"lutKa", "lutCovm.ka.dat", "LUT for kaons"};
-  Configurable<std::string> lutPr{"lutPr", "lutCovm.pr.dat", "LUT for protons"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> lutEl{"lutEl", "inherit", "LUT for electrons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutMu{"lutMu", "inherit", "LUT for muons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutPi{"lutPi", "inherit", "LUT for pions (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutKa{"lutKa", "inherit", "LUT for kaons (if inherit, inherits from otf tracker task)"};
+    Configurable<std::string> lutPr{"lutPr", "inherit", "LUT for protons (if inherit, inherits from otf tracker task)"};
+  } simConfig;
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -257,9 +260,7 @@ struct OnTheFlyRichPid {
         aerogel_rindex[2 * i_central_mirror - i] = bRichRefractiveIndexSector[i - i_central_mirror];
         mProjectiveLengthInner = R_min * t; // <-- At the end of the loop this will be the maximum Z
       }
-    }
-    // Even number of sectors
-    else {
+    } else { // Even number of sectors
       float two_half_gap = 1.0;
       int i_central_mirror = static_cast<int>((number_of_sectors_in_z) / 2.0);
       float m_val = std::tan(0.0);
@@ -315,18 +316,33 @@ struct OnTheFlyRichPid {
     // std::cout << std::endl << std::endl;
   }
 
-  void init(o2::framework::InitContext& /*initContext*/)
+  void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+
+    // Check if inheriting the LUT configuration
+    auto configLutPath = [&](Configurable<std::string>& lut) {
+      if (lut.value != "inherit") {
+        return;
+      }
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut.name, lut.value, true)) {
+        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
+      }
+    };
+    configLutPath(simConfig.lutEl);
+    configLutPath(simConfig.lutMu);
+    configLutPath(simConfig.lutPi);
+    configLutPath(simConfig.lutKa);
+    configLutPath(simConfig.lutPr);
 
     // Load LUT for pt and eta smearing
     if (flagIncludeTrackAngularRes && flagRICHLoadDelphesLUTs) {
       std::map<int, const char*> mapPdgLut;
-      const char* lutElChar = lutEl->c_str();
-      const char* lutMuChar = lutMu->c_str();
-      const char* lutPiChar = lutPi->c_str();
-      const char* lutKaChar = lutKa->c_str();
-      const char* lutPrChar = lutPr->c_str();
+      const char* lutElChar = simConfig.lutEl->c_str();
+      const char* lutMuChar = simConfig.lutMu->c_str();
+      const char* lutPiChar = simConfig.lutPi->c_str();
+      const char* lutKaChar = simConfig.lutKa->c_str();
+      const char* lutPrChar = simConfig.lutPr->c_str();
 
       LOGF(info, "Will load electron lut file ..: %s for RICH PID", lutElChar);
       LOGF(info, "Will load muon lut file ......: %s for RICH PID", lutMuChar);
@@ -340,7 +356,7 @@ struct OnTheFlyRichPid {
       mapPdgLut.insert(std::make_pair(321, lutKaChar));
       mapPdgLut.insert(std::make_pair(2212, lutPrChar));
 
-      for (auto e : mapPdgLut) {
+      for (const auto& e : mapPdgLut) {
         if (!mSmearer.loadTable(e.first, e.second)) {
           LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
