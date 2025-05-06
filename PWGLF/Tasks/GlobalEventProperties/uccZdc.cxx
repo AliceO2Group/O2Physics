@@ -155,9 +155,8 @@ struct UccZdc {
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
-  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   // Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
-  Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  // Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
@@ -308,18 +307,15 @@ struct UccZdc {
       registry.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
 
-    ccdb->setURL(uRl.value);
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(noLaterThan.value);
-    LOGF(info, "Getting object %s", paTH.value.data());
-    //        efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, noLaterThan);
-    //        if (!efficiency) {
-    //            LOGF(fatal, "Efficiency object not found!");
-    //        }
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+    // ccdb->setCreatedNotAfter(noLaterThan.value);
   }
 
   template <typename CheckCol>
@@ -565,8 +561,8 @@ struct UccZdc {
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
     // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
 
-    // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
     if (!efficiency) {
       LOGF(fatal, "Efficiency object not found!");
     }
@@ -704,8 +700,8 @@ struct UccZdc {
 
         // To use run-by-run efficiency
         const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-        // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-        auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+        auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+        // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
         if (!efficiency) {
           LOGF(fatal, "Efficiency object not found!");
         }

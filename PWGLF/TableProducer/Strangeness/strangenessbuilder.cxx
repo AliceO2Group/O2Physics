@@ -1601,7 +1601,7 @@ struct StrangenessBuilder {
               info.momentum[0], info.momentum[1], info.momentum[2]);
             histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
             histos.fill(HIST("hPrimaryV0s"), 0);
-            if (thisInfo.isPhysicalPrimary)
+            if (info.isPhysicalPrimary)
               histos.fill(HIST("hPrimaryV0s"), 1);
           }
           if (mEnabledTables[kV0MCCollRefs]) {
