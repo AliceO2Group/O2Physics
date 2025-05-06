@@ -34,6 +34,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/ZDCConstants.h"
 #include "Framework/ASoAHelpers.h" // required for Filter op.
@@ -113,6 +114,18 @@ struct UccZdc {
   Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
   Configurable<int> minITSnCls{"minITSnCls", 5, "min ITSnCls"};
 
+  Configurable<int> itsRequirement{"itsRequirement", TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, "0: Global Tracks, 2: Hits in the 7 ITS layers"};
+  Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireGoldenChi2{"requireGoldenChi2", false, "Additional cut on the GoldenChi2"};
+  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  //    Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
+  Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
+  Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
+  // Configurable<float> minTPCNClsFound{"minTPCNClsFound", 100.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
+
   enum EvCutLabel {
     All = 1,
     SelEigth,
@@ -137,26 +150,19 @@ struct UccZdc {
   static constexpr float oneHalf{0.5};
 
   // Filters
-  // Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt) && requireGlobalTrackInFilter());
-  // Remove the GlobalTrack filter to count also ITS tracks
   Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt));
-
   // Apply Filters
-  // using TheFilteredCollisions = soa::Filtered<o2::aod::ColEvSels>;
-  // using TheFilteredCollision = TheFilteredCollisions::iterator;
   using TheFilteredTracks = soa::Filtered<o2::aod::TracksSel>;
-  // using TheFilteredTrack = TheFilteredTracks::iterator;
-
-  // using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
   using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
+
+  // Additional filters for tracks
+  TrackSelection myTrackSel;
 
   // Histograms: Data
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
-  // Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
-  // Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
@@ -194,6 +200,34 @@ struct UccZdc {
     x->SetBinLabel(15, "has T0?");
     x->SetBinLabel(16, "Within TDC cut?");
     x->SetBinLabel(17, "Within ZEM cut?");
+
+    LOG(info) << "\titsRequirement=" << itsRequirement.value;
+    LOG(info) << "\trequireITS=" << requireITS.value;
+    LOG(info) << "\trequireTPC=" << requireTPC.value;
+    LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
+    LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
+    LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
+    LOG(info) << "\tminNCrossedRowsOverFindableClustersTPC=" << minNCrossedRowsOverFindableClustersTPC.value;
+    LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
+    LOG(info) << "\tminPt=" << minPt.value;
+    LOG(info) << "\tmaxPt=" << maxPt.value;
+    LOG(info) << "\tminEta=" << minEta.value;
+    LOG(info) << "\tmaxEta=" << maxEta.value;
+
+    myTrackSel = getGlobalTrackSelectionRun3ITSMatch(itsRequirement, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    myTrackSel.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
+    myTrackSel.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+    myTrackSel.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
+    myTrackSel.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
+    myTrackSel.SetRequireITSRefit(requireITS.value);
+    myTrackSel.SetRequireTPCRefit(requireTPC.value);
+    myTrackSel.SetMaxDcaZ(maxDcaZ.value);
+    myTrackSel.SetRequireGoldenChi2(requireGoldenChi2.value);
+    myTrackSel.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; }); // No DCAxy cut will be used, this is done via the member function of the task
+    myTrackSel.SetPtRange(minPt, maxPt);
+    myTrackSel.SetEtaRange(minEta, maxEta);
+    LOGF(info, "----- Custom Track selection -----");
+    myTrackSel.print();
 
     //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
@@ -265,6 +299,11 @@ struct UccZdc {
 
     if (doprocessQA) {
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+      registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
+      registry.add("dcaXYvspTOpen", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
+      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
+      registry.add("nClustersITS", ";<n clusters ITS>;;", kTProfile, {{axisPt}});
+      registry.add("nClustersTPC", ";<n clusters TPC>;;", kTProfile, {{axisPt}});
 
       registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
@@ -297,6 +336,7 @@ struct UccZdc {
       registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
 
+      registry.add("Nch", ";#it{N}_{ch} (|#eta|<0.8);", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsMeanPt", ";#it{N}_{ch} (|#eta|<0.8);#LT[#it{p}_{T}]#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
@@ -315,7 +355,6 @@ struct UccZdc {
     // This avoids that users can replace objects **while** a train is running
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
-    // ccdb->setCreatedNotAfter(noLaterThan.value);
   }
 
   template <typename CheckCol>
@@ -492,10 +531,18 @@ struct UccZdc {
         itsTracks++;
       }
       // Track Selection
-      if (track.isGlobalTrack()) {
-        glbTracks++;
-        meanpt += track.pt();
-        et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+      if (myTrackSel.IsSelected(track)) {
+        if (passesDCAxyCut(track)) {
+          glbTracks++;
+          meanpt += track.pt();
+          et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+          registry.fill(HIST("nClustersITS"), track.pt(), track.itsNCls());
+          registry.fill(HIST("nClustersTPC"), track.pt(), track.tpcNClsFound());
+        } else {
+          registry.fill(HIST("dcaXYvspTOpen"), track.dcaXY(), track.pt());
+        }
       }
     }
 
@@ -538,6 +585,7 @@ struct UccZdc {
     registry.fill(HIST("NchVsFT0C"), aT0C / 100., glbTracks);
     registry.fill(HIST("NchVsFT0M"), (aT0A + aT0C) / 100., glbTracks);
 
+    registry.fill(HIST("Nch"), glbTracks);
     registry.fill(HIST("NchVsEt"), et, glbTracks);
     registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), glbTracks);
     registry.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
@@ -617,20 +665,20 @@ struct UccZdc {
     // Calculates the event weight, W_k
     for (const auto& track : tracks) {
       // Track Selection
-      if (!track.isGlobalTrack()) {
-        continue;
-      }
+      if (myTrackSel.IsSelected(track)) {
+        if (passesDCAxyCut(track)) {
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
 
-      registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
-      registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
-      registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
-      registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
-
-      float pt{track.pt()};
-      double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
-      if (weight > 0.) {
-        pTs.emplace_back(pt);
-        wIs.emplace_back(weight);
+          float pt{track.pt()};
+          double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
+          if (weight > 0.) {
+            pTs.emplace_back(pt);
+            wIs.emplace_back(weight);
+          }
+        }
       }
     }
 
@@ -645,10 +693,11 @@ struct UccZdc {
     // To calculate event-averaged <pt>
     for (const auto& track : tracks) {
       // Track Selection
-      if (!track.isGlobalTrack()) {
-        continue;
+      if (myTrackSel.IsSelected(track)) {
+        if (passesDCAxyCut(track)) {
+          registry.fill(HIST("NchVsPt"), w1, track.pt());
+        }
       }
-      registry.fill(HIST("NchVsPt"), w1, track.pt());
     }
 
     // EbE one-particle pT correlation
@@ -725,15 +774,15 @@ struct UccZdc {
         // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-
-          float pt{track.pt()};
-          double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
-          if (weight > 0.) {
-            pTs.emplace_back(pt);
-            wIs.emplace_back(weight);
+          if (myTrackSel.IsSelected(track)) {
+            if (passesDCAxyCut(track)) {
+              float pt{track.pt()};
+              double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
+              if (weight > 0.) {
+                pTs.emplace_back(pt);
+                wIs.emplace_back(weight);
+              }
+            }
           }
         }
 
@@ -840,37 +889,36 @@ struct UccZdc {
 
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
-          // Track Selection
-          if (!track.isGlobalTrack()) {
-            continue;
-          }
-
           // Has MC particle?
           if (!track.has_mcParticle()) {
             continue;
           }
+          // Track selection
+          if (myTrackSel.IsSelected(track)) {
+            if (passesDCAxyCut(track)) {
+              registry.fill(HIST("Pt_all_ch"), cent, track.pt());
+              registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
 
-          const auto& particle{track.mcParticle()};
-          registry.fill(HIST("Pt_all_ch"), cent, track.pt());
-          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+              const auto& particle{track.mcParticle()};
+              if (!particle.isPhysicalPrimary()) {
+                continue;
+              }
 
-          if (!particle.isPhysicalPrimary()) {
-            continue;
-          }
-
-          registry.fill(HIST("Pt_ch"), cent, track.pt());
-          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-            registry.fill(HIST("Pt_pi"), cent, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-            registry.fill(HIST("Pt_ka"), cent, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-            registry.fill(HIST("Pt_pr"), cent, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
-            registry.fill(HIST("Pt_sigpos"), cent, track.pt());
-          } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
-            registry.fill(HIST("Pt_signeg"), cent, track.pt());
-          } else {
-            registry.fill(HIST("Pt_re"), cent, track.pt());
+              registry.fill(HIST("Pt_ch"), cent, track.pt());
+              if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+                registry.fill(HIST("Pt_pi"), cent, track.pt());
+              } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+                registry.fill(HIST("Pt_ka"), cent, track.pt());
+              } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+                registry.fill(HIST("Pt_pr"), cent, track.pt());
+              } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+                registry.fill(HIST("Pt_sigpos"), cent, track.pt());
+              } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+                registry.fill(HIST("Pt_signeg"), cent, track.pt());
+              } else {
+                registry.fill(HIST("Pt_re"), cent, track.pt());
+              }
+            }
           }
         }
 
@@ -931,32 +979,15 @@ struct UccZdc {
     }
   }
 
-  // Single-Track Selection
-  // template <typename T2>
-  // bool passedTrackSelection(const T2& track) {
-  //   if (track.eta() < minEta || track.eta() > maxEta) return false;
-  //   if (track.pt() < minPt) return false;
-  //
-  //   if (!track.hasITS()) return false;
-  //   if (track.itsNCls() < minItsNclusters) return false;
-  //   if (!track.hasTPC()) return false;
-  //   if (track.tpcNClsFound() < minTpcNclusters) return false;
-  //   if (track.tpcNClsCrossedRows() < minTpcNcrossedRows) return false;
-  //   if (track.tpcChi2NCl() > maxChiSquareTpc) return false;
-  //   if (track.itsChi2NCl() > maxChiSquareIts) return false;
-  //   // pt-dependent selection
-  //   if (setDCAselectionPtDep) {
-  //     if (std::fabs(track.dcaXY()) > (par0 + par1 / track.pt())) return
-  //     false; if (std::fabs(track.dcaZ()) > (par0 + par1 / track.pt()))
-  //     return false;
-  //   }
-  //   // standard selection
-  //   if (!setDCAselectionPtDep) {
-  //     if (std::fabs(track.dcaXY()) > maxDcaxy) return false;
-  //     if (std::fabs(track.dcaZ()) > maxDcaz) return false;
-  //   }
-  //   return true;
-  // }
+  template <typename TrackType>
+  bool passesDCAxyCut(TrackType const& track) const
+  {
+    if (std::fabs(track.dcaXY()) <= (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
