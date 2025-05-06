@@ -27,6 +27,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
+#include "Common/Core/PID/PIDTOF.h"
 
 namespace o2::aod
 {
