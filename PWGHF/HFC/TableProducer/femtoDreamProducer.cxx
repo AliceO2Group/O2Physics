@@ -14,7 +14,6 @@
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
-
 #include <string>
 #include <vector>
 #include "CCDB/BasicCCDBManager.h"
