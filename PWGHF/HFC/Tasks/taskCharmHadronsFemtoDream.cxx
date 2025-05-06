@@ -196,6 +196,7 @@ struct HfTaskCharmHadronsFemtoDream {
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
   Produces<o2::aod::FDResultsHF> fillFemtoResult;
+  Produces<o2::aod::FDResultsHFTrkInfo> fillFemtoResultTrkInfo;
 
   void init(InitContext& /*context*/)
   {
@@ -331,6 +332,13 @@ struct HfTaskCharmHadronsFemtoDream {
         processType,
         charmHadMc,
         originType);
+        fillFemtoResultTrkInfo(
+        p1.tpcNClsFound(),
+        p1.tpcNClsFindable(),
+        p1.tpcNClsCrossedRows(),
+        p1.tpcNSigmaPr(),
+        p1.tofNSigmaPr()
+      );
 
       sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
@@ -427,6 +435,13 @@ struct HfTaskCharmHadronsFemtoDream {
           processType,
           charmHadMc,
           originType);
+          fillFemtoResultTrkInfo(
+            p1.tpcNClsFound(),
+            p1.tpcNClsFindable(),
+            p1.tpcNClsCrossedRows(),
+            p1.tpcNSigmaPr(),
+            p1.tofNSigmaPr()
+          );
 
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
