@@ -206,7 +206,7 @@ class FemtoUniverseAngularContainer
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     if (mHistogramRegistry) {
-      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots);
+      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, weight);
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
