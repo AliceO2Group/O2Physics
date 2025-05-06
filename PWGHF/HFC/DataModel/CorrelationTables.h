@@ -475,8 +475,8 @@ namespace hf_electron
 DECLARE_SOA_COLUMN(PhiElectron, phiElectron, float); //! Phi of electron
 DECLARE_SOA_COLUMN(EtaElectron, etaElectron, float); //! Eta of electron
 DECLARE_SOA_COLUMN(PtElectron, ptElectron, float);   //! Transverse momentum of electron
-DECLARE_SOA_COLUMN(NLSEl, nLSEl, int);               //! like sign Electron
-DECLARE_SOA_COLUMN(NULSEl, nULSEl, int);             //! unLike sign Electron
+DECLARE_SOA_COLUMN(NElectronsLS, nElectronsLS, int); //! number of like-sign
+DECLARE_SOA_COLUMN(NElectronsUS, nElectronsUS, int); //! number of Unlike-sign
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin of event defined using zvtx and multiplicit
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);       //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);   //! Timestamp for the collision
@@ -487,8 +487,8 @@ DECLARE_SOA_TABLE(HfElectron, "AOD", "HFELECTRON", //! Hf Electron properties
                   aod::hf_electron::PhiElectron,
                   aod::hf_electron::EtaElectron,
                   aod::hf_electron::PtElectron,
-                  aod::hf_electron::NLSEl,
-                  aod::hf_electron::NULSEl,
+                  aod::hf_electron::NElectronsLS,
+                  aod::hf_electron::NElectronsUS,
                   aod::hf_electron::PoolBin,
                   aod::hf_electron::GIndexCol,
                   aod::hf_electron::TimeStamp);
