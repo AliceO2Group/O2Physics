@@ -9,11 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, Padova University and INFN
-///
-/// Event selection: o2-analysis-timestamp --aod-file AO2D.root -b | o2-analysis-event-selection -b | ---> not working with Run2 converted data/MC
-/// Track selection: o2-analysis-trackextension | o2-analysis-trackselection | ---> add --isRun3 1 with Run 3 data/MC (then global track selection works)
-/// PID: o2-analysis-pid-tpc-full | o2-analysis-pid-tof-full
-/// Working configuration (2021 Oct 20th): o2-analysis-trackextension -b --aod-file ./AO2D.root | o2-analysis-trackselection -b --isRun3 1 | o2-analysis-pid-tpc-full -b | o2-analysis-pid-tof-full -b | o2-analysis-pp-qa-impact-parameter -b
+
+#include <string>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -62,7 +59,7 @@ struct QaImpactPar {
   ConfigurableAxis binningPulls{"binningPulls", {200, -10.f, 10.f}, "Pulls binning"};
   ConfigurableAxis binningPt{"binningPt", {100, 0.f, 10.f}, "Pt binning"};
   ConfigurableAxis binningEta{"binningEta", {40, -2.f, 2.f}, "Eta binning"};
-  ConfigurableAxis binningPhi{"binningPhi", {24, 0.f, TMath::TwoPi()}, "Phi binning"};
+  ConfigurableAxis binningPhi{"binningPhi", {24, 0.f, o2::constants::math::TwoPI}, "Phi binning"};
   ConfigurableAxis binningPDG{"binningPDG", {5, -1.5f, 3.5f}, "PDG species binning (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
   ConfigurableAxis binningCharge{"binningCharge", {2, -2.f, 2.f}, "charge binning (-1: negative; +1: positive)"};
   ConfigurableAxis binningIuPosX{"binningIuPosX", {100, -10.f, 10.f}, "Track IU x position"};
@@ -94,28 +91,29 @@ struct QaImpactPar {
   Configurable<float> nSigmaTOFProtonMax{"nSigmaTOFProtonMax", 99999.f, "Maximum nSigma value in TOF, proton hypothesis"};
   // PV refit
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbpath_lut{"ccdbpath_lut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathLut{"ccdbpath_lut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   // Configurable<std::string> ccdbpath_geo{"ccdbpath_geo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> ccdbpath_grp{"ccdbpath_grp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> ccdbPathGrp{"ccdbpath_grp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
-  Configurable<int> nBins_DeltaX_PVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
-  Configurable<int> nBins_DeltaY_PVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
-  Configurable<int> nBins_DeltaZ_PVrefit{"nBins_DeltaZ_PVrefit", 1000, "Number of bins of DeltaZ for PV refit"};
-  Configurable<float> minDeltaX_PVrefit{"minDeltaX_PVrefit", -0.5, "Min. DeltaX value for PV refit (cm)"};
-  Configurable<float> maxDeltaX_PVrefit{"maxDeltaX_PVrefit", 0.5, "Max. DeltaX value for PV refit (cm)"};
-  Configurable<float> minDeltaY_PVrefit{"minDeltaY_PVrefit", -0.5, "Min. DeltaY value for PV refit (cm)"};
-  Configurable<float> maxDeltaY_PVrefit{"maxDeltaY_PVrefit", 0.5, "Max. DeltaY value for PV refit (cm)"};
-  Configurable<float> minDeltaZ_PVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
-  Configurable<float> maxDeltaZ_PVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
+  Configurable<int> nBinsDeltaXPVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
+  Configurable<int> nBinsDeltaYPVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
+  Configurable<int> nBinsDeltaZPVrefit{"nBins_DeltaZ_PVrefit", 1000, "Number of bins of DeltaZ for PV refit"};
+  Configurable<float> minDeltaXPVrefit{"minDeltaX_PVrefit", -0.5, "Min. DeltaX value for PV refit (cm)"};
+  Configurable<float> maxDeltaXPVrefit{"maxDeltaX_PVrefit", 0.5, "Max. DeltaX value for PV refit (cm)"};
+  Configurable<float> minDeltaYPVrefit{"minDeltaY_PVrefit", -0.5, "Min. DeltaY value for PV refit (cm)"};
+  Configurable<float> maxDeltaYPVrefit{"maxDeltaY_PVrefit", 0.5, "Max. DeltaY value for PV refit (cm)"};
+  Configurable<float> minDeltaZPVrefit{"minDeltaZ_PVrefit", -0.5, "Min. DeltaZ value for PV refit (cm)"};
+  Configurable<float> maxDeltaZPVrefit{"maxDeltaZ_PVrefit", 0.5, "Max. DeltaZ value for PV refit (cm)"};
   Configurable<uint16_t> minPVcontrib{"minPVcontrib", 0, "Minimum number of PV contributors"};
   Configurable<uint16_t> maxPVcontrib{"maxPVcontrib", 10000, "Maximum number of PV contributors"};
   Configurable<bool> removeDiamondConstraint{"removeDiamondConstraint", true, "Remove the diamond constraint for the PV refit"};
   Configurable<bool> keepAllTracksPVrefit{"keepAllTracksPVrefit", false, "Keep all tracks for PV refit (for debug)"};
-  Configurable<bool> use_customITSHitMap{"use_customITSHitMap", false, "Use custom ITS hitmap selection"};
+  Configurable<bool> useCustomITSHitMap{"use_customITSHitMap", false, "Use custom ITS hitmap selection"};
   Configurable<int> customITShitmap{"customITShitmap", 0, "Custom ITS hitmap (consider the binary representation)"};
   Configurable<int> customITShitmap_exclude{"customITShitmap_exclude", 0, "Custom ITS hitmap of layers to be excluded (consider the binary representation)"};
-  Configurable<int> n_customMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
-  Configurable<bool> custom_forceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
+  Configurable<int> nCustomMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
+  Configurable<bool> customForceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
+  Configurable<float> downsamplingFraction{"downsamplingFraction", 1.1, "Fraction of tracks to be used to fill the output objects"};
 
   /// Custom cut selection objects
   TrackSelection selector_ITShitmap;
@@ -153,16 +151,16 @@ struct QaImpactPar {
   /////////////////////////////////////////////////////////////
 
   /// Data
-  using collisionRecoTable = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
-  using trackTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra>;
-  using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
+  using CollisionRecoTable = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using TrackTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov, o2::aod::TracksExtra>;
+  using TrackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
-  using trackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU, o2::aod::TracksExtra>;
-  void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
-                   const trackTable& tracksUnfiltered,
-                   const o2::soa::Filtered<trackFullTable>& tracks,
-                   const trackTableIU& tracksIU,
+  using TrackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU, o2::aod::TracksExtra>;
+  void processData(o2::soa::Filtered<CollisionRecoTable>::iterator const& collision,
+                   const TrackTable& tracksUnfiltered,
+                   const o2::soa::Filtered<TrackFullTable>& tracks,
+                   const TrackTableIU& tracksIU,
                    o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
@@ -172,12 +170,12 @@ struct QaImpactPar {
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
 
   /// MC
-  using collisionMCRecoTable = o2::soa::Join<collisionRecoTable, o2::aod::McCollisionLabels>;
-  using trackMCFullTable = o2::soa::Join<trackFullTable, o2::aod::McTrackLabels>;
-  void processMC(o2::soa::Filtered<collisionMCRecoTable>::iterator& collision,
-                 trackTable const& tracksUnfiltered,
-                 o2::soa::Filtered<trackMCFullTable> const& tracks,
-                 const trackTableIU& tracksIU,
+  using CollisionMCRecoTable = o2::soa::Join<CollisionRecoTable, o2::aod::McCollisionLabels>;
+  using TrackMCFullTable = o2::soa::Join<TrackFullTable, o2::aod::McTrackLabels>;
+  void processMC(o2::soa::Filtered<CollisionMCRecoTable>::iterator const& collision,
+                 TrackTable const& tracksUnfiltered,
+                 o2::soa::Filtered<TrackMCFullTable> const& tracks,
+                 const TrackTableIU& tracksIU,
                  const o2::aod::McParticles& mcParticles,
                  const o2::aod::McCollisions&,
                  o2::aod::BCsWithTimestamps const&)
@@ -190,7 +188,7 @@ struct QaImpactPar {
 
   /// core template process function
   /// template<bool IS_MC, typename C, typename T, typename T_MC>
-  /// void processReco(const C& collision, const trackTable& unfilteredTracks, const T& tracks,
+  /// void processReco(const C& collision, const TrackTable& unfilteredTracks, const T& tracks,
   ///                 const T_MC& mcParticles,
   ///                 o2::aod::BCsWithTimestamps const& bcs);
 
@@ -207,9 +205,9 @@ struct QaImpactPar {
     const AxisSpec collisionYOrigAxis{1000, -20.f, 20.f, "Y original PV (cm)"};
     const AxisSpec collisionZOrigAxis{1000, -20.f, 20.f, "Z original PV (cm)"};
     const AxisSpec collisionNumberContributorAxis{1000, 0, 1000, "Number of contributors"};
-    const AxisSpec collisionDeltaX_PVrefit{nBins_DeltaX_PVrefit, minDeltaX_PVrefit, maxDeltaX_PVrefit, "#Delta x_{PV} (cm)"};
-    const AxisSpec collisionDeltaY_PVrefit{nBins_DeltaY_PVrefit, minDeltaY_PVrefit, maxDeltaY_PVrefit, "#Delta y_{PV} (cm)"};
-    const AxisSpec collisionDeltaZ_PVrefit{nBins_DeltaZ_PVrefit, minDeltaZ_PVrefit, maxDeltaZ_PVrefit, "#Delta z_{PV} (cm)"};
+    const AxisSpec collisionDeltaX_PVrefit{nBinsDeltaXPVrefit, minDeltaXPVrefit, maxDeltaXPVrefit, "#Delta x_{PV} (cm)"};
+    const AxisSpec collisionDeltaY_PVrefit{nBinsDeltaYPVrefit, minDeltaYPVrefit, maxDeltaYPVrefit, "#Delta y_{PV} (cm)"};
+    const AxisSpec collisionDeltaZ_PVrefit{nBinsDeltaZPVrefit, minDeltaZPVrefit, maxDeltaZPVrefit, "#Delta z_{PV} (cm)"};
 
     histograms.add("Reco/vertices", "", kTH1D, {{2, 0.5f, 2.5f, ""}});
     histograms.get<TH1>(HIST("Reco/vertices"))->GetXaxis()->SetBinLabel(1, "All PV");
@@ -236,7 +234,7 @@ struct QaImpactPar {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbpath_lut));
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     // if (!o2::base::GeometryManager::isGeometryLoaded()) {
     //   ccdb->get<TGeoManager>(ccdbpath_geo);
     // }
@@ -244,14 +242,15 @@ struct QaImpactPar {
 
     /// Custom cut selection objects - ITS layers that must be present
     std::set<uint8_t> set_customITShitmap; // = {};
-    if (use_customITSHitMap) {
-      for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
-        if ((customITShitmap & (1 << index_ITSlayer)) > 0) {
-          set_customITShitmap.insert(static_cast<uint8_t>(index_ITSlayer));
+    constexpr std::size_t NLayersIts = 7;
+    if (useCustomITSHitMap) {
+      for (std::size_t indexItsLayer = 0; indexItsLayer < NLayersIts; indexItsLayer++) {
+        if ((customITShitmap & (1 << indexItsLayer)) > 0) {
+          set_customITShitmap.insert(static_cast<uint8_t>(indexItsLayer));
         }
       }
       LOG(info) << "### customITShitmap: " << customITShitmap;
-      LOG(info) << "### n_customMinITShits: " << n_customMinITShits;
+      LOG(info) << "### nCustomMinITShits: " << nCustomMinITShits;
       LOG(info) << "### set_customITShitmap.size(): " << set_customITShitmap.size();
       LOG(info) << "### Custom ITS hitmap checked: ";
       for (std::set<uint8_t>::iterator it = set_customITShitmap.begin(); it != set_customITShitmap.end(); it++) {
@@ -259,14 +258,14 @@ struct QaImpactPar {
       }
       LOG(info) << "############";
 
-      selector_ITShitmap.SetRequireHitsInITSLayers(n_customMinITShits, set_customITShitmap);
+      selector_ITShitmap.SetRequireHitsInITSLayers(nCustomMinITShits, set_customITShitmap);
     }
     /// Custom cut selection objects - ITS layers that must be absent
     std::set<uint8_t> set_customITShitmap_exclude; // = {};
-    if (use_customITSHitMap) {
-      for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
-        if ((customITShitmap_exclude & (1 << index_ITSlayer)) > 0) {
-          set_customITShitmap_exclude.insert(static_cast<uint8_t>(index_ITSlayer));
+    if (useCustomITSHitMap) {
+      for (std::size_t indexItsLayer = 0; indexItsLayer < NLayersIts; indexItsLayer++) {
+        if ((customITShitmap_exclude & (1 << indexItsLayer)) > 0) {
+          set_customITShitmap_exclude.insert(static_cast<uint8_t>(indexItsLayer));
         }
       }
       LOG(info) << "### customITShitmap_exclude: " << customITShitmap_exclude;
@@ -369,8 +368,8 @@ struct QaImpactPar {
 
   /// core template process function
   template <bool IS_MC, typename C, typename T, typename T_MC>
-  void processReco(const C& collision, const trackTable& unfilteredTracks, const T& tracks,
-                   const trackTableIU& tracksIU, const T_MC& /*mcParticles*/,
+  void processReco(const C& collision, const TrackTable& unfilteredTracks, const T& tracks,
+                   const TrackTableIU& tracksIU, const T_MC& /*mcParticles*/,
                    o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
@@ -451,7 +450,7 @@ struct QaImpactPar {
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     // auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     if (mRunNumber != bc.runNumber()) {
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
       if (grpo != nullptr) {
         o2::base::Propagator::initFieldFromGRP(grpo);
         o2::base::Propagator::Instance()->setMatLUT(lut);
@@ -492,6 +491,11 @@ struct QaImpactPar {
     /// loop over tracks
     float pt = -999.f;
     float p = -999.f;
+    float eta = -999.f;
+    float phi = -999.f;
+    int8_t sign = -1;
+    bool isPvContributor = false;
+    int nContributors = -1;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
     float impParRPhiSigma = 999.f;
@@ -511,7 +515,8 @@ struct QaImpactPar {
     int cnt = 0;
     for (const auto& track : tracks) {
 
-      if (keepOnlyPvContrib && !track.isPVContributor()) {
+      isPvContributor = track.isPVContributor();
+      if (keepOnlyPvContrib && !isPvContributor) {
         /// let's skip all tracks that were not PV contributors originally
         /// this let us ignore tracks flagged as ambiguous
         continue;
@@ -547,12 +552,12 @@ struct QaImpactPar {
       ///}
 
       /// apply custom ITS hitmap selections, if asked
-      if (use_customITSHitMap && !selector_ITShitmap.IsSelected(track, TrackSelection::TrackCuts::kITSHits)) {
+      if (useCustomITSHitMap && !selector_ITShitmap.IsSelected(track, TrackSelection::TrackCuts::kITSHits)) {
         /// skip this track and go on, because it does not satisfy the ITS hit requirements
         continue;
       }
-      if (use_customITSHitMap && custom_forceITSTPCmatching && (!track.hasITS() || !track.hasTPC())) {
-        // if (use_customITSHitMap && custom_forceITSTPCmatching && track.hasITS()) {  ///ATTEMPT: REMOVE TRACKS WITH ITS
+      if (useCustomITSHitMap && customForceITSTPCmatching && (!track.hasITS() || !track.hasTPC())) {
+        // if (useCustomITSHitMap && customForceITSTPCmatching && track.hasITS()) {  ///ATTEMPT: REMOVE TRACKS WITH ITS
         /// skip this track because it is not global (no matching ITS-TPC)
         continue;
       }
@@ -710,16 +715,24 @@ struct QaImpactPar {
       }
 
       /// all tracks
-      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      if ((pt * 1000 - static_cast<int>(pt * 1000)) > downsamplingFraction) {
+        // downsampling - do not consider the current track
+        continue;
+      }
+      eta = track.eta();
+      phi = track.phi();
+      sign = track.sign();
+      nContributors = collision.numContrib();
+      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
       if (addTrackIUinfo) {
         histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         // histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
         histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
       }
       if (fEnablePulls) {
-        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
       }
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
@@ -727,8 +740,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Pion"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
         histograms.fill(HIST("Reco/hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
@@ -737,8 +750,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Kaon"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
         histograms.fill(HIST("Reco/hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
       }
@@ -747,8 +760,8 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Proton"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
-        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Reco/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
@@ -759,6 +772,6 @@ struct QaImpactPar {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w{
-    adaptAnalysisTask<QaImpactPar>(cfgc, TaskName{"qa-impact-par"})};
+    adaptAnalysisTask<QaImpactPar>(cfgc)};
   return w;
 }
