@@ -346,12 +346,15 @@ struct EventSelectionQaTask {
       histos.add("occupancyQA/hOccupancyByFT0CvsByTracks", "", kTH2D, {{150, 0, 15000}, {150, 0, 150000}});
 
       // 3D histograms: nGlobalTracks with cls567 as y-axis, V0A as x-axis:
-      const AxisSpec axisNtracks{160, -0.5, 4000 - 0.5, "n tracks"};
-      const AxisSpec axisNtracksGlobal{120, -0.5, 3000 - 0.5, "n tracks"};
+      const AxisSpec axisNtracksPV{160, -0.5, 4000 - 0.5, "n ITS PV tracks"};
+      const AxisSpec axisNtracksPVTPC{120, -0.5, 3000 - 0.5, "n ITS-TPC PV tracks"};
+      const AxisSpec axisNtracksTPConly{120, -0.5, 6000 - 0.5, "n TPC-only tracks"};
       const AxisSpec axisMultV0AForOccup{20, 0., static_cast<float>(200000), "mult V0A"};
       const AxisSpec axisOccupancyTracks{150, 0., 15000, "occupancy (n ITS tracks weighted)"};
-      histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracks, axisOccupancyTracks});
-      histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksGlobal, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPV, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksPVTPC, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
+      histos.add("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy", "", kTH3F, {axisMultV0AForOccup, axisNtracksTPConly, axisOccupancyTracks});
 
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF", ";nITStracks event #1;nITStracks event #2", kTH2D, {{200, 0., 6000}, {200, 0., 6000}});
       histos.add("occupancyQA/hITSTracks_ev1_vs_ev2_2coll_in_ROF_UPC", ";nITStracks event #1;nITStracks event #2", kTH2D, {{41, -0.5, 40.5}, {41, -0.5, 40.5}});
@@ -1108,10 +1111,22 @@ struct EventSelectionQaTask {
       // count tracks of different types
       auto tracksGrouped = tracks.sliceBy(perCollision, colIndex);
       int nPV = 0;
+      int nTPConly = 0;
+      // int nTPConlyWithDeDxCut = 0;
+      int nTPConlyNoITS = 0;
       int nContributorsAfterEtaTPCCuts = 0;
       bool isTVX = col.selection_bit(kIsTriggerTVX);
       for (const auto& track : tracksGrouped) {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
+
+        if (track.hasTPC() && std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 50 && track.tpcChi2NCl() < 4) {
+          nTPConly++;
+          // if (track.tpcSignal() > 20)
+          // nTPConlyWithDeDxCut++;
+          if (!track.hasITS())
+            nTPConlyNoITS++;
+        }
+
         if (!track.isPVContributor())
           continue;
 
@@ -1119,7 +1134,7 @@ struct EventSelectionQaTask {
           vTracksITS567perColl[colIndex]++;
 
         // high-quality contributors for ROF border QA and occupancy study
-        if (isTVX && std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.itsNCls() >= 5) {
+        if (std::fabs(track.eta()) < 0.8 && track.pt() > 0.2 && track.itsNCls() >= 5) {
           nPV++;
           if (track.tpcNClsFound() > 70 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
             nContributorsAfterEtaTPCCuts++;
@@ -1154,6 +1169,8 @@ struct EventSelectionQaTask {
           histos.fill(HIST("occupancyQA/hOccupancyByFT0CvsByTracks"), occupancyByTracks, occupancyByFT0C);
           histos.fill(HIST("occupancyQA/hNumTracksPV_vs_V0A_vs_occupancy"), multV0A, nPV, occupancyByTracks);
           histos.fill(HIST("occupancyQA/hNumTracksPVTPC_vs_V0A_vs_occupancy"), multV0A, nContributorsAfterEtaTPCCuts, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksTPConly_vs_V0A_vs_occupancy"), multV0A, nTPConly, occupancyByTracks);
+          histos.fill(HIST("occupancyQA/hNumTracksTPConlyNoITS_vs_V0A_vs_occupancy"), multV0A, nTPConlyNoITS, occupancyByTracks);
 
           // dE/dx QA for a narrow pT bin
           for (const auto& track : tracksGrouped) {
