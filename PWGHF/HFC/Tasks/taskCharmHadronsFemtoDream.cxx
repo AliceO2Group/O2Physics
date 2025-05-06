@@ -243,6 +243,18 @@ struct HfTaskCharmHadronsFemtoDream {
     registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
 
+  template <typename Part1>
+  void fillTableTrkInfo(Part1 const& p1)
+  {
+    fillFemtoResultTrkInfo(
+      p1.tpcNClsFound(),
+      p1.tpcNClsFindable(),
+      p1.tpcNClsCrossedRows(),
+      p1.tpcNSigmaPr(),
+      p1.tofNSigmaPr()
+    );
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
@@ -332,12 +344,7 @@ struct HfTaskCharmHadronsFemtoDream {
         processType,
         charmHadMc,
         originType);
-      fillFemtoResultTrkInfo(
-        p1.tpcNClsFound(),
-        p1.tpcNClsFindable(),
-        p1.tpcNClsCrossedRows(),
-        p1.tpcNSigmaPr(),
-        p1.tofNSigmaPr());
+      fillTableTrkInfo(p1);
 
       sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
@@ -434,12 +441,7 @@ struct HfTaskCharmHadronsFemtoDream {
           processType,
           charmHadMc,
           originType);
-        fillFemtoResultTrkInfo(
-          p1.tpcNClsFound(),
-          p1.tpcNClsFindable(),
-          p1.tpcNClsCrossedRows(),
-          p1.tpcNSigmaPr(),
-          p1.tofNSigmaPr());
+        fillTableTrkInfo(p1);
 
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
