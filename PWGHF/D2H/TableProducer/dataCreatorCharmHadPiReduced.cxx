@@ -171,7 +171,7 @@ struct HfDataCreatorCharmHadPiReduced {
   double invMass2ChHadPiMin{0.};
   double invMass2ChHadPiMax{0.};
   double bz{0.};
-  constexpr std::size_t NDaughtersDs{2u};
+  static constexpr std::size_t NDaughtersDs{2u};
   bool isHfCandBhadConfigFilled = false;
 
   // Fitter to redo D-vertex to get extrapolated daughter tracks (2/3-prong vertex filter)
