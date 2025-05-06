@@ -68,14 +68,14 @@ struct HfTaskCorrelationHfeHadrons {
       ptHadron = pairEntry.ptHadron();
 
       registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-      if (pairEntry.lsPairEHCount() > 0) {
-        for (int i = 0; i < pairEntry.lsPairEHCount(); ++i) {
+      if (pairEntry.nPairsLS() > 0) {
+        for (int i = 0; i < pairEntry.nPairsLS(); ++i) {
 
           registry.fill(HIST("hLikeSignEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
         }
       }
-      if (pairEntry.ulsPairEHCount() > 0) {
-        for (int i = 0; i < pairEntry.ulsPairEHCount(); ++i) {
+      if (pairEntry.nPairsUS() > 0) {
+        for (int i = 0; i < pairEntry.nPairsLS(); ++i) {
 
           registry.fill(HIST("hUnlikeSignEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
         }
