@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file diHardonCor.cxx
-/// \brief di-hardon correlation for O-O, Pb-Pb collisions
+/// \file diHadronCor.cxx
+/// \brief di-hadron correlation for O-O, Pb-Pb collisions
 /// \author Zhiyong Lu (zhiyong.lu@cern.ch)
 /// \since  May/03/2025
 
@@ -45,19 +45,19 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace o2::aod
 {
-namespace di_hardon_cor
+namespace di_hadron_cor
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
 }
 DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
-                  di_hardon_cor::Multiplicity);
+                  di_hadron_cor::Multiplicity);
 
 } // namespace o2::aod
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct DiHardonCor {
+struct DiHadronCor {
   Service<ccdb::BasicCCDBManager> ccdb;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVtxZ, float, 10.0f, "Accepted z-vertex range")
@@ -333,7 +333,7 @@ struct DiHardonCor {
 
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent);
   }
-  PROCESS_SWITCH(DiHardonCor, processSame, "Process same event", true);
+  PROCESS_SWITCH(DiHadronCor, processSame, "Process same event", true);
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks, aod::BCsWithTimestamps const&)
@@ -374,12 +374,12 @@ struct DiHardonCor {
     }
   }
 
-  PROCESS_SWITCH(DiHardonCor, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(DiHadronCor, processMixed, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DiHardonCor>(cfgc),
+    adaptAnalysisTask<DiHadronCor>(cfgc),
   };
 }
