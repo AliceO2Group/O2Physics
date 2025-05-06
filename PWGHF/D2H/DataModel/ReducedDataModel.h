@@ -803,8 +803,6 @@ DECLARE_SOA_TABLE(HfMcRecRedLcPis, "AOD", "HFMCRECREDLCPI", //! Table with recon
                   hf_cand_lb::DebugMcRec,
                   hf_lb_mc::PtMother);
 
-// try with extended table ?
-// DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
 DECLARE_SOA_TABLE(HfMcCheckLcPis, "AOD", "HFMCCHECKLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for MC checks in reduced workflow
                   hf_lb_mc::PdgCodeBeautyMother,
                   hf_lb_mc::PdgCodeCharmMother,
