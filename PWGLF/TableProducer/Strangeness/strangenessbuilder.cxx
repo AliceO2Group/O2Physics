@@ -29,12 +29,13 @@
 //                           task will adapt algorithm to spare / spend CPU accordingly
 //  -- mc_findableMode ....: 0: only found (default), 1: add findable to found, 2: all findable
 //                           When using findables, refer to FoundTag bools for checking if found
-//  -- v0builderopts ......: V0-specific building options (topological, etc)
+//  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
 //  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
 #include <string>
 #include <vector>
 
+#include "Framework/DataSpecUtils.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -479,6 +480,10 @@ struct StrangenessBuilder {
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
 
+    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
+    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
+    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
+
     mRunNumber = 0;
 
     mEnabledTables.resize(nTables, 0);
@@ -486,6 +491,7 @@ struct StrangenessBuilder {
     LOGF(info, "Configuring tables to generate");
     auto& workflows = context.services().get<RunningWorkflowInfo const>();
 
+    TString listOfRequestors[nTables];
     for (int i = 0; i < nTables; i++) {
       // adjust bookkeeping histogram
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
@@ -495,6 +501,7 @@ struct StrangenessBuilder {
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
+        listOfRequestors[i] = "manual enabling";
       }
       if (f == -1) {
         // autodetect this table in other devices
@@ -503,9 +510,17 @@ struct StrangenessBuilder {
           for (auto const& input : device.inputs) {
             if (device.name.compare("strangenessbuilder-initializer") == 0)
               continue; // don't listen to the initializer
-            if (input.matcher.binding == tableNames[i]) {
-              LOGF(info, "Device %s has subscribed to %s", device.name, tableNames[i]);
-              mEnabledTables[i] = 1;
+            if (DataSpecUtils::partialMatch(input.matcher, o2::header::DataOrigin("AOD"))) {
+              auto&& [origin, description, version] = DataSpecUtils::asConcreteDataMatcher(input.matcher);
+              std::string tableNameWithVersion = tableNames[i];
+              if (version > 0) {
+                tableNameWithVersion += Form("_%03d", version);
+              }
+              if (input.matcher.binding == tableNameWithVersion) {
+                LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
+                listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
+                mEnabledTables[i] = 1;
+              }
             }
           }
         }
@@ -540,7 +555,7 @@ struct StrangenessBuilder {
     for (int i = 0; i < nTables; i++) {
       // printout to be improved in the future
       if (mEnabledTables[i]) {
-        LOGF(info, " -~> Table enabled: %s", tableNames[i]);
+        LOGF(info, " -~> Table enabled: %s, requested by %s", tableNames[i], listOfRequestors[i].Data());
         h->SetBinContent(i + 1, 0); // mark enabled
       }
     }
@@ -818,7 +833,7 @@ struct StrangenessBuilder {
             // process candidate with helper, generate properties for consulting
             // <false>: do not apply selections: do as much as possible to preserve
             // candidate at this level and do not select with topo selections
-            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false)) {
+            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true)) {
               // candidate built, check pointing angle
               if (straHelper.v0.pointingAngle < bestPointingAngle) {
                 bestPointingAngle = straHelper.v0.pointingAngle;
@@ -1005,9 +1020,6 @@ struct StrangenessBuilder {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
           auto const& v0 = cascade.v0();
-          if (v0.v0Type() > 1) {
-            continue; // skip any unexpected stuff (FIXME: follow-up)
-          }
           currentCascadeEntry.globalId = cascade.globalIndex();
           currentCascadeEntry.collisionId = cascade.collisionId();
           currentCascadeEntry.v0Id = ao2dV0toV0List[v0.globalIndex()];
@@ -1294,7 +1306,7 @@ struct StrangenessBuilder {
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs])) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, mEnabledTables[kV0Covs], true)) {
         products.v0dataLink(-1, -1);
         continue;
       }
@@ -1454,6 +1466,9 @@ struct StrangenessBuilder {
                   thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
                   thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
                 histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+                histos.fill(HIST("hPrimaryV0s"), 0);
+                if (thisInfo.isPhysicalPrimary)
+                  histos.fill(HIST("hPrimaryV0s"), 1);
               }
               if (mEnabledTables[kV0MCCollRefs]) {
                 products.v0mccollref(thisInfo.mcCollision);
@@ -1585,6 +1600,9 @@ struct StrangenessBuilder {
               info.negP[0], info.negP[1], info.negP[2],
               info.momentum[0], info.momentum[1], info.momentum[2]);
             histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+            histos.fill(HIST("hPrimaryV0s"), 0);
+            if (info.isPhysicalPrimary)
+              histos.fill(HIST("hPrimaryV0s"), 1);
           }
           if (mEnabledTables[kV0MCCollRefs]) {
             products.v0mccollref(info.mcCollision);

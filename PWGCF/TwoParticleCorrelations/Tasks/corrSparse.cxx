@@ -28,6 +28,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
@@ -54,39 +55,6 @@ DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct CalcNch {
-  O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
-  O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 10.0f, "Eta cut")
-  O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
-
-  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
-
-  using AodCollisions = soa::Join<aod::Collisions, aod::EvSel>; // aod::CentFT0Cs
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
-
-  Produces<aod::Multiplicity> multiplicityNch;
-
-  HistogramRegistry registry{"registry"};
-
-  void init(InitContext&)
-  {
-    AxisSpec axisNch = {100, 0, 100};
-    AxisSpec axisVrtx = {10, -10, 10};
-
-    registry.add("Ncharge", "N_{charge}", {HistType::kTH1D, {axisNch}});
-    registry.add("zVtx_all", "zVtx_all", {HistType::kTH1D, {axisVrtx}});
-  }
-
-  void process(AodCollisions::iterator const& collision, AodTracks const& tracks)
-  {
-    multiplicityNch(tracks.size());
-    registry.fill(HIST("Ncharge"), tracks.size());
-    registry.fill(HIST("zVtx_all"), collision.posZ());
-  }
-};
-
 struct CorrSparse {
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -100,12 +68,15 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgMergingCut, float, 0.0, "Merging cut on track merge")
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, -5.0, "Minimum eta for MFT track")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, 0.0, "Maximum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, 3.6, "Minimum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, 2.5, "Maximum eta for MFT track")
   O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
 
   Configurable<bool> processMFT{"processMFT", true, "Associate particle from MFT"};
+
+  SliceCache cache;
+  SliceCache cacheNch;
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -125,7 +96,7 @@ struct CorrSparse {
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
   // make the filters and cuts.
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::corrsparse::multiplicity) > cfgMinMult && (aod::corrsparse::multiplicity) < cfgMaxMult && (aod::evsel::sel8) == true;
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::evsel::sel8) == true;
   Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   // Define the outputs
@@ -134,7 +105,7 @@ struct CorrSparse {
 
   HistogramRegistry registry{"registry"};
 
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, o2::aod::Multiplicity>>; // aod::CentFT0Cs
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel>>; // aod::CentFT0Cs
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
 
   void init(InitContext&)
@@ -155,11 +126,12 @@ struct CorrSparse {
     registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
+    registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
     registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
 
-    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisMultiplicity, axisVertex, axisPtTrigger}}});
+    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
-    registry.add("eventcount", "bin", {HistType::kTH1F, {{3, 0, 3, "bin"}}}); // histogram to see how many events are in the same and mixed event
+    registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
@@ -219,11 +191,21 @@ struct CorrSparse {
   template <typename TCollision, typename TTracks>
   void fillYield(TCollision collision, TTracks tracks) // function to fill the yield and etaphi histograms.
   {
+
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
     for (auto const& track1 : tracks) {
-      registry.fill(HIST("Phi"), track1.phi());
+
+      if (processMFT) {
+        if constexpr (std::is_same_v<aod::MFTTracks, TTracks>) {
+          if (!isAcceptedMftTrack(track1)) {
+            continue;
+          }
+        }
+      }
+
+      registry.fill(HIST("Phi"), RecoDecay::constrainAngle(track1.phi(), 0.0));
       registry.fill(HIST("Eta"), track1.eta());
       registry.fill(HIST("pT"), track1.pt());
     }
@@ -255,7 +237,7 @@ struct CorrSparse {
 
   //
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float Nch, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
@@ -264,7 +246,8 @@ struct CorrSparse {
     for (auto const& track1 : tracks1) {
 
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), Nch, posZ, track1.pt());
+        registry.fill(HIST("Nch_used"), tracks1.size());
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
       }
 
       for (auto const& track2 : tracks2) {
@@ -290,13 +273,13 @@ struct CorrSparse {
 
           const double kLimit = 3.0 * cfgMergingCut;
 
-          bool bIsBelow = kFALSE;
+          bool bIsBelow = false;
 
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
             for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
               double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
               if (std::abs(dPhiStar) < kLimit) {
-                bIsBelow = kTRUE;
+                bIsBelow = true;
                 break;
               }
             }
@@ -325,58 +308,82 @@ struct CorrSparse {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
-    fillYield(collision, tracks);
 
     if (processMFT) {
+      fillYield(collision, mfts);
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, mfts, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, mfts, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()));
 
     } else {
+      fillYield(collision, tracks);
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, tracks.size(), getMagneticField(bc.timestamp()));
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()));
     }
   }
   PROCESS_SWITCH(CorrSparse, processSame, "Process same event", true);
-
-  // event mixing
-  SliceCache cache;
-  using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::corrsparse::Multiplicity>;
 
   // the process for filling the mixed events
   void processMixed(AodCollisions const& collisions, AodTracks const& tracks, aod::MFTTracks const& MFTtracks, aod::BCsWithTimestamps const&)
   {
 
-    if (processMFT) {
-      MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
-      auto tracksTuple = std::make_tuple(tracks, MFTtracks);
-      SameKindPair<AodCollisions, AodTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    auto getTracksSize = [&tracks, this](AodCollisions::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
+    };
 
-      for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {vtxMix, multMix}, true};
+
+    if (processMFT) {
+
+      auto tracksTuple = std::make_tuple(tracks, MFTtracks);
+      Pair<AodCollisions, AodTracks, aod::MFTTracks, MixedBinning> pair{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+      for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
         registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
         auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
 
-        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, tracks1.size(), getMagneticField(bc.timestamp()));
+        if ((tracks1.size() < cfgMinMult || tracks1.size() >= cfgMaxMult))
+          continue;
+
+        if ((tracks2.size() < cfgMinMult || tracks2.size() >= cfgMaxMult))
+          continue;
+
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()));
       }
     } else {
-      MixedBinning binningOnVtxAndMult{{vtxMix, multMix}, true}; // true is for 'ignore overflows' (true by default)
       auto tracksTuple = std::make_tuple(tracks, tracks);
-      SameKindPair<AodCollisions, AodTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-
-      for (auto const& [collision1, tracks1, collision2, tracks2] : pairs) {
+      Pair<AodCollisions, AodTracks, AodTracks, MixedBinning> pair{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+      for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
         registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
         auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
 
-        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, tracks1.size(), getMagneticField(bc.timestamp()));
+        if ((tracks1.size() < cfgMinMult || tracks1.size() >= cfgMaxMult))
+          continue;
+
+        if ((tracks2.size() < cfgMinMult || tracks2.size() >= cfgMaxMult))
+          continue;
+
+        fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()));
       }
     }
   }
+
   PROCESS_SWITCH(CorrSparse, processMixed, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<CalcNch>(cfgc),
     adaptAnalysisTask<CorrSparse>(cfgc),
   };
 }
