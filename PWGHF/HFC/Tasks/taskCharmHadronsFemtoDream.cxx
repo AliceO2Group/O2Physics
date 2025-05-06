@@ -251,8 +251,7 @@ struct HfTaskCharmHadronsFemtoDream {
       p1.tpcNClsFindable(),
       p1.tpcNClsCrossedRows(),
       p1.tpcNSigmaPr(),
-      p1.tofNSigmaPr()
-    );
+      p1.tofNSigmaPr());
   }
 
   /// This function processes the same event and takes care of all the histogramming
