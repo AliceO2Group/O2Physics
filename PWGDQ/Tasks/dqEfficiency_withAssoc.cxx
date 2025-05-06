@@ -1980,7 +1980,7 @@ struct AnalysisSameEventPairing {
 
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
-  
+
   template <int TPairType>
   void runMCGen(ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
