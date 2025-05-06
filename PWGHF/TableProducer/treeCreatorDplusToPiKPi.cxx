@@ -260,9 +260,9 @@ struct HfTreeCreatorDplusToPiKPi {
 
   HfHelper hfHelper;
 
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -313,10 +313,6 @@ struct HfTreeCreatorDplusToPiKPi {
         outputMl[1]);
     }
 
-    auto prong0 = candidate.template prong0_as<TracksWPid>();
-    auto prong1 = candidate.template prong1_as<TracksWPid>();
-    auto prong2 = candidate.template prong2_as<TracksWPid>();
-
     float cent{-1.};
     auto coll = candidate.template collision_as<Coll>();
     if (std::is_same_v<Coll, CollisionsCent> && centEstimator != CentralityEstimator::None) {
@@ -339,24 +335,24 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.impactParameterZ0(),
         candidate.impactParameterZ1(),
         candidate.impactParameterZ2(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
-        prong2.tpcNSigmaPi(),
-        prong2.tpcNSigmaKa(),
-        prong2.tofNSigmaPi(),
-        prong2.tofNSigmaKa(),
-        prong2.tpcTofNSigmaPi(),
-        prong2.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.nSigTpcPi2(),
+        candidate.nSigTpcKa2(),
+        candidate.nSigTofPi2(),
+        candidate.nSigTofKa2(),
+        candidate.tpcTofNSigmaPi2(),
+        candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
         candidate.pt(),
@@ -418,24 +414,24 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.errorImpactParameterZ0(),
         candidate.errorImpactParameterZ1(),
         candidate.errorImpactParameterZ2(),
-        prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
-        prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
-        prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcTofNSigmaKa(),
-        prong2.tpcNSigmaPi(),
-        prong2.tpcNSigmaKa(),
-        prong2.tofNSigmaPi(),
-        prong2.tofNSigmaKa(),
-        prong2.tpcTofNSigmaPi(),
-        prong2.tpcTofNSigmaKa(),
+        candidate.nSigTpcPi0(),
+        candidate.nSigTpcKa0(),
+        candidate.nSigTofPi0(),
+        candidate.nSigTofKa0(),
+        candidate.tpcTofNSigmaPi0(),
+        candidate.tpcTofNSigmaKa0(),
+        candidate.nSigTpcPi1(),
+        candidate.nSigTpcKa1(),
+        candidate.nSigTofPi1(),
+        candidate.nSigTofKa1(),
+        candidate.tpcTofNSigmaPi1(),
+        candidate.tpcTofNSigmaKa1(),
+        candidate.nSigTpcPi2(),
+        candidate.nSigTpcKa2(),
+        candidate.nSigTofPi2(),
+        candidate.nSigTofKa2(),
+        candidate.tpcTofNSigmaPi2(),
+        candidate.tpcTofNSigmaKa2(),
         candidate.isSelDplusToPiKPi(),
         hfHelper.invMassDplusToPiKPi(candidate),
         candidate.pt(),
@@ -456,7 +452,7 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+                   soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>> const& candidates,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -485,7 +481,7 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
   void processDataWCent(CollisionsCent const& collisions,
-                        soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>> const& candidates,
+                        soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>> const& candidates,
                         TracksWPid const&)
   {
     // Filling event properties

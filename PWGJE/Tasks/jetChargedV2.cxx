@@ -96,6 +96,7 @@ struct JetChargedV2 {
   Configurable<float> jetEtaMin{"jetEtaMin", -0.9, "minimum eta acceptance for jets"};
   Configurable<float> jetEtaMax{"jetEtaMax", 0.9, "maximum eta acceptance for jets"};
   Configurable<float> jetRadius{"jetRadius", 0.2, "jet resolution parameters"};
+  Configurable<float> randomConeLeadJetDeltaR{"randomConeLeadJetDeltaR", -99.0, "min distance between leading jet axis and random cone (RC) axis; if negative, min distance is set to automatic value of R_leadJet+R_RC "};
 
   Configurable<float> localRhoFitPtMin{"localRhoFitPtMin", 0.2, "Minimum track pT used for local rho fluctuation fit"};
   Configurable<float> localRhoFitPtMax{"localRhoFitPtMax", 5, "Maximum track pT used for local rho fluctuation fit"};
@@ -789,28 +790,21 @@ struct JetChargedV2 {
 
         // removing the leading jet from the random cone
         if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
-          float leadingJetEta = jets.iteratorAt(0).eta();
-          float leadingJetPhi = jets.iteratorAt(0).phi();
-          float etaBandWidth = 2 * randomConeR;
+          float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
+          float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
 
           bool jetWasInCone = false;
-          do {
+          while ((randomConeLeadJetDeltaR <= 0 && (std::sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR)) || (randomConeLeadJetDeltaR > 0 && (std::sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < randomConeLeadJetDeltaR))) {
+            jetWasInCone = true;
             randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
             randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
-
-            float dEta = randomConeEta - leadingJetEta;
-            float dPhi = RecoDecay::constrainAngle(randomConePhi - leadingJetPhi, static_cast<float>(-o2::constants::math::PI));
-
-            if (std::abs(dEta) > etaBandWidth && std::sqrt(dEta * dEta + dPhi * dPhi) > randomConeR + jets.iteratorAt(0).r() / 100.0) {
-              break;
-            }
-            jetWasInCone = true;
-          } while (true);
-
+            dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
+            dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
+          }
           if (jetWasInCone) {
             randomConePt = 0.0;
             for (auto const& track : tracks) {
-              if (jetderiveddatautilities::selectTrack(track, trackSelection)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
+              if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > randomConeR)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
                 float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, static_cast<float>(-o2::constants::math::PI));
                 float dEta = track.eta() - randomConeEta;
                 if (std::sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
