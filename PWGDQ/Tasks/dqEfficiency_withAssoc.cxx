@@ -1980,7 +1980,8 @@ struct AnalysisSameEventPairing {
 
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
-
+  
+  template <int TPairType>
   void runMCGen(ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -2027,7 +2028,7 @@ struct AnalysisSameEventPairing {
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
-              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2);
+              VarManager::FillPairMC<TPairType>(t1, t2);
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
               if (useMiniTree.fConfigMiniTree) {
                 // WARNING! To be checked
@@ -2049,9 +2050,9 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    /*if (fConfigMC.runMCGenPair) {
-      runMCGen(mcEvents, mcTracks);
-    }*/
+    if (fConfigMC.runMCGenPair) {
+      runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
+    }
     // runSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons);
   }
 
@@ -2061,9 +2062,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    /*if (fConfigMC.runMCGenPair) {
-      runMCGen(mcEvents, mcTracks);
-    }*/
+    if (fConfigMC.runMCGenPair) {
+      runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
+    }
   }
 
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
@@ -2072,9 +2073,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    /*if (fConfigMC.runMCGenPair) {
-      runMCGen(mcEvents, mcTracks);
-    }*/
+    if (fConfigMC.runMCGenPair) {
+      runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
+    }
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -2082,9 +2083,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    /*if (fConfigMC.runMCGenPair) {
-      runMCGen(mcEvents, mcTracks);
-    }*/
+    if (fConfigMC.runMCGenPair) {
+      runMCGen<VarManager::kDecayToMuMu>(mcEvents, mcTracks);
+    }
   }
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
