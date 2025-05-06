@@ -967,8 +967,8 @@ class HfHelper
   bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
   {
     auto ptCandLb = candLb.pt();
-    auto ptLc = RecoDecay::pt(candLb.pxProng0(), candLb.pyProng0());
-    auto ptPi = RecoDecay::pt(candLb.pxProng1(), candLb.pyProng1());
+    auto ptLc = candLb.ptProng0();
+    auto ptPi = candLb.ptProng1();
 
     int pTBin = o2::analysis::findBin(binsPt, ptCandLb);
     if (pTBin == -1) {
