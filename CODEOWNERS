@@ -40,19 +40,19 @@
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy
 # PWG-LF
-/PWGLF @alibuild @njacazio @skundu692
-/PWGLF/Tasks/GlobalEventProperties         @alibuild @njacazio @skundu692 @gbencedi @abmodak
-/PWGLF/TableProducer/GlobalEventProperties @alibuild @njacazio @skundu692 @gbencedi @abmodak
-/PWGLF/Tasks/Nuspex         @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/TableProducer/Nuspex @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
-/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @dmallick2 @smaff92
-/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @dmallick2 @smaff92
-/PWGLF/Tasks/Strangeness         @alibuild @njacazio @skundu692 @ercolessi @romainschotter
-/PWGLF/TableProducer/Strangeness @alibuild @njacazio @skundu692 @ercolessi @romainschotter
+/PWGLF @alibuild @sustripathy @skundu692
+/PWGLF/Tasks/GlobalEventProperties         @alibuild @sustripathy @skundu692 @gbencedi @abmodak
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak
+/PWGLF/Tasks/Nuspex         @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/Tasks/Resonances         @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
+/PWGLF/Tasks/Strangeness         @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 
 # PWG-MM
-/PWGMM      @alibuild @njacazio @skundu692 @aalkin
-/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk @gbencedi
+/PWGMM      @alibuild @sustripathy @skundu692 @aalkin
+/PWGMM/Mult @alibuild @sustripathy @skundu692 @aalkin @aortizve @ddobrigk @gbencedi
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/UE   @alibuild @aalkin @aortizve
 
