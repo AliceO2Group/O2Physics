@@ -173,10 +173,10 @@ struct FlowSP {
     evSel_kNoCollInTimeRangeStandard,
     evSel_kIsVertexITSTPC,
     evSel_MultCuts,
-    evSel_CentCuts,
     evSel_kIsGoodITSLayersAll,
     evSel_isSelectedZDC,
-    nEventSelections
+    nEventSelections,
+    evSel_CentCuts
   };
 
   enum TrackSelectionsUnFiltered {
@@ -387,6 +387,8 @@ struct FlowSP {
           registry.add<TH1>("QA/hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
           registry.add<TH1>("QA/hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
 
+          registry.add("QA/hCentFull", " ; Centrality (%); ", {HistType::kTH1D, {axisCent}});
+
           registry.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
           registry.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
           registry.add<TProfile>("QA/hSinPhiACosPhiC", "hSinPhiACosPhiC; Centrality(%); #LT Sin(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
@@ -441,9 +443,9 @@ struct FlowSP {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Mult cuts (Alex)");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
 
     registry.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_Eta + 1, "Eta");
@@ -730,10 +732,6 @@ struct FlowSP {
 
       registry.fill(HIST("hEventCount"), evSel_MultCuts);
     }
-
-    if (centrality > cfgCentMax || centrality < cfgCentMin)
-      return 0;
-    registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     if (cfgEvSelsIsGoodITSLayersAll) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
@@ -1047,8 +1045,7 @@ struct FlowSP {
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
 
       if (cfgFillQAHistos) {
-        fillEventQA<kAfter>(collision, tracks);
-
+        registry.fill(HIST("QA/hCentFull"), centrality, 1);
         registry.fill(HIST("QA/hSPplaneA"), psiA, 1);
         registry.fill(HIST("QA/hSPplaneC"), psiC, 1);
         registry.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
@@ -1064,6 +1061,14 @@ struct FlowSP {
         registry.fill(HIST("QA/qAqCX"), centrality, qxA * qxC);
         registry.fill(HIST("QA/qAqCY"), centrality, qyA * qyC);
       }
+
+      if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return;
+
+      registry.fill(HIST("hEventCount"), evSel_CentCuts);
+
+      if (cfgFillQAHistos) 
+        fillEventQA<kAfter>(collision, tracks);
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
