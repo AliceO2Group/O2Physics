@@ -17,6 +17,7 @@
 #include <string>
 #include <array>
 #include <utility>
+#include <iostream>
 
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -1367,6 +1368,9 @@ struct taggingHFE {
     for (const auto& genD0 : genD0s) {
       const auto& mcCollision = genD0.template mcCollision_as<aod::McCollisions>();
       if (cfgEventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != cfgEventGeneratorType) {
+        continue;
+      }
+      if (!(genD0.isPhysicalPrimary() || genD0.producedByGenerator())) {
         continue;
       }
       if ((isSemiLeptonic<11, -12>(genD0, mcParticles) || isSemiLeptonic<-11, 12>(genD0, mcParticles))) {
