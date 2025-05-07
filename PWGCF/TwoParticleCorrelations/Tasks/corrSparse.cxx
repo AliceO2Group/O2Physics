@@ -65,11 +65,12 @@ struct CorrSparse {
   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
   O2_DEFINE_CONFIGURABLE(cfgMinMult, int, 0, "Minimum multiplicity for collision")
   O2_DEFINE_CONFIGURABLE(cfgMaxMult, int, 10, "Maximum multiplicity for collision")
-  O2_DEFINE_CONFIGURABLE(cfgMergingCut, float, 0.0, "Merging cut on track merge")
+  O2_DEFINE_CONFIGURABLE(cfgMergingCut, float, 0.02, "Merging cut on track merge")
+  O2_DEFINE_CONFIGURABLE(cfgApplyTwoTrackEfficiency, bool, true, "Apply two track efficiency for tpc tpc")
   O2_DEFINE_CONFIGURABLE(cfgRadiusLow, float, 0.8, "Low radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, 3.6, "Minimum eta for MFT track")
-  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, 2.5, "Maximum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMin, float, -3.6, "Minimum eta for MFT track")
+  O2_DEFINE_CONFIGURABLE(etaMftTrackMax, float, -2.5, "Maximum eta for MFT track")
   O2_DEFINE_CONFIGURABLE(nClustersMftTrack, int, 5, "Minimum number of clusters for MFT track")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
 
@@ -97,7 +98,7 @@ struct CorrSparse {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::evsel::sel8) == true;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (cfgPtCutMin < aod::track::pt) && (cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   // Define the outputs
   OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -160,7 +161,7 @@ struct CorrSparse {
   bool isAcceptedMftTrack(TTrackAssoc const& mftTrack)
   {
     // cut on the eta of MFT tracks
-    if (mftTrack.eta() > etaMftTrackMax || mftTrack.eta() < etaMftTrackMin) {
+    if (mftTrack.eta() < etaMftTrackMin || mftTrack.eta() > etaMftTrackMax) {
       return false;
     }
 
@@ -266,7 +267,7 @@ struct CorrSparse {
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
         float deltaEta = track1.eta() - track2.eta();
 
-        if (std::abs(deltaEta) < cfgMergingCut) {
+        if (cfgApplyTwoTrackEfficiency && std::abs(deltaEta) < cfgMergingCut) {
 
           double dPhiStarHigh = getDPhiStar(track1, track2, cfgRadiusHigh, magneticField);
           double dPhiStarLow = getDPhiStar(track1, track2, cfgRadiusLow, magneticField);
@@ -353,9 +354,6 @@ struct CorrSparse {
         auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
 
         if ((tracks1.size() < cfgMinMult || tracks1.size() >= cfgMaxMult))
-          continue;
-
-        if ((tracks2.size() < cfgMinMult || tracks2.size() >= cfgMaxMult))
           continue;
 
         fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()));
