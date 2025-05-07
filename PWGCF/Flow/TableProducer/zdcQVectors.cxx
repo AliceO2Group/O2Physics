@@ -535,7 +535,8 @@ struct ZdcQVectors {
     if (cfgNGlobal)
       cent = collision.centNGlobal();
 
-    if(cfgFillCommonRegistry) registry.fill(HIST("QA/centrality_before"), cent);
+    if (cfgFillCommonRegistry)
+      registry.fill(HIST("QA/centrality_before"), cent);
 
     if (!eventSelected(collision, cent)) {
       // event not selected
@@ -668,7 +669,6 @@ struct ZdcQVectors {
       registry.fill(HIST("QA/ZNC_Energy"), bincenter, eZN[i + 4]);
       registry.fill(HIST("QA/ZNC_Energy"), bincenter + 4, e[i + 4]);
 
-      
       registry.get<TProfile>(HIST("QA/before/ZNA_pmC"))->Fill(Form("%d", runnumber), meanEZN[0]);
       registry.get<TProfile>(HIST("QA/before/ZNA_pm1"))->Fill(Form("%d", runnumber), eZN[0]);
       registry.get<TProfile>(HIST("QA/before/ZNA_pm2"))->Fill(Form("%d", runnumber), eZN[1]);
@@ -680,7 +680,6 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("QA/before/ZNC_pm2"))->Fill(Form("%d", runnumber), eZN[5]);
       registry.get<TProfile>(HIST("QA/before/ZNC_pm3"))->Fill(Form("%d", runnumber), eZN[6]);
       registry.get<TProfile>(HIST("QA/before/ZNC_pm4"))->Fill(Form("%d", runnumber), eZN[7]);
-
 
       registry.get<TProfile>(HIST("QA/after/ZNA_pm2"))->Fill(Form("%d", runnumber), e[1]);
       registry.get<TProfile>(HIST("QA/after/ZNA_pm3"))->Fill(Form("%d", runnumber), e[2]);

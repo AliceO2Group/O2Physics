@@ -1063,11 +1063,11 @@ struct FlowSP {
       }
 
       if (centrality > cfgCentMax || centrality < cfgCentMin)
-      return;
+        return;
 
       registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
-      if (cfgFillQAHistos) 
+      if (cfgFillQAHistos)
         fillEventQA<kAfter>(collision, tracks);
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
