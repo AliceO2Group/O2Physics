@@ -461,7 +461,7 @@ struct HStrangeCorrelationFilter {
         continue;
     }
   }
-  void processAssocHadronsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::BCsWithTimestamps const&)
+  void processAssocHadronsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
     // Perform basic event selection
     if (!collision.sel8()) {
