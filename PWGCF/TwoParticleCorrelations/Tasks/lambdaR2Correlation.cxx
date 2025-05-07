@@ -1294,7 +1294,7 @@ struct LambdaTracksExtProducer {
     const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
     const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
-    const AxisSpec axisDPhi(640, -PIHalf, 3.*PIHalf, "#Delta#varphi");
+    const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
     // Histograms Booking
     histos.add("h1i_totlambda_mult", "Multiplicity", kTH1I, {axisMult});
