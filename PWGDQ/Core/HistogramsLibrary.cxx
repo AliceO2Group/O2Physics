@@ -889,6 +889,15 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kPhi);
+    int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE};
+    int varspTCS[3] = {VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS};
+    int varspTPP[3] = {VarManager::kMCPt, VarManager::kMCCosThetaPP, VarManager::kMCPhiPP};
+    int binspT[3] = {20, 20, 20};
+    double xminpT[3] = {0., -1., -3.14};
+    double xmaxpT[3] = {20., 1., +3.14};
+    hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE", "", 3, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS", "", 3, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Pt_cosThetaPP_phiPP", "", 3, varspTPP, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
   }
   if (!groupStr.CompareTo("mctruth_quad")) {
     hm->AddHistogram(histClass, "hMass_defaultDileptonMass", "", false, 1000, 3.0, 5.0, VarManager::kQuadDefaultDileptonMass);
