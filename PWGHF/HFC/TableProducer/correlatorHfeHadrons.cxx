@@ -165,25 +165,25 @@ struct HfCorrelatorHfeHadrons {
         continue;
       }
       registry.fill(HIST("hptElectron"), ptElectron);
-      int lsElCounts = 0;
-      int ulsElCounts = 0;
+      int nElectronLS = 0;
+      int nElectronUS = 0;
       if (eTrack.nElPairLS() > 0) {
         for (int i = 0; i < eTrack.nElPairLS(); ++i) {
 
-          ++lsElCounts;
+          ++nElectronLS;
           registry.fill(HIST("hLSElectronBin"), poolBin);
         }
       }
       if (eTrack.nElPairUS() > 0) {
         for (int i = 0; i < eTrack.nElPairUS(); ++i) {
 
-          ++ulsElCounts;
+          ++nElectronUS;
           registry.fill(HIST("hULSElectronBin"), poolBin);
         }
       }
 
       registry.fill(HIST("hElectronBin"), poolBin);
-      entryElectron(phiElectron, etaElectron, ptElectron, lsElCounts, ulsElCounts, poolBin, gCollisionId, timeStamp);
+      entryElectron(phiElectron, etaElectron, ptElectron, nElectronLS, nElectronUS, poolBin, gCollisionId, timeStamp);
 
       for (const auto& hTrack : tracks) {
         // Apply Hadron cut
@@ -209,12 +209,12 @@ struct HfCorrelatorHfeHadrons {
         deltaEta = etaElectron - etaHadron;
         registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
 
-        int lsPairElcorr = 0;
-        int ulsPairElcorr = 0;
+        int nElHadLSCorr = 0;
+        int nElHadUSCorr = 0;
         if (eTrack.nElPairLS() > 0) {
           for (int i = 0; i < eTrack.nElPairLS(); ++i) {
 
-            ++lsPairElcorr;
+            ++nElHadLSCorr;
             registry.fill(HIST("hLSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
           }
         }
@@ -222,10 +222,10 @@ struct HfCorrelatorHfeHadrons {
           for (int i = 0; i < eTrack.nElPairUS(); ++i) {
 
             registry.fill(HIST("hULSEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-            ++ulsPairElcorr;
+            ++nElHadUSCorr;
           }
         }
-        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, lsPairElcorr, ulsPairElcorr);
+        entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);
 
       } // end Hadron Track loop
       nElectron++;
@@ -271,23 +271,23 @@ struct HfCorrelatorHfeHadrons {
       deltaEtaMix = etaElectronMix - etaHadronMix;
 
       registry.fill(HIST("hMixEventInclusiveEHCorrl"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-      int lsElPairCorr = 0;
-      int ulsElPairCorr = 0;
+      int nElHadLSCorr = 0;
+      int nElHadUSCorr = 0;
       if (t1.nElPairLS() > 0) {
         for (int i = 0; i < t1.nElPairLS(); ++i) {
 
           registry.fill(HIST("hMixEventLSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-          ++lsElPairCorr;
+          ++nElHadLSCorr;
         }
       }
       if (t1.nElPairUS() > 0) {
         for (int i = 0; i < t1.nElPairUS(); ++i) {
 
           registry.fill(HIST("hMixEventULSEHCorrel"), ptElectronMix, ptHadronMix, deltaPhiMix, deltaEtaMix);
-          ++ulsElPairCorr;
+          ++nElHadUSCorr;
         }
       }
-      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, lsElPairCorr, ulsElPairCorr);
+      entryElectronHadronPair(deltaPhiMix, deltaEtaMix, ptElectronMix, ptHadronMix, poolBin, nElHadLSCorr, nElHadUSCorr);
     }
   }
 
