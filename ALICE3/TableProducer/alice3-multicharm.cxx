@@ -655,7 +655,6 @@ struct alice3multicharm {
             histos.fill(HIST("hMinXiCCDecayRadius"), xiccDecayRadius2D * 1e+4);
 
             double totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
-            histos.fill(HIST("hXicCandidateP"), totalMomentumC);
             double decayLengthXiC = std::hypot(
               thisXiCcandidate.xyz[0] - thisXiCCcandidate.xyz[0],
               thisXiCcandidate.xyz[1] - thisXiCCcandidate.xyz[1],
@@ -678,7 +677,6 @@ struct alice3multicharm {
             histos.fill(HIST("hMinxicDecayDistanceFromPV"), xicDecayDistanceFromPV * 1e+4);
 
             double totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
-            histos.fill(HIST("hXiccCandidateP"), totalMomentumCC);
             double decayLengthXiCC = std::hypot(
               thisXiCCcandidate.xyz[0] - collision.posX(),
               thisXiCCcandidate.xyz[1] - collision.posY(),
