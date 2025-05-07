@@ -85,7 +85,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-tpcspectra
-    SOURCES NucleitpcPbPb.cxx
+    SOURCES NucleiTPCPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
