@@ -934,36 +934,36 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
 
       // Xic → pi pi pi pi p
       if (matchDecayedPions && matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
       } else if (matchDecayedPions && !matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
       } else if (!matchDecayedPions && matchInteractionsWithMaterial) {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
       } else {
-        indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
+        indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4, &nPionsDecayed, nullptr, &nInteractionsWithMaterial);
       }
       indexRecXicPlus = indexRec;
       if (indexRec > -1) {
         // Xi- → pi pi p
         if (matchDecayedPions && matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
         } else if (matchDecayedPions && !matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
         } else if (!matchDecayedPions && matchInteractionsWithMaterial) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
         } else {
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
+          indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughtersCasc, +kXiMinus, std::array{+kPiMinus, +kProton, +kPiMinus}, true, nullptr, 2);
         }
         if (indexRec > -1) {
           // Lambda → p pi
           if (matchDecayedPions && matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
           } else if (matchDecayedPions && !matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
           } else if (!matchDecayedPions && matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, true>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
           } else {
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
+            indexRec = RecoDecay::getMatchedMCRec<false, true, false, false, false>(mcParticles, arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true);
           }
           if (indexRec > -1) {
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
@@ -1027,21 +1027,21 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         idxBhadMothers.clear();
 
         //  Xic → Xi pi pi
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
+        if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kXiCPlus, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, true, &sign, 2)) {
           // Xi- -> Lambda pi
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Find Xi- from Xi(1530) -> Xi pi in case of resonant decay
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == NDaughtersResonant) {
             auto cascStarMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
+            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascStarMC, +3324, std::array{+kXiMinus, +kPiPlus}, true)) {
               cascMC = mcParticles.rawIteratorAt(cascStarMC.daughtersIds().front());
             }
           }
-          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, cascMC, +kXiMinus, std::array{+kLambda0, +kPiMinus}, true)) {
             // Lambda -> p pi
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
-            if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
+            if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, v0MC, +kLambda0, std::array{+kProton, +kPiMinus}, true)) {
               if (arrDaughIndex.size() == NDaughtersResonant) {
                 for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                   auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
