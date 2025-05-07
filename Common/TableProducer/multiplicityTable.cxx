@@ -15,26 +15,32 @@
 /// \author ALICE
 ///
 
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <map>
-#include <string>
 
+#include <TH1F.h>
+#include <TFormula.h>
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "TableHelper.h"
 #include "MetadataHelper.h"
-#include "TList.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include "TableHelper.h"
+#include "TList.h"
+#include "TFormula.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -42,6 +48,8 @@ using namespace o2::framework::expressions;
 
 MetadataHelper metadataInfo; // Metadata helper
 
+namespace multiplicity
+{
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
 static constexpr int kFDDMults = 2;
@@ -56,7 +64,7 @@ static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
 static constexpr int kMultMCExtras = 13;
-static constexpr int Ntables = 14;
+static constexpr int kNTables = 14;
 
 // Checking that the Zeq tables are after the normal ones
 static_assert(kFV0Mults < kFV0MultZeqs);
@@ -64,7 +72,6 @@ static_assert(kFT0Mults < kFT0MultZeqs);
 static_assert(kFDDMults < kFDDMultZeqs);
 static_assert(kPVMults < kPVMultZeqs);
 
-static constexpr int Nparameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0Mults",       // 1
                                                  "FDDMults",       // 2
@@ -79,11 +86,18 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FDDMultZeqs",    // 11
                                                  "PVMultZeqs",     // 12
                                                  "MultMCExtras"};  // 13
+static const int defaultParameters[kNTables][1]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+} // namespace multiplicity
+
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[Ntables][Nparameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTable {
   SliceCache cache;
+  // Services
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  // Multiplicity tables
   Produces<aod::FV0Mults> tableFV0;             // 0
   Produces<aod::FV0AOuterMults> tableFV0AOuter; // 0-bis (produced with FV0)
   Produces<aod::FT0Mults> tableFT0;             // 1
@@ -100,59 +114,118 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
-  Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
-  Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
+  Produces<aod::MFTMults> mftMults;       // Not accounted for, produced using custom process function to avoid dependencies
+  Produces<aod::MultsGlobal> multsGlobal; // Not accounted for, produced based on process function processGlobalTrackingCounters
+  Configurable<LabeledArray<int>> enabledMultiplicityTables{"enabledMultiplicityTables",
+                                                            {multiplicity::defaultParameters[0], multiplicity::kNTables, 1, multiplicity::tableNames, parameterNames},
+                                                            "Produce multiplicity tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
-  // For vertex-Z corrections in calibration
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Service<o2::framework::O2DatabasePDG> pdg;
-
-  using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
-  Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-  Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
-  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
-  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
-  Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
-  Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
-
-  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-
-  // Configurable
-  Configurable<int> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
-  Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
-  Configurable<LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], Ntables, Nparameters, tableNames, parameterNames},
-                                                "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
-
-  struct : ConfigurableGroup {
-    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
-    Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
-  } ccdbConfig;
-
+  // Configuration
   Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
   Configurable<bool> autoSetupFromMetadata{"autoSetupFromMetadata", true, {"Autosetup the Run 2 and Run 3 processing from the metadata"}};
 
-  int mRunNumber;
-  bool lCalibLoaded;
-  TList* lCalibObjects;
-  TProfile* hVtxZFV0A;
-  TProfile* hVtxZFT0A;
-  TProfile* hVtxZFT0C;
-  TProfile* hVtxZFDDA;
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+    Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+  } ccdbConfig;
 
-  TProfile* hVtxZFDDC;
-  TProfile* hVtxZNTracks;
-  std::vector<int> mEnabledTables; // Vector of enabled tables
+  // Configurable multiplicity
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdbPath{"ccdbPath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+    Configurable<bool> doVertexZeq{"doVertexZeq", 1, "if 1: do vertex Z eq mult table"};
+    Configurable<float> fractionOfEvents{"fractionOfEvents", 2.0, "Fractions of events to keep in case the QA is used"};
+    Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
+    Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
+  } multiplicityConfig;
+  Configurable<float> minPtGlobalTrack{"minPtGlobalTrack", 0.15, "min. pT for global tracks"};
+  Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
+
+  struct MultiplicityCalibration {
+    bool isCalibLoaded = false;
+    TList* mCalibObjectsMultiplicity = nullptr;
+    TProfile* hVtxZFV0A = nullptr;
+    TProfile* hVtxZFT0A = nullptr;
+    TProfile* hVtxZFT0C = nullptr;
+    TProfile* hVtxZFDDA = nullptr;
+    TProfile* hVtxZFDDC = nullptr;
+    TProfile* hVtxZNTracks = nullptr;
+    int mRunNumber = 0;
+  } multCalib;
+
+  template <typename T>
+  void initMultCalib(const T& bc)
+  {
+    if (multiplicityConfig.doVertexZeq == false) {
+      return;
+    }
+    if (bc.runNumber() == multCalib.mRunNumber) {
+      return;
+    }
+    multCalib.mRunNumber = bc.runNumber(); // mark this run as at least tried
+    std::map<std::string, std::string> metadata;
+    if (ccdbConfig.reconstructionPass.value == "") {
+      LOG(info) << "No pass required";
+    } else {
+      if (ccdbConfig.reconstructionPass.value == "metadata") {
+        LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+        ccdbConfig.reconstructionPass.value = metadataInfo.get("RecoPassName");
+      }
+      metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+    }
+    multCalib.mCalibObjectsMultiplicity = ccdb->getSpecificForRun<TList>(multiplicityConfig.ccdbPath, bc.runNumber(), metadata);
+    if (multCalib.mCalibObjectsMultiplicity) {
+      if (produceHistograms) {
+        listCalib->Add(multCalib.mCalibObjectsMultiplicity->Clone(Form("multCalib_run%i", bc.runNumber())));
+      }
+
+      auto findProfile = [&](const char* name) {
+        TProfile* p = static_cast<TProfile*>(multCalib.mCalibObjectsMultiplicity->FindObject(name));
+        if (!p) {
+          multCalib.mCalibObjectsMultiplicity->ls();
+          LOGF(error, "CCDB object %s not found in list!", name);
+          multCalib.isCalibLoaded = false;
+          return static_cast<TProfile*>(nullptr);
+        }
+        return p;
+      };
+      multCalib.isCalibLoaded = true;
+      multCalib.hVtxZFV0A = findProfile("hVtxZFV0A");
+      multCalib.hVtxZFT0A = findProfile("hVtxZFT0A");
+      multCalib.hVtxZFT0C = findProfile("hVtxZFT0C");
+      multCalib.hVtxZFDDA = findProfile("hVtxZFDDA");
+      multCalib.hVtxZFDDC = findProfile("hVtxZFDDC");
+      multCalib.hVtxZNTracks = findProfile("hVtxZNTracksPV");
+    } else {
+      LOGF(error, "Problem loading CCDB object! Please check");
+      multCalib.isCalibLoaded = false;
+    }
+  }
+
+  // List of tables enabled
+  std::vector<int> mEnabledMultiplicityTables; // Vector of enabled multiplicity tables
+  bool isMultiplicityTableEnabled(int table) const
+  {
+    for (int i : mEnabledMultiplicityTables) {
+      if (i == table) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // Debug output
-  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   OutputObj<TList> listCalib{"calib-list", OutputObjHandlingPolicy::QAObject};
 
   unsigned int randomSeed = 0;
   void init(InitContext& context)
   {
+    ccdb->setURL(ccdbConfig.ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
+
     // If both Run 2 and Run 3 data process flags are enabled then we check the metadata
     if (autoSetupFromMetadata && metadataInfo.isFullyDefined()) {
       LOG(info) << "Autosetting the processing from the metadata";
@@ -173,59 +246,43 @@ struct MultiplicityTable {
       LOGF(fatal, "Cannot enable processRun2 and processRun3 at the same time. Please choose one.");
     }
 
-    bool tEnabled[Ntables] = {false};
-    for (int i = 0; i < Ntables; i++) {
-      int f = enabledTables->get(tableNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(context, tableNames[i], f);
+    // Enable or disable the multiplicity tables
+    for (int i = 0; i < multiplicity::kNTables; i++) {
+      int f = enabledMultiplicityTables->get(multiplicity::tableNames[i].c_str(), "Enable");
+      enableFlagIfTableRequired(context, multiplicity::tableNames[i], f);
       if (f == 1) {
-        tEnabled[i] = true;
-        mEnabledTables.push_back(i);
-        if (fractionOfEvents <= 1.f && (tableNames[i] != "MultsExtra")) {
+        mEnabledMultiplicityTables.push_back(i);
+        if (multiplicityConfig.fractionOfEvents <= 1.f && (multiplicity::tableNames[i] != "MultsExtra")) {
           LOG(fatal) << "Cannot have a fraction of events <= 1 and multiplicity table consumed.";
         }
       }
     }
     // Handle the custom cases.
-    if (tEnabled[kMultMCExtras]) {
-      if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
+    if (isMultiplicityTableEnabled(multiplicity::kMultMCExtras)) {
+      if (enabledMultiplicityTables->get(multiplicity::tableNames[multiplicity::kMultMCExtras].c_str(), "Enable") == -1) {
         doprocessMC.value = true;
-        LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
+        LOG(info) << "Enabling MC processing due to " << multiplicity::tableNames[multiplicity::kMultMCExtras] << " table being enabled.";
       }
     }
 
     // Check that the tables are enabled consistenly
-    if (tEnabled[kFV0MultZeqs] && !tEnabled[kFV0Mults]) { // FV0
-      mEnabledTables.push_back(kFV0Mults);
-      LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
+    if (isMultiplicityTableEnabled(multiplicity::kFV0MultZeqs) && !isMultiplicityTableEnabled(multiplicity::kFV0Mults)) { // FV0
+      mEnabledMultiplicityTables.push_back(multiplicity::kFV0Mults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFV0MultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFV0Mults] << ". Enabling it.";
     }
-    if (tEnabled[kFT0MultZeqs] && !tEnabled[kFT0Mults]) { // FT0
-      mEnabledTables.push_back(kFT0Mults);
-      LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
+    if (isMultiplicityTableEnabled(multiplicity::kFT0MultZeqs) && !isMultiplicityTableEnabled(multiplicity::kFT0Mults)) { // FT0
+      mEnabledMultiplicityTables.push_back(multiplicity::kFT0Mults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFT0MultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFT0Mults] << ". Enabling it.";
     }
-    if (tEnabled[kFDDMultZeqs] && !tEnabled[kFDDMults]) { // FDD
-      mEnabledTables.push_back(kFDDMults);
-      LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
+    if (isMultiplicityTableEnabled(multiplicity::kFDDMultZeqs) && !isMultiplicityTableEnabled(multiplicity::kFDDMults)) { // FDD
+      mEnabledMultiplicityTables.push_back(multiplicity::kFDDMults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kFDDMultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kFDDMults] << ". Enabling it.";
     }
-    if (tEnabled[kPVMultZeqs] && !tEnabled[kPVMults]) { // PV
-      mEnabledTables.push_back(kPVMults);
-      LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
+    if (isMultiplicityTableEnabled(multiplicity::kPVMultZeqs) && !isMultiplicityTableEnabled(multiplicity::kPVMults)) { // PV
+      mEnabledMultiplicityTables.push_back(multiplicity::kPVMults);
+      LOG(info) << "Cannot have the " << multiplicity::tableNames[multiplicity::kPVMultZeqs] << " table enabled and not the one on " << multiplicity::tableNames[multiplicity::kPVMults] << ". Enabling it.";
     }
-    std::sort(mEnabledTables.begin(), mEnabledTables.end());
-
-    mRunNumber = 0;
-    lCalibLoaded = false;
-    lCalibObjects = nullptr;
-    hVtxZFV0A = nullptr;
-    hVtxZFT0A = nullptr;
-    hVtxZFT0C = nullptr;
-    hVtxZFDDA = nullptr;
-    hVtxZFDDC = nullptr;
-    hVtxZNTracks = nullptr;
-
-    ccdb->setURL(ccdbConfig.ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
+    std::sort(mEnabledMultiplicityTables.begin(), mEnabledMultiplicityTables.end());
 
     listCalib.setObject(new TList);
     if (!produceHistograms.value) {
@@ -240,13 +297,23 @@ struct MultiplicityTable {
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
   void process(aod::BCs const&) {}
 
-  void processRun2(aod::Run2MatchedSparse::iterator const& collision,
+  using BCsWithTimestampsAndRun2Infos = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+  using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
+  Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<Run2Tracks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  Partition<Run2Tracks> pvContribTracks = (nabs(aod::track::eta) < 0.8f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Partition<Run2Tracks> pvContribTracksEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::TracksIU> perColIU = aod::track::collisionId;
+  Preslice<aod::MFTTracks> perCollisionMFT = o2::aod::fwdtrack::collisionId;
+
+  void processRun2(aod::CollisionMatchedRun2Sparse const& collision,
                    Run2Tracks const&,
-                   aod::BCs const&,
                    aod::Zdcs const&,
                    aod::FV0As const&,
                    aod::FV0Cs const&,
-                   aod::FT0s const&)
+                   aod::FT0s const&,
+                   BCsWithTimestampsAndRun2Infos const& bcs)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
@@ -312,6 +379,9 @@ struct MultiplicityTable {
     tableTpc(multTPC);
     tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
   }
+  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
+
+  using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
   using Run3TracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3TracksIU> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -328,53 +398,53 @@ struct MultiplicityTable {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
-    // reserve memory
-    for (const auto& i : mEnabledTables) {
-      switch (i) {
-        case kFV0Mults: // FV0
+    // reserve memory for multiplicity tables
+    for (const auto tableId : mEnabledMultiplicityTables) {
+      switch (tableId) {
+        case multiplicity::kFV0Mults: // FV0
           tableFV0.reserve(collisions.size());
           tableFV0AOuter.reserve(collisions.size());
           break;
-        case kFT0Mults: // FT0
+        case multiplicity::kFT0Mults: // FT0
           tableFT0.reserve(collisions.size());
           break;
-        case kFDDMults: // FDD
+        case multiplicity::kFDDMults: // FDD
           tableFDD.reserve(collisions.size());
           break;
-        case kZDCMults: // ZDC
+        case multiplicity::kZDCMults: // ZDC
           tableZDC.reserve(collisions.size());
           break;
-        case kTrackletMults: // Tracklets (Run 2 only, nothing to do) (to be removed!)
+        case multiplicity::kTrackletMults: // Tracklets (Run 2 only, nothing to do) (to be removed!)
           tableTracklet.reserve(collisions.size());
           break;
-        case kTPCMults: // TPC
+        case multiplicity::kTPCMults: // TPC
           tableTpc.reserve(collisions.size());
           break;
-        case kPVMults: // PV multiplicity
+        case multiplicity::kPVMults: // PV multiplicity
           tablePv.reserve(collisions.size());
           break;
-        case kMultsExtra: // Extra information
+        case multiplicity::kMultsExtra: // Extra information
           tableExtra.reserve(collisions.size());
           break;
-        case kMultSelections: // Extra information
+        case multiplicity::kMultSelections: // Extra information
           multSelections.reserve(collisions.size());
           break;
-        case kFV0MultZeqs: // Equalized multiplicity for FV0
+        case multiplicity::kFV0MultZeqs: // Equalized multiplicity for FV0
           tableFV0Zeqs.reserve(collisions.size());
           break;
-        case kFT0MultZeqs: // Equalized multiplicity for FT0
+        case multiplicity::kFT0MultZeqs: // Equalized multiplicity for FT0
           tableFT0Zeqs.reserve(collisions.size());
           break;
-        case kFDDMultZeqs: // Equalized multiplicity for FDD
+        case multiplicity::kFDDMultZeqs: // Equalized multiplicity for FDD
           tableFDDZeqs.reserve(collisions.size());
           break;
-        case kPVMultZeqs: // Equalized multiplicity for PV
+        case multiplicity::kPVMultZeqs: // Equalized multiplicity for PV
           tablePVZeqs.reserve(collisions.size());
           break;
-        case kMultMCExtras: // MC extra information (nothing to do in the data)
+        case multiplicity::kMultMCExtras: // MC extra information (nothing to do in the data)
           break;
         default:
-          LOG(fatal) << "Unknown table requested: " << i;
+          LOG(fatal) << "Unknown table requested: " << tableId;
           break;
       }
     }
@@ -402,7 +472,7 @@ struct MultiplicityTable {
     float multZeqNContribs = 0.f;
 
     for (auto const& collision : collisions) {
-      if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
+      if ((multiplicityConfig.fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > multiplicityConfig.fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
       }
       int multNContribs = 0;
@@ -411,50 +481,12 @@ struct MultiplicityTable {
 
       /* check the previous run number */
       const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
-      if (doVertexZeq > 0) {
-        if (bc.runNumber() != mRunNumber) {
-          mRunNumber = bc.runNumber(); // mark this run as at least tried
-          if (ccdbConfig.reconstructionPass.value == "") {
-            lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
-          } else if (ccdbConfig.reconstructionPass.value == "metadata") {
-            std::map<std::string, std::string> metadata;
-            metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
-            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
-          } else {
-            std::map<std::string, std::string> metadata;
-            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
-            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
-          }
+      initMultCalib(bc);
 
-          if (lCalibObjects) {
-            if (produceHistograms) {
-              listCalib->Add(lCalibObjects->Clone(Form("%i", bc.runNumber())));
-            }
-
-            hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
-            hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-            hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-            hVtxZFDDA = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDA"));
-            hVtxZFDDC = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFDDC"));
-            hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
-            lCalibLoaded = true;
-            // Capture error
-            if (!hVtxZFV0A || !hVtxZFT0A || !hVtxZFT0C || !hVtxZFDDA || !hVtxZFDDC || !hVtxZNTracks) {
-              LOGF(error, "Problem loading CCDB objects! Please check");
-              lCalibLoaded = false;
-            }
-          } else {
-            LOGF(error, "Problem loading CCDB object! Please check");
-            lCalibLoaded = false;
-          }
-        }
-      }
-
-      for (const auto& i : mEnabledTables) {
-        switch (i) {
-          case kFV0Mults: // FV0
+      // First we compute the multiplicity
+      for (const auto tableId : mEnabledMultiplicityTables) {
+        switch (tableId) {
+          case multiplicity::kFV0Mults: // FV0
           {
             multFV0A = 0.f;
             multFV0AOuter = 0.f;
@@ -478,7 +510,7 @@ struct MultiplicityTable {
             tableFV0AOuter(multFV0AOuter);
             LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f", multFV0A, multFV0C);
           } break;
-          case kFT0Mults: // FT0
+          case multiplicity::kFT0Mults: // FT0
           {
             multFT0A = 0.f;
             multFT0C = 0.f;
@@ -498,7 +530,7 @@ struct MultiplicityTable {
             tableFT0(multFT0A, multFT0C);
             LOGF(debug, "multFT0A=%5.0f multFT0C=%5.0f", multFV0A, multFV0C);
           } break;
-          case kFDDMults: // FDD
+          case multiplicity::kFDDMults: // FDD
           {
             multFDDA = 0.f;
             multFDDC = 0.f;
@@ -518,7 +550,7 @@ struct MultiplicityTable {
             tableFDD(multFDDA, multFDDC);
             LOGF(debug, "multFDDA=%5.0f multFDDC=%5.0f", multFDDA, multFDDC);
           } break;
-          case kZDCMults: // ZDC
+          case multiplicity::kZDCMults: // ZDC
           {
             multZNA = -1.f;
             multZNC = -1.f;
@@ -544,18 +576,18 @@ struct MultiplicityTable {
             tableZDC(multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC);
             LOGF(debug, "multZNA=%6.0f multZNC=%6.0f", multZNA, multZNC);
           } break;
-          case kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)
+          case multiplicity::kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)
           {
             tableTracklet(0);
           } break;
-          case kTPCMults: // TPC
+          case multiplicity::kTPCMults: // TPC
           {
             const auto& tracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
             const int multTPC = tracksGrouped.size();
             tableTpc(multTPC);
             LOGF(debug, "multTPC=%i", multTPC);
           } break;
-          case kPVMults: // PV multiplicity
+          case multiplicity::kPVMults: // PV multiplicity
           {
             // use only one single grouping operation, then do loop
             const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -572,7 +604,7 @@ struct MultiplicityTable {
             tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
             LOGF(debug, "multNContribs=%i, multNContribsEta1=%i, multNContribsEtaHalf=%i", multNContribs, multNContribsEta1, multNContribsEtaHalf);
           } break;
-          case kMultsExtra: // Extra
+          case multiplicity::kMultsExtra: // Extra
           {
             int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
             int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
@@ -609,29 +641,29 @@ struct MultiplicityTable {
             }
 
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
-                       mRunNumber, collision.posZ(), collision.sel8(),
+                       bc.runNumber(), collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
                        nAllTracksTPCOnly, nAllTracksITSTPC,
                        collision.trackOccupancyInTimeRange(),
                        collision.ft0cOccupancyInTimeRange(),
                        collision.flags());
           } break;
-          case kMultSelections: // Multiplicity selections
+          case multiplicity::kMultSelections: // Multiplicity selections
           {
             multSelections(collision.selection_raw());
           } break;
-          case kFV0MultZeqs: // Z equalized FV0
+          case multiplicity::kFV0MultZeqs: // Z equalized FV0
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFV0A = multCalib.hVtxZFV0A->Interpolate(0.0) * multFV0A / multCalib.hVtxZFV0A->Interpolate(collision.posZ());
             }
             tableFV0Zeqs(multZeqFV0A);
           } break;
-          case kFT0MultZeqs: // Z equalized FT0
+          case multiplicity::kFT0MultZeqs: // Z equalized FT0
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-              multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFT0A = multCalib.hVtxZFT0A->Interpolate(0.0) * multFT0A / multCalib.hVtxZFT0A->Interpolate(collision.posZ());
+              multZeqFT0C = multCalib.hVtxZFT0C->Interpolate(0.0) * multFT0C / multCalib.hVtxZFT0C->Interpolate(collision.posZ());
             }
             if (produceHistograms.value) {
               histos.fill(HIST("FT0A"), multFT0A, multZeqFT0A);
@@ -641,39 +673,39 @@ struct MultiplicityTable {
             }
             tableFT0Zeqs(multZeqFT0A, multZeqFT0C);
           } break;
-          case kFDDMultZeqs: // Z equalized FDD
+          case multiplicity::kFDDMultZeqs: // Z equalized FDD
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
-              multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqFDDA = multCalib.hVtxZFDDA->Interpolate(0.0) * multFDDA / multCalib.hVtxZFDDA->Interpolate(collision.posZ());
+              multZeqFDDC = multCalib.hVtxZFDDC->Interpolate(0.0) * multFDDC / multCalib.hVtxZFDDC->Interpolate(collision.posZ());
             }
             tableFDDZeqs(multZeqFDDA, multZeqFDDC);
           } break;
-          case kPVMultZeqs: // Z equalized PV
+          case multiplicity::kPVMultZeqs: // Z equalized PV
           {
-            if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-              multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
+            if (std::fabs(collision.posZ()) < 15.0f && multCalib.isCalibLoaded) {
+              multZeqNContribs = multCalib.hVtxZNTracks->Interpolate(0.0) * multNContribs / multCalib.hVtxZNTracks->Interpolate(collision.posZ());
             }
             tablePVZeqs(multZeqNContribs);
           } break;
-          case kMultMCExtras: // MC only (nothing to do)
+          case multiplicity::kMultMCExtras: // MC only (nothing to do)
           {
           } break;
           default: // Default
           {
-            LOG(fatal) << "Unknown table requested: " << i;
+            LOG(fatal) << "Unknown table requested: " << tableId;
           } break;
         }
       }
     }
   }
+  PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
 
   // one loop better than multiple sliceby calls
   // FIT FT0C: -3.3 < η < -2.1
   // FOT FT0A:  3.5 < η <  4.9
   Filter mcParticleFilter = (aod::mcparticle::eta < 7.0f) && (aod::mcparticle::eta > -7.0f);
   using McParticlesFiltered = soa::Filtered<aod::McParticles>;
-
   void processMC(aod::McCollision const& mcCollision, McParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
@@ -720,20 +752,16 @@ struct MultiplicityTable {
     }
     tableExtraMc(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multBarrelEta05, multBarrelEta08, multBarrelEta10, mcCollision.posZ());
   }
+  PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
 
   void processMC2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
   {
     tableExtraMult2MCExtras(collision.mcCollisionId()); // interlink
   }
-
-  Configurable<float> minPtGlobalTrack{"minPtGlobalTrack", 0.15, "min. pT for global tracks"};
-  Configurable<float> maxPtGlobalTrack{"maxPtGlobalTrack", 1e+10, "max. pT for global tracks"};
-  Configurable<int> minNclsITSGlobalTrack{"minNclsITSGlobalTrack", 5, "min. number of ITS clusters for global tracks"};
-  Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
+  PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
 
   using Run3Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
   Partition<Run3Tracks> pvContribGlobalTracksEta1 = (minPtGlobalTrack < aod::track::pt && aod::track::pt < maxPtGlobalTrack) && (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && requireQualityTracksInFilter();
-
   void processGlobalTrackingCounters(aod::Collision const& collision, soa::Join<Run3TracksIU, aod::TrackSelection, aod::TrackSelectionExtension> const& tracksIU, Run3Tracks const&)
   {
     // counter from Igor
@@ -745,7 +773,7 @@ struct MultiplicityTable {
     auto pvContribGlobalTracksEta1PerCollision = pvContribGlobalTracksEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     for (const auto& track : pvContribGlobalTracksEta1PerCollision) {
-      if (track.itsNCls() < minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < minNclsITSibGlobalTrack) {
+      if (track.itsNCls() < multiplicityConfig.minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < multiplicityConfig.minNclsITSibGlobalTrack) {
         continue;
       }
       multNbrContribsEta10GlobalTrackWoDCA++;
@@ -770,6 +798,7 @@ struct MultiplicityTable {
 
     multsGlobal(nGlobalTracks, multNbrContribsEta08GlobalTrackWoDCA, multNbrContribsEta10GlobalTrackWoDCA, multNbrContribsEta05GlobalTrackWoDCA);
   }
+  PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
 
   void processRun3MFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const&,
                       o2::aod::MFTTracks const& mftTracks,
@@ -801,13 +830,6 @@ struct MultiplicityTable {
     }
     mftMults(nAllTracks, nTracks);
   }
-
-  // Process switches
-  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
-  PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables. Autoset if both processRun2 and processRun3 are enabled", true);
-  PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
-  PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
-  PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
   PROCESS_SWITCH(MultiplicityTable, processRun3MFT, "Produce MFT mult tables", false);
 };
 
