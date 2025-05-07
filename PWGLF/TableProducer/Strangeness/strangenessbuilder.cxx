@@ -29,7 +29,7 @@
 //                           task will adapt algorithm to spare / spend CPU accordingly
 //  -- mc_findableMode ....: 0: only found (default), 1: add findable to found, 2: all findable
 //                           When using findables, refer to FoundTag bools for checking if found
-//  -- v0builderopts ......: V0-specific building options (topological, etc)
+//  -- v0builderopts ......: V0-specific building options (topological, deduplication, etc)
 //  -- cascadebuilderopts .: cascade-specific building options (topological, etc)
 
 #include <string>
@@ -479,6 +479,10 @@ struct StrangenessBuilder {
       hFindable->GetXaxis()->SetBinLabel(5, "Cascades to be built");
       hFindable->GetXaxis()->SetBinLabel(6, "Cascades with collId -1");
     }
+
+    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
+    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
+    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
 
     mRunNumber = 0;
 
@@ -1016,9 +1020,6 @@ struct StrangenessBuilder {
         // simple passthrough: copy existing cascades to build list
         for (const auto& cascade : cascades) {
           auto const& v0 = cascade.v0();
-          if (v0.v0Type() > 1) {
-            continue; // skip any unexpected stuff (FIXME: follow-up)
-          }
           currentCascadeEntry.globalId = cascade.globalIndex();
           currentCascadeEntry.collisionId = cascade.collisionId();
           currentCascadeEntry.v0Id = ao2dV0toV0List[v0.globalIndex()];
@@ -1465,6 +1466,9 @@ struct StrangenessBuilder {
                   thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
                   thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
                 histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+                histos.fill(HIST("hPrimaryV0s"), 0);
+                if (thisInfo.isPhysicalPrimary)
+                  histos.fill(HIST("hPrimaryV0s"), 1);
               }
               if (mEnabledTables[kV0MCCollRefs]) {
                 products.v0mccollref(thisInfo.mcCollision);
@@ -1596,6 +1600,9 @@ struct StrangenessBuilder {
               info.negP[0], info.negP[1], info.negP[2],
               info.momentum[0], info.momentum[1], info.momentum[2]);
             histos.fill(HIST("hTableBuildingStatistics"), kV0MCCores);
+            histos.fill(HIST("hPrimaryV0s"), 0);
+            if (info.isPhysicalPrimary)
+              histos.fill(HIST("hPrimaryV0s"), 1);
           }
           if (mEnabledTables[kV0MCCollRefs]) {
             products.v0mccollref(info.mcCollision);
