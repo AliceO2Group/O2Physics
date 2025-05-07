@@ -434,7 +434,8 @@ struct HfFemtoDreamProducer {
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
     for (const auto& candidate : candidates) {
-
+      outputMlPKPi = {-1.0f, -1.0f, -1.0f};
+      outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)

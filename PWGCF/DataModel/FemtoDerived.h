@@ -323,6 +323,13 @@ DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results 
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
 
+DECLARE_SOA_TABLE(FDResultsHFTrkInfo, "AOD", "FDRESULTSHFTRKINFO", //! table to store results for HF femtoscopy
+                  femtodreamparticle::TPCNClsFound,
+                  track::TPCNClsFindable,
+                  femtodreamparticle::TPCNClsCrossedRows,
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TOFNSigmaPr);
+
 DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC", //! Table for reconstructed MC charm hadron candidates
                   o2::soa::Index<>,
                   fdhf::FlagMc,
