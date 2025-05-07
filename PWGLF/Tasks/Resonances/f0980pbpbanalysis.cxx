@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <chrono>
 // #include <iostream>
+#include <iostream>
 #include <string>
 
 #include "TLorentzVector.h"
@@ -103,9 +104,9 @@ struct F0980pbpbanalysis {
   Configurable<float> cfgRapMin{"cfgRapMin", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgRapMax{"cfgRapMax", 0.5, "Maximum rapidity for pair"};
 
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
-  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
-  Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
+  Configurable<bool> cfgIsPrimaryTrack{"cfgIsPrimaryTrack", true, "Primary track selection"};
+  Configurable<bool> cfgIsGlobalWoDCATrack{"cfgIsGlobalWoDCATrack", true, "Global track selection without DCA"};
+  Configurable<bool> cfgIsPVContributor{"cfgIsPVContributor", true, "PV contributor track selection"};
 
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
@@ -125,13 +126,14 @@ struct F0980pbpbanalysis {
   Configurable<int> cfgRotBkgNum{"cfgRotBkgNum", 10, "the number of rotational backgrounds"};
 
   // for phi test
-  Configurable<bool> cfgTPCFinableClsSel{"cfgTPCFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
+  Configurable<bool> cfgRatioTPCRowsFinableClsSel{"cfgRatioTPCRowsFinableClsSel", true, "TPC Crossed Rows to Findable Clusters selection flag"};
   Configurable<bool> cfgITSClsSel{"cfgITSClsSel", false, "ITS cluster selection flag"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<bool> cfgTOFBetaSel{"cfgTOFBetaSel", false, "TOF beta cut selection flag"};
   Configurable<float> cfgTOFBetaCut{"cfgTOFBetaCut", 0.0, "cut TOF beta"};
   Configurable<bool> cfgDeepAngleSel{"cfgDeepAngleSel", true, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<bool> cfgTrackIndexSel{"cfgTrackIndexSel", false, "Index selection flag"};
 
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
@@ -263,19 +265,19 @@ struct F0980pbpbanalysis {
     if (std::fabs(track.dcaZ()) > cfgMaxDCAzToPVcut) {
       return 0;
     }
-    if (cfgPVContributor && !track.isPVContributor()) {
+    if (cfgIsPVContributor && !track.isPVContributor()) {
       return 0;
     }
-    if (cfgPrimaryTrack && !track.isPrimaryTrack()) {
+    if (cfgIsPrimaryTrack && !track.isPrimaryTrack()) {
       return 0;
     }
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
+    if (cfgIsGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return 0;
     }
     if (track.tpcNClsFound() < cfgTPCcluster) {
       return 0;
     }
-    if (cfgTPCFinableClsSel && track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
+    if (cfgRatioTPCRowsFinableClsSel && track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls) {
       return 0;
     }
     if (cfgITSClsSel && track.itsNCls() < cfgITScluster) {
@@ -419,7 +421,7 @@ struct F0980pbpbanalysis {
           histos.fill(HIST("QA/TPC_TOF_selected"), getTpcNSigma(trk2), getTofNSigma(trk2));
         }
 
-        if (cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() == trk1.globalIndex()) {
+        if (cfgTrackIndexSel && cfgSelectPID == PIDList::PIDTest && trk2.globalIndex() <= trk1.globalIndex()) {
           continue;
         }
 
@@ -458,6 +460,7 @@ struct F0980pbpbanalysis {
       }
     }
   }
+  
 
   void init(o2::framework::InitContext&)
   {
