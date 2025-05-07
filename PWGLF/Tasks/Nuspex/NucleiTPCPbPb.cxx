@@ -15,7 +15,7 @@
 ///        It currently contemplates 6 particle types:
 ///        pion, Proton, Deuteron, Triton, Helium3, Alpha
 ///
-/// \author Jaideep Tanwar 
+/// \author Jaideep Tanwar
 /// \since  Jan. 20, 2025
 ///
 #include <limits>
