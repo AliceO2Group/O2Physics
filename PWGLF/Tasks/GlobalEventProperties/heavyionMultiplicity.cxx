@@ -756,8 +756,8 @@ struct HeavyionMultiplicity {
             histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
           }
         } // track (mcrec) loop
-	
-	      for (const auto& particle : GenParticles) {
+
+        for (const auto& particle : GenParticles) {
           if (!isGenTrackSelected(particle)) {
             continue;
           }
@@ -769,21 +769,21 @@ struct HeavyionMultiplicity {
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
             histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown);
           }
-	  
+
           int pid = 0;
           switch (std::abs(particle.pdgCode())) {
-	          case PDG_t::kPiPlus:
-	            pid = kSpPion;
-	            break;
-	          case PDG_t::kKPlus:
-	            pid = kSpKaon;
-	            break;
-	          case PDG_t::kProton:
-	            pid = kSpProton;
-	            break;
-	          default:
-	            pid = kSpOther;
-	            break;
+            case PDG_t::kPiPlus:
+              pid = kSpPion;
+              break;
+            case PDG_t::kKPlus:
+              pid = kSpKaon;
+              break;
+            case PDG_t::kProton:
+              pid = kSpProton;
+              break;
+            default:
+              pid = kSpOther;
+              break;
           }
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(pid), kNoGenpTVar);
         } // track (mcgen) loop
