@@ -390,7 +390,7 @@ struct F0980pbpbanalysis {
     histos.fill(HIST("QA/EPResAC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
     histos.fill(HIST("QA/EPResBC"), centrality, std::cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
-    TLorentzVector pion1, pion2, pion2Rot, reco, recoRot;
+    ROOT::Math::PxPyPzMVector pion1, pion2, pion2Rot, reco, recoRot;
     for (const auto& trk1 : dTracks) {
       if (!trackSelected(trk1)) {
         continue;
@@ -428,8 +428,8 @@ struct F0980pbpbanalysis {
           continue;
         }
 
-        pion1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPtl);
-        pion2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPtl);
+        pion1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), massPtl);
+        pion2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPtl);
         reco = pion1 + pion2;
 
         if (reco.Rapidity() > cfgRapMax || reco.Rapidity() < cfgRapMin) {
@@ -450,7 +450,7 @@ struct F0980pbpbanalysis {
           for (int nr = 0; nr < cfgRotBkgNum; nr++) {
             auto randomPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
             randomPhi += pion2.Phi();
-            pion2Rot.SetXYZM(pion2.Pt() * std::cos(randomPhi), pion2.Pt() * std::sin(randomPhi), trk2.pz(), massPtl);
+            pion2Rot = ROOT::Math::PxPyPzMVector(pion2.Pt() * std::cos(randomPhi), pion2.Pt() * std::sin(randomPhi), trk2.pz(), massPtl);
             recoRot = pion1 + pion2Rot;
             relPhiRot = TVector2::Phi_0_2pi((recoRot.Phi() - eventPlaneDet) * static_cast<float>(nmode));
             histos.fill(HIST("hInvMass_f0980_USRot_EPA"), recoRot.M(), recoRot.Pt(), centrality, relPhiRot);
