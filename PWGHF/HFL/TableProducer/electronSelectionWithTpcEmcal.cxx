@@ -52,9 +52,9 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfMcGenSelEl> hfGenElectronSel;
 
   enum EMCalRegion {
-    kNoAcceptance = 0,
-    kEMCalAcceptance = 1,
-    kDCalAcceptance = 2
+    NoAcceptance = 0,
+    EMCalAcceptance = 1,
+    DCalAcceptance = 2
   };
   // Configurables
   // EMCal Cluster information
@@ -380,7 +380,7 @@ struct HfElectronSelectionWithTpcEmcal {
         registry.fill(HIST("hEmcClusterM20"), emcClusterBefore.m20());
       }
     }
-    EMCalRegion passEMCal = kNoAcceptance;
+    EMCalRegion passEMCal = NoAcceptance;
     float phiTrack = -999;
     float etaTrack = -999;
     float pTrack = -999;
@@ -402,9 +402,9 @@ struct HfElectronSelectionWithTpcEmcal {
         continue;
       }
       if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
-        passEMCal = kEMCalAcceptance; // EMcal acceptance passed
+        passEMCal = EMCalAcceptance; // EMcal acceptance passed
       if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
-        passEMCal = kDCalAcceptance; // Dcal acceptance passed
+        passEMCal = DCalAcceptance; // Dcal acceptance passed
 
       if (fillTrackInfo) {
         registry.fill(HIST("hTrackEtaPhi"), etaTrack, phiTrack, passEMCal);                 // track etaphi infor after filter bit
