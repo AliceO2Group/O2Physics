@@ -1364,11 +1364,11 @@ struct LambdaTracksExtProducer {
 
           // Fill DEta-DPhi Histogram
           if ((lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) || (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda)) {
-            histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PI / 2.));
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
           } else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PI / 2.));
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
           } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
-            histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PI / 2.));
+            histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
           }
 
           // decision based on mass closest to PdgMass of Lambda
