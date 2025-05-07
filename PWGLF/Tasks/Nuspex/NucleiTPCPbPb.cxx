@@ -8,10 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file NucleitpcPbPb.cxx
-/// \brief Analysis task for light nuclei spectra in Pb–Pb collisions using TPC
-/// \author Jaideep Tanwar, <Jaideep.tanwar@cern.ch>
-/// \since Jan 2025
+///
+/// \file NucleiTPCPbPb.cxx
+///
+/// \brief This task use global tracks and used for primary selection analysis using TPC detector.
+///        It currently contemplates 6 particle types:
+///        pion, Proton, Deuteron, Triton, Helium3, Alpha
+///
+/// \author Jaideep Tanwar 
+/// \since  Jan. 20, 2025
 ///
 #include <limits>
 #include <string>
