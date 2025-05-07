@@ -527,7 +527,7 @@ struct alice3multicharm {
 
       if (xiCand.cascRadius() < minXiRadius)
         continue;
-      
+
       histos.fill(HIST("hMinXiDecayRadius"), xiCand.cascRadius());
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
@@ -588,9 +588,9 @@ struct alice3multicharm {
           double xicDecayRadius2D = std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]);
           if (xicDecayRadius2D < minXiCRadius)
             continue; // do not take if radius too small, likely a primary combination
-          
+
           histos.fill(HIST("hMinXiCDecayRadius"), xicDecayRadius2D * 1e+4);
-          
+
           if (xicDecayRadius2D > xiCand.cascRadius())
             continue;
 
