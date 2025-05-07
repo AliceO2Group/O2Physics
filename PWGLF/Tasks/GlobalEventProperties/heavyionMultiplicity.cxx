@@ -756,20 +756,7 @@ struct HeavyionMultiplicity {
             histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
           }
         } // track (mcrec) loop
-      } // nTrks>0
 
-      // INEL>0 sample
-      auto npart = 0;
-      for (const auto& particle : GenParticles) {
-        if (!isGenTrackSelected(particle)) {
-          continue;
-        }
-        if (particle.eta() < kEtaInelgt0) {
-          npart++;
-        }
-      } // particle loop
-
-      if (npart > 0) {
         for (const auto& particle : GenParticles) {
           if (!isGenTrackSelected(particle)) {
             continue;
@@ -800,7 +787,7 @@ struct HeavyionMultiplicity {
           }
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(pid), kNoGenpTVar);
         } // track (mcgen) loop
-      } // npart>0
+      } // nTrks>0
     } // collision loop
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);
