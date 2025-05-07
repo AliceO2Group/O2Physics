@@ -20,7 +20,6 @@
 #include <cstdlib>
 #include <chrono>
 // #include <iostream>
-#include <iostream>
 #include <string>
 
 #include "TLorentzVector.h"
@@ -460,7 +459,6 @@ struct F0980pbpbanalysis {
       }
     }
   }
-  
 
   void init(o2::framework::InitContext&)
   {
