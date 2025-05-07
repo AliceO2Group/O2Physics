@@ -49,29 +49,29 @@ using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
 using CollisionDataTable =
-    soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs,
-              aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals,
-              aod::CentMFTs>;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs,
+            aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals,
+            aod::CentMFTs>;
 using ColDataTablepp =
-    soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                  aod::TrackSelection>;
 using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 using CollisionMCTrueTable = aod::McCollisions;
 using TrackMCTrueTable = aod::McParticles;
 using CollisionMCRecTable = soa::SmallGroups<
-    soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults,
-              aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
-              aod::CentNGlobals, aod::CentMFTs>>;
+  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults,
+            aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms,
+            aod::CentNGlobals, aod::CentMFTs>>;
 using ColMCRecTablepp =
-    soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
-                               aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
+  soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
+                             aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                   aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 using V0TrackCandidates =
-    soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-              aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+            aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
 
 enum {
   kTrackTypebegin = 0,
@@ -81,7 +81,11 @@ enum {
   kTrackTypeend
 };
 
-enum { kGenpTbegin = 0, kNoGenpTVar = 1, kGenpTup, kGenpTdown, kGenpTend };
+enum { kGenpTbegin = 0,
+       kNoGenpTVar = 1,
+       kGenpTup,
+       kGenpTdown,
+       kGenpTend };
 
 enum {
   kSpeciesbegin = 0,
@@ -97,27 +101,27 @@ enum {
 };
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
-    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-    TrackSelectionFlags::kITSHits;
+  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+  TrackSelectionFlags::kITSHits;
 static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
-    TrackSelectionFlags::kTPCNCls |
-    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-    TrackSelectionFlags::kTPCChi2NDF;
+  TrackSelectionFlags::kTPCNCls |
+  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  TrackSelectionFlags::kTPCChi2NDF;
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
-    TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
-    TrackSelectionFlags::kDCAxy;
+  TrackSelectionFlags::kDCAxy;
 
 AxisSpec axisEvent{10, 0.5, 10.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{
-    {0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf,
-     o2::constants::math::PIQuarter * 3., o2::constants::math::PI,
-     o2::constants::math::PIQuarter * 5., o2::constants::math::PIHalf * 3.,
-     o2::constants::math::PIQuarter * 7., o2::constants::math::TwoPI},
-    "#phi",
-    "PhiAxis"};
+  {0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf,
+   o2::constants::math::PIQuarter * 3., o2::constants::math::PI,
+   o2::constants::math::PIQuarter * 5., o2::constants::math::PIHalf * 3.,
+   o2::constants::math::PIQuarter * 7., o2::constants::math::TwoPI},
+  "#phi",
+  "PhiAxis"};
 AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5,
@@ -138,7 +142,9 @@ auto static constexpr kNItslayers = 7;
 struct HeavyionMultiplicity {
 
   HistogramRegistry histos{
-      "histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "histos",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
@@ -166,38 +172,40 @@ struct HeavyionMultiplicity {
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{
-      "centralityBinning",
-      {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
-      ""};
+    "centralityBinning",
+    {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
+    ""};
   ConfigurableAxis occupancyBin{
-      "occupancyBin", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
+    "occupancyBin",
+    {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000},
+    ""};
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true,
                                             "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true,
                                             "Enable GoodZvtxFT0vsPV cut"};
   Configurable<bool> isApplyExtraCorrCut{
-      "isApplyExtraCorrCut", false,
-      "Enable extra NPVtracks vs FTOC correlation cut"};
+    "isApplyExtraCorrCut", false,
+    "Enable extra NPVtracks vs FTOC correlation cut"};
   Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false,
                                         "Enable extra phi cut"};
   Configurable<float> npvTracksCut{"npvTracksCut", 1.0f,
                                    "Apply extra NPVtracks cut"};
   Configurable<float> ft0cCut{"ft0cCut", 1.0f, "Apply extra FT0C cut"};
   Configurable<bool> isApplyNoCollInTimeRangeStandard{
-      "isApplyNoCollInTimeRangeStandard", true,
-      "Enable NoCollInTimeRangeStandard cut"};
+    "isApplyNoCollInTimeRangeStandard", true,
+    "Enable NoCollInTimeRangeStandard cut"};
   Configurable<bool> isApplyNoCollInRofStandard{
-      "isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
+    "isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
   Configurable<bool> isApplyNoHighMultCollInPrevRof{
-      "isApplyNoHighMultCollInPrevRof", false,
-      "Enable NoHighMultCollInPrevRof cut"};
+    "isApplyNoHighMultCollInPrevRof", false,
+    "Enable NoHighMultCollInPrevRof cut"};
   Configurable<bool> isApplyFT0CbasedOccupancy{
-      "isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
+    "isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true,
                                      "Centrality based on FT0C"};
   Configurable<bool> isApplyCentFT0CVariant1{
-      "isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
+    "isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false,
                                      "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false,
@@ -205,7 +213,8 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false,
                                     "Centrality based on MFT tracks"};
 
-  void init(InitContext const &) {
+  void init(InitContext const&)
+  {
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisPV = {pvHistBin, "PV", "PVAxis"};
     AxisSpec axisFv0aMult = {fv0aMultHistBin, "fv0a", "FV0AMultAxis"};
@@ -219,12 +228,12 @@ struct HeavyionMultiplicity {
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
 
     auto hstat = histos.get<TH1>(HIST("EventHist"));
-    auto *x = hstat->GetXaxis();
+    auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All events");
     x->SetBinLabel(2, "sel8");
     x->SetBinLabel(
-        3, "kNoSameBunchPileup"); // reject collisions in case of pileup with
-                                  // another collision in the same foundBC
+      3, "kNoSameBunchPileup");              // reject collisions in case of pileup with
+                                             // another collision in the same foundBC
     x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV"); // small difference between
                                              // z-vertex from PV and from FT0
     x->SetBinLabel(5, "ApplyExtraCorrCut");
@@ -240,9 +249,9 @@ struct HeavyionMultiplicity {
       histos.add("PhiVsEtaHist", "PhiVsEtaHist", kTH2D, {axisPhi2, axisEta},
                  false);
       histos.add(
-          "hdatadndeta", "hdatadndeta", kTHnSparseD,
-          {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisTrackType},
-          false);
+        "hdatadndeta", "hdatadndeta", kTHnSparseD,
+        {axisVtxZ, centAxis, axisOccupancy, axisEta, axisPhi, axisTrackType},
+        false);
     }
 
     if (doprocessMonteCarlo || doprocessMCpTefficiency ||
@@ -261,9 +270,9 @@ struct HeavyionMultiplicity {
                   axisSpecies, axisTrackType},
                  false);
       histos.add(
-          "hmcgendndeta", "hmcgendndeta", kTHnSparseD,
-          {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary},
-          false);
+        "hmcgendndeta", "hmcgendndeta", kTHnSparseD,
+        {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary},
+        false);
     }
 
     if (doprocessMCpTefficiency) {
@@ -277,7 +286,7 @@ struct HeavyionMultiplicity {
       histos.add("hTracksCount", "hTracksCount", kTHnSparseD,
                  {centAxis, axisTracks}, false);
       auto htrack = histos.get<THnSparse>(HIST("hTracksCount"));
-      auto *x2 = htrack->GetAxis(1);
+      auto* x2 = htrack->GetAxis(1);
       x2->SetBinLabel(1, "All tracks");
       x2->SetBinLabel(2, "Non-fake tracks");
       for (int i = 0; i < kNItslayers; i++) {
@@ -327,17 +336,19 @@ struct HeavyionMultiplicity {
       histos.add("MCrecPhiVsEtaHistpp", "MCrecPhiVsEtaHistpp", kTH2D,
                  {axisPhi2, axisEta}, false);
       histos.add(
-          "hmcrecdndetapp", "hmcrecdndetapp", kTHnSparseD,
-          {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisTrackType},
-          false);
+        "hmcrecdndetapp", "hmcrecdndetapp", kTHnSparseD,
+        {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisTrackType},
+        false);
       histos.add(
-          "hmcgendndetapp", "hmcgendndetapp", kTHnSparseD,
-          {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary},
-          false);
+        "hmcgendndetapp", "hmcgendndetapp", kTHnSparseD,
+        {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary},
+        false);
     }
   }
 
-  template <typename CheckCol> bool isEventSelected(CheckCol const &col) {
+  template <typename CheckCol>
+  bool isEventSelected(CheckCol const& col)
+  {
     histos.fill(HIST("EventHist"), 1);
 
     if (!col.sel8()) {
@@ -383,7 +394,9 @@ struct HeavyionMultiplicity {
     return true;
   }
 
-  template <typename CheckColCent> float selColCent(CheckColCent const &col) {
+  template <typename CheckColCent>
+  float selColCent(CheckColCent const& col)
+  {
     auto cent = -1;
     if (isApplyCentFT0C) {
       cent = col.centFT0C();
@@ -403,13 +416,17 @@ struct HeavyionMultiplicity {
     return cent;
   }
 
-  template <typename CheckColOccu> float selColOccu(CheckColOccu const &col) {
+  template <typename CheckColOccu>
+  float selColOccu(CheckColOccu const& col)
+  {
     auto occu = isApplyFT0CbasedOccupancy ? col.ft0cOccupancyInTimeRange()
                                           : col.trackOccupancyInTimeRange();
     return occu;
   }
 
-  template <typename CheckTrack> bool isTrackSelected(CheckTrack const &track) {
+  template <typename CheckTrack>
+  bool isTrackSelected(CheckTrack const& track)
+  {
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
@@ -422,7 +439,8 @@ struct HeavyionMultiplicity {
   }
 
   template <typename CheckGenTrack>
-  bool isGenTrackSelected(CheckGenTrack const &track) {
+  bool isGenTrackSelected(CheckGenTrack const& track)
+  {
     if (!track.isPhysicalPrimary()) {
       return false;
     }
@@ -448,18 +466,19 @@ struct HeavyionMultiplicity {
   }
 
   expressions::Filter trackSelectionProperMixed =
-      ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-      ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
-      ifnode(ncheckbit(aod::track::v001::detectorMap,
-                       (uint8_t)o2::aod::track::TPC),
-             ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true) &&
-      ifnode(dcaZ.node() > 0.f,
-             nabs(aod::track::dcaZ) <= dcaZ &&
-                 ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-             ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
+    ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+    ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
+    ifnode(ncheckbit(aod::track::v001::detectorMap,
+                     (uint8_t)o2::aod::track::TPC),
+           ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true) &&
+    ifnode(dcaZ.node() > 0.f,
+           nabs(aod::track::dcaZ) <= dcaZ &&
+             ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
+           ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
 
-  void processData(CollisionDataTable::iterator const &cols,
-                   FilTrackDataTable const &tracks) {
+  void processData(CollisionDataTable::iterator const& cols,
+                   FilTrackDataTable const& tracks)
+  {
     if (!isEventSelected(cols)) {
       return;
     }
@@ -468,7 +487,7 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("hdatazvtxcent"), cols.posZ(), selColCent(cols),
                 selColOccu(cols));
 
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
@@ -487,8 +506,9 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C",
                  false);
 
-  void processCorrelation(CollisionDataTable::iterator const &cols,
-                          FilTrackDataTable const &tracks) {
+  void processCorrelation(CollisionDataTable::iterator const& cols,
+                          FilTrackDataTable const& tracks)
+  {
     if (!isEventSelected(cols)) {
       return;
     }
@@ -498,7 +518,7 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("VtxZHist"), cols.posZ());
 
     auto nchTracks = 0;
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) >= etaRange) {
         continue;
       }
@@ -515,11 +535,12 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation,
                  "do correlation study in data", false);
 
-  void processMonteCarlo(CollisionMCTrueTable::iterator const &,
-                         CollisionMCRecTable const &RecCols,
-                         TrackMCTrueTable const &GenParticles,
-                         FilTrackMCRecTable const &RecTracks) {
-    for (const auto &RecCol : RecCols) {
+  void processMonteCarlo(CollisionMCTrueTable::iterator const&,
+                         CollisionMCRecTable const& RecCols,
+                         TrackMCTrueTable const& GenParticles,
+                         FilTrackMCRecTable const& RecTracks)
+  {
+    for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
@@ -529,9 +550,9 @@ struct HeavyionMultiplicity {
                   selColOccu(RecCol));
 
       auto recTracksPart =
-          RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+        RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
-      for (const auto &Rectrack : recTracksPart) {
+      for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
@@ -554,25 +575,25 @@ struct HeavyionMultiplicity {
           auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
           if (mcpart.isPhysicalPrimary()) {
             switch (std::abs(mcpart.pdgCode())) {
-            case PDG_t::kPiPlus:
-              pid = kSpPion;
-              break;
-            case PDG_t::kKPlus:
-              pid = kSpKaon;
-              break;
-            case PDG_t::kProton:
-              pid = kSpProton;
-              break;
-            default:
-              pid = kSpOther;
-              break;
+              case PDG_t::kPiPlus:
+                pid = kSpPion;
+                break;
+              case PDG_t::kKPlus:
+                pid = kSpKaon;
+                break;
+              case PDG_t::kProton:
+                pid = kSpProton;
+                break;
+              default:
+                pid = kSpOther;
+                break;
             }
           } else {
             pid = kSpNotPrimary;
           }
           if (mcpart.has_mothers()) {
             auto mcpartMother =
-                mcpart.template mothers_as<aod::McParticles>().front();
+              mcpart.template mothers_as<aod::McParticles>().front();
             if (mcpartMother.pdgCode() == PDG_t::kK0Short ||
                 std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
               pid = kSpStrangeDecay;
@@ -593,7 +614,7 @@ struct HeavyionMultiplicity {
         }
       } // track (mcrec) loop
 
-      for (const auto &particle : GenParticles) {
+      for (const auto& particle : GenParticles) {
         if (!isGenTrackSelected(particle)) {
           continue;
         }
@@ -620,18 +641,18 @@ struct HeavyionMultiplicity {
 
         int pid = 0;
         switch (std::abs(particle.pdgCode())) {
-        case PDG_t::kPiPlus:
-          pid = kSpPion;
-          break;
-        case PDG_t::kKPlus:
-          pid = kSpKaon;
-          break;
-        case PDG_t::kProton:
-          pid = kSpProton;
-          break;
-        default:
-          pid = kSpOther;
-          break;
+          case PDG_t::kPiPlus:
+            pid = kSpPion;
+            break;
+          case PDG_t::kKPlus:
+            pid = kSpKaon;
+            break;
+          case PDG_t::kProton:
+            pid = kSpProton;
+            break;
+          default:
+            pid = kSpOther;
+            break;
         }
         histos.fill(HIST("hmcgendndeta"), RecCol.posZ(), selColCent(RecCol),
                     particle.eta(), particle.phi(), static_cast<double>(pid),
@@ -642,11 +663,12 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C",
                  false);
 
-  void processMCpTefficiency(CollisionMCTrueTable::iterator const &,
-                             CollisionMCRecTable const &RecCols,
-                             TrackMCTrueTable const &GenParticles,
-                             FilTrackMCRecTable const &RecTracks) {
-    for (const auto &RecCol : RecCols) {
+  void processMCpTefficiency(CollisionMCTrueTable::iterator const&,
+                             CollisionMCRecTable const& RecCols,
+                             TrackMCTrueTable const& GenParticles,
+                             FilTrackMCRecTable const& RecTracks)
+  {
+    for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
@@ -659,8 +681,8 @@ struct HeavyionMultiplicity {
                   selColOccu(RecCol));
 
       auto recTracksPart =
-          RecTracks.sliceBy(perCollision, RecCol.globalIndex());
-      for (const auto &Rectrack : recTracksPart) {
+        RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+      for (const auto& Rectrack : recTracksPart) {
         if (std::abs(Rectrack.eta()) >= etaRange) {
           continue;
         }
@@ -680,7 +702,7 @@ struct HeavyionMultiplicity {
         }
       }
 
-      for (const auto &particle : GenParticles) {
+      for (const auto& particle : GenParticles) {
         if (!isGenTrackSelected(particle)) {
           continue;
         }
@@ -703,10 +725,11 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processMCpTefficiency,
                  "process MC pTefficiency", false);
 
-  void processMCcheckFakeTracks(CollisionMCTrueTable::iterator const &,
-                                CollisionMCRecTable const &RecCols,
-                                FilTrackMCRecTable const &RecTracks) {
-    for (const auto &RecCol : RecCols) {
+  void processMCcheckFakeTracks(CollisionMCTrueTable::iterator const&,
+                                CollisionMCRecTable const& RecCols,
+                                FilTrackMCRecTable const& RecTracks)
+  {
+    for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
@@ -719,8 +742,8 @@ struct HeavyionMultiplicity {
                   selColOccu(RecCol));
 
       auto recTracksPart =
-          RecTracks.sliceBy(perCollision, RecCol.globalIndex());
-      for (const auto &Rectrack : recTracksPart) {
+        RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+      for (const auto& Rectrack : recTracksPart) {
         if (std::abs(Rectrack.eta()) >= etaRange) {
           continue;
         }
@@ -746,9 +769,10 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processMCcheckFakeTracks,
                  "Check Fake tracks", false);
 
-  void processStrangeYield(CollisionDataTable::iterator const &cols,
-                           V0TrackCandidates const &,
-                           aod::V0Datas const &v0data) {
+  void processStrangeYield(CollisionDataTable::iterator const& cols,
+                           V0TrackCandidates const&,
+                           aod::V0Datas const& v0data)
+  {
     if (!isEventSelected(cols)) {
       return;
     }
@@ -756,7 +780,7 @@ struct HeavyionMultiplicity {
       return;
     }
     histos.fill(HIST("hzvtxcent"), cols.posZ(), selColCent(cols));
-    for (const auto &v0track : v0data) {
+    for (const auto& v0track : v0data) {
       auto v0pTrack = v0track.template posTrack_as<V0TrackCandidates>();
       auto v0nTrack = v0track.template negTrack_as<V0TrackCandidates>();
       if (std::abs(v0pTrack.eta()) > v0etaCut ||
@@ -798,15 +822,16 @@ struct HeavyionMultiplicity {
   PROCESS_SWITCH(HeavyionMultiplicity, processStrangeYield,
                  "Strange particle yield", false);
 
-  void processppData(ColDataTablepp::iterator const &cols,
-                     FilTrackDataTable const &tracks) {
+  void processppData(ColDataTablepp::iterator const& cols,
+                     FilTrackDataTable const& tracks)
+  {
     if (!isEventSelected(cols)) {
       return;
     }
 
     // INEL>0 sample
     auto nTrks = 0;
-    for (const auto &track : tracks) {
+    for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
@@ -821,7 +846,7 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("MultPercentileHist"), cols.centFT0M());
       histos.fill(HIST("hdatazvtxmultpp"), cols.posZ(), cols.centFT0M());
 
-      for (const auto &track : tracks) {
+      for (const auto& track : tracks) {
         if (!isTrackSelected(track)) {
           continue;
         }
@@ -840,21 +865,22 @@ struct HeavyionMultiplicity {
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppData, "process pp data", false);
 
-  void processppMonteCarlo(CollisionMCTrueTable::iterator const &,
-                           ColMCRecTablepp const &RecCols,
-                           TrackMCTrueTable const &GenParticles,
-                           FilTrackMCRecTable const &RecTracks) {
-    for (const auto &RecCol : RecCols) {
+  void processppMonteCarlo(CollisionMCTrueTable::iterator const&,
+                           ColMCRecTablepp const& RecCols,
+                           TrackMCTrueTable const& GenParticles,
+                           FilTrackMCRecTable const& RecTracks)
+  {
+    for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
       }
       auto recTracksPart =
-          RecTracks.sliceBy(perCollision, RecCol.globalIndex());
+        RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
 
       // INEL>0 sample
       auto nTrks = 0;
-      for (const auto &Rectrack : recTracksPart) {
+      for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
@@ -869,7 +895,7 @@ struct HeavyionMultiplicity {
         histos.fill(HIST("MultPercentileMCRecHist"), RecCol.centFT0M());
         histos.fill(HIST("hmczvtxmultpp"), RecCol.posZ(), RecCol.centFT0M());
 
-        for (const auto &Rectrack : recTracksPart) {
+        for (const auto& Rectrack : recTracksPart) {
           if (!isTrackSelected(Rectrack)) {
             continue;
           }
@@ -893,25 +919,25 @@ struct HeavyionMultiplicity {
             auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
             if (mcpart.isPhysicalPrimary()) {
               switch (std::abs(mcpart.pdgCode())) {
-              case PDG_t::kPiPlus:
-                pid = kSpPion;
-                break;
-              case PDG_t::kKPlus:
-                pid = kSpKaon;
-                break;
-              case PDG_t::kProton:
-                pid = kSpProton;
-                break;
-              default:
-                pid = kSpOther;
-                break;
+                case PDG_t::kPiPlus:
+                  pid = kSpPion;
+                  break;
+                case PDG_t::kKPlus:
+                  pid = kSpKaon;
+                  break;
+                case PDG_t::kProton:
+                  pid = kSpProton;
+                  break;
+                default:
+                  pid = kSpOther;
+                  break;
               }
             } else {
               pid = kSpNotPrimary;
             }
             if (mcpart.has_mothers()) {
               auto mcpartMother =
-                  mcpart.template mothers_as<aod::McParticles>().front();
+                mcpart.template mothers_as<aod::McParticles>().front();
               if (mcpartMother.pdgCode() == PDG_t::kK0Short ||
                   std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
                 pid = kSpStrangeDecay;
@@ -932,7 +958,7 @@ struct HeavyionMultiplicity {
           }
         } // track (mcrec) loop
 
-        for (const auto &particle : GenParticles) {
+        for (const auto& particle : GenParticles) {
           if (!isGenTrackSelected(particle)) {
             continue;
           }
@@ -959,18 +985,18 @@ struct HeavyionMultiplicity {
 
           int pid = 0;
           switch (std::abs(particle.pdgCode())) {
-          case PDG_t::kPiPlus:
-            pid = kSpPion;
-            break;
-          case PDG_t::kKPlus:
-            pid = kSpKaon;
-            break;
-          case PDG_t::kProton:
-            pid = kSpProton;
-            break;
-          default:
-            pid = kSpOther;
-            break;
+            case PDG_t::kPiPlus:
+              pid = kSpPion;
+              break;
+            case PDG_t::kKPlus:
+              pid = kSpKaon;
+              break;
+            case PDG_t::kProton:
+              pid = kSpProton;
+              break;
+            default:
+              pid = kSpOther;
+              break;
           }
           histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(),
                       particle.eta(), particle.phi(), static_cast<double>(pid),
@@ -983,6 +1009,7 @@ struct HeavyionMultiplicity {
                  false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<HeavyionMultiplicity>(cfgc)};
 }
