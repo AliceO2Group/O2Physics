@@ -1221,7 +1221,7 @@ struct FlowSP {
 
     if (centrality > cfgCentMax || centrality < cfgCentMin)
       return;
-    
+
     if (!collision.has_mcCollision()) {
       LOGF(info, "No mccollision found for this collision");
       return;
@@ -1293,8 +1293,7 @@ struct FlowSP {
           colSelected = false;
           continue;
         }
-        if (!eventSelected(col, filteredTrackSlice.size()) || centrality > cfgCentMax || centrality < cfgCentMin)
-        {
+        if (!eventSelected(col, filteredTrackSlice.size()) || centrality > cfgCentMax || centrality < cfgCentMin) {
           colSelected = false;
           continue;
         }
