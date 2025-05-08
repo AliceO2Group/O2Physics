@@ -1002,7 +1002,7 @@ struct FlowSP {
   template <ModeType md, typename McParticleObject>
   inline void fillPrimaryHistos(McParticleObject mcparticle)
   {
-    static constexpr std::string_view Time[] = {"before/", "after/"};
+    static constexpr std::string_view Time[] = {"/before", "/after"};
 
     if (!mcparticle.isPhysicalPrimary()) {
       registry.fill(HIST("trackMCReco") + HIST(Time[md]) + HIST("/hIsPhysicalPrimary"), 0);
