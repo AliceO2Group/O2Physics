@@ -180,6 +180,7 @@ struct FlowSP {
   };
 
   enum TrackSelectionsUnFiltered {
+    trackSel_ZeroCharge,
     trackSel_Eta,
     trackSel_Pt,
     trackSel_DCAxy,
@@ -188,7 +189,6 @@ struct FlowSP {
     trackSel_NCls,
     trackSel_FshCls,
     trackSel_TPCBoundary,
-    trackSel_ZeroCharge,
     trackSel_ParticleWeights,
     nTrackSelections
   };
@@ -285,16 +285,17 @@ struct FlowSP {
 
         if (doprocessData || doprocessMCReco) {
           // track QA for pos, neg, incl
-          registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
-          registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
-          registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-          registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
-          registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
-          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
-          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
-          registry.add("incl/QA/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+          registry.add<TH1>("incl/QA/before/hPt", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/before/hPhi", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/before/hEta", "", kTH1D, {axisEta});
+          registry.add<TH3>("incl/QA/before/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+          registry.add<TH2>("incl/QA/before/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+          registry.add<TH2>("incl/QA/before/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+          registry.add("incl/QA/before/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
+          registry.add("incl/QA/before/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
+          registry.add("incl/QA/before/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+
+          registry.addClone("incl/QA/before/", "incl/QA/after/");
         }
       }
 
@@ -947,19 +948,20 @@ struct FlowSP {
     }
   }
 
-  template <ChargeType ct, typename TrackObject>
+  template <FillType ft, ChargeType ct, typename TrackObject>
   inline void fillTrackQA(TrackObject track, double vz, float wacc = 1, float weff = 1)
   {
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPt"), track.pt());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi"), track.phi());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhiCorrected"), track.phi(), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy_pt"), track.pt(), track.dcaXY());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz_pt"), track.pt(), track.dcaZ());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_pt"), track.pt(), track.tpcNClsFound());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls());
+    static constexpr std::string_view Time[] = {"before/", "after/"};
+
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz, , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), , wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), , wacc * weff);
   }
 
   template <FillType ft, ModeType md, typename TrackObject>
@@ -1124,14 +1126,25 @@ struct FlowSP {
         float weffP = 1., waccP = 1.;
         float weffN = 1., waccN = 1.;
 
-        if (!trackSelected(track, field))
-          continue;
-
         if (track.sign() == 0.0)
           continue;
 
         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
+
+
+        // Fill QA histograms before track selection
+        if (cfgFillQAHistos){
+          fillTrackQA<kBefore,kInclusive>(track, vtxz);
+          if(pos) 
+            fillTrackQA<kBefore,kPositive>(track, vtxz);
+          else
+            fillTrackQA<kBefore,kNegative>(track, vtxz);
+        }
+
+        if (!trackSelected(track, field))
+          continue;
+
 
         // Fill NUA weights
         if (cfgFillWeights) {
@@ -1180,20 +1193,21 @@ struct FlowSP {
         fillHistograms<kInclusive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
 
         if (cfgFillQAHistos)
-          fillTrackQA<kInclusive>(track, vtxz, wacc, weff);
+          fillTrackQA<kAfter,kInclusive>(track, vtxz, wacc, weff);
 
         if (cfgFillChargeDependence) {
           if (pos) {
             fillHistograms<kPositive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kPositive>(track, vtxz, waccP, weffP);
+            fillTrackQA<kAfter,kPositive>(track, vtxz, waccP, weffP);
           } else {
             fillHistograms<kNegative>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kNegative>(track, vtxz, waccN, weffN);
+            fillTrackQA<kAfter,kNegative>(track, vtxz, waccN, weffN);
           }
         }
       } // end of track loop
     } // end of collision isSelected loop
   }
+
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
 
   void processMCReco(CC const& collision, aod::BCsWithTimestamps const&, TCs const& tracks, FilteredTCs const& filteredTracks, aod::McParticles const&)
@@ -1221,6 +1235,7 @@ struct FlowSP {
 
     if (centrality > cfgCentMax || centrality < cfgCentMin)
       return;
+
     registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     if (!collision.has_mcCollision()) {
@@ -1243,13 +1258,16 @@ struct FlowSP {
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
+      if (cfgFillQAHistos)
+        fillTrackQA<kBefore,kInclusive>(track, vtxz);
+
       if (!trackSelected(track, field))
         continue;
 
       fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
 
       if (cfgFillQAHistos)
-        fillTrackQA<kInclusive>(track, vtxz);
+        fillTrackQA<kAfter,kInclusive>(track, vtxz);
 
     } // end of track loop
   }
@@ -1294,18 +1312,20 @@ struct FlowSP {
           colSelected = false;
           continue;
         }
-        if (!eventSelected(col, filteredTrackSlice.size()))
+        if (!eventSelected(col, filteredTrackSlice.size())){
           colSelected = false;
-        continue;
+          continue;
+        }
 
-        if (centrality > cfgCentMax || centrality < cfgCentMin) {
+        if (centrality > cfgCentMax || centrality < cfgCentMin){
           colSelected = false;
           continue;
         }
         registry.fill(HIST("hEventCount"), evSel_CentCuts);
-      }
-
+      
         fillEventQA<kAfter>(col, trackSlice);
+
+      } // leave reconstructed collision loop
 
         if (!colSelected)
           continue;
@@ -1354,7 +1374,6 @@ struct FlowSP {
         }
       }
     }
-  }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
 };
 
