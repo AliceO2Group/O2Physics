@@ -112,7 +112,7 @@ struct Hyperhelium4sigmaAnalysis {
     // Axes
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
     const AxisSpec ptAxis{50, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec nSigmaAxis{100, -5, 5, "n#sigma_{#pi}"};
+    const AxisSpec nSigmaAxis{120, -6.f, 6.f, "n#sigma_{#alpha}"};
     const AxisSpec massAxis{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
 
     registry.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
@@ -133,7 +133,8 @@ struct Hyperhelium4sigmaAnalysis {
       if (std::abs(dauTrack.tpcNSigmaAl()) > cutNSigmaAl) {
         continue;
       }
-      registry.fill(HIST("h2MassHyperhelium4sigmaPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
+      registry.fill(HIST("h2MassHyperhelium4sigmaPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
       registry.fill(HIST("h2NSigmaAlPt"), kinkCand.mothSign() * kinkCand.ptDaug(), dauTrack.tpcNSigmaAl());
     }
   }
@@ -183,6 +184,7 @@ struct Hyperhelium4sigmaQa {
       registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(1, "Generated");
       registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(2, "Survived");
 
+      registry.add<TH1>("hGenHyperHelium4SigmaP", "", HistType::kTH1F, {ptAxis});
       registry.add<TH1>("hGenHyperHelium4SigmaPt", "", HistType::kTH1F, {ptAxis});
       registry.add<TH1>("hGenHyperHelium4SigmaCt", "", HistType::kTH1F, {ctAxis});
       registry.add<TH1>("hMcRecoInvMass", "", HistType::kTH1F, {invMassAxis});
@@ -342,6 +344,7 @@ struct Hyperhelium4sigmaQa {
           }
         }
 
+        registry.fill(HIST("hGenHyperHelium4SigmaP"), mcparticle.p());
         registry.fill(HIST("hGenHyperHelium4SigmaPt"), mcparticle.pt());
         double ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperHelium4Sigma / mcparticle.p();
         registry.fill(HIST("hGenHyperHelium4SigmaCt"), ct);
