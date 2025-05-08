@@ -95,6 +95,7 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurables Event Selection
+  Configurable<bool> applyWeights{"applyWeights", false, "apply particle weights?"};
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
   Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
@@ -676,7 +677,11 @@ struct UccZdc {
           double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
           if (weight > 0.) {
             pTs.emplace_back(pt);
-            wIs.emplace_back(weight);
+            if (applyWeights) {
+              wIs.emplace_back(weight);
+            } else {
+              wIs.emplace_back(1.);
+            }
           }
         }
       }
@@ -787,7 +792,11 @@ struct UccZdc {
             double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
             if (weight > 0.) {
               pTs.emplace_back(pt);
-              wIs.emplace_back(weight);
+              if (applyWeights) {
+                wIs.emplace_back(weight);
+              } else {
+                wIs.emplace_back(1.);
+              }
             }
           }
         }
