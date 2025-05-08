@@ -277,11 +277,15 @@ DECLARE_SOA_TABLE(HfMlBplusToD0Pi, "AOD", "HFMLBPLUS", //!
 
 namespace hf_sel_candidate_lb
 {
-DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int); //!
+DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int);     //! selection flag on Lb candidate
+DECLARE_SOA_COLUMN(MlProbLbToLcPi, mlProbLbToLcPi, float); //! ML score of Lb candidate for signal class
+
 } // namespace hf_sel_candidate_lb
 
 DECLARE_SOA_TABLE(HfSelLbToLcPi, "AOD", "HFSELLB", //!
                   hf_sel_candidate_lb::IsSelLbToLcPi);
+DECLARE_SOA_TABLE(HfMlLbToLcPi, "AOD", "HFMLLB", //!
+                  hf_sel_candidate_lb::MlProbLbToLcPi);
 
 namespace hf_sel_candidate_x
 {
