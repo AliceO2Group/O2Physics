@@ -1005,9 +1005,9 @@ struct FlowSP {
     static constexpr std::string_view Time[] = {"before/", "after/"};
 
     if (!mcparticle.isPhysicalPrimary()) {
-      registry.fill(HIST("trackMCReco") + HIST() + HIST("/hIsPhysicalPrimary"), 0);
+      registry.fill(HIST("trackMCReco") + HIST(Time[md]) + HIST("/hIsPhysicalPrimary"), 0);
     } else {
-      registry.fill(HIST("trackMCReco") + HIST() + HIST("/hIsPhysicalPrimary"), 1);
+      registry.fill(HIST("trackMCReco") + HIST(Time[md]) + HIST("/hIsPhysicalPrimary"), 1);
     }
   }
 
