@@ -210,7 +210,7 @@ struct FlowSP {
   };
 
   static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
-  static constexpr std::string_view Time[] = {"before/", "after"};
+  static constexpr std::string_view Time[] = {"before/", "after/"};
 
   void init(InitContext const&)
   {
@@ -347,20 +347,22 @@ struct FlowSP {
         }
 
         if (cfgFillMixedHarmonics) {
-          registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
 
-          registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
 
-          registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+
+          registry.addClone("incl/v2/", "incl/v3/");
         }
 
         if (cfgFillEventPlane) {
@@ -414,7 +416,7 @@ struct FlowSP {
       }
 
       registry.addClone("QA/after/", "QA/before/");
-
+      
       if (cfgFillChargeDependence) {
         registry.addClone("incl/", "pos/");
         registry.addClone("incl/", "neg/");
@@ -855,37 +857,37 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
     if (cfgFillMixedHarmonics) {
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
       // -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_eta_MH"), track.eta(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_eta_MH"), track.eta(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_eta_MH"), track.eta(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_eta_MH"), track.eta(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_pt_MH"), track.pt(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_pt_MH"), track.pt(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_pt_MH"), track.pt(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_pt_MH"), track.pt(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_cent_MH"), centrality, (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_cent_MH"), centrality, (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_cent_MH"), centrality, (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_cent_MH"), centrality, (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
     }
 
     if (cfgFillXandYterms) {
@@ -997,6 +999,19 @@ struct FlowSP {
     }
   }
 
+  template < ModeType md, typename McParticleObject> 
+  inline void fillPrimaryHistos(McParticleObject mcparticle)
+  {
+    static constexpr std::string_view Time[] = {"before/", "after/"};
+
+    if (!mcparticle.isPhysicalPrimary()) {
+      registry.fill(HIST("trackMCReco") + HIST() + HIST("/hIsPhysicalPrimary"), 0);
+    } else {
+      registry.fill(HIST("trackMCReco") + HIST() + HIST("/hIsPhysicalPrimary"), 1);
+    }
+
+  }
+
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
@@ -1063,11 +1078,11 @@ struct FlowSP {
       }
 
       if (centrality > cfgCentMax || centrality < cfgCentMin)
-        return;
+      return;
 
       registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
-      if (cfgFillQAHistos)
+      if (cfgFillQAHistos) 
         fillEventQA<kAfter>(collision, tracks);
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
@@ -1224,13 +1239,6 @@ struct FlowSP {
       registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
-
-      if (!mcParticle.isPhysicalPrimary()) {
-        registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 0);
-        continue;
-      } else {
-        registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 1);
-      }
 
       if (!trackSelected(track, field))
         continue;
