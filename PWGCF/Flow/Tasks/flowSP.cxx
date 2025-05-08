@@ -416,7 +416,7 @@ struct FlowSP {
       }
 
       registry.addClone("QA/after/", "QA/before/");
-      
+
       if (cfgFillChargeDependence) {
         registry.addClone("incl/", "pos/");
         registry.addClone("incl/", "neg/");
@@ -999,7 +999,7 @@ struct FlowSP {
     }
   }
 
-  template < ModeType md, typename McParticleObject> 
+  template <ModeType md, typename McParticleObject>
   inline void fillPrimaryHistos(McParticleObject mcparticle)
   {
     static constexpr std::string_view Time[] = {"before/", "after/"};
@@ -1009,7 +1009,6 @@ struct FlowSP {
     } else {
       registry.fill(HIST("trackMCReco") + HIST() + HIST("/hIsPhysicalPrimary"), 1);
     }
-
   }
 
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
@@ -1078,11 +1077,11 @@ struct FlowSP {
       }
 
       if (centrality > cfgCentMax || centrality < cfgCentMin)
-      return;
+        return;
 
       registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
-      if (cfgFillQAHistos) 
+      if (cfgFillQAHistos)
         fillEventQA<kAfter>(collision, tracks);
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
