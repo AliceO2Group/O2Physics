@@ -81,13 +81,13 @@ class FemtoUniverseCascadeSelection
 
  public:
   FemtoUniverseCascadeSelection()
-    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), fDCAV0DaughMax(-9999999.), fCPAV0Min(9999999.), fTranRadV0Min(9999999.), fTranRadV0Max(-9999999.), fV0DecVtxMax(-9999999.), fDCACascadeDaughMax(-9999999.), fCPACascadeMin(9999999.), fTranRadCascadeMin(9999999.), fTranRadCascadeMax(-9999999.), fDecVtxMax(-9999999.), fDCAPosToPV(9999999.), fDCANegToPV(9999999.), fDCABachToPV(9999999.), fDCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimit(1.25), fInvMassUpLimit(1.4), fRejectCompetingMass(false), fInvMassCompetingLowLimit(1.5), fInvMassCompetingUpLimit(2.0), isCascOmega(false) /*, nSigmaPIDOffsetTPC(0.)*/
+    : nPtCascadeMinSel(0), nPtCascadeMaxSel(0), nEtaCascadeMaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nV0DecVtxMax(0), nDCACascadeDaughMax(0), nCPACascadeMin(0), nTranRadCascadeMin(0), nTranRadCascadeMax(0), nDecVtxMax(0), nDCAPosToPV(0), nDCANegToPV(0), nDCABachToPV(0), nDCAV0ToPV(0), pTCascadeMin(9999999.), pTCascadeMax(-9999999.), etaCascadeMax(-9999999.), fDCAV0DaughMax(-9999999.), fCPAV0Min(9999999.), fTranRadV0Min(9999999.), fTranRadV0Max(-9999999.), fV0DecVtxMax(-9999999.), fDCACascadeDaughMax(-9999999.), fCPACascadeMin(9999999.), fTranRadCascadeMin(9999999.), fTranRadCascadeMax(-9999999.), fDecVtxMax(-9999999.), fDCAPosToPV(9999999.), fDCANegToPV(9999999.), fDCABachToPV(9999999.), fDCAV0ToPV(9999999.), fV0InvMassLowLimit(1.05), fV0InvMassUpLimit(1.3), fInvMassLowLimitXi(1.25), fInvMassUpLimitXi(1.4), fInvMassLowLimitOmega(1.6), fInvMassUpLimitOmega(1.8) /*, fRejectCompetingMass(false), fInvMassCompetingLowLimit(1.5), fInvMassCompetingUpLimit(2.0), nSigmaPIDOffsetTPC(0.)*/
   {
   }
 
   /// Initializes histograms for the task
   template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
-  void init(HistogramRegistry* registry, bool isSelectCascOmega = false);
+  void init(HistogramRegistry* registry /*, bool isSelectCascOmega = false*/);
 
   template <typename Col, typename Casc, typename Track>
   bool isSelectedMinimal(Col const& col, Casc const& cascade, Track const& posTrack, Track const& negTrack, Track const& bachTrack);
@@ -153,21 +153,23 @@ class FemtoUniverseCascadeSelection
   /// Set limit for the selection on the invariant mass
   /// \param lowLimit Lower limit for the invariant mass distribution
   /// \param upLimit Upper limit for the invariant mass distribution
-  void setInvMassLimits(float lowLimit, float upLimit)
+  void setInvMassLimits(float lowLimitXi, float lowLimitOmega, float upLimitXi, float upLimitOmega)
   {
-    fInvMassLowLimit = lowLimit;
-    fInvMassUpLimit = upLimit;
+    fInvMassLowLimitXi = lowLimitXi;
+    fInvMassUpLimitXi = upLimitXi;
+    fInvMassLowLimitOmega = lowLimitOmega;
+    fInvMassUpLimitOmega = upLimitOmega;
   }
 
   /// Set limit for the omega rejection on the invariant mass
   /// \param lowLimit Lower limit for the invariant mass distribution
   /// \param upLimit Upper limit for the invariant mass distribution
-  void setCompetingInvMassLimits(float lowLimit, float upLimit)
+  /*void setCompetingInvMassLimits(float lowLimit, float upLimit)
   {
     fRejectCompetingMass = true;
     fInvMassCompetingLowLimit = lowLimit;
     fInvMassCompetingUpLimit = upLimit;
-  }
+  }*/
 
  private:
   int nPtCascadeMinSel;
@@ -208,14 +210,15 @@ class FemtoUniverseCascadeSelection
   float fV0InvMassLowLimit;
   float fV0InvMassUpLimit;
 
-  float fInvMassLowLimit;
-  float fInvMassUpLimit;
+  float fInvMassLowLimitXi;
+  float fInvMassUpLimitXi;
 
-  float fRejectCompetingMass;
+  float fInvMassLowLimitOmega;
+  float fInvMassUpLimitOmega;
+
+  /*float fRejectCompetingMass;
   float fInvMassCompetingLowLimit;
-  float fInvMassCompetingUpLimit;
-
-  bool isCascOmega;
+  float fInvMassCompetingUpLimit;*/
 
   // float nSigmaPIDOffsetTPC;
 
@@ -284,7 +287,7 @@ class FemtoUniverseCascadeSelection
 }; // namespace femto_universe
 
 template <o2::aod::femtouniverseparticle::ParticleType part, o2::aod::femtouniverseparticle::ParticleType daugh, o2::aod::femtouniverseparticle::ParticleType bach, typename CutContainerType>
-void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSelectCascOmega)
+void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry)
 {
 
   if (registry) {
@@ -334,7 +337,8 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
 
     // Cascade (Xi, Omega)
     // mHistogramRegistry->add("CascadeQA/hInvMassCascadeNoCuts", "No cuts", kTH1F, {massAxisCascade});
-    mHistogramRegistry->add("CascadeQA/hInvMassCascadeCut", "Invariant mass with cut", kTH1F, {massAxisCascade});
+    mHistogramRegistry->add("CascadeQA/hInvMassXiCut", "Invariant mass with cut", kTH1F, {massAxisCascade});
+    mHistogramRegistry->add("CascadeQA/hInvMassOmegaCut", "Invariant mass with cut", kTH1F, {massAxisCascade});
     mHistogramRegistry->add("CascadeQA/hCascadePt", "pT distribution", kTH1F, {ptAxis});
     mHistogramRegistry->add("CascadeQA/hCascadeEta", "Eta distribution", kTH1F, {etaAxis});
     mHistogramRegistry->add("CascadeQA/hCascadePhi", "Phi distribution", kTH1F, {phiAxis});
@@ -406,8 +410,6 @@ void FemtoUniverseCascadeSelection::init(HistogramRegistry* registry, bool isSel
                                            femto_universe_selection::kLowerLimit);
   fV0InvMassUpLimit = getMinimalSelection(femto_universe_cascade_selection::kCascadeV0MassMax,
                                           femto_universe_selection::kUpperLimit);
-
-  isCascOmega = isSelectCascOmega;
 }
 
 template <typename Col, typename Casc, typename Track>
@@ -427,21 +429,23 @@ bool FemtoUniverseCascadeSelection::isSelectedMinimal(Col const& col, Casc const
   const float cpaCasc = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
   const float invMassLambda = cascade.mLambda();
-  const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
+  const float invMassXi = cascade.mXi();
+  const float invMassOmega = cascade.mOmega();
 
   if (invMassLambda < fV0InvMassLowLimit || invMassLambda > fV0InvMassUpLimit) {
     return false;
   }
-  if (invMass < fInvMassLowLimit || invMass > fInvMassUpLimit) {
+  // Accepts the cascade candidates as either Xi or Omega but not both
+  if ((invMassXi < fInvMassLowLimitXi || invMassXi > fInvMassUpLimitXi) == (invMassOmega < fInvMassLowLimitOmega || invMassOmega > fInvMassUpLimitOmega)) {
     return false;
   }
-  if (fRejectCompetingMass) {
+  /*if (fRejectCompetingMass) {
     const float invMassCompeting = isCascOmega ? cascade.mXi() : cascade.mOmega();
     if (invMassCompeting > fInvMassCompetingLowLimit &&
         invMassCompeting < fInvMassCompetingUpLimit) {
       return false;
     }
-  }
+  }*/
   if (nPtCascadeMinSel > 0 && cascade.pt() < pTCascadeMin) {
     return false;
   }
@@ -537,10 +541,12 @@ void FemtoUniverseCascadeSelection::fillCascadeQA(Col const& col, Casc const& ca
   const float dcav0topv = cascade.dcav0topv(col.posX(), col.posY(), col.posZ());
 
   const float invMassLambda = cascade.mLambda();
-  const float invMass = isCascOmega ? cascade.mOmega() : cascade.mXi();
+  const float invMassXi = cascade.mXi();
+  const float invMassOmega = cascade.mOmega();
 
   mHistogramRegistry->fill(HIST("CascadeQA/hInvMassV0Cut"), invMassLambda);
-  mHistogramRegistry->fill(HIST("CascadeQA/hInvMassCascadeCut"), invMass);
+  mHistogramRegistry->fill(HIST("CascadeQA/hInvMassXiCut"), invMassXi);
+  mHistogramRegistry->fill(HIST("CascadeQA/hInvMassOmegaCut"), invMassOmega);
   mHistogramRegistry->fill(HIST("CascadeQA/hCascadePt"), cascade.pt());
   mHistogramRegistry->fill(HIST("CascadeQA/hCascadeEta"), cascade.eta());
   mHistogramRegistry->fill(HIST("CascadeQA/hCascadePhi"), cascade.phi());
