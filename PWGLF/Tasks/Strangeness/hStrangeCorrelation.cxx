@@ -89,7 +89,6 @@ struct HStrangeCorrelation {
 
   Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
   Configurable<int> triggerParticleCharge{"triggerParticleCharge", 0, "For checks, if 0 all charged tracks, if -1 only neg., if 1 only positive"};
-
   Configurable<float> etaSel{"etaSel", 0.8, "Selection in eta for trigger and associated particles"};
   Configurable<float> ySel{"ySel", 0.5, "Selection in rapidity for consistency checks"};
 
@@ -2206,7 +2205,6 @@ struct HStrangeCorrelation {
       }
     }
   }
-
   PROCESS_SWITCH(HStrangeCorrelation, processSelectEventWithTrigger, "Select events with trigger only", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHV0s, "Process same events, h-V0s", true);
   PROCESS_SWITCH(HStrangeCorrelation, processSameEventHCascades, "Process same events, h-Cascades", true);
