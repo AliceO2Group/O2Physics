@@ -67,6 +67,8 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
+int maxLogComb = 10;
+
 bool processpairs = false;
 bool processmixedevents = false;
 bool ptorder = false;
@@ -95,9 +97,10 @@ struct IdentifiedbfTask {
     std::vector<TH1F*> fhN1VsPt{nch, nullptr};                                    //!<! weighted single particle distribution vs \f$p_T\f$, for the different species
     std::vector<TH2F*> fhN1VsEtaPhi{nch, nullptr};                                //!<! weighted single particle distribution vs \f$\eta,\;\phi\f$, for the different species
     std::vector<TH2F*> fhSum1PtVsEtaPhi{nch, nullptr};                            //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
-    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch, nullptr};                             //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPt{nch + 1, nullptr};                         //!<! single particle distribution vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtPrimary{nch, nullptr};                      //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhN1VsZEtaPhiPtSecondary{nch, nullptr};                    //!<! single particle distribution of primary particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
+    std::vector<TH3F*> fhN1VsZEtaPhiPtPure{nch + 1, nullptr};                     //!<! single particle distribution of pure particles vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3F*> fhSum1PtVsZEtaPhiPt{nch, nullptr};                         //!<! accumulated sum of weighted \f$p_T\f$ vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the different species
     std::vector<TH3*> fhNuaNueVsZEtaPhiPt{nch, nullptr};                          //!<! NUA+NUE correction vs \f$\mbox{vtx}_z,\; \eta,\;\phi,\;p_T\f$, for the differents species
     std::vector<TH2*> fhPtAvgVsEtaPhi{nch, nullptr};                              //!<! average \f$p_T\f$ vs \f$\eta,\;\phi\f$, for the different species
@@ -278,6 +281,12 @@ struct IdentifiedbfTask {
         } else {
           fhN1VsZEtaPhiPtSecondary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
         }
+      } else if constexpr (framework::has_type_v<aod::mcparticle::McCollisionId, typename TrackObject::all_columns>) {
+        if (isPrimaryCheck(track)) {
+          fhN1VsZEtaPhiPtPrimary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
+        } else {
+          fhN1VsZEtaPhiPtSecondary[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
+        }
       }
     }
 
@@ -287,6 +296,56 @@ struct IdentifiedbfTask {
     bool isPrimaryCheck(ParticleObject const& particle)
     {
       return particle.isPhysicalPrimary();
+    }
+
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param particle passed MC track converted to MCParticle
+    template <typename ParticleObject>
+    bool isSpeciesCheck(ParticleObject const& particle, int trkId)
+    {
+      int pdgcode = particle.pdgCode();
+      int realPID = -1;
+      switch (pdgcode) {
+        case kPositron:
+          realPID = 0;
+          break;
+        case kElectron:
+          realPID = 1;
+          break;
+        case kPiPlus:
+          realPID = 2;
+          break;
+        case kPiMinus:
+          realPID = 3;
+          break;
+        case kKPlus:
+          realPID = 4;
+          break;
+        case kKMinus:
+          realPID = 5;
+          break;
+        case kProton:
+          realPID = 6;
+          break;
+        case kProtonBar:
+          realPID = 7;
+          break;
+        default:
+          realPID = -1;
+          break;
+      }
+      return (realPID == trkId);
+    }
+
+    /// \brief checks whether MC track is a physical primary or secondary
+    /// \param particle passed MC track converted to MCParticle
+    template <typename TrackObject>
+    bool isPrimarySpeciesCheck(TrackObject const& track, int trkId)
+    {
+      if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+        return (isPrimaryCheck(track.template mcParticle_as<aod::McParticles>()) && isSpeciesCheck(track.template mcParticle_as<aod::McParticles>(), trkId));
+      }
+      return false;
     }
 
     /// \brief fills the singles histograms in singles execution mode
@@ -303,9 +362,13 @@ struct IdentifiedbfTask {
           fhN1VsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), corr);
           fhSum1PtVsEtaPhi[track.trackacceptedid()]->Fill(track.eta(), getShiftedPhi(track.phi()), track.pt() * corr);
         } else {
+          fhN1VsZEtaPhiPt[nch]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhN1VsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
           fhSum1PtVsZEtaPhiPt[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), track.pt() * corr);
           trackPrimaryCheck(track, zvtx, corr);
+          if (isPrimarySpeciesCheck(track, track.trackacceptedid())) {
+            fhN1VsZEtaPhiPtPure[track.trackacceptedid()]->Fill(zvtx, getEtaPhiIndex(track) + 0.5, track.pt(), corr);
+          }
         }
         index++;
       }
@@ -574,6 +637,23 @@ struct IdentifiedbfTask {
               ptlow,
               ptup);
 
+            fhN1VsZEtaPhiPtPure[i] = new TH3F(
+              TString::Format("n1_%s_Pure_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
+              TString::Format("#LT n_{1} Pure #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                              tname[i].c_str(),
+                              tname[i].c_str(),
+                              tname[i].c_str())
+                .Data(),
+              zvtxbins,
+              zvtxlow,
+              zvtxup,
+              etabins * phibins,
+              0.0,
+              static_cast<double>(etabins * phibins),
+              ptbins,
+              ptlow,
+              ptup);
+
             fhSum1PtVsZEtaPhiPt[i] = new TH3F(
               TString::Format("sumPt1_%s_vsZ_vsEtaPhi_vsPt", tname[i].c_str()).Data(),
               TString::Format(
@@ -609,6 +689,8 @@ struct IdentifiedbfTask {
             fhN1VsZEtaPhiPtPrimary[i]->Sumw2(false);
             fhN1VsZEtaPhiPtSecondary[i]->SetBit(TH1::kIsNotW);
             fhN1VsZEtaPhiPtSecondary[i]->Sumw2(false);
+            fhN1VsZEtaPhiPtPure[i]->SetBit(TH1::kIsNotW);
+            fhN1VsZEtaPhiPtPure[i]->Sumw2(false);
             fhSum1PtVsZEtaPhiPt[i]->SetBit(TH1::kIsNotW);
             fhSum1PtVsZEtaPhiPt[i]->Sumw2(false);
           }
@@ -623,9 +705,31 @@ struct IdentifiedbfTask {
             fOutputList->Add(fhN1VsZEtaPhiPt[i]);
             fOutputList->Add(fhN1VsZEtaPhiPtPrimary[i]);
             fOutputList->Add(fhN1VsZEtaPhiPtSecondary[i]);
+            fOutputList->Add(fhN1VsZEtaPhiPtPure[i]);
             fOutputList->Add(fhSum1PtVsZEtaPhiPt[i]);
           }
         }
+        if (!smallsingles) {
+          TH1::SetDefaultSumw2(false);
+          fhN1VsZEtaPhiPt[nch] = new TH3F(
+            TString::Format("n1_%s_vsZ_vsEtaPhi_vsPt", "h"),
+            TString::Format("#LT n_{1} #GT;vtx_{z};#eta_{%s}#times#varphi_{%s};p_{t,%s} (GeV/c)",
+                            "h",
+                            "h",
+                            "h")
+              .Data(),
+            zvtxbins,
+            zvtxlow,
+            zvtxup,
+            etabins * phibins,
+            0.0,
+            static_cast<double>(etabins * phibins),
+            ptbins,
+            ptlow,
+            ptup);
+          fOutputList->Add(fhN1VsZEtaPhiPt[nch]);
+        }
+
       } else {
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
@@ -1124,13 +1228,13 @@ struct IdentifiedbfTask {
   Filter onlyacceptedcollisions = (aod::identifiedbffilter::collisionaccepted == uint8_t(true));
   Filter onlyacceptedtracks = (aod::identifiedbffilter::trackacceptedid >= int8_t(0));
 
-  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks, aod::McParticles const&)
+  void processRecLevel(soa::Filtered<aod::IdentifiedBfCFAcceptedCollisions>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
   PROCESS_SWITCH(IdentifiedbfTask, processRecLevel, "Process reco level correlations", false);
 
-  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks, aod::McParticles const&)
+  void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
     int nAssignedTracks = 0;
     int nNotAssignedTracks = 0;
@@ -1187,8 +1291,7 @@ struct IdentifiedbfTask {
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo>>::iterator const& collision,
     aod::BCsWithTimestamps const&,
-    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks,
-    aod::McParticles const&)
+    soa::Filtered<soa::Join<aod::Tracks, aod::IdentifiedBfCFTracksInfo>> const& tracks)
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
@@ -1241,7 +1344,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1276,7 +1379,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS,
              "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
@@ -1322,7 +1425,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1355,7 +1458,7 @@ struct IdentifiedbfTask {
     LOGF(IDENTIFIEDBFLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < correlationstask::maxLogComb) {
         LOGF(IDENTIFIEDBFLOGCOLLISIONS,
              "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),

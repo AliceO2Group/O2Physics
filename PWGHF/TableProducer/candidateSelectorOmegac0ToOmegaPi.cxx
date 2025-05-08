@@ -14,6 +14,7 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
 #include <string>
 #include <vector>
@@ -223,7 +224,6 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
 
     // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
-    registry.add("hSelPtOmegac", "hSelPtOmegac;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
@@ -254,6 +254,7 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
 
     if (KfconfigurableGroup.applyKFpreselections) {
+      registry.add("hSelPtOmegac", "hSelPtOmegac;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelKFstatus", "hSelKFstatus;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelV0_Casc_Omegacldl", "hSelV0_Casc_Omegacldl;status;entries", {HistType::kTH1D, {axisSel}});
@@ -340,7 +341,6 @@ struct HfCandidateSelectorToOmegaPi {
       auto trackPrFromLam = trackV0PosDau;
 
       auto ptCand = candidate.ptCharmBaryon();
-
       int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
@@ -507,7 +507,6 @@ struct HfCandidateSelectorToOmegaPi {
       }
 
       if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
-        ;
         // KFParticle Preselections(kfsel)
         if (KfconfigurableGroup.applyKFpreselections) {
 
@@ -529,7 +528,6 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Omegac Pt selection
-          hPtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
           if (std::abs(candidate.kfptOmegac()) < ptCandMin || std::abs(candidate.kfptOmegac()) > ptCandMax) {
             resultSelections = false;
             registry.fill(HIST("hSelPtOmegac"), 0);
@@ -798,6 +796,11 @@ struct HfCandidateSelectorToOmegaPi {
 
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
         hInvMassCharmBaryon->Fill(invMassCharmBaryon);
+        if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
+          hPtCharmBaryon->Fill(candidate.kfptOmegac());
+        } else {
+          hPtCharmBaryon->Fill(ptCand);
+        }
       }
     }
   } // end process

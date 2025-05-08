@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
+/// \file qaPid.cxx
 /// \brief Task to check PID efficiency
 /// \author Łukasz Sawicki
 /// \since
@@ -20,15 +21,16 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct EvaluatePid {
+struct QaPid {
   double combinedSignal(float val1, float val2)
   {
-    return sqrt(pow(val1, 2) + pow(val2, 2));
+    return std::sqrt(std::pow(val1, 2) + std::pow(val2, 2));
   }
 
   int indexOfSmallestElement(const float array[], int size)
@@ -41,113 +43,119 @@ struct EvaluatePid {
     return index;
   }
 
+  enum ContaminationIn {
+    kPion,
+    kProton,
+    kKaon
+  };
+
   void fillContaminationRegistry(int i, int pdgCode, double pt)
   {
-    if (i == 0) {
-      if (pdgCode == 211) {
+    if (i == ContaminationIn::kPion) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in211"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in211"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in211"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in211"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in211"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in211"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in211"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in211"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in211"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in211"), pt);
       }
 
-    } else if (i == 1) {
-      if (pdgCode == 211) {
+    } else if (i == ContaminationIn::kProton) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in2212"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in2212"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in2212"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in2212"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in2212"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in2212"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in2212"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in2212"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in2212"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in2212"), pt);
       }
 
-    } else if (i == 2) {
-      if (pdgCode == 211) {
+    } else if (i == ContaminationIn::kKaon) {
+      if (pdgCode == PDG_t::kPiPlus) {
         histReg.fill(HIST("contamination/211in321"), pt);
       }
-      if (pdgCode == -211) {
+      if (pdgCode == PDG_t::kPiMinus) {
         histReg.fill(HIST("contamination/0211in321"), pt);
       }
 
-      if (pdgCode == 2212) {
+      if (pdgCode == PDG_t::kProton) {
         histReg.fill(HIST("contamination/2212in321"), pt);
       }
-      if (pdgCode == -2212) {
+      if (pdgCode == PDG_t::kProtonBar) {
         histReg.fill(HIST("contamination/02212in321"), pt);
       }
 
-      if (pdgCode == 321) {
+      if (pdgCode == PDG_t::kKPlus) {
         histReg.fill(HIST("contamination/321in321"), pt);
       }
-      if (pdgCode == -321) {
+      if (pdgCode == PDG_t::kKMinus) {
         histReg.fill(HIST("contamination/0321in321"), pt);
       }
 
-      if (pdgCode == 11) {
+      if (pdgCode == PDG_t::kElectron) {
         histReg.fill(HIST("contamination/11in321"), pt);
       }
-      if (pdgCode == -11) {
+      if (pdgCode == PDG_t::kPositron) {
         histReg.fill(HIST("contamination/011in321"), pt);
       }
 
-      if (pdgCode == 13) {
+      if (pdgCode == PDG_t::kMuonMinus) {
         histReg.fill(HIST("contamination/13in321"), pt);
       }
-      if (pdgCode == -13) {
+      if (pdgCode == PDG_t::kMuonPlus) {
         histReg.fill(HIST("contamination/013in321"), pt);
       }
     }
@@ -157,13 +165,13 @@ struct EvaluatePid {
   void fillPidHistos(const T& track, const int pdgCode, bool isPidTrue)
   {
     if (isPidTrue) {
-      histReg.fill(HIST(pidTrueRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidTrueRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidTrueRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidTrue"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidTrue"), track.p(), track.beta());
       histReg.fill(HIST(TOFPidTrueRegistryNames[i]), track.p(), track.beta());
     } else {
-      histReg.fill(HIST(pidFalseRegistryNames[i]), track.pt());
+      histReg.fill(HIST(PidFalseRegistryNames[i]), track.pt());
       histReg.fill(HIST(TPCPidFalseRegistryNames[i]), track.p(), track.tpcSignal());
       histReg.fill(HIST("TPCSignalPidFalse"), track.p(), track.tpcSignal());
       histReg.fill(HIST("TOFSignalPidFalse"), track.p(), track.beta());
@@ -177,8 +185,8 @@ struct EvaluatePid {
   // nb of particles (5 particles - Pi, Pr, Ka, e, mu, and 5 antiparticles)
   static const int numParticles = 10;
 
-  static constexpr std::string_view pidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321", "pidTrue/11", "pidTrue/13", "pidTrue/0211", "pidTrue/02212", "pidTrue/0321", "pidTrue/011", "pidTrue/013"};
-  static constexpr std::string_view pidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321", "pidFalse/11", "pidFalse/13", "pidFalse/0211", "pidFalse/02212", "pidFalse/0321", "pidFalse/011", "pidFalse/013"};
+  static constexpr std::string_view PidTrueRegistryNames[numParticles] = {"pidTrue/211", "pidTrue/2212", "pidTrue/321", "pidTrue/11", "pidTrue/13", "pidTrue/0211", "pidTrue/02212", "pidTrue/0321", "pidTrue/011", "pidTrue/013"};
+  static constexpr std::string_view PidFalseRegistryNames[numParticles] = {"pidFalse/211", "pidFalse/2212", "pidFalse/321", "pidFalse/11", "pidFalse/13", "pidFalse/0211", "pidFalse/02212", "pidFalse/0321", "pidFalse/011", "pidFalse/013"};
 
   static constexpr std::string_view TPCPidTrueRegistryNames[numParticles] = {"TPCPidTrue/211", "TPCPidTrue/2212", "TPCPidTrue/321", "TPCPidTrue/11", "TPCPidTrue/13", "TPCPidTrue/0211", "TPCPidTrue/02212", "TPCPidTrue/0321", "TPCPidTrue/011", "TPCPidTrue/013"};
   static constexpr std::string_view TPCPidFalseRegistryNames[numParticles] = {"TPCPidFalse/211", "TPCPidFalse/2212", "TPCPidFalse/321", "TPCPidFalse/11", "TPCPidFalse/13", "TPCPidFalse/0211", "TPCPidFalse/02212", "TPCPidFalse/0321", "TPCPidFalse/011", "TPCPidFalse/013"};
@@ -186,13 +194,13 @@ struct EvaluatePid {
   static constexpr std::string_view TOFPidTrueRegistryNames[numParticles] = {"TOFPidTrue/211", "TOFPidTrue/2212", "TOFPidTrue/321", "TOFPidTrue/11", "TOFPidTrue/13", "TOFPidTrue/0211", "TOFPidTrue/02212", "TOFPidTrue/0321", "TOFPidTrue/011", "TOFPidTrue/013"};
   static constexpr std::string_view TOFPidFalseRegistryNames[numParticles] = {"TOFPidFalse/211", "TOFPidFalse/2212", "TOFPidFalse/321", "TOFPidFalse/11", "TOFPidFalse/13", "TOFPidFalse/0211", "TOFPidFalse/02212", "TOFPidFalse/0321", "TOFPidFalse/011", "TOFPidFalse/013"};
 
-  static constexpr int pdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
-  static constexpr int pidToPdg[numParticles] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
-  // charge with index i corresponds to i-th particle from pdgCodes array
-  static constexpr int particleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
+  static constexpr int PdgCodes[numParticles] = {211, 2212, 321, 11, 13, -211, -2212, -321, -11, -13};
+  static constexpr int PidToPdg[numParticles] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
+  // charge with index i corresponds to i-th particle from PdgCodes array
+  static constexpr int ParticleCharge[numParticles] = {1, 1, 1, -1, -1, -1, -1, -1, 1, 1};
   // momentum value when to switch from pid based only on TPC (below the value) to combination of TPC and TOF (above the value)
   // i-th momentum corresponds to the i-th particle
-  static constexpr float pSwitch[numParticles] = {0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5};
+  static constexpr float PSwitch[numParticles] = {0.5, 0.8, 0.5, 0.5, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5};
 
   static const int maxP = 5;
   // nb of bins for TH1 hists
@@ -323,26 +331,26 @@ struct EvaluatePid {
      {"TOFPidFalse/011", "PID false e^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
   template <std::size_t i, typename T>
-  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int /*arrLen*/)
+  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     /*
     Simplest possible PID, accept particle when:
     TPCSignal < X if p < Value or
-    sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
+    std::sqrt(TPCSignal^2 + TOFSignal^2) < X if p > Value
     */
     const float p = track.p();
 
-    if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      if (abs(tpcNSigmas[i]) < nsigmacut.value) {
-        if (pdgCode == pdgCodes[i]) {
+    if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      if (std::abs(tpcNSigmas[i]) < nsigmacut.value) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      if (sqrt(pow(tpcNSigmas[i], 2) + pow(tofNSigmas[i], 2)) < nsigmacut.value) {
-        if (pdgCode == pdgCodes[i]) {
+    } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      if (std::sqrt(std::pow(tpcNSigmas[i], 2) + std::pow(tofNSigmas[i], 2)) < nsigmacut.value) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
@@ -351,36 +359,36 @@ struct EvaluatePid {
     }
   }
 
-  template <std::size_t i, typename T>
-  void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  template <std::size_t i, int kArrLen, typename T>
+  void pidMinStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen];
+    float particleNSigma[kArrLen];
 
     // calculate Nsigmas for every particle
-    for (int j = 0; j < arrLen; ++j) {
-      if (p < pSwitch[j]) {
-        particleNSigma[j] = abs(tpcNSigmas[j]);
-      } else if (p >= pSwitch[j]) {
+    for (int j = 0; j < kArrLen; ++j) {
+      if (p < PSwitch[j]) {
+        particleNSigma[j] = std::abs(tpcNSigmas[j]);
+      } else if (p >= PSwitch[j]) {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
 
-    if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      float tmp_NSigma = abs(tpcNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-        if (pdgCode == pdgCodes[i]) {
+    if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      float tmpNSigma = std::abs(tpcNSigmas[i]);
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
         }
       }
-    } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-      float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-      if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-        if (pdgCode == pdgCodes[i]) {
+    } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+      float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+      if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
+        if (pdgCode == PdgCodes[i]) {
           fillPidHistos<i>(track, pdgCode, true);
         } else {
           fillPidHistos<i>(track, pdgCode, false);
@@ -389,45 +397,45 @@ struct EvaluatePid {
     }
   }
 
-  template <std::size_t i, typename T>
-  void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  template <std::size_t i, int kArrLen, typename T>
+  void pidExclusiveStrategy(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[])
   {
     const float p = track.p();
 
     // list of Nsigmas for particles
-    float particleNSigma[arrLen];
+    float particleNSigma[kArrLen];
 
     // calculate Nsigmas for every particle
-    for (int j = 0; j < arrLen; ++j) {
-      if (p < pSwitch[j]) {
-        particleNSigma[j] = abs(tpcNSigmas[j]);
-      } else if (p >= pSwitch[j]) {
+    for (int j = 0; j < kArrLen; ++j) {
+      if (p < PSwitch[j]) {
+        particleNSigma[j] = std::abs(tpcNSigmas[j]);
+      } else if (p >= PSwitch[j]) {
         particleNSigma[j] = combinedSignal(tpcNSigmas[j], tofNSigmas[j]);
       }
     }
 
     // check how many particles satisfy the condition
     int counts = 0;
-    for (int j = 0; j < arrLen; ++j) {
+    for (int j = 0; j < kArrLen; ++j) {
       if (particleNSigma[j] < nsigmacut.value) {
         counts++;
       }
     }
 
     if (counts == 1) {
-      if ((p < pSwitch[i]) & (track.sign() == particleCharge[i])) {
-        float tmp_NSigma = abs(tpcNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-          if (pdgCode == pdgCodes[i]) {
+      if ((p < PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+        float tmpNSigma = std::abs(tpcNSigmas[i]);
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
+          if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
             fillPidHistos<i>(track, pdgCode, false);
           }
         }
-      } else if ((p >= pSwitch[i]) & (track.sign() == particleCharge[i])) {
-        float tmp_NSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
-        if ((tmp_NSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, arrLen) == i)) {
-          if (pdgCode == pdgCodes[i]) {
+      } else if ((p >= PSwitch[i]) & (track.sign() == ParticleCharge[i])) {
+        float tmpNSigma = combinedSignal(tpcNSigmas[i], tofNSigmas[i]);
+        if ((tmpNSigma < nsigmacut.value) & (indexOfSmallestElement(particleNSigma, kArrLen) == i)) {
+          if (pdgCode == PdgCodes[i]) {
             fillPidHistos<i>(track, pdgCode, true);
           } else {
             fillPidHistos<i>(track, pdgCode, false);
@@ -442,8 +450,8 @@ struct EvaluatePid {
   {
     // Convert PID to PDG code
     // We don't identify particles with PID bigger than Proton, putting dummy code so they will be skipped.
-    int bayesPdg = track.bayesID() > o2::track::PID::Proton ? 999 : pidToPdg[track.bayesID()];
-    if (track.bayesID() <= o2::track::PID::Proton && track.sign() == -1 * particleCharge[track.bayesID()]) { // Check if antiparticle
+    int bayesPdg = track.bayesID() > o2::track::PID::Proton ? 999 : PidToPdg[track.bayesID()];
+    if (track.bayesID() <= o2::track::PID::Proton && track.sign() == -1 * ParticleCharge[track.bayesID()]) { // Check if antiparticle
       bayesPdg += numParticles / 2;
     }
     return bayesPdg;
@@ -453,7 +461,7 @@ struct EvaluatePid {
   void pidBayes(const T& track, const int pdgCode, const int bayesPdg)
   {
     if (bayesPdg == pdgCode) {
-      if (pdgCode == pdgCodes[i]) {
+      if (pdgCode == PdgCodes[i]) {
         fillPidHistos<i>(track, pdgCode, true);
       } else {
         fillPidHistos<i>(track, pdgCode, false);
@@ -465,34 +473,25 @@ struct EvaluatePid {
   void fillMcHistos(const T& track, const int pdgCode)
   {
     // pions
-    if (pdgCode == 211) {
+    if (pdgCode == PDG_t::kPiPlus) {
       histReg.fill(HIST("MC/211"), track.pt());
-    } else if (pdgCode == -211) {
+    } else if (pdgCode == PDG_t::kPiMinus) {
       histReg.fill(HIST("MC/0211"), track.pt());
-    }
-    // protons
-    else if (pdgCode == 2212) {
+    } /* protons */ else if (pdgCode == PDG_t::kProton) {
       histReg.fill(HIST("MC/2212"), track.pt());
-    } else if (pdgCode == -2212) {
+    } else if (pdgCode == PDG_t::kProtonBar) {
       histReg.fill(HIST("MC/02212"), track.pt());
-    }
-    // kaons
-    else if (pdgCode == 321) {
+    } /* kaons */ else if (pdgCode == PDG_t::kKPlus) {
       histReg.fill(HIST("MC/321"), track.pt());
-    } else if (pdgCode == -321) {
+    } else if (pdgCode == PDG_t::kKMinus) {
       histReg.fill(HIST("MC/0321"), track.pt());
-    }
-    // electrons
-    else if (pdgCode == 11) {
+    } /* electrons */ else if (pdgCode == PDG_t::kElectron) {
       histReg.fill(HIST("MC/11"), track.pt());
-      ;
-    } else if (pdgCode == -11) {
+    } else if (pdgCode == PDG_t::kPositron) {
       histReg.fill(HIST("MC/011"), track.pt());
-    }
-    // muons
-    else if (pdgCode == 13) {
+    } /* muons */ else if (pdgCode == PDG_t::kMuonMinus) {
       histReg.fill(HIST("MC/13"), track.pt());
-    } else if (pdgCode == -13) {
+    } else if (pdgCode == PDG_t::kMuonPlus) {
       histReg.fill(HIST("MC/013"), track.pt());
     } else {
       histReg.fill(HIST("MC/else"), track.pt());
@@ -503,11 +502,18 @@ struct EvaluatePid {
   Configurable<int> strategy{"strategy", 1, "1-PID with Nsigma method, 2-PID with NSigma and condition for minimal Nsigma value for particle, 3-Exclusive condition for NSigma, 4-Bayesian PID"};
 
   Filter trackFilter = requireGlobalTrackInFilter();
-  using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
+  using PidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
 
-  void process(pidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
+  enum PIDStrategy {
+    kSimple = 1,
+    kMin = 2,
+    kExclusive = 3,
+    kBayes = 4
+  };
+
+  void process(PidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();
       int pdgCode = particle.pdgCode();
 
@@ -518,22 +524,22 @@ struct EvaluatePid {
       const float tpcNSigmas[numParticles] = {track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaEl(), track.tpcNSigmaMu()};
       const float tofNSigmas[numParticles] = {track.tofNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaEl(), track.tofNSigmaMu()};
 
-      if (strategy.value == 1) {
+      if (strategy.value == PIDStrategy::kSimple) {
         // Simplest strategy. PID with Nsigma method only
         static_for<0, 9>([&](auto i) {
-          pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+          pidSimple<i>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 2) {
+      } else if (strategy.value == PIDStrategy::kMin) {
         // PID with Nsigma method and additional condition. Selected particle's Nsigma value must be the lowest in order to count particle
         static_for<0, 9>([&](auto i) {
-          pidMinStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+          pidMinStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 3) {
+      } else if (strategy.value == PIDStrategy::kExclusive) {
         // Particle is counted only if one can satisfy the PID NSigma condition
         static_for<0, 9>([&](auto i) {
-          pidExclusiveStrategy<i>(track, pdgCode, tpcNSigmas, tofNSigmas, 5);
+          pidExclusiveStrategy<i, 5>(track, pdgCode, tpcNSigmas, tofNSigmas);
         });
-      } else if (strategy.value == 4) {
+      } else if (strategy.value == PIDStrategy::kBayes) {
         int bayesPdg = getPdgFromPid(track);
         static_for<0, 9>([&](auto i) {
           pidBayes<i>(track, pdgCode, bayesPdg);
@@ -546,6 +552,6 @@ struct EvaluatePid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<EvaluatePid>(cfgc),
+    adaptAnalysisTask<QaPid>(cfgc),
   };
 }

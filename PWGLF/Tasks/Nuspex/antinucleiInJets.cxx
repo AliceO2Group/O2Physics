@@ -25,6 +25,7 @@
 #include <TVector3.h>
 #include "TGrid.h"
 #include <random>
+#include <memory>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -122,9 +123,15 @@ struct AntinucleiInJets {
   Configurable<std::string> pathToFile{"pathToFile", "", "path to file with reweighting"};
   Configurable<std::string> histoNameWeightAntipJet{"histoNameWeightAntipJet", "", "reweighting histogram: antip in jet"};
   Configurable<std::string> histoNameWeightAntipUe{"histoNameWeightAntipUe", "", "reweighting histogram: antip in ue"};
-
   TH2F* twoDweightsAntipJet;
   TH2F* twoDweightsAntipUe;
+
+  // jet pt unfolding
+  Configurable<bool> applyPtUnfolding{"applyPtUnfolding", true, "apply jet pt unfolding"};
+  Configurable<std::string> urlToCcdbPtUnfolding{"urlToCcdbPtUnfolding", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> pathToFilePtUnfolding{"pathToFilePtUnfolding", "Users/c/chpinto/My/Object/ResponseMatrix", "path to file with pt unfolding"};
+  Configurable<std::string> histoNamePtUnfolding{"histoNamePtUnfolding", "detectorResponseMatrix", "pt unfolding histogram"};
+  TH2F* responseMatrix;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
@@ -144,6 +151,12 @@ struct AntinucleiInJets {
     } else {
       twoDweightsAntipJet = nullptr;
       twoDweightsAntipUe = nullptr;
+    }
+
+    if (applyPtUnfolding) {
+      getPtUnfoldingHistogram(ccdb, TString(pathToFilePtUnfolding), TString(histoNamePtUnfolding));
+    } else {
+      responseMatrix = nullptr;
     }
 
     // binning
@@ -253,9 +266,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_ue_rec_tpc", "antiproton_ue_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_jet_rec_tof", "antiproton_jet_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_jet_tpc_rec_vs_generatedptjet", "antiproton_jet_tpc_rec_vs_generatedptjet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T, antiproton}^{rec} (GeV/#it{c})"}, {1000, 0., 100., "#it{p}_{T, jet}^{gen} (GeV/#it{c})"}});
+      registryMC.add("antiproton_jet_tof_rec_vs_generatedptjet", "antiproton_jet_tof_rec_vs_generatedptjet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T, antiproton}^{rec} (GeV/#it{c})"}, {1000, 0., 100., "#it{p}_{T, jet}^{gen} (GeV/#it{c})"}});
 
       // detector response matrix
       registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
+      registryMC.add("generatedVsReconstructedPt", "generatedVsReconstructedPt", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}});
     }
 
     // systematic uncertainties
@@ -278,51 +294,55 @@ struct AntinucleiInJets {
     }
   }
 
-  void getPerpendicularAxis(TVector3 p, TVector3& u, double sign)
+  void getPerpendicularAxis(const TVector3& p, TVector3& u, double sign)
   {
-    // initialization
-    double ux(0), uy(0), uz(0);
-
-    // components of vector p
     double px = p.X();
     double py = p.Y();
     double pz = p.Z();
 
+    double px2 = px * px;
+    double py2 = py * py;
+    double pz2 = pz * pz;
+    double pz4 = pz2 * pz2;
+
+    // px and py are both zero
+    if (px == 0 && py == 0) {
+      u.SetXYZ(0, 0, 0);
+      return;
+    }
+
     // protection 1
     if (px == 0 && py != 0) {
-      uy = -(pz * pz) / py;
-      ux = sign * std::sqrt(py * py - (pz * pz * pz * pz) / (py * py));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
+      double ux = sign * std::sqrt(py2 - pz4 / py2);
+      double uy = -pz2 / py;
+      u.SetXYZ(ux, uy, pz);
       return;
     }
 
     // protection 2
     if (py == 0 && px != 0) {
-      ux = -(pz * pz) / px;
-      uy = sign * std::sqrt(px * px - (pz * pz * pz * pz) / (px * px));
-      uz = pz;
-      u.SetXYZ(ux, uy, uz);
+      double ux = -pz2 / px;
+      double uy = sign * std::sqrt(px2 - pz4 / px2);
+      u.SetXYZ(ux, uy, pz);
       return;
     }
 
-    // equation parameters
-    double a = px * px + py * py;
-    double b = 2.0 * px * pz * pz;
-    double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
+    // General case
+    double a = px2 + py2;
+    double b = 2.0 * px * pz2;
+    double c = pz4 - py2 * py2 - px2 * py2;
+
     double delta = b * b - 4.0 * a * c;
 
-    // protection agains delta<0
-    if (delta < 0) {
+    if (delta < 0 || a == 0) {
+      LOGP(warn, "Invalid input in getPerpendicularAxis: delta = {}, a = {}", delta, a);
+      u.SetXYZ(0, 0, 0);
       return;
     }
 
-    // solutions
-    ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
-    uy = (-pz * pz - px * ux) / py;
-    uz = pz;
-    u.SetXYZ(ux, uy, uz);
-    return;
+    double ux = (-b + sign * std::sqrt(delta)) / (2.0 * a);
+    double uy = (-pz2 - px * ux) / py;
+    u.SetXYZ(ux, uy, pz);
   }
 
   double getDeltaPhi(double a1, double a2)
@@ -352,27 +372,39 @@ struct AntinucleiInJets {
   template <typename JetTrack>
   bool passedTrackSelectionForJetReconstruction(const JetTrack& track)
   {
+
+    const int minTpcCr = 70;
+    const double minCrFindable = 0.8;
+    const double maxChi2Tpc = 4.0;
+    const double maxChi2Its = 36.0;
+    const double maxPseudorapidity = 0.8;
+    const double minPtTrack = 0.1;
+    const double dcaxyMaxTrackPar0 = 0.0105;
+    const double dcaxyMaxTrackPar1 = 0.035;
+    const double dcaxyMaxTrackPar2 = 1.1;
+    const double dcazMaxTrack = 2.0;
+
     if (!track.hasITS())
       return false;
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    if (track.tpcNClsCrossedRows() < minTpcCr)
       return false;
-    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < 0.8)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < minCrFindable)
       return false;
-    if (track.tpcChi2NCl() > 4)
+    if (track.tpcChi2NCl() > maxChi2Tpc)
       return false;
-    if (track.itsChi2NCl() > 36)
+    if (track.itsChi2NCl() > maxChi2Its)
       return false;
-    if (track.eta() < -0.8 || track.eta() > 0.8)
+    if (track.eta() < -maxPseudorapidity || track.eta() > maxPseudorapidity)
       return false;
-    if (track.pt() < 0.1)
+    if (track.pt() < minPtTrack)
       return false;
-    if (std::fabs(track.dcaXY()) > (0.0105 + 0.035 / std::pow(track.pt(), 1.1)))
+    if (std::fabs(track.dcaXY()) > (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2)))
       return false;
-    if (std::fabs(track.dcaZ()) > 2.0)
+    if (std::fabs(track.dcaZ()) > dcazMaxTrack)
       return false;
     return true;
   }
@@ -412,31 +444,55 @@ struct AntinucleiInJets {
     double nsigmaTPCPr = track.tpcNSigmaPr();
     double nsigmaTOFPr = track.tofNSigmaPr();
     double pt = track.pt();
+    double ptThreshold = 0.5;
+    double nsigmaMaxPr = 2.0;
 
-    if (pt < 0.5 && std::fabs(nsigmaTPCPr) < 2.0)
+    if (pt < ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr)
       return true;
-    if (pt >= 0.5 && std::fabs(nsigmaTPCPr) < 2.0 && track.hasTOF() && std::fabs(nsigmaTOFPr) < 2.0)
+    if (pt >= ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr && track.hasTOF() && std::fabs(nsigmaTOFPr) < nsigmaMaxPr)
       return true;
     return false;
   }
 
   double getCorrectedPt(double ptRec, TH2* responseMatrix)
   {
+    if (!responseMatrix) {
+      LOGP(error, "Response matrix is null. Returning uncorrected pt.");
+      return ptRec;
+    }
 
     int binX = responseMatrix->GetXaxis()->FindBin(ptRec);
-    TH1D* proj = responseMatrix->ProjectionY("proj", binX, binX);
+    if (binX < 1 || binX > responseMatrix->GetNbinsX()) {
+      LOGP(error, "Bin index out of range: binX = {}", binX);
+      return ptRec; // Return uncorrected pt if bin index is invalid
+    }
+    std::unique_ptr<TH1D> proj(responseMatrix->ProjectionY("proj", binX, binX));
 
     // add a protection in case the projection is empty
     if (proj->GetEntries() == 0) {
-      delete proj;
       return ptRec;
     }
 
     double deltaPt = proj->GetRandom();
     double ptGen = ptRec + deltaPt;
-    delete proj;
 
     return ptGen;
+  }
+
+  void getPtUnfoldingHistogram(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histoNamePtUnfolding)
+  {
+    TList* l = ccdbObj->get<TList>(filepath.Data());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      return;
+    }
+    TObject* obj = l->FindObject(Form("%s", histoNamePtUnfolding.Data()));
+    if (!obj || !obj->InheritsFrom(TH2F::Class())) {
+      LOGP(error, "Could not find a valid TH2F histogram {}", Form("%s", histoNamePtUnfolding.Data()));
+      return;
+    }
+    responseMatrix = static_cast<TH2F*>(obj);
+    LOGP(info, "Opened histogram {}", Form("%s", histoNamePtUnfolding.Data()));
   }
 
   void getReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
@@ -533,8 +589,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       isAtLeastOneJetSelected = true;
 
@@ -766,8 +821,7 @@ struct AntinucleiInJets {
       double ptJetAfterSub = jetForSub.pt();
       registryQC.fill(HIST("jetPtDifference"), ptJetAfterSub - ptJetBeforeSub);
 
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
       njetsHighPt++;
       registryQC.fill(HIST("sumPtJet"), jet.pt());
@@ -988,7 +1042,8 @@ struct AntinucleiInJets {
 
         if (!particle.isPhysicalPrimary())
           continue;
-        if (particle.eta() < -0.8 || particle.eta() > 0.8 || particle.pt() < 0.1)
+        double minPtParticle = 0.1;
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
           continue;
 
         double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
@@ -1043,7 +1098,8 @@ struct AntinucleiInJets {
 
           if (!particle.isPhysicalPrimary())
             continue;
-          if (particle.eta() < -0.8 || particle.eta() > 0.8 || particle.pt() < 0.1)
+          double minPtParticle = 0.1;
+          if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
             continue;
 
           double deltaEtaUe1 = particle.eta() - ueAxis1.Eta();
@@ -1122,12 +1178,12 @@ struct AntinucleiInJets {
 
         // fill detector response matrix
         registryMC.fill(HIST("detectorResponseMatrix"), jet.pt(), jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
+        registryMC.fill(HIST("generatedVsReconstructedPt"), jet.pt(), jetPtGen);
 
         // jet pt must be larger than threshold
         auto jetForSub = jet;
         fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-        // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-        if (jetMinusBkg.pt() < minJetPt)
+        if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
           continue;
 
         // perpendicular cone
@@ -1180,8 +1236,10 @@ struct AntinucleiInJets {
 
           if (passedItsPidProt) {
             registryMC.fill(HIST("antiproton_jet_rec_tpc"), track.pt(), nsigmaTPCPr);
+            registryMC.fill(HIST("antiproton_jet_tpc_rec_vs_generatedptjet"), track.pt(), jetPtGen);
             if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF())
               registryMC.fill(HIST("antiproton_jet_rec_tof"), track.pt(), nsigmaTOFPr);
+            registryMC.fill(HIST("antiproton_jet_tof_rec_vs_generatedptjet"), track.pt(), jetPtGen);
           }
         }
 
@@ -1302,8 +1360,7 @@ struct AntinucleiInJets {
       // jet pt must be larger than threshold
       auto jetForSub = jet;
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
-      // if (getCorrectedPt(jetMinusBkg.pt()) < minJetPt) // while fixing the response matrix
-      if (jetMinusBkg.pt() < minJetPt)
+      if (getCorrectedPt(jetMinusBkg.pt(), responseMatrix) < minJetPt)
         continue;
 
       // get jet constituents
