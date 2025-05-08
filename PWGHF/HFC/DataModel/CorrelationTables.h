@@ -141,6 +141,7 @@ namespace hf_correlation_lc_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Lc and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaY, deltaY, float);                                 //! DeltaY between Lc and Hadrons
 DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
 DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
@@ -212,7 +213,8 @@ DECLARE_SOA_TABLE(TrkRecInfoLc, "AOD", "TRKRECINFOLC", //! Tracks Reconstructed 
                   aod::hf_correlation_lc_hadron::TrackDcaXY,
                   aod::hf_correlation_lc_hadron::TrackDcaZ,
                   aod::hf_correlation_lc_hadron::TrackTPCNClsCrossedRows);
-
+DECLARE_SOA_TABLE(LcHadronPairY, "AOD", "LCHPAIRY", //! Lc candidates Generated Information
+                  aod::hf_correlation_lc_hadron::DeltaY);
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {
@@ -340,6 +342,7 @@ DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! T
 DECLARE_SOA_COLUMN(MD, mD, float);                                         //! Invariant mass of D+
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for D+ selection
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for D+ selection
+DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);             //! ML non-prompt score for D+ selection
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool);                      //! Used in MC-Rec, D+ Signal
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin of event defined using zvtx and multiplicity
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
@@ -370,13 +373,15 @@ DECLARE_SOA_TABLE(DplusHadronGenInfo, "AOD", "DPLUSHGENINFO", //! Ds-Hadrons pai
 
 DECLARE_SOA_TABLE(DplusHadronMlInfo, "AOD", "DPLUSHMLINFO", //! D+-Hadrons pairs Machine Learning Information
                   aod::hf_correlation_dplus_hadron::MlScoreBkg,
-                  aod::hf_correlation_dplus_hadron::MlScorePrompt);
+                  aod::hf_correlation_dplus_hadron::MlScorePrompt,
+                  aod::hf_correlation_dplus_hadron::MlScoreNonPrompt);
 
 DECLARE_SOA_TABLE(DplusRecoInfo, "AOD", "DPLUSRECOINFO", //! D+ candidates Reconstructed Information
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::PtD,
                   aod::hf_correlation_dplus_hadron::MlScoreBkg,
-                  aod::hf_correlation_dplus_hadron::MlScorePrompt);
+                  aod::hf_correlation_dplus_hadron::MlScorePrompt,
+                  aod::hf_correlation_dplus_hadron::MlScoreNonPrompt);
 
 DECLARE_SOA_TABLE(DplusGenInfo, "AOD", "DPLUSGENOINFO", //! D+ candidates Generated Information
                   aod::hf_correlation_dplus_hadron::IsPrompt);

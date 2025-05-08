@@ -167,9 +167,11 @@ struct TableMaker {
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
   HistogramManager* fHistMan;
 
-  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-  Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
+    Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+    Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  } configCuts;
   struct : ConfigurableGroup {
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
@@ -178,8 +180,10 @@ struct TableMaker {
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 1.0f, "Low pt cut for tracks in the barrel"};
   Configurable<float> fConfigBarrelTrackMaxAbsEta{"cfgBarrelMaxAbsEta", 0.9f, "Eta absolute value cut for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
-  Configurable<float> fConfigMinTpcSignal{"cfgMinTpcSignal", 30.0, "Minimum TPC signal"};
-  Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 300.0, "Maximum TPC signal"};
+  struct : ConfigurableGroup {
+    Configurable<float> fConfigMinTpcSignal{"cfgMinTpcSignal", 30.0, "Minimum TPC signal"};
+    Configurable<float> fConfigMaxTpcSignal{"cfgMaxTpcSignal", 300.0, "Maximum TPC signal"};
+  } configTpcSignal;
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
@@ -202,8 +206,6 @@ struct TableMaker {
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
   Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
-  Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
-  Configurable<int> fConfigInitRunNumber{"cfgInitRunNumber", 543215, "Initial run number used in run by run checks"};
   Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -225,14 +227,15 @@ struct TableMaker {
 
   Preslice<MyBarrelTracks> perCollisionTracks = aod::track::collisionId;
   Preslice<MyMuons> perCollisionMuons = aod::fwdtrack::collisionId;
+  PresliceUnsorted<MyMuonsRealignWithCov> perCollisionMuonsRealign = aod::fwdtrackrealign::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-
+  PresliceUnsorted<MyMuonsRealignWithCov> fwdtrackRealignPerMuon = aod::fwdtrackrealign::fwdtrackId;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
-  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= fConfigBarrelTrackMaxAbsEta && o2::aod::track::tpcSignal >= fConfigMinTpcSignal && o2::aod::track::tpcSignal <= fConfigMaxTpcSignal && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
+  Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= fConfigBarrelTrackMaxAbsEta && o2::aod::track::tpcSignal >= configTpcSignal.fConfigMinTpcSignal && o2::aod::track::tpcSignal <= configTpcSignal.fConfigMaxTpcSignal && o2::aod::track::tpcChi2NCl < 4.0f && o2::aod::track::itsChi2NCl < 36.0f;
 
   Filter muonFilter = o2::aod::fwdtrack::pt >= fConfigMuonPtLow;
 
@@ -285,7 +288,7 @@ struct TableMaker {
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithCovAndCentMults") ||
                              context.mOptions.get<bool>("processMuonOnlyWithCov") || context.mOptions.get<bool>("processMuonOnlyWithCovAndEventFilter") || context.mOptions.get<bool>("processAmbiguousMuonOnlyWithCov") ||
-                             context.mOptions.get<bool>("processMuonsAndMFT") || context.mOptions.get<bool>("processMuonsAndMFTWithFilter") || context.mOptions.get<bool>("processMuonMLOnly"));
+                             context.mOptions.get<bool>("processMuonsAndMFT") || context.mOptions.get<bool>("processMuonsAndMFTWithFilter") || context.mOptions.get<bool>("processMuonMLOnly") || context.mOptions.get<bool>("processAssociatedMuonOnlyWithCov") || context.mOptions.get<bool>("processAssociatedRealignedMuonOnlyWithCov"));
 
     if (enableBarrelHistos) {
       if (fDoDetailedQA) {
@@ -329,10 +332,6 @@ struct TableMaker {
       }
     }
 
-    if (fConfigDummyRunlist) {
-      VarManager::SetDummyRunlist(fConfigInitRunNumber);
-    }
-
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -350,11 +349,11 @@ struct TableMaker {
   {
     // Event cuts
     fEventCut = new AnalysisCompositeCut(true);
-    TString eventCutStr = fConfigEventCuts.value;
+    TString eventCutStr = configCuts.fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
 
     // Barrel track cuts
-    TString cutNamesStr = fConfigTrackCuts.value;
+    TString cutNamesStr = configCuts.fConfigTrackCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -363,7 +362,7 @@ struct TableMaker {
     }
 
     // Muon cuts
-    cutNamesStr = fConfigMuonCuts.value;
+    cutNamesStr = configCuts.fConfigMuonCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
@@ -436,7 +435,6 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
-    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -910,7 +908,6 @@ struct TableMaker {
     VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
     VarManager::fgValues[VarManager::kBC] = bc.globalBC();
     VarManager::fgValues[VarManager::kTimestamp] = bc.timestamp();
-    VarManager::fgValues[VarManager::kRunIndex] = VarManager::GetRunIndex(bc.runNumber());
     VarManager::FillEvent<TEventFillMap>(collision); // extract event information and place it in the fValues array
     if (fDoDetailedQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
@@ -1127,7 +1124,7 @@ struct TableMaker {
           // Update muon information using realigned tracks
           if (static_cast<int>(muon.trackType()) > 2) {
             // Update only MCH or MCH-MID tracks with realigned information
-            auto muonRealignSelected = tracksMuonRealign.select(aod::fwdtrackrealign::fwdtrackId == muonId.fwdtrackId() && aod::fwdtrackrealign::collisionId == collision.globalIndex());
+            auto muonRealignSelected = tracksMuonRealign.sliceBy(fwdtrackRealignPerMuon, muonId.fwdtrackId());
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
@@ -1176,7 +1173,7 @@ struct TableMaker {
           // Update muon information using realigned tracks
           if (static_cast<int>(muon.trackType()) > 2) {
             // Update only MCH or MCH-MID tracks with realigned information
-            auto muonRealignSelected = tracksMuonRealign.select(aod::fwdtrackrealign::fwdtrackId == muonId.fwdtrackId() && aod::fwdtrackrealign::collisionId == collision.globalIndex());
+            auto muonRealignSelected = tracksMuonRealign.sliceBy(fwdtrackRealignPerMuon, muonId.fwdtrackId());
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 LOGF(debug, "Muon original  - collisionId:%d x:%g y:%g z:%g phi:%g tgl:%g signed1pt:%g pt:%g p:%g eta:%g chi2:%g", muon.collisionId(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.pt(), muon.p(), muon.eta(), muon.chi2());
@@ -1687,7 +1684,8 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi, gkMuonRealignFillMapWithCov>(collision, bcs, nullptr, tracksMuon, tracksMuonRealign, nullptr, muonIdsThisCollision);
+      auto muonsRealignThisCollision = tracksMuonRealign.sliceBy(perCollisionMuonsRealign, collision.globalIndex());
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi, gkMuonRealignFillMapWithCov>(collision, bcs, nullptr, tracksMuon, muonsRealignThisCollision, nullptr, muonIdsThisCollision);
     }
   }
 

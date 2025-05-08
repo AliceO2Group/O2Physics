@@ -17,6 +17,7 @@
 #include <TProfile2D.h>
 #include <THnSparse.h>
 #include <TPDGCode.h>
+#include <TMCProcess.h>
 #include <CCDB/BasicCCDBManager.h>
 #include <vector>
 #include <algorithm>
@@ -95,7 +96,7 @@ float widthNSigmaBin = 0.1f;
 int noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
 /* the pT bins of interest for the relative separation within TPC sectors data collection */
-std::vector<int> ptBinsOfInterest{1, 2, 3};
+std::vector<int> ptBinsOfInterest{};
 
 /* the PID selector object to help with the configuration and the id of the selected particles */
 o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
@@ -391,6 +392,9 @@ struct QADataCollectingEngine {
     using namespace analysis::dptdptfilter;
     using namespace o2::aod::track;
 
+    constexpr float kFiftyPerCent = 50.0f;
+    constexpr float kHundredPerCent = 100.0f;
+
     fhPtB[kindOfData]->Fill(track.pt());
     fhPtVsEtaB[kindOfData]->Fill(track.eta(), track.pt());
     fhPtVsZvtxB[kindOfData]->Fill(zvtx, track.pt());
@@ -411,7 +415,7 @@ struct QADataCollectingEngine {
 
       float phiInTpcSector = std::fmod(track.phi(), kTpcPhiSectorWidth);
       float phiShiftedPercentInTpcSector = phiInTpcSector * 100 / kTpcPhiSectorWidth;
-      phiShiftedPercentInTpcSector = (phiShiftedPercentInTpcSector > 50.0f) ? (phiShiftedPercentInTpcSector - 100.0f) : phiShiftedPercentInTpcSector;
+      phiShiftedPercentInTpcSector = (phiShiftedPercentInTpcSector > kFiftyPerCent) ? (phiShiftedPercentInTpcSector - kHundredPerCent) : phiShiftedPercentInTpcSector;
       if (track.sign() > 0) {
         fhPhiVsPtPosB->Fill(track.pt(), phiInTpcSector);
         fhPerColNchVsPhiVsPtPosB->Fill(track.pt(), phiInTpcSector);
@@ -490,7 +494,7 @@ struct QADataCollectingEngine {
           float genid = findgenid(mcparticle);
 
           bool isprimary = mcparticle.isPhysicalPrimary();
-          bool issecdecay = !isprimary && (mcparticle.getProcess() == 4);
+          bool issecdecay = !isprimary && (mcparticle.getProcess() == TMCProcess::kPDecay);
           bool isfrommaterial = !isprimary && !issecdecay;
           fillpurityhistos(fhPtPurityPosPrimA, fhPtPurityNegPrimA, genid, track, isprimary);
           fillpurityhistos(fhPtPurityPosSecA, fhPtPurityNegSecA, genid, track, issecdecay);
@@ -524,7 +528,7 @@ struct QADataCollectingEngine {
         /* pure generator level */
         if (track.isPhysicalPrimary()) {
           fhPtVsEtaPrimA[track.trackacceptedid()]->Fill(track.eta(), track.pt());
-        } else if (track.getProcess() == 4) {
+        } else if (track.getProcess() == TMCProcess::kPDecay) {
           fhPtVsEtaSecA[track.trackacceptedid()]->Fill(track.eta(), track.pt());
         } else {
           fhPtVsEtaMatA[track.trackacceptedid()]->Fill(track.eta(), track.pt());
@@ -585,13 +589,31 @@ struct QAExtraDataCollectingEngine {
   // The QA output objects
   //===================================================
   /* pairs histograms */
+  constexpr static size_t kNoOfOverflowBins = 2;
+  constexpr static int kBinNotTracked = -1;
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhPhiPhiA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhEtaEtaA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<TH2>>>> fhN2VsDeltaEtaVsDeltaPhi{2, {nsp, {nsp, nullptr}}};
   TAxis ptAxis{analysis::dptdptfilter::ptbins, analysis::dptdptfilter::ptlow, analysis::dptdptfilter::ptup};
-  std::vector<int> ptOfInterestBinMap{analysis::dptdptfilter::ptbins + 1, -1};
+  std::vector<int> ptOfInterestBinMap;
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsPhiPhiPerPtBinA{2, {nsp, {nsp, nullptr}}};
   std::vector<std::vector<std::vector<std::shared_ptr<THnSparse>>>> fhInSectorDeltaPhiVsEtaEtaPerPtBinA{2, {nsp, {nsp, nullptr}}};
+
+  QAExtraDataCollectingEngine()
+  {
+    using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    /* it is done once for both reco and gen */
+    ptOfInterestBinMap = std::vector(static_cast<size_t>(ptbins + kNoOfOverflowBins), kBinNotTracked);
+    LOGF(info, "Configuring the pT bins of interest on a map of length %d", ptOfInterestBinMap.size());
+    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
+      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
+      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
+      LOGF(info, "  Added pT bin %d as internal axis value %d", ptBinsOfInterest[ix], ptOfInterestBinMap[ptBinsOfInterest[ix]]);
+    }
+  }
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -607,17 +629,23 @@ struct QAExtraDataCollectingEngine {
     AxisSpec etaAxis = {etabins, etalow, etaup, "#eta"};
     AxisSpec ptOfInterestAxis = {static_cast<int>(ptBinsOfInterest.size()), 0.5f, static_cast<float>(ptBinsOfInterest.size()) + 0.5f, "#it{p}_{T} (GeV/#it{c})"};
 
-    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
-    std::string hPtRangesOfInterestTitle;
-    for (size_t ix = 0; ix < ptBinsOfInterest.size(); ++ix) {
-      TString ptRange = TString::Format("%s%.2f-%.2f", ix == 0 ? "" : ",", ptAxis.GetBinLowEdge(ptBinsOfInterest[ix]), ptAxis.GetBinUpEdge(ptBinsOfInterest[ix]));
-      /* remember our internal axis starts in 0.5 value, i.e. its first central value is 1 */
-      ptOfInterestBinMap[ptBinsOfInterest[ix]] = ix + 1;
-      hPtRangesOfInterestTitle += ptRange.Data();
-    }
-
     /* the reconstructed and generated levels histograms */
     std::string recogen = (kindOfData == kReco) ? "Reco" : "Gen";
+
+    /* the mapping between pT bins of interest and internal representation, and histogram title to keep track of them offline */
+    LOGF(info, "Configured at %s level the pT bins of interest on a map of length %d", recogen.c_str(), ptOfInterestBinMap.size());
+    std::string hPtRangesOfInterestTitle;
+    bool firstRange = true;
+    for (size_t ix = 0; ix < ptOfInterestBinMap.size(); ++ix) {
+      if (ptOfInterestBinMap[ix] != kBinNotTracked) {
+        TString ptRange = TString::Format("%s%.2f-%.2f", firstRange ? "" : ",", ptAxis.GetBinLowEdge(ix), ptAxis.GetBinUpEdge(ix));
+        hPtRangesOfInterestTitle += ptRange.Data();
+        LOGF(info, "  Tracking pT bin %d as internal axis value %d", ix, ptOfInterestBinMap[ix]);
+        firstRange = false;
+      }
+    }
+    LOGF(info, " Final pT bins tilte: %s", hPtRangesOfInterestTitle.c_str());
+
     for (uint isp = 0; isp < nsp; ++isp) {
       for (uint jsp = 0; jsp < nsp; ++jsp) {
         fhPhiPhiA[kindOfData][isp][jsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, recogen.c_str(), "After"), HNAMESTRING("PhiPhi_%s%s", tnames[isp].c_str(), tnames[jsp].c_str()),
@@ -649,7 +677,7 @@ struct QAExtraDataCollectingEngine {
         return ptOfInterestBinMap[ptAxis.FindFixBin(track.pt())];
       };
       int ptBin1 = binForPt(track1);
-      if (ptBin1 > 0) {
+      if (ptBin1 != kBinNotTracked) {
         float inTpcSectorPhi1 = std::fmod(track1.phi(), kTpcPhiSectorWidth);
         for (auto const& track2 : tracks2) {
           /* checking the same track id condition */
@@ -658,7 +686,7 @@ struct QAExtraDataCollectingEngine {
             continue;
           }
           int ptBin2 = binForPt(track2);
-          if (ptBin2 > 0) {
+          if (ptBin2 != kBinNotTracked) {
             float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi());
             float deltaEta = track1.eta() - track2.eta();
             float preWeight = 1 - std::abs(deltaEta) / deltaEtaSpan;
@@ -688,16 +716,18 @@ struct PidDataCollectingEngine {
   uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
   uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
+  constexpr static uint kNoOfSteps = 2; /* Before and after track selection */
+
   /* PID histograms */
   /* before and after */
-  std::vector<std::shared_ptr<TH2>> fhTPCdEdxSignalVsP{2, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCdEdxSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{2, {nallmainsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhTOFSignalVsP{2, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{2, {nallmainsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhPvsTOFSqMass{2, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH3>>> fhTPCTOFSigmaVsP{2, {nmainsp, nullptr}};
+  std::vector<std::shared_ptr<TH2>> fhTPCdEdxSignalVsP{kNoOfSteps, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCdEdxSignalDiffVsP{kNoOfSteps, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{kNoOfSteps, {nallmainsp, nullptr}};
+  std::vector<std::shared_ptr<TH2>> fhTOFSignalVsP{kNoOfSteps, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFSignalDiffVsP{kNoOfSteps, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{kNoOfSteps, {nallmainsp, nullptr}};
+  std::vector<std::shared_ptr<TH2>> fhPvsTOFSqMass{kNoOfSteps, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH3>>> fhTPCTOFSigmaVsP{kNoOfSteps, {nmainsp, nullptr}};
 
   template <efficiencyandqatask::KindOfData kindOfData>
   void init(HistogramRegistry& registry, const char* dirname)
@@ -711,9 +741,9 @@ struct PidDataCollectingEngine {
     if constexpr (kindOfData == kReco) {
       /* PID histograms */
       std::vector<std::string> whenname{"Before", "After"};
-      char whenprefix[2]{'B', 'A'};
+      constexpr char whenprefix[kNoOfSteps]{'B', 'A'};
       std::vector<std::string> whentitle{"before", ""};
-      for (uint ix = 0; ix < whenname.size(); ++ix) {
+      for (uint ix = 0; ix < kNoOfSteps; ++ix) {
         fhTPCdEdxSignalVsP[ix] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                               HNAMESTRING("tpcSignalVsP%c", whenprefix[ix]),
                                               HTITLESTRING("TPC dE/dx signal %s", whentitle[ix].c_str()), kTH2F, {pidPAxis, dEdxAxis});
@@ -761,7 +791,7 @@ struct PidDataCollectingEngine {
     } else {
       ix = 2 * ix;
     }
-    for (uint when = 0; when < 2; ++when) {
+    for (uint when = 0; when < kNoOfSteps; ++when) {
       fhTPCnSigmasVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcNSigma<id>(track));
       fhTOFnSigmasVsP[when][ix]->Fill(tofmom, o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
@@ -779,7 +809,7 @@ struct PidDataCollectingEngine {
     } else {
       ix = 2 * ix;
     }
-    for (uint when = 0; when < 2; ++when) {
+    for (uint when = 0; when < kNoOfSteps; ++when) {
       fhTPCdEdxSignalDiffVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcExpSignalDiff<id>(track));
       fhTOFSignalDiffVsP[when][ix]->Fill(tofmom, o2::aod::pidutils::tofExpSignalDiff<id>(track));
       fhTPCTOFSigmaVsP[when][ix]->Fill(tpcmom, o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
@@ -793,7 +823,7 @@ struct PidDataCollectingEngine {
   template <typename TrackObject>
   void fillPID(TrackObject const& track, float tpcmom, float tofmom)
   {
-    for (uint when = 0; when < 2; ++when) {
+    for (uint when = 0; when < kNoOfSteps; ++when) {
       if constexpr (framework::has_type_v<o2::aod::mcpidtpc::DeDxTunedMc, typename TrackObject::all_columns>) {
         fhTPCdEdxSignalVsP[when]->Fill(tpcmom, track.mcTunedTPCSignal());
       } else {
@@ -853,6 +883,7 @@ struct PidExtraDataCollectingEngine {
     const AxisSpec dEdxAxis{200, 0.0, 200.0, "dE/dx (au)"};
     AxisSpec pidPAxis{150, 0.1, 5.0, "#it{p} (GeV/#it{c})"};
     pidPAxis.makeLogarithmic();
+    constexpr int kEvenOddBase = 2;
 
     if constexpr (kindOfData == kReco) {
       /* PID histograms */
@@ -875,7 +906,7 @@ struct PidExtraDataCollectingEngine {
                                                    kTProfile2D, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
         for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
           /* only the same charge makes any sense */
-          if (isp % 2 == imainsp % 2) {
+          if (isp % kEvenOddBase == imainsp % kEvenOddBase) {
             fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                                            HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
                                                            HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
@@ -1114,7 +1145,11 @@ struct DptDptEfficiencyAndQc {
       noOfNSigmaBins = static_cast<int>((maxNSigma - minNSigma) / widthNSigmaBin);
 
       /* configure the pT bins of interest */
-      ptBinsOfInterest = cfgPtBinsOfInterest.value;
+      TAxis ptAxis{ptbins, ptlow, ptup};
+      for (const int& bin : cfgPtBinsOfInterest.value) {
+        ptBinsOfInterest.push_back(bin);
+        LOGF(info, "Inserted pT bin %d: %.2f < pT < %.2f GeV/c", bin, ptAxis.GetBinLowEdge(bin), ptAxis.GetBinUpEdge(bin));
+      }
 
       bool doBasicAnalysis = doprocessDetectorLevelNotStored || doprocessReconstructedNotStored || doprocessGeneratorLevelNotStored;
       bool doExtraAnalysis = doprocessExtraDetectorLevelNotStored || doprocessExtraReconstructedNotStored || doprocessExtraGeneratorLevelNotStored;
@@ -1139,32 +1174,38 @@ struct DptDptEfficiencyAndQc {
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool genlevel) {
+        auto initializeCEInstance = [&](auto dce, auto name, auto& registry, bool reclevel, bool genlevel) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
-          dce->template init<kReco>(registry, name.Data());
+          if (reclevel) {
+            dce->template init<kReco>(registry, name.Data());
+          }
           if (genlevel) {
             dce->template init<kGen>(registry, name.Data());
           }
         };
         auto buildQACEInstance = [&](float min, float max) {
           auto* dce = new QADataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registryBank[i],
+                               doprocessReconstructedNotStored || doprocessDetectorLevelNotStored, doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildQACEExtraInstance = [&](float min, float max) {
           auto* dce = new QAExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i], doprocessExtraGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaExtraData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *extraRegistryBank[i],
+                               doprocessExtraReconstructedNotStored || doprocessExtraDetectorLevelNotStored, doprocessExtraGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidCEInstance = [&](float min, float max) {
           auto* dce = new PidDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i],
+                               doprocessReconstructedNotStoredPID || doprocessDetectorLevelNotStoredPID || doprocessDetectorLevelNotStoredTunedOnDataPID, doprocessGeneratorLevelNotStored);
           return dce;
         };
         auto buildPidExtraCEInstance = [&](float min, float max) {
           auto* dce = new PidExtraDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i], doprocessGeneratorLevelNotStored);
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidRegistryBank[i],
+                               doprocessReconstructedNotStoredPIDExtra || doprocessDetectorLevelNotStoredPIDExtra || doprocessDetectorLevelNotStoredTunedOnDataPIDExtra, doprocessGeneratorLevelNotStored);
           return dce;
         };
         /* in reverse order for proper order in results file */
@@ -1224,22 +1265,24 @@ struct DptDptEfficiencyAndQc {
       if constexpr (kindOfProcess == kEXTRA) {
         qaExtraDataCE[ixDCE]->processTrackPairs<kindOfData, FilteredCollisions>(tracks, tracks);
       }
-      for (auto const& track : tracks) {
-        float tpcmom = track.p();
-        float tofmom = track.p();
-        if (useTPCInnerWallMomentum.value) {
-          if constexpr (!framework::has_type_v<aod::mcparticle::PdgCode, typename PassedTracks::iterator::all_columns>) {
-            tpcmom = track.tpcInnerParam();
+      if constexpr (kindOfProcess == kBASIC || kindOfProcess == kPID || kindOfProcess == kPIDEXTRA) {
+        for (auto const& track : tracks) {
+          float tpcmom = track.p();
+          float tofmom = track.p();
+          if (useTPCInnerWallMomentum.value) {
+            if constexpr (!framework::has_type_v<aod::mcparticle::PdgCode, typename PassedTracks::iterator::all_columns>) {
+              tpcmom = track.tpcInnerParam();
+            }
           }
-        }
-        if constexpr (kindOfProcess == kBASIC) {
-          qaDataCE[ixDCE]->processTrack<kindOfData, FilteredCollisions>(collision.posZ(), track);
-        }
-        if constexpr (kindOfProcess == kPID) {
-          pidDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
-        }
-        if constexpr (kindOfProcess == kPIDEXTRA) {
-          pidExtraDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
+          if constexpr (kindOfProcess == kBASIC) {
+            qaDataCE[ixDCE]->processTrack<kindOfData, FilteredCollisions>(collision.posZ(), track);
+          }
+          if constexpr (kindOfProcess == kPID) {
+            pidDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
+          }
+          if constexpr (kindOfProcess == kPIDEXTRA) {
+            pidExtraDataCE[ixDCE]->processTrack<kindOfData>(track, tpcmom, tofmom);
+          }
         }
       }
       if constexpr (kindOfProcess == kBASIC) {
