@@ -19,6 +19,7 @@
 #include <limits>
 #include <vector>
 #include <map>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -28,6 +29,9 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
@@ -39,7 +43,7 @@ using namespace o2::framework::expressions;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using MyBCs = soa::Join<aod::BCs, aod::BcSels>;
+using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps>;
 
 using SelectedUniqueClusters = soa::Filtered<aod::EMCALClusters>;                                                         // Clusters from collisions with only one collision in the BC
 using SelectedUniqueMCClusters = soa::Filtered<soa::Join<aod::EMCALClusters, aod::EMCALMCClusters>>;                      // Clusters from collisions with only one collision in the BC
@@ -70,8 +74,12 @@ struct bcWiseClusterSkimmer {
 
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", false, "Only store kTVXinEMC triggered BCs"};
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
+  Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
+  parameters::GRPLHCIFData* mLHCIFdata = nullptr;
+  int mRunNumber = -1;
+  ctpRateFetcher mRateFetcher;
 
   Filter energyFilter = (aod::emcalcluster::energy > cfgMinClusterEnergy && aod::emcalcluster::energy < cfgMaxClusterEnergy);
   Filter m02Filter = (aod::emcalcluster::nCells == 1 || (aod::emcalcluster::m02 > cfgMinM02 && aod::emcalcluster::m02 < cfgMaxM02));
@@ -82,7 +90,7 @@ struct bcWiseClusterSkimmer {
 
   std::map<int32_t, int32_t> fMapPi0Index; // Map to connect the MC index of the pi0 to the one saved in the derived table
 
-  void init(framework::InitContext&)
+  void init(o2::framework::InitContext&)
   {
     const int nEventBins = 6;
     mHistManager.add("nBCs", "Number of BCs;;#bf{#it{N}_{BCs}}", HistType::kTH1F, {{nEventBins, -0.5, 5.5}});
@@ -105,9 +113,9 @@ struct bcWiseClusterSkimmer {
 
   /// \brief Process EMCAL clusters (either ambigous or unique)
   template <typename OutputType, typename InputType>
-  OutputType convertForStorage(InputType const& valueIn, Observables observable)
+  OutputType convertForStorage(InputType const& valueIn, Observable observable)
   {
-    double valueToBeChecked = std::round(valueIn * downscalingFactors[observable]);
+    double valueToBeChecked = valueIn * downscalingFactors[observable];
     if (valueToBeChecked < std::numeric_limits<OutputType>::lowest()) {
       LOG(warning) << "Value " << valueToBeChecked << " of observable " << observable << " below lowest possible value of " << typeid(OutputType).name() << ": " << static_cast<float>(std::numeric_limits<OutputType>::lowest());
       valueToBeChecked = static_cast<float>(std::numeric_limits<OutputType>::lowest());
@@ -173,6 +181,33 @@ struct bcWiseClusterSkimmer {
     return true;
   }
 
+  double calculateMu(const auto& bc)
+  {
+    auto& ccdbMgr = o2::ccdb::BasicCCDBManager::instance();
+    uint64_t timeStamp = bc.timestamp();
+
+    if (mRunNumber != bc.runNumber()) {
+      std::map<std::string, std::string> metadata;
+      mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
+      if (mLHCIFdata == nullptr)
+        LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
+      mRunNumber = bc.runNumber();
+      LOG(info) << "LHCIF data fetched for run " << mRunNumber << " and timestamp " << timeStamp;
+    }
+
+    auto bfilling = mLHCIFdata->getBunchFilling();
+    double nbc = bfilling.getFilledBCs().size();
+
+    double tvxRate = mRateFetcher.fetch(&ccdbMgr, timeStamp, bc.runNumber(), "T0VTX");
+
+    double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
+    double mu = -std::log(1 - nTriggersPerFilledBC);
+
+    // LOG(info) << "Time stamp: " << timeStamp << " Run number: " << bc.runNumber() << " Number of filled BCs: " << nbc << " Trigger rate: " << tvxRate << " Mu: " << mu;
+
+    return mu;
+  }
+
   void processEventProperties(const auto& bc, const auto& collisionsInBC, const auto& cellsInBC)
   {
     bool hasFT0 = bc.has_foundFT0();
@@ -192,13 +227,16 @@ struct bcWiseClusterSkimmer {
     if (hasNoTFROFBorder)
       mHistManager.fill(HIST("nBCs"), 5);
 
+    double mu = cfgStoreMu ? calculateMu(bc) : 0.;
     float ft0Amp = hasFT0 ? bc.foundFT0().sumAmpA() + bc.foundFT0().sumAmpC() : 0.;
+    double centrality = 101.5;
+    if (collisionsInBC.size() > 0)
+      centrality = collisionsInBC.iteratorAt(0).centFT0M();
 
-    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint16_t>(ft0Amp, kFT0Amp));
+    bcTable(hasFT0, hasTVX, haskTVXinEMC, hasEMCCell, hasNoTFROFBorder, convertForStorage<uint8_t>(centrality, kFT0MCent), convertForStorage<uint16_t>(ft0Amp, kFT0Amp), convertForStorage<uint16_t>(mu, kMu));
 
-    for (const auto& collision : collisionsInBC) {
+    for (const auto& collision : collisionsInBC)
       collisionTable(bcTable.lastIndex(), convertForStorage<uint8_t>(collision.centFT0M(), kFT0MCent), convertForStorage<int16_t>(collision.posZ(), kZVtx));
-    }
   }
 
   template <typename TMCParticle, typename TMCParticles>
