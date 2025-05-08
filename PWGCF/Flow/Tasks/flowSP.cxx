@@ -652,7 +652,7 @@ struct FlowSP {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(TCollision collision, const int& multTrk)
   {
     if (!collision.sel8())
       return 0;
@@ -1039,7 +1039,7 @@ struct FlowSP {
     if (cfgCentNGlobal)
       centrality = collision.centNGlobal();
 
-    if (!eventSelected(collision, tracks.size(), centrality))
+    if (!eventSelected(collision, tracks.size()))
       return;
 
     if (collision.isSelected()) {
@@ -1216,9 +1216,12 @@ struct FlowSP {
     if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
 
-    if (!eventSelected(collision, filteredTracks.size(), centrality))
+    if (!eventSelected(collision, filteredTracks.size()))
       return;
 
+    if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return;
+    
     if (!collision.has_mcCollision()) {
       LOGF(info, "No mccollision found for this collision");
       return;
@@ -1290,7 +1293,8 @@ struct FlowSP {
           colSelected = false;
           continue;
         }
-        if (!eventSelected(col, filteredTrackSlice.size(), centrality)) {
+        if (!eventSelected(col, filteredTrackSlice.size()) || centrality > cfgCentMax || centrality < cfgCentMin)
+        {
           colSelected = false;
           continue;
         }
@@ -1306,7 +1310,6 @@ struct FlowSP {
             continue;
 
           int charge = 0;
-          ;
 
           auto pdgCode = particle.pdgCode();
           auto pdgInfo = pdg->GetParticle(pdgCode);
