@@ -29,15 +29,24 @@ struct HfConverterReducedHadronDausPid {
   Produces<aod::HfRedPidDau1s_001> hfRedPidDau1s;
   Produces<aod::HfRedPidDau2s_001> hfRedPidDau2s;
 
-  using HfRedPidDaus = soa::Join<aod::HfCand3ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
+  using HfRedPidDaus2Prong = soa::Join<aod::HfCand2ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000>;
+  using HfRedPidDaus3Prong = soa::Join<aod::HfCand3ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
 
-  void process(HfRedPidDaus::iterator const& hfCandPidProngs)
+  void process2Prongs(HfRedPidDaus2Prong::iterator const& hfCandPidProngs)
   {
     hfRedPidDau0s(hfCandPidProngs.tpcNSigmaPiProng0(), hfCandPidProngs.tofNSigmaPiProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.nSigTpcPr0(), hfCandPidProngs.nSigTofPr0(), hfCandPidProngs.hasTOFProng0(), hfCandPidProngs.hasTPCProng0());
     hfRedPidDau1s(hfCandPidProngs.tpcNSigmaPiProng1(), hfCandPidProngs.tofNSigmaPiProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.nSigTpcPr1(), hfCandPidProngs.nSigTofPr1(), hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
-    hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.nSigTpcPr2(), hfCandPidProngs.nSigTofPr2(), hfCandPidProngs.hasTOFProng2(), hfCandPidProngs.hasTPCProng2());
   }
+  PROCESS_SWITCH(HfConverterReducedHadronDausPid, process2Prongs, "Produce PID tables for 2-prong candidates", true);
 };
+
+void process3Prongs(HfRedPidDaus3Prong::iterator const& hfCandPidProngs)
+{
+  hfRedPidDau0s(hfCandPidProngs.tpcNSigmaPiProng0(), hfCandPidProngs.tofNSigmaPiProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.tpcNSigmaKaProng0(), hfCandPidProngs.nSigTpcPr0(), hfCandPidProngs.nSigTofPr0(), hfCandPidProngs.hasTOFProng0(), hfCandPidProngs.hasTPCProng0());
+  hfRedPidDau1s(hfCandPidProngs.tpcNSigmaPiProng1(), hfCandPidProngs.tofNSigmaPiProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.tpcNSigmaKaProng1(), hfCandPidProngs.nSigTpcPr1(), hfCandPidProngs.nSigTofPr1(), hfCandPidProngs.hasTOFProng1(), hfCandPidProngs.hasTPCProng1());
+  hfRedPidDau2s(hfCandPidProngs.tpcNSigmaPiProng2(), hfCandPidProngs.tofNSigmaPiProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.tpcNSigmaKaProng2(), hfCandPidProngs.nSigTpcPr2(), hfCandPidProngs.nSigTofPr2(), hfCandPidProngs.hasTOFProng2(), hfCandPidProngs.hasTPCProng2());
+}
+PROCESS_SWITCH(HfConverterReducedHadronDausPid, process3Prongs, "Produce PID tables for 3-prong candidates", true);
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
