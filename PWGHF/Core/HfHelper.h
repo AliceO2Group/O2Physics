@@ -958,6 +958,87 @@ class HfHelper
     return true;
   }
 
+  /// Apply topological cuts as defined in SelectorCuts.h
+  /// \param candLb Lb candidate
+  /// \param cuts Lb candidate selection per pT bin"
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
+  {
+    auto ptCandLb = candLb.pt();
+    auto ptLc = candLb.ptProng0();
+    auto ptPi = candLb.ptProng1();
+
+    int pTBin = o2::analysis::findBin(binsPt, ptCandLb);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // Lb mass cut
+    if (std::abs(invMassLbToLcPi(candLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // Lc pt
+    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+      return false;
+    }
+
+    // Lb Decay length
+    if (candLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
+      return false;
+    }
+
+    // Lb Decay length XY
+    if (candLb.decayLengthXY() < cuts->get(pTBin, "Lb decLenXY")) {
+      return false;
+    }
+
+    // Lb chi2PCA cut
+    if (candLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      return false;
+    }
+
+    // Lb CPA cut
+    if (candLb.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // d0 of pi
+    if (std::abs(candLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of Lc
+    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// \param pidTrackPi PID status of trackPi (prong1 of Lb candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of Lb candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionLbToLcPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Apply selection on ML scores for charm-hadron daughter in b-hadron decays (common for all the beauty channels)
   /// \param cuts ML score selection per bin of charm-hadron pT
   /// \param binsPtC pT bin limits of charm hadron
