@@ -19,6 +19,7 @@
 #include <limits>
 #include <vector>
 #include <map>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -186,11 +187,10 @@ struct bcWiseClusterSkimmer {
     uint64_t timeStamp = bc.timestamp();
 
     if (mRunNumber != bc.runNumber()) {
-      std::map<string, string> metadata;
+      std::map<std::string, std::string> metadata;
       mLHCIFdata = ccdbMgr.getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
-      if (mLHCIFdata == nullptr) {
+      if (mLHCIFdata == nullptr)
         LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;
-      }
       mRunNumber = bc.runNumber();
       LOG(info) << "LHCIF data fetched for run " << mRunNumber << " and timestamp " << timeStamp;
     }
