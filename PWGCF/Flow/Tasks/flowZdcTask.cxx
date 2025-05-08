@@ -479,7 +479,6 @@ struct FlowZdcTask {
     float zpA = zdc.amplitudeZPA() / 2.68;
     float zpC = zdc.amplitudeZPC() / 2.68;
 
-
     float tZEM1{zdc.timeZEM1()};
     float tZEM2{zdc.timeZEM2()};
     float sumZNs{znA + znC};
