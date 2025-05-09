@@ -219,13 +219,17 @@ struct HfCandidateCreator3Prong {
   {
     fillProngPid<HfProngSpecies::Pion>(track0, rowProng0PidPi);
     fillProngPid<HfProngSpecies::Kaon>(track0, rowProng0PidKa);
-    fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
     fillProngPid<HfProngSpecies::Pion>(track1, rowProng1PidPi);
     fillProngPid<HfProngSpecies::Kaon>(track1, rowProng1PidKa);
-    fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
     fillProngPid<HfProngSpecies::Pion>(track2, rowProng2PidPi);
     fillProngPid<HfProngSpecies::Kaon>(track2, rowProng2PidKa);
-    fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
+
+    /// fill proton PID information only if necessary
+    if (createLc || createXic) {
+      fillProngPid<HfProngSpecies::Proton>(track0, rowProng0PidPr);
+      fillProngPid<HfProngSpecies::Proton>(track1, rowProng1PidPr);
+      fillProngPid<HfProngSpecies::Proton>(track2, rowProng2PidPr);
+    }
   }
 
   template <bool doPvRefit = false, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
