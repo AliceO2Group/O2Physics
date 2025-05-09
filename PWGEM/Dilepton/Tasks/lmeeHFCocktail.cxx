@@ -209,15 +209,14 @@ struct lmeehfcocktailprefilter {
       }
 
       int mother_pdg = mcParticles.iteratorAt(p.mothersIds()[0]).pdgCode();
-      bool direct_charm_mother = abs(mother_pdg) < 1e+9 && (std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 3] == '4' || std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 4] == '4');
-      if (abs(mother_pdg) == 443) {
-        direct_charm_mother = false; // we don't want JPsi here
-      }
+      // Mother is an open-charm hadon (meson or baryon) expected to decay semi-leptonicly
+      bool direct_charm_mother = ((std::abs(mother_pdg) >= 400) && (std::abs(mother_pdg) <= 439)) || ((std::abs(mother_pdg) >= 4000) && (std::abs(mother_pdg) <= 4399));
       int cHadronId = -1;
       if (direct_charm_mother) {
         cHadronId = p.mothersIds()[0];
       }
-      bool direct_beauty_mother = abs(mother_pdg) < 1e+9 && (std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 3] == '5' || std::to_string(mother_pdg)[std::to_string(mother_pdg).length() - 4] == '5');
+      // Mother is an open-beuaty hadron (meson or baryon) expected to decay semi-leptonicly
+      bool direct_beauty_mother = ((std::abs(mother_pdg) >= 500) && (std::abs(mother_pdg) <= 549)) || ((std::abs(mother_pdg) >= 5000) && (std::abs(mother_pdg) <= 5499));
       int bHadronId = IsFromBeauty(p, mcParticles);
 
       int bQuarkId = -1;
