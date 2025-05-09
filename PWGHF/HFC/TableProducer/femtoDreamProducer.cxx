@@ -301,7 +301,7 @@ struct HfFemtoDreamProducer {
           // particle is from a decay -> getProcess() == 4
           // particle is generated during transport -> getGenStatusCode() == -1
           // list of mothers is not empty
-        } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == genFromTransport && !motherparticlesMc.empty()) {
+        } else if (particleMc.getProcess() == TMCProcess::kPDecay && particleMc.getGenStatusCode() == GenFromTransport && !motherparticlesMc.empty()) {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
@@ -309,7 +309,7 @@ struct HfFemtoDreamProducer {
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
-        } else if (particleMc.getProcess() == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == genFromTransport) {
+        } else if (particleMc.getProcess() == TMCProcess::kPHInhelastic && particleMc.getGenStatusCode() == GenFromTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
           // cross check to see if we missed a case
         } else {
