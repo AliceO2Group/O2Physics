@@ -71,9 +71,9 @@ enum MlMode : uint8_t {
 };
 
 enum ProcessType {
-    kUndefined = -1,
-    kProcessDecay = 4,
-    kProcessInelasticHadronic = 23
+  kUndefined = -1,
+  kProcessDecay = 4,
+  kProcessInelasticHadronic = 23
 };
 
 struct HfFemtoDreamProducer {
