@@ -1,0 +1,13 @@
+{ "OutputDirector": {
+  "debug_mode": true,
+  "resfile": "AO2D",
+  "OutputDescriptors": [
+    {
+      "table": "AOD/PIDEUTERONTABLE/0"
+    },
+    {
+      "table": "AOD/PIDEUTERONMULT/0"
+    }
+  ],
+  "ntfmerge": 1
+} }

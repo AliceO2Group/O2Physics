@@ -40,7 +40,7 @@ o2physics_add_dpl_workflow(nucleustreecreator
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(he3hadronfemto
-    SOURCES He3HadronFemto.cxx
+    SOURCES he3HadronFemto.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
