@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// 
+//
 
 /// \file PiDeuteronFemto.cxx
 /// \brief Analysis task for Deuteron-Pion femto analysis
@@ -80,9 +80,8 @@ using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 
 namespace
 {
-constexpr double betheBlochDefault[1][6]{{-136.71,0.441,0.2269,1.347,0.8035,0.09}};
+constexpr double betheBlochDefault[1][6]{{-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-
 
 enum Selections {
   kNoCuts = 0,
@@ -148,7 +147,7 @@ struct PiDeuteronFemto {
 
   Produces<aod::PionDeuteronTable> mOutputDataTable;
   Produces<aod::PionDeuteronMult> mOutputMultiplicityTable;
-  
+
   // Selections
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
@@ -263,11 +262,11 @@ struct PiDeuteronFemto {
     int mat{static_cast<int>(settingMaterialCorrection)};
     mFitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
-    const int numParticles = 5; 
+    const int numParticles = 5;
     for (int i = 0; i < numParticles; i++) {
       mBBparamsDe[i] = settingBetheBlochParams->get("De", Form("p%i", i));
     }
-    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution");// wdf? 
+    mBBparamsDe[5] = settingBetheBlochParams->get("De", "resolution"); // wdf?
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -388,7 +387,7 @@ struct PiDeuteronFemto {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaPiTOF_preselection"), candidate.pt(), tofNSigmaPi);
-      if (std::sqrt(tofNSigmaPi*tofNSigmaPi + tpcNSigmaPi*tpcNSigmaPi) > settingCutNsigmaTOFTPCPi) {
+      if (std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi) > settingCutNsigmaTOFTPCPi) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaPiTPC"), candidate.pt(), tpcNSigmaPi);
@@ -403,8 +402,8 @@ struct PiDeuteronFemto {
 
   template <typename Ttrack>
   float computeNSigmaDe(const Ttrack& candidate)
-  { 
-    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam()/ constants::physics::MassDeuteron), mBBparamsDe[0], mBBparamsDe[1], mBBparamsDe[2], mBBparamsDe[3], mBBparamsDe[4]);
+  {
+    float expTPCSignal = o2::tpc::BetheBlochAleph(static_cast<float>(candidate.tpcInnerParam() / constants::physics::MassDeuteron), mBBparamsDe[0], mBBparamsDe[1], mBBparamsDe[2], mBBparamsDe[3], mBBparamsDe[4]);
     double resoTPC{expTPCSignal * mBBparamsDe[5]};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resoTPC);
   }
@@ -426,12 +425,12 @@ struct PiDeuteronFemto {
       if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
         return false;
       }
-      if (std::sqrt(tofNSigmaDe*tofNSigmaDe + tpcNSigmaDe*tpcNSigmaDe) > settingCutNsigmaTOFTPCDe) {
+      if (std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe) > settingCutNsigmaTOFTPCDe) {
         return false;
       }
       o2::aod::ITSResponse mResponseITS;
       auto itsnSigmaDe = mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
-   
+
       mQaRegistry.fill(HIST("h2NSigmaDeITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
       if (itsnSigmaDe < settingCutNsigmaITSDe) {
         return false;
@@ -451,7 +450,7 @@ struct PiDeuteronFemto {
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
   bool fillCandidateInfo(const Ttrack& trackDe, const Ttrack& trackPi, const CollBracket& collBracket, const Tcollisions& collisions, PiDecandidate& piDecand, const Ttracks& /*trackTable*/, bool isMixedEvent)
-  { 
+  {
     const int numCoordinates = 3;
     if (!isMixedEvent) {
       auto trackCovDe = getTrackParCov(trackDe);
@@ -495,7 +494,7 @@ struct PiDeuteronFemto {
 
     piDecand.momDe = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
     for (int i = 0; i < numCoordinates; i++)
-    piDecand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
+      piDecand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
     float invMass = 0;
     invMass = RecoDecay::m(std::array{piDecand.momDe, piDecand.momPi}, std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassPiPlus});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
@@ -564,8 +563,8 @@ struct PiDeuteronFemto {
 
   template <typename Ttrack>
   void pairTracksSameEvent(const Ttrack& tracks)
-  { 
-    //LOG(info) << "Number of tracks: " << tracks.size();
+  {
+    // LOG(info) << "Number of tracks: " << tracks.size();
     for (const auto& track0 : tracks) {
 
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
