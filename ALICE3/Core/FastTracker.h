@@ -37,24 +37,44 @@ class FastTracker
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
   DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true);
 
-  void AddSiliconALICE3v4();
-  void AddSiliconALICE3v1();
+  void AddSiliconALICE3v4(std::vector<float> pixelResolution);
+  void AddSiliconALICE3v2(std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
 
   void Print();
-  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack);
+  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, float nch);
+
+  // For efficiency calculation
+  float Dist(float z, float radius);
+  float OneEventHitDensity(float multiplicity, float radius);
+  float IntegratedHitDensity(float multiplicity, float radius);
+  float UpcHitDensity(float radius);
+  float HitDensity(float radius);
+  float ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ);
 
   // Definition of detector layers
   std::vector<DetLayer> layers;
   std::vector<std::vector<float>> hits; // bookkeep last added hits
 
   // operational
-  float magneticField;       // in kiloGauss (5 = 0.5T, etc)
   bool applyZacceptance;     // check z acceptance or not
-  float covMatFactor;        // covmat off-diagonal factor to use for covmat fix (negative: no factor)
-  int verboseLevel;          // 0: not verbose, >0 more verbose
   bool applyMSCorrection;    // Apply correction for multiple scattering
   bool applyElossCorrection; // Apply correction for eloss (requires MS correction)
+  bool applyEffCorrection;   // Apply correction for hit efficiency
+  int verboseLevel;          // 0: not verbose, >0 more verbose
+  int crossSectionMinB;
+  int dNdEtaCent;
+  int dNdEtaMinB;
+  float integrationTime;
+  float magneticField; // in kiloGauss (5 = 0.5T, etc)
+  float covMatFactor;  // covmat off-diagonal factor to use for covmat fix (negative: no factor)
+  float sigmaD;
+  float luminosity;
+  float otherBackground;
+  float maxRadiusSlowDet;
+  float avgRapidity;
+  float lhcUPCScale;
+  float upcBackgroundMultiplier;
 
   uint64_t covMatOK;    // cov mat has negative eigenvals
   uint64_t covMatNotOK; // cov mat has negative eigenvals
@@ -63,6 +83,7 @@ class FastTracker
   int nIntercepts;    // found in first outward propagation
   int nSiliconPoints; // silicon-based space points added to track
   int nGasPoints;     // tpc-based space points added to track
+  std::vector<float> goodHitProbability;
 
   ClassDef(FastTracker, 1);
 };

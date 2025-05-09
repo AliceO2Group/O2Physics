@@ -26,7 +26,7 @@ class AnalysisCut : public TNamed
  public:
   AnalysisCut() = default;
   AnalysisCut(const char* name, const char* title);
-  AnalysisCut(const AnalysisCut& c) = default;
+  AnalysisCut(const AnalysisCut& c);
   AnalysisCut& operator=(const AnalysisCut& c);
   ~AnalysisCut() override;
 
@@ -41,6 +41,8 @@ class AnalysisCut : public TNamed
   virtual bool IsSelected(float* values);
 
   static std::vector<int> fgUsedVars; //! vector of used variables
+
+  void PrintCuts();
 
   struct CutContainer {
     short fVar;    // variable to be cut upon

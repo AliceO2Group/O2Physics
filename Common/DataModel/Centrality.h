@@ -26,14 +26,15 @@ DECLARE_SOA_COLUMN(CentRun2CL1, centRun2CL1, float);                   //! Run 2
 DECLARE_SOA_COLUMN(CentRun2RefMult5, centRun2RefMult5, float);         //! Run 2 cent. from ref. mult. estimator, eta 0.5
 DECLARE_SOA_COLUMN(CentRun2RefMult8, centRun2RefMult8, float);         //! Run 2 cent. from  ref. mult. estimator, eta 0.8
 
-DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);       //! Run 3 cent. from FV0A multiplicities
-DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);       //! Run 3 cent. from FT0A+FT0C multiplicities
-DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);       //! Run 3 cent. from FT0A multiplicity
-DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);       //! Run 3 cent. from FT0C multiplicity
-DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);       //! Run 3 cent. from FDDA+FDDC multiplicity
-DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);       //! Run 3 cent. from the number of tracks contributing to the
-DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float); //! Run 3 cent. from the number of tracks contributing to the PV
-DECLARE_SOA_COLUMN(CentMFT, centMFT, float);         //! Run 3 cent. from the number of tracks in the MFT
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);                 //! Run 3 cent. from FV0A multiplicities
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);                 //! Run 3 cent. from FT0A+FT0C multiplicities
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);                 //! Run 3 cent. from FT0A multiplicity
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                 //! Run 3 cent. from FT0C multiplicity
+DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float); //! Run 3 cent. from FT0C multiplicity
+DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                 //! Run 3 cent. from FDDA+FDDC multiplicity
+DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the
+DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                   //! Run 3 cent. from the number of tracks in the MFT
 } // namespace cent
 
 // Run 2 tables
@@ -55,6 +56,9 @@ DECLARE_SOA_TABLE(CentFDDMs, "AOD", "CENTFDDM", cent::CentFDDM);          //! Ru
 DECLARE_SOA_TABLE(CentNTPVs, "AOD", "CENTNTPV", cent::CentNTPV);          //! Run 3 NTPV centrality table
 DECLARE_SOA_TABLE(CentNGlobals, "AOD", "CENTNGLOBAL", cent::CentNGlobal); //! Run 3 NGlobal centrality table
 DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Run 3 MFT tracks centrality table
+
+// Run 3 variant tables
+DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1); //! Run 3 FT0C variant 1
 
 using CentRun2V0M = CentRun2V0Ms::iterator;
 using CentRun2V0A = CentRun2V0As::iterator;

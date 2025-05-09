@@ -27,6 +27,7 @@
 #include "Framework/OutputObjHeader.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -82,6 +83,7 @@ namespace o2::hf_evsel
 // event rejection types
 enum EventRejection {
   None = 0,
+  Rct,
   SoftwareTrigger,
   Centrality,
   Trigger,
@@ -110,6 +112,7 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
 {
   // Puts labels on the collision monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::Rct + 1, "RCT");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::SoftwareTrigger + 1, softwareTriggerLabel.data());
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
@@ -154,20 +157,27 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
-  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 140000}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 14000}, ""};
+  o2::framework::Configurable<bool> requireGoodRct{"requireGoodRct", false, "Flag to require good RCT"};
+  o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CCBT_calo, CBT_muon, CBT_muon_glo)"};
+  o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
+  o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
 
   // histogram names
-  static constexpr char nameHistCollisions[] = "hCollisions";
-  static constexpr char nameHistSelCollisionsCent[] = "hSelCollisionsCent";
-  static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
-  static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
-  static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
-  static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
-  static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
-  static constexpr char nameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
+  static constexpr char NameHistCollisions[] = "hCollisions";
+  static constexpr char NameHistSelCollisionsCent[] = "hSelCollisionsCent";
+  static constexpr char NameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
+  static constexpr char NameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
+  static constexpr char NameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
+  static constexpr char NameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
+  static constexpr char NameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
+  static constexpr char NameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
   std::shared_ptr<TH2> hCollisionsCentOcc;
+
+  // util to retrieve the RCT info from CCDB
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
@@ -178,23 +188,36 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
-    hSelCollisionsCent = registry.add<TH1>(nameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
-    hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
-    hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    hCollisions = registry.add<TH1>(NameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hSelCollisionsCent = registry.add<TH1>(NameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hPosZBeforeEvSel = registry.add<TH1>(NameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>(NameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>(NameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>(NameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>(NameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
 
     const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
     const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
-    hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+    hCollisionsCentOcc = registry.add<TH2>(NameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
+  }
+
+  /// \brief Inits the HF event selection object
+  /// \param registry reference to the histogram registry
+  void init(o2::framework::HistogramRegistry& registry)
+  {
+    // we initialise the RCT checker
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    }
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
+
+    // we initialise histograms
+    addHistograms(registry);
   }
 
   /// \brief Applies event selection.
@@ -218,6 +241,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     if constexpr (useEvSel) {
+      /// RCT condition
+      if (requireGoodRct && !rctChecker.checkTable(collision)) {
+        SETBIT(rejectionMask, EventRejection::Rct);
+      }
       /// trigger condition
       if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
         SETBIT(rejectionMask, EventRejection::Trigger);
@@ -333,37 +360,47 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
 struct HfEventSelectionMc {
   // event selection parameters (in chronological order of application)
-  bool useSel8Trigger{false};       // Apply the Sel8 selection
-  bool useTvxTrigger{false};        // Apply the TVX trigger
-  bool useTimeFrameBorderCut{true}; // Apply TF border cut
-  bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
-  float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
-  float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
-  float centralityMin{0.f};         // Minimum centrality
-  float centralityMax{100.f};       // Maximum centrality
+  bool useSel8Trigger{false};          // Apply the Sel8 selection
+  bool useTvxTrigger{false};           // Apply the TVX trigger
+  bool useTimeFrameBorderCut{true};    // Apply TF border cut
+  bool useItsRofBorderCut{false};      // Apply the ITS RO frame border cut
+  float zPvPosMin{-1000.f};            // Minimum PV posZ (cm)
+  float zPvPosMax{1000.f};             // Maximum PV posZ (cm)
+  float centralityMin{0.f};            // Minimum centrality
+  float centralityMax{100.f};          // Maximum centrality
+  bool requireGoodRct{false};          // Apply RCT selection
+  std::string rctLabel{""};            // RCT selection flag
+  bool rctCheckZDC;                    // require ZDC from RCT
+  bool rctTreatLimitedAcceptanceAsBad; // RCT flag to reject events with limited acceptance for selected detectors
+
+  // util to retrieve the RCT info from CCDB
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   // histogram names
-  static constexpr char nameHistGenCollisionsCent[] = "hGenCollisionsCent";
+  static constexpr char NameHistGenCollisionsCent[] = "hGenCollisionsCent";
   std::shared_ptr<TH1> hGenCollisionsCent;
-  static constexpr char nameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
+  static constexpr char NameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
   std::shared_ptr<TH1> hRecCollisionsCentMc;
-  static constexpr char nameHistNSplitVertices[] = "hNSplitVertices";
+  static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
   std::shared_ptr<TH1> hNSplitVertices;
-  static constexpr char nameHistParticles[] = "hParticles";
+  static constexpr char NameHistParticles[] = "hParticles";
   std::shared_ptr<TH1> hParticles;
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
   /// \param registry reference to the histogram registry
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
-    hGenCollisionsCent = registry.add<TH1>(nameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hRecCollisionsCentMc = registry.add<TH1>(nameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
-    hNSplitVertices = registry.add<TH1>(nameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
-    hParticles = registry.add<TH1>(nameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hGenCollisionsCent = registry.add<TH1>(NameHistGenCollisionsCent, "HF event counter;T0M;# of generated collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hRecCollisionsCentMc = registry.add<TH1>(NameHistRecCollisionsCentMc, "HF event counter;T0M;# of reconstructed collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
+    hNSplitVertices = registry.add<TH1>(NameHistNSplitVertices, "HF split vertices counter;;# of reconstructed collisions per mc collision", {o2::framework::HistType::kTH1D, {{4, 1., 5.}}});
+    hParticles = registry.add<TH1>(NameHistParticles, "HF particle counter;;# of accepted particles", {o2::framework::HistType::kTH1D, {axisEvents}});
     // Puts labels on the collision monitoring histogram.
     setEventRejectionLabels(hParticles);
   }
 
+  /// \brief Configures the object from the reco workflow
+  /// \param registry reference to the histogram registry
+  /// \param device device spec to get the configs from the reco workflow
   void configureFromDevice(const o2::framework::DeviceSpec& device)
   {
     for (const auto& option : device.options) {
@@ -383,8 +420,33 @@ struct HfEventSelectionMc {
         centralityMin = option.defaultValue.get<float>();
       } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
         centralityMax = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.requireGoodRct") == 0) {
+        requireGoodRct = option.defaultValue.get<bool>();
+      } else if (option.name.compare("hfEvSel.rctLabel") == 0) {
+        rctLabel = option.defaultValue.get<std::string>();
+      } else if (option.name.compare("hfEvSel.rctCheckZDC") == 0) {
+        rctCheckZDC = option.defaultValue.get<bool>();
+      } else if (option.name.compare("hfEvSel.rctTreatLimitedAcceptanceAsBad") == 0) {
+        rctTreatLimitedAcceptanceAsBad = option.defaultValue.get<bool>();
       }
     }
+  }
+
+  /// \brief Inits the HF event selection object
+  /// \param device device spec to get the configs from the reco workflow
+  /// \param registry reference to the histogram registry
+  void init(const o2::framework::DeviceSpec& device, o2::framework::HistogramRegistry& registry)
+  {
+    // we get the configuration from the reco workflow
+    configureFromDevice(device);
+
+    // we initialise the RCT checker
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel, rctCheckZDC, rctTreatLimitedAcceptanceAsBad);
+    }
+
+    // we initialise histograms
+    addHistograms(registry);
   }
 
   /// \brief Function to apply event selections to generated MC collisions
@@ -404,6 +466,16 @@ struct HfEventSelectionMc {
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
+      }
+    }
+
+    /// RCT condition
+    if (requireGoodRct) {
+      for (auto const& collision : collSlice) {
+        if (!rctChecker.checkTable(collision)) {
+          SETBIT(rejectionMask, EventRejection::Rct);
+          break;
+        }
       }
     }
     /// Sel8 trigger selection

@@ -82,7 +82,8 @@ DECLARE_SOA_COLUMN(DotProdTrackJetOverJet, trackdotjetoverjet, float); //! The d
 DECLARE_SOA_COLUMN(DeltaRJetTrack, rjettrack, float);                  //! The DR jet-track
 DECLARE_SOA_COLUMN(SignedIP2D, ip2d, float);                           //! The track signed 2D IP
 DECLARE_SOA_COLUMN(SignedIP2DSign, ip2dsigma, float);                  //! The track signed 2D IP significance
-DECLARE_SOA_COLUMN(SignedIP3D, ip3d, float);                           //! The track signed 3D IP
+DECLARE_SOA_COLUMN(SignedIPz, ipz, float);                             //! The track signed z IP
+DECLARE_SOA_COLUMN(SignedIPzSign, ipzsigma, float);                    //! The track signed z IP significance
 DECLARE_SOA_COLUMN(SignedIP3DSign, ip3dsigma, float);                  //! The track signed 3D IP significance
 DECLARE_SOA_COLUMN(MomFraction, momfraction, float);                   //! The track momentum fraction of the jets
 DECLARE_SOA_COLUMN(DeltaRTrackVertex, rtrackvertex, float);            //! DR between the track and the closest SV, to be decided whether to add to or not
@@ -108,7 +109,8 @@ DECLARE_SOA_TABLE(bjetTracksParams, "AOD", "BJETTRACKSPARAM",
                   trackInfo::DeltaRJetTrack,
                   trackInfo::SignedIP2D,
                   trackInfo::SignedIP2DSign,
-                  trackInfo::SignedIP3D,
+                  trackInfo::SignedIPz,
+                  trackInfo::SignedIPzSign,
                   trackInfo::SignedIP3DSign,
                   trackInfo::MomFraction,
                   trackInfo::DeltaRTrackVertex);
@@ -227,7 +229,7 @@ struct BJetTreeCreator {
 
   Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   std::vector<double> jetRadiiValues;
   std::vector<double> jetPtBinsReduction;
@@ -242,7 +244,7 @@ struct BJetTreeCreator {
     jetPtBinsReduction = (std::vector<double>)jetPtBins;
     jetReductionFactorsPt = (std::vector<double>)jetReductionFactors;
 
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{40, -20.0, 20.0}}});
 
@@ -460,7 +462,7 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
-        bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), RClosestSV);
+        bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), RClosestSV);
       }
       trackIndices.push_back(bjetTracksParamsTable.lastIndex());
     }
@@ -531,7 +533,7 @@ struct BJetTreeCreator {
       }
 
       if (produceTree) {
-        bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.);
+        bjetTracksParamsTable(bjetParamsTable.lastIndex() + 1, constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.);
       }
       trackIndices.push_back(bjetTracksParamsTable.lastIndex());
     }
@@ -544,7 +546,7 @@ struct BJetTreeCreator {
 
   void processDataJets(FilteredCollision::iterator const& collision, DataJets const& alljets, JetTrackswID const& allTracks, aod::DataSecondaryVertex3Prongs const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 
@@ -598,7 +600,7 @@ struct BJetTreeCreator {
 
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, aod::JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 
@@ -698,7 +700,7 @@ struct BJetTreeCreator {
 
   void processMCJetsForGNN(FilteredCollisionMCD::iterator const& collision, aod::JMcCollisions const&, MCDJetTableNoSV const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticleswID const& MCParticles, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
     }
 

@@ -134,7 +134,6 @@ struct chk892_pp {
   Configurable<int> ConfEvtOccupancyInTimeRangeMax{"ConfEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
   Configurable<int> ConfEvtOccupancyInTimeRangeMin{"ConfEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtTriggerTVXSel{"ConfEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
   Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
@@ -222,7 +221,7 @@ struct chk892_pp {
   {
     centrality = -999;
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, ConfEvtOccupancyInTimeRangeMax, ConfEvtOccupancyInTimeRangeMin);
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, ConfEvtOccupancyInTimeRangeMax, ConfEvtOccupancyInTimeRangeMin);
     colCuts.init(&histos);
     colCuts.setTriggerTVX(ConfEvtTriggerTVXSel);
     colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);

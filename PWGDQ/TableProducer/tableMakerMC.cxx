@@ -468,7 +468,8 @@ struct TableMakerMC {
       eventMClabels(fEventLabels.find(mcCollision.globalIndex())->second, collision.mcMask());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
         multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(), collision.trackOccupancyInTimeRange());
+               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
         multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
                 0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0);
       }
@@ -761,10 +762,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (fConfigQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }
@@ -813,7 +810,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
               if (fIsAmbiguous && isAmbiguous == 1) {
                 fHistMan->FillHistClass(Form("Ambiguous_Muons_%s", cut.GetName()), VarManager::fgValues);
               }
@@ -1324,10 +1320,6 @@ struct TableMakerMC {
           for (auto& cut : fMuonCuts) {
             if (cut.IsSelected(VarManager::fgValues)) {
               trackTempFilterMap |= (uint8_t(1) << i);
-              if (fConfigQA) {
-                fHistMan->FillHistClass(Form("Muons_%s", cut.GetName()), VarManager::fgValues);
-              }
-              (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(i));
             }
             i++;
           }

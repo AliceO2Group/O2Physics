@@ -1618,19 +1618,19 @@ struct cascadeBuilder {
     }
   }
 
-  template <class TTrackTo, typename TCascTable>
-  void buildStrangenessTables(TCascTable const& cascades)
+  template <class TTrackTo>
+  void buildStrangenessTables(auto const& cascades)
   {
     statisticsRegistry.eventCounter++;
     for (auto& cascade : cascades) {
       // de-reference from V0 pool, either specific for cascades or general
       // use templatizing to avoid code duplication
 
-      if constexpr (requires { cascade.template v0(); }) {
+      if constexpr (requires { cascade.v0(); }) {
         auto v0index = cascade.template v0_as<aod::V0sLinked>();
         processCascadeCandidate<TTrackTo>(v0index, cascade);
       }
-      if constexpr (requires { cascade.template findableV0(); }) {
+      if constexpr (requires { cascade.findableV0(); }) {
         auto v0index = cascade.template findableV0_as<aod::FindableV0sLinked>();
         processCascadeCandidate<TTrackTo>(v0index, cascade);
       }
@@ -1640,17 +1640,17 @@ struct cascadeBuilder {
     resetHistos();
   }
 
-  template <class TTrackTo, typename TCascTable>
-  void buildKFStrangenessTables(TCascTable const& cascades)
+  template <class TTrackTo>
+  void buildKFStrangenessTables(auto const& cascades)
   {
     statisticsRegistry.eventCounter++;
     for (auto& cascade : cascades) {
       bool validCascadeCandidateKF = false;
-      if constexpr (requires { cascade.template v0(); }) {
+      if constexpr (requires { cascade.v0(); }) {
         auto v0 = cascade.template v0_as<aod::V0sLinked>();
         validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
       }
-      if constexpr (requires { cascade.template findableV0(); }) {
+      if constexpr (requires { cascade.findableV0(); }) {
         auto v0 = cascade.template findableV0_as<aod::FindableV0sLinked>();
         validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0);
       }
@@ -1979,7 +1979,7 @@ struct cascadeBuilder {
   }
   PROCESS_SWITCH(cascadeBuilder, processFindableRun3, "Produce Run 3 findable cascade tables", false);
 
-  void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0s const&)
+  void processRun3withKFParticle(aod::Collisions const& collisions, soa::Filtered<TaggedCascades> const& cascades, FullTracksExtIU const&, aod::BCsWithTimestamps const&, aod::V0sLinked const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB

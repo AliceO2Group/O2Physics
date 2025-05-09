@@ -214,8 +214,8 @@ struct flowAnalysisGF {
     fPtAxis = new TAxis(ptbins, &ptbinning[0]);
 
     if (cfgFillWeights) {
-      fWeights->SetPtBins(ptbins, &ptbinning[0]);
-      fWeights->Init(true, false);
+      fWeights->setPtBins(ptbins, &ptbinning[0]);
+      fWeights->init(true, false);
     }
 
     if (doprocessMCGen) {
@@ -388,7 +388,7 @@ struct flowAnalysisGF {
       return false;
     weight_nue = 1. / eff;
     if (cfg.mAcceptance)
-      weight_nua = cfg.mAcceptance->GetNUA(phi, eta, vtxz);
+      weight_nua = cfg.mAcceptance->getNUA(phi, eta, vtxz);
     else
       weight_nua = 1;
     return true;
@@ -582,7 +582,7 @@ struct flowAnalysisGF {
         return false;
 
       if (cfgFillWeights)
-        fWeights->Fill(particle.phi(), particle.eta(), vtxz, particle.pt(), centrality, 0);
+        fWeights->fill(particle.phi(), particle.eta(), vtxz, particle.pt(), centrality, 0);
 
       if (!setCurrentParticleWeights(weff, wacc, particle.phi(), particle.eta(), particle.pt(), vtxz))
         return false;

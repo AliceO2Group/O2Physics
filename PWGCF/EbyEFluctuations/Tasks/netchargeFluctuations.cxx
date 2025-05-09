@@ -1,11 +1,12 @@
-//
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
 // author Nida Malik (nida.malik@cern.ch)
 // Department of Physics, Aligarh Muslim University, India
 // to study the net charge fluctuations by observable, #nu_dyn
@@ -13,7 +14,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Multiplicity.
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -32,6 +33,9 @@
 #include "Framework/HistogramRegistry.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -335,4 +339,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   };
 }
+
 

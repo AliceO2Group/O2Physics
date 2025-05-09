@@ -140,6 +140,7 @@ struct vpPairQCMC {
     Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +0.0, "max. TPC n sigma for proton exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -0.0, "min. TOF n sigma for electron inclusion"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +0.0, "max. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_min_pin_pirejTPC{"cfg_min_pin_pirejTPC", 0.5, "min. pin for pion rejection in TPC"};
     Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 0.5, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
@@ -342,7 +343,7 @@ struct vpPairQCMC {
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
-    fDielectronCut.SetMaxPinForPionRejectionTPC(dielectroncuts.cfg_max_pin_pirejTPC);
+    fDielectronCut.SetPinRangeForPionRejectionTPC(dielectroncuts.cfg_min_pin_pirejTPC, dielectroncuts.cfg_max_pin_pirejTPC);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       static constexpr int nClassesMl = 2;
