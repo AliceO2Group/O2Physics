@@ -406,6 +406,8 @@ DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
 // We don't want to link the charm candidate table because we want to avoid producing it.
 namespace hf_cand_par_charm
 {
+DECLARE_SOA_COLUMN(Chi2PCACharm, chi2PCACharm, float);                                       //! sum of (non-weighted) distances of the secondary vertex to its prongs
+DECLARE_SOA_COLUMN(NProngsContributorsPVCharm, nProngsContributorsPVCharm, uint8_t);         //! number of prongs contributing to the primary-vertex reconstruction
 DECLARE_SOA_COLUMN(CosThetaStarCharm, cosThetaStarCharm, float);                             //! cosine of theta star
 DECLARE_SOA_COLUMN(CpaCharm, cpaCharm, float);                                               //! cosine of pointing angle
 DECLARE_SOA_COLUMN(CpaXYCharm, cpaXYCharm, float);                                           //! cosine of pointing angle in the transverse plane
@@ -416,6 +418,7 @@ DECLARE_SOA_COLUMN(DecayLengthXYCharm, decayLengthXYCharm, float);              
 DECLARE_SOA_COLUMN(DecayLengthXYNormalisedCharm, decayLengthXYNormalisedCharm, float);       //! decay length in the transverse plane divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameter0Charm, impactParameter0Charm, float);                     //! impact parameter of prong 0
 DECLARE_SOA_COLUMN(ImpactParameter1Charm, impactParameter1Charm, float);                     //! impact parameter of prong 1
+DECLARE_SOA_COLUMN(ImpactParameter2Charm, impactParameter2Charm, float);                     //! impact parameter of prong 1
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0Charm, impactParameterNormalised0Charm, float); //! impact parameter of prong 0 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1Charm, impactParameterNormalised1Charm, float); //! impact parameter of prong 1 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2Charm, impactParameterNormalised2Charm, float); //! impact parameter of prong 2 divided by its uncertainty
@@ -668,23 +671,33 @@ DECLARE_SOA_TABLE_STAGED(HfB0Pars, "HFB0PAR", //! Table with candidate propertie
                          o2::soa::Marker<MarkerB0>);
 
 DECLARE_SOA_TABLE_STAGED(HfB0ParDpluss, "HFB0PARDP", //! Table with D+ candidate properties used for selection of B0
+                         hf_cand_par_charm::Chi2PCACharm,
+                         hf_cand_par_charm::NProngsContributorsPVCharm,
                          hf_cand_par_charm::CpaCharm,
+                         hf_cand_par_charm::CpaXYCharm,
                          hf_cand_par_charm::DecayLengthCharm,
+                         hf_cand_par_charm::DecayLengthXYCharm,
+                         hf_cand_par_charm::DecayLengthNormalisedCharm,
+                         hf_cand_par_charm::DecayLengthXYNormalisedCharm,
+                         hf_cand_par_charm::PtProng0Charm,
+                         hf_cand_par_charm::PtProng1Charm,
+                         hf_cand_par_charm::PtProng2Charm,
                          hf_cand_par_charm::ImpactParameter0Charm,
                          hf_cand_par_charm::ImpactParameter1Charm,
-                         hf_cand_par_charm::ImpactParameterProductCharm,
-                         hf_cand_par_charm::NSigTpcPiExpPiCharm,
-                         hf_cand_par_charm::NSigTofPiExpPiCharm,
-                         hf_cand_par_charm::NSigTpcTofPiExpPiCharm,
-                         hf_cand_par_charm::NSigTpcKaExpPiCharm,
-                         hf_cand_par_charm::NSigTofKaExpPiCharm,
-                         hf_cand_par_charm::NSigTpcTofKaExpPiCharm,
-                         hf_cand_par_charm::NSigTpcPiExpKaCharm,
-                         hf_cand_par_charm::NSigTofPiExpKaCharm,
-                         hf_cand_par_charm::NSigTpcTofPiExpKaCharm,
-                         hf_cand_par_charm::NSigTpcKaExpKaCharm,
-                         hf_cand_par_charm::NSigTofKaExpKaCharm,
-                         hf_cand_par_charm::NSigTpcTofKaExpKaCharm);
+                         hf_cand_par_charm::ImpactParameter2Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised0Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised1Charm,
+                         hf_cand_par_charm::ImpactParameterNormalised2Charm,
+                         hf_cand_par_charm::NSigTpcPi0Charm,
+                         hf_cand_par_charm::NSigTofPi0Charm,
+                         hf_cand_par_charm::NSigTpcTofPi0Charm,
+                         hf_cand_par_charm::NSigTpcKa1Charm,
+                         hf_cand_par_charm::NSigTofKa1Charm,
+                         hf_cand_par_charm::NSigTpcTofKa1Charm,
+                         hf_cand_par_charm::NSigTpcPi2Charm,
+                         hf_cand_par_charm::NSigTofPi2Charm,
+                         hf_cand_par_charm::NSigTpcTofPi2Charm,
+                         o2::soa::Marker<MarkerB0>);
 
 DECLARE_SOA_TABLE_STAGED(HfB0ParEs, "HFB0PARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
