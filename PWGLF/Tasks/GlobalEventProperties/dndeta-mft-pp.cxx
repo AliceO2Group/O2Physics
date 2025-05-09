@@ -163,8 +163,8 @@ struct PseudorapidityDensityMFT {
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_all",
-                    "; N_{trk}; #it{z}_{vtx} (cm); events",
-                    {HistType::kTH2F, {MultAxis, ZAxis}}});
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_sel8",
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
@@ -172,8 +172,8 @@ struct PseudorapidityDensityMFT {
                   "; N_{trk}; #it{z}_{vtx} (cm); events",
                   {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"Tracks/2Danalysis/EventsNtrkZvtx_sel8_inelfwdgt0",
-                    "; N_{trk}; #it{z}_{vtx} (cm); events",
-                    {HistType::kTH2F, {MultAxis, ZAxis}}});               
+                  "; N_{trk}; #it{z}_{vtx} (cm); events",
+                  {HistType::kTH2F, {MultAxis, ZAxis}}});
     registry.add({"Tracks/Control/DCAXY",
                   " ; DCA_{XY} (cm)",
                   {HistType::kTH1F, {DCAxyAxis}}});
@@ -332,17 +332,17 @@ struct PseudorapidityDensityMFT {
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx",
-                      "; #eta; #it{z}_{vtx} (cm); tracks",
-                      {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx_sel8",
-                      "; #eta; #it{z}_{vtx} (cm); tracks",
-                      {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx_sel8_inelgt0",
-                        "; #eta; #it{z}_{vtx} (cm); tracks",
-                        {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx_sel8_inelfwdgt0",
-                      "; #eta; #it{z}_{vtx} (cm); tracks",
-                      {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
+                    "; #eta; #it{z}_{vtx} (cm); tracks",
+                    {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
       registry.add({"Tracks/Control/woOrp/woOrpTracksPhiEta",
                     "; #varphi; #eta; tracks",
                     {HistType::kTH2F, {PhiAxis, EtaAxis}}}); //
@@ -572,12 +572,12 @@ struct PseudorapidityDensityMFT {
       for (auto& retrack : retracks) {
         auto track = retrack.mfttrack();
         if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
-        registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
+          registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
+        }
       }
-    }
-    if (!useEvSel || (useEvSel && collision.sel8())) {
-      registry.fill(HIST("EventSelection"), 2.);
-      registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
+      if (!useEvSel || (useEvSel && collision.sel8())) {
+        registry.fill(HIST("EventSelection"), 2.);
+        registry.fill(HIST("Tracks/2Danalysis/EventsNtrkZvtx_sel8"), Ntrk, z);
         registry.fill(HIST("EventSelection"), 3.);
         std::unordered_set<int> uniqueEvents;
         std::unordered_set<int> uniqueEventsAmb;
@@ -602,13 +602,12 @@ struct PseudorapidityDensityMFT {
         for (auto& retrack : retracks) {
           auto track = retrack.mfttrack();
           if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0) {
-          registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
-          if(midtracks.size() > 0 && retrack.ambDegree() > 0)
-          {
-            registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelgt0"), track.eta(), z);
+            registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
+            if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
+              registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8_inelgt0"), track.eta(), z);
+            }
           }
         }
-      }
         if (retracks.size() > 0) {
           registry.fill(HIST("EventSelection"), 5.);
           if (midtracks.size() > 0) {
@@ -898,31 +897,31 @@ struct PseudorapidityDensityMFT {
         if (std::abs(charge) < 3.) {
           continue;
         }
-        if(cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2){
-        registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
-                      mcCollision.posZ());
-        if (perCollisionMCSampleCentral.size() > 0) {
-          registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
+        if (cfgnEta1 < particle.eta() && particle.eta() < cfgnEta2) {
+          registry.fill(HIST("TracksEtaZvtxGen_t"), particle.eta(),
                         mcCollision.posZ());
-          registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
-        }
-        if (atLeastOne) {
-          registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
-                        mcCollision.posZ());
-          registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
-          if (atLeastOne_gt0) {
-            registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+          if (perCollisionMCSampleCentral.size() > 0) {
+            registry.fill(HIST("TracksEtaZvtxGen_gt0t"), particle.eta(),
                           mcCollision.posZ());
-            registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+            registry.fill(HIST("TracksPhiEtaGen_gt0t"), particle.phi(), particle.eta());
           }
-        }
+          if (atLeastOne) {
+            registry.fill(HIST("TracksEtaZvtxGen"), particle.eta(),
+                          mcCollision.posZ());
+            registry.fill(HIST("TracksPtEtaGen"), particle.pt(), particle.eta());
+            if (atLeastOne_gt0) {
+              registry.fill(HIST("TracksEtaZvtxGen_gt0"), particle.eta(),
+                            mcCollision.posZ());
+              registry.fill(HIST("TracksPhiEtaGen_gt0"), particle.phi(), particle.eta());
+            }
+          }
 
-        registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
-        registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
-                      mcCollision.posZ());
-        registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+          registry.fill(HIST("TracksPhiEtaGen"), particle.phi(), particle.eta());
+          registry.fill(HIST("TracksPhiZvtxGen"), particle.phi(),
+                        mcCollision.posZ());
+          registry.fill(HIST("TracksPtEtaGen_t"), particle.pt(), particle.eta());
+        }
       }
-     } 
     }
   }
 
