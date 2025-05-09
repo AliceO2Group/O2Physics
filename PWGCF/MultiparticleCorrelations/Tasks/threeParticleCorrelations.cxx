@@ -120,7 +120,8 @@ struct ThreeParticleCorrelations {
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 
   // Process configurables
-  Configurable<bool> confFilterSwitch{"confFilterSwitch", false, "Switch for the fakeV0Filter function"};
+  Configurable<bool> confFakeV0Switch{"confFakeV0Switch", false, "Switch for the fakeV0Filter function"};
+  Configurable<bool> confRDSwitch{"confRDSwitch", true, "Switch for the radialDistanceFilter function"};
 
   // Efficiency histograms
   TH2D** hEffPions = new TH2D*[2];
@@ -770,7 +771,7 @@ struct ThreeParticleCorrelations {
   bool fakeV0Filter(const V0Cand& v0, const TrackCand& track)
   {
 
-    if (confFilterSwitch) {
+    if (confFakeV0Switch) {
 
       if (trackPID(track)[0] == kaonID) { // Kaons
         return kTRUE;
@@ -814,45 +815,48 @@ struct ThreeParticleCorrelations {
   bool radialDistanceFilter(const V0Cand& v0, const TrackCand& track, double B, bool Mix)
   {
 
-    auto proton = v0.template posTrack_as<MyFilteredTracks>();
-    if (v0Sign(v0) == -1) {
-      proton = v0.template negTrack_as<MyFilteredTracks>();
-    }
-
-    double dEta = proton.eta() - track.eta();
-    if (std::abs(dEta) > dEtaMin) {
-      return kTRUE;
-    }
-
-    double dPhiStar;
-    double dPhi = proton.phi() - track.phi();
-    double phaseProton = (-0.3 * B * proton.sign()) / (2 * proton.pt());
-    double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
-
-    for (double r = rMin; r <= rMax; r += 0.01) {
-      dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
-
-      if (r == rMin) {
-        if (!Mix) {
-          rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), dPhiStar, dEta);
-        } else {
-          rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), dPhiStar, dEta);
-        }
+    if (confRDSwitch) {
+      
+      auto proton = v0.template posTrack_as<MyFilteredTracks>();
+      if (v0Sign(v0) == -1) {
+	proton = v0.template negTrack_as<MyFilteredTracks>();
       }
 
-      if (std::abs(dPhiStar) < dPhiStarMin) {
-        return kFALSE;
+      double dEta = proton.eta() - track.eta();
+      if (std::abs(dEta) > dEtaMin) {
+	return kTRUE;
       }
 
-      if (r == rMin) {
-        if (!Mix) {
-          rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), dPhiStar, dEta);
-        } else {
-          rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), dPhiStar, dEta);
-        }
+      double dPhiStar;
+      double dPhi = proton.phi() - track.phi();
+      double phaseProton = (-0.3 * B * proton.sign()) / (2 * proton.pt());
+      double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
+
+      for (double r = rMin; r <= rMax; r += 0.01) {
+	dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
+
+	if (r == rMin) {
+	  if (!Mix) {
+	    rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), dPhiStar, dEta);
+	  } else {
+	    rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), dPhiStar, dEta);
+	  }
+	}
+
+	if (std::abs(dPhiStar) < dPhiStarMin) {
+	  return kFALSE;
+	}
+
+	if (r == rMin) {
+	  if (!Mix) {
+	    rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), dPhiStar, dEta);
+	  } else {
+	    rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), dPhiStar, dEta);
+	  }
+	}
       }
     }
-
+    
     return kTRUE;
   }
 };
