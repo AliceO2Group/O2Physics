@@ -73,7 +73,6 @@ enum MlMode : uint8_t {
   FillMlFromNewBDT
 };
 
-
 struct HfFemtoDreamProducer {
 
   Produces<aod::FDCollisions> outputCollision;
