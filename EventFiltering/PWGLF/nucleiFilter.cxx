@@ -125,7 +125,7 @@ struct nucleiFilter {
   struct : ConfigurableGroup {
     Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
-    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.15, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
     Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
     Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
@@ -138,7 +138,7 @@ struct nucleiFilter {
     Configurable<float> maxPionPt{"trgH3L3Body.maxPionPt", 1.2, "maxPionPt"};
     Configurable<float> minDeuteronPt{"trgH3L3Body.minDeuteronPt", 0.6, "minDeuteronPt"};
     Configurable<float> maxDeuteronPt{"trgH3L3Body.maxDeuteronPt", 10, "maxDeuteronPt"};
-    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
+    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 999, "minDeuteronPt Enable TOF PID"};
     Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
     Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
     Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 1.5, "min P3Body"};
@@ -618,7 +618,7 @@ struct nucleiFilter {
         continue;
       }
 
-      float dcaDaughters = fitter3body.getChi2AtPCACandidate();
+      float dcaDaughters = std::sqrt(fitter3body.getChi2AtPCACandidate());
       if (dcaDaughters > trgH3L3Body.dcavtxdau) {
         continue;
       }
