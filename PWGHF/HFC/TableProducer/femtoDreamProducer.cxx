@@ -284,7 +284,7 @@ struct HfFemtoDreamProducer {
       auto pdgCode = particleMc.pdgCode();
       int particleOrigin = 99;
       int pdgCodeMother = -1;
-      constexpr int genFromTransport = -1; // -1 if a particle produced during transport
+      constexpr int GenFromTransport = -1; // -1 if a particle produced during transport
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMc = particleMc.template mothers_as<aod::McParticles>();
       // check pdg code
