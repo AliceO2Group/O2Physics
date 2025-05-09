@@ -24,11 +24,13 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGLF/DataModel/LFKinkDecayTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using std::array;
+
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullAl, aod::pidTPCFullTr, aod::pidTPCFullPi>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
@@ -97,17 +99,52 @@ Channel getDecayChannelH4S(TMCParticle const& particle)
   return kNDecayChannel;
 }
 //--------------------------------------------------------------
-
-// check the performance of mcparticle
 struct Hyperhelium4sigmaAnalysis {
+  // Histograms are defined with HistogramRegistry
+  HistogramRegistry registry{"registry", {}};
+
+  // Configurable for event selection
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<float> cutNSigmaAl{"cutNSigmaAl", 5, "NSigmaTPCAlpha"};
+
+  void init(InitContext const&)
+  {
+    // Axes
+    const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
+    const AxisSpec ptAxis{50, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec nSigmaAxis{120, -6.f, 6.f, "n#sigma_{#alpha}"};
+    const AxisSpec massAxis{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
+
+    registry.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
+
+    registry.add("h2MassHyperhelium4sigmaPt", "h2MassHyperhelium4sigmaPt", {HistType::kTH2F, {ptAxis, massAxis}});
+    registry.add("h2NSigmaAlPt", "h2NSigmaAlPt", {HistType::kTH2F, {ptAxis, nSigmaAxis}});
+  }
+
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+               aod::KinkCands const& KinkCands, FullTracksExtIU const&)
+  {
+    if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hVertexZRec"), collision.posZ());
+    for (const auto& kinkCand : KinkCands) {
+      auto dauTrack = kinkCand.trackDaug_as<FullTracksExtIU>();
+      if (std::abs(dauTrack.tpcNSigmaAl()) > cutNSigmaAl) {
+        continue;
+      }
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
+      registry.fill(HIST("h2MassHyperhelium4sigmaPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
+      registry.fill(HIST("h2NSigmaAlPt"), kinkCand.mothSign() * kinkCand.ptDaug(), dauTrack.tpcNSigmaAl());
+    }
+  }
+};
+
+//--------------------------------------------------------------
+// check the performance of mcparticle
+struct Hyperhelium4sigmaQa {
   // Basic checks
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"hCollCounter", "hCollCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-      {"hMcCollCounter", "hMcCollCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
-    },
-  };
+  HistogramRegistry registry{"registry", {}};
 
   ConfigurableAxis ptBins{"ptBins", {200, 0.f, 10.f}, "Binning for #it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis ctBins{"ctBins", {100, 0.f, 25.f}, "Binning for c#it{t} (cm)"};
@@ -117,40 +154,45 @@ struct Hyperhelium4sigmaAnalysis {
 
   void init(InitContext&)
   {
-    const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ctAxis{ctBins, "c#it{t} (cm)"};
-    const AxisSpec rigidityAxis{rigidityBins, "p/z (GeV/#it{c})"};
-    const AxisSpec nsigmaAxis{nsigmaBins, "TPC n#sigma"};
-    const AxisSpec invMassAxis{invMassBins, "Inv Mass (GeV/#it{c}^{2})"};
+    if (doprocessMC == true) {
+      const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec ctAxis{ctBins, "c#it{t} (cm)"};
+      const AxisSpec rigidityAxis{rigidityBins, "p/z (GeV/#it{c})"};
+      const AxisSpec nsigmaAxis{nsigmaBins, "TPC n#sigma"};
+      const AxisSpec invMassAxis{invMassBins, "Inv Mass (GeV/#it{c}^{2})"};
 
-    registry.get<TH1>(HIST("hCollCounter"))->GetXaxis()->SetBinLabel(1, "Reconstructed Collisions");
-    registry.get<TH1>(HIST("hCollCounter"))->GetXaxis()->SetBinLabel(2, "Selected");
-    registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(1, "MC Collisions");
-    registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(2, "Reconstructed");
+      auto hCollCounter = registry.add<TH1>("hCollCounter", "hCollCounter", HistType::kTH1F, {{2, 0.0f, 2.0f}});
+      registry.get<TH1>(HIST("hCollCounter"))->GetXaxis()->SetBinLabel(1, "Reconstructed Collisions");
+      registry.get<TH1>(HIST("hCollCounter"))->GetXaxis()->SetBinLabel(2, "Selected");
+      auto hMcCollCounter = registry.add<TH1>("hMcCollCounter", "hMcCollCounter", HistType::kTH1F, {{2, 0.0f, 2.0f}});
+      registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(1, "MC Collisions");
+      registry.get<TH1>(HIST("hMcCollCounter"))->GetXaxis()->SetBinLabel(2, "Reconstructed");
 
-    auto hGenHyperHelium4SigmaCounter = registry.add<TH1>("hGenHyperHelium4SigmaCounter", "", HistType::kTH1F, {{10, 0.f, 10.f}});
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(1, "H4S All");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(2, "Matter");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(3, "AntiMatter");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(4, "#alpha + #pi^{0}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(5, "#bar{#alpha} + #pi^{0}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(6, "t + p + #pi^{0}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(7, "#bar{t} + #bar{p} + #pi^{0}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(8, "t + n + #pi^{+}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(9, "#bar{t} + #bar{n} + #pi^{+}");
-    registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(10, "Unexpected");
+      auto hGenHyperHelium4SigmaCounter = registry.add<TH1>("hGenHyperHelium4SigmaCounter", "", HistType::kTH1F, {{10, 0.f, 10.f}});
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(1, "H4S All");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(2, "Matter");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(3, "AntiMatter");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(4, "#alpha + #pi^{0}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(5, "#bar{#alpha} + #pi^{0}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(6, "t + p + #pi^{0}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(7, "#bar{t} + #bar{p} + #pi^{0}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(8, "t + n + #pi^{+}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(9, "#bar{t} + #bar{n} + #pi^{+}");
+      registry.get<TH1>(HIST("hGenHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(10, "Unexpected");
 
-    auto hEvtSelectedHyperHelium4SigmaCounter = registry.add<TH1>("hEvtSelectedHyperHelium4SigmaCounter", "", HistType::kTH1F, {{2, 0.f, 2.f}});
-    registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(1, "Generated");
-    registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(2, "Survived");
+      auto hEvtSelectedHyperHelium4SigmaCounter = registry.add<TH1>("hEvtSelectedHyperHelium4SigmaCounter", "", HistType::kTH1F, {{2, 0.f, 2.f}});
+      registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(1, "Generated");
+      registry.get<TH1>(HIST("hEvtSelectedHyperHelium4SigmaCounter"))->GetXaxis()->SetBinLabel(2, "Survived");
 
-    registry.add<TH1>("hGenHyperHelium4SigmaPt", "", HistType::kTH1F, {ptAxis});
-    registry.add<TH1>("hGenHyperHelium4SigmaCt", "", HistType::kTH1F, {ctAxis});
-    registry.add<TH1>("hMcRecoInvMass", "", HistType::kTH1F, {invMassAxis});
+      registry.add<TH1>("hGenHyperHelium4SigmaP", "", HistType::kTH1F, {ptAxis});
+      registry.add<TH1>("hGenHyperHelium4SigmaPt", "", HistType::kTH1F, {ptAxis});
+      registry.add<TH1>("hGenHyperHelium4SigmaCt", "", HistType::kTH1F, {ctAxis});
+      registry.add<TH1>("hMcRecoInvMass", "", HistType::kTH1F, {invMassAxis});
 
-    registry.add<TH2>("hDauHelium4TPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
-    registry.add<TH2>("hDauTritonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
-    registry.add<TH2>("hDauProtonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      registry.add<TH2>("hDauHelium4TPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      registry.add<TH2>("hDauTritonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+      registry.add<TH2>("hDauProtonTPCNSigma", "", HistType::kTH2F, {rigidityAxis, nsigmaAxis});
+    }
   }
 
   // Configurable<bool> eventSel8Cut{"eventSel8Cut", true, "flag to enable event sel8 selection"};
@@ -183,7 +225,13 @@ struct Hyperhelium4sigmaAnalysis {
     }
   }
 
-  void process(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions, MCLabeledTracksIU const& tracks)
+  void processData(o2::aod::Collisions const&)
+  {
+    // dummy process function;
+  }
+  PROCESS_SWITCH(Hyperhelium4sigmaQa, processData, "process data", true);
+
+  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& particlesMC, o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels> const& collisions, MCLabeledTracksIU const& tracks)
   {
     setTrackIDForMC(particlesMC, tracks);
     std::vector<int64_t> selectedEvents(collisions.size());
@@ -296,6 +344,7 @@ struct Hyperhelium4sigmaAnalysis {
           }
         }
 
+        registry.fill(HIST("hGenHyperHelium4SigmaP"), mcparticle.p());
         registry.fill(HIST("hGenHyperHelium4SigmaPt"), mcparticle.pt());
         double ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperHelium4Sigma / mcparticle.p();
         registry.fill(HIST("hGenHyperHelium4SigmaCt"), ct);
@@ -328,11 +377,13 @@ struct Hyperhelium4sigmaAnalysis {
       }
     }
   }
+  PROCESS_SWITCH(Hyperhelium4sigmaQa, processMC, "do QA for MC prodcutions", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<Hyperhelium4sigmaAnalysis>(cfgc),
+    adaptAnalysisTask<Hyperhelium4sigmaQa>(cfgc),
   };
 }
