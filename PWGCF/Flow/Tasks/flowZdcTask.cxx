@@ -70,10 +70,6 @@ struct FlowZdcTask {
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<int> nBinsFT0Amp{"nBinsFT0Amp", 250000, "nbinsAmp"};
   Configurable<float> maxZn{"maxZn", 4099.5, "Max ZN signal"};
-  Configurable<float> acceptanceZna{"acceptanceZna", 0.92, "ZNA acceptance factor"};
-  Configurable<float> acceptanceZnc{"acceptanceZnc", 0.90, "ZNC acceptance factor"};
-  Configurable<float> acceptanceZpa{"acceptanceZpa", 0.52, "ZPA acceptance factor"};
-  Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
@@ -478,14 +474,10 @@ struct FlowZdcTask {
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    float znA{zdc.amplitudeZNA()};
-    float znC{zdc.amplitudeZNC()};
-    float zpA{zdc.amplitudeZPA()};
-    float zpC{zdc.amplitudeZPC()};
-    znA /= 2.81;
-    znC /= 2.81;
-    zpA /= 2.81;
-    zpC /= 2.81;
+    float znA = zdc.amplitudeZNA() / 2.68;
+    float znC = zdc.amplitudeZNC() / 2.68;
+    float zpA = zdc.amplitudeZPA() / 2.68;
+    float zpC = zdc.amplitudeZPC() / 2.68;
 
     float tZEM1{zdc.timeZEM1()};
     float tZEM2{zdc.timeZEM2()};
