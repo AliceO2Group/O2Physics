@@ -88,19 +88,23 @@ struct decay3bodyCandidate {
 class Decay3BodyBuilderHelper
 {
  public:
-  strangenessBuilderHelper()
+  decay3bodyBuilderHelper()
     {
-    // standards hardcoded in builder ...
-    // ...but can be changed easily since fitter is public
     fitter3body.setPropagateToPCA(true);
-    fitter3body.setMaxR(200.);
+    fitter3body.setMaxR(200.); //->maxRIni3body
     fitter3body.setMinParamChange(1e-3);
     fitter3body.setMinRelChi2Change(0.9);
     fitter3body.setMaxDZIni(1e9);
     fitter3body.setMaxDXYIni(4.0f);
     fitter3body.setMaxChi2(1e9);
-    fitter3body.setUseAbsDCA(true);
-    fitter3body.setWeightedFinalPCA(false);
+
+    fitterV0.setPropagateToPCA(true);
+    fitterV0.setMaxR(200.);
+    fitterV0.setMinParamChange(1e-3);
+    fitterV0.setMinRelChi2Change(0.9);
+    fitterV0.setMaxDZIni(1e9);
+    fitterV0.setMaxChi2(1e9);
+    fitterV0.setUseAbsDCA(d_UseAbsDCA);
 
     // LUT has to be loaded later
     lut = nullptr;
@@ -110,11 +114,14 @@ class Decay3BodyBuilderHelper
     fitter3body.setBz(-999.9f); // will NOT make sense if not changed
   };
 
-  o2::base::MatLayerCylSet* lut;            // material LUT for DCA fitter
+  o2::base::MatLayerCylSet* lut = nullptr;  // material LUT for DCA fitter
   o2::vertexing::DCAFitterN<2> fitterV0;    // 2-prong o2 dca fitter
   o2::vertexing::DCAFitterN<3> fitter3body; // 3-prong o2 dca fitter
 
   decay3bodyCandidate decay3body; // storage for Decay3body candidate properties
+
+  o2::dataformats::VertexBase mMeanVertex{{0., 0., 0.}, {0.1 * 0.1, 0., 0.1 * 0.1, 0., 0., 6. * 6.}};
+  std::array<o2::vertexing::SVertexHypothesis, 2> mV0Hyps; // 0 - Lambda, 1 - AntiLambda
 
   // decay3body candidate criteria
   struct {
@@ -149,6 +156,20 @@ class Decay3BodyBuilderHelper
     float maxChi2;
   } decay3bodyselections;
 
+  // SVertexer selection criteria
+  struct {
+    float minPt2V0;
+    float maxTgl2V0;
+    float maxDCAXY2ToMeanVertex3bodyV0;
+    float minCosPAXYMeanVertex3bodyV0;
+    float minCosPA3bodyV0;
+    float maxRDiffV03body;
+    float minPt3Body;
+    float maxTgl3Body;
+    float maxDCAXY3Body;
+    float maxDCAZ3Body;
+  } svertexerselections;
+
   //_______________________________________________________________________
   // build Decay3body from three tracks, including V0 building.
   template <typename TCollision, typename TTrack>
@@ -157,7 +178,7 @@ class Decay3BodyBuilderHelper
                                 TTrack const& trackNeg,
                                 TTrack const& trackBach,
                                 int decay3bodyIndex, 
-                                float todNsigmaDeuteron, 
+                                float tofNsigmaDeuteron, 
                                 float trackedClSize,
                                 int bachelorcharge = 1,
                                 bool useKFParticle = false,
@@ -165,7 +186,8 @@ class Decay3BodyBuilderHelper
                                 bool useSelections = true,
                                 bool useTPCforPion = false,
                                 bool acceptTPCOnly = false,
-                                bool calculateCovariance = true)
+                                bool calculateCovariance = true,
+                                bool isEventMixing = false)
   {
     int collisionIndex = collision.globalIndex();
     float pvX = collision.posX();
@@ -285,7 +307,7 @@ class Decay3BodyBuilderHelper
     mPV.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
     // positive track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPosCopy, 2.f, matCorr, &mDcaInfoCov);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPosCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
     decay3body.trackDCAxyToPV[0] = mDcaInfoCov.getY();
     decay3body.trackDCAzToPV[0] = mDcaInfoCov.getZ();
     auto trackPosDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[0] * decay3body.trackDCAxyToPV[0] + decay3body.trackDCAzToPV[0] * decay3body.trackDCAzToPV[0]);
@@ -299,7 +321,7 @@ class Decay3BodyBuilderHelper
       }
     }
     // negative track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParNegPosCopy, 2.f, matCorr, &mDcaInfoCov);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParNegPosCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
     decay3body.trackDCAxyToPV[1] = mDcaInfoCov.getY();
     decay3body.trackDCAzToPV[1] = mDcaInfoCov.getZ();
     auto trackNegDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[1] * decay3body.trackDCAxyToPV[1] + decay3body.trackDCAzToPV[1] * decay3body.trackDCAzToPV[1]);
@@ -313,7 +335,7 @@ class Decay3BodyBuilderHelper
       }
     }
     // bachelor track
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovBachCopy, 2.f, matCorr, &mDcaInfoCov);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovBachCopy, 2.f, fitter3body.getMatCorrType(), &mDcaInfoCov);
     decay3body.trackDCAxyToPV[2] = mDcaInfoCov.getY();
     decay3body.trackDCAzToPV[2] = mDcaInfoCov.getZ();
     auto trackBachDCAToPV = std::sqrt(decay3body.trackDCAxyToPV[2] * decay3body.trackDCAxyToPV[2] + decay3body.trackDCAzToPV[2] * decay3body.trackDCAzToPV[2]);
@@ -443,6 +465,12 @@ class Decay3BodyBuilderHelper
     }
 
     //_______________________________________________________________________
+    // SVertexer selections in case of event mixing
+    if (isEventMixing) {
+      applySVertexerCuts(collision, trackParCovPos, trackParCovNeg, trackParCovBach, /*applyV0Cut = */true);
+    }
+
+    //_______________________________________________________________________
     // fill remaining candidate information
     // daughter PID
     if (isMatter) {
@@ -455,7 +483,7 @@ class Decay3BodyBuilderHelper
     decay3body.tpcNsigma[2] = trackBach.tpcNsigmaDeuteron();
     decay3body.tpcNsigma[3] = trackBach.tpcNsigmaPi();
     // recalculated bachelor TOF PID
-    decay3body.tofNsigmaDeuteron = todNsigmaDeuteron;
+    decay3body.tofNsigmaDeuteron = tofNsigmaDeuteron;
 
     // average ITS cluster size of deuteron track
     double averageClusterSizeDeuteron(0);
@@ -704,6 +732,135 @@ class Decay3BodyBuilderHelper
     return;
   }
 
+  //_______________________________________________________________________
+  // functionality to apply SVertexer cuts in case of event mixing
+  template <typename TCollision, typename TTrackParCov, typename THist>
+  void applySVertexerCuts(TCollisions const& collision,
+                          TTrackParCov const& trackParCovPos, 
+                          TTrackParCov const& trackParCovNeg,
+                          TTrackParCov const& trackParCovBach,
+                          bool applyV0Cut = true)
+  {
+    const float pidCutsLambda[o2::vertexing::SVertexHypothesis::NPIDParams] = {0., 20, 0., 5.0, 0.0, 1.09004e-03, 2.62291e-04, 8.93179e-03, 2.83121}; // Lambda
+    mV0Hyps[0].set(o2::track::PID::Lambda, o2::track::PID::Proton, o2::track::PID::Pion, pidCutsLambda, fitter3body.getBz());
+    mV0Hyps[1].set(o2::track::PID::Lambda, o2::track::PID::Pion, o2::track::PID::Proton, pidCutsLambda, fitter3body.getBz());
+
+    int nV0 = fitterV0.process(trackParCovPos, trackParCovNeg);
+    if (nV0 == 0) {
+      return;
+    }
+
+    std::array<float, 3> v0pos = {0.};
+    const auto& v0vtxXYZ = fitterV0.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      v0pos[i] = v0vtxXYZ[i];
+    }
+    const int cand = 0;
+    if (!fitterV0.isPropagateTracksToVertexDone(cand) && !fitterV0.propagateTracksToVertex(cand)) {
+      return;
+    }
+
+    const auto& trPProp = fitterV0.getTrack(0, cand);
+    const auto& trNProp = fitterV0.getTrack(1, cand);
+    std::array<float, 3> pP{}, pN{};
+    trPProp.getPxPyPzGlo(pP);
+    trNProp.getPxPyPzGlo(pN);
+    std::array<float, 3> pV0 = {pP[0] + pN[0], pP[1] + pN[1], pP[2] + pN[2]};
+    // Cut for Virtual V0
+    float dxv0 = v0pos[0] - mMeanVertex.getX(), dyv0 = v0pos[1] - mMeanVertex.getY(), r2v0 = dxv0 * dxv0 + dyv0 * dyv0;
+    float rv0 = std::sqrt(r2v0);
+    float pt2V0 = pV0[0] * pV0[0] + pV0[1] * pV0[1], prodXYv0 = dxv0 * pV0[0] + dyv0 * pV0[1], tDCAXY = prodXYv0 / pt2V0;
+    if (applyV0Cut && pt2V0 <= svertexerselections.mMinPt2V0) {
+      return;
+    }
+    if (applyV0Cut && pV0[2] * pV0[2] / pt2V0 > svertexerselections.maxTgl2V0) { // tgLambda cut
+      return;
+    }
+
+    float p2V0 = pt2V0 + pV0[2] * pV0[2], ptV0 = std::sqrt(pt2V0);
+    // apply mass selections
+    float p2Pos = pP[0] * pP[0] + pP[1] * pP[1] + pP[2] * pP[2], p2Neg = pN[0] * pN[0] + pN[1] * pN[1] + pN[2] * pN[2];
+    bool good3bodyV0Hyp = false;
+    for (int ipid = 0; ipid < 2; ipid++) {
+      float massForLambdaHyp = mV0Hyps[ipid].calcMass(p2Pos, p2Neg, p2V0);
+      if (massForLambdaHyp - mV0Hyps[ipid].getMassV0Hyp() < mV0Hyps[ipid].getMargin(ptV0)) {
+        good3bodyV0Hyp = true;
+        break;
+      }
+    }
+    if (applyV0Cut && !good3bodyV0Hyp) {
+      return;
+    }
+
+    float dcaX = dxv0 - pV0[0] * tDCAXY, dcaY = dyv0 - pV0[1] * tDCAXY, dca2 = dcaX * dcaX + dcaY * dcaY;
+    float cosPAXY = prodXYv0 / rv0 * ptV0;
+    if (applyV0Cut && dca2 > svertexerselections.maxDCAXY2ToMeanVertex3bodyV0) {
+      return;
+    }
+    // FIXME: V0 cosPA cut to be investigated
+    if (applyV0Cut && cosPAXY < svertexerselections.minCosPAXYMeanVertex3bodyV0) {
+      return;
+    }
+    // Check: CosPA Cut of Virtual V0 may not be used since the V0 may be based on another PV
+    float dx = v0pos[0] - collision.posX(), dy = v0pos[1] - collision.posY(), dz = v0pos[2] - collision.posZ(), prodXYZv0 = dx * pV0[0] + dy * pV0[1] + dz * pV0[2];
+    float v0CosPA = prodXYZv0 / std::sqrt((dx * dx + dy * dy + dz * dz) * p2V0);
+    if (applyV0Cut && v0CosPA < svertexerselections.minCosPA3bodyV0) {
+      return;
+    }
+
+    // 3body vertex
+    int n3bodyVtx = fitter3body.process(trackParCovPos, trackParCovNeg, trackParCovBach);
+    if (n3bodyVtx == 0) { // discard this pair
+      return;
+    }
+    const auto& vertexXYZ = fitter3body.getPCACandidatePos();
+    std::array<float, 3> pos = {0.};
+    for (int i = 0; i < 3; i++) {
+      pos[i] = vertexXYZ[i];
+    }
+
+    std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
+    const auto& propagatedTrackPos = fitter3body.getTrack(0);
+    const auto& propagatedTrackNeg = fitter3body.getTrack(1);
+    const auto& propagatedTrackBach = fitter3body.getTrack(2);
+    propagatedTrackPos.getPxPyPzGlo(p0);
+    propagatedTrackNeg.getPxPyPzGlo(p1);
+    propagatedTrackBach.getPxPyPzGlo(p2);
+    for (int i = 0; i < 3; i++) {
+      p2[i] *= bachelorcharge;
+    }
+    std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
+
+    float r3body = std::hypot(pos[0], pos[1]);
+    if (r3body < 0.5) {
+      return;
+    }
+
+    // Cut for the compatibility of V0 and 3body vertex
+    float deltaR = std::abs(rv0 - r3body);
+    if (deltaR > svertexerselections.maxRDiffV03body) {
+      return;
+    }
+
+    float pt3B = std::hypot(p3B[0], p3B[1]);
+    if (pt3B < svertexerselections.minPt3Body) { // pt cut
+      return;
+    }
+    if (p3B[2] / pt3B > svertexerselections.maxTgl3Body) { // tgLambda cut
+      return;
+    }
+
+    // H3L DCA Check
+    const auto& vertexXYZ = fitter3body.getPCACandidatePos();
+    auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, t2.sign());
+    o2::dataformats::DCA dca;
+    if (!track3B.propagateToDCA({{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}}, fitter3body.getBz(), &dca, 5.) ||
+        std::abs(dca.getY()) > svertexerselections.maxDCAXY3Body || std::abs(dca.getZ()) > svertexerselections.maxDCAZ3Body) {
+      return;
+    }
+
+    return;
+  }
  private:
   // internal helper to calculate DCA (3D) of a straight line to a given PV analytically
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
