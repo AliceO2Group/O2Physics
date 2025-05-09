@@ -46,6 +46,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TPDGCode.h"
+#include "TF1.h"
 
 using namespace std;
 using namespace o2;
@@ -107,6 +108,7 @@ struct UccZdc {
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
 
+  Configurable<double> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
   Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
   Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
   Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
@@ -164,9 +166,13 @@ struct UccZdc {
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch", "base path to the ccdb object"};
+  Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch", "base path to the ccdb object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
+  TF1* fitSigmaNch = nullptr;
+  TF1* fitMeanNch = nullptr;
 
   void init(InitContext const&)
   {
@@ -301,14 +307,16 @@ struct UccZdc {
     if (doprocessQA) {
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
       registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
-      registry.add("dcaXYvspTOpen", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
-      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
+      registry.add("dcaXYvspTOpen", ";DCA_{xy} (cm);;", kTH2F, {{{150, -1.5, 1.5}, {axisPt}}});
+      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{150, -1.5, 1.5}, {axisPt}}});
       registry.add("nClustersITS", ";<n clusters ITS>;;", kTProfile, {{axisPt}});
       registry.add("nClustersTPC", ";<n clusters TPC>;;", kTProfile, {{axisPt}});
 
       registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("RejectedEvtsVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., 3000.}});
+      registry.add("RejectedEvtsVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
 
       registry.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
@@ -452,6 +460,18 @@ struct UccZdc {
       return;
     }
 
+    auto fitMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
+    if (!fitMeanNch) {
+      LOGF(fatal, "fitMeanNch object not found!");
+      return;
+    }
+
+    auto fitSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
+    if (!fitSigmaNch) {
+      LOGF(fatal, "fitSigmaNch object not found!");
+      return;
+    }
+
     // has ZDC?
     if (!foundBC.has_zdc()) {
       return;
@@ -533,6 +553,7 @@ struct UccZdc {
       }
       // Track Selection
       if (myTrackSel.IsSelected(track)) {
+        registry.fill(HIST("dcaXYvspTOpen"), track.dcaXY(), track.pt());
         if (passesDCAxyCut(track)) {
           glbTracks++;
           meanpt += track.pt();
@@ -541,10 +562,18 @@ struct UccZdc {
           registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
           registry.fill(HIST("nClustersITS"), track.pt(), track.itsNCls());
           registry.fill(HIST("nClustersTPC"), track.pt(), track.tpcNClsFound());
-        } else {
-          registry.fill(HIST("dcaXYvspTOpen"), track.dcaXY(), track.pt());
         }
       }
+    }
+
+    const double meanNch{fitMeanNch->Eval((aT0A + aT0C) / 100.)};
+    const double sigmaNch{fitSigmaNch->Eval((aT0A + aT0C) / 100.)};
+    const double diffMeanNch{std::abs(meanNch - glbTracks)};
+    const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+    if (!(diffMeanNch < nSigmaSelection)) {
+      registry.fill(HIST("RejectedEvtsVsFT0M"), (aT0A + aT0C) / 100.);
+      registry.fill(HIST("RejectedEvtsVsNch"), glbTracks);
+      return;
     }
 
     registry.fill(HIST("zPos"), collision.posZ());
@@ -576,10 +605,6 @@ struct UccZdc {
     registry.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
     registry.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
     registry.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
-
-    if (sumZNs > znBasedCut) {
-      return;
-    }
 
     registry.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
     registry.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
