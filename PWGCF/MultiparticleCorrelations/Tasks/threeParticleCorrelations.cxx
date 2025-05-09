@@ -816,15 +816,15 @@ struct ThreeParticleCorrelations {
   {
 
     if (confRDSwitch) {
-      
+
       auto proton = v0.template posTrack_as<MyFilteredTracks>();
       if (v0Sign(v0) == -1) {
-	proton = v0.template negTrack_as<MyFilteredTracks>();
+        proton = v0.template negTrack_as<MyFilteredTracks>();
       }
 
       double dEta = proton.eta() - track.eta();
       if (std::abs(dEta) > dEtaMin) {
-	return kTRUE;
+        return kTRUE;
       }
 
       double dPhiStar;
@@ -833,30 +833,30 @@ struct ThreeParticleCorrelations {
       double phaseTrack = (-0.3 * B * track.sign()) / (2 * track.pt());
 
       for (double r = rMin; r <= rMax; r += 0.01) {
-	dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
+        dPhiStar = RecoDecay::constrainAngle(dPhi + std::asin(phaseProton * r) - std::asin(phaseTrack * r), -constants::math::PIHalf);
 
-	if (r == rMin) {
-	  if (!Mix) {
-	    rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), dPhiStar, dEta);
-	  } else {
-	    rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), dPhiStar, dEta);
-	  }
-	}
+        if (r == rMin) {
+          if (!Mix) {
+            rPhiStarRegistry.fill(HIST("hSEProtonPreCut"), dPhiStar, dEta);
+          } else {
+            rPhiStarRegistry.fill(HIST("hMEProtonPreCut"), dPhiStar, dEta);
+          }
+        }
 
-	if (std::abs(dPhiStar) < dPhiStarMin) {
-	  return kFALSE;
-	}
+        if (std::abs(dPhiStar) < dPhiStarMin) {
+          return kFALSE;
+        }
 
-	if (r == rMin) {
-	  if (!Mix) {
-	    rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), dPhiStar, dEta);
-	  } else {
-	    rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), dPhiStar, dEta);
-	  }
-	}
+        if (r == rMin) {
+          if (!Mix) {
+            rPhiStarRegistry.fill(HIST("hSEProtonPostCut"), dPhiStar, dEta);
+          } else {
+            rPhiStarRegistry.fill(HIST("hMEProtonPostCut"), dPhiStar, dEta);
+          }
+        }
       }
     }
-    
+
     return kTRUE;
   }
 };
