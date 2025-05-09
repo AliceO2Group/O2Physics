@@ -249,7 +249,7 @@ struct Derivedupcanalysis {
   ConfigurableAxis axisNchInvMass{"axisNchInvMass", {201, -1.5f, 199.5f}, "Number of charged particles for kTHnSparseF"};
 
   ConfigurableAxis axisFT0Cqa{"axisFT0Cqa",
-                              {VARIABLE_WIDTH, -1.5, -0.5, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
+                              {VARIABLE_WIDTH, -1.5, -0.5, 0., 1., 5, 10, 20, 30, 40, 50, 60, 70, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                               "FT0C (%)"};
 
   ConfigurableAxis axisFT0C{"axisFT0C",
@@ -881,7 +881,7 @@ struct Derivedupcanalysis {
     secondaryMaskSelectionAntiLambda = maskTopologicalV0 | maskKinematicV0 | maskTrackPropertiesV0 | maskAntiLambdaSpecific;
 
     // Event Counter
-    histos.add("eventQA/hEventSelection", "hEventSelection", kTH1F, {{17, -0.5f, 16.5f}});
+    histos.add("eventQA/hEventSelection", "hEventSelection", kTH1D, {{17, -0.5f, 16.5f}});
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -901,48 +901,48 @@ struct Derivedupcanalysis {
     histos.get<TH1>(HIST("eventQA/hEventSelection"))->GetXaxis()->SetBinLabel(17, "has UPC flag");
 
     // Event QA
-    histos.add("eventQA/hCentralityVsFT0ampl", "hCentralityVsFT0ampl", kTH3F, {axisFT0Cqa, axisDetectors.axisFT0Aampl, axisSelGap});
-    histos.add("eventQA/hCentrality", "hCentrality", kTH2F, {axisFT0Cqa, axisSelGap});
-    histos.add("eventQA/hFT0ampl", "hFT0ampl", kTH2F, {axisDetectors.axisFT0Aampl, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksPVeta1", "hCentralityVsTracksPVeta1", kTH3F, {axisFT0Cqa, axisNTracksPVeta1, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksTotalExceptITSonly", "hCentralityVsTracksTotalExceptITSonly", kTH3F, {axisFT0Cqa, axisNTracksTotalExceptITSonly, axisSelGap});
-    histos.add("eventQA/hOccupancy", "hOccupancy", kTH2F, {axisOccupancy, axisSelGap});
-    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH3F, {axisFT0Cqa, axisOccupancy, axisSelGap});
-    histos.add("eventQA/hTracksPVeta1VsTracksGlobal", "hTracksPVeta1VsTracksGlobal", kTH3F, {axisNTracksPVeta1, axisNTracksGlobal, axisSelGap});
-    histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH3F, {axisFT0Cqa, axisNTracksGlobal, axisSelGap});
-    histos.add("eventQA/hFT0amplVsTracksGlobal", "hFT0amplVsTracksGlobal", kTH3F, {axisDetectors.axisFT0Aampl, axisNTracksGlobal, axisSelGap});
-    histos.add("eventQA/hRawGapSide", "Raw Gap side; Entries", kTH1F, {{6, -1.5, 4.5}});
-    histos.add("eventQA/hSelGapSide", "Selected gap side (with n); Entries", kTH1F, {axisSelGap});
-    histos.add("eventQA/hPosX", "Vertex position in x", kTH2F, {{100, -0.1, 0.1}, axisSelGap});
-    histos.add("eventQA/hPosY", "Vertex position in y", kTH2F, {{100, -0.1, 0.1}, axisSelGap});
-    histos.add("eventQA/hPosZ", "Vertex position in z", kTH2F, {{100, -20., 20.}, axisSelGap});
-    histos.add("eventQA/hFT0", "hFT0", kTH3F, {axisDetectors.axisFT0Aampl, axisDetectors.axisFT0Campl, axisSelGap});
-    histos.add("eventQA/hFDD", "hFDD", kTH3F, {axisDetectors.axisFDDAampl, axisDetectors.axisFDDCampl, axisSelGap});
-    histos.add("eventQA/hZN", "hZN", kTH3F, {axisDetectors.axisZNAampl, axisDetectors.axisZNCampl, axisSelGap});
+    histos.add("eventQA/hCentralityVsFT0ampl", "hCentralityVsFT0ampl", kTH3D, {axisFT0Cqa, axisDetectors.axisFT0Aampl, axisSelGap});
+    histos.add("eventQA/hCentrality", "hCentrality", kTH2D, {axisFT0Cqa, axisSelGap});
+    histos.add("eventQA/hFT0ampl", "hFT0ampl", kTH2D, {axisDetectors.axisFT0Aampl, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksPVeta1", "hCentralityVsTracksPVeta1", kTH3D, {axisFT0Cqa, axisNTracksPVeta1, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksTotalExceptITSonly", "hCentralityVsTracksTotalExceptITSonly", kTH3D, {axisFT0Cqa, axisNTracksTotalExceptITSonly, axisSelGap});
+    histos.add("eventQA/hOccupancy", "hOccupancy", kTH2D, {axisOccupancy, axisSelGap});
+    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH3D, {axisFT0Cqa, axisOccupancy, axisSelGap});
+    histos.add("eventQA/hTracksPVeta1VsTracksGlobal", "hTracksPVeta1VsTracksGlobal", kTH3D, {axisNTracksPVeta1, axisNTracksGlobal, axisSelGap});
+    histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH3D, {axisFT0Cqa, axisNTracksGlobal, axisSelGap});
+    histos.add("eventQA/hFT0amplVsTracksGlobal", "hFT0amplVsTracksGlobal", kTH3D, {axisDetectors.axisFT0Aampl, axisNTracksGlobal, axisSelGap});
+    histos.add("eventQA/hRawGapSide", "Raw Gap side; Entries", kTH1D, {{6, -1.5, 4.5}});
+    histos.add("eventQA/hSelGapSide", "Selected gap side (with n); Entries", kTH1D, {axisSelGap});
+    histos.add("eventQA/hPosX", "Vertex position in x", kTH2D, {{100, -0.1, 0.1}, axisSelGap});
+    histos.add("eventQA/hPosY", "Vertex position in y", kTH2D, {{100, -0.1, 0.1}, axisSelGap});
+    histos.add("eventQA/hPosZ", "Vertex position in z", kTH2D, {{100, -20., 20.}, axisSelGap});
+    histos.add("eventQA/hFT0", "hFT0", kTH3D, {axisDetectors.axisFT0Aampl, axisDetectors.axisFT0Campl, axisSelGap});
+    histos.add("eventQA/hFDD", "hFDD", kTH3D, {axisDetectors.axisFDDAampl, axisDetectors.axisFDDCampl, axisSelGap});
+    histos.add("eventQA/hZN", "hZN", kTH3D, {axisDetectors.axisZNAampl, axisDetectors.axisZNCampl, axisSelGap});
 
     if (doprocessGenerated) {
-      histos.add("eventQA/mc/hEventSelectionMC", "hEventSelectionMC", kTH3F, {{3, -0.5, 2.5}, axisNTracksPVeta1, axisGeneratorIds});
+      histos.add("eventQA/mc/hEventSelectionMC", "hEventSelectionMC", kTH3D, {{3, -0.5, 2.5}, axisNTracksPVeta1, axisGeneratorIds});
       histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(2, "posZ cut");
       histos.get<TH3>(HIST("eventQA/mc/hEventSelectionMC"))->GetXaxis()->SetBinLabel(3, "rec. at least once");
-      histos.add("eventQA/mc/hTracksGlobalvsMCNParticlesEta08gen", "hTracksGlobalvsMCNParticlesEta08gen", kTH2F, {axisNTracksGlobal, axisNTracksGlobal});
-      histos.add("eventQA/mc/hTracksGlobalVsNcoll_beforeEvSel", "hTracksGlobalVsNcoll_beforeEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
-      histos.add("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel", "hTracksGlobalVsNcoll_afterEvSel", kTH2F, {axisNTracksGlobal, axisNAssocColl});
-      histos.add("eventQA/mc/hTracksGlobalVsPVzMC", "hTracksGlobalVsPVzMC", kTH2F, {axisNTracksGlobal, {100, -20., 20.}});
-      histos.add("eventQA/mc/hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20., 20.}});
-      histos.add("eventQA/mc/hGenEventFT0ampl", "hGenEventFT0ampl", kTH1F, {axisDetectors.axisFT0Aampl});
-      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisFT0Cqa});
-      histos.add("eventQA/mc/hGeneratorsId", "hGeneratorsId", kTH1F, {axisGeneratorIds});
+      histos.add("eventQA/mc/hTracksGlobalvsMCNParticlesEta08gen", "hTracksGlobalvsMCNParticlesEta08gen", kTH2D, {axisNTracksGlobal, axisNTracksGlobal});
+      histos.add("eventQA/mc/hTracksGlobalVsNcoll_beforeEvSel", "hTracksGlobalVsNcoll_beforeEvSel", kTH2D, {axisNTracksGlobal, axisNAssocColl});
+      histos.add("eventQA/mc/hTracksGlobalVsNcoll_afterEvSel", "hTracksGlobalVsNcoll_afterEvSel", kTH2D, {axisNTracksGlobal, axisNAssocColl});
+      histos.add("eventQA/mc/hTracksGlobalVsPVzMC", "hTracksGlobalVsPVzMC", kTH2D, {axisNTracksGlobal, {100, -20., 20.}});
+      histos.add("eventQA/mc/hEventPVzMC", "hEventPVzMC", kTH1D, {{100, -20., 20.}});
+      histos.add("eventQA/mc/hGenEventFT0ampl", "hGenEventFT0ampl", kTH1D, {axisDetectors.axisFT0Aampl});
+      histos.add("eventQA/mc/hGenEventCentrality", "hGenEventCentrality", kTH1D, {axisFT0Cqa});
+      histos.add("eventQA/mc/hGeneratorsId", "hGeneratorsId", kTH1D, {axisGeneratorIds});
     }
 
     if (doprocessV0sMC || doprocessCascadesMC) {
       // Event QA
-      histos.add("eventQA/mc/hFakeEvents", "hFakeEvents", {kTH1F, {{1, -0.5f, 0.5f}}});
-      histos.add("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec", "hNTracksGlobalvsMCNParticlesEta08rec", kTH2F, {axisNTracksGlobal, axisNTracksGlobal});
-      histos.add("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec", "hNTracksPVeta1vsMCNParticlesEta10rec", kTH2F, {axisNTracksPVeta1, axisNTracksPVeta1});
-      histos.add("eventQA/mc/hNTracksGlobalvstotalMultMCParticles", "hNTracksGlobalvstotalMultMCParticles", kTH2F, {axisNTracksGlobal, axisNchInvMass});
-      histos.add("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles", "hNTracksPVeta1vstotalMultMCParticles", kTH2F, {axisNTracksPVeta1, axisNchInvMass});
-      histos.add("eventQA/hSelGapSideNoNeutrons", "Selected gap side (no n); Entries", kTH1F, {{5, -0.5, 4.5}});
+      histos.add("eventQA/mc/hFakeEvents", "hFakeEvents", {kTH1D, {{1, -0.5f, 0.5f}}});
+      histos.add("eventQA/mc/hNTracksGlobalvsMCNParticlesEta08rec", "hNTracksGlobalvsMCNParticlesEta08rec", kTH2D, {axisNTracksGlobal, axisNTracksGlobal});
+      histos.add("eventQA/mc/hNTracksPVeta1vsMCNParticlesEta10rec", "hNTracksPVeta1vsMCNParticlesEta10rec", kTH2D, {axisNTracksPVeta1, axisNTracksPVeta1});
+      histos.add("eventQA/mc/hNTracksGlobalvstotalMultMCParticles", "hNTracksGlobalvstotalMultMCParticles", kTH2D, {axisNTracksGlobal, axisNchInvMass});
+      histos.add("eventQA/mc/hNTracksPVeta1vstotalMultMCParticles", "hNTracksPVeta1vstotalMultMCParticles", kTH2D, {axisNTracksPVeta1, axisNchInvMass});
+      histos.add("eventQA/hSelGapSideNoNeutrons", "Selected gap side (no n); Entries", kTH1D, {{5, -0.5, 4.5}});
     }
 
     if (doprocessV0sMC) {
