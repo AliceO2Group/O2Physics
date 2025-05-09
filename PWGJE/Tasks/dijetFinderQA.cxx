@@ -77,6 +77,7 @@ struct DijetFinderQATask {
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    // Add histogram for event counts
 
     auto dijetMassTemp = 0.0;
     while (dijetMassTemp <= 2 * jetPtMax) {
@@ -85,17 +86,21 @@ struct DijetFinderQATask {
     }
 
     AxisSpec dijetMassAxis = {dijetMassBins, "M_{jj} (GeV/#it{c}^2)"};
+    AxisSpec eventCountAxis = {{0.5, 1.5}, "events"};
 
     if (doprocessDijetMCP) {
       registry.add("h_part_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
+      registry.add("hColCounterFinal_MCP", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
     }
 
     if (doprocessDijetMCD) {
       registry.add("h_detec_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
+      registry.add("hColCounterFinal_MCD", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
     }
 
     if (doprocessDijetData) {
       registry.add("h_data_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
+      registry.add("hColCounterFinal_Data", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
     }
 
     if (doprocessDijetMCMatched) {
@@ -177,6 +182,8 @@ struct DijetFinderQATask {
 
   void processDijetMCP(soa::Filtered<aod::JetMcCollisions>::iterator const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
   {
+    registry.fill(HIST("hColCounterFinal_MCP"), 1);
+
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
       jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
@@ -209,6 +216,9 @@ struct DijetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+
+    registry.fill(HIST("hColCounterFinal_MCD"), 1);
+
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
       jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
@@ -241,6 +251,9 @@ struct DijetFinderQATask {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
+
+    // Fill event count histogram
+    registry.fill(HIST("hColCounterFinal_Data"), 1);
 
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
