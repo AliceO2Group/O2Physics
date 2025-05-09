@@ -163,32 +163,32 @@ struct TreeWriterTpcV0 {
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTreeWithdEdxTrkQA(track.tpcSignal(),
-                          1. / dEdxExp,
-                          track.tpcInnerParam(),
-                          track.tgl(),
-                          track.signed1Pt(),
-                          track.eta(),
-                          track.phi(),
-                          track.y(),
-                          mass,
-                          bg,
-                          multTPC / 11000.,
-                          std::sqrt(nClNorm / ncl),
-                          nclPID,
-                          id,
-                          nSigmaTPC,
-                          nSigmaTOF,
-                          alpha,
-                          qt,
-                          cosPA,
-                          pT,
-                          v0radius,
-                          gammapsipair,
-                          runnumber,
-                          trackocc,
-                          ft0occ,
-                          hadronicRate,
-                          existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                              1. / dEdxExp,
+                              track.tpcInnerParam(),
+                              track.tgl(),
+                              track.signed1Pt(),
+                              track.eta(),
+                              track.phi(),
+                              track.y(),
+                              mass,
+                              bg,
+                              multTPC / 11000.,
+                              std::sqrt(nClNorm / ncl),
+                              nclPID,
+                              id,
+                              nSigmaTPC,
+                              nSigmaTOF,
+                              alpha,
+                              qt,
+                              cosPA,
+                              pT,
+                              v0radius,
+                              gammapsipair,
+                              runnumber,
+                              trackocc,
+                              ft0occ,
+                              hadronicRate,
+                              existTrkQA ? trackQA.tpcdEdxNorm() : -999);
     }
   };
 
@@ -469,10 +469,6 @@ struct TreeWriterTpcV0 {
   } /// process with dEdx from TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQA, "Standard V0 Samples with dEdx from Track QA for PID", false);
 
-  
-
-  //Preslice<Trks> perCollisionTracks = aod::track::collisionId;
-  //Preslice<V0sWithID> perCollisionV0s = aod::v0data::collisionId;
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA;
@@ -730,27 +726,27 @@ struct TreeWriterTPCTOF {
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTreeWithdEdxTrkQA(track.tpcSignal(),
-                             1. / dEdxExp,
-                             track.tpcInnerParam(),
-                             track.tgl(),
-                             track.signed1Pt(),
-                             track.eta(),
-                             track.phi(),
-                             track.y(),
-                             mass,
-                             bg,
-                             multTPC / 11000.,
-                             std::sqrt(nClNorm / ncl),
-                             nclPID,
-                             id,
-                             nSigmaTPC,
-                             nSigmaTOF,
-                             nSigmaITS,
-                             runnumber,
-                             trackocc,
-                             ft0occ,
-                             hadronicRate,
-                             existTrkQA ? trackQA.tpcdEdxNorm() : -999);
+                                 1. / dEdxExp,
+                                 track.tpcInnerParam(),
+                                 track.tgl(),
+                                 track.signed1Pt(),
+                                 track.eta(),
+                                 track.phi(),
+                                 track.y(),
+                                 mass,
+                                 bg,
+                                 multTPC / 11000.,
+                                 std::sqrt(nClNorm / ncl),
+                                 nclPID,
+                                 id,
+                                 nSigmaTPC,
+                                 nSigmaTOF,
+                                 nSigmaITS,
+                                 runnumber,
+                                 trackocc,
+                                 ft0occ,
+                                 hadronicRate,
+                                 existTrkQA ? trackQA.tpcdEdxNorm() : -999);
     }
   };
   /// Function to fill trees
@@ -951,7 +947,6 @@ struct TreeWriterTPCTOF {
     }
   } /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processWithdEdxTrQA, "Samples for PID with TrackQA info", false);
-  //Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   void processWithTrQA(Colls const& collisions, Trks const& myTracks, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
     std::vector<int64_t> labelTrack2TrackQA;
