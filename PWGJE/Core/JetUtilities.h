@@ -27,6 +27,7 @@
 #include <TKDTree.h>
 
 #include "Framework/Logger.h"
+#include "CommonConstants/MathConstants.h"
 #include "Common/Core/RecoDecay.h"
 
 namespace jetutilities
@@ -138,10 +139,76 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> MatchCl
   return std::make_tuple(matchIndexTrack, matchIndexCluster);
 }
 
+/**
+ * Match cells to tracks.
+ *
+ * Match cells to tracks, where maxNumberMatches are considered in dR=maxMatchingDistance.
+ * If no unique cell match was found for a track, an index of -1 is stored..
+ *
+ * @param cellPhi cell collection phi.
+ * @param cellEta cell collection eta.
+ * @param trackPhi track collection phi.
+ * @param trackEta track collection eta.
+ * @param maxMatchingDistance Maximum matching distance.
+ *
+ * @returns (track to cell index map)
+ */
+template <typename T>
+std::vector<int> matchCellsAndTracks(
+  std::vector<T>& cellPhi,
+  std::vector<T>& cellEta,
+  std::vector<T>& trackPhi,
+  std::vector<T>& trackEta,
+  double maxMatchingDistance)
+{
+  // Validation
+  const std::size_t nClusters = cellEta.size();
+  const std::size_t nTracks = trackEta.size();
+  if (!(nClusters && nTracks)) {
+    // There are no jets, so nothing to be done.
+    return std::vector<int>(nTracks, -1);
+  }
+  // Input sizes must match
+  if (cellPhi.size() != cellEta.size()) {
+    throw std::invalid_argument("Cells collection eta and phi sizes don't match! Check the inputs!");
+  }
+  if (trackPhi.size() != trackEta.size()) {
+    throw std::invalid_argument("Track collection eta and phi sizes don't match! Check the inputs!");
+  }
+
+  // Build the KD-trees using vectors
+  // We build two trees:
+  // treeBase, which contains the base collection.
+  // treeTag, which contains the tag collection.
+  // The trees are built to match in two dimensions (eta, phi)
+  TKDTree<int, T> treeCell(cellEta.size(), 2, 1);
+  // By utilizing SetData, we can avoid having to copy the data again.
+  treeCell.SetData(0, cellEta.data());
+  treeCell.SetData(1, cellPhi.data());
+  treeCell.Build();
+
+  // Storage for the cluster matching indices.
+  std::vector<int> matchIndexCell(nTracks, -1);
+
+  // Find the cell closest to each track
+  for (std::size_t iTrack = 0; iTrack < nTracks; iTrack++) {
+    T point[2] = {trackEta[iTrack], trackPhi[iTrack]};
+    int index[1];  // size 50 for safety
+    T distance[1]; // size 50 for safery
+    std::fill_n(index, 1, -1);
+    std::fill_n(distance, 1, std::numeric_limits<T>::max());
+    treeCell.FindNearestNeighbors(point, 1, index, distance);
+    if (index[0] >= 0 && distance[0] < maxMatchingDistance) {
+      matchIndexCell[iTrack] = index[0];
+    }
+  }
+  return matchIndexCell;
+}
+
 template <typename T, typename U>
 float deltaR(T const& A, U const& B)
 {
-  float dPhi = RecoDecay::constrainAngle(A.phi() - B.phi(), -M_PI);
+  float dPhi = RecoDecay::constrainAngle(A.phi() - B.phi(), -o2::constants::math::PI);
   float dEta = A.eta() - B.eta();
 
   return std::sqrt(dEta * dEta + dPhi * dPhi);
@@ -150,7 +217,7 @@ float deltaR(T const& A, U const& B)
 template <typename T, typename U, typename V, typename W>
 float deltaR(T const& eta1, U const& phi1, V const& eta2, W const& phi2)
 {
-  float dPhi = RecoDecay::constrainAngle(phi1 - phi2, -M_PI);
+  float dPhi = RecoDecay::constrainAngle(phi1 - phi2, -o2::constants::math::PI);
   float dEta = eta1 - eta2;
 
   return std::sqrt(dEta * dEta + dPhi * dPhi);
