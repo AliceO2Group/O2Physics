@@ -27,6 +27,7 @@
 #include "MathUtils/Utils.h"
 
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 namespace o2::aod
 {
@@ -351,11 +352,19 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
 DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
                   reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedtrack::TrackId);
 
+DECLARE_SOA_TABLE(ReducedTracksBarrelEMCal, "AOD", "RTBARRELEMCAL",
+                  emcalcluster::Energy,
+                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+                  emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
+
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
 using ReducedTrackBarrelCov = ReducedTracksBarrelCov::iterator;
 using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
 using ReducedTrackBarrelInfo = ReducedTracksBarrelInfo::iterator;
+using ReducedTrackBarrelEMCal = ReducedTracksBarrelEMCal::iterator;
+
 
 namespace reducedtrackMC
 {
