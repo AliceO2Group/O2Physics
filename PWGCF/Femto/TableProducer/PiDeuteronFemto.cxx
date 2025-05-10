@@ -632,7 +632,7 @@ struct PiDeuteronFemto {
   }
 
   template <typename Tcoll>
-  void fillTable(const PiDecandidate& piDecand, const Tcoll& collision, bool isMC = false)
+  void fillTable(const PiDecandidate& piDecand, const Tcoll& collision)
   {
     mOutputDataTable(
       piDecand.recoPtDe(),
@@ -702,7 +702,7 @@ struct PiDeuteronFemto {
       }
       fillHistograms(piDecand);
       auto collision = collisions.rawIteratorAt(piDecand.collisionID);
-      fillTable(piDecand, collision, /*isMC*/ false);
+      fillTable(piDecand, collision);
     }
   }
 
