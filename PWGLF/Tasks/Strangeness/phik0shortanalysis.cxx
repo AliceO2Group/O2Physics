@@ -193,6 +193,9 @@ struct Phik0shortanalysis {
   // Defining filters on V0s (cannot filter on dynamic columns)
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
+  // Defining filters on tracks (cannot filter on dynamic columns)
+  Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
@@ -236,6 +239,7 @@ struct Phik0shortanalysis {
     AxisSpec massPhiAxis = {200, 0.9f, 1.2f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec sigmassPhiAxis = {nBinsMPhi, lowMPhi, upMPhi, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec vertexZAxis = {100, -15.f, 15.f, "vrtx_{Z} [cm]"};
+    AxisSpec etaAxis = {16, -trackConfigs.etaMax, trackConfigs.etaMax, "#eta"};
     AxisSpec yAxis = {nBinsY, -cfgYAcceptanceSmear, cfgYAcceptanceSmear, "#it{y}"};
     AxisSpec deltayAxis = {nBinsDeltaY, -1.2f, 1.2f, "#Delta#it{y}"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
@@ -260,6 +264,9 @@ struct Phik0shortanalysis {
     dataEventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     dataEventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
     dataEventHist.add("hMultiplicityPercentWithPhi", "Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {multAxis});
+
+    // Eta distribution for dN/deta values estimation in Data
+    dataEventHist.add("h2EtaDistribution", "Eta vs multiplicity in Data", kTH2F, {binnedmultAxis, etaAxis});
 
     // Number of MC events per selection for Rec and Gen
     mcEventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{9, -0.5f, 8.5f}});
@@ -288,6 +295,11 @@ struct Phik0shortanalysis {
 
     mcEventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
+
+    // Eta distribution for dN/deta values estimation in MC
+    mcEventHist.add("h2RecMCEtaDistribution", "Eta vs multiplicity in MCReco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h2GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
 
     // Phi topological/PID cuts
     dataPhiHist.add("h2DauTracksPhiDCAxyPreCutData", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -767,6 +779,63 @@ struct Phik0shortanalysis {
         return false;
     }
     return true;
+  }
+
+  template <typename T1, typename T2>
+  bool eventHasPhi(const T1& posTracks, const T2& negTracks)
+  {
+    int nPhi = 0;
+
+    for (const auto& track1 : posTracks) {
+      if (!selectionTrackResonance<false>(track1, false) || !selectionPIDKaonpTdependent(track1))
+        continue; // topological and PID selection
+
+      auto track1ID = track1.globalIndex();
+
+      for (const auto& track2 : negTracks) {
+        if (!selectionTrackResonance<false>(track2, false) || !selectionPIDKaonpTdependent(track2))
+          continue; // topological and PID selection
+
+        auto track2ID = track2.globalIndex();
+        if (track2ID == track1ID)
+          continue; // condition to avoid double counting of pair
+
+        ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
+        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
+          continue;
+        if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
+          continue;
+        if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
+          continue;
+
+        nPhi++;
+      }
+    }
+
+    if (nPhi > 0)
+      return true;
+    return false;
+  }
+
+  template <typename T>
+  bool eventHasMCPhi(const T& mcParticles)
+  {
+    int nPhi = 0;
+
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
+        continue;
+      if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+        continue;
+      if (std::abs(mcParticle.y()) > cfgYAcceptance)
+        continue
+
+      nPhi++;
+    }
+
+    if (nPhi > 0)
+      return true;
+    return false;
   }
 
   // Get phi-meson purity functions from CCDB
@@ -2188,6 +2257,91 @@ struct Phik0shortanalysis {
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMCGen, "Process function for Phi-Pion Correlations Efficiency correction in MCGen", false);
+
+  void processdNdetaWPhiData(SelCollisions::iterator const& collision, soa::Filtered<FullTracks> const& fullTracks)
+  {
+    // Check if the event selection is passed
+    if (!acceptEventQA<false>(collision, true))
+      return;
+
+    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+    // Check if the event contains a phi candidate
+    if (!eventHasPhi(posThisColl, negThisColl))
+      return;
+
+    float multiplicity = collision.centFT0M();
+
+    for (const auto& track : fullTracks)
+      dataEventHist.fill(HIST("h2EtaDistribution"), multiplicity, track.eta());
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
+
+  void processdNdetaWPhiMCReco(SimCollisions const& collisions, soa::Filtered<FullMCTracks> const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
+  {   
+    for (const auto& collision : collisions) {
+      if (!acceptEventQA<true>(collision, true))
+        continue;
+      if (!collision.has_mcCollision())
+      continue;
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+
+      auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+      if (!eventHasMCPhi(mcParticlesThisColl))
+        continue;
+
+      float genmultiplicity = mcCollision.centFT0M();
+
+      auto mcTracksThisColl = fullMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+      for (const auto& track : mcTracksThisColl) {
+        if (!track.has_mcParticle())
+          continue;
+
+        auto mcTrack = track.mcParticle_as<aod::McParticles>();
+        if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
+          continue;
+
+        mcEventHist.fill(HIST("h2RecMCEtaDistribution"), genmultiplicity, mcTrack.eta());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
+
+  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
+  {   
+    if (std::abs(mcCollision.posZ()) > cutZVertex)
+      return;
+    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
+      return;
+    if (!eventHasMCPhi(mcParticles))
+      return;
+
+    bool isAssocColl = false;
+    for (const auto& collision : collisions) {
+      if (acceptEventQA<true>(collision, false)) {
+        isAssocColl = true;
+        break;
+      }
+    }
+
+    float genmultiplicity = mcCollision.centFT0M();
+    
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax || std::abs(mcParticle.signed1Pt()) == trackConfigs.cfgCutCharge)
+        continue;
+
+      mcEventHist.fill(HIST("h2GenMCEtaDistribution"), genmultiplicity, mcParticle.eta());
+      if (isAssocColl)
+        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), genmultiplicity, mcParticle.eta());
+    }
+  }
+
+  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCGen, "Process function for dN/deta values in MCGen", false);
 
   void processPhiK0SPionData2D(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
