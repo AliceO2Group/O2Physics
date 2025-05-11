@@ -829,7 +829,7 @@ struct Phik0shortanalysis {
       if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
         continue;
       if (std::abs(mcParticle.y()) > cfgYAcceptance)
-        continue
+        continue;
 
       nPhi++;
     }
