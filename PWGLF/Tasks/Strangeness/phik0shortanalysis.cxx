@@ -2336,6 +2336,12 @@ struct Phik0shortanalysis {
       if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax || std::abs(mcParticle.signed1Pt()) == trackConfigs.cfgCutCharge)
         continue;
 
+      auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
+      if (pdgTrack == nullptr)
+        continue;
+      if (pdgTrack->Charge() == trackConfigs.cfgCutCharge)
+        continue;
+
       mcEventHist.fill(HIST("h2GenMCEtaDistribution"), genmultiplicity, mcParticle.eta());
       if (isAssocColl)
         mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), genmultiplicity, mcParticle.eta());
@@ -2646,8 +2652,6 @@ struct Phik0shortanalysis {
         if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
           continue;
 
-        mcPhiHist.fill(HIST("h3PhiRapiditySmearing"), genmultiplicity, recPhi.Rapidity(), mcMotherPhi.y());
-
         if (std::abs(recPhi.Rapidity()) > cfgYAcceptance)
           continue;
 
@@ -2700,6 +2704,8 @@ struct Phik0shortanalysis {
 
           if (std::abs(track.rapidity(massPi)) > cfgYAcceptance)
             continue;
+
+          float nSigmaTOFPi = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
           closureMCPhiPionHist.fill(HIST("h6PhiPiMCClosure"), 0, genmultiplicity, track.pt(), track.tpcNSigmaPi(), nSigmaTOFPi, recPhi.M());
           for (size_t i = 0; i < cfgDeltaYAcceptanceBins->size(); i++) {
