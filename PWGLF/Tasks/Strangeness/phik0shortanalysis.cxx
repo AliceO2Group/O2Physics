@@ -91,6 +91,7 @@ struct Phik0shortanalysis {
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
     Configurable<float> cMinKaonPtcut{"cMinKaonPtcut", 0.15f, "Track minimum pt cut"};
     Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
+    Configurable<float> pTToUseTOF{"pTToUseTOF", 0.5f, "pT above which use TOF"};
     Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
     Configurable<float> cMaxDCArToPV1Phi{"cMaxDCArToPV1Phi", 0.004f, "Track DCAr cut to PV config 1 for Phi"};
     Configurable<float> cMaxDCArToPV2Phi{"cMaxDCArToPV2Phi", 0.013f, "Track DCAr cut to PV config 2 for Phi"};
@@ -703,9 +704,9 @@ struct Phik0shortanalysis {
   template <typename T>
   bool selectionPIDKaonpTdependent(const T& track)
   {
-    if (track.pt() < 0.5 && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
+    if (track.pt() < trackConfigs.pTToUseTOF && std::abs(track.tpcNSigmaKa()) < trackConfigs.nSigmaCutTPCKa)
       return true;
-    if (track.pt() >= 0.5 && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
+    if (track.pt() >= trackConfigs.pTToUseTOF && track.hasTOF() && (std::pow(track.tofNSigmaKa(), 2) + std::pow(track.tpcNSigmaKa(), 2)) < std::pow(trackConfigs.nSigmaCutCombinedKa, 2))
       return true;
     return false;
   }
@@ -747,7 +748,7 @@ struct Phik0shortanalysis {
       return false;
 
     if constexpr (isTOFChecked) {
-      if (track.pt() >= 0.5 && !track.hasTOF())
+      if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
         return false;
     }
 
@@ -1569,7 +1570,7 @@ struct Phik0shortanalysis {
             mcPhiPionHist.fill(HIST("h4PhiPiTPCMCReco"), i, genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi());
         }
 
-        if (track.pt() >= 0.5 && !track.hasTOF())
+        if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
           continue;
 
         mcPionHist.fill(HIST("h4PiTPCTOFMCReco"), genmultiplicity, mcTrack.pt(), track.tpcNSigmaPi(), track.tofNSigmaPi());
@@ -2280,12 +2281,12 @@ struct Phik0shortanalysis {
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
 
   void processdNdetaWPhiMCReco(SimCollisions const& collisions, soa::Filtered<FullMCTracks> const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
-  {   
+  {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, true))
         continue;
       if (!collision.has_mcCollision())
-      continue;
+        continue;
       const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
       auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
@@ -2313,7 +2314,7 @@ struct Phik0shortanalysis {
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
 
   void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
-  {   
+  {
     if (std::abs(mcCollision.posZ()) > cutZVertex)
       return;
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
@@ -2330,7 +2331,7 @@ struct Phik0shortanalysis {
     }
 
     float genmultiplicity = mcCollision.centFT0M();
-    
+
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax || std::abs(mcParticle.signed1Pt()) == trackConfigs.cfgCutCharge)
         continue;
