@@ -265,8 +265,8 @@ struct mcParticlePrediction {
       if (!enabledEstimatorsArray[i]) {
         continue;
       }
-      AxisSpec axisThisEstimator = axisMultiplicity; 
-      if(i == Estimators::ImpactParameter){ 
+      AxisSpec axisThisEstimator = axisMultiplicity;
+      if (i == Estimators::ImpactParameter) {
         axisThisEstimator = axisImpactParameter;
       }
       const char* name = Estimators::estimatorNames[i];
@@ -277,8 +277,8 @@ struct mcParticlePrediction {
         auto hist = histos.add<TH2>(Form("%s%s", h.c_str(), name),
                                     name,
                                     kTH2D,
-                                    {isImpactParameterX?axisImpactParameter:axisMultiplicity, 
-                                    isImpactParameterY?axisImpactParameter:axisMultiplicity});
+                                    {isImpactParameterX ? axisImpactParameter : axisMultiplicity,
+                                     isImpactParameterY ? axisImpactParameter : axisMultiplicity});
         hist->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
         hist->GetYaxis()->SetTitle(Form("Multiplicity %s", ytitle));
         return hist;
@@ -293,9 +293,8 @@ struct mcParticlePrediction {
         hestimatorsVsETA08[i] = make2DH("multiplicity/vsETA08/", Estimators::estimatorNames[Estimators::ETA08], (i == Estimators::ImpactParameter));
       }
       if (enableVsImpactParameterHistograms) {
-        hestimatorsVsImpactParameter[i] = make2DH("multiplicity/vsImpactParameter/", Estimators::estimatorNames[Estimators::ImpactParameter],(i == Estimators::ImpactParameter), true);
+        hestimatorsVsImpactParameter[i] = make2DH("multiplicity/vsImpactParameter/", Estimators::estimatorNames[Estimators::ImpactParameter], (i == Estimators::ImpactParameter), true);
       }
-
 
       hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisThisEstimator});
       hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
@@ -347,8 +346,8 @@ struct mcParticlePrediction {
         if (!enabledEstimatorsArray[j]) {
           continue;
         }
-        AxisSpec axisThisEstimator = axisMultiplicity; 
-        if(j == Estimators::ImpactParameter){ 
+        AxisSpec axisThisEstimator = axisMultiplicity;
+        if (j == Estimators::ImpactParameter) {
           axisThisEstimator = axisImpactParameter;
         }
         const char* name = Estimators::estimatorNames[j];
