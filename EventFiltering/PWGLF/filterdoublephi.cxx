@@ -131,10 +131,10 @@ struct filterdoublephi {
       return true;
     }
     if (candidate.pt() >= 0.5) {
-      if (!candidate.hasTOF() && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 3.0) {
+      if (!candidate.hasTOF() && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 2.0) {
         return true;
       }
-      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 3.0 && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
     }
@@ -146,10 +146,13 @@ struct filterdoublephi {
     if (candidate.pt() < 0.5 && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 3.0) {
       return true;
     }
-    if (candidate.pt() >= 0.5) {
-      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 3.0 && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+    if (candidate.pt() >= 0.5 && candidate.pt() < 5.0) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
+    }
+    if (candidate.pt() >= 5.0 && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 2.0) {
+      return true;
     }
     return false;
   }

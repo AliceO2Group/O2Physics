@@ -145,8 +145,8 @@ struct HfFemtoDreamProducer {
 
   float magField;
   int runNumber;
-  using CandidateLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
@@ -166,7 +166,7 @@ struct HfFemtoDreamProducer {
 
   void init(InitContext&)
   {
-    std::array<bool, 3> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessMcCharmHadGen};
+    std::array<bool, 5> processes = {doprocessDataCharmHad, doprocessMcCharmHad, doprocessDataCharmHadWithML, doprocessMcCharmHadWithML, doprocessMcCharmHadGen};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -434,7 +434,8 @@ struct HfFemtoDreamProducer {
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
     for (const auto& candidate : candidates) {
-
+      outputMlPKPi = {-1.0f, -1.0f, -1.0f};
+      outputMlPiKP = {-1.0f, -1.0f, -1.0f};
       auto trackPos1 = candidate.template prong0_as<TrackType>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<TrackType>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TrackType>(); // positive daughter (negative for the antiparticles)
@@ -457,11 +458,11 @@ struct HfFemtoDreamProducer {
           isSelectedMlLcToPKPi = false;
           isSelectedMlLcToPiKP = false;
           if (candidate.mlProbLcToPKPi().size() > 0) {
-            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
             isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlPKPi);
           }
           if (candidate.mlProbLcToPiKP().size() > 0) {
-            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
             isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
           }
           if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP)

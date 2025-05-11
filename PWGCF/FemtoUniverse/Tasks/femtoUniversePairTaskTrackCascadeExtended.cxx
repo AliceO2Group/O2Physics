@@ -15,6 +15,7 @@
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
 
 #include <vector>
+#include <set>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -47,56 +48,56 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   using FemtoRecoParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColReco = aod::femtouniverseparticle::fdCollisionId;
 
-  ConfigurableAxis confChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
-  ConfigurableAxis confChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  Configurable<float> confCascInvMassLowLimit{"ConfCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
-  Configurable<float> confCascInvMassUpLimit{"ConfCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
-  Configurable<float> confCascTranRad{"ConfCascTranRad", 0.5, "Cascade transverse radius"};
+  ConfigurableAxis confChildTempFitVarpTBins{"confChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
+  Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
+  Configurable<float> confCascTranRad{"confCascTranRad", 0.5, "Cascade transverse radius"};
 
-  Configurable<float> confNSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-  Configurable<float> confNSigmaTPCProton{"NSigmaTPCProton", 4, "NSigmaTPCProton"};
+  Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
+  Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
 
   /// applying narrow cut
-  Configurable<float> confZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
-  Configurable<float> confEta{"ConfEta", 0.8, "Eta cut for the global track"};
+  Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
+  Configurable<float> confEta{"confEta", 0.8, "Eta cut for the global track"};
 
   // configurations for correlation part
-  Configurable<int> confTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
-  Configurable<int> confTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
-  Configurable<int> confCascType1{"ConfCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
-  Configurable<int> confCascType2{"ConfCascType2", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
-  Configurable<bool> confIsCPR{"ConfIsCPR", false, "Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> confCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<bool> confCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> confCPRChosenRadii{"ConfCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
-  Configurable<int> confChargePart1{"ConfChargePart1", 1, "sign of particle 1"};
-  Configurable<float> confHPtPart1{"ConfHPtPart1", 4.0f, "higher limit for pt of particle 1"};
-  Configurable<float> confLPtPart1{"ConfLPtPart1", 0.5f, "lower limit for pt of particle 1"};
-  Configurable<float> confHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
-  Configurable<float> confLPtPart2{"ConfLPtPart2", 0.3f, "lower limit for pt of particle 2"};
-  Configurable<float> confmom{"Confmom", 0.75, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"ConfNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < Confmom"};
-  Configurable<float> confNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle (track) momentum > Confmom"};
-  Configurable<float> confNsigmaTPCParticleChild{"ConfNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < Confmom"};
-  Configurable<float> confNsigmaTOFParticleChild{"ConfNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
+  Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
+  Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
+  Configurable<int> confCascType1{"confCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
+  Configurable<int> confCascType2{"confCascType2", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
+  Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
+  Configurable<float> confCPRdeltaPhiCutMax{"confCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaPhiCutMin{"confCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaEtaCutMax{"confCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+  Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+  Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
+  Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<int> confChargePart1{"confChargePart1", 1, "sign of particle 1"};
+  Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "higher limit for pt of particle 1"};
+  Configurable<float> confLPtPart1{"confLPtPart1", 0.5f, "lower limit for pt of particle 1"};
+  Configurable<float> confHPtPart2{"confHPtPart2", 4.0f, "higher limit for pt of particle 2"};
+  Configurable<float> confLPtPart2{"confLPtPart2", 0.3f, "lower limit for pt of particle 2"};
+  Configurable<float> confmom{"confmom", 0.75, "momentum threshold for particle identification using TOF"};
+  Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle (track) momentum < Confmom"};
+  Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle (track) momentum > Confmom"};
+  Configurable<float> confNsigmaTPCParticleChild{"confNsigmaTPCParticleChild", 3.0, "TPC Sigma for particle (daugh & bach) momentum < Confmom"};
+  Configurable<float> confNsigmaTOFParticleChild{"confNsigmaTOFParticleChild", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
 
-  ConfigurableAxis confkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis confMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis confkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis confmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
-  ConfigurableAxis confmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
-  ConfigurableAxis confmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
-  Configurable<int> confEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
-  Configurable<int> confPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
-  Configurable<bool> confIsMC{"ConfIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
-  Configurable<bool> confUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
+  ConfigurableAxis confkstarBins{"confkstarBins", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis confkTBins{"confkTBins", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis confmTBins{"confmTBins", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis confMultBins3D{"confMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  ConfigurableAxis confmTBins3D{"confmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
+  Configurable<int> confEtaBins{"confEtaBins", 29, "Number of eta bins in deta dphi"};
+  Configurable<int> confPhiBins{"confPhiBins", 29, "Number of phi bins in deta dphi"};
+  Configurable<bool> confIsMC{"confIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
+  Configurable<bool> confUse3D{"confUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
   Configurable<bool> confUseCent{"confUseCent", false, "Use centrality in place of multiplicity"};
-  ConfigurableAxis confVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis confTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
-  ConfigurableAxis confTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis confTrkTempFitVarpTBins{"confTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
@@ -140,16 +141,15 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   HistogramRegistry registryMCgen{"MCgenHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
+  std::set<int> cascDuplicates;
+
   // Table to select cascade daughters
   // Charges: = +--, +--, +-+, +-+
   static constexpr unsigned int CascChildTable[][3] = {{0, 1, 2}, {0, 1, 1}, {1, 0, 2}, {1, 0, 1}};
 
-  bool invMCascade(float invMassCascade, float invMassAntiCascade)
+  bool invMCascade(float invMassXi, float invMassOmega, int cascType)
   {
-    if ((invMassCascade < confCascInvMassLowLimit || invMassCascade > confCascInvMassUpLimit) && (invMassAntiCascade < confCascInvMassLowLimit || invMassAntiCascade > confCascInvMassUpLimit)) {
-      return false;
-    }
-    return true;
+    return (((cascType == 1 || cascType == 3) && (invMassXi > confCascInvMassLowLimit && invMassXi < confCascInvMassUpLimit)) || ((cascType == 0 || cascType == 2) && (invMassOmega > confCascInvMassLowLimit && invMassOmega < confCascInvMassUpLimit)));
   }
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
@@ -278,8 +278,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     bachHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true, "hBachelor");
     cascQAHistos.init(&qaRegistry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, 0, true);
 
-    sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
-    mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confmultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+    sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+    mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
@@ -359,7 +359,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     const int multCol = confUseCent ? col.multV0M() : col.multNtr();
 
     for (const auto& part : groupPartsTwo) {
-      if (!invMCascade(part.mLambda(), part.mAntiLambda()))
+      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1))
         continue;
 
       cascQAHistos.fillQA<false, true>(part);
@@ -400,7 +400,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       // Cascade invariant mass cut
-      if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType1))
         continue;
       // PID
       if (!isParticleCombined(p1, confTrackChoicePartOne))
@@ -434,7 +434,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     const int multCol = confUseCent ? col.multV0M() : col.multNtr();
 
     for (const auto& part : groupPartsTwo) {
-      if (!invMCascade(part.mLambda(), part.mAntiLambda()))
+      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1))
         continue;
 
       cascQAHistos.fillQA<false, true>(part);
@@ -454,17 +454,30 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       }*/
     }
 
-    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+    auto pairDuplicateCheckFunc = [&](auto& p1, auto& p2) -> void {
       // Cascade invariant mass cut for p1
-      if (!invMCascade(p1.mLambda(), p1.mAntiLambda()))
+      if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
         return;
       // Cascade invariant mass cut for p2
-      if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
+      if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
         return;
-      // track cleaning
+      // track cleaning & checking for duplicate pairs
       if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
-        return;
+        // mark for rejection the cascades that share a daughter with other cascades
+        cascDuplicates.insert(p1.globalIndex());
+        cascDuplicates.insert(p2.globalIndex());
       }
+    };
+
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      if (cascDuplicates.contains(p1.globalIndex()) || cascDuplicates.contains(p2.globalIndex()))
+        return;
+      // Cascade invariant mass cut for p1
+      if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
+        return;
+      // Cascade invariant mass cut for p2
+      if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
+        return;
       if (confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return;
@@ -485,12 +498,19 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     };
+    cascDuplicates.clear();
     if (confCascType1 == confCascType2) {
+      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        pairDuplicateCheckFunc(p1, p2);
+      }
       /// Now build the combinations for identical cascades
       for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
         pairProcessFunc(p1, p2);
       }
     } else {
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        pairDuplicateCheckFunc(p1, p2);
+      }
       /// Now build the combinations for non-identical cascades
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
         pairProcessFunc(p1, p2);
@@ -517,7 +537,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       }
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Cascade invariant mass cut
-        if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType1))
           continue;
         // PID
         if (!isParticleCombined(p1, confTrackChoicePartOne))
@@ -561,10 +581,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       }
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         // Cascade invariant mass cut for p1
-        if (!invMCascade(p1.mLambda(), p1.mAntiLambda()))
+        if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
           continue;
         // Cascade invariant mass cut for p2
-        if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
+        if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
           continue;
 
         const auto& posChild1 = parts.iteratorAt(p1.index() - 3);
