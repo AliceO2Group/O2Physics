@@ -960,7 +960,7 @@ struct FullJetSpectrapp {
   }
   PROCESS_SWITCH(FullJetSpectrapp, processJetsMCPMCDMatchedWeighted, "Full Jet finder MCP matched to MCD on weighted events", false);
 
-  void processTracks(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  void processDataTracks(soa::Filtered<EMCCollisionsData>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
 
@@ -993,6 +993,55 @@ struct FullJetSpectrapp {
     } else {
       // Check if EMCAL was readout with the MB trigger(kTVXinEMC) fired. If not then reject the event and exit the function.
       // This is the default check for the simulations with proper trigger flags not requiring the above workaround.
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+        registry.fill(HIST("h_collisions_unweighted"), 4.0); // Tracks with kTVXinEMC
+        registry.fill(HIST("h_Detcollision_counter"), 1.0);
+      }
+    }
+
+    if (!eventAccepted) {
+      registry.fill(HIST("h_collisions_unweighted"), 8.0); // Tracks w/o kTVXinEMC
+      return;
+    }
+    registry.fill(HIST("h_collisions_unweighted"), 2.5);
+
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+      // Fill Accepted events histos
+      fillTrackHistograms(tracks, clusters, 1.0);
+    }
+    registry.fill(HIST("h_collisions_unweighted"), 3.5);
+  }
+  PROCESS_SWITCH(FullJetSpectrapp, processTracks, "Full Jet tracks", false);
+
+  void processMCTracks(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  {
+    bool eventAccepted = false;
+
+    registry.fill(HIST("h_collisions_unweighted"), 0.5);
+    if (fabs(collision.posZ()) > VertexZCut) {
+      return;
+    }
+    registry.fill(HIST("h_collisions_unweighted"), 1.5);
+    if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      return;
+    }
+
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        eventAccepted = true;
+        if (collision.alias_bit(kTVXinEMC)) {
+          registry.fill(HIST("h_collisions_unweighted"), 4.0); // Tracks with kTVXinEMC
+          registry.fill(HIST("h_Detcollision_counter"), 1.0);
+        }
+      }
+    } else {
       if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
         eventAccepted = true;
         registry.fill(HIST("h_collisions_unweighted"), 4.0); // Tracks with kTVXinEMC
