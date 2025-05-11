@@ -2333,7 +2333,7 @@ struct Phik0shortanalysis {
     float genmultiplicity = mcCollision.centFT0M();
 
     for (const auto& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax || std::abs(mcParticle.signed1Pt()) == trackConfigs.cfgCutCharge)
+      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
         continue;
 
       auto pdgTrack = pdgDB->GetParticle(mcParticle.pdgCode());
