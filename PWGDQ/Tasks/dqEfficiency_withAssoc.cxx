@@ -2296,7 +2296,6 @@ struct AnalysisAsymmetricPairing {
       fRecMCSignalNames.push_back(objArrayRecMCSignals->At(i)->GetName());
     }
 
-
     // Get the barrel track selection cuts
     string tempCuts;
     getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
@@ -2530,7 +2529,7 @@ struct AnalysisAsymmetricPairing {
       if (sig) {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
           fGenMCSignals.push_back(sig);
-          DefineHistograms(fHistMan, Form("MCTruthGen_%s;", sig->GetName()), fConfigHistogramSubgroups.value.data()); // TODO: Add these names to a std::vector to avoid using Form in the process function
+          DefineHistograms(fHistMan, Form("MCTruthGen_%s;", sig->GetName()), fConfigHistogramSubgroups.value.data());    // TODO: Add these names to a std::vector to avoid using Form in the process function
           DefineHistograms(fHistMan, Form("MCTruthGenSel_%s;", sig->GetName()), fConfigHistogramSubgroups.value.data()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         }
       }
@@ -3434,7 +3433,6 @@ struct AnalysisDileptonTrack {
           pairLegCutName = static_cast<TObjString*>(cfgPairing_objArrayTrackCuts->At(icut))->GetString();
         }
         fLegCutNames.push_back(pairLegCutName);
-
 
         // define dilepton histograms
         DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
