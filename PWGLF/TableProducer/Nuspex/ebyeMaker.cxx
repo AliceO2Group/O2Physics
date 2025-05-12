@@ -532,11 +532,11 @@ struct ebyeMaker {
     auto fv0c = fv0cs.rawIteratorAt(id);
     float multFV0A = 0;
     float multFV0C = 0;
-    for (float const amplitude : fv0a.amplitude()) {
+    for (const float amplitude : fv0a.amplitude()) {
       multFV0A += amplitude;
     }
 
-    for (float const amplitude : fv0c.amplitude()) {
+    for (const float amplitude : fv0c.amplitude()) {
       multFV0C += amplitude;
     }
 
