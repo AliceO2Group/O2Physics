@@ -1733,8 +1733,6 @@ DECLARE_SOA_COLUMN(NSigTofPrFromLambda, nSigTofPrFromLambda, float);
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
-DECLARE_SOA_COLUMN(DebugMcGen, debugMcGen, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 // Dynamic columns
@@ -1821,14 +1819,12 @@ DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC", //!
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
-                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
                   hf_cand_xic_to_xi_pi_pi::OriginRec);
-
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN", //!
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
-                  hf_cand_xic_to_xi_pi_pi::DebugMcGen,
-                  hf_cand_xic_to_xi_pi_pi::OriginGen);
+                  hf_cand_xic_to_xi_pi_pi::OriginGen,
+                  hf_cand::PdgBhadMotherPart);
 
 // specific chic candidate properties
 namespace hf_cand_chic
