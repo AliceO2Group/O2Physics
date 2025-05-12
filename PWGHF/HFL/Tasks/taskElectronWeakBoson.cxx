@@ -86,7 +86,6 @@ struct HfTaskElectronWeakBoson {
 
   // Zorro objects for skimmed data processing
   Zorro zorro;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // CCDB service object
   Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
@@ -196,6 +195,10 @@ struct HfTaskElectronWeakBoson {
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
+
+  // Zorro Summary
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
   {
