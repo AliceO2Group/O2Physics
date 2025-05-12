@@ -180,8 +180,16 @@ struct DijetFinderQATask {
   }
   PROCESS_SWITCH(DijetFinderQATask, processDummy, "dummy", false);
 
-  void processDijetMCP(soa::Filtered<aod::JetMcCollisions>::iterator const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+  void processDijetMCP(soa::Filtered<aod::JetMcCollisions>::iterator const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions)
   {
+    if (collisions.size() == 0) {
+      return;
+    }
+    for (auto& collision : collisions) {
+      if (fabs(collision.posZ()) > vertexZCut || !jetderiveddatautilities::selectCollision(collision, eventSelection))
+        return;
+    }
+
     registry.fill(HIST("hColCounterFinal_MCP"), 1);
 
     std::vector<std::array<double, 3>> jetPtcuts;
