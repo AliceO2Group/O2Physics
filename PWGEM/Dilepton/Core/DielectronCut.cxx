@@ -325,10 +325,11 @@ void DielectronCut::SetMaxPinMuonTPConly(float max)
   mMaxPinMuonTPConly = max;
   LOG(info) << "Dielectron Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
 }
-void DielectronCut::SetMaxPinForPionRejectionTPC(float max)
+void DielectronCut::SetPinRangeForPionRejectionTPC(float min, float max)
 {
+  mMinPinForPionRejectionTPC = min;
   mMaxPinForPionRejectionTPC = max;
-  LOG(info) << "Dielectron Cut, set max pin for pion rejection in TPC: " << mMaxPinForPionRejectionTPC;
+  LOG(info) << "Dielectron Cut, set pin range for pion rejection in TPC: " << mMinPinForPionRejectionTPC << " - " << mMaxPinForPionRejectionTPC;
 }
 void DielectronCut::RequireITSibAny(bool flag)
 {
