@@ -324,14 +324,14 @@ struct ebyeMaker {
   template <class P>
   int getPartTypeMother(P const& mcPart)
   {
-    for (auto& mother : mcPart.template mothers_as<aod::McParticles>()) {
+    for (auto& const mother : mcPart.template mothers_as<aod::McParticles>()) {
       if (!mother.isPhysicalPrimary())
         return -1;
       int pdgCode = mother.pdgCode();
       switch (std::abs(pdgCode)) {
         case 3122: {
           int foundPi = 0;
-          for (auto& mcDaught : mother.template daughters_as<aod::McParticles>()) {
+          for (auto& const mcDaught : mother.template daughters_as<aod::McParticles>()) {
             if (std::abs(mcDaught.pdgCode()) == 211) {
               foundPi = mcDaught.pdgCode();
               break;
@@ -532,17 +532,17 @@ struct ebyeMaker {
     auto fv0c = fv0cs.rawIteratorAt(id);
     float multFV0A = 0;
     float multFV0C = 0;
-    for (float amplitude : fv0a.amplitude()) {
+    for (float const amplitude : fv0a.amplitude()) {
       multFV0A += amplitude;
     }
 
-    for (float amplitude : fv0c.amplitude()) {
+    for (float const amplitude : fv0c.amplitude()) {
       multFV0C += amplitude;
     }
 
     float v0m = -1;
     auto scaleMC = [](float x, float pars[6]) {
-      return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      return std::pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
     if (Run2V0MInfo.mMCScale != nullptr) {
@@ -915,7 +915,7 @@ struct ebyeMaker {
     fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
 
     for (int iP{0}; iP < kNpart; ++iP) {
-      for (auto& candidateTrack : candidateTracks[iP]) {
+      for (auto& const candidateTrack : candidateTracks[iP]) {
         candidateTrack.isreco = true;
 
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
@@ -945,7 +945,7 @@ struct ebyeMaker {
         }
       }
     }
-    for (auto& candidateV0 : candidateV0s) {
+    for (auto& const candidateV0 : candidateV0s) {
       candidateV0.isreco = true;
       auto mcLabPos = mcLabels.rawIteratorAt(candidateV0.globalIndexPos);
       auto mcLabNeg = mcLabels.rawIteratorAt(candidateV0.globalIndexNeg);
@@ -954,8 +954,8 @@ struct ebyeMaker {
         auto mcTrackPos = mcLabPos.template mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.template mcParticle_as<aod::McParticles>();
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
-          for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
-            for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
+          for (auto& const negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
+            for (auto& const posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
               if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
@@ -983,7 +983,7 @@ struct ebyeMaker {
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
     auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
-    for (auto& mcPart : mcParticles_thisCollision) {
+    for (auto& const mcPart : mcParticles_thisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
@@ -995,7 +995,7 @@ struct ebyeMaker {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
         bool foundPr = false;
-        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        for (auto& const mcDaught : mcPart.daughters_as<aod::McParticles>()) {
           if (std::abs(mcDaught.pdgCode()) == 2212) {
             foundPr = true;
             break;
@@ -1073,7 +1073,7 @@ struct ebyeMaker {
 
       collisionEbyeTable(centrality, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (auto& const candidateV0 : candidateV0s) {
         lambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1091,7 +1091,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (auto& const candidateTrack : candidateTracks[iP]) { // deuterons + protons
           nucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1158,7 +1158,7 @@ struct ebyeMaker {
 
       collisionEbyeTable(cV0M, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (auto& const candidateV0 : candidateV0s) {
         lambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1176,7 +1176,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (auto& const candidateTrack : candidateTracks[iP]) { // deuterons + protons
           nucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1226,7 +1226,7 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      for (auto& classId : classIds) {
+      for (auto& const classId : classIds) {
         if (bc.triggerMask() & BIT(classId)) {
           trigger |= 0x2;
           cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
@@ -1241,7 +1241,7 @@ struct ebyeMaker {
       }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& const candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
@@ -1264,7 +1264,7 @@ struct ebyeMaker {
 
   void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
+    for (auto& const collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
@@ -1290,7 +1290,7 @@ struct ebyeMaker {
 
       collisionEbyeTable(centrality, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (auto& const candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1312,7 +1312,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (auto& const candidateTrack : candidateTracks[iP]) { // deuterons + protons
           mcNucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1334,7 +1334,7 @@ struct ebyeMaker {
 
   void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
-    for (auto& collision : collisions) {
+    for (auto& const collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
@@ -1361,7 +1361,7 @@ struct ebyeMaker {
 
       collisionEbyeTable(cV0M, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (auto& const candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1383,7 +1383,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (auto& const candidateTrack : candidateTracks[iP]) { // deuterons + protons
           mcNucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1433,7 +1433,7 @@ struct ebyeMaker {
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& const candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
