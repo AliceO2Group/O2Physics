@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file derivedDataCreatorDstarToD0Pi.cxx
-/// \brief Producer of derived tables of Dstar candidates, collisions and MC particles
+/// \brief Producer of derived tables of D*+ candidates, collisions and MC particles
 /// \note Based on derivedDataCreatorLcToPKPi.cxx
 ///
 /// \author Mingze Li <mingze.li@cern.cn>, CCNU
