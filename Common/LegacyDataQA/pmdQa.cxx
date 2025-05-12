@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file pmdqa.cxx
+/// \file pmdQa.cxx
 ///
 /// \brief QA task to check PMD info on Run 2 converted data
 /// \author Abhi Modak (abhi.modak@cern.ch)
@@ -68,6 +68,7 @@ struct PmdQa {
   Configurable<int> fNcellCut{"fNcellCut", 2, "fNcellCut"};
   Configurable<float> fEtalow{"fEtalow", 2.3, "fEtalow"};
   Configurable<float> fEtahigh{"fEtalow", 3.9, "fEtahigh"};
+  Configurable<float> fVtxCut{"fVtxCut", 10.0, "fVtxCut"};
 
   void init(InitContext&)
   {
@@ -89,17 +90,17 @@ struct PmdQa {
     histos.add("hclsncell", "hclsncell", kTH1F, {axisNcell});
   }
 
-  using coltable = soa::Join<aod::Collisions, aod::PMDTracksIndex>;
-  using colevsel = soa::Join<coltable, aod::EvSels>;
+  using ColTable = soa::Join<aod::Collisions, aod::PMDTracksIndex>;
+  using ColevSel = soa::Join<ColTable, aod::EvSels>;
 
-  void process(colevsel::iterator const& collision, aod::Pmds const&)
+  void process(ColevSel::iterator const& collision, aod::Pmds const&)
   {
     histos.fill(HIST("hEventHist"), 1);
     if (collision.sel7()) {
       return;
     }
     histos.fill(HIST("hEventHist"), 2);
-    if (std::abs(collision.posZ()) >= 10.) {
+    if (std::abs(collision.posZ()) >= fVtxCut) {
       return;
     }
     histos.fill(HIST("hEventHist"), 3);
@@ -121,9 +122,9 @@ struct PmdQa {
         }
         histos.fill(HIST("hClusXY"), track.pmdclsx(), track.pmdclsy());
         histos.fill(HIST("hClusAdc"), track.pmdclsadc());
-        float rdist = TMath::Sqrt(track.pmdclsx() * track.pmdclsx() + track.pmdclsy() * track.pmdclsy());
-        float theta = TMath::ATan2(rdist, track.pmdclsz());
-        float etacls = -TMath::Log(TMath::Tan(0.5 * theta));
+        float rdist = std::sqrt(track.pmdclsx() * track.pmdclsx() + track.pmdclsy() * track.pmdclsy());
+        float theta = std::atan2(rdist, track.pmdclsz());
+        float etacls = -std::log(TMath::Tan(0.5 * theta));
         if (track.pmdclsadc() > fMipCut && track.pmdncell() > fNcellCut) {
           if (etacls > fEtalow && etacls < fEtahigh) {
             histos.fill(HIST("hetacls"), etacls);
