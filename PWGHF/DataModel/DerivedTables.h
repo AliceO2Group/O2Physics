@@ -39,7 +39,6 @@ namespace o2::aod
 // composite species
 // B0 → D− π+ (todo)
 // B+ → D0 π+
-// D*+ → D0 π+ (todo)
 
 // ================
 // Collision tables
