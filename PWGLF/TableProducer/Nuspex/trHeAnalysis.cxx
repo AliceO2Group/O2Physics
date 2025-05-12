@@ -411,7 +411,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = getRigidity();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
@@ -457,7 +457,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = getRigidity();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
@@ -564,7 +564,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = getRigidity();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
@@ -609,7 +609,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = getRigidity();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
