@@ -67,7 +67,7 @@ struct PmdQa {
   Configurable<int> fMipCut{"fMipCut", 432, "fMipCut"};
   Configurable<int> fNcellCut{"fNcellCut", 2, "fNcellCut"};
   Configurable<float> fEtalow{"fEtalow", 2.3, "fEtalow"};
-  Configurable<float> fEtahigh{"fEtalow", 3.9, "fEtahigh"};
+  Configurable<float> fEtahigh{"fEtahigh", 3.9, "fEtahigh"};
   Configurable<float> fVtxCut{"fVtxCut", 10.0, "fVtxCut"};
 
   void init(InitContext&)
@@ -124,7 +124,7 @@ struct PmdQa {
         histos.fill(HIST("hClusAdc"), track.pmdclsadc());
         float rdist = std::sqrt(track.pmdclsx() * track.pmdclsx() + track.pmdclsy() * track.pmdclsy());
         float theta = std::atan2(rdist, track.pmdclsz());
-        float etacls = -std::log(TMath::Tan(0.5 * theta));
+        float etacls = -std::log(std::tan(0.5 * theta));
         if (track.pmdclsadc() > fMipCut && track.pmdncell() > fNcellCut) {
           if (etacls > fEtalow && etacls < fEtahigh) {
             histos.fill(HIST("hetacls"), etacls);
