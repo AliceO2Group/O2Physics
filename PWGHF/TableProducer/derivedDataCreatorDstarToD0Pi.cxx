@@ -38,7 +38,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
