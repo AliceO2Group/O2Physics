@@ -166,7 +166,7 @@ struct TrHeAnalysis {
   std::vector<Particle> particles;
   Configurable<bool> enableTr{"enableTr", true, "Flag to enable triton analysis."};
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
-  Configurable<bool> cfgRigidityCorrection {"cfgRigidityCorrection", true, "Enable Rigidity correction"};
+  Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", true, "Enable Rigidity correction"};
   ConfigurableAxis binsDeDx{"binsDeDx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDca{"binsDca", {400, -1.f, 1.f}, ""};
