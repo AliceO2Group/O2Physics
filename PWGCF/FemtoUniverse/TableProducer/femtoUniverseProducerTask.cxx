@@ -708,10 +708,11 @@ struct FemtoUniverseProducerTask {
           particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
           auto motherparticleMC = motherparticlesMC.front();
-          if (motherparticleMC.producedByGenerator())
+          if (motherparticleMC.producedByGenerator()) {
             particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
-          particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          } else {
+            particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          }
         }
       } else {
         particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake;
