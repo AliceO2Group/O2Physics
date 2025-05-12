@@ -383,7 +383,7 @@ DECLARE_SOA_COLUMN(DecayLengthXYCharm, decayLengthXYCharm, float);              
 DECLARE_SOA_COLUMN(DecayLengthXYNormalisedCharm, decayLengthXYNormalisedCharm, float);       //! decay length in the transverse plane divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameter0Charm, impactParameter0Charm, float);                     //! impact parameter of prong 0
 DECLARE_SOA_COLUMN(ImpactParameter1Charm, impactParameter1Charm, float);                     //! impact parameter of prong 1
-DECLARE_SOA_COLUMN(ImpactParameter2Charm, impactParameter2Charm, float);                     //! impact parameter of prong 1
+DECLARE_SOA_COLUMN(ImpactParameter2Charm, impactParameter2Charm, float);                     //! impact parameter of prong 2
 DECLARE_SOA_COLUMN(ImpactParameterNormalised0Charm, impactParameterNormalised0Charm, float); //! impact parameter of prong 0 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised1Charm, impactParameterNormalised1Charm, float); //! impact parameter of prong 1 divided by its uncertainty
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2Charm, impactParameterNormalised2Charm, float); //! impact parameter of prong 2 divided by its uncertainty
