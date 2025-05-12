@@ -1220,6 +1220,7 @@ struct AnalysisSameEventPairing {
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
     std::vector<TString> names;
+    fTrackCuts.clear();
 
     // NOTE: Pair cuts are only applied on the histogram output. The produced pair tables do not have these cuts applied
     TString cutNamesStr = fConfigCuts.pair.value;
@@ -1768,7 +1769,7 @@ struct AnalysisSameEventPairing {
               if constexpr (TPairType == VarManager::kDecayToEE) {
                 fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                 if (isAmbiExtra) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                 }
               }
             } else {
@@ -1788,7 +1789,7 @@ struct AnalysisSameEventPairing {
                 if constexpr (TPairType == VarManager::kDecayToEE) {
                   fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   }
                 }
               } else {
@@ -1807,7 +1808,7 @@ struct AnalysisSameEventPairing {
                 if constexpr (TPairType == VarManager::kDecayToEE) {
                   fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   }
                 }
               }
