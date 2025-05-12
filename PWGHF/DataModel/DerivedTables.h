@@ -748,10 +748,6 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
 // Dstar
 // ----------------
 
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTARPAR", //! Table with candidate properties used for selection
                          hf_cand_dstar::Chi2PCAD0,
                          hf_cand_par::CpaD0,
