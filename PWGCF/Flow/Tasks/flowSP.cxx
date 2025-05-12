@@ -1132,19 +1132,17 @@ struct FlowSP {
         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
 
-
         // Fill QA histograms before track selection
-        if (cfgFillQAHistos){
-          fillTrackQA<kBefore,kInclusive>(track, vtxz);
-          if(pos) 
-            fillTrackQA<kBefore,kPositive>(track, vtxz);
+        if (cfgFillQAHistos) {
+          fillTrackQA<kBefore, kInclusive>(track, vtxz);
+          if (pos)
+            fillTrackQA<kBefore, kPositive>(track, vtxz);
           else
-            fillTrackQA<kBefore,kNegative>(track, vtxz);
+            fillTrackQA<kBefore, kNegative>(track, vtxz);
         }
 
         if (!trackSelected(track, field))
           continue;
-
 
         // Fill NUA weights
         if (cfgFillWeights) {
@@ -1193,15 +1191,15 @@ struct FlowSP {
         fillHistograms<kInclusive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
 
         if (cfgFillQAHistos)
-          fillTrackQA<kAfter,kInclusive>(track, vtxz, wacc, weff);
+          fillTrackQA<kAfter, kInclusive>(track, vtxz, wacc, weff);
 
         if (cfgFillChargeDependence) {
           if (pos) {
             fillHistograms<kPositive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kAfter,kPositive>(track, vtxz, waccP, weffP);
+            fillTrackQA<kAfter, kPositive>(track, vtxz, waccP, weffP);
           } else {
             fillHistograms<kNegative>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kAfter,kNegative>(track, vtxz, waccN, weffN);
+            fillTrackQA<kAfter, kNegative>(track, vtxz, waccN, weffN);
           }
         }
       } // end of track loop
@@ -1259,7 +1257,7 @@ struct FlowSP {
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
       if (cfgFillQAHistos)
-        fillTrackQA<kBefore,kInclusive>(track, vtxz);
+        fillTrackQA<kBefore, kInclusive>(track, vtxz);
 
       if (!trackSelected(track, field))
         continue;
@@ -1267,7 +1265,7 @@ struct FlowSP {
       fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
 
       if (cfgFillQAHistos)
-        fillTrackQA<kAfter,kInclusive>(track, vtxz);
+        fillTrackQA<kAfter, kInclusive>(track, vtxz);
 
     } // end of track loop
   }
@@ -1312,17 +1310,17 @@ struct FlowSP {
           colSelected = false;
           continue;
         }
-        if (!eventSelected(col, filteredTrackSlice.size())){
+        if (!eventSelected(col, filteredTrackSlice.size())) {
           colSelected = false;
           continue;
         }
 
-        if (centrality > cfgCentMax || centrality < cfgCentMin){
+        if (centrality > cfgCentMax || centrality < cfgCentMin) {
           colSelected = false;
           continue;
         }
         registry.fill(HIST("hEventCount"), evSel_CentCuts);
-      
+
         fillEventQA<kAfter>(col, trackSlice);
 
       } // leave reconstructed collision loop
@@ -1373,7 +1371,7 @@ struct FlowSP {
           }
         }
       }
-    }
+  }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
 };
 
