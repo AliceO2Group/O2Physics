@@ -4727,8 +4727,8 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     // Calculate kstar of Dilepton and hadron pair
     ROOT::Math::PtEtaPhiMVector v12_Qvect = v1 - v2;
     double Pinv = v12.M();
-    double Q1 = ( dilepton.mass()*dilepton.mass() - hadronMass*hadronMass )/Pinv;
-    values[kDileptonHadronKstar] = sqrt(Q1*Q1-v12_Qvect.M2())/2.0;
+    double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
+    values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
   }
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
