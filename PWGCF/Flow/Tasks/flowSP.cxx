@@ -1370,7 +1370,7 @@ struct FlowSP {
             registry.fill(HIST("trackMCGen/after/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
           }
         }
-      }
+    }
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
 };
