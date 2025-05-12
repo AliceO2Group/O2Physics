@@ -281,39 +281,6 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
   DECLARE_TABLES_COMMON(_hf_type_, _hf_description_, _hf_namespace_)                    \
   DECLARE_TABLE_CAND_ID_4P(_hf_type_, _hf_description_)
 
-// Workaround for the existing B0 macro in termios.h
-#define DECLARE_TABLES_B0(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
-  constexpr uint Marker##_hf_type_ = _marker_number_;                                   \
-  DECLARE_TABLES_COLL(B0, _hf_description_)                                             \
-  DECLARE_TABLES_MCCOLL(B0, _hf_description_, _hf_namespace_)                           \
-  DECLARE_TABLE_CAND_BASE(B0, _hf_description_, _hf_namespace_)                         \
-  DECLARE_TABLE_CAND_SEL(B0, _hf_description_)                                          \
-  DECLARE_TABLE_MCPARTICLE_BASE(B0, _hf_description_, _hf_namespace_)                   \
-  DECLARE_TABLE_MCPARTICLE_ID(B0, _hf_description_)                                     \
-  DECLARE_TABLE_CAND_ID_4P(B0, _hf_description_)
-
-// Debugging start
-
-#define DECLARE_TABLES_4P_GOOD(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
-  constexpr uint Marker##_hf_type_ = _marker_number_;                                        \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##CollBases, "HF" _hf_description_ "COLLBASE",       \
-                           collision::PosX,                                                  \
-                           o2::soa::Marker<Marker##_hf_type_>);
-
-#define DECLARE_TABLES_TEST(_hf_type_, _hf_description_)                               \
-  DECLARE_SOA_TABLE_STAGED(Hf##_hf_type_##CollBases, "HF" _hf_description_ "COLLBASE", \
-                           collision::PosX,                                            \
-                           o2::soa::Marker<Marker##_hf_type_>);
-
-#define DECLARE_TABLES_4P_BAD(_hf_type_, _hf_description_, _hf_namespace_, _marker_number_) \
-  constexpr uint Marker##_hf_type_ = _marker_number_;                                       \
-  DECLARE_TABLES_TEST(_hf_type_, _hf_description_) // macro B0 gets expanded here!
-
-// DECLARE_TABLES_4P_GOOD(B0, "B0", b0, 6); // compiles
-// DECLARE_TABLES_4P_BAD(B0, "B0", b0, 6); // fails with "'Marker0000000' was not declared in this scope"
-
-// Debugging end
-
 // ================
 // Declarations of common tables for individual species
 // ================
@@ -327,8 +294,6 @@ DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
 #undef B0
 DECLARE_TABLES_4P(B0, "B0", b0, 6);
 #pragma pop_macro("B0")
-// Otherwise, avoid macro nesting and give the explicit string as argument:
-// DECLARE_TABLES_B0(B0, "B0", b0, 6);
 
 // ================
 // Additional species-specific candidate tables
@@ -562,10 +527,6 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
 // B+
 // ----------------
 
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfBplusPars, "HFBPPAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
                          hf_cand_par::Cpa,
@@ -642,10 +603,6 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
 // B0
 // ----------------
 
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfB0Pars, "HFB0PAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
                          hf_cand_par::Cpa,
@@ -732,10 +689,6 @@ DECLARE_SOA_TABLE_STAGED(HfB0Mcs, "HFB0MC", //! Table with MC candidate info
 // Lc
 // ----------------
 
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfLcPars, "HFLCPAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
                          hf_cand::NProngsContributorsPV,
@@ -810,10 +763,6 @@ DECLARE_SOA_TABLE_STAGED(HfLcMcs, "HFLCMC", //! Table with MC candidate info
 // D+
 // ----------------
 
-// candidates for removal:
-// PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
-// XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
-// normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE_STAGED(HfDplusPars, "HFDPPAR", //! Table with candidate properties used for selection
                          hf_cand::Chi2PCA,
                          hf_cand::NProngsContributorsPV,
