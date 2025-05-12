@@ -11,7 +11,7 @@
 
 /// \file derivedDataCreatorB0ToDPi.cxx
 /// \brief Producer of derived tables of B+ candidates, collisions and MC particles
-/// \note Based on derivedDataCreatorLcToPKPi.cxx
+/// \note Based on derivedDataCreatorBplusToD0Pi.cxx
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
@@ -306,7 +306,6 @@ struct HfDerivedDataCreatorB0ToDPi {
         if constexpr (isMl) {
           mlScoreB0ToDPi = candidate.mlProbB0ToDPi();
         }
-        // flag = 0 for Dplus pi-, flag = 1 for Dplusbar pi+
         fillTablesCandidate(candidate, prongCharm, prongBachelor, 0, massB0ToDPi, ct, y, flagMcRec, origin, mlScoreB0ToDPi, mlScoresDplus);
       }
     }
