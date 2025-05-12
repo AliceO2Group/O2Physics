@@ -18,6 +18,8 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <string>
+#include <memory>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
