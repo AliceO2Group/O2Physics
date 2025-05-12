@@ -55,6 +55,8 @@
 #include "DetectorsVertexing/HelixHelper.h"
 #include "TableHelper.h"
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "TEfficiency.h"
+#include "THashList.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -117,6 +119,8 @@ struct OnTheFlyTofPid {
     Configurable<int> nBinsTimeRes{"nBinsTimeRes", 400, "number of bins plots time resolution"};
     Configurable<int> nBinsRelativeEtaPt{"nBinsRelativeEtaPt", 400, "number of bins plots pt and eta relative errors"};
     Configurable<int> nBinsEta{"nBinsEta", 400, "number of bins plot relative eta error"};
+    Configurable<int> nBinsMult{"nBinsMult", 200, "number of bins in multiplicity"};
+    Configurable<float> maxMultRange{"maxMultRange", 1000.f, "upper limit in multiplicity plots"};
   } plotsConfig;
 
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -129,6 +133,7 @@ struct OnTheFlyTofPid {
 
   // for handling basic QA histograms if requested
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<THashList> listEfficiency{"efficiency"};
   static constexpr int kParticles = 5;
 
   void init(o2::framework::InitContext& initContext)
@@ -179,13 +184,16 @@ struct OnTheFlyTofPid {
     }
 
     if (plotsConfig.doQAplots) {
-      const AxisSpec axisdNdeta{200, 0.0f, 1000.0f, Form("dN/d#eta in |#eta| < %f", simConfig.multiplicityEtaRange.value)};
+      const AxisSpec axisdNdeta{plotsConfig.nBinsMult, 0.0f, plotsConfig.maxMultRange, Form("dN/d#eta in |#eta| < %f", simConfig.multiplicityEtaRange.value)};
 
       histos.add("h1dNdeta", "h2dNdeta", kTH1F, {axisdNdeta});
       histos.add("h2dEventTime", "h2dEventTime", kTH2F, {{200, -1000, 1000, "computed"}, {200, -1000, 1000, "generated"}});
       histos.add("h1dEventTimegen", "h1dEventTimegen", kTH1F, {{200, -1000, 1000, "generated"}});
       histos.add("h1dEventTimerec", "h1dEventTimerec", kTH1F, {{200, -1000, 1000, "computed"}});
+      histos.add("h1dEventTimedelta", "h1dEventTimedelta", kTH1F, {{200, -1000, 1000, "generated - computed"}});
       histos.add("h2dEventTimeres", "h2dEventTimeres", kTH2F, {axisdNdeta, {300, 0, 300, "resolution"}});
+      listEfficiency.setObject(new THashList);
+      listEfficiency->Add(new TEfficiency("effEventTime", "effEventTime", plotsConfig.nBinsMult, 0.0f, plotsConfig.maxMultRange));
 
       const AxisSpec axisMomentum{static_cast<int>(plotsConfig.nBinsP), 0.0f, +10.0f, "#it{p} (GeV/#it{c})"};
       const AxisSpec axisMomentumSmall{static_cast<int>(plotsConfig.nBinsP), 0.0f, +1.0f, "#it{p} (GeV/#it{c})"};
@@ -564,8 +572,9 @@ struct OnTheFlyTofPid {
     // Now we compute the event time for the tracks
 
     std::array<float, 2> tzero = {0.f, 0.f};
+    bool etStatus = false;
     if (simConfig.considerEventTime.value) {
-      const bool etStatus = eventTime(tracksWithTime, tzero);
+      etStatus = eventTime(tracksWithTime, tzero);
       if (!etStatus) {
         LOG(warning) << "Event time calculation failed with " << tracksWithTime.size() << " tracks";
       }
@@ -576,6 +585,10 @@ struct OnTheFlyTofPid {
       histos.fill(HIST("h1dEventTimegen"), eventCollisionTimePS);
       histos.fill(HIST("h1dEventTimerec"), tzero[0]);
       histos.fill(HIST("h2dEventTimeres"), dNdEta, tzero[1]);
+      if (etStatus) {
+        histos.fill(HIST("h1dEventTimedelta"), eventCollisionTimePS - tzero[0]);
+      }
+      static_cast<TEfficiency*>(listEfficiency->At(0))->Fill(etStatus, dNdEta);
     }
 
     // Then we do a second loop to compute the measured quantities with the measured event time

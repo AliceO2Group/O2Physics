@@ -21,3 +21,6 @@ o2physics_target_root_dictionary(AnalysisCCDB
               HEADERS ctpRateFetcher.h
               HEADERS RCTSelectionFlags.h
               LINKDEF AnalysisCCDBLinkDef.h)
+
+o2physics_add_header_only_library(RCTSelectionFlags
+                                  HEADERS RCTSelectionFlags.h)

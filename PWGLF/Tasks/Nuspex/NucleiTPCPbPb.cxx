@@ -8,15 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file NucleitpcPbPb.cxx
-/// \brief Analysis task for light nuclei spectra in Pb–Pb collisions using TPC
-/// \author Jaideep Tanwar, <Jaideep.tanwar@cern.ch>
-/// \since Jan 2025
 ///
+/// \file NucleiTPCPbPb.cxx
+///
+/// \brief This task use global tracks and used for primary selection analysis using TPC detector.
+///        It currently contemplates 6 particle types:
+///        pion, Proton, Deuteron, Triton, Helium3, Alpha
+///
+/// \author Jaideep Tanwar
+/// \since  Jan. 20, 2025
+///
+#include <Math/Vector4D.h>
 #include <limits>
 #include <string>
 #include <vector>
-#include <Math/Vector4D.h>
 #include <TRandom3.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -42,7 +47,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::pidTOFmass>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::pidTOFmass>;
 //---------------------------------------------------------------------------------------------------------------------------------
 namespace
 {
@@ -97,12 +102,16 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", false, "apply rigidity correction"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
+  Configurable<bool> cfgITSrequire{"cfgITSrequire", true, "Additional cut on ITS require"};
+  Configurable<bool> cfgTPCrequire{"cfgTPCrequire", true, "Additional cut on TPC require"};
+  Configurable<bool> cfgPassedITSRefit{"cfgPassedITSRefit", true, "Require ITS refit"};
+  Configurable<bool> cfgPassedTPCRefit{"cfgPassedTPCRefit", true, "Require TPC refit"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {trackPIDsettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<bool> cfgFillDeDxWithoutCut{"cfgFillDeDxWithoutCut", false, "Fill without cut beth bloch"};
   Configurable<bool> cfgFillDeDxWithCut{"cfgFillDeDxWithCut", false, "Fill with cut beth bloch"};
-  Configurable<bool> cfgFillnsigma{"cfgFillnsigma", false, "Fill n-sigma histograms"};
-  Configurable<bool> cfgFillmass{"cfgFillmass", true, "Fill mass histograms"};
+  Configurable<bool> cfgFillnsigma{"cfgFillnsigma", true, "Fill n-sigma histograms"};
+  Configurable<bool> cfgFillmass{"cfgFillmass", false, "Fill mass histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
@@ -193,23 +202,21 @@ struct NucleitpcPbPb {
     for (const auto& trackId : tracksByColl) {
       const auto& track = tracks.rawIteratorAt(trackId.trackId());
       filldedx(track, nParticles);
+      if (!track.isPVContributor() && cfgUsePVcontributors)
+        continue;
+      if (!track.hasITS() && cfgITSrequire)
+        continue;
+      if (!track.hasTPC() && cfgTPCrequire)
+        continue;
+      if (!track.passedITSRefit() && cfgPassedITSRefit)
+        continue;
+      if (!track.passedTPCRefit() && cfgPassedTPCRefit)
+        continue;
       if (std::abs(track.eta()) > cfgCutEta)
         continue;
-      histos.fill(HIST("histeta"), track.eta());
       for (size_t i = 0; i < primaryParticles.size(); i++) {
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity)
           continue;
-        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
-        if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
-          continue;
-        if (track.sign() > 0) {
-          histos.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_particle"), track.pt(), track.dcaXY());
-        }
-        if (track.sign() < 0) {
-          histos.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
-          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), track.pt(), track.dcaXY());
-        }
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
           continue;
         if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2"))
@@ -231,7 +238,19 @@ struct NucleitpcPbPb {
           continue;
         if (cfgTrackPIDsettings->get(i, "TOFrequiredabove") >= 0 && getRigidity(track) > cfgTrackPIDsettings->get(i, "TOFrequiredabove") && (track.mass() < cfgTrackPIDsettings->get(i, "minTOFmass") || track.mass() > cfgTrackPIDsettings->get(i, "maxTOFmass")))
           continue;
+        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(track.pt(), 1.1f))));
+        if (!(insideDCAxy) || std::abs(track.dcaZ()) > cfgTrackPIDsettings->get(i, "maxDcaZ"))
+          continue;
+        if (track.sign() > 0) {
+          histos.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_particle"), track.pt(), track.dcaXY());
+        }
+        if (track.sign() < 0) {
+          histos.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
+          histos.fill(HIST("histDcaXYVsPtData_antiparticle"), track.pt(), track.dcaXY());
+        }
       }
+      histos.fill(HIST("histeta"), track.eta());
     } // track loop
   }
   //----------------------------------------------------------------------------------------------------------------
