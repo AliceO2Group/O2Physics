@@ -745,7 +745,7 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
                          o2::soa::Marker<MarkerDplus>);
 
 // ----------------
-// Dstar
+// D*+
 // ----------------
 
 DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTARPAR", //! Table with candidate properties used for selection
