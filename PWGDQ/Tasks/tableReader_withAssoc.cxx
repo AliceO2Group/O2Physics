@@ -1233,7 +1233,7 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayTrackCuts = nullptr;
     if (!trackCutsStr.IsNull()) {
       objArrayTrackCuts = trackCutsStr.Tokenize(",");
-      for(int icut = 0; icut < objArrayTrackCuts->GetEntries(); ++icut) {
+      for (int icut = 0; icut < objArrayTrackCuts->GetEntries(); ++icut) {
         fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArrayTrackCuts->At(icut)->GetName()));
       }
     }
