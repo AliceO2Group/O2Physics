@@ -46,6 +46,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TPDGCode.h"
+#include "TF1.h"
 
 using namespace std;
 using namespace o2;
@@ -95,6 +96,7 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurables Event Selection
+  Configurable<bool> applyWeights{"applyWeights", false, "apply particle weights?"};
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
   Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
@@ -106,6 +108,7 @@ struct UccZdc {
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
   Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
 
+  Configurable<double> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
   Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
   Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
   Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
@@ -163,9 +166,13 @@ struct UccZdc {
 
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch", "base path to the ccdb object"};
+  Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch", "base path to the ccdb object"};
 
   // the efficiency has been previously stored in the CCDB as TH1F histogram
   TH1F* efficiency = nullptr;
+  TF1* fitSigmaNch = nullptr;
+  TF1* fitMeanNch = nullptr;
 
   void init(InitContext const&)
   {
@@ -300,14 +307,16 @@ struct UccZdc {
     if (doprocessQA) {
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
       registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
-      registry.add("dcaXYvspTOpen", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
-      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{150, -3., 3.}, {axisPt}}});
+      registry.add("dcaXYvspTOpen", ";DCA_{xy} (cm);;", kTH2F, {{{150, -1.5, 1.5}, {axisPt}}});
+      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{150, -1.5, 1.5}, {axisPt}}});
       registry.add("nClustersITS", ";<n clusters ITS>;;", kTProfile, {{axisPt}});
       registry.add("nClustersTPC", ";<n clusters TPC>;;", kTProfile, {{axisPt}});
 
       registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("RejectedEvtsVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., 3000.}});
+      registry.add("RejectedEvtsVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
 
       registry.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
@@ -451,6 +460,18 @@ struct UccZdc {
       return;
     }
 
+    auto fitMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
+    if (!fitMeanNch) {
+      LOGF(fatal, "fitMeanNch object not found!");
+      return;
+    }
+
+    auto fitSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
+    if (!fitSigmaNch) {
+      LOGF(fatal, "fitSigmaNch object not found!");
+      return;
+    }
+
     // has ZDC?
     if (!foundBC.has_zdc()) {
       return;
@@ -532,6 +553,7 @@ struct UccZdc {
       }
       // Track Selection
       if (myTrackSel.IsSelected(track)) {
+        registry.fill(HIST("dcaXYvspTOpen"), track.dcaXY(), track.pt());
         if (passesDCAxyCut(track)) {
           glbTracks++;
           meanpt += track.pt();
@@ -540,10 +562,18 @@ struct UccZdc {
           registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
           registry.fill(HIST("nClustersITS"), track.pt(), track.itsNCls());
           registry.fill(HIST("nClustersTPC"), track.pt(), track.tpcNClsFound());
-        } else {
-          registry.fill(HIST("dcaXYvspTOpen"), track.dcaXY(), track.pt());
         }
       }
+    }
+
+    const double meanNch{fitMeanNch->Eval((aT0A + aT0C) / 100.)};
+    const double sigmaNch{fitSigmaNch->Eval((aT0A + aT0C) / 100.)};
+    const double diffMeanNch{std::abs(meanNch - glbTracks)};
+    const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+    if (!(diffMeanNch < nSigmaSelection)) {
+      registry.fill(HIST("RejectedEvtsVsFT0M"), (aT0A + aT0C) / 100.);
+      registry.fill(HIST("RejectedEvtsVsNch"), glbTracks);
+      return;
     }
 
     registry.fill(HIST("zPos"), collision.posZ());
@@ -575,10 +605,6 @@ struct UccZdc {
     registry.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
     registry.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
     registry.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
-
-    if (sumZNs > znBasedCut) {
-      return;
-    }
 
     registry.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
     registry.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
@@ -676,7 +702,11 @@ struct UccZdc {
           double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
           if (weight > 0.) {
             pTs.emplace_back(pt);
-            wIs.emplace_back(weight);
+            if (applyWeights) {
+              wIs.emplace_back(weight);
+            } else {
+              wIs.emplace_back(1.);
+            }
           }
         }
       }
@@ -738,49 +768,59 @@ struct UccZdc {
   void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
 
-    float rndNum = randPointer->Uniform(0.0, 1.0);
-    registry.fill(HIST("RandomNumber"), rndNum);
+    for (const auto& collision : collisions) {
 
-    // Half of the statistics for MC closure
-    if (rndNum >= zEro && rndNum < oneHalf) {
-      registry.fill(HIST("EvtsDivided"), 0);
-      //----- MC reconstructed -----//
-      for (const auto& collision : collisions) {
+      // To use run-by-run efficiency
+      const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+      auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+      if (!efficiency) {
+        LOGF(fatal, "Efficiency object not found!");
+        continue;
+      }
 
-        // To use run-by-run efficiency
-        const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-        auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-        // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-        if (!efficiency) {
-          LOGF(fatal, "Efficiency object not found!");
-        }
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
 
-        // Event selection
-        if (!isEventSelected(collision)) {
-          continue;
-        }
-        // MC collision?
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
+      // Event selection
+      if (!isEventSelected(collision)) {
+        continue;
+      }
+      // MC collision?
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
 
-        registry.fill(HIST("T0Ccent"), collision.centFT0C());
-        registry.fill(HIST("zPos"), collision.posZ());
+      if (std::fabs(mccollision.posZ()) > posZcut) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
 
-        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+      const auto& cent{collision.centFT0C()};
+      registry.fill(HIST("nRecColvsCent"), collisions.size(), cent);
+      registry.fill(HIST("T0Ccent"), cent);
+      registry.fill(HIST("zPos"), collision.posZ());
 
+      float rndNum = randPointer->Uniform(0.0, 1.0);
+      registry.fill(HIST("RandomNumber"), rndNum);
+      const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+
+      if (rndNum >= zEro && rndNum < oneHalf) { // Half of the statistics for MC closure
+
+        registry.fill(HIST("EvtsDivided"), 0);
         std::vector<float> pTs;
         std::vector<float> wIs;
         // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
-          if (myTrackSel.IsSelected(track)) {
-            if (passesDCAxyCut(track)) {
-              float pt{track.pt()};
-              double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
-              if (weight > 0.) {
-                pTs.emplace_back(pt);
+          if (myTrackSel.IsSelected(track) && passesDCAxyCut(track)) {
+            float pt{track.pt()};
+            double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
+            if (weight > 0.) {
+              pTs.emplace_back(pt);
+              if (applyWeights) {
                 wIs.emplace_back(weight);
+              } else {
+                wIs.emplace_back(1.);
               }
             }
           }
@@ -815,13 +855,6 @@ struct UccZdc {
         registry.fill(HIST("NchVsFourParCorr"), w1, fourParCorr, denFourParCorr);
 
         //--------------------------- Generated MC ---------------------------
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
-        if (std::fabs(mccollision.posZ()) > posZcut) {
-          continue;
-        }
-        registry.fill(HIST("zPosMC"), mccollision.posZ());
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
-
         std::vector<float> pTsMC;
         std::vector<float> wIsMC;
         // Calculates the event weight, W_k
@@ -867,69 +900,42 @@ struct UccZdc {
         registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
         registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
         registry.fill(HIST("NchvsFourParCorrGen"), nchMC, fourParCorrMC, denFourParCorrMC);
-      }
-    } else { // Correction with the remaining half of the sample
-      registry.fill(HIST("EvtsDivided"), 1);
-      //----- MC reconstructed -----//
-      for (const auto& collision : collisions) {
-        // Event selection
-        if (!isEventSelected(collision)) {
-          continue;
-        }
-        // MC collision?
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-
-        registry.fill(HIST("zPos"), collision.posZ());
-        registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
-
-        const auto& cent{collision.centFT0C()};
-        registry.fill(HIST("T0Ccent"), cent);
-
-        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
+      } else { // Correction with the remaining half of the sample
+        registry.fill(HIST("EvtsDivided"), 1);
+        //----- MC reconstructed -----//
         for (const auto& track : groupedTracks) {
           // Has MC particle?
           if (!track.has_mcParticle()) {
             continue;
           }
           // Track selection
-          if (myTrackSel.IsSelected(track)) {
-            if (passesDCAxyCut(track)) {
-              registry.fill(HIST("Pt_all_ch"), cent, track.pt());
-              registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          if (myTrackSel.IsSelected(track) && passesDCAxyCut(track)) {
+            registry.fill(HIST("Pt_all_ch"), cent, track.pt());
+            registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
 
-              const auto& particle{track.mcParticle()};
-              if (!particle.isPhysicalPrimary()) {
-                continue;
-              }
+            const auto& particle{track.mcParticle()};
+            if (!particle.isPhysicalPrimary()) {
+              continue;
+            }
 
-              registry.fill(HIST("Pt_ch"), cent, track.pt());
-              if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-                registry.fill(HIST("Pt_pi"), cent, track.pt());
-              } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-                registry.fill(HIST("Pt_ka"), cent, track.pt());
-              } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-                registry.fill(HIST("Pt_pr"), cent, track.pt());
-              } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
-                registry.fill(HIST("Pt_sigpos"), cent, track.pt());
-              } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
-                registry.fill(HIST("Pt_signeg"), cent, track.pt());
-              } else {
-                registry.fill(HIST("Pt_re"), cent, track.pt());
-              }
+            registry.fill(HIST("Pt_ch"), cent, track.pt());
+            if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+              registry.fill(HIST("Pt_pi"), cent, track.pt());
+            } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+              registry.fill(HIST("Pt_ka"), cent, track.pt());
+            } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+              registry.fill(HIST("Pt_pr"), cent, track.pt());
+            } else if (particle.pdgCode() == PDG_t::kSigmaPlus || particle.pdgCode() == PDG_t::kSigmaBarMinus) {
+              registry.fill(HIST("Pt_sigpos"), cent, track.pt());
+            } else if (particle.pdgCode() == PDG_t::kSigmaMinus || particle.pdgCode() == PDG_t::kSigmaBarPlus) {
+              registry.fill(HIST("Pt_signeg"), cent, track.pt());
+            } else {
+              registry.fill(HIST("Pt_re"), cent, track.pt());
             }
           }
         }
 
-        // Generated MC
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
-        if (std::fabs(mccollision.posZ()) > posZcut) {
-          continue;
-        }
-        registry.fill(HIST("zPosMC"), mccollision.posZ());
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
-
+        //----- MC generated -----//
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -956,8 +962,8 @@ struct UccZdc {
             registry.fill(HIST("PtMC_re"), cent, particle.pt());
           }
         }
-      }
-    } // Half of statistics for corrections
+      } // Half of statistics for corrections
+    } // Collisions loop
   }
   PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
 

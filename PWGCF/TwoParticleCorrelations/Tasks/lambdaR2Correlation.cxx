@@ -248,7 +248,6 @@ struct LambdaTableProducer {
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.01, "Reject K0Short Candidates"};
   Configurable<bool> cKshortRejFlag{"cKshortRejFlag", true, "K0short Mass Rej Flag"};
-  // Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Lambda Mass Window"};
 
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Mass{"cMinV0Mass", 1.10, "V0 Mass Min"};
@@ -1294,12 +1293,17 @@ struct LambdaTracksExtProducer {
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
     const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
+    const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
+    const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
     // Histograms Booking
     histos.add("h1i_totlambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
 
     // InvMass, DcaDau and CosPA
     histos.add("Reco/h1f_lambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
@@ -1353,15 +1357,19 @@ struct LambdaTracksExtProducer {
           continue;
         }
 
-        // check only lambda-lambda || antilambda-antilambda
-        if (lambda.v0Type() != track.v0Type()) {
-          continue;
-        }
-
         // check if lambda shares daughters with any other track
         if (lambda.posTrackId() == track.posTrackId() || lambda.negTrackId() == track.negTrackId()) {
           vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
+
+          // Fill DEta-DPhi Histogram
+          if ((lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) || (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda)) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          }
 
           // decision based on mass closest to PdgMass of Lambda
           if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0)) {
@@ -1473,7 +1481,6 @@ struct LambdaR2Correlation {
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
-    const AxisSpec axisMassCorr(60, -0.03, 0.03, "M_{#Lambda} - #frac{M_{pair}}{2} (GeV/#it{c}^{2})");
     const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");
@@ -1537,14 +1544,6 @@ struct LambdaR2Correlation {
     histos.add("Reco/h2d_n2_phiphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisPhi, axisPhi});
     histos.add("Reco/h2d_n2_phiphi_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH2D, {axisPhi, axisPhi});
 
-    // rho2 for numerator of R2 as a function of M_{#Lambda} (To remove background from sidebands) {TESTING PHASE !!!!}
-    histos.add("Reco/h3d_n2_raprapmass_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3D, {axisRap, axisRap, axisMassCorr});
-    histos.add("Reco/h3d_n2_raprapmass_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH3D, {axisRap, axisRap, axisMassCorr});
-    histos.add("Reco/h3d_n2_raprapmass_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3D, {axisRap, axisRap, axisMassCorr});
-    histos.add("Reco/h3d_n2_phiphimass_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
-    histos.add("Reco/h3d_n2_phiphimass_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
-    histos.add("Reco/h3d_n2_phiphimass_LaM_LaM", "#rho_{2}^{#bar{#Lambda}#bar{#Lambda}}", kTH3D, {axisPhi, axisPhi, axisMassCorr});
-
     // rho2 for R2 Rap1Phi1Rap2Phi2
     histos.add("Reco/h2d_n2_rapphi_LaP_LaM", "#rho_{2}^{#Lambda#bar{#Lambda}}", kTH2D, {axisRapPhi, axisRapPhi});
     histos.add("Reco/h2d_n2_rapphi_LaP_LaP", "#rho_{2}^{#Lambda#Lambda}", kTH2D, {axisRapPhi, axisRapPhi});
@@ -1579,17 +1578,11 @@ struct LambdaR2Correlation {
 
     float corfac = p1.corrFact() * p2.corrFact();
 
-    float massParam = MassLambda0 - 0.5 * (p1.mass() + p2.mass());
-
     // fill rho2 histograms
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_ptpt_") + HIST(SubDirHist[part_pair]), p1.pt(), p2.pt(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_etaeta_") + HIST(SubDirHist[part_pair]), p1.eta(), p2.eta(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_raprap_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), corfac);
     histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h2d_n2_phiphi_") + HIST(SubDirHist[part_pair]), p1.phi(), p2.phi(), corfac);
-
-    // fill rho2 3D-histograms with mass
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3d_n2_raprapmass_") + HIST(SubDirHist[part_pair]), p1.rap(), p2.rap(), massParam, corfac);
-    histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3d_n2_phiphimass_") + HIST(SubDirHist[part_pair]), p1.phi(), p2.phi(), massParam, corfac);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 

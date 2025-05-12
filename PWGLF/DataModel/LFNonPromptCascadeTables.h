@@ -101,6 +101,9 @@ DECLARE_SOA_COLUMN(BachPionTOFNSigma, bachPionTOFNSigma, float);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
+DECLARE_SOA_COLUMN(gVx, genVx, float);
+DECLARE_SOA_COLUMN(gVy, genVy, float);
+DECLARE_SOA_COLUMN(gVz, genVz, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
 DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
@@ -302,6 +305,9 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
+                  NPCascadeTable::gVx,
+                  NPCascadeTable::gVy,
+                  NPCascadeTable::gVz,
                   NPCascadeTable::PDGcode,
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
@@ -378,6 +384,9 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
+                  NPCascadeTable::gVx,
+                  NPCascadeTable::gVy,
+                  NPCascadeTable::gVz,
                   NPCascadeTable::PDGcode,
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,

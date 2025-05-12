@@ -870,6 +870,9 @@ struct OnTheFlyTracker {
                       posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.resZ);
                     }
 
+                    if (std::isnan(phi))
+                      continue; // Catch when getXatLabR misses layer[i]
+
                     // towards adding cluster: move to track alpha
                     double alpha = cascadeTrack.getAlpha();
                     double xyz1[3]{

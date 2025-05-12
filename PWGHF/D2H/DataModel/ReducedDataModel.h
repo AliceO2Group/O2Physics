@@ -18,6 +18,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino (UniTO)
+/// \author Biao Zhang <biao.zhang@cern.ch>, Heidelberg University
 
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
@@ -213,12 +214,18 @@ DECLARE_SOA_COLUMN(TPCNSigmaPiProng2, tpcNSigmaPiProng2, float); //! NsigmaTPCPi
 DECLARE_SOA_COLUMN(TPCNSigmaKaProng0, tpcNSigmaKaProng0, float); //! NsigmaTPCKa for prong0, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TPCNSigmaKaProng1, tpcNSigmaKaProng1, float); //! NsigmaTPCKa for prong1, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TPCNSigmaKaProng2, tpcNSigmaKaProng2, float); //! NsigmaTPCKa for prong2, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaPrProng0, tpcNSigmaPrProng0, float); //! NsigmaTPCPr for prong0, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaPrProng1, tpcNSigmaPrProng1, float); //! NsigmaTPCPr for prong1, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TPCNSigmaPrProng2, tpcNSigmaPrProng2, float); //! NsigmaTPCPr for prong2, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaPiProng0, tofNSigmaPiProng0, float); //! NsigmaTOFPi for prong0, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaPiProng1, tofNSigmaPiProng1, float); //! NsigmaTOFPi for prong1, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaPiProng2, tofNSigmaPiProng2, float); //! NsigmaTOFPi for prong2, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng0, tofNSigmaKaProng0, float); //! NsigmaTOFKa for prong0, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng1, tofNSigmaKaProng1, float); //! NsigmaTOFKa for prong1, o2-linter: disable=name/o2-column (written to disk)
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng2, tofNSigmaKaProng2, float); //! NsigmaTOFKa for prong2, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaPrProng0, tofNSigmaPrProng0, float); //! NsigmaTOFPr for prong0, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaPrProng1, tofNSigmaPrProng1, float); //! NsigmaTOFPr for prong1, o2-linter: disable=name/o2-column (written to disk)
+DECLARE_SOA_COLUMN(TOFNSigmaPrProng2, tofNSigmaPrProng2, float); //! NsigmaTOFPr for prong2, o2-linter: disable=name/o2-column (written to disk)
 // dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
@@ -238,6 +245,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng1, tpcTofNSigmaKaProng1, //! Combi
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng2, tpcTofNSigmaKaProng2, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPrProng0, tpcTofNSigmaPrProng0, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPrProng1, tpcTofNSigmaPrProng1, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPrProng2, tpcTofNSigmaPrProng2, //! Combination of NsigmaTPC and NsigmaTOF, o2-linter: disable=name/o2-column (written to disk)
+                           [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
 } // namespace hf_track_pid_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -351,7 +364,7 @@ DECLARE_SOA_TABLE_VERSIONED(HfRed3ProngsMl_001, "AOD", "HFRED3PRONGML", 1, //! T
 
 using HfRed3ProngsMl = HfRed3ProngsMl_001;
 
-DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
+DECLARE_SOA_TABLE(HfRedPidDau0s_000, "AOD", "HFREDPIDDAU0", //!
                   hf_track_pid_reduced::TPCNSigmaPiProng0,
                   hf_track_pid_reduced::TOFNSigmaPiProng0,
                   hf_track_pid_reduced::TPCNSigmaKaProng0,
@@ -361,7 +374,7 @@ DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng0<hf_track_pid_reduced::TPCNSigmaPiProng0, hf_track_pid_reduced::TOFNSigmaPiProng0>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng0<hf_track_pid_reduced::TPCNSigmaKaProng0, hf_track_pid_reduced::TOFNSigmaKaProng0>);
 
-DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
+DECLARE_SOA_TABLE(HfRedPidDau1s_000, "AOD", "HFREDPIDDAU1", //!
                   hf_track_pid_reduced::TPCNSigmaPiProng1,
                   hf_track_pid_reduced::TOFNSigmaPiProng1,
                   hf_track_pid_reduced::TPCNSigmaKaProng1,
@@ -371,7 +384,7 @@ DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng1<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng1<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>);
 
-DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
+DECLARE_SOA_TABLE(HfRedPidDau2s_000, "AOD", "HFREDPIDDAU2", //!
                   hf_track_pid_reduced::TPCNSigmaPiProng2,
                   hf_track_pid_reduced::TOFNSigmaPiProng2,
                   hf_track_pid_reduced::TPCNSigmaKaProng2,
@@ -381,6 +394,55 @@ DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
                   hf_track_pid_reduced::TPCTOFNSigmaPiProng2<hf_track_pid_reduced::TPCNSigmaPiProng2, hf_track_pid_reduced::TOFNSigmaPiProng2>,
                   hf_track_pid_reduced::TPCTOFNSigmaKaProng2<hf_track_pid_reduced::TPCNSigmaKaProng2, hf_track_pid_reduced::TOFNSigmaKaProng2>);
 
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau0s_001, "AOD", "HFREDPIDDAU0", 1, //!
+                            hf_track_pid_reduced::TPCNSigmaPiProng0,
+                            hf_track_pid_reduced::TOFNSigmaPiProng0,
+                            hf_track_pid_reduced::TPCNSigmaKaProng0,
+                            hf_track_pid_reduced::TOFNSigmaKaProng0,
+                            hf_track_pid_reduced::TPCNSigmaPrProng0,
+                            hf_track_pid_reduced::TOFNSigmaPrProng0,
+                            hf_track_vars_reduced::HasTOFProng0,
+                            hf_track_vars_reduced::HasTPCProng0,
+                            hf_track_pid_reduced::TPCTOFNSigmaPiProng0<hf_track_pid_reduced::TPCNSigmaPiProng0, hf_track_pid_reduced::TOFNSigmaPiProng0>,
+                            hf_track_pid_reduced::TPCTOFNSigmaKaProng0<hf_track_pid_reduced::TPCNSigmaKaProng0, hf_track_pid_reduced::TOFNSigmaKaProng0>,
+                            hf_track_pid_reduced::TPCTOFNSigmaPrProng0<hf_track_pid_reduced::TPCNSigmaPrProng0, hf_track_pid_reduced::TOFNSigmaPrProng0>,
+                            o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau1s_001, "AOD", "HFREDPIDDAU1", 1, //!
+                            hf_track_pid_reduced::TPCNSigmaPiProng1,
+                            hf_track_pid_reduced::TOFNSigmaPiProng1,
+                            hf_track_pid_reduced::TPCNSigmaKaProng1,
+                            hf_track_pid_reduced::TOFNSigmaKaProng1,
+                            hf_track_pid_reduced::TPCNSigmaPrProng1,
+                            hf_track_pid_reduced::TOFNSigmaPrProng1,
+                            hf_track_vars_reduced::HasTOFProng1,
+                            hf_track_vars_reduced::HasTPCProng1,
+                            hf_track_pid_reduced::TPCTOFNSigmaPiProng1<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
+                            hf_track_pid_reduced::TPCTOFNSigmaKaProng1<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>,
+                            hf_track_pid_reduced::TPCTOFNSigmaPrProng1<hf_track_pid_reduced::TPCNSigmaPrProng1, hf_track_pid_reduced::TOFNSigmaPrProng1>,
+                            o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE_VERSIONED(HfRedPidDau2s_001, "AOD", "HFREDPIDDAU2", 1, //!
+                            hf_track_pid_reduced::TPCNSigmaPiProng2,
+                            hf_track_pid_reduced::TOFNSigmaPiProng2,
+                            hf_track_pid_reduced::TPCNSigmaKaProng2,
+                            hf_track_pid_reduced::TOFNSigmaKaProng2,
+                            hf_track_pid_reduced::TPCNSigmaPrProng2,
+                            hf_track_pid_reduced::TOFNSigmaPrProng2,
+                            hf_track_vars_reduced::HasTOFProng2,
+                            hf_track_vars_reduced::HasTPCProng2,
+                            hf_track_pid_reduced::TPCTOFNSigmaPiProng2<hf_track_pid_reduced::TPCNSigmaPiProng2, hf_track_pid_reduced::TOFNSigmaPiProng2>,
+                            hf_track_pid_reduced::TPCTOFNSigmaKaProng2<hf_track_pid_reduced::TPCNSigmaKaProng2, hf_track_pid_reduced::TOFNSigmaKaProng2>,
+                            hf_track_pid_reduced::TPCTOFNSigmaPrProng2<hf_track_pid_reduced::TPCNSigmaPrProng2, hf_track_pid_reduced::TOFNSigmaPrProng2>,
+                            o2::soa::Marker<1>);
+
+using HfRedPidDau0s = HfRedPidDau0s_001;
+using HfRedPidDau1s = HfRedPidDau1s_001;
+using HfRedPidDau2s = HfRedPidDau2s_001;
+
+using HfRedPidDau0 = HfRedPidDau0s::iterator;
+using HfRedPidDau1 = HfRedPidDau1s::iterator;
+using HfRedPidDau2 = HfRedPidDau2s::iterator;
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
 {
@@ -441,6 +503,26 @@ DECLARE_SOA_TABLE(HfRedBsDsMls, "AOD", "HFREDBSDSML", //! Table with ML scores f
                   o2::soa::Marker<1>);
 
 using HfRedCandBs = soa::Join<HfCandBsExt, HfRedBsProngs>;
+
+namespace hf_cand_lb_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Lc, prong0Lc, int, HfRed3Prongs, "_0");          //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Track, prong1Track, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                       //! Bkg ML score of the Lc daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                 //! Prompt ML score of the Lc daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);           //! Nonprompt ML score of the Lc daughter
+} // namespace hf_cand_lb_reduced
+
+DECLARE_SOA_TABLE(HfRedLbProngs, "AOD", "HFREDLBPRONG", //! Table with Lb daughter indices
+                  hf_cand_lb_reduced::Prong0LcId, hf_cand_lb_reduced::Prong1TrackId);
+
+DECLARE_SOA_TABLE(HfRedLbLcMls, "AOD", "HFREDLBLCML", //! Table with ML scores for the Lc daughter
+                  hf_cand_lb_reduced::Prong0MlScoreBkg,
+                  hf_cand_lb_reduced::Prong0MlScorePrompt,
+                  hf_cand_lb_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
+
+using HfRedCandLb = soa::Join<HfCandLbExt, HfRedLbProngs>;
 
 namespace hf_b0_mc
 {
@@ -688,6 +770,87 @@ DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-widt
 DECLARE_SOA_TABLE(HfCandBsConfigs, "AOD", "HFCANDBSCONFIG", //! Table with configurables information for reduced workflow
                   hf_cand_bs_config::MySelectionFlagD,
                   hf_cand_bs_config::MyInvMassWindowDPi);
+
+namespace hf_lb_mc
+{
+// MC Rec
+DECLARE_SOA_COLUMN(PtMother, ptMother, float); //! Transverse momentum of the mother in GeV/c
+// MC Gen
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);     //! Transverse momentum of the track in GeV/c
+DECLARE_SOA_COLUMN(YTrack, yTrack, float);       //! Rapidity of the track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);   //! Pseudorapidity of the track
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);   //! Transverse momentum of the track's prong0 in GeV/c
+DECLARE_SOA_COLUMN(YProng0, yProng0, float);     //! Rapidity of the track's prong0
+DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float); //! Pseudorapidity of the track's prong0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);   //! Transverse momentum of the track's prong1 in GeV/c
+DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's prong1
+DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
+
+DECLARE_SOA_COLUMN(PdgCodeBeautyMother, pdgCodeBeautyMother, int); //! Pdg code of beauty mother
+DECLARE_SOA_COLUMN(PdgCodeCharmMother, pdgCodeCharmMother, int);   //! Pdg code of charm mother
+DECLARE_SOA_COLUMN(PdgCodeProng0, pdgCodeProng0, int);             //! Pdg code of prong0
+DECLARE_SOA_COLUMN(PdgCodeProng1, pdgCodeProng1, int);             //! Pdg code of prong1
+DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code of prong2
+DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code of prong3
+} // namespace hf_lb_mc
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfMcRecRedLcPis, "AOD", "HFMCRECREDLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for reduced workflow
+                  hf_cand_lb_reduced::Prong0LcId,
+                  hf_cand_lb_reduced::Prong1TrackId,
+                  hf_cand_lb::FlagMcMatchRec,
+                  hf_cand_lb::FlagWrongCollision,
+                  hf_cand_lb::DebugMcRec,
+                  hf_lb_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfMcCheckLcPis, "AOD", "HFMCCHECKLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for MC checks in reduced workflow
+                  hf_lb_mc::PdgCodeBeautyMother,
+                  hf_lb_mc::PdgCodeCharmMother,
+                  hf_lb_mc::PdgCodeProng0,
+                  hf_lb_mc::PdgCodeProng1,
+                  hf_lb_mc::PdgCodeProng2,
+                  hf_lb_mc::PdgCodeProng3,
+                  o2::soa::Marker<1>);
+
+// Table with same size as HFCANDLc
+DECLARE_SOA_TABLE(HfMcRecRedLbs, "AOD", "HFMCRECREDLB", //! Reconstruction-level MC information on Lb candidates for reduced workflow
+                  hf_cand_lb::FlagMcMatchRec,
+                  hf_cand_lb::FlagWrongCollision,
+                  hf_cand_lb::DebugMcRec,
+                  hf_lb_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfMcCheckLbs, "AOD", "HFMCCHECKLB", //! Table with reconstructed MC information on Lb candidates for MC checks in reduced workflow
+                  hf_lb_mc::PdgCodeBeautyMother,
+                  hf_lb_mc::PdgCodeCharmMother,
+                  hf_lb_mc::PdgCodeProng0,
+                  hf_lb_mc::PdgCodeProng1,
+                  hf_lb_mc::PdgCodeProng2,
+                  hf_lb_mc::PdgCodeProng3,
+                  o2::soa::Marker<2>);
+
+DECLARE_SOA_TABLE(HfMcGenRedLbs, "AOD", "HFMCGENREDLB", //! Generation-level MC information on Lb candidates for reduced workflow
+                  hf_cand_lb::FlagMcMatchGen,
+                  hf_lb_mc::PtTrack,
+                  hf_lb_mc::YTrack,
+                  hf_lb_mc::EtaTrack,
+                  hf_lb_mc::PtProng0,
+                  hf_lb_mc::YProng0,
+                  hf_lb_mc::EtaProng0,
+                  hf_lb_mc::PtProng1,
+                  hf_lb_mc::YProng1,
+                  hf_lb_mc::EtaProng1);
+
+// store all configurables values used in the first part of the workflow
+// so we can use them in the B0 part
+namespace hf_cand_lb_config
+{
+DECLARE_SOA_COLUMN(MySelectionFlagLc, mySelectionFlagLc, int8_t);    //! Flag to filter selected Lc baryons
+DECLARE_SOA_COLUMN(MyInvMassWindowLcPi, myInvMassWindowLcPi, float); //! Half-width of the Lb invariant-mass window in GeV/c2
+} // namespace hf_cand_lb_config
+
+DECLARE_SOA_TABLE(HfCandLbConfigs, "AOD", "HFCANDLBCONFIG", //! Table with configurables information for reduced workflow
+                  hf_cand_lb_config::MySelectionFlagLc,
+                  hf_cand_lb_config::MyInvMassWindowLcPi);
 
 // Charm resonances analysis
 namespace hf_reso_3_prong
