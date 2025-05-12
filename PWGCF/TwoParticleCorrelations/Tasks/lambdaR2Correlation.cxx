@@ -248,7 +248,6 @@ struct LambdaTableProducer {
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.01, "Reject K0Short Candidates"};
   Configurable<bool> cKshortRejFlag{"cKshortRejFlag", true, "K0short Mass Rej Flag"};
-  Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Lambda Mass Window"};
 
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Mass{"cMinV0Mass", 1.10, "V0 Mass Min"};
@@ -259,7 +258,6 @@ struct LambdaTableProducer {
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Do Eta Analysis"};
   Configurable<bool> cV0TypeSelFlag{"cV0TypeSelFlag", false, "V0 Type Selection Flag"};
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
-  Configurable<bool> cGenProcessFlag{"cGenProcessFlag", true, "Generater Level Table Selection"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -972,7 +970,7 @@ struct LambdaTableProducer {
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
-        if (!v0.has_mcParticle() || !v0.template posTrack_as<T>().has_mcParticle() || !v0.template negTrack_as<T>().has_mcParticle()) {
+        if (!v0.has_mcParticle()) {
           continue;
         }
       }
@@ -1239,11 +1237,6 @@ struct LambdaTableProducer {
     auto mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
     auto mcGenParticles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
-    if (cGenProcessFlag) {
-      fillLambdaMcGenTables<kRun3>(mcCollision, mcGenParticles);
-      return;
-    }
-
     // Fill Gen Table
     lambdaMCGenCollisionTable(mcCollision.centFT0M(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
 
@@ -1300,12 +1293,17 @@ struct LambdaTracksExtProducer {
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
     const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
+    const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
+    const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
     // Histograms Booking
     histos.add("h1i_totlambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
 
     // InvMass, DcaDau and CosPA
     histos.add("Reco/h1f_lambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
@@ -1359,15 +1357,19 @@ struct LambdaTracksExtProducer {
           continue;
         }
 
-        // check only lambda-lambda || antilambda-antilambda
-        if (lambda.v0Type() != track.v0Type()) {
-          continue;
-        }
-
         // check if lambda shares daughters with any other track
         if (lambda.posTrackId() == track.posTrackId() || lambda.negTrackId() == track.negTrackId()) {
           vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
+
+          // Fill DEta-DPhi Histogram
+          if ((lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) || (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda)) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          }
 
           // decision based on mass closest to PdgMass of Lambda
           if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0)) {
@@ -1478,7 +1480,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisPosZ(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
-    const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
+    const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
     const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");

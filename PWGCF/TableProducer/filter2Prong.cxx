@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \author Jasper Parkkila <jasper.parkkila@cern.ch>
+
 #include <experimental/type_traits>
 #include <vector>
 #include <string>
@@ -39,11 +42,10 @@ using namespace o2::math_utils::detail;
 struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
-  //
   O2_DEFINE_CONFIGURABLE(cfgImPart1Mass, float, o2::constants::physics::MassKPlus, "Daughter particle 1 mass in GeV")
   O2_DEFINE_CONFIGURABLE(cfgImPart2Mass, float, o2::constants::physics::MassKMinus, "Daughter particle 2 mass in GeV")
-  O2_DEFINE_CONFIGURABLE(cfgImPart1PID, float, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
-  O2_DEFINE_CONFIGURABLE(cfgImPart2PID, float, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
+  O2_DEFINE_CONFIGURABLE(cfgImPart1PID, int, o2::track::PID::Kaon, "PID of daughter particle 1 (O2 PID ID)")
+  O2_DEFINE_CONFIGURABLE(cfgImPart2PID, int, o2::track::PID::Kaon, "PID of daughter particle 2 (O2 PID ID)")
   O2_DEFINE_CONFIGURABLE(cfgImCutPt, float, 0.2f, "Minimal pT for candidates")
   O2_DEFINE_CONFIGURABLE(cfgImMinInvMass, float, 0.95f, "Minimum invariant mass (GeV)")
   O2_DEFINE_CONFIGURABLE(cfgImMaxInvMass, float, 1.07f, "Maximum invariant mass (GeV)")
@@ -165,7 +167,7 @@ struct Filter2Prong {
   PROCESS_SWITCH(Filter2Prong, processMC, "Process MC 2-prong daughters", false);
 
   // Generic 2-prong invariant mass method candidate finder. Only works for non-identical daughters of opposite charge for now.
-  using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
+  using PIDTrack = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   void processDataInvMass(aod::Collisions::iterator const&, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, PIDTrack const& tracks)
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)

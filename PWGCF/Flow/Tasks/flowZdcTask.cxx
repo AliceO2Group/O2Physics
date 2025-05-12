@@ -70,10 +70,6 @@ struct FlowZdcTask {
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
   Configurable<int> nBinsFT0Amp{"nBinsFT0Amp", 250000, "nbinsAmp"};
   Configurable<float> maxZn{"maxZn", 4099.5, "Max ZN signal"};
-  Configurable<float> acceptanceZna{"acceptanceZna", 0.92, "ZNA acceptance factor"};
-  Configurable<float> acceptanceZnc{"acceptanceZnc", 0.90, "ZNC acceptance factor"};
-  Configurable<float> acceptanceZpa{"acceptanceZpa", 0.52, "ZPA acceptance factor"};
-  Configurable<float> acceptanceZpc{"acceptanceZpc", 0.50, "ZPC acceptance factor"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> npvTracksCut{"npvTracksCut", 1.0f, "Apply extra NPVtracks cut"};
@@ -290,7 +286,6 @@ struct FlowZdcTask {
       histos.add("hZPvsFT0CAmp", "ZP Energy vs FT0C Amplitude", kTH2F, {axisFT0CAmp, axisZP});
       histos.add("hZNvsMult", "ZN Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZN});
       histos.add("hZPvsMult", "ZP Energy vs Multiplicity", kTH2F, {axisMultiplicity, axisZP});
-      histos.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
     }
 
     if (doprocessQA) {
@@ -479,14 +474,10 @@ struct FlowZdcTask {
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    float znA{zdc.amplitudeZNA()};
-    float znC{zdc.amplitudeZNC()};
-    float zpA{zdc.amplitudeZPA()};
-    float zpC{zdc.amplitudeZPC()};
-    znA /= 2.81;
-    znC /= 2.81;
-    zpA /= 2.81;
-    zpC /= 2.81;
+    float znA = zdc.amplitudeZNA() / 2.68;
+    float znC = zdc.amplitudeZNC() / 2.68;
+    float zpA = zdc.amplitudeZPA() / 2.68;
+    float zpC = zdc.amplitudeZPC() / 2.68;
 
     float tZEM1{zdc.timeZEM1()};
     float tZEM2{zdc.timeZEM2()};
@@ -622,12 +613,6 @@ struct FlowZdcTask {
     int nTot = tracks.size();
     double ft0aAmp = 0;
     double ft0cAmp = 0;
-    float tZNA{0.0};
-    float tZNC{0.0};
-    float tZPA{0.0};
-    float tZPC{0.0};
-    float tZDCdif{0.0};
-    float tZDCsum{0.0};
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     if (collision.has_foundFT0()) {
       auto ft0 = collision.foundFT0();
@@ -654,12 +639,6 @@ struct FlowZdcTask {
 
       histos.get<TH1>(HIST("ZEM1coll"))->Fill(zdcread.amplitudeZEM1());
       histos.get<TH1>(HIST("ZEM2coll"))->Fill(zdcread.amplitudeZEM2());
-      tZNA = foundBC.zdc().timeZNA();
-      tZNC = foundBC.zdc().timeZNC();
-      tZPA = foundBC.zdc().timeZPA();
-      tZPC = foundBC.zdc().timeZPC();
-      tZDCdif = tZNC + tZPC - tZNA - tZPA;
-      tZDCsum = tZNC + tZPC + tZNA + tZPA;
 
       float sumZNC = (zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3];
       float sumZNA = (zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3];
@@ -693,7 +672,6 @@ struct FlowZdcTask {
       histos.fill(HIST("hZPvsFT0CAmp"), ft0cAmp, sumZP);
       histos.fill(HIST("hZNvsMult"), nTot, sumZN);
       histos.fill(HIST("hZPvsMult"), nTot, sumZP);
-      histos.fill(HIST("debunch"), tZDCdif, tZDCsum);
       histos.fill(HIST("hNchvsNPV"), collision.multNTracksPVeta1(), nTot);
 
       float ratioZN = sumZNC / sumZNA;
