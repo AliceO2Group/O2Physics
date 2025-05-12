@@ -1183,6 +1183,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNames;
   std::map<int, std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
+  std::vector<AnalysisCompositeCut> fTrackCuts;
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
   uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -1235,6 +1236,9 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayTrackCuts = nullptr;
     if (!trackCutsStr.IsNull()) {
       objArrayTrackCuts = trackCutsStr.Tokenize(",");
+      for(int icut = 0; icut < objArrayTrackCuts->GetEntries(); ++icut) {
+        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArrayTrackCuts->At(icut)->GetName()));
+      }
     }
     TString muonCutsStr = fConfigCuts.muon.value;
     TObjArray* objArrayMuonCuts = nullptr;
@@ -1269,35 +1273,15 @@ struct AnalysisSameEventPairing {
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            names.push_back(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
-            }
-            names.push_back(Form("PairsBarrelSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-            histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 6 : 3)].Data(), names[(fEnableBarrelMixingHistos ? 7 : 4)].Data(), names[(fEnableBarrelMixingHistos ? 8 : 5)].Data());
-            histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 9 : 6)].Data(), names[(fEnableBarrelMixingHistos ? 10 : 7)].Data(), names[(fEnableBarrelMixingHistos ? 11 : 8)].Data());
-            histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 12 : 9)].Data(), names[(fEnableBarrelMixingHistos ? 13 : 10)].Data(), names[(fEnableBarrelMixingHistos ? 14 : 11)].Data());
-            if (fEnableBarrelMixingHistos) {
-              names.push_back(Form("PairsBarrelMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              names.push_back(Form("PairsBarrelMEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;%s;%s;%s;%s;%s;%s;", names[15].Data(), names[16].Data(), names[17].Data(), names[18].Data(), names[19].Data(), names[20].Data(), names[21].Data(), names[22].Data(), names[23].Data());
+              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
             }
             fTrackHistNames[icut] = names;
 
@@ -1768,59 +1752,62 @@ struct AnalysisSameEventPairing {
               }
             }
             if (sign1 * sign2 < 0) {
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch);
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
-              }
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                }
                 if (isUnambiguous) {
                   fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                 if (isAmbiExtra) {
-                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
                 }
               }
             } else {
               if (sign1 > 0) {
-                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                }
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                  }
                   if (isUnambiguous) {
                     fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   }
                 }
               } else {
-                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                }
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                  }
                   if (isUnambiguous) {
                     fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s_ambiguousextra", fTrackCuts[icut].GetName()), VarManager::fgValues);
                   }
                 }
               }
@@ -1936,9 +1923,6 @@ struct AnalysisSameEventPairing {
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
         bool isUnambiguous = false;
-        bool isLeg1Ambi = false;
-        bool isLeg2Ambi = false;
-        bool isAmbiExtra = false;
         for (int icut = 0; icut < ncuts; icut++) {
           if (!(twoTrackFilter & (static_cast<uint32_t>(1) << icut))) {
             continue; // cut not passed
@@ -1946,25 +1930,9 @@ struct AnalysisSameEventPairing {
           isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
           isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
           isUnambiguous = !((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
-          isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
-          isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
-          if constexpr (TPairType == VarManager::kDecayToEE) {
-            if (isLeg1Ambi && isLeg2Ambi) {
-              std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
-              if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
-                if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
-                  isAmbiExtra = true;
-                } else {
-                  fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
-                }
-              } else {
-                fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
-              }
-            }
-          }
           if (pairSign == 0) {
-            fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
             if constexpr (TPairType == VarManager::kDecayToMuMu) {
+              fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
               if (isAmbiInBunch) {
                 fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
               }
@@ -1976,20 +1944,12 @@ struct AnalysisSameEventPairing {
               }
             }
             if constexpr (TPairType == VarManager::kDecayToEE) {
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
-              }
-              if (isAmbiExtra) {
-                fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
-              }
+              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
             }
           } else {
             if (pairSign > 0) {
-              fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
                   fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
                 }
@@ -2001,19 +1961,11 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
-                }
-                if (isAmbiExtra) {
-                  fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
-                }
+                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
               }
             } else {
-              fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
                   fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
                 }
@@ -2025,15 +1977,7 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
-                }
-                if (isAmbiExtra) {
-                  fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
-                }
+                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
               }
             }
           }
