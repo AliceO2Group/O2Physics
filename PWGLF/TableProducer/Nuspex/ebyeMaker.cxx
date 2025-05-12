@@ -220,6 +220,7 @@ struct ebyeMaker {
   int mRunNumber;
   float d_bz;
   uint8_t nTrackletsColl;
+  uint8_t nTracksColl;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -244,7 +245,7 @@ struct ebyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
+  Configurable<bool> storeTracksNum{"storeTracksNum", false, "store the number of tracks instead of tracklets"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
@@ -663,6 +664,7 @@ struct ebyeMaker {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
+    uint8_t nTracks{0};
     for (const auto& track : tracks) {
 
       if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
@@ -691,6 +693,8 @@ struct ebyeMaker {
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
+
+      nTracks++;
 
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
@@ -752,6 +756,7 @@ struct ebyeMaker {
     if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
       nTrackletsColl = nTracklets[1];
+      nTracksColl = nTracks;
     }
 
     if (lambdaPtMax > lambdaPtMin) {
@@ -1234,7 +1239,7 @@ struct ebyeMaker {
       if (triggerCut != 0x0 && (trigger & triggerCut) != triggerCut) {
         continue;
       }
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1426,7 +1431,7 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
