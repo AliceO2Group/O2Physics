@@ -15,6 +15,10 @@
 /// \author Abhi Modak (abhi.modak@cern.ch)
 /// \since February 19, 2025
 
+#include <cstdlib>
+#include <cmath>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
@@ -24,9 +28,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "TH1F.h"
 #include "TH2F.h"
-#include <cstdlib>
-#include <cmath>
-#include <vector>
 
 using namespace o2;
 using namespace o2::aod::run2;
@@ -50,7 +51,7 @@ DECLARE_SOA_INDEX_TABLE_USER(PMDTracksIndex, BCs, "PMDTRKIDX", pmdtrack::Collisi
 struct BuiltPmdIndex {
   // build the index table PMDTracksIndex
   Builds<aod::PMDTracksIndex> idx;
-  void init(InitContext const&) {};
+  void init(InitContext const&) {}
 };
 
 struct PmdQa {
