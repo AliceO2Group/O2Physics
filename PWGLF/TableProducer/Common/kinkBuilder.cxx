@@ -56,7 +56,7 @@ std::shared_ptr<TH2> h2ClsMapPtMoth;
 std::shared_ptr<TH2> h2ClsMapPtDaug;
 std::shared_ptr<TH2> h2DeDxDaugSel;
 std::shared_ptr<TH2> h2KinkAnglePt;
-std::shared_ptr<TH2> h2SigmaMinusMassPt;
+std::shared_ptr<TH2> h2MothMassPt;
 } // namespace
 
 struct kinkCandidate {
@@ -89,9 +89,13 @@ struct kinkCandidate {
 
 struct kinkBuilder {
 
+  enum PartType { kSigmaMinus = 0,
+                  kHyperhelium4sigma };
+
   Produces<aod::KinkCands> outputDataTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  Configurable<int> hypoMoth{"hypoMoth", kSigmaMinus, "Mother particle hypothesis"};
   // Selection criteria
   Configurable<float> maxDCAMothToPV{"maxDCAMothToPV", 0.1, "Max DCA of the mother to the PV"};
   Configurable<float> minDCADaugToPV{"minDCADaugToPV", 0., "Min DCA of the daughter to the PV"};
@@ -107,7 +111,7 @@ struct kinkBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
 
   // constants
-  float radToDeg = 180. / M_PI;
+  float radToDeg = o2::constants::math::Rad2Deg;
   svPoolCreator svCreator;
 
   // bethe bloch parameters
@@ -141,8 +145,25 @@ struct kinkBuilder {
   float mBz;
   std::array<float, 6> mBBparamsDaug;
 
+  // mother and daughter tracks' properties (absolute charge and mass)
+  int charge = 1;
+  float mothMass = o2::constants::physics::MassSigmaMinus;
+  float chargedDauMass = o2::constants::physics::MassPiMinus;
+  float neutDauMass = o2::constants::physics::MassNeutron;
+
   void init(InitContext const&)
   {
+    if (hypoMoth == kSigmaMinus) {
+      charge = 1;
+      mothMass = o2::constants::physics::MassSigmaMinus;
+      chargedDauMass = o2::constants::physics::MassPiMinus;
+      neutDauMass = o2::constants::physics::MassNeutron;
+    } else if (hypoMoth == kHyperhelium4sigma) {
+      charge = 2;
+      mothMass = o2::constants::physics::MassHyperHelium4;
+      chargedDauMass = o2::constants::physics::MassAlpha;
+      neutDauMass = o2::constants::physics::MassPi0;
+    }
 
     // dummy values, 1 for mother, 0 for daughter
     svCreator.setPDGs(1, 0);
@@ -174,13 +195,19 @@ struct kinkBuilder {
     const AxisSpec itsClusterMapAxis(128, 0, 127, "ITS cluster map");
     const AxisSpec rigidityAxis{rigidityBins, "#it{p}^{TPC}/#it{z}"};
     const AxisSpec ptAxis{rigidityBins, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
     const AxisSpec kinkAngleAxis{100, 0, 180, "#theta_{kink} (deg)"};
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
 
+    AxisSpec massAxis(100, 1.1, 1.4, "m (GeV/#it{c}^{2})");
+    if (hypoMoth == kSigmaMinus) {
+      massAxis = AxisSpec{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
+    } else if (hypoMoth == kHyperhelium4sigma) {
+      massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
+    }
+
     h2DeDxDaugSel = qaRegistry.add<TH2>("h2DeDxDaugSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
     h2KinkAnglePt = qaRegistry.add<TH2>("h2KinkAnglePt", "; p_{T} (GeV/#it{c}); #theta_{kink} (deg)", HistType::kTH2F, {ptAxis, kinkAngleAxis});
-    h2SigmaMinusMassPt = qaRegistry.add<TH2>("h2SigmaMinusMassPt", "; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, sigmaMassAxis});
+    h2MothMassPt = qaRegistry.add<TH2>("h2MothMassPt", "; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, massAxis});
     h2ClsMapPtMoth = qaRegistry.add<TH2>("h2ClsMapPtMoth", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
     h2ClsMapPtDaug = qaRegistry.add<TH2>("h2ClsMapPtDaug", "; p_{T} (GeV/#it{c}); ITS cluster map", HistType::kTH2F, {ptAxis, itsClusterMapAxis});
   }
@@ -225,7 +252,7 @@ struct kinkBuilder {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (std::abs(track.eta()) > etaMax)
         continue;
 
@@ -240,7 +267,7 @@ struct kinkBuilder {
     }
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
 
-    for (auto& svCand : kinkPool) {
+    for (const auto& svCand : kinkPool) {
       kinkCandidate kinkCand;
 
       auto trackMoth = tracks.rawIteratorAt(svCand.tr0Idx);
@@ -338,8 +365,12 @@ struct kinkBuilder {
 
       propMothTrack.getPxPyPzGlo(kinkCand.momMoth);
       propDaugTrack.getPxPyPzGlo(kinkCand.momDaug);
-      float pMoth = propMothTrack.getP();
-      float pDaug = propDaugTrack.getP();
+      for (int i = 0; i < 3; i++) {
+        kinkCand.momMoth[i] *= charge;
+        kinkCand.momDaug[i] *= charge;
+      }
+      float pMoth = propMothTrack.getP() * charge;
+      float pDaug = propDaugTrack.getP() * charge;
       float spKink = kinkCand.momMoth[0] * kinkCand.momDaug[0] + kinkCand.momMoth[1] * kinkCand.momDaug[1] + kinkCand.momMoth[2] * kinkCand.momDaug[2];
       kinkCand.kinkAngle = std::acos(spKink / (pMoth * pDaug));
 
@@ -348,15 +379,15 @@ struct kinkBuilder {
         neutDauMom[i] = kinkCand.momMoth[i] - kinkCand.momDaug[i];
       }
 
-      float piMinusE = std::sqrt(neutDauMom[0] * neutDauMom[0] + neutDauMom[1] * neutDauMom[1] + neutDauMom[2] * neutDauMom[2] + 0.13957 * 0.13957);
-      float neutronE = std::sqrt(pDaug * pDaug + 0.93957 * 0.93957);
-      float invMass = std::sqrt((piMinusE + neutronE) * (piMinusE + neutronE) - (pMoth * pMoth));
+      float chargedDauE = std::sqrt(pDaug * pDaug + chargedDauMass * chargedDauMass);
+      float neutE = std::sqrt(neutDauMom[0] * neutDauMom[0] + neutDauMom[1] * neutDauMom[1] + neutDauMom[2] * neutDauMom[2] + neutDauMass * neutDauMass);
+      float invMass = std::sqrt((chargedDauE + neutE) * (chargedDauE + neutE) - (pMoth * pMoth));
 
       h2DeDxDaugSel->Fill(trackDaug.tpcInnerParam() * trackDaug.sign(), trackDaug.tpcSignal());
-      h2KinkAnglePt->Fill(trackMoth.pt() * trackMoth.sign(), kinkCand.kinkAngle * radToDeg);
-      h2SigmaMinusMassPt->Fill(trackMoth.pt() * trackMoth.sign(), invMass);
-      h2ClsMapPtMoth->Fill(trackMoth.pt() * trackMoth.sign(), trackMoth.itsClusterMap());
-      h2ClsMapPtDaug->Fill(trackDaug.pt() * trackDaug.sign(), trackDaug.itsClusterMap());
+      h2KinkAnglePt->Fill(trackMoth.pt() * charge * trackMoth.sign(), kinkCand.kinkAngle * radToDeg);
+      h2MothMassPt->Fill(trackMoth.pt() * charge * trackMoth.sign(), invMass);
+      h2ClsMapPtMoth->Fill(trackMoth.pt() * charge * trackMoth.sign(), trackMoth.itsClusterMap());
+      h2ClsMapPtDaug->Fill(trackDaug.pt() * charge * trackDaug.sign(), trackDaug.itsClusterMap());
 
       kinkCand.collisionID = collision.globalIndex();
       kinkCand.mothTrackID = trackMoth.globalIndex();
@@ -423,7 +454,7 @@ struct kinkBuilder {
     // sort kinkCandidates by collisionID to allow joining with collision table
     std::sort(kinkCandidates.begin(), kinkCandidates.end(), [](const kinkCandidate& a, const kinkCandidate& b) { return a.collisionID < b.collisionID; });
 
-    for (auto& kinkCand : kinkCandidates) {
+    for (const auto& kinkCand : kinkCandidates) {
       outputDataTable(kinkCand.collisionID, kinkCand.mothTrackID, kinkCand.daugTrackID,
                       kinkCand.decVtx[0], kinkCand.decVtx[1], kinkCand.decVtx[2],
                       kinkCand.mothSign, kinkCand.momMoth[0], kinkCand.momMoth[1], kinkCand.momMoth[2],

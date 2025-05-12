@@ -508,7 +508,7 @@ struct HStrangeCorrelation {
       return false;
     return true;
   }
-  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, float pvx, float pvy, float pvz, bool mixing, float mult)
+  void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvx, float pvy, float pvz, float mult)
   {
     for (auto const& triggerTrack : triggers) {
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
