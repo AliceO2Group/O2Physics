@@ -13,7 +13,6 @@
 /// \brief Producer of derived tables of Dstar candidates, collisions and MC particles
 /// \note Based on derivedDataCreatorLcToPKPi.cxx
 ///
-/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 /// \author Mingze Li <mingze.li@cern.cn>, CCNU
 
 #include <algorithm>
