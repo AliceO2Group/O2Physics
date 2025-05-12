@@ -145,7 +145,8 @@ DECLARE_SOA_TABLE(SkimmedTPCV0TreeWithTrkQA, "AOD", "TPCSKIMV0WQA",
                   o2::aod::trackqa::TPCdEdxTot0R,
                   o2::aod::trackqa::TPCdEdxTot1R,
                   o2::aod::trackqa::TPCdEdxTot2R,
-                  o2::aod::trackqa::TPCdEdxTot3R);
+                  o2::aod::trackqa::TPCdEdxTot3R,
+                  o2::aod::trackqa::TPCdEdxNorm);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   o2::aod::track::TPCSignal,
@@ -225,6 +226,7 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTreeWithTrkQA, "AOD", "TPCTOFSKIMWQA",
                   o2::aod::trackqa::TPCdEdxTot0R,
                   o2::aod::trackqa::TPCdEdxTot1R,
                   o2::aod::trackqa::TPCdEdxTot2R,
-                  o2::aod::trackqa::TPCdEdxTot3R);
+                  o2::aod::trackqa::TPCdEdxTot3R,
+                  o2::aod::trackqa::TPCdEdxNorm);
 } // namespace o2::aod
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_

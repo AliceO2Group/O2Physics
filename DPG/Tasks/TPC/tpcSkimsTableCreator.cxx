@@ -252,7 +252,8 @@ struct TreeWriterTpcV0 {
                           existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
                           existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
                           existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
-                          existTrkQA ? trackQA.tpcdEdxTot3R() : -999);
+                          existTrkQA ? trackQA.tpcdEdxTot3R() : -999,
+                          existTrkQA ? trackQA.tpcdEdxNorm() : -999);
     }
   };
 
@@ -797,7 +798,8 @@ struct TreeWriterTPCTOF {
                              existTrkQA ? trackQA.tpcdEdxTot0R() : -999,
                              existTrkQA ? trackQA.tpcdEdxTot1R() : -999,
                              existTrkQA ? trackQA.tpcdEdxTot2R() : -999,
-                             existTrkQA ? trackQA.tpcdEdxTot3R() : -999);
+                             existTrkQA ? trackQA.tpcdEdxTot3R() : -999,
+                             existTrkQA ? trackQA.tpcdEdxNorm() : -999);
     }
   };
 
