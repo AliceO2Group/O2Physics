@@ -36,21 +36,21 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-  namespace pmdtrack
-  {
-    DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-    DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
-    DECLARE_SOA_INDEX_COLUMN(BC, bc);
-    DECLARE_SOA_SLICE_INDEX_COLUMN(Pmd,pmd);
-  } // namespace pmdtrack
-  
-  DECLARE_SOA_INDEX_TABLE_USER(PMDTracksIndex, BCs, "PMDTRKIDX", pmdtrack::CollisionId, pmdtrack::BCId, pmdtrack::PmdIdSlice);
-}
+namespace pmdtrack
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
+DECLARE_SOA_INDEX_COLUMN(BC, bc);
+DECLARE_SOA_SLICE_INDEX_COLUMN(Pmd, pmd);
+} // namespace pmdtrack
+
+DECLARE_SOA_INDEX_TABLE_USER(PMDTracksIndex, BCs, "PMDTRKIDX", pmdtrack::CollisionId, pmdtrack::BCId, pmdtrack::PmdIdSlice);
+} // namespace o2::aod
 
 struct BuiltPmdIndex {
   // build the index table PMDTracksIndex
   Builds<aod::PMDTracksIndex> idx;
-  void init(InitContext const&){};
+  void init(InitContext const&) {};
 };
 
 struct PmdQa {
@@ -59,12 +59,12 @@ struct PmdQa {
   ConfigurableAxis axisEventBin{"axisEventBin", {4, 0.5, 4.5}, ""};
   ConfigurableAxis axisVtxZBin{"axisVtxZBin", {40, -20, 20}, ""};
   ConfigurableAxis axisNPMDtracksBin{"axisNPMDtracksBin", {500, 0, 500}, "Number of pmdtracks"};
-  ConfigurableAxis axisClsxyBin{"axisClsxyBin", {200,-100,100}, ""};
-  ConfigurableAxis axisAdcBin{"axisAdcBin", {200,0,2000}, ""};
-  ConfigurableAxis axisEtaBin{"axisEtaBin", {10,2.1,4.1}, ""};
-  ConfigurableAxis axisNcellBin{"axisNcellBin", {50,-0.5,49.5}, ""};
+  ConfigurableAxis axisClsxyBin{"axisClsxyBin", {200, -100, 100}, ""};
+  ConfigurableAxis axisAdcBin{"axisAdcBin", {200, 0, 2000}, ""};
+  ConfigurableAxis axisEtaBin{"axisEtaBin", {10, 2.1, 4.1}, ""};
+  ConfigurableAxis axisNcellBin{"axisNcellBin", {50, -0.5, 49.5}, ""};
   Configurable<int> fMipCut{"fMipCut", 432, "fMipCut"};
-    
+
   void init(InitContext&)
   {
 
@@ -75,7 +75,7 @@ struct PmdQa {
     AxisSpec axisAdc = {axisAdcBin, "Adc", "AdcAxis"};
     AxisSpec axisEta = {axisEtaBin, "Eta", "EtaAxis"};
     AxisSpec axisNcell = {axisNcellBin, "Ncell", "NcellAxis"};
-    
+
     histos.add("hEventHist", "hEventHist", kTH1F, {axisEvent});
     histos.add("hVtxZHist", "hVtxZHist", kTH1F, {axisVtxZ});
     histos.add("hNPMDtracks", "Number of pmdtracks", kTH1F, {axisNPMDtracks});
@@ -87,7 +87,7 @@ struct PmdQa {
 
   using coltable = soa::Join<aod::Collisions, aod::PMDTracksIndex>;
   using colevsel = soa::Join<coltable, aod::EvSels>;
-    
+
   void process(colevsel::iterator const& collision, aod::Pmds const&)
   {
     histos.fill(HIST("hEventHist"), 1);
@@ -100,32 +100,32 @@ struct PmdQa {
     }
     histos.fill(HIST("hEventHist"), 3);
     histos.fill(HIST("hVtxZHist"), collision.posZ());
-    
+
     if (collision.has_pmd()) {
       histos.fill(HIST("hEventHist"), 4);
       auto tracks = collision.pmd();
       histos.fill(HIST("hNPMDtracks"), tracks.size());
       for (const auto& track : tracks) {
-	if (track.pmddet() == 1) {
-	  return;
-	}
-	if(track.pmdclsz() == 0) {
-	  return;
-	}
-	if (!track.pmdmodule()) {
-	  return;
-	}
-	histos.fill(HIST("hClusXY"), track.pmdclsx(), track.pmdclsy());
-	histos.fill(HIST("hClusAdc"), track.pmdclsadc());
-	float rdist = TMath::Sqrt(track.pmdclsx()*track.pmdclsx() + track.pmdclsy()*track.pmdclsy());
-	float theta = TMath::ATan2(rdist,track.pmdclsz());
-	float etacls  = -TMath::Log(TMath::Tan(0.5*theta));
-	if (track.pmdclsadc() > fMipCut && track.pmdncell() > 2) {
-	  if(etacls>2.3 && etacls<3.9){
-	    histos.fill(HIST("hetacls"), etacls);
-	    histos.fill(HIST("hclsncell"), track.pmdncell());
-	  }
-	}
+        if (track.pmddet() == 1) {
+          return;
+        }
+        if (track.pmdclsz() == 0) {
+          return;
+        }
+        if (!track.pmdmodule()) {
+          return;
+        }
+        histos.fill(HIST("hClusXY"), track.pmdclsx(), track.pmdclsy());
+        histos.fill(HIST("hClusAdc"), track.pmdclsadc());
+        float rdist = TMath::Sqrt(track.pmdclsx() * track.pmdclsx() + track.pmdclsy() * track.pmdclsy());
+        float theta = TMath::ATan2(rdist, track.pmdclsz());
+        float etacls = -TMath::Log(TMath::Tan(0.5 * theta));
+        if (track.pmdclsadc() > fMipCut && track.pmdncell() > 2) {
+          if (etacls > 2.3 && etacls < 3.9) {
+            histos.fill(HIST("hetacls"), etacls);
+            histos.fill(HIST("hclsncell"), track.pmdncell());
+          }
+        }
       }
     }
   }
