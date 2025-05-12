@@ -141,13 +141,7 @@ struct FemtoUniversePairTaskTrackD0 {
   Configurable<uint8_t> confChooseD0trackCorr{"confChooseD0trackCorr", 0, "If 0 correlations with D0s, if 1 with D0bars"};
 
   // Efficiency
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<std::string> confEfficiencyTrackPath{"confEfficiencyTrackPath", "", "Local path to hadron efficiency TH2F file"};
-    Configurable<std::string> confEfficiencyD0Path{"confEfficiencyD0Path", "", "Local path to D0 efficiency TH2F file"};
-    Configurable<int64_t> confEfficiencyTrackTimestamp{"confEfficiencyTrackTimestamp", 0, "(int64_t) Timestamp for hadron"};
-    Configurable<int64_t> confEfficiencyD0Timestamp{"confEfficiencyD0Timestamp", 0, "(int64_t) Timestamp for D0"};
-    Configurable<bool> doEfficiencyCorr{"doEfficiencyCorr", false, "Apply efficiency corrections"};
-  } ConfEff;
+  Configurable<bool> doEfficiencyCorr{"doEfficiencyCorr", false, "Apply efficiency corrections"};
 
   /// Partitions for particle 1
   Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.confTrackSign)) && (aod::femtouniverseparticle::pt > ConfTrack.confTrackLowPtCut) && (aod::femtouniverseparticle::pt < ConfTrack.confTrackHighPtCut);
@@ -850,7 +844,7 @@ struct FemtoUniversePairTaskTrackD0 {
       }
       // Efficiency
       weight = 1.0f;
-      if (ConfEff.doEfficiencyCorr) {
+      if (doEfficiencyCorr) {
         weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
       sameEventAngularCont.setPair<isMC>(track, d0candidate, multCol, ConfBothTracks.confUse3D, weight);
@@ -979,7 +973,7 @@ struct FemtoUniversePairTaskTrackD0 {
       }
       // Efficiency
       weight = 1.0f;
-      if (ConfEff.doEfficiencyCorr) {
+      if (doEfficiencyCorr) {
         weight = efficiencyCalculator.getWeight(ParticleNo::ONE, track.pt()) * efficiencyCalculator.getWeight(ParticleNo::TWO, d0candidate.pt());
       }
 
