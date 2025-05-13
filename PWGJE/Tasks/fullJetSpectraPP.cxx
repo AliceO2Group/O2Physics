@@ -1292,9 +1292,6 @@ struct FullJetSpectrapp {
     registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
 
     for (auto const& jet : jets) {
-      if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD (Detector Level) Outlier Rejection
-        return;
-      }
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
