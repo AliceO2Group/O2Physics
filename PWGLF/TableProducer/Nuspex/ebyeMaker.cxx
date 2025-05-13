@@ -298,7 +298,7 @@ struct EbyeMaker {
   Configurable<double> v0settingCosPa{"v0settingCosPa", 0.99f, "V0 CosPA"};
   Configurable<float> v0settingRadius{"v0settingRadius", 5.f, "v0radius"};
   Configurable<float> v0settingLifetime{"v0settingLifetime", 40.f, "v0 lifetime cut"};
-  Configurable<float> v0settingNsigmaTpc{"v0settingNsigmatpc", 4.f, "nsigmatpc"};
+  Configurable<float> v0settingNSigmaTpc{"v0settingNSigmaTpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<bool> constDCASel{"constDCASel", true, "use DCA selections independent of pt"};
@@ -838,7 +838,7 @@ struct EbyeMaker {
         auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
         float tpcSigPr = matter ? posTrack.tpcSignal() : negTrack.tpcSignal();
 
-        if (std::abs(nSigmaTPCPos) > v0settingNsigmatpc || std::abs(nSigmaTPCNeg) > v0settingNsigmatpc) {
+        if (std::abs(nSigmaTPCPos) > v0settingNSigmaTpc || std::abs(nSigmaTPCNeg) > v0settingNSigmaTpc) {
           continue;
         }
 
@@ -877,8 +877,8 @@ struct EbyeMaker {
 
         auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
         auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
-        float ML2PLambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
-        if (ML2PLambda > v0settingLifetime) {
+        float mL2PLambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
+        if (mL2PLambda > v0settingLifetime) {
           continue;
         }
 
@@ -1071,12 +1071,12 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
       auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
-      fillRecoEvent(collision, tracks, V0TableThisCollision, centrality);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
@@ -1158,11 +1158,11 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
       auto multTracklets = collision.multTracklets();
-      fillRecoEvent(collision, tracks, V0TableThisCollision, cV0M);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, cV0M);
 
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, cV0M);
       histos.fill(HIST("QA/trackletsVsV0M"), cV0M, multTracklets);
@@ -1232,10 +1232,10 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillRecoEvent(collision, tracks, V0TableThisCollision, cV0M);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
       for (const auto& classId : classIds) {
@@ -1294,10 +1294,10 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0TableThisCollision, centrality, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       collisionEbyeTable(centrality, collision.posZ());
@@ -1365,10 +1365,10 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0TableThisCollision, cV0M, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       collisionEbyeTable(cV0M, collision.posZ());
@@ -1437,10 +1437,10 @@ struct EbyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0TableThisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0TableThisCollision, cV0M, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
