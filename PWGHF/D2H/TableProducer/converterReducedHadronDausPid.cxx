@@ -30,7 +30,7 @@ struct HfConverterReducedHadronDausPid {
   Produces<aod::HfRedPidDau2s_001> hfRedPidDau2s;
 
   using HfRedPidDaus2Prong = soa::Join<aod::HfCand2ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000>;
-  using HfRedPidDaus3Prong = soa::Join<aod::HfCand3ProngWPid, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
+  using HfRedPidDaus3Prong = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfRedPidDau0s_000, aod::HfRedPidDau1s_000, aod::HfRedPidDau2s_000>;
 
   void process2Prongs(HfRedPidDaus2Prong::iterator const& hfCandPidProngs)
   {

@@ -148,8 +148,8 @@ struct HfFemtoDreamProducer {
 
   float magField;
   int runNumber;
-  using CandidateLc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;

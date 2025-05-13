@@ -192,7 +192,7 @@ struct HfTreeCreatorLbToLcPi {
   using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi> const& candidates,
-               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const&,
+               soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const&,
                TracksWPid const&)
   {
     // Filling candidate properties
@@ -202,7 +202,7 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>>();
+        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>>();
         auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
         auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
         auto track2 = candLc.prong1_as<TracksWPid>();

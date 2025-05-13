@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3ProngWPid, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3ProngWPidPiKaPr, "_0");
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 DECLARE_SOA_COLUMN(Channel, channel, int8_t); // direct or resonant
 // Events
@@ -954,7 +954,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -970,7 +970,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -987,7 +987,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, aod::PVMults> const& collisions,
                                            aod::McCollisions const& mcCollisions,
-                                           soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                           soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                            soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -1003,7 +1003,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param bcs Bunch-crossing table
   void processMcWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
                                              aod::McCollisions const& mcCollisions,
-                                             soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& particles,
                                              soa::Join<TracksWPid, o2::aod::McTrackLabels> const& tracks, aod::BCs const& bcs)
   {
@@ -1059,7 +1059,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1072,7 +1072,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithDCAFitterN(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::DCAFitter>(collisions, candidates, tracks, bcs);
@@ -1085,7 +1085,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataNoCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, aod::PVMults> const& collisions,
-                                             soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                             soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                              TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<false, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);
@@ -1098,7 +1098,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param tracks Track table
   /// \param bcs Bunch-crossing table
   void processDataWithCentralityWithKFParticle(soa::Join<aod::Collisions, aod::PVMultZeqs, Cents, aod::PVMults> const& collisions,
-                                               soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
+                                               soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngKF> const& candidates,
                                                TracksWPid const& tracks, aod::BCs const& bcs)
   {
     fillTablesData<true, aod::hf_cand::VertexerType::KfParticle>(collisions, candidates, tracks, bcs);

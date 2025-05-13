@@ -222,7 +222,7 @@ struct HfCandidateSelectorXicToPKPi {
     return true;
   }
 
-  void process(aod::HfCand3ProngWPid const& candidates,
+  void process(aod::HfCand3ProngWPidPiKaPr const& candidates,
                TracksSel const&)
   {
     // looping over 3-prong candidates

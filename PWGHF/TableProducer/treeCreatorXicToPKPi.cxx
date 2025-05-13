@@ -226,8 +226,8 @@ struct HfTreeCreatorXicToPKPi {
 
   HfHelper hfHelper;
 
-  using CandXicData = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi>>;
-  using CandXicMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>>;
+  using CandXicData = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi>>;
+  using CandXicMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>>;
   using CandXicMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;

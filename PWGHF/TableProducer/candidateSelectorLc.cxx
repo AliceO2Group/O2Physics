@@ -588,7 +588,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function w/o Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPidWithDCAFitterN(aod::HfCand3ProngWPid const& candidates,
+  void processNoBayesPidWithDCAFitterN(aod::HfCand3ProngWPidPiKaPr const& candidates,
                                        TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
@@ -598,7 +598,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function with Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPidWithDCAFitterN(aod::HfCand3ProngWPid const& candidates,
+  void processBayesPidWithDCAFitterN(aod::HfCand3ProngWPidPiKaPr const& candidates,
                                      TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
@@ -608,7 +608,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function w/o Bayes PID with KFParticle
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngKF> const& candidates,
+  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngKF> const& candidates,
                                        TracksSel const& tracks)
   {
     runSelectLc<false, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
@@ -618,7 +618,7 @@ struct HfCandidateSelectorLc {
   /// \brief process function with Bayes PID with KFParticle
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngKF> const& candidates,
+  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngKF> const& candidates,
                                      TracksSelBayesPid const& tracks)
   {
     runSelectLc<true, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
