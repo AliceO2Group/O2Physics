@@ -56,6 +56,7 @@ enum eProcess {
   eProcessSim_Run1,    // Run 1, only simulated
   eProcessTest,        // minimum subscription to the tables, for testing purposes
   eProcessQA,          // maximum subscription to the tables, for QA purposes. Basically: eProcessRec + otherwise unnecessary tables
+  eProcessHepMChi,     // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventualyl with RecSim cases
   // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
   eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec". eQA is also in this category
   eGenericRecSim, // generic "RecSim" case
@@ -384,6 +385,7 @@ enum eQAEventHistograms2D {
   // Unsorted category: TBI 20250331 not sure if I will keep these ones permanently:
   eMultiplicity_vs_FT0CAmplitudeOnFoundBC,
   eCentFT0C_vs_FT0CAmplitudeOnFoundBC,
+  eCentrality_vs_CentralitySim, // correlation between centrality determined from reconstructed data, and centrality determined at generated level (from IP). I save it as [eSim], not as [eRec]
   // ...
   eQAEventHistograms2D_N
 };
