@@ -289,7 +289,7 @@ class DielectronCut : public TNamed
   bool PassTOFreqLowB(T const& track) const
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = (track.tpcInnerParam() < mMinPinForPionRejectionTPC && track.tpcInnerParam() < mMaxPinForPionRejectionTPC) ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
+    bool is_pi_excluded_TPC = (track.tpcInnerParam() > mMinPinForPionRejectionTPC && track.tpcInnerParam() < mMaxPinForPionRejectionTPC) ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_el_included_TOF = (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) && (track.hasTOF() && track.tofChi2() < mMaxChi2TOF);
     bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
     bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
