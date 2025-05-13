@@ -720,7 +720,8 @@ struct ebyeMaker {
         float beta{track.hasTOF() ? track.length() / (track.tofSignal() - track.tofEvTime()) * o2::constants::physics::invLightSpeedCm2PS : -999.f};
         beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
-        bool hasTof = track.hasTOF() && track.tofChi2() < 3;
+        const float maxTofChi2 = 3.f;
+        bool hasTof = track.hasTOF() && track.tofChi2() < maxTofChi2;
 
         if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
@@ -1131,7 +1132,8 @@ struct ebyeMaker {
       float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
+        const float centTriggerEdges[]{10.f, 30.f, 50.f};
+        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= centTriggerEdges[0] && cV0M < centTriggerEdges[1]) || cV0M > centTriggerEdges[2]))))
           continue;
       }
 
@@ -1217,7 +1219,8 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = 105.f;
+      float maxV0M = 105.f;
+      float cV0M = maxV0M;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1234,7 +1237,7 @@ struct ebyeMaker {
       for (const auto& classId : classIds) {
         if (bc.triggerMask() & BIT(classId)) {
           trigger |= 0x2;
-          cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
+          cV0M = cV0M < (maxV0M - 1.f) ? cV0M * 100. : cV0M;
           break;
         }
       }
