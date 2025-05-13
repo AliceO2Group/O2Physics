@@ -1255,7 +1255,6 @@ struct FullJetSpectrapp {
   void processMBCollisionsDATAWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsData, aod::FT0Mults>>::iterator const& collision, FullJetTableDataJoined const& jets, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
-    float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
     float neutralEnergy = 0.0;
 
     if (fabs(collision.posZ()) > VertexZCut) {
