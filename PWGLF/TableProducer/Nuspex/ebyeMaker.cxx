@@ -44,7 +44,6 @@
 
 #include "PWGLF/DataModel/LFEbyeTables.h"
 
-#include "TDatabasePDG.h"
 #include "TFormula.h"
 
 using namespace o2;
@@ -332,7 +331,7 @@ struct ebyeMaker {
         case 3122: {
           int foundPi = 0;
           for (const auto& mcDaught : mother.template daughters_as<aod::McParticles>()) {
-            if (std::abs(mcDaught.pdgCode()) == 211) {
+            if (std::abs(mcDaught.pdgCode()) == PDG_t::kPiPlus) {
               foundPi = mcDaught.pdgCode();
               break;
             }
@@ -542,7 +541,7 @@ struct ebyeMaker {
 
     float v0m = -1;
     auto scaleMC = [](float x, float pars[6]) {
-      return std::pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
     if (Run2V0MInfo.mMCScale != nullptr) {
@@ -958,9 +957,9 @@ struct ebyeMaker {
             for (const auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-              if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
+              if (!((mcTrackPos.pdgCode() == PDG_t::kProton && mcTrackNeg.pdgCode() == PDT_t::kPiMinus) || (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kProtonBar)))
                 continue;
-              if (std::abs(posMother.pdgCode()) != 3122) {
+              if (std::abs(posMother.pdgCode()) != PDG_t::kLambda0) {
                 continue;
               }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
@@ -991,12 +990,12 @@ struct ebyeMaker {
       if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
-      if (std::abs(pdgCode) == 3122) {
+      if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
         bool foundPr = false;
         for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcDaught.pdgCode()) == 2212) {
+          if (std::abs(mcDaught.pdgCode()) == PDG_t::kProton) {
             foundPr = true;
             break;
           }
