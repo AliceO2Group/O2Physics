@@ -300,7 +300,8 @@ struct HfTreeCreatorTccToD0D0Pi {
   void runCandCreatorData(CollType const& collision,
                           CandType const& candidates,
                           aod::TrackAssoc const& trackIndices,
-                          TrkType const&, aod::BCs const&)
+                          TrkType const&,
+                          aod::BCs const&)
   {
 
     auto primaryVertex = getPrimaryVertex(collision);
