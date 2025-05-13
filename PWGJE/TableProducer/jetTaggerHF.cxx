@@ -94,6 +94,7 @@ struct JetTaggerHFTask {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {DefaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", 2, "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<bool> useDb{"useDb", false, "Flag to use DB for ML model instead of the score"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/h/hahassan"}, "Paths of models on CCDB"};
@@ -507,7 +508,7 @@ struct JetTaggerHFTask {
       std::vector<jettaggingutilities::BJetSVParams> svsParams;
 
       jettaggingutilities::analyzeJetSVInfo4ML(analysisJet, allTracks, allSVs, svsParams, svPtMin, svReductionFactor);
-      jettaggingutilities::analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin);
+      jettaggingutilities::analyzeJetTrackInfo4ML(analysisJet, allTracks, allSVs, tracksParams, trackPtMin, trackDcaXYMax, trackDcaZMax);
 
       int nSVs = analysisJet.template secondaryVertices_as<SecondaryVertices>().size();
 
@@ -525,7 +526,15 @@ struct JetTaggerHFTask {
         bMlResponse.isSelectedMl(inputML, analysisJet.pt(), output);
       }
 
-      scoreML[analysisJet.globalIndex()] = output[0];
+      if (bMlResponse.getOutputNodes() > 1) {
+        auto Db = [](std::vector<float> scores, float fC) {
+          return std::log(scores[2] / (fC * scores[1] + (1 - fC) * scores[0]));
+        };
+
+        scoreML[analysisJet.globalIndex()] = useDb ? Db(output, fC) : output[2]; // 2 is the b-jet index
+      } else {
+        scoreML[analysisJet.globalIndex()] = output[0];
+      }
     }
   }
 
@@ -537,7 +546,7 @@ struct JetTaggerHFTask {
       std::vector<jettaggingutilities::BJetTrackParams> tracksParams;
       std::vector<jettaggingutilities::BJetSVParams> svsParams;
 
-      jettaggingutilities::analyzeJetTrackInfo4MLnoSV(analysisJet, allTracks, tracksParams, trackPtMin);
+      jettaggingutilities::analyzeJetTrackInfo4MLnoSV(analysisJet, allTracks, tracksParams, trackPtMin, trackDcaXYMax, trackDcaZMax);
 
       jettaggingutilities::BJetParams jetparam = {analysisJet.pt(), analysisJet.eta(), analysisJet.phi(), static_cast<int>(tracksParams.size()), 0, analysisJet.mass()};
       tracksParams.resize(nJetConst); // resize to the number of inputs of the ML
