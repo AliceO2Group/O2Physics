@@ -300,7 +300,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   void runCandCreatorData(CollType const& collision,
                           CandType const& candidates,
                           aod::TrackAssoc const& trackIndices,
-                          TrkType const& track, aod::BCs const&)
+                          TrkType const&, aod::BCs const&)
   {
 
     auto primaryVertex = getPrimaryVertex(collision);
@@ -427,7 +427,6 @@ struct HfTreeCreatorTccToD0D0Pi {
           trackD2.getPxPyPzGlo(pVecD2New);        // momentum of D2 at the Tcc vertex
           trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex
 
-          const auto& secVertexTcc = dfTcc.getPCACandidate();
           auto chi2PCA = dfTcc.getChi2AtPCACandidate();
           auto covMatrixPCA = dfTcc.calcPCACovMatrixFlat();
           hCovSVXX->Fill(covMatrixPCA[0]);
