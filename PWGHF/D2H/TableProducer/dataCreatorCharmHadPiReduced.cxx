@@ -1137,9 +1137,20 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), candC.nSigTpcPr0(), candC.nSigTofPr0(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
-          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), candC.nSigTpcPr1(), candC.nSigTofPr1(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
-          hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), candC.nSigTpcPr2(), candC.nSigTofPr2(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
+          float nSigmaTpcPr0{-999.f}, nSigmaTpcPr1{-999.f}, nSigmaTpcPr2{-999.f};
+          float nSigmaTofPr0{-999.f}, nSigmaTofPr1{-999.f}, nSigmaTofPr2{-999.f};
+          if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+            /// assign non-dummy values only for Lb->LcPi analysis
+            nSigmaTpcPr0 = candC.nSigTpcPr0();
+            nSigmaTpcPr1 = candC.nSigTpcPr1();
+            nSigmaTpcPr1 = candC.nSigTpcPr2();
+            nSigmaTofPr0 = candC.nSigTofPr0();
+            nSigmaTofPr1 = candC.nSigTofPr1();
+            nSigmaTofPr2 = candC.nSigTofPr2();
+          }
+          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), nSigmaTpcPr0, nSigmaTofPr0, charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
+          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), nSigmaTpcPr1, nSigmaTofPr1, charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
+          hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), nSigmaTpcPr1, nSigmaTofPr2, charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
           if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
