@@ -2082,7 +2082,6 @@ struct AnalysisAsymmetricPairing {
 
   HistogramManager* fHistMan;
 
-  std::map<int, std::vector<TString>> fTrackHistNames;
   std::vector<AnalysisCompositeCut*> fPairCuts;
   int fNPairHistPrefixes;
 
@@ -2102,6 +2101,10 @@ struct AnalysisAsymmetricPairing {
   int fNLegCuts;
   int fNPairCuts;
   int fNCommonTrackCuts;
+  // vectors for cut names and signal names, for easy access when calling FillHistogramList()
+  std::vector<TString> fLegCutNames;
+  std::vector<TString> fPairCutNames;
+  std::vector<TString> fCommonCutNames;
 
   Preslice<soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts>> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
@@ -2118,10 +2121,11 @@ struct AnalysisAsymmetricPairing {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    VarManager::SetDefaultVarNames();
 
-    TString histNames = "";
-    std::vector<TString> names;
+    VarManager::SetDefaultVarNames();
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
     // Get the leg cut filter maps
     fLegAFilterMask = fConfigLegAFilterMask.value;
@@ -2143,6 +2147,11 @@ struct AnalysisAsymmetricPairing {
         fPairCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
+    }
+    std::unique_ptr<TObjArray> objArrayPairCuts(cutNamesStr.Tokenize(","));
+    fNPairCuts = objArrayPairCuts->GetEntries();
+    for (int j = 0; j < fNPairCuts; j++) {
+      fPairCutNames.push_back(objArrayPairCuts->At(j)->GetName());
     }
     // Get the barrel track selection cuts
     string tempCuts;
@@ -2169,6 +2178,7 @@ struct AnalysisAsymmetricPairing {
         if (commonCutIdx >= 0) {
           fCommonTrackCutMask |= static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
           fCommonTrackCutFilterMasks[icut] = static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
+          fCommonCutNames.push_back(objArrayCommon->At(icut)->GetName());
         } else {
           LOGF(fatal, "Common track cut %s was not calculated upstream. Check the config!", objArrayCommon->At(icut)->GetName());
         }
@@ -2238,42 +2248,31 @@ struct AnalysisAsymmetricPairing {
           continue;
         }
       }
+      // Leg cut config is fine, store the leg cut name in a vector
+      fLegCutNames.push_back(legsStr);
+
       if (isThreeProng[icut]) {
-        names = {
-          Form("TripletsBarrelSE_%s", legsStr.Data())};
-        histNames += Form("%s;", names[0].Data());
+        DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s", legsStr.Data()), fConfigHistogramSubgroups.value.data());
         if (fConfigAmbiguousHistograms.value) {
-          names.push_back(Form("TripletsBarrelSE_ambiguous_%s", legsStr.Data()));
-          histNames += Form("%s;", names[1].Data());
+          DefineHistograms(fHistMan, Form("TripletsBarrelSE_ambiguous_%s", legsStr.Data()), fConfigHistogramSubgroups.value.data());
         }
-        fTrackHistNames[icut] = names;
 
         std::unique_ptr<TObjArray> objArrayCommon(commonNamesStr.Tokenize(","));
         for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-          names = {};
-          names.push_back(Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()));
-          histNames += Form("%s;", names[0].Data());
-          fTrackHistNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
+          DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()), fConfigHistogramSubgroups.value.data());
         }
 
         if (!cutNamesStr.IsNull()) { // if pair cuts
           std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
           fNPairCuts = objArrayPair->GetEntries();
           for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
-            names = {};
-            names.push_back(Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName()));
-            histNames += Form("%s;", names[0].Data());
-            fTrackHistNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
+            DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-              names = {};
-              names.push_back(Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
-              histNames += Form("%s;", names[0].Data());
-              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut] = names;
+              DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());
             } // end loop (common cuts)
           } // end loop (pair cuts)
         } // end if (pair cuts)
       } else {
-        names = {};
         std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
         if (fConfigSameSignHistograms.value) {
           pairHistPrefixes.push_back("PairsBarrelSEPP");
@@ -2282,50 +2281,37 @@ struct AnalysisAsymmetricPairing {
         fNPairHistPrefixes = pairHistPrefixes.size();
 
         for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-          names.push_back(Form("%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()));
-          histNames += Form("%s;", names[iPrefix].Data());
+          DefineHistograms(fHistMan, Form("%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()), fConfigHistogramSubgroups.value.data());
         }
         if (fConfigAmbiguousHistograms.value) {
           for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-            names.push_back(Form("%s_ambiguous_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()));
-            histNames += Form("%s;", names[fNPairHistPrefixes + iPrefix].Data());
+            DefineHistograms(fHistMan, Form("%s_ambiguous_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()), fConfigHistogramSubgroups.value.data());
           }
         }
         if (fConfigReflectedHistograms.value) {
           for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-            names.push_back(Form("%s_reflected_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()));
-            histNames += Form("%s;", names[(1 + fConfigAmbiguousHistograms.value) * fNPairHistPrefixes + iPrefix].Data());
+            DefineHistograms(fHistMan, Form("%s_reflected_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data()), fConfigHistogramSubgroups.value.data());
           }
         }
-        fTrackHistNames[icut] = names;
 
         std::unique_ptr<TObjArray> objArrayCommon(commonNamesStr.Tokenize(","));
         for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-          names = {};
           for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-            names.push_back(Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()));
-            histNames += Form("%s;", names[iPrefix].Data());
+            DefineHistograms(fHistMan, Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()), fConfigHistogramSubgroups.value.data());
           }
-          fTrackHistNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut] = names;
         }
 
         if (!cutNamesStr.IsNull()) { // if pair cuts
           std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
           fNPairCuts = objArrayPair->GetEntries();
           for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
-            names = {};
             for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-              names.push_back(Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayPair->At(iPairCut)->GetName()));
-              histNames += Form("%s;", names[iPrefix].Data());
+              DefineHistograms(fHistMan, Form("%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());
             }
-            fTrackHistNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut] = names;
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-              names = {};
               for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
-                names.push_back(Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()));
-                histNames += Form("%s;", names[iPrefix].Data());
+                DefineHistograms(fHistMan, Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());
               }
-              fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
         } // end if (pair cuts)
@@ -2357,11 +2343,6 @@ struct AnalysisAsymmetricPairing {
     fLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(fCCDB->get<o2::base::MatLayerCylSet>(fConfigLutPath));
     VarManager::SetupMatLUTFwdDCAFitter(fLUT);
 
-    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-    fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-    DefineHistograms(fHistMan, histNames.Data(), fConfigHistogramSubgroups.value.data()); // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
     VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
@@ -2419,8 +2400,6 @@ struct AnalysisAsymmetricPairing {
         fCurrentRun = events.begin().runNumber();
       }
     }
-
-    std::map<int, std::vector<TString>> histNames = fTrackHistNames;
 
     int sign1 = 0;
     int sign2 = 0;
@@ -2511,41 +2490,41 @@ struct AnalysisAsymmetricPairing {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbi = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
             if (sign1 * sign2 < 0) {
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fLegCutNames[icut].Data()), VarManager::fgValues); // reconstructed, unmatched
               if (isAmbi && fConfigAmbiguousHistograms.value) {
-                fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguous_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
               }
               if (isReflected && fConfigReflectedHistograms.value) {
-                fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes * (1 + fConfigAmbiguousHistograms.value)].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_reflected_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
               }
             } else if (fConfigSameSignHistograms.value) {
               if (sign1 > 0) {
-                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 if (isAmbi && fConfigAmbiguousHistograms.value) {
-                  fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes + 1].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguous_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 }
                 if (isReflected && fConfigReflectedHistograms.value) {
-                  fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes * (1 + fConfigAmbiguousHistograms.value) + 1].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_reflected_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 }
               } else {
-                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 if (isAmbi && fConfigAmbiguousHistograms.value) {
-                  fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes + 2].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguous_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 }
                 if (isReflected && fConfigReflectedHistograms) {
-                  fHistMan->FillHistClass(histNames[icut][fNPairHistPrefixes * (1 + fConfigAmbiguousHistograms.value) + 2].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_reflected_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
                 }
               }
             }
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
               if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
                 if (sign1 * sign2 < 0) {
-                  fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data()), VarManager::fgValues);
                 } else if (fConfigSameSignHistograms.value) {
                   if (sign1 > 0) {
-                    fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][1].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data()), VarManager::fgValues);
                   } else {
-                    fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][2].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data()), VarManager::fgValues);
                   }
                 }
               }
@@ -2557,24 +2536,24 @@ struct AnalysisAsymmetricPairing {
               pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
               // Histograms with pair cuts
               if (sign1 * sign2 < 0) {
-                fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
               } else if (fConfigSameSignHistograms.value) {
                 if (sign1 > 0) {
-                  fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][1].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
                 } else {
-                  fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][2].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
                 }
               }
               // Histograms with pair cuts and common track cuts
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
                 if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
                   if (sign1 * sign2 < 0) {
-                    fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
                   } else if (fConfigSameSignHistograms.value) {
                     if (sign1 > 0) {
-                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][1].Data(), VarManager::fgValues);
+                      fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
                     } else {
-                      fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][2].Data(), VarManager::fgValues);
+                      fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
                     }
                   }
                 }
@@ -2603,8 +2582,6 @@ struct AnalysisAsymmetricPairing {
       }
     }
 
-    std::map<int, std::vector<TString>> histNames = fTrackHistNames;
-
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
@@ -2629,12 +2606,12 @@ struct AnalysisAsymmetricPairing {
       // Based on triplet type, make suitable combinations of the partitions
       if (tripletType == VarManager::kTripleCandidateToPKPi) {
         for (auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
-          readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames);
+          readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType);
         }
       } else if (tripletType == VarManager::kTripleCandidateToKPiPi) {
         for (auto& a1 : groupedLegAAssocs) {
           for (auto& [a2, a3] : combinations(groupedLegBAssocs, groupedLegCAssocs)) {
-            readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames);
+            readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType);
           }
         }
       } else {
@@ -2645,7 +2622,7 @@ struct AnalysisAsymmetricPairing {
 
   // Helper function to process triplet
   template <bool TThreeProngFitter, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TTrackAssoc, typename TTracks, typename TEvent>
-  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType, std::map<int, std::vector<TString>> histNames)
+  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType)
   {
     uint32_t threeTrackFilter = static_cast<uint32_t>(0);
     uint32_t threeTrackCommonFilter = static_cast<uint32_t>(0);
@@ -2717,13 +2694,13 @@ struct AnalysisAsymmetricPairing {
     // Fill histograms
     for (int icut = 0; icut < fNLegCuts; icut++) {
       if (threeTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-        fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+        fHistMan->FillHistClass(Form("TripletsBarrelSE_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
         if (fConfigAmbiguousHistograms.value && ((threeTrackFilter & (static_cast<uint32_t>(1) << 29)) || (threeTrackFilter & (static_cast<uint32_t>(1) << 30)) || (threeTrackFilter & (static_cast<uint32_t>(1) << 31)))) {
-          fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+          fHistMan->FillHistClass(Form("TripletsBarrelSE_ambiguous_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
         }
         for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
           if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
-            fHistMan->FillHistClass(histNames[fNLegCuts + icut * fNCommonTrackCuts + iCommonCut][0].Data(), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TripletsBarrelSE_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data()), VarManager::fgValues);
           }
         } // end loop (common cuts)
         int iPairCut = 0;
@@ -2731,11 +2708,11 @@ struct AnalysisAsymmetricPairing {
           if (!((*cut)->IsSelected(VarManager::fgValues))) // apply pair cuts
             continue;
           // Histograms with pair cuts
-          fHistMan->FillHistClass(histNames[fNLegCuts * (fNCommonTrackCuts + 1) + icut * fNPairCuts + iPairCut][0].Data(), VarManager::fgValues);
+          fHistMan->FillHistClass(Form("TripletsBarrelSE_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
           // Histograms with pair cuts and common track cuts
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
             if (threeTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
-              fHistMan->FillHistClass(histNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + (icut * fNPairCuts * fNCommonTrackCuts) + (iCommonCut * fNPairCuts) + iPairCut][0].Data(), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("TripletsBarrelSE_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), VarManager::fgValues);
             }
           }
         } // end loop (pair cuts)
@@ -2815,12 +2792,14 @@ struct AnalysisDileptonTrack {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   int fNCuts;      // number of dilepton leg cuts
+  int fNLegCuts;
   int fNPairCuts;  // number of pair cuts
   int fNCommonTrackCuts;
   std::map<int, int> fCommonTrackCutMap;
   uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // vector for single-lepton and track cut names for easy access when calling FillHistogramList()
   std::vector<TString> fTrackCutNames;
+  std::vector<TString> fLegCutNames;
   // vector for pair cut names, used mainly for pairs built via the asymmetric pairing task
   std::vector<TString> fPairCutNames;
   std::vector<TString> fCommonPairCutNames;
@@ -2866,7 +2845,6 @@ struct AnalysisDileptonTrack {
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(true);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-    TString histNames = "";
 
     // For each track/muon selection used to produce dileptons, create a separate histogram directory using the
     // name of the track/muon cut.
@@ -2935,6 +2913,7 @@ struct AnalysisDileptonTrack {
       //        but this is only used for histograms, not for the produced dilepton tables
       string cfgPairing_TrackCuts;
       string cfgPairing_PairCuts;
+      string cfgPairing_PairCutsJSON;
       string cfgPairing_CommonTrackCuts;
       if (isBarrel) {
         getTaskOptionValue<string>(context, "analysis-same-event-pairing", "cfgTrackCuts", cfgPairing_TrackCuts, false);
@@ -2949,7 +2928,7 @@ struct AnalysisDileptonTrack {
       }
 
       if (cfgPairing_TrackCuts.empty()) {
-        LOG(fatal) << "There are no dilepton cuts specified in the upstream in the same-event-pairing or assymmetric-pairing";
+        LOG(fatal) << "There are no dilepton cuts specified in the upstream in the same-event-pairing or asymmetric-pairing";
       }
 
       // If asymmetric pair is used, it may have common track cuts
@@ -2967,6 +2946,18 @@ struct AnalysisDileptonTrack {
         }
       } // end if (common cuts)
 
+      // Get also the pair cuts specified via the JSON parameters
+      if (isBarrelAsymmetric) {
+        getTaskOptionValue<string>(context, "analysis-asymmetric-pairing", "cfgPairCutsJSON", cfgPairing_PairCutsJSON, false);
+        TString addPairCutsStr = cfgPairing_PairCutsJSON;
+        if (addPairCutsStr != "") {
+          std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
+          for (auto& t : addPairCuts) {
+            cfgPairing_PairCuts += Form(",%s", t->GetName());
+          }
+        }
+      }
+
       std::unique_ptr<TObjArray> objArrayPairCuts(TString(cfgPairing_PairCuts).Tokenize(","));
       fNPairCuts = objArrayPairCuts->GetEntries();
       for (int j = 0; j < fNPairCuts; j++) {
@@ -2975,16 +2966,30 @@ struct AnalysisDileptonTrack {
 
       // array of single lepton cuts specified in the same-analysis-pairing task
       std::unique_ptr<TObjArray> cfgPairing_objArrayTrackCuts(TString(cfgPairing_TrackCuts).Tokenize(","));
+      // If asymmetric pairs are used, the number of cuts should come from the asymmetric-pairing task
+      if (isBarrelAsymmetric) {
+        fNLegCuts = cfgPairing_objArrayTrackCuts->GetEntries();
+      } else {
+        fNLegCuts = fNCuts;
+      }
 
       // loop over single lepton cuts
-      for (int icut = 0; icut < fNCuts; ++icut) {
+      for (int icut = 0; icut < fNLegCuts; ++icut) {
+
+        TString pairLegCutName;
 
         // here we check that this cut is one of those used for building the dileptons
-        if (!cfgPairing_objArrayTrackCuts->FindObject(fTrackCutNames[icut].Data())) {
-          continue;
+        if (!isBarrelAsymmetric) {
+          if (!cfgPairing_objArrayTrackCuts->FindObject(fTrackCutNames[icut].Data())) {
+            continue;
+          }
+          pairLegCutName = fTrackCutNames[icut].Data();
+        } else {
+          // For asymmetric pairs we access the leg cuts instead
+          pairLegCutName = static_cast<TObjString*>(cfgPairing_objArrayTrackCuts->At(icut))->GetString();
         }
+        fLegCutNames.push_back(pairLegCutName);
 
-        TString pairLegCutName = fTrackCutNames[icut].Data();
         // define dilepton histograms
         DefineHistograms(fHistMan, Form("DileptonsSelected_%s", pairLegCutName.Data()), "barrel,vertexing");
         // loop over track cuts and create dilepton - track histogram directories
@@ -3000,22 +3005,22 @@ struct AnalysisDileptonTrack {
           if (!cfgPairing_strCommonTrackCuts.IsNull()) {
             std::unique_ptr<TObjArray> objArrayCommon(cfgPairing_strCommonTrackCuts.Tokenize(","));
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-              DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
               DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data()), "barrel,vertexing");
+              DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
             }
           }
 
           if (fNPairCuts != 0) {
 
             for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) {
-              DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
               DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data()), "barrel,vertexing");
+              DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
 
               if (!cfgPairing_strCommonTrackCuts.IsNull()) {
                 std::unique_ptr<TObjArray> objArrayCommon(cfgPairing_strCommonTrackCuts.Tokenize(","));
                 for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-                  DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
                   DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), "barrel,vertexing");
+                  DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigHistogramSubgroups.value.data());
                 }
               }
             }
@@ -3079,28 +3084,28 @@ struct AnalysisDileptonTrack {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
 
       // loop over existing dilepton leg cuts (e.g. electron1, electron2, etc)
-      for (int icut = 0; icut < fNCuts; icut++) {
+      for (int icut = 0; icut < fNLegCuts; icut++) {
 
         if (!dilepton.filterMap_bit(icut)) {
           continue;
         }
 
         // regular dileptons
-        fHistMan->FillHistClass(Form("DileptonsSelected_%s", fTrackCutNames[icut].Data()), fValuesDilepton);
+        fHistMan->FillHistClass(Form("DileptonsSelected_%s", fLegCutNames[icut].Data()), fValuesDilepton);
 
         // other pairs, e.g.: D0s
         if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
           for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
             if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
-              fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data()), fValuesDilepton);
+              fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s", fLegCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data()), fValuesDilepton);
             }
           }
           for (int iPairCut = 0; iPairCut < fNPairCuts; iPairCut++) {
             if (dilepton.pairFilterMap_bit(iPairCut)) {
-              fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[icut].Data()), fValuesDilepton);
+              fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[icut].Data()), fValuesDilepton);
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
                 if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
-                  fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[icut].Data()), fValuesDilepton);
+                  fHistMan->FillHistClass(Form("DileptonsSelected_%s_%s_%s", fLegCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[icut].Data()), fValuesDilepton);
                 }
               }
             }
@@ -3161,7 +3166,7 @@ struct AnalysisDileptonTrack {
 
         // Fill histograms for the triplets
         // loop over dilepton / ditrack cuts
-        for (int icut = 0; icut < fNCuts; icut++) {
+        for (int icut = 0; icut < fNLegCuts; icut++) {
 
           if (!dilepton.filterMap_bit(icut)) {
             continue;
@@ -3173,20 +3178,20 @@ struct AnalysisDileptonTrack {
             if (!(trackSelection & (static_cast<uint32_t>(1) << iTrackCut))) {
               continue;
             }
-            fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fTrackCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
+            fHistMan->FillHistClass(Form("DileptonTrack_%s_%s", fLegCutNames[icut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
 
             if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) { // Dielectrons and Dimuons don't have the PairFilterMap column
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
                 if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
-                  fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
+                  fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fLegCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                 }
               }
               for (int iPairCut = 0; iPairCut < fNPairCuts; iPairCut++) {
                 if (dilepton.pairFilterMap_bit(iPairCut)) {
-                  fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fTrackCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
+                  fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                   for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
                     if (dilepton.commonFilterMap_bit(fCommonTrackCutMap[iCommonCut])) {
-                      fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fTrackCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
+                      fHistMan->FillHistClass(Form("DileptonTrack_%s_%s_%s_%s", fLegCutNames[icut].Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iTrackCut].Data()), fValuesHadron);
                     }
                   }
                 }

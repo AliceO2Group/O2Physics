@@ -1036,6 +1036,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kWV22ME] = "";
   fgVariableNames[kWV24ME] = "W_{2}(4)_{ME}";
   fgVariableUnits[kWV24ME] = "";
+  fgVariableNames[kS12] = "m_{12}^{2}";
+  fgVariableUnits[kS12] = "GeV^{2}/c^{4}";
+  fgVariableNames[kS13] = "m_{13}^{2}";
+  fgVariableUnits[kS13] = "GeV^{2}/c^{4}";
+  fgVariableNames[kS23] = "m_{23}^{2}";
+  fgVariableUnits[kS23] = "GeV^{2}/c^{4}";
 
   // Set the variables short names map. This is needed for dynamic configuration via JSON files
   fgVarNamesMap["kNothing"] = kNothing;
@@ -1618,6 +1624,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kKFJpsiDCAxy"] = kKFJpsiDCAxy;
   fgVarNamesMap["kKFPairDeviationFromPV"] = kKFPairDeviationFromPV;
   fgVarNamesMap["kKFPairDeviationxyFromPV"] = kKFPairDeviationxyFromPV;
+  fgVarNamesMap["kS12"] = kS12,
+  fgVarNamesMap["kS13"] = kS13,
+  fgVarNamesMap["kS23"] = kS23,
   fgVarNamesMap["kNPairVariables"] = kNPairVariables;
   fgVarNamesMap["kPairMass"] = kPairMass;
   fgVarNamesMap["kPairMassDau"] = kPairMassDau;

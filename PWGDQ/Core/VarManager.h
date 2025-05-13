@@ -791,6 +791,9 @@ class VarManager : public TObject
     kKFJpsiDCAxy,
     kKFPairDeviationFromPV,
     kKFPairDeviationxyFromPV,
+    kS12,
+    kS13,
+    kS23,
     kNPairVariables,
 
     // Candidate-track correlation variables
@@ -3073,6 +3076,9 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
     values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 
   if (pairType == kTripleCandidateToPKPi) {
@@ -3334,6 +3340,10 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+    values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 }
 
@@ -4047,6 +4057,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[VarManager::kPairPtDau] = v12.Pt();
     }
     values[VarManager::kPt] = track.pt();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0 || procCodeJpsi == 0) {
