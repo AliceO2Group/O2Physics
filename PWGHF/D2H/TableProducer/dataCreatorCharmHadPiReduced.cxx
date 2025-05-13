@@ -625,7 +625,7 @@ struct HfDataCreatorCharmHadPiReduced {
               std::vector<int> arrDaughDsIndex;
               std::array<int, 2> arrPDGDaughDs;
               RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
-              if (arrDaughDsIndex.size() == 2) {
+              if (arrDaughDsIndex.size() == NDaughtersDs) {
                 for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
                   auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
                   arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());

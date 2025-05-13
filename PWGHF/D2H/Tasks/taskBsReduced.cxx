@@ -127,11 +127,11 @@ struct HfTaskBsReduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bs::isSelBsToDsPi >= selectionFlagBs);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
   void init(InitContext&)
   {
