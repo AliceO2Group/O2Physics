@@ -261,7 +261,7 @@ struct TableMaker {
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut;              //! Event selection cut
+  AnalysisCompositeCut* fEventCut;               //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
@@ -400,7 +400,7 @@ struct TableMaker {
       }
     }
 
-    DefineHistograms(histClasses);                   // define all histograms
+    DefineHistograms(histClasses); // define all histograms
     // Additional histogram via the JSON configurable
     TString addHistsStr = fConfigHistOutput.fConfigAddJSONHistograms.value;
     if (fConfigHistOutput.fConfigQA && addHistsStr != "") {
@@ -1160,10 +1160,12 @@ struct TableMaker {
           if (static_cast<int>(muon.trackType()) > 2) {
             // refill kinematic info and recalculate propagation in case of using realigned muons
             auto muonRealignSelected = muonsRealign.sliceBy(fwdtrackRealignPerMuon, assoc.fwdtrackId());
+            int realignRemoveFlag = 0;
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 // refill muon information with realigned tracks
                 VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+                realignRemoveFlag = muonRealign.isRemovable();
 
                 if (fConfigVariousOptions.fPropMuon) {
                   VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
@@ -1171,6 +1173,11 @@ struct TableMaker {
 
                 VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
               }
+
+              if (realignRemoveFlag) {
+                continue;
+              }
+
             } else {
               LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
             }
@@ -1260,10 +1267,12 @@ struct TableMaker {
           if (static_cast<int>(muon.trackType()) > 2) {
             // refill kinematic info and recalculate propagation in case of using realigned muons
             auto muonRealignSelected = muonsRealign.sliceBy(fwdtrackRealignPerMuon, muon.globalIndex());
+            int realignRemoveFlag = 0;
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 // refill muon information with realigned tracks
                 VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+                realignRemoveFlag = muonRealign.isRemovable();
 
                 if (fConfigVariousOptions.fPropMuon) {
                   VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
@@ -1271,6 +1280,11 @@ struct TableMaker {
 
                 VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
               }
+
+              if (realignRemoveFlag) {
+                continue;
+              }
+
             } else {
               LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
             }

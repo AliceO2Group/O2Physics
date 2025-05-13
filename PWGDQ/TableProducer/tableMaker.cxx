@@ -1120,6 +1120,7 @@ struct TableMaker {
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
         auto muon = muonId.template fwdtrack_as<TMuons>();
         trackFilteringTag = static_cast<uint64_t>(0);
+        int realignRemoveFlag = 0;
         if constexpr (static_cast<bool>(TMuonRealignFillMap)) {
           // Update muon information using realigned tracks
           if (static_cast<int>(muon.trackType()) > 2) {
@@ -1128,6 +1129,7 @@ struct TableMaker {
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+                realignRemoveFlag = muonRealign.isRemovable();
               }
             } else {
               LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
@@ -1151,7 +1153,7 @@ struct TableMaker {
             trackTempFilterMap |= (uint8_t(1) << i);
         }
 
-        if (!trackTempFilterMap) { // does not pass the cuts
+        if (!trackTempFilterMap || realignRemoveFlag) { // does not pass the cuts
           nDel++;
         } else { // it passes the cuts and will be saved in the tables
           newEntryNb[muon.index()] = muon.index() - nDel;
@@ -1174,11 +1176,13 @@ struct TableMaker {
           if (static_cast<int>(muon.trackType()) > 2) {
             // Update only MCH or MCH-MID tracks with realigned information
             auto muonRealignSelected = tracksMuonRealign.sliceBy(fwdtrackRealignPerMuon, muonId.fwdtrackId());
+            int realignRemoveFlag = 0;
             if (muonRealignSelected.size() == 1) {
               for (const auto& muonRealign : muonRealignSelected) {
                 LOGF(debug, "Muon original  - collisionId:%d x:%g y:%g z:%g phi:%g tgl:%g signed1pt:%g pt:%g p:%g eta:%g chi2:%g", muon.collisionId(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.pt(), muon.p(), muon.eta(), muon.chi2());
                 LOGF(debug, "Muon realigned - collisionId:%d x:%g y:%g z:%g phi:%g tgl:%g signed1pt:%g pt:%g p:%g eta:%g chi2:%g", muonRealign.collisionId(), muonRealign.x(), muonRealign.y(), muonRealign.z(), muonRealign.phi(), muonRealign.tgl(), muonRealign.signed1Pt(), muonRealign.pt(), muonRealign.p(), muonRealign.eta(), muonRealign.chi2());
                 VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
+                realignRemoveFlag = muonRealign.isRemovable();
 
                 // recalculte pDca for global muon tracks
                 VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
@@ -1187,6 +1191,11 @@ struct TableMaker {
                   VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
                 }
               }
+
+              if (realignRemoveFlag) {
+                continue;
+              }
+
             } else {
               LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
             }
