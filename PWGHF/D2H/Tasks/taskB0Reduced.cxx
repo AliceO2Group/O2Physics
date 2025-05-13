@@ -310,6 +310,8 @@ struct HfTaskB0Reduced {
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi] = "B_{s}^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) K^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_b0::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -463,6 +465,10 @@ struct HfTaskB0Reduced {
         } else if constexpr (withDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassB0, ptCandB0);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi)) { // B0s → Ds- π+ → (K- K+ π-) π+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi, invMassB0, ptCandB0);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK)) { // B0 → D- K+ → (π- K+ π-) K+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK, invMassB0, ptCandB0);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::PartlyRecoDecay, invMassB0, ptCandB0);
           } else {
