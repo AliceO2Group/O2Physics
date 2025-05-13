@@ -28,17 +28,13 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
-
-enum PidMethod {
-  NoPid = 0, // none
-  TpcOrTof,  // TPC or TOF
-  TpcAndTof  // TPC and TOF
-};
+using namespace o2::aod::pid_tpc_tof_utils;
 
 struct HfCandidateSelectorLbToLcPiReduced {
   Produces<aod::HfSelLbToLcPi> hfSelLbToLcPiCandidate; // table defined in CandidateSelectionTables.h
@@ -47,7 +43,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<int> pidMethod{"pidMethod", 1, "PID selection method for the bachelor pion (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
+  Configurable<int> pidMethod{"pidMethod", PidMethod::TpcOrTof, "PID selection method for the bachelor pion (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -100,11 +96,11 @@ struct HfCandidateSelectorLbToLcPiReduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (pidMethod < PidMethod::NoPid || pidMethod > PidMethod::TpcAndTof) {
+    if (pidMethod < 0 || pidMethod >= PidMethod::NPidMethods) {
       LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
     }
 
-    if (pidMethod == PidMethod::TpcOrTof || pidMethod == PidMethod::TpcAndTof) {
+    if (pidMethod != PidMethod::NoPid) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -191,7 +187,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
         if (pidMethod == PidMethod::TpcOrTof) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
-        } else {
+        } else if (pidMethod == PidMethod::TpcAndTof) {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
         if (!hfHelper.selectionLbToLcPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
