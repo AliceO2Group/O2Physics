@@ -20,7 +20,10 @@
         "ccdb-url": "http://alice-ccdb.cern.ch",
         "isRun2MC": "-1"
     },
-    "tracks-extra-converter": "",
+    "tracks-extra-v002-converter": {
+        "processV000ToV002": "true",
+        "processV001ToV002": "false"
+    },
     "tracks-extra-spawner": "",
     "track-propagation": {
         "ccdb-url": "http://alice-ccdb.cern.ch",
