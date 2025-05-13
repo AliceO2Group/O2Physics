@@ -13,6 +13,7 @@
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
 #include <vector>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -84,9 +85,6 @@ struct HfTaskElectronWeakBoson {
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
 
-  // Zorro objects for skimmed data processing
-  Zorro zorro;
-
   // CCDB service object
   Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -126,6 +124,10 @@ struct HfTaskElectronWeakBoson {
 
   // Histogram registry: an object to hold your registrygrams
   HistogramRegistry registry{"registry"};
+
+  // Zorro objects for skimmed data processing
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -195,9 +197,6 @@ struct HfTaskElectronWeakBoson {
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
-
-  // Zorro Summary
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
