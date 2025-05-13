@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file ebyeMaker.cxx
-// \brief table producer for e-by-e analysis in LF
-// \author Mario Ciacco <mario.ciacco@cern.ch>
+/// \file ebyeMaker.cxx
+/// \brief table producer for e-by-e analysis in LF
+/// \author Mario Ciacco <mario.ciacco@cern.ch>
 
 #include <vector>
 #include <map>
