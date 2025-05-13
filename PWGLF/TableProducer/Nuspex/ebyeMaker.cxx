@@ -75,7 +75,7 @@ static const std::vector<std::string> particleName{"p"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
-  for (int i = 0; i < 3; ++i) {
+  for (uint64_t i = 0; i < momA.size(); ++i) {
     momA[i] = momB[i] + momC[i];
   }
 }
@@ -336,7 +336,7 @@ struct ebyeMaker {
               break;
             }
           }
-          if (foundPi * mcPart.pdgCode() < -0.5)
+          if (foundPi * mcPart.pdgCode() < 0)
             return PartTypes::kLa;
           return -1;
         }
@@ -354,13 +354,14 @@ struct ebyeMaker {
   template <class T>
   bool selectV0Daughter(T const& track)
   {
+    const float defNClCROverFind = 0.8f;
     if (std::abs(track.eta()) > etaMaxV0dau) {
       return false;
     }
     if (track.itsNCls() < v0trackNclusItsCut ||
         track.tpcNClsFound() < v0trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < v0trackNclusTpcCut ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
         track.tpcNClsShared() > v0trackNsharedClusTpc) {
       return false;
     }
@@ -379,6 +380,8 @@ struct ebyeMaker {
   template <class T>
   bool selectTrack(T const& track)
   {
+    const float defItsChi2NClCut = 36.f;
+    const float defNClCROverFind = 0.8f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -388,9 +391,9 @@ struct ebyeMaker {
     if (track.itsNCls() < trackNclusItsCut ||
         track.tpcNClsFound() < trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > trackChi2Cut ||
-        track.itsChi2NCl() > 36.f) {
+        track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
     if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
@@ -407,7 +410,8 @@ struct ebyeMaker {
   float getITSClSize(T const& track)
   {
     float sum{0.f};
-    for (int iL{0}; iL < 6; ++iL) {
+    const int nLayers = 7;
+    for (int iL{0}; iL < nLayers; ++iL) {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();
@@ -452,7 +456,8 @@ struct ebyeMaker {
         if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
           if (genName->length() != 0) {
             if (Run2V0MInfo.mMCScale != nullptr) {
-              for (int ixpar = 0; ixpar < 6; ++ixpar) {
+              const int nPars = 6;
+              for (int ixpar = 0; ixpar < nPars; ++ixpar) {
                 Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
               }
             } else {
@@ -664,12 +669,13 @@ struct ebyeMaker {
     gpu::gpustd::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
     uint8_t nTracks{0};
+    const float tklEtaCuts[]{1.2, 0.6, 0.7};
     for (const auto& track : tracks) {
 
-      if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
-        if (std::abs(track.eta()) < 0.6)
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < tklEtaCuts[0]) { // tracklet
+        if (std::abs(track.eta()) < tklEtaCuts[1])
           nTracklets[0]++;
-        else if (std::abs(track.eta()) > 0.7)
+        else if (std::abs(track.eta()) > tklEtaCuts[2])
           nTracklets[1]++;
       }
 
@@ -914,7 +920,7 @@ struct ebyeMaker {
     fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
 
     for (int iP{0}; iP < kNpart; ++iP) {
-      for (const auto& candidateTrack : candidateTracks[iP]) {
+      for (auto& candidateTrack : candidateTracks[iP]) {
         candidateTrack.isreco = true;
 
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
@@ -944,7 +950,7 @@ struct ebyeMaker {
         }
       }
     }
-    for (const auto& candidateV0 : candidateV0s) {
+    for (auto& candidateV0 : candidateV0s) {
       candidateV0.isreco = true;
       auto mcLabPos = mcLabels.rawIteratorAt(candidateV0.globalIndexPos);
       auto mcLabNeg = mcLabels.rawIteratorAt(candidateV0.globalIndexNeg);
@@ -957,7 +963,7 @@ struct ebyeMaker {
             for (const auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-              if (!((mcTrackPos.pdgCode() == PDG_t::kProton && mcTrackNeg.pdgCode() == PDT_t::kPiMinus) || (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kProtonBar)))
+              if (!((mcTrackPos.pdgCode() == PDG_t::kProton && mcTrackNeg.pdgCode() == PDG_t::kPiMinus) || (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kProtonBar)))
                 continue;
               if (std::abs(posMother.pdgCode()) != PDG_t::kLambda0) {
                 continue;
@@ -1240,7 +1246,7 @@ struct ebyeMaker {
       }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (const auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
@@ -1432,7 +1438,7 @@ struct ebyeMaker {
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (const auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
