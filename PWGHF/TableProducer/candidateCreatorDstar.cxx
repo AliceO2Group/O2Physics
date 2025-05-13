@@ -385,8 +385,8 @@ struct HfCandidateCreatorDstar {
   /// @brief process function w/ PV refit and w/o centrality selections
   void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
-                      aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDs
-                        TracksWCovExtraPidPiKa const& tracks,
+                      aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
+                      TracksWCovExtraPidPiKa const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -396,8 +396,8 @@ struct HfCandidateCreatorDstar {
   /// @brief process function w/o PV refit and w/o centrality selections
   void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
-                        aod::HfDstars const& rowsTrackIndexDst
-                          TracksWCovExtraPidPiKa const& tracks,
+                        aod::HfDstars const& rowsTrackIndexDstar,
+                        TracksWCovExtraPidPiKa const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -425,7 +425,6 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-
                                 TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -454,7 +453,6 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-
                                 TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
