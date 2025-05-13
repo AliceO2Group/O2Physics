@@ -31,13 +31,42 @@ DECLARE_SOA_COLUMN(NSigmaMuonRich, nSigmaMuonRich, float);         //! NSigma mu
 DECLARE_SOA_COLUMN(NSigmaPionRich, nSigmaPionRich, float);         //! NSigma pion BarrelRich
 DECLARE_SOA_COLUMN(NSigmaKaonRich, nSigmaKaonRich, float);         //! NSigma kaon BarrelRich
 DECLARE_SOA_COLUMN(NSigmaProtonRich, nSigmaProtonRich, float);     //! NSigma proton BarrelRich
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaRich, nSigmaRich,                 //! General function to get the nSigma for the RICH
+                           [](const float el,
+                              const float mu,
+                              const float pi,
+                              const float ka,
+                              const float pr,
+                              const int id) -> float {
+                             switch (std::abs(id)) {
+                               case 0:
+                                 return el;
+                               case 1:
+                                 return mu;
+                               case 2:
+                                 return pi;
+                               case 3:
+                                 return ka;
+                               case 4:
+                                 return pr;
+                               default:
+                                 LOG(fatal) << "Unrecognized PDG code for RICH";
+                                 return 999.f;
+                             }
+                           });
+
 } // namespace upgrade_rich
 DECLARE_SOA_TABLE(UpgradeRichs, "AOD", "UPGRADERICH",
                   upgrade_rich::NSigmaElectronRich,
                   upgrade_rich::NSigmaMuonRich,
                   upgrade_rich::NSigmaPionRich,
                   upgrade_rich::NSigmaKaonRich,
-                  upgrade_rich::NSigmaProtonRich);
+                  upgrade_rich::NSigmaProtonRich,
+                  upgrade_rich::NSigmaRich<upgrade_rich::NSigmaElectronRich,
+                                           upgrade_rich::NSigmaMuonRich,
+                                           upgrade_rich::NSigmaPionRich,
+                                           upgrade_rich::NSigmaKaonRich,
+                                           upgrade_rich::NSigmaProtonRich>);
 
 using UpgradeRich = UpgradeRichs::iterator;
 
