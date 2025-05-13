@@ -920,7 +920,7 @@ struct ebyeMaker {
     fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
 
     for (int iP{0}; iP < kNpart; ++iP) {
-      for (auto& candidateTrack : candidateTracks[iP]) {
+      for (auto& candidateTrack : candidateTracks[iP]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         candidateTrack.isreco = true;
 
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
@@ -950,7 +950,7 @@ struct ebyeMaker {
         }
       }
     }
-    for (auto& candidateV0 : candidateV0s) {
+    for (auto& candidateV0 : candidateV0s) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
       candidateV0.isreco = true;
       auto mcLabPos = mcLabels.rawIteratorAt(candidateV0.globalIndexPos);
       auto mcLabNeg = mcLabels.rawIteratorAt(candidateV0.globalIndexNeg);
@@ -1246,7 +1246,7 @@ struct ebyeMaker {
       }
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
@@ -1438,7 +1438,7 @@ struct ebyeMaker {
 
       miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
