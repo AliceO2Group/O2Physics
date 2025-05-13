@@ -109,7 +109,7 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
   template <bool withDmesMl, typename T1, typename T2>
   std::vector<float> getInputFeatures(T1 const& candidate,
                                       T2 const& prong1,
-                                      std::optional<std::vector<float>> const& mlScoresD)
+                                      const std::vector<float>* mlScoresD = nullptr)
   {
     std::vector<float> inputFeatures;
 
@@ -145,9 +145,9 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
         } else {
           if (mlScoresD) {
             switch (idx) {
-              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreBkg, mlScoresD.value(), 0);
-              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScorePrompt, mlScoresD.value(), 1);
-              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreNonprompt, mlScoresD.value(), 2);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreBkg, *mlScoresD, 0);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScorePrompt, *mlScoresD, 1);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreNonprompt, *mlScoresD, 2);
             }
           } else {
             LOG(fatal) << "ML scores of D not provided";
