@@ -6296,7 +6296,8 @@ void InternalValidation()
       // Persistent symmetry plane correlation:
       double Psi1 = gRandom->Uniform(0., o2::constants::math::TwoPI);
       double Psi2 = gRandom->Uniform(0., o2::constants::math::TwoPI);
-      double Psi3 = (1. / 3.) * ((o2::constants::math::PI / 4.) + 2. * Psi2 + Psi1); // see arXiv:1901.06968, Sec. II D.
+      double Psi3 = (1. / 3.) * (o2::constants::math::PIQuarter + 2. * Psi2 + Psi1); // see arXiv:1901.06968, Sec. II D.
+                                                                                     // o2::constants::math::PIQuarter = 0.25f * PI
       fPhiPDF->SetParameter(3, Psi1);
       fPhiPDF->SetParameter(4, Psi2);
       fPhiPDF->SetParameter(5, Psi3);
@@ -7755,7 +7756,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
-      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+      } else if (std::sqrt(std::pow(collision.posX(), 2.) + std::pow(collision.posY(), 2.) + std::pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
         if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
           return false;
         }
@@ -7911,7 +7912,7 @@ bool EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMinVertexDistanceFromIP]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMinVertexDistanceFromIP, eCutCounterBinning);
-      } else if (sqrt(pow(collision.posX(), 2.) + pow(collision.posY(), 2.) + pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
+      } else if (std::sqrt(std::pow(collision.posX(), 2.) + std::pow(collision.posY(), 2.) + std::pow(collision.posZ(), 2.)) < ec.fdEventCuts[eMinVertexDistanceFromIP][eMin]) {
         if (!EventCut(eRec, eMinVertexDistanceFromIP, cutModus)) {
           return false;
         }
@@ -10359,7 +10360,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      twoC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 2.);
+      twoC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 2.);
     }
 
     // integrated:
@@ -10428,7 +10429,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      fourC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 4.);
+      fourC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 4.);
     }
 
     // integrated:
@@ -10499,7 +10500,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      sixC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 6.);
+      sixC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 6.);
     }
 
     // integrated:
@@ -10572,7 +10573,7 @@ void CalculateCorrelations()
 
     // for on-the-fly and internal validation, rescale results with theoretical value:
     if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1)) > 0.) {
-      eightC /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 8.);
+      eightC /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h - 1), 8.);
     }
 
     // integrated:
@@ -11144,7 +11145,7 @@ void CalculateEtaSeparations()
 
       // for on-the-fly and internal validation, rescale results with theoretical value:
       if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
-        correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
+        correlation /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
       }
 
       // integrated:
@@ -11261,7 +11262,7 @@ void CalculateKineEtaSeparations(eAsFunctionOf AFO_variable)
 
         // for on-the-fly and internal validation, rescale results with theoretical value:
         if (iv.fUseInternalValidation && iv.fRescaleWithTheoreticalInput && iv.fInternalValidationVnPsin[eVn] && std::abs(iv.fInternalValidationVnPsin[eVn]->GetAt(h)) > 0.) {
-          correlation /= pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
+          correlation /= std::pow(iv.fInternalValidationVnPsin[eVn]->GetAt(h), 2.);
         }
 
         // finally, fill:
@@ -13725,7 +13726,7 @@ double WeightFromSparse(const double& dPhi, const double& dPt, const double& dEt
   }
 
   // *) Reduce dimensionality is possible, i.e. look up only the dimensions in THnSparse which were requested in this analysis:
-  Int_t dim = 1; // yes, because dimension 0 is always reserved for each category
+  int dim = 1; // yes, because dimension 0 is always reserved for each category
   switch (dwc) {
     case eDWPhi: {
       // Remember that ordering here has to resemble ordering in eDiffPhiWeights
@@ -15159,7 +15160,7 @@ float DetermineSimulatedCentrality()
       LOGF(warning, "\033[1;31m%s at line %d : b < 0. => did you forget to calculate ebye.fImpactParameter before calling DetermineSimulatedCentrality() ? Or you are processing Monte Carlo dataset where IP was not stored, i.e. it's set to -999 (e.g. in LHC21i6a) ? Setting lSimulatedCentrality = -1. and simply continuing... \033[0m", __FUNCTION__, __LINE__);
       lSimulatedCentrality = -1.;
     } else {
-      lSimulatedCentrality = o2::constants::math::PI * pow(b, 2.) / lSigmaInel; // finally, calculate true simulated centrality directly from impact parameter
+      lSimulatedCentrality = o2::constants::math::PI * std::pow(b, 2.) / lSigmaInel; // finally, calculate true simulated centrality directly from impact parameter
     }
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : this branch is not supported/validated yet\033[0m", __FUNCTION__, __LINE__);
@@ -15743,7 +15744,7 @@ void FillQvector(const double& dPhi, const double& dPt, const double& dEta)
     for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA]) {
-          wToPowerP = pow(wPhi * wPt * wEta, wp);
+          wToPowerP = std::pow(wPhi * wPt * wEta, wp);
           qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
           qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
@@ -15875,7 +15876,7 @@ void FillQvectorFromSparse(const double& dPhi, const double& dPt, const double& 
     for (int h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
       for (int wp = 0; wp < gMaxCorrelator + 1; wp++) { // weight power
         if (pw.fUseDiffPhiWeights[wPhiPhiAxis] || pw.fUseDiffPtWeights[wPtPtAxis] || pw.fUseDiffEtaWeights[wEtaEtaAxis]) {
-          wToPowerP = pow(wPhi * wPt * wEta, wp);
+          wToPowerP = std::pow(wPhi * wPt * wEta, wp);
           qv.fQvector[h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // Q-vector with weights
         } else {
           qv.fQvector[h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare Q-vector without weights
@@ -16004,7 +16005,7 @@ void Fillqvector(const double& dPhi, const double& kineVarValue, eqvectorKine ki
       if (pw.fUseWeights[AFO_weight] || pw.fUseDiffWeights[AFO_diffWeight]) {
         // TBI 20240212 supported at the moment: e.g. q-vector vs pt can be weighted only with diff. phi(pt) and integrated pt weights.
         // It cannot be weighted in addition with eta weights, since in any case I anticipate I will do always 1-D analysis, by integrating out all other dependencies
-        wToPowerP = pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
+        wToPowerP = std::pow(diffPhiWeightsForThisKineVar * kineVarWeight, wp);
         qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(wToPowerP * std::cos(h * dPhi), wToPowerP * std::sin(h * dPhi)); // q-vector with weights
       } else {
         qv.fqvector[kineVarChoice][bin - 1][h][wp] += TComplex(std::cos(h * dPhi), std::sin(h * dPhi)); // bare q-vector without weights
