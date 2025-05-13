@@ -116,7 +116,7 @@ struct FullJetSpectrapp {
   // Add Collision Histograms' Bin Labels for clarity
   void labelCollisionHistograms(HistogramRegistry& registry)
   {
-    if (doprocessTracks) {
+    if (doprocessDataTracks || doprocessMCTracks) {
       auto h_collisions_unweighted = registry.get<TH1>(HIST("h_collisions_unweighted"));
       h_collisions_unweighted->GetXaxis()->SetBinLabel(1, "AllUnweightedDetColl");
       h_collisions_unweighted->GetXaxis()->SetBinLabel(2, "UnweightedCollWithVertexZ");
@@ -173,7 +173,7 @@ struct FullJetSpectrapp {
     }
 
     // Track QA histograms
-    if (doprocessTracks || doprocessTracksWeighted) {
+    if (doprocessDataTracks || doprocessMCTracks || doprocessTracksWeighted) {
       registry.add("h_collisions_unweighted", "event status; event status;entries", {HistType::kTH1F, {{12, 0., 12.0}}});
 
       registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
@@ -291,7 +291,7 @@ struct FullJetSpectrapp {
       registry.add("h_full_jet_ResponseMatrix", "Full Jets Response Matrix; p_{T,det} (GeV/c); p_{T,part} (GeV/c)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});
     }
 
-    if (doprocessCollisionsWeightedWithMultiplicity || doprocessMBCollisionsWithMultiplicity) {
+    if (doprocessCollisionsWeightedWithMultiplicity || doprocessMBCollisionsWithMultiplicity || doprocessMBCollisionsDATAWithMultiplicity) {
       registry.add("h_FT0Mults_occupancy", "", {HistType::kTH1F, {{3500, 0., 3500.}}});
       registry.add("h2_full_jet_FT0Amplitude", "; FT0C Amplitude; Counts", {HistType::kTH1F, {{3500, 0., 3500.}}});
       registry.add("h2_full_jet_jetpTDetVsFT0Mults", "; p_{T,det} (GeV/c); FT0C Multiplicity", {HistType::kTH2F, {{350, 0., 350.}, {3500, 0., 3500.}}});
@@ -1015,7 +1015,7 @@ struct FullJetSpectrapp {
     }
     registry.fill(HIST("h_collisions_unweighted"), 3.5);
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processTracks, "Full Jet tracks", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processDataTracks, "Full Jet tracks for Data", false);
 
   void processMCTracks(soa::Filtered<EMCCollisionsMCD>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
@@ -1064,7 +1064,7 @@ struct FullJetSpectrapp {
     }
     registry.fill(HIST("h_collisions_unweighted"), 3.5);
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processTracks, "Full Jet tracks", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processMCTracks, "Full Jet tracks for MC", false);
 
   void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& collision,
                              aod::JMcCollisions const&,
@@ -1250,7 +1250,70 @@ struct FullJetSpectrapp {
       registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), mcdjet.pt(), collision.multiplicity(), NEF, 1.0);
     }
   }
-  PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsWithMultiplicity, "MB Collisions for Full Jets Multiplicity Studies", false);
+  PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsWithMultiplicity, "MB MCD Collisions for Full Jets Multiplicity Studies", false);
+
+  void processMBCollisionsDATAWithMultiplicity(soa::Filtered<soa::Join<EMCCollisionsData, aod::FT0Mults>>::iterator const& collision, FullJetTableDataJoined const& jets, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
+  {
+    bool eventAccepted = false;
+    float pTHat = 10. / (std::pow(1.0, 1.0 / pTHatExponent));
+    float neutralEnergy = 0.0;
+
+    if (fabs(collision.posZ()) > VertexZCut) {
+      return;
+    }
+    if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
+      return;
+    }
+
+    if (doEMCALEventWorkaround) {
+      if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
+        eventAccepted = true;
+        fillTrackHistograms(tracks, clusters, 1.0);
+        if (collision.alias_bit(kTVXinEMC)) {
+        }
+      }
+    } else {
+      if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
+        eventAccepted = true;
+      }
+    }
+
+    if (!eventAccepted) {
+      return;
+    }
+    for (auto const& track : tracks) {
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        continue;
+      }
+    }
+    registry.fill(HIST("h_FT0Mults_occupancy"), collision.multiplicity());
+
+    for (auto const& jet : jets) {
+      if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) { // MCD (Detector Level) Outlier Rejection
+        return;
+      }
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (jet.phi() < jetPhiMin || jet.phi() > jetPhiMax) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      registry.fill(HIST("h2_full_jet_jetpTDetVsFT0Mults"), jet.pt(), collision.multiplicity(), 1.0);
+
+      for (auto const& cluster : clusters) {
+        neutralEnergy += cluster.energy();
+      }
+      auto NEF = neutralEnergy / jet.energy();
+      registry.fill(HIST("h3_full_jet_jetpTDet_FT0Mults_NEF"), jet.pt(), collision.multiplicity(), NEF, 1.0);
+    }
+  }
+  PROCESS_SWITCH(FullJetSpectrapp, processMBCollisionsDATAWithMultiplicity, "MB DATA Collisions for Full Jets Multiplicity Studies", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
