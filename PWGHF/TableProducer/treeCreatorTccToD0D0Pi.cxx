@@ -407,7 +407,7 @@ struct HfTreeCreatorTccToD0D0Pi {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecD1New = {0., 0., 0.};
           std::array<float, 3> pVecD2New = {0., 0., 0.};
-          std::array<float, 3> pVecBach = {0., 0., 0.};
+          std::array<float, 3> pVecSoftPi = {0., 0., 0.};
 
           // find the DCA between the D01, D02 and the bachelor track, for Tcc
           hCandidatesTcc->Fill(SVFitting::BeforeFit);
@@ -425,12 +425,12 @@ struct HfTreeCreatorTccToD0D0Pi {
           dfTcc.propagateTracksToVertex();      // propagate the softpi and D0 pair to the Tcc vertex
           trackD1.getPxPyPzGlo(pVecD1New);      // momentum of D1 at the Tcc vertex
           trackD2.getPxPyPzGlo(pVecD2New);      // momentum of D2 at the Tcc vertex
-          trackParCovPi.getPxPyPzGlo(pVecBach); // momentum of pi at the Tcc vertex
+          trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex
 
           const auto& secVertexTcc = dfTcc.getPCACandidate();
           auto chi2PCA = dfTcc.getChi2AtPCACandidate();
           auto covMatrixPCA = dfTcc.calcPCACovMatrixFlat();
-          hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+          hCovSVXX->Fill(covMatrixPCA[0]);
 
           // get track impact parameters
           // This modifies track momenta!
@@ -443,12 +443,6 @@ struct HfTreeCreatorTccToD0D0Pi {
           trackD1.propagateToDCA(primaryVertex, bz, &impactParameterD1);
           trackD2.propagateToDCA(primaryVertex, bz, &impactParameterD2);
           trackParCovPi.propagateToDCA(primaryVertex, bz, &impactParameterSoftPi);
-
-          // get uncertainty of the decay length
-          // double phi, theta;
-          // getPointDirection(std::array{collision.posX(), collision.posY(), collision.posZ()}, secVertexTcc, phi, theta);
-          // auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-          // auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           // Retrieve properties of the two D0 candidates
           float yD1 = hfHelper.yD0(candidateD1);
@@ -501,13 +495,13 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD2Daus[1] = MassPiPlus;
           }
 
-          auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecBach}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
-          auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecBach}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
+          auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
+          auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
 
           deltaMassD01 = massKpipi1 - massD01;
           deltaMassD02 = massKpipi2 - massD02;
 
-          auto arrayMomentaDDpi = std::array{pVecD1New, pVecD2New, pVecBach};
+          auto arrayMomentaDDpi = std::array{pVecD1New, pVecD2New, pVecSoftPi};
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
           const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1New, pVecD2New}, std::array{MassD0, MassD0});
