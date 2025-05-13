@@ -91,7 +91,7 @@ struct HfDerivedDataCreatorB0ToDPi {
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandB0, aod::HfCandB0McRec, aod::HfSelB0ToDPi, aod::HfMlB0ToDPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandB0McGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
-  using THfCandDaughtersMl = soa::Join<aod::HfCand3ProngWPid, aod::HfMlDplusToPiKPi>;
+  using THfCandDaughtersMl = soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfMlDplusToPiKPi>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0;
   Filter filterMcGenMatching = nabs(aod::hf_cand_b0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_b0::DecayType::B0ToDPi));

@@ -230,7 +230,7 @@ struct HfCandidateSelectorB0ToDPi {
   }
 
   void processSelection(HfCandB0 const& hfCandsB0,
-                        aod::HfCand3ProngWPid const& hfCandsD,
+                        aod::HfCand3ProngWPidPiKa const& hfCandsD,
                         TracksPion const& pionTracks)
   {
     runSelection<false>(hfCandsB0, hfCandsD, pionTracks);
@@ -239,7 +239,7 @@ struct HfCandidateSelectorB0ToDPi {
   PROCESS_SWITCH(HfCandidateSelectorB0ToDPi, processSelection, "Process selection without ML scores of D mesons", true);
 
   void processSelectionWithDmesMl(HfCandB0 const& hfCandsB0,
-                                  soa::Join<aod::HfCand3ProngWPid, aod::HfMlDplusToPiKPi> const& hfCandsD,
+                                  soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfMlDplusToPiKPi> const& hfCandsD,
                                   TracksPion const& pionTracks)
   {
     runSelection<true>(hfCandsB0, hfCandsD, pionTracks);
