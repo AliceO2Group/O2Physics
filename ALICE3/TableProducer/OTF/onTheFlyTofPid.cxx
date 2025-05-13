@@ -645,7 +645,7 @@ struct OnTheFlyTofPid {
         expectedTimeOuterTOF[ii] = trackLengthOuterTOF / v;
 
         deltaTimeInnerTOF[ii] = measuredTimeInnerTOF - expectedTimeInnerTOF[ii];
-        deltaTimeOuterTOF[ii] = measuredTimeOuterTOF - expectedTimeInnerTOF[ii];
+        deltaTimeOuterTOF[ii] = measuredTimeOuterTOF - expectedTimeOuterTOF[ii];
 
         // Evaluate total sigma (layer + tracking resolution)
         float innerTotalTimeReso = simConfig.innerTOFTimeReso;
