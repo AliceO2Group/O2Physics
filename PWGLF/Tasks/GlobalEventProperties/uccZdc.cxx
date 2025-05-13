@@ -244,6 +244,8 @@ struct UccZdc {
       registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
       registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
       registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
+      registry.add("RejectedEvtsVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., 3000.}});
+      registry.add("RejectedEvtsVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0., 3000.}});
 
       registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsPt", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);;", kTH2F, {{{nBinsNch, minNch, maxNch}, {axisPt}}});
@@ -531,10 +533,10 @@ struct UccZdc {
     float znC{zdc.amplitudeZNC()};
     float zpA{zdc.amplitudeZPA()};
     float zpC{zdc.amplitudeZPC()};
-    znA /= 2.81;
-    znC /= 2.81;
-    zpA /= 2.81;
-    zpC /= 2.81;
+    znA /= 2.68;
+    znC /= 2.68;
+    zpA /= 2.68;
+    zpC /= 2.68;
 
     float tZEM1{zdc.timeZEM1()};
     float tZEM2{zdc.timeZEM2()};
@@ -579,10 +581,10 @@ struct UccZdc {
     registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
 
-    registry.fill(HIST("ZNCcvsZNCsum"), sumZNC / 2.81, zdc.energyCommonZNC() / 2.81);
-    registry.fill(HIST("ZNAcvsZNAsum"), sumZNA / 2.81, zdc.energyCommonZNA() / 2.81);
-    registry.fill(HIST("ZPCcvsZPCsum"), sumZPC / 2.81, zdc.energyCommonZPC() / 2.81);
-    registry.fill(HIST("ZPAcvsZPAsum"), sumZPA / 2.81, zdc.energyCommonZPA() / 2.81);
+    registry.fill(HIST("ZNCcvsZNCsum"), sumZNC / 2.68, zdc.energyCommonZNC() / 2.68);
+    registry.fill(HIST("ZNAcvsZNAsum"), sumZNA / 2.68, zdc.energyCommonZNA() / 2.68);
+    registry.fill(HIST("ZPCcvsZPCsum"), sumZPC / 2.68, zdc.energyCommonZPC() / 2.68);
+    registry.fill(HIST("ZPAcvsZPAsum"), sumZPA / 2.68, zdc.energyCommonZPA() / 2.68);
 
     registry.fill(HIST("ZNA"), znA);
     registry.fill(HIST("ZNC"), znC);
@@ -636,9 +638,21 @@ struct UccZdc {
     // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
 
     auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
     if (!efficiency) {
       LOGF(fatal, "Efficiency object not found!");
+      return;
+    }
+
+    auto fitMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
+    if (!fitMeanNch) {
+      LOGF(fatal, "fitMeanNch object not found!");
+      return;
+    }
+
+    auto fitSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
+    if (!fitSigmaNch) {
+      LOGF(fatal, "fitSigmaNch object not found!");
+      return;
     }
 
     // has ZDC?
@@ -647,7 +661,16 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
 
-    if (!foundBC.has_ft0()) {
+    // has T0?
+    float aT0A = 0., aT0C = 0.;
+    if (foundBC.has_ft0()) {
+      for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+        aT0A += amplitude;
+      }
+      for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+        aT0C += amplitude;
+      }
+    } else {
       return;
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
@@ -662,8 +685,8 @@ struct UccZdc {
     float tZPC{foundBC.zdc().timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= 2.81;
-    znC /= 2.81;
+    znA /= 2.68;
+    znC /= 2.68;
     float sumZNs{znA + znC};
     float sumZEMs{aZEM1 + aZEM2};
 
@@ -686,6 +709,7 @@ struct UccZdc {
     registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
 
+    int glbTracks{0};
     std::vector<float> pTs;
     std::vector<float> wIs;
     // Calculates the event weight, W_k
@@ -698,6 +722,7 @@ struct UccZdc {
           registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
           registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
 
+          glbTracks++;
           float pt{track.pt()};
           double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
           if (weight > 0.) {
@@ -712,10 +737,21 @@ struct UccZdc {
       }
     }
 
+    const double meanNch{fitMeanNch->Eval((aT0A + aT0C) / 100.)};
+    const double sigmaNch{fitSigmaNch->Eval((aT0A + aT0C) / 100.)};
+    const double diffMeanNch{std::abs(meanNch - glbTracks)};
+    const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+    if (!(diffMeanNch < nSigmaSelection)) {
+      registry.fill(HIST("RejectedEvtsVsFT0M"), (aT0A + aT0C) / 100.);
+      registry.fill(HIST("RejectedEvtsVsNch"), glbTracks);
+      return;
+    }
+
     double p1, p2, p3, p4, w1, w2, w3, w4;
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
     getPTpowers(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
     const double nch{static_cast<double>(pTs.size())};
+    // To avoid calculating <pt> with zero particles
     if (nch < minNchSel) {
       return;
     }

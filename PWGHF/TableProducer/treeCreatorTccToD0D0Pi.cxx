@@ -18,6 +18,8 @@
 #include <vector>
 #include <algorithm>
 #include <utility>
+#include <string>
+#include <memory>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -25,6 +27,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/V0.h"
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
@@ -53,9 +56,6 @@ namespace o2::aod
 namespace full
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(PtD1, ptD1, float);
-DECLARE_SOA_COLUMN(PtD2, ptD2, float);
-DECLARE_SOA_COLUMN(PtPi, ptPi, float);
 DECLARE_SOA_COLUMN(PxProng0D1, pxProng0D1, float);
 DECLARE_SOA_COLUMN(PxProng1D1, pxProng1D1, float);
 DECLARE_SOA_COLUMN(PyProng0D1, pyProng0D1, float);
@@ -95,10 +95,12 @@ DECLARE_SOA_COLUMN(NSigTpcSoftPi, nSigTpcSoftPi, float);
 DECLARE_SOA_COLUMN(NSigTofSoftPi, nSigTofSoftPi, float);
 DECLARE_SOA_COLUMN(MlScoreD1, mlScoreD1, float);
 DECLARE_SOA_COLUMN(MlScoreD2, mlScoreD2, float);
-DECLARE_SOA_COLUMN(DecayLengthD1, decayLengthD1, float);
-DECLARE_SOA_COLUMN(DecayLengthD2, decayLengthD2, float);
+DECLARE_SOA_COLUMN(ImpactParameterD1, impactParameterD1, float);
+DECLARE_SOA_COLUMN(ImpactParameterD2, impactParameterD2, float);
+DECLARE_SOA_COLUMN(ImpactParameterSoftPi, impactParameterSoftPi, float);
 DECLARE_SOA_COLUMN(CpaD1, cpaD1, float);
 DECLARE_SOA_COLUMN(CpaD2, cpaD2, float);
+DECLARE_SOA_COLUMN(Chi2PCA, chi2PCA, float);
 DECLARE_SOA_COLUMN(SignSoftPi, signSoftPi, float);
 DECLARE_SOA_COLUMN(DcaXYSoftPi, dcaXYSoftPi, float);
 DECLARE_SOA_COLUMN(DcaZSoftPi, dcaZSoftPi, float);
@@ -112,9 +114,6 @@ DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
-                  full::PtD1,
-                  full::PtD2,
-                  full::PtPi,
                   full::PxProng0D1,
                   full::PxProng1D1,
                   full::PyProng0D1,
@@ -154,10 +153,12 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::NSigTofSoftPi,
                   full::MlScoreD1,
                   full::MlScoreD2,
-                  full::DecayLengthD1,
-                  full::DecayLengthD2,
+                  full::ImpactParameterD1,
+                  full::ImpactParameterD2,
+                  full::ImpactParameterSoftPi,
                   full::CpaD1,
                   full::CpaD2,
+                  full::Chi2PCA,
                   full::SignSoftPi,
                   full::DcaXYSoftPi,
                   full::DcaZSoftPi,
@@ -184,16 +185,37 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the soft pion"};
   Configurable<bool> usePionIsGlobalTrackWoDCA{"usePionIsGlobalTrackWoDCA", true, "check isGlobalTrackWoDCA status for pions"};
 
-  // Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
-  // Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
-  // Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
-  // Configurable<int> softPiItsHitsMin{"softPiItsHitsMin", 1, "Minimum number of ITS layers crossed by the soft pion among those in \"softPiItsHitMap\""};
+  // vertexing
+  Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  Configurable<float> maxR{"maxR", 200., "reject PCA's above this radius"};
+  Configurable<float> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
+  Configurable<float> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any Lb is smaller than this"};
+  Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
+
   Configurable<float> softPiDcaXYMax{"softPiDcaXYMax", 0.065, "Soft pion max dcaXY (cm)"};
   Configurable<float> softPiDcaZMax{"softPiDcaZMax", 0.065, "Soft pion max dcaZ (cm)"};
   Configurable<float> deltaMassCanMax{"deltaMassCanMax", 2, "delta candidate max mass (DDPi-D0D0) ((GeV/c2)"};
   Configurable<float> massCanMax{"massCanMax", 4.0, "candidate max mass (DDPi) ((GeV/c2)"};
 
+  // magnetic field setting from CCDB
+  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  o2::vertexing::DCAFitterN<3> dfTcc; // Tcc vertex fitter
+  o2::vertexing::DCAFitterN<2> dfD1;  // 2-prong vertex fitter (to rebuild D01 vertex)
+  o2::vertexing::DCAFitterN<2> dfD2;  // 2-prong vertex fitter (to rebuild D02 vertex)
+
   HfHelper hfHelper;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber;
+  double bz{0.};
 
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWPid = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
@@ -209,7 +231,9 @@ struct HfTreeCreatorTccToD0D0Pi {
   Preslice<SelectedCandidatesMl> candsD0PerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   // Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-
+  std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc;
+  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "Tcc candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
+  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "Tcc candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   void init(InitContext const&)
   {
 
@@ -217,6 +241,37 @@ struct HfTreeCreatorTccToD0D0Pi {
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
+
+    dfD1.setPropagateToPCA(propagateToPCA);
+    dfD1.setMaxR(maxR);
+    dfD1.setMaxDZIni(maxDZIni);
+    dfD1.setMinParamChange(minParamChange);
+    dfD1.setMinRelChi2Change(minRelChi2Change);
+    dfD1.setUseAbsDCA(useAbsDCA);
+    dfD1.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    dfD2.setPropagateToPCA(propagateToPCA);
+    dfD2.setMaxR(maxR);
+    dfD2.setMaxDZIni(maxDZIni);
+    dfD2.setMinParamChange(minParamChange);
+    dfD2.setMinRelChi2Change(minRelChi2Change);
+    dfD2.setUseAbsDCA(useAbsDCA);
+    dfD2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    dfTcc.setPropagateToPCA(propagateToPCA);
+    dfTcc.setMaxR(maxR);
+    dfTcc.setMaxDZIni(maxDZIni);
+    dfTcc.setMinParamChange(minParamChange);
+    dfTcc.setMinRelChi2Change(minRelChi2Change);
+    dfTcc.setUseAbsDCA(useAbsDCA);
+    dfTcc.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Configure CCDB access
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    runNumber = 0;
   }
 
   template <typename T>
@@ -245,10 +300,86 @@ struct HfTreeCreatorTccToD0D0Pi {
   void runCandCreatorData(CollType const& collision,
                           CandType const& candidates,
                           aod::TrackAssoc const& trackIndices,
-                          TrkType const& track, aod::BCs const&)
+                          TrkType const&,
+                          aod::BCs const&)
   {
+
+    auto primaryVertex = getPrimaryVertex(collision);
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    if (runNumber != bc.runNumber()) {
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      bz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+    }
+    dfTcc.setBz(bz);
+    dfD1.setBz(bz);
+    dfD2.setBz(bz);
+
     for (const auto& candidateD1 : candidates) {
+
+      auto trackD1Prong0 = candidateD1.template prong0_as<TrkType>();
+      auto trackD1Prong1 = candidateD1.template prong1_as<TrkType>();
+      auto trackParVarD1Prong0 = getTrackParCov(trackD1Prong0);
+      auto trackParVarD1Prong1 = getTrackParCov(trackD1Prong1);
+      // reconstruct the 2-prong secondary vertex
+      hCandidatesD1->Fill(SVFitting::BeforeFit);
+      try {
+        if (dfD1.process(trackParVarD1Prong0, trackParVarD1Prong1) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for first D0 cannot work, skipping the candidate.";
+        hCandidatesD1->Fill(SVFitting::Fail);
+        continue;
+      }
+      hCandidatesD1->Fill(SVFitting::FitOk);
+      const auto& vertexD1 = dfD1.getPCACandidatePos();
+      trackParVarD1Prong0.propagateTo(vertexD1[0], bz);
+      trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
+      // Get pVec of tracks of D1
+      std::array<float, 3> pVecD1Prong0 = {0};
+      std::array<float, 3> pVecD1Prong1 = {0};
+      dfD1.getTrack(0).getPxPyPzGlo(pVecD1Prong0);
+      dfD1.getTrack(1).getPxPyPzGlo(pVecD1Prong1);
+      // Get D1 momentum
+      std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
+
+      // build a D1 neutral track
+      auto trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
+
       for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
+
+        auto trackD2Prong0 = candidateD2.template prong0_as<TrkType>();
+        auto trackD2Prong1 = candidateD2.template prong1_as<TrkType>();
+        auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
+        auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
+        // reconstruct the 2-prong secondary vertex
+        hCandidatesD2->Fill(SVFitting::BeforeFit);
+        try {
+          if (dfD2.process(trackParVarD2Prong0, trackParVarD2Prong1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for second D0 cannot work, skipping the candidate.";
+          hCandidatesD2->Fill(SVFitting::Fail);
+          continue;
+        }
+        hCandidatesD2->Fill(SVFitting::FitOk);
+        const auto& vertexD2 = dfD2.getPCACandidatePos();
+        trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
+        trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
+        // Get pVec of tracks of D2
+        std::array<float, 3> pVecD2Prong0 = {0};
+        std::array<float, 3> pVecD2Prong1 = {0};
+        dfD2.getTrack(0).getPxPyPzGlo(pVecD2Prong0);
+        dfD2.getTrack(1).getPxPyPzGlo(pVecD2Prong1);
+        // Get D2 momentum
+        std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
+
+        // build a D2 neutral track
+        auto trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
+
         for (const auto& trackId : trackIndices) {
           auto trackPion = trackId.template track_as<TrkType>();
           if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
@@ -273,6 +404,46 @@ struct HfTreeCreatorTccToD0D0Pi {
             (candidateD2.prong1Id() == trackPion.globalIndex())) {
             continue;
           }
+
+          auto trackParCovPi = getTrackParCov(trackPion);
+          std::array<float, 3> pVecD1New = {0., 0., 0.};
+          std::array<float, 3> pVecD2New = {0., 0., 0.};
+          std::array<float, 3> pVecSoftPi = {0., 0., 0.};
+
+          // find the DCA between the D01, D02 and the bachelor track, for Tcc
+          hCandidatesTcc->Fill(SVFitting::BeforeFit);
+          try {
+            if (dfTcc.process(trackD1, trackD2, trackParCovPi) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Tcc cannot work, skipping the candidate.";
+            hCandidatesTcc->Fill(SVFitting::Fail);
+            continue;
+          }
+          hCandidatesTcc->Fill(SVFitting::FitOk);
+
+          dfTcc.propagateTracksToVertex();        // propagate the softpi and D0 pair to the Tcc vertex
+          trackD1.getPxPyPzGlo(pVecD1New);        // momentum of D1 at the Tcc vertex
+          trackD2.getPxPyPzGlo(pVecD2New);        // momentum of D2 at the Tcc vertex
+          trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex
+
+          auto chi2PCA = dfTcc.getChi2AtPCACandidate();
+          auto covMatrixPCA = dfTcc.calcPCACovMatrixFlat();
+          hCovSVXX->Fill(covMatrixPCA[0]);
+
+          // get track impact parameters
+          // This modifies track momenta!
+          auto covMatrixPV = primaryVertex.getCov();
+          hCovPVXX->Fill(covMatrixPV[0]);
+          o2::dataformats::DCA impactParameterD1;
+          o2::dataformats::DCA impactParameterD2;
+          o2::dataformats::DCA impactParameterSoftPi;
+
+          trackD1.propagateToDCA(primaryVertex, bz, &impactParameterD1);
+          trackD2.propagateToDCA(primaryVertex, bz, &impactParameterD2);
+          trackParCovPi.propagateToDCA(primaryVertex, bz, &impactParameterSoftPi);
+
           // Retrieve properties of the two D0 candidates
           float yD1 = hfHelper.yD0(candidateD1);
           float yD2 = hfHelper.yD0(candidateD2);
@@ -292,7 +463,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0ToPiK(candidateD1);
           }
-          if (candidateD1.isSelD0bar()) {
+          if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
             candFlagD1 = 2;
             std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
             massD01 = hfHelper.invMassD0barToKPi(candidateD1);
@@ -303,7 +474,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
             massD02 = hfHelper.invMassD0ToPiK(candidateD2);
           }
-          if (candidateD2.isSelD0bar()) {
+          if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
             candFlagD2 = 2;
             std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
             massD02 = hfHelper.invMassD0barToKPi(candidateD2);
@@ -311,17 +482,6 @@ struct HfTreeCreatorTccToD0D0Pi {
 
           // LOG(info) << " candidateD1.collisionId() " << candidateD1.collisionId()<<" massD01 "<<massD01<<" massD02 "<<massD02 <<"  trackPion.pt() "<< trackPion.pt();
 
-          auto trackPosD1Dau = track.rawIteratorAt(candidateD1.prong0Id()); // positive daughter D01
-          auto trackNegD1Dau = track.rawIteratorAt(candidateD1.prong1Id()); // negative daughter D01
-
-          auto trackPosD2Dau = track.rawIteratorAt(candidateD2.prong0Id()); // positive daughter D02
-          auto trackNegD2Dau = track.rawIteratorAt(candidateD2.prong1Id()); // negative daughter D02
-
-          std::array<float, 3> pVecPosD1Dau{trackPosD1Dau.pVector()};
-          std::array<float, 3> pVecNegD1Dau{trackNegD1Dau.pVector()};
-          std::array<float, 3> pVecPosD2Dau{trackPosD2Dau.pVector()};
-          std::array<float, 3> pVecNegD2Dau{trackNegD2Dau.pVector()};
-          std::array<float, 3> pVecSoftPion = {trackPion.pVector()};
           std::array<double, 2> massD1Daus{MassPiPlus, MassKPlus};
           std::array<double, 2> massD2Daus{MassPiPlus, MassKPlus};
 
@@ -335,27 +495,22 @@ struct HfTreeCreatorTccToD0D0Pi {
             massD2Daus[1] = MassPiPlus;
           }
 
-          auto massKpipi1 = RecoDecay::m(std::array{pVecPosD1Dau, pVecNegD1Dau, pVecSoftPion}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
-          auto massKpipi2 = RecoDecay::m(std::array{pVecPosD2Dau, pVecNegD2Dau, pVecSoftPion}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
+          auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
+          auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
 
           deltaMassD01 = massKpipi1 - massD01;
           deltaMassD02 = massKpipi2 - massD02;
 
-          std::array<float, 3> pVecD1{candidateD1.px(), candidateD1.py(), candidateD1.pz()};
-          std::array<float, 3> pVecD2{candidateD2.px(), candidateD2.py(), candidateD2.pz()};
-          auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPion};
+          auto arrayMomentaDDpi = std::array{pVecD1New, pVecD2New, pVecSoftPi};
           const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
           const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
-          const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
+          const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1New, pVecD2New}, std::array{MassD0, MassD0});
 
           if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
             continue;
           }
 
           rowCandidateLite(
-            candidateD1.pt(),
-            candidateD2.pt(),
-            trackPion.pt(),
             candidateD1.pxProng0(),
             candidateD1.pxProng1(),
             candidateD1.pyProng0(),
@@ -395,10 +550,12 @@ struct HfTreeCreatorTccToD0D0Pi {
             trackPion.tofNSigmaPi(),
             mlScoresD1[0],
             mlScoresD2[0],
-            candidateD1.decayLength(),
-            candidateD2.decayLength(),
+            impactParameterD1.getY(),
+            impactParameterD2.getY(),
+            impactParameterSoftPi.getY(),
             candidateD1.cpa(),
             candidateD2.cpa(),
+            chi2PCA,
             trackPion.sign(),
             trackPion.dcaXY(),
             trackPion.dcaZ(),
