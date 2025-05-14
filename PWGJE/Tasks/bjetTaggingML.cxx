@@ -212,11 +212,11 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_SVMass_jetpT"), myJet.pt(), massSV, eventweight);
 
       if (doprocessMCJets) {
-        if (jetFlavor == 2) {
+        if (jetFlavor == JetTaggingSpecies::beauty) {
           registry.fill(HIST("h2_LxyS_jetpT_bjet"), myJet.pt(), candSV.decayLengthXY() / candSV.errorDecayLengthXY(), eventweight);
           registry.fill(HIST("h2_Dispersion_jetpT_bjet"), myJet.pt(), candSV.dispersion(), eventweight);
           registry.fill(HIST("h2_SVMass_jetpT_bjet"), myJet.pt(), massSV, eventweight);
-        } else if (jetFlavor == 1) {
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
           registry.fill(HIST("h2_LxyS_jetpT_cjet"), myJet.pt(), candSV.decayLengthXY() / candSV.errorDecayLengthXY(), eventweight);
           registry.fill(HIST("h2_Dispersion_jetpT_cjet"), myJet.pt(), candSV.dispersion(), eventweight);
           registry.fill(HIST("h2_SVMass_jetpT_cjet"), myJet.pt(), massSV, eventweight);
@@ -250,10 +250,10 @@ struct BJetTaggingML {
       registry.fill(HIST("h2_SIPs3D_jetpT"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
 
       if (doprocessMCJets) {
-        if (jetFlavor == 2) {
+        if (jetFlavor == JetTaggingSpecies::beauty) {
           registry.fill(HIST("h2_SIPs2D_jetpT_bjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXY()) / constituent.sigmadcaXY(), eventweight);
           registry.fill(HIST("h2_SIPs3D_jetpT_bjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
-        } else if (jetFlavor == 1) {
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
           registry.fill(HIST("h2_SIPs2D_jetpT_cjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXY()) / constituent.sigmadcaXY(), eventweight);
           registry.fill(HIST("h2_SIPs3D_jetpT_cjet"), analysisJet.pt(), sign * std::abs(constituent.dcaXYZ()) / constituent.sigmadcaXYZ(), eventweight);
         } else {
@@ -385,23 +385,23 @@ struct BJetTaggingML {
 
       if (doDataDriven) {
         registry.fill(HIST("hSparse_Incljets"), analysisJet.pt(), analysisJet.scoreML(), useDb ? 0 : -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].svMass, svsParams[0].svfE, eventWeight);
-        if (jetFlavor == 2) {
+        if (jetFlavor == JetTaggingSpecies::beauty) {
           registry.fill(HIST("hSparse_bjets"), analysisJet.pt(), analysisJet.scoreML(), useDb ? 0 : -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].svMass, svsParams[0].svfE, eventWeight);
-        } else if (jetFlavor == 1) {
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
           registry.fill(HIST("hSparse_cjets"), analysisJet.pt(), analysisJet.scoreML(), useDb ? 0 : -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].svMass, svsParams[0].svfE, eventWeight);
         } else {
           registry.fill(HIST("hSparse_lfjets"), analysisJet.pt(), analysisJet.scoreML(), useDb ? 0 : -1 * std::log(1 - analysisJet.scoreML()), analysisJet.mass(), -1 * std::log(analysisJet.jetProb()), svsParams[0].svMass, svsParams[0].svfE, eventWeight);
         }
       }
 
-      if (jetFlavor == 2) {
+      if (jetFlavor == JetTaggingSpecies::beauty) {
         registry.fill(HIST("h2_score_jetpT_bjet"), analysisJet.pt(), analysisJet.scoreML(), eventWeight);
         if (!useDb) {
           registry.fill(HIST("h2_logscore_jetpT_bjet"), analysisJet.pt(), -1 * std::log(1 - analysisJet.scoreML()), eventWeight);
         }
         registry.fill(HIST("h2_jetMass_jetpT_bjet"), analysisJet.pt(), analysisJet.mass(), eventWeight);
         registry.fill(HIST("h_jetpT_detector_bjet"), analysisJet.pt(), eventWeight);
-      } else if (jetFlavor == 1) {
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
         registry.fill(HIST("h2_score_jetpT_cjet"), analysisJet.pt(), analysisJet.scoreML(), eventWeight);
         if (!useDb) {
           registry.fill(HIST("h2_logscore_jetpT_cjet"), analysisJet.pt(), -1 * std::log(1 - analysisJet.scoreML()), eventWeight);
@@ -422,9 +422,9 @@ struct BJetTaggingML {
           continue;
         }
 
-        if (jetFlavor == 2) {
+        if (jetFlavor == JetTaggingSpecies::beauty) {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_bjet"), analysisJet.pt(), mcpjet.pt(), eventWeight);
-        } else if (jetFlavor == 1) {
+        } else if (jetFlavor == JetTaggingSpecies::charm) {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_cjet"), analysisJet.pt(), mcpjet.pt(), eventWeight);
         } else {
           registry.fill(HIST("h2_Response_DetjetpT_PartjetpT_lfjet"), analysisJet.pt(), mcpjet.pt(), eventWeight);
@@ -457,9 +457,9 @@ struct BJetTaggingML {
 
       registry.fill(HIST("h_jetpT_particle_DetColl"), mcpjet.pt(), eventWeight);
 
-      if (jetFlavor == 2) {
+      if (jetFlavor == JetTaggingSpecies::beauty) {
         registry.fill(HIST("h_jetpT_particle_DetColl_bjet"), mcpjet.pt(), eventWeight);
-      } else if (jetFlavor == 1) {
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
         registry.fill(HIST("h_jetpT_particle_DetColl_cjet"), mcpjet.pt(), eventWeight);
       } else {
         registry.fill(HIST("h_jetpT_particle_DetColl_lfjet"), mcpjet.pt(), eventWeight);
@@ -496,9 +496,9 @@ struct BJetTaggingML {
 
       int8_t jetFlavor = mcpjet.origin();
 
-      if (jetFlavor == 2) {
+      if (jetFlavor == JetTaggingSpecies::beauty) {
         registry.fill(HIST("h_jetpT_particle_bjet"), mcpjet.pt(), eventWeight);
-      } else if (jetFlavor == 1) {
+      } else if (jetFlavor == JetTaggingSpecies::charm) {
         registry.fill(HIST("h_jetpT_particle_cjet"), mcpjet.pt(), eventWeight);
       } else {
         registry.fill(HIST("h_jetpT_particle_lfjet"), mcpjet.pt(), eventWeight);

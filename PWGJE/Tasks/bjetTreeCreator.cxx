@@ -327,12 +327,12 @@ struct BJetTreeCreator {
       registry.add("h2_trk_jtrackpt_vs_origtrackpt", "JTracks::pt vs Tracks::pt", {HistType::kTH2F, {{200, 0., 100.}, {200, 0., 100.}}});
       registry.add("h_trk_vtx_index", "trk_vtx_index;Vertex index;Entries", {HistType::kTH1F, {{20, 0., 20.}}});
       registry.add("h_trk_origin", "trk_origin;Track origin;Entries", {HistType::kTH1F, {{5, 0., 5.}}});
-      auto h_trk_origin = registry.get<TH1>(HIST("h_trk_origin"));
-      h_trk_origin->GetXaxis()->SetBinLabel(1, "NotPhysPrim");
-      h_trk_origin->GetXaxis()->SetBinLabel(2, "Charm");
-      h_trk_origin->GetXaxis()->SetBinLabel(3, "Beauty");
-      h_trk_origin->GetXaxis()->SetBinLabel(4, "Primary");
-      h_trk_origin->GetXaxis()->SetBinLabel(5, "OtherSecondary");
+      auto hTrackOrigin = registry.get<TH1>(HIST("h_trk_origin"));
+      hTrackOrigin->GetXaxis()->SetBinLabel(1, "NotPhysPrim");
+      hTrackOrigin->GetXaxis()->SetBinLabel(2, "Charm");
+      hTrackOrigin->GetXaxis()->SetBinLabel(3, "Beauty");
+      hTrackOrigin->GetXaxis()->SetBinLabel(4, "Primary");
+      hTrackOrigin->GetXaxis()->SetBinLabel(5, "OtherSecondary");
     }
   }
 
@@ -558,7 +558,7 @@ struct BJetTreeCreator {
     for (const auto& analysisJet : alljets) {
 
       bool jetIncluded = false;
-      for (const auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (analysisJet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -615,7 +615,7 @@ struct BJetTreeCreator {
     for (const auto& analysisJet : MCDjets) {
 
       bool jetIncluded = false;
-      for (const auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (analysisJet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -715,7 +715,7 @@ struct BJetTreeCreator {
     for (const auto& analysisJet : MCDjets) {
 
       bool jetIncluded = false;
-      for (const auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (analysisJet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;
@@ -790,7 +790,7 @@ struct BJetTreeCreator {
     for (const auto& mcpjet : MCPjets) {
 
       bool jetIncluded = false;
-      for (const auto jetR : jetRadiiValues) {
+      for (const auto& jetR : jetRadiiValues) {
         if (mcpjet.r() == static_cast<int>(jetR * 100)) {
           jetIncluded = true;
           break;

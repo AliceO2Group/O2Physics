@@ -298,16 +298,16 @@ struct JetTaggerHFTask {
     std::map<std::string, std::string> metadata;
     resoFuncMatch = resoFuncMatching;
 
-    const int IPmethodResolutionFunctionSize = 7;
+    const int mIPmethodResolutionFunctionSize = 7;
 
     auto loadCCDBforIP = [&](const std::vector<std::string>& paths, std::vector<TF1*>& targetVec, const std::string& name) {
-      if (paths.size() != IPmethodResolutionFunctionSize) {
+      if (paths.size() != mIPmethodResolutionFunctionSize) {
         usepTcategorize.value = false;
         LOG(info) << name << " does not have 7 entries. Disabling pT categorization (usepTcategorize = false).";
         resoFuncMatch = 0;
         return;
       }
-      for (int i = 0; i < IPmethodResolutionFunctionSize; i++) {
+      for (int i = 0; i < mIPmethodResolutionFunctionSize; i++) {
         targetVec.push_back(ccdbApi.retrieveFromTFileAny<TF1>(paths[i], metadata, -1));
       }
     };
@@ -336,7 +336,7 @@ struct JetTaggerHFTask {
     }
 
     maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
-    const int IPmethodNumOfParameters = 9;
+    const int mIPmethodNumOfParameters = 9;
 
     // Set up the resolution function
     switch (resoFuncMatch) {
@@ -384,7 +384,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncIncCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncIncCCDB[j]) {
-            for (int i = 0; i < IPmethodNumOfParameters; i++) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
               params.emplace_back(resoFuncIncCCDB[j]->GetParameter(i));
             }
           }
@@ -398,7 +398,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncBeautyCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncBeautyCCDB[j]) {
-            for (int i = 0; i < IPmethodNumOfParameters; i++) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
               params.emplace_back(resoFuncBeautyCCDB[j]->GetParameter(i));
             }
           }
@@ -407,7 +407,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncCharmCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncCharmCCDB[j]) {
-            for (int i = 0; i < IPmethodNumOfParameters; i++) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
               params.emplace_back(resoFuncCharmCCDB[j]->GetParameter(i));
             }
           }
@@ -416,7 +416,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncLfCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncLfCCDB[j]) {
-            for (int i = 0; i < IPmethodNumOfParameters; i++) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
               params.emplace_back(resoFuncLfCCDB[j]->GetParameter(i));
             }
           }
@@ -428,7 +428,7 @@ struct JetTaggerHFTask {
         for (size_t j = 0; j < resoFuncDataCCDB.size(); j++) {
           std::vector<float> params;
           if (resoFuncDataCCDB[j]) {
-            for (int i = 0; i < IPmethodNumOfParameters; i++) {
+            for (int i = 0; i < mIPmethodNumOfParameters; i++) {
               params.emplace_back(resoFuncDataCCDB[j]->GetParameter(i));
             }
           }
@@ -527,11 +527,11 @@ struct JetTaggerHFTask {
       }
 
       if (bMlResponse.getOutputNodes() > 1) {
-        auto Db = [](std::vector<float> scores, float fC) {
+        auto mDb = [](std::vector<float> scores, float fC) {
           return std::log(scores[2] / (fC * scores[1] + (1 - fC) * scores[0]));
         };
 
-        scoreML[analysisJet.globalIndex()] = useDb ? Db(output, fC) : output[2]; // 2 is the b-jet index
+        scoreML[analysisJet.globalIndex()] = useDb ? mDb(output, fC) : output[2]; // 2 is the b-jet index
       } else {
         scoreML[analysisJet.globalIndex()] = output[0];
       }
