@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file SGCandProducer.cxx
+/// \brief Produces PWGUD derived table from standard tables
+///
+/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
+/// \since  23.11.2023
+//
 
 #include <cmath>
 #include <vector>
@@ -411,7 +418,7 @@ struct SGCandProducer {
       auto hCountersTrgBcSel = getHist(TH1, "reco/hCountersTrgBcSel");
       auto hLumi = getHist(TH1, "reco/hLumi");
       auto hLumiBcSel = getHist(TH1, "reco/hLumiBcSel");
-      for (const auto h : {hCountersTrg, hCountersTrgBcSel, hLumi, hLumiBcSel}) {
+      for (const auto& h : {hCountersTrg, hCountersTrgBcSel, hLumi, hLumiBcSel}) {
         h->GetXaxis()->SetBinLabel(1, "TVX");
         h->GetXaxis()->SetBinLabel(2, "TCE");
         h->GetXaxis()->SetBinLabel(3, "ZEM");
@@ -545,7 +552,7 @@ struct McSGCandProducer {
     }
 
     // all particles of the McCollision are saved
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
         // mothers
         newmids.clear();
