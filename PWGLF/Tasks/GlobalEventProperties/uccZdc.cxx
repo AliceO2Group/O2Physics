@@ -515,13 +515,14 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    const auto& fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
-    const auto& fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
-    if (!fMeanNch) {
-      LOGF(fatal, "fMeanNch object not found!");
+    // Get Nch-based selection objects from the CCDB
+    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
+    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
+    if (fMeanNch == nullptr) {
+      LOGF(fatal, "Could not load fMeanNch!");
     }
-    if (!fSigmaNch) {
-      LOGF(fatal, "fSigmaNch object not found!");
+    if (fSigmaNch == nullptr) {
+      LOGF(fatal, "Could not load fSigmaNch!");
     }
 
     float znA{zdc.amplitudeZNA()};
@@ -619,10 +620,9 @@ struct UccZdc {
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
     // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
 
-    const auto& efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-    if (!efficiency) {
-      LOGF(fatal, "Efficiency object not found!");
+    efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+    if (efficiency == nullptr) {
+      LOGF(fatal, "Could not load efficiency!");
     }
 
     // has ZDC?
@@ -676,14 +676,14 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    // Nch-based selection
-    const auto& fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
-    const auto& fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
-    if (!fMeanNch) {
-      LOGF(fatal, "fMeanNch object not found!");
+    // Get Nch-based selection objects from the CCDB
+    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
+    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
+    if (fMeanNch == nullptr) {
+      LOGF(fatal, "Could not load fMeanNch!");
     }
-    if (!fSigmaNch) {
-      LOGF(fatal, "fSigmaNch object not found!");
+    if (fSigmaNch == nullptr) {
+      LOGF(fatal, "Could not load fSigmaNch!");
     }
 
     std::vector<float> pTs;
