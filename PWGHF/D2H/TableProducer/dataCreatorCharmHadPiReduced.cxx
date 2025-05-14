@@ -485,6 +485,17 @@ struct HfDataCreatorCharmHadPiReduced {
             }
           }
         }
+        // B0 → D- K+ → (π- K+ π-) K+
+        if (!flag) {
+          indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kKPlus}, true, &sign, 3);
+          if (indexRec > -1) {
+            // D- → π- K+ π-
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2,3
         if (!flag) {
@@ -604,6 +615,41 @@ struct HfDataCreatorCharmHadPiReduced {
             }
           }
         }
+        // Bs → Ds- K+ → (K- K+ π-) K+
+        if (!flag) {
+          indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kKPlus}, true, &sign, 3);
+          if (indexRec > -1) {
+            // Ds- → K- K+ π-
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              std::vector<int> arrDaughDsIndex;
+              std::array<int, 2> arrPDGDaughDs;
+              RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+              if (arrDaughDsIndex.size() == NDaughtersDs) {
+                for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
+                  auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                  arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
+                }
+                // Ds- → Phi π- → K- K+ π- and Ds- → K0* K- → K- K+ π-
+                if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                  flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsKToPhiPiKToKKPiK);
+                } else if ((arrPDGDaughDs[0] == arrPDGResonantDKstarK[0] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaughDs[0] == arrPDGResonantDKstarK[1] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[0])) {
+                  flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsKToK0starKKToKKPiK);
+                }
+              }
+            } else {
+              debug = 1;
+              LOGF(debug, "Bs decays in the expected final state but the condition on the intermediate state is not fulfilled");
+            }
+
+            auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersB.back().template mcParticle_as<PParticles>(), Pdg::kBS, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+              checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2,3
         if (!flag) {
@@ -669,7 +715,7 @@ struct HfDataCreatorCharmHadPiReduced {
         // D0(bar) → K+ π-;
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
+          flag = sign * BIT(hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi);
         } else {
           debug = 1;
           LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -684,6 +730,27 @@ struct HfDataCreatorCharmHadPiReduced {
       }
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
+        if (!flag) {
+          // B+ → D0(bar) K+ → (K+ π-) K+
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            // D0(bar) → K+ π-;
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
+            if (indexRec > -1) {
+              flag = sign * BIT(hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK);
+            } else {
+              debug = 1;
+              LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
+            }
+
+            auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersB.back().template mcParticle_as<PParticles>(), Pdg::kBPlus, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+              checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2
         if (!flag) {
@@ -769,7 +836,7 @@ struct HfDataCreatorCharmHadPiReduced {
             //  Lc+ → p K- π+
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiK);
+              flag = sign * BIT(hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK);
             }
           }
         }
