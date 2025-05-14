@@ -212,6 +212,7 @@ enum CharmHadronMassHypo {
 };
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);                  //! Timestamp for the collision
+DECLARE_SOA_COLUMN(VertexZ, vertexZ, float);                        //! VertexZ for the collision
 DECLARE_SOA_COLUMN(TrackId, trackId, int);                          //! track id to match associate particle with charm hadron prongs
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);                         //! Charge of charm hadron
 DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                        //! Track id of charm hadron prong0
@@ -235,11 +236,15 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
 DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                        //! Transverse momentum of associate femto particle
+DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                      //! Eta of associate femto particle
+DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                      //! Phi of associate femto particle
 DECLARE_SOA_COLUMN(Kstar, kstar, float);                            //! Relative momentum in particles pair frame
 DECLARE_SOA_COLUMN(KT, kT, float);                                  //! kT distribution of particle pairs
 DECLARE_SOA_COLUMN(MT, mT, float);                                  //! Transverse mass distribution
 DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm hadron mass
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
+DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                      //! Eta of charm hadron for result task
+DECLARE_SOA_COLUMN(CharmPhi, charmPhi, float);                      //! Phi of charm hadron for result task
 DECLARE_SOA_COLUMN(Mult, mult, int);                                //! Charge particle multiplicity
 DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);          //! Multiplicity precentile
 DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                     //! Selection between like sign (1) and unlike sign pair (2)
@@ -282,6 +287,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,                                            
 DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived data for charm hadron candidates
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
+                  fdhf::TimeStamp,
                   fdhf::Charge,
                   fdhf::Prong0Id,
                   fdhf::Prong1Id,
@@ -309,9 +315,14 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
 DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
+                  fdhf::VertexZ,
                   fdhf::CharmM,
                   fdhf::CharmPt,
                   fdhf::PtAssoc,
+                  fdhf::CharmEta,
+                  fdhf::EtaAssoc,
+                  fdhf::CharmPhi,
+                  fdhf::PhiAssoc,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
                   fdhf::BDTFD,
@@ -319,7 +330,6 @@ DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results 
                   fdhf::KT,
                   fdhf::MT,
                   fdhf::Mult,
-                  fdhf::MultPercentile,
                   fdhf::Charge,
                   fdhf::PairSign,
                   fdhf::ProcessType,
