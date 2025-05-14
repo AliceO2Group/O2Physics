@@ -220,7 +220,7 @@ struct DndetaMFTPbPb {
     }
 
     auto hev = registry.add<TH1>("hEvtSel", "hEvtSel", HistType::kTH1F,
-                                 {{12, -0.5f, +11.5f}});
+                                 {{16, -0.5f, +15.5f}});
     hev->GetXaxis()->SetBinLabel(1, "All collisions");
     hev->GetXaxis()->SetBinLabel(2, "Ev. sel.");
     hev->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
@@ -228,10 +228,14 @@ struct DndetaMFTPbPb {
     hev->GetXaxis()->SetBinLabel(5, "Z-vtx cut");
     hev->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStd");
     hev->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeNarrow");
-    hev->GetXaxis()->SetBinLabel(8, "Below min occup.");
-    hev->GetXaxis()->SetBinLabel(9, "Above max occup.");
-    hev->GetXaxis()->SetBinLabel(10, "Below min IR (kHz)");
-    hev->GetXaxis()->SetBinLabel(11, "Above max IR (kHz)");
+    hev->GetXaxis()->SetBinLabel(8, "kNoCollInTimeRangeStrict");
+    hev->GetXaxis()->SetBinLabel(9, "kNoCollInRofStrict");
+    hev->GetXaxis()->SetBinLabel(10, "kNoCollInRofStandard");
+    hev->GetXaxis()->SetBinLabel(11, "kNoHighMultCollInPrevRof");
+    hev->GetXaxis()->SetBinLabel(12, "Below min occup.");
+    hev->GetXaxis()->SetBinLabel(13, "Above max occup.");
+    hev->GetXaxis()->SetBinLabel(14, "Below min IR (kHz)");
+    hev->GetXaxis()->SetBinLabel(15, "Above max IR (kHz)");
 
     auto hBcSel = registry.add<TH1>("hBcSel", "hBcSel", HistType::kTH1F,
                                     {{3, -0.5f, +2.5f}});
@@ -741,13 +745,13 @@ struct DndetaMFTPbPb {
       return false;
     }
     if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 9);
+      registry.fill(HIST("hEvtSel"), 13);
     }
     if (eventCuts.maxIR >= 0 && ir > eventCuts.maxIR) {
       return false;
     }
     if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 10);
+      registry.fill(HIST("hEvtSel"), 14);
     }
     return true;
   }
