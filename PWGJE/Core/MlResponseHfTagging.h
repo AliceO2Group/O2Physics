@@ -113,6 +113,11 @@ class MlResponseHfTagging : public MlResponse<TypeOutputScore>
   /// @return A vector of input shapes
   std::vector<std::vector<int64_t>> getInputShape() const { return this->mModels[0].getInputShapes(); }
 
+  /// @brief Method to get the output shape of a model
+  /// \param imod is the index of the model
+  /// @return number of output nodes
+  int getOutputNodes(int imod = 0) const { return this->mModels[imod].getNumOutputNodes(); }
+
   /// Method to fill the inputs of jet, tracks and secondary vertices
   /// \param jet is the b-jet candidate
   /// \param tracks is the vector of tracks associated to the jet
