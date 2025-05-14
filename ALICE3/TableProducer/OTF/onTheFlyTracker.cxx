@@ -145,8 +145,10 @@ struct OnTheFlyTracker {
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
     Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
-    Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "turn on ms corrections for secondaries"};
-    Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "turn on eloss corrections for secondaries"};
+    Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
+    Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
+    Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
+    Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
   struct : ConfigurableGroup {
@@ -321,6 +323,7 @@ struct OnTheFlyTracker {
       histos.add("h2dVerticesVsContributors", "h2dVerticesVsContributors", kTH2F, {axes.axisMultiplicity, axes.axisNVertices});
       histos.add("hRecoVsSimMultiplicity", "hRecoVsSimMultiplicity", kTH2F, {axes.axisMultiplicity, axes.axisMultiplicity});
       histos.add("h2dDCAxy", "h2dDCAxy", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAz", "h2dDCAz", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
       histos.add("hSimTrackX", "hSimTrackX", kTH1F, {axes.axisX});
       histos.add("hRecoTrackX", "hRecoTrackX", kTH1F, {axes.axisX});
@@ -352,10 +355,24 @@ struct OnTheFlyTracker {
       histos.add("h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative", kTH2F, {axes.axisMomentum, axes.axisDCA});
       histos.add("h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
+      histos.add("h2dDCAzCascade", "h2dDCAzCascade", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAzCascadeBachelor", "h2dDCAzCascadeBachelor", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAzCascadeNegative", "h2dDCAzCascadeNegative", kTH2F, {axes.axisMomentum, axes.axisDCA});
+      histos.add("h2dDCAzCascadePositive", "h2dDCAzCascadePositive", kTH2F, {axes.axisMomentum, axes.axisDCA});
+
       histos.add("h2dDeltaPtVsPt", "h2dDeltaPtVsPt", kTH2F, {axes.axisMomentum, axes.axisDeltaPt});
       histos.add("h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt", kTH2F, {axes.axisMomentum, axes.axisDeltaEta});
 
       histos.add("hFastTrackerHits", "hFastTrackerHits", kTH2F, {axes.axisZ, axes.axisRadius});
+      auto hFastTrackerQA = histos.add<TH1>("hFastTrackerQA", "hFastTrackerQA", kTH1D, {{8, -0.5f, 7.5f}});
+      hFastTrackerQA->GetXaxis()->SetBinLabel(1, "Negative eigenvalue");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(2, "Failed sanity check");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(3, "intercept original radius");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(4, "propagate to original radius");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(5, "problematic layer");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(6, "multiple scattering");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(7, "energy loss");
+      hFastTrackerQA->GetXaxis()->SetBinLabel(8, "efficiency");
     }
 
     LOGF(info, "Initializing magnetic field to value: %.3f kG", static_cast<float>(magneticField));
@@ -411,10 +428,10 @@ struct OnTheFlyTracker {
     fastTracker.applyElossCorrection = fastTrackerSettings.applyElossCorrection;
 
     if (fastTrackerSettings.alice3detector == 0) {
-      fastTracker.AddSiliconALICE3v1();
+      fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
     }
     if (fastTrackerSettings.alice3detector == 1) {
-      fastTracker.AddSiliconALICE3v4();
+      fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
       fastTracker.AddTPC(0.1, 0.1);
     }
 
@@ -544,6 +561,7 @@ struct OnTheFlyTracker {
 
     // generate collision time
     auto ir = irSampler.generateCollisionTime();
+    const float eventCollisionTime = ir.timeInBCNS;
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -642,7 +660,7 @@ struct OnTheFlyTracker {
         isDecayDaughter = true;
 
       multiplicityCounter++;
-      const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
+      const float t = (eventCollisionTime + gRandom->Gaus(0., 100.)) * 1e-3;
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
       std::vector<bool> isReco(3);
@@ -666,10 +684,13 @@ struct OnTheFlyTracker {
           nSiliconHits[i] = 0;
           nTPCHits[i] = 0;
           if (enableSecondarySmearing) {
-
-            nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i]);
+            nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
             nSiliconHits[i] = fastTracker.nSiliconPoints;
             nTPCHits[i] = fastTracker.nGasPoints;
+
+            if (nHits[i] < 0) { // QA
+              histos.fill(HIST("hFastTrackerQA"), o2::math_utils::abs(nHits[i]));
+            }
 
             if (nSiliconHits[i] >= fastTrackerSettings.minSiliconHits || (nSiliconHits[i] >= fastTrackerSettings.minSiliconHitsIfTPCUsed && nTPCHits[i] >= fastTrackerSettings.minTPCClusters)) {
               isReco[i] = true;
@@ -849,6 +870,9 @@ struct OnTheFlyTracker {
                       posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.resZ);
                     }
 
+                    if (std::isnan(phi))
+                      continue; // Catch when getXatLabR misses layer[i]
+
                     // towards adding cluster: move to track alpha
                     double alpha = cascadeTrack.getAlpha();
                     double xyz1[3]{
@@ -1003,7 +1027,7 @@ struct OnTheFlyTracker {
                primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(),
                primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(),
                0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
-               0, 0);
+               eventCollisionTime, 0.f); // For the moment the event collision time is taken as the "GEANT" time, the computation of the event time is done a posteriori from the tracks in the OTF TOF PID task
     collLabels(mcCollision.globalIndex(), 0);
     collisionsAlice3(dNdEta);
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
@@ -1023,17 +1047,26 @@ struct OnTheFlyTracker {
         }
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          histos.fill(HIST("h2dDCAz"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         if (cascadeDecaySettings.doXiQA) {
-          if (trackParCov.isUsedInCascading == 1)
+          if (trackParCov.isUsedInCascading == 1) {
             histos.fill(HIST("h2dDCAxyCascade"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
-          if (trackParCov.isUsedInCascading == 2)
+            histos.fill(HIST("h2dDCAzCascade"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 2) {
             histos.fill(HIST("h2dDCAxyCascadeBachelor"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
-          if (trackParCov.isUsedInCascading == 3)
+            histos.fill(HIST("h2dDCAzCascadeBachelor"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 3) {
             histos.fill(HIST("h2dDCAxyCascadeNegative"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
-          if (trackParCov.isUsedInCascading == 4)
+            histos.fill(HIST("h2dDCAzCascadeNegative"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
+          if (trackParCov.isUsedInCascading == 4) {
             histos.fill(HIST("h2dDCAxyCascadePositive"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+            histos.fill(HIST("h2dDCAzCascadePositive"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
+          }
         }
         tracksDCA(dcaXY, dcaZ);
         if (populateTracksDCACov) {
@@ -1080,6 +1113,7 @@ struct OnTheFlyTracker {
         }
         if (doExtraQA && (!extraQAwithoutDecayDaughters || (extraQAwithoutDecayDaughters && !trackParCov.isDecayDau))) {
           histos.fill(HIST("h2dDCAxy"), trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
+          histos.fill(HIST("h2dDCAz"), trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
           histos.fill(HIST("hTrackXatDCA"), trackParametrization.getX());
         }
         tracksDCA(dcaXY, dcaZ);

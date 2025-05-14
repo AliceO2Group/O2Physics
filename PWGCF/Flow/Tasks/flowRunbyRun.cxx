@@ -84,7 +84,9 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptanceList, std::string, "", "CCDB path to acceptance lsit object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptanceListEnabled, bool, false, "switch of acceptance list")
   O2_DEFINE_CONFIGURABLE(cfgDynamicRunNumber, bool, false, "Add runNumber during runtime")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
@@ -286,8 +288,14 @@ struct FlowRunbyRun {
   {
     if (correctionsLoaded)
       return;
-
-    if (cfgAcceptanceList.value.empty() == false) {
+    if (!cfgAcceptanceListEnabled && cfgAcceptance.value.empty() == false) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
+      if (mAcceptance)
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+      else
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+    }
+    if (cfgAcceptanceListEnabled && cfgAcceptanceList.value.empty() == false) {
       mAcceptanceList = ccdb->getForTimeStamp<TObjArray>(cfgAcceptanceList, timestamp);
       if (mAcceptanceList == nullptr) {
         LOGF(fatal, "Could not load acceptance weights list from %s", cfgAcceptanceList.value.c_str());
@@ -474,17 +482,6 @@ struct FlowRunbyRun {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const auto cent = collision.centFT0C();
     int runNumber = bc.runNumber();
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
-      return;
-    if (cfgGetInteractionRate) {
-      initHadronicRate(bc);
-      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
-      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
-      if (cfgUseInteractionRateCut && (hadronicRate < cfgCutMinIR || hadronicRate > cfgCutMaxIR)) // cut on hadronic rate
-        return;
-      gCurrentHadronicRate->Fill(seconds, hadronicRate);
-    }
-    float lRandom = fRndm->Rndm();
     if (runNumber != lastRunNumer) {
       lastRunNumer = runNumber;
       if (cfgDynamicRunNumber && std::find(runNumbers.begin(), runNumbers.end(), runNumber) == runNumbers.end()) {
@@ -498,6 +495,18 @@ struct FlowRunbyRun {
         return;
       }
     }
+
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, runNumber))
+      return;
+    if (cfgGetInteractionRate) {
+      initHadronicRate(bc);
+      double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+      double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+      if (cfgUseInteractionRateCut && (hadronicRate < cfgCutMinIR || hadronicRate > cfgCutMaxIR)) // cut on hadronic rate
+        return;
+      gCurrentHadronicRate->Fill(seconds, hadronicRate);
+    }
+    float lRandom = fRndm->Rndm();
 
     th1sList[runNumber][hVtxZ]->Fill(collision.posZ());
     th1sList[runNumber][hMult]->Fill(tracks.size());

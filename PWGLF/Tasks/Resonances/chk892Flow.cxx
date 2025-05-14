@@ -78,6 +78,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
+using namespace o2::aod::rctsel;
 
 struct Chk892Flow {
   enum BinType : unsigned int {
@@ -146,7 +147,14 @@ struct Chk892Flow {
     Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
     Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
+    Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 80.0f, "Event sel: maximum centrality"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } EventCuts;
+  RCTFlagsChecker rctChecker;
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
@@ -159,7 +167,7 @@ struct Chk892Flow {
 
   // Track selections
   struct : ConfigurableGroup {
-    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.15, "Track minium pt cut"};
+    Configurable<float> cfgMinPtcut{"cfgMinPtcut", 0.6, "Track minium pt cut"};
     Configurable<float> cfgMaxEtacut{"cfgMaxEtacut", 0.8, "Track maximum eta cut"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
     Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -190,14 +198,14 @@ struct Chk892Flow {
 
     Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
     Configurable<float> cfgSecondaryDauDCAMax{"cfgSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
-    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
-    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
+    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.1, "Minimum DCA Secondary positive daughters to PV"};
+    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.1, "Minimum DCA Secondary negative daughters to PV"};
 
     Configurable<float> cfgSecondaryPtMin{"cfgSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
-    Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.5, "Maximum rapidity of Secondary"};
+    Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.8, "Maximum rapidity of Secondary"};
     Configurable<float> cfgSecondaryRadiusMin{"cfgSecondaryRadiusMin", 0.0, "Minimum transverse radius of Secondary"};
     Configurable<float> cfgSecondaryRadiusMax{"cfgSecondaryRadiusMax", 999.9, "Maximum transverse radius of Secondary"};
-    Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.998, "Mininum cosine pointing angle of Secondary"};
+    Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.995, "Mininum cosine pointing angle of Secondary"};
     Configurable<float> cfgSecondaryDCAtoPVMax{"cfgSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
     Configurable<float> cfgSecondaryProperLifetimeMax{"cfgSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
     Configurable<float> cfgSecondaryparamArmenterosCut{"cfgSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
@@ -259,6 +267,8 @@ struct Chk892Flow {
     colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
     colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
     colCuts.printCuts();
+
+    rctChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     AxisSpec centAxis = {AxisConfig.cfgBinsCent, "T0M (%)"};
     AxisSpec vtxzAxis = {AxisConfig.cfgBinsVtxZ, "Z Vertex (cm)"};
@@ -803,9 +813,9 @@ struct Chk892Flow {
     histos.fill(HIST("QA/EP/hEPResBC"), lCentrality, lEPResBC);
     // Scalar product method
     if (AnalysisConfig.cfgUseScalProduct) {
-      double lEPSPResAB = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefAInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefAInd]) * lEPResAB;
-      double lEPSPResAC = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResAC;
-      double lEPSPResBC = (collision.qvecRe()[lQvecRefAInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecRefAInd] * collision.qvecIm()[lQvecRefBInd]) * lEPResBC;
+      double lEPSPResAB = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefAInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefAInd]);
+      double lEPSPResAC = (collision.qvecRe()[lQvecDetInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecDetInd] * collision.qvecIm()[lQvecRefBInd]);
+      double lEPSPResBC = (collision.qvecRe()[lQvecRefAInd] * collision.qvecRe()[lQvecRefBInd] + collision.qvecIm()[lQvecRefAInd] * collision.qvecIm()[lQvecRefBInd]);
 
       histos.fill(HIST("QA/EP/hEPSPResAB"), lCentrality, lEPSPResAB);
       histos.fill(HIST("QA/EP/hEPSPResAC"), lCentrality, lEPSPResAC);
@@ -1064,10 +1074,15 @@ struct Chk892Flow {
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
     if (AnalysisConfig.cfgQvecSel && (collision.qvecAmp()[lDetId] < 1e-4 || collision.qvecAmp()[lRefAId] < 1e-4 || collision.qvecAmp()[lRefBId] < 1e-4))
       return; // If we don't have a Q-vector
-    colCuts.fillQA(collision);
     lCentrality = getCentrality(collision);
+    if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
+      return;
+    colCuts.fillQA(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s, EventPlaneConfig.cfgnMods); // second order
   }
@@ -1078,6 +1093,9 @@ struct Chk892Flow {
                  MCTrackCandidates const& tracks,
                  MCV0Candidates const& v0s)
   {
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
     fillHistograms<true, false>(collision, tracks, v0s, EventPlaneConfig.cfgnMods);
   }
   PROCESS_SWITCH(Chk892Flow, processMC, "Process Event for MC", false);

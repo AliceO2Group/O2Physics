@@ -47,6 +47,25 @@ using ReducedCols = soa::Join<aod::RedCollisions, aod::RedCentFT0Cs>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
+std::vector<std::string> triggerLabels = {
+  "fTriggerEventF1Proton", "fTrackedOmega", "fTrackedXi", "fOmegaLargeRadius",
+  "fDoubleOmega", "fOmegaHighMult", "fSingleXiYN", "fQuadrupleXi", "fDoubleXi",
+  "fhadronOmega", "fOmegaXi", "fTripleXi", "fOmega", "fGammaVeryLowPtEMCAL",
+  "fGammaVeryLowPtDCAL", "fGammaHighPtEMCAL", "fGammaLowPtEMCAL", "fGammaVeryHighPtDCAL",
+  "fGammaVeryHighPtEMCAL", "fGammaLowPtDCAL", "fJetNeutralLowPt", "fJetNeutralHighPt",
+  "fGammaHighPtDCAL", "fJetFullLowPt", "fJetFullHighPt", "fEMCALReadout", "fPCMandEE",
+  "fPHOSnbar", "fPCMHighPtPhoton", "fPHOSPhoton", "fLD", "fPPPHI", "fPD", "fLLL", "fPLL",
+  "fPPL", "fPPP", "fLeadingPtTrack", "fHighFt0cFv0Flat", "fHighFt0cFv0Mult", "fHighFt0Flat",
+  "fHighFt0Mult", "fHighMultFv0", "fHighTrackMult", "fHfSingleNonPromptCharm3P",
+  "fHfSingleNonPromptCharm2P", "fHfSingleCharm3P", "fHfPhotonCharm3P", "fHfHighPt2P",
+  "fHfSigmaC0K0", "fHfDoubleCharm2P", "fHfBeauty3P", "fHfFemto3P", "fHfFemto2P",
+  "fHfHighPt3P", "fHfSigmaCPPK", "fHfDoubleCharm3P", "fHfDoubleCharmMix",
+  "fHfPhotonCharm2P", "fHfV0Charm2P", "fHfBeauty4P", "fHfV0Charm3P", "fHfSingleCharm2P",
+  "fHfCharmBarToXiBach", "fSingleMuHigh", "fSingleMuLow", "fLMeeHMR", "fDiMuon",
+  "fDiElectron", "fLMeeIMR", "fSingleE", "fTrackHighPt", "fTrackLowPt", "fJetChHighPt",
+  "fJetChLowPt", "fUDdiffLarge", "fUDdiffSmall", "fITSextremeIonisation",
+  "fITSmildIonisation", "fH3L3Body", "fHe", "fH2"};
+
 struct Candidate3body {
   // Index
   int mcmotherId;
@@ -75,6 +94,7 @@ struct Candidate3body {
   float dautpcNsigma[3];      // 0 - proton, 1 - pion, 2 - bachelor
   float dauinnermostR[3];     // 0 - proton, 1 - pion, 2 - bachelor  !!! TracksIU required !!!
   float bachelortofNsigma;
+  bool isBachPrimary = false;
   // MC infomartion
   TLorentzVector lgencand = {0, 0, 0, 0};
   float genct = -1;
@@ -98,8 +118,12 @@ struct ThreebodyRecoTask {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   //------------------------------------------------------------------
-  Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
+  PresliceUnsorted<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
 
+  // Configurable for trigger selection
+  Configurable<std::string> triggerList{"triggerList", "fTriggerEventF1Proton, fTrackedOmega, fTrackedXi, fOmegaLargeRadius, fDoubleOmega, fOmegaHighMult, fSingleXiYN, fQuadrupleXi, fDoubleXi, fhadronOmega, fOmegaXi, fTripleXi, fOmega, fGammaVeryLowPtEMCAL, fGammaVeryLowPtDCAL, fGammaHighPtEMCAL, fGammaLowPtEMCAL, fGammaVeryHighPtDCAL, fGammaVeryHighPtEMCAL, fGammaLowPtDCAL, fJetNeutralLowPt, fJetNeutralHighPt, fGammaHighPtDCAL, fJetFullLowPt, fJetFullHighPt, fEMCALReadout, fPCMandEE, fPHOSnbar, fPCMHighPtPhoton, fPHOSPhoton, fLD, fPPPHI, fPD, fLLL, fPLL, fPPL, fPPP, fLeadingPtTrack, fHighFt0cFv0Flat, fHighFt0cFv0Mult, fHighFt0Flat, fHighFt0Mult, fHighMultFv0, fHighTrackMult, fHfSingleNonPromptCharm3P, fHfSingleNonPromptCharm2P, fHfSingleCharm3P, fHfPhotonCharm3P, fHfHighPt2P, fHfSigmaC0K0, fHfDoubleCharm2P, fHfBeauty3P, fHfFemto3P, fHfFemto2P, fHfHighPt3P, fHfSigmaCPPK, fHfDoubleCharm3P, fHfDoubleCharmMix, fHfPhotonCharm2P, fHfV0Charm2P, fHfBeauty4P, fHfV0Charm3P, fHfSingleCharm2P, fHfCharmBarToXiBach, fSingleMuHigh, fSingleMuLow, fLMeeHMR, fDiMuon, fDiElectron, fLMeeIMR, fSingleE, fTrackHighPt, fTrackLowPt, fJetChHighPt, fJetChLowPt, fUDdiffLarge, fUDdiffSmall, fITSextremeIonisation, fITSmildIonisation, fH3L3Body, fHe, fH2", "List of triggers used to select events"};
+  Configurable<bool> cfgOnlyKeepInterestedTrigger{"cfgOnlyKeepInterestedTrigger", false, "Flag to keep only interested trigger"};
+  Configurable<int> bcTolerance{"bcTolerance", 100, "Tolerance for BC in Zorro"};
   // Configuration to enable like-sign analysis
   Configurable<bool> cfgLikeSignAnalysis{"cfgLikeSignAnalysis", false, "Enable like-sign analysis"};
   // Selection criteria
@@ -111,9 +135,9 @@ struct ThreebodyRecoTask {
   Configurable<float> tofPIDNSigmaMin{"tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
   Configurable<float> tofPIDNSigmaMax{"tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
   Configurable<float> tpcPIDNSigmaCut{"tpcPIDNSigmaCut", 5, "tpcPIDNSigmaCut"};
-  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
-  Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
-  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
+  Configurable<bool> eventSel8Cut{"eventSel8Cut", true, "flag to enable event sel8 selection"};
+  Configurable<bool> mcEventCut{"mcEventCut", true, "flag to enable mc event selection: kIsTriggerTVX and kNoTimeFrameBorder"};
+  Configurable<bool> eventPosZCut{"eventPosZCut", true, "flag to enable event posZ selection"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
@@ -137,8 +161,7 @@ struct ThreebodyRecoTask {
   float uppersignallimit = o2::constants::physics::MassHyperTriton + 3 * mcsigma;
 
   // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
@@ -221,9 +244,10 @@ struct ThreebodyRecoTask {
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
+
     mRunNumber = 0;
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -239,6 +263,13 @@ struct ThreebodyRecoTask {
     registry.add("hDiffRVtxPion", "hDiffRVtxPion", HistType::kTH1F, {{100, -10, 10}});         // difference between the radius of decay vertex and minR of pion
     registry.add("hDiffRVtxDeuteron", "hDiffRVtxDeuteron", HistType::kTH1F, {{100, -10, 10}}); // difference between the radius of decay vertex and minR of deuteron
     registry.add("hDiffDaughterR", "hDiffDaughterR", HistType::kTH1F, {{10000, -100, 100}});   // difference between minR of pion&proton and R of deuteron(bachelor)
+
+    // Check triggers
+    auto hEventTriggerCount = registry.add<TH1>("hEventTriggerCount", "hEventTriggerCount", HistType::kTH1F, {{static_cast<int>(triggerLabels.size() + 1), 0, static_cast<double>(triggerLabels.size() + 1)}});
+    for (size_t i = 0; i < triggerLabels.size(); i++) {
+      hEventTriggerCount->GetXaxis()->SetBinLabel(i + 1, triggerLabels[i].c_str());
+    }
+    hEventTriggerCount->GetXaxis()->SetBinLabel(triggerLabels.size() + 1, "NoTrigger");
 
     if (cfgLikeSignAnalysis) {
       registry.add("hInvMassCorrectSign", "hInvMassCorrectSign", HistType::kTH1F, {{80, 2.96f, 3.04f}}); // check if there are contamination of possible signals which are caused by unexpected PID
@@ -275,10 +306,11 @@ struct ThreebodyRecoTask {
     }
 
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fH3L3Body");
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerList);
       zorro.populateHistRegistry(registry, bc.runNumber());
     }
 
+    LOGF(info, "Initializing CCDB for run %d", bc.runNumber());
     mRunNumber = bc.runNumber();
   }
 
@@ -293,13 +325,13 @@ struct ThreebodyRecoTask {
     bool haveProton = false, havePion = false, haveBachelor = false;
     bool haveAntiProton = false, haveAntiPion = false, haveAntiBachelor = false;
     for (const auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
-      if (mcparticleDaughter.pdgCode() == 2212)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kProton)
         haveProton = true;
-      if (mcparticleDaughter.pdgCode() == -2212)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar)
         haveAntiProton = true;
-      if (mcparticleDaughter.pdgCode() == 211)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus)
         havePion = true;
-      if (mcparticleDaughter.pdgCode() == -211)
+      if (mcparticleDaughter.pdgCode() == PDG_t::kPiMinus)
         haveAntiPion = true;
       if (mcparticleDaughter.pdgCode() == bachelorPdgCode)
         haveBachelor = true;
@@ -323,11 +355,11 @@ struct ThreebodyRecoTask {
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
 
-    if (event_sel8_selection && !collision.sel8()) {
+    if (eventSel8Cut && !collision.sel8()) {
       return false;
     }
     registry.fill(HIST("hEventCounter"), 1.5);
-    if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
+    if (eventPosZCut && std::abs(collision.posZ()) > 10.f) { // 10cm
       return false;
     }
     registry.fill(HIST("hEventCounter"), 2.5);
@@ -337,6 +369,10 @@ struct ThreebodyRecoTask {
       bool zorroSelected = zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
       if (zorroSelected) {
         registry.fill(HIST("hEventCounter"), 3.5);
+      } else {
+        if (cfgOnlyKeepInterestedTrigger) {
+          return false;
+        }
       }
     }
 
@@ -346,7 +382,7 @@ struct ThreebodyRecoTask {
   //------------------------------------------------------------------
   // Fill candidate table
   template <typename TCollisionTable, typename TTrackTable, typename TCandTable>
-  void fillCand(TCollisionTable const& collision, TCandTable const& candData, TTrackTable const& trackProton, TTrackTable const& trackPion, TTrackTable const& trackDeuteron, bool isMatter, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  void fillCand(TCollisionTable const& collision, TCandTable const& candData, TTrackTable const& trackProton, TTrackTable const& trackPion, TTrackTable const& trackDeuteron, bool isMatter, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double mcLifetime = -1, bool isBachPrimary = false)
   {
     double cospa = candData.vtxcosPA(collision.posX(), collision.posY(), collision.posZ());
     double ct = candData.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassHyperTriton;
@@ -394,10 +430,11 @@ struct ThreebodyRecoTask {
     cand3body.dauinnermostR[2] = trackDeuteron.x();
 
     cand3body.bachelortofNsigma = candData.tofNSigmaBachDe();
+    cand3body.isBachPrimary = isBachPrimary;
     if (isTrueCand) {
       cand3body.mcmotherId = lLabel;
       cand3body.lgencand = lmother;
-      cand3body.genct = MClifetime;
+      cand3body.genct = mcLifetime;
       cand3body.genrapidity = lmother.Rapidity();
       cand3body.isSignal = true;
       cand3body.isReco = true;
@@ -511,7 +548,7 @@ struct ThreebodyRecoTask {
   //------------------------------------------------------------------
   // Analysis process for a single candidate
   template <class TTrackClass, typename TCollisionTable, typename TCandTable>
-  void candidateAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  void candidateAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& ifHasCandidate, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double mcLifetime = -1, double isBachPrimary = false)
   {
     auto track0 = candData.template track0_as<TTrackClass>();
     auto track1 = candData.template track1_as<TTrackClass>();
@@ -524,15 +561,15 @@ struct ThreebodyRecoTask {
     auto& trackDeuteron = track2;
 
     if (selectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
-      if_hasvtx = true;
-      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+      ifHasCandidate = true;
+      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, mcLifetime, isBachPrimary);
     }
   }
 
   //------------------------------------------------------------------
   // Analysis process for like-sign candidates : (p pi- anti-d) or (anti-p pi+ d)
   template <class TTrackClass, typename TCollisionTable, typename TCandTable>
-  void likeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  void likeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& ifHasCandidate, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double mcLifetime = -1, double isBachPrimary = false)
   {
     auto track0 = candData.template track0_as<TTrackClass>();
     auto track1 = candData.template track1_as<TTrackClass>();
@@ -546,8 +583,8 @@ struct ThreebodyRecoTask {
     auto& trackDeuteron = track2;
 
     if (selectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
-      if_hasvtx = true;
-      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+      ifHasCandidate = true;
+      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, mcLifetime, isBachPrimary);
       // QA for if signals have the possibility to be reconginzed as a like-sign background
       if (isMatter) {
         registry.fill(HIST("hInvMassCorrectSign"), candData.mHypertriton());
@@ -560,7 +597,7 @@ struct ThreebodyRecoTask {
   //------------------------------------------------------------------
   // Analysis process for reduced data
   template <class TTrackClass, typename TCollisionTable, typename TCandTable, typename TTracks>
-  void reducedAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  void reducedAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double mcLifetime = -1, double isBachPrimary = false)
   {
     auto track0 = tracks.rawIteratorAt(candData.track0Id());
     auto track1 = tracks.rawIteratorAt(candData.track1Id());
@@ -573,14 +610,14 @@ struct ThreebodyRecoTask {
     auto& trackDeuteron = track2;
 
     if (selectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
-      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, mcLifetime, isBachPrimary);
     }
   }
 
   //------------------------------------------------------------------
   // Analysis process for reduced data with like-sign candidates
   template <class TTrackClass, typename TCollisionTable, typename TCandTable, typename TTracks>
-  void reducedLikeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  void reducedLikeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, TTracks tracks, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double mcLifetime = -1, bool isBachPrimary = false)
   {
     auto track0 = tracks.rawIteratorAt(candData.track0Id());
     auto track1 = tracks.rawIteratorAt(candData.track1Id());
@@ -594,7 +631,7 @@ struct ThreebodyRecoTask {
     auto& trackDeuteron = track2;
 
     if (selectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
-      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+      fillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, mcLifetime, isBachPrimary);
       // QA for if signals have the possibility to be reconginzed as a like-sign background
       if (isMatter) {
         registry.fill(HIST("hInvMassCorrectSign"), candData.mHypertriton());
@@ -632,35 +669,35 @@ struct ThreebodyRecoTask {
 
       bool haveProton = false, havePionPlus = false, haveDeuteron = false;
       bool haveAntiProton = false, havePionMinus = false, haveAntiDeuteron = false;
-      double MClifetime = -1;
+      double mcLifetime = -1;
       for (const auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
-        if (mcparticleDaughter.pdgCode() == 2212)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kProton)
           haveProton = true;
-        if (mcparticleDaughter.pdgCode() == -2212)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kProtonBar)
           haveAntiProton = true;
-        if (mcparticleDaughter.pdgCode() == 211)
+        if (mcparticleDaughter.pdgCode() == PDG_t::kPiPlus)
           havePionPlus = true;
-        if (mcparticleDaughter.pdgCode() == -211)
+        if (mcparticleDaughter.pdgCode() == -PDG_t::kPiPlus)
           havePionMinus = true;
         if (mcparticleDaughter.pdgCode() == bachelorPdgCode) {
           haveDeuteron = true;
-          MClifetime = RecoDecay::sqrtSumOfSquares(mcparticleDaughter.vx() - mcparticle.vx(), mcparticleDaughter.vy() - mcparticle.vy(), mcparticleDaughter.vz() - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
+          mcLifetime = RecoDecay::sqrtSumOfSquares(mcparticleDaughter.vx() - mcparticle.vx(), mcparticleDaughter.vy() - mcparticle.vy(), mcparticleDaughter.vz() - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
         }
         if (mcparticleDaughter.pdgCode() == -bachelorPdgCode) {
           haveAntiDeuteron = true;
-          MClifetime = RecoDecay::sqrtSumOfSquares(mcparticleDaughter.vx() - mcparticle.vx(), mcparticleDaughter.vy() - mcparticle.vy(), mcparticleDaughter.vz() - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
+          mcLifetime = RecoDecay::sqrtSumOfSquares(mcparticleDaughter.vx() - mcparticle.vx(), mcparticleDaughter.vy() - mcparticle.vy(), mcparticleDaughter.vz() - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
         }
       }
       if (haveProton && havePionMinus && haveDeuteron && mcparticle.pdgCode() == motherPdgCode) {
         registry.fill(HIST("hGeneratedHypertritonCounter"), 1.5);
         registry.fill(HIST("hPtGeneratedHypertriton"), mcparticle.pt());
-        registry.fill(HIST("hctGeneratedHypertriton"), MClifetime);
+        registry.fill(HIST("hctGeneratedHypertriton"), mcLifetime);
         registry.fill(HIST("hEtaGeneratedHypertriton"), mcparticle.eta());
         registry.fill(HIST("hRapidityGeneratedHypertriton"), mcparticle.y());
       } else if (haveAntiProton && havePionPlus && haveAntiDeuteron && mcparticle.pdgCode() == -motherPdgCode) {
         registry.fill(HIST("hGeneratedHypertritonCounter"), 1.5);
         registry.fill(HIST("hPtGeneratedAntiHypertriton"), mcparticle.pt());
-        registry.fill(HIST("hctGeneratedAntiHypertriton"), MClifetime);
+        registry.fill(HIST("hctGeneratedAntiHypertriton"), mcLifetime);
         registry.fill(HIST("hEtaGeneratedAntiHypertriton"), mcparticle.eta());
         registry.fill(HIST("hRapidityGeneratedAntiHypertriton"), mcparticle.y());
       }
@@ -678,17 +715,29 @@ struct ThreebodyRecoTask {
         continue;
       }
 
-      bool if_hasvtx = false;
-      auto d3bodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
-      for (const auto& vtx : d3bodyCands) {
+      bool ifHasCandidate = false;
+      auto d3BodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
+      for (const auto& vtx : d3BodyCands) {
         if (cfgLikeSignAnalysis) {
-          likeSignAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
+          likeSignAnalysis<FullTracksExtIU>(collision, vtx, ifHasCandidate);
         } else {
-          candidateAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
+          candidateAnalysis<FullTracksExtIU>(collision, vtx, ifHasCandidate);
         }
       }
-      if (if_hasvtx)
+
+      if (ifHasCandidate) {
+        auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+        auto triggerSelection = zorro.getTriggerOfInterestResults(bc.globalBC(), bcTolerance);
+        for (size_t i = 0; i < triggerSelection.size(); i++) {
+          if (triggerSelection[i]) {
+            registry.fill(HIST("hEventTriggerCount"), i + 0.5);
+          }
+        }
+        if (zorro.isNotSelectedByAny(bc.globalBC(), bcTolerance)) {
+          registry.fill(HIST("hEventTriggerCount"), triggerLabels.size() + 0.5);
+        }
         registry.fill(HIST("hEventCounter"), 4.5);
+      }
       fillHistos();
       resetHistos();
 
@@ -704,6 +753,8 @@ struct ThreebodyRecoTask {
   void processReducedData(ReducedCols const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::RedIUTracks const& tracks)
   {
     candidates3body.clear();
+
+    registry.fill(HIST("hEventCounter"), 0.5, collisions.size());
 
     for (const auto& vtx : vtx3bodydatas) {
       const auto& collision = collisions.iteratorAt(vtx.collisionId());
@@ -733,11 +784,11 @@ struct ThreebodyRecoTask {
     for (const auto& collision : collisions) {
       candidates3body.clear();
       registry.fill(HIST("hEventCounter"), 0.5);
-      if (mc_event_selection && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+      if (mcEventCut && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
-      if (event_posZ_selection && std::abs(collision.posZ()) > 10.f) { // 10cm
+      if (eventPosZCut && std::abs(collision.posZ()) > 10.f) { // 10cm
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
@@ -747,13 +798,14 @@ struct ThreebodyRecoTask {
         isGoodCollision[collision.mcCollisionId()] = true;
       }
 
-      bool if_hasvtx = false;
-      auto vtxsthiscol = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
+      bool ifHasCandidate = false;
+      auto vtxsThisCol = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
 
-      for (const auto& vtx : vtxsthiscol) {
+      for (const auto& vtx : vtxsThisCol) {
+        bool isBachPrimary = false;
         int lLabel = -1;
         int lPDG = -1;
-        double MClifetime = -1;
+        double mcLifetime = -1;
         TLorentzVector lmother;
         bool isTrueCand = false;
         auto track0 = vtx.track0_as<MCLabeledTracksIU>();
@@ -763,6 +815,11 @@ struct ThreebodyRecoTask {
           auto lMCTrack0 = track0.mcParticle_as<aod::McParticles>();
           auto lMCTrack1 = track1.mcParticle_as<aod::McParticles>();
           auto lMCTrack2 = track2.mcParticle_as<aod::McParticles>();
+
+          if (lMCTrack2.isPhysicalPrimary()) {
+            isBachPrimary = true;
+          }
+
           if (lMCTrack0.has_mothers() && lMCTrack1.has_mothers() && lMCTrack2.has_mothers()) {
             for (const auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
               for (const auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
@@ -770,10 +827,10 @@ struct ThreebodyRecoTask {
                   if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
                     lLabel = lMother0.globalIndex();
                     lPDG = lMother0.pdgCode();
-                    if ((lPDG == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) ||
-                        (lPDG == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
+                    if ((lPDG == motherPdgCode && lMCTrack0.pdgCode() == PDG_t::kProton && lMCTrack1.pdgCode() == PDG_t::kPiMinus && lMCTrack2.pdgCode() == bachelorPdgCode) ||
+                        (lPDG == -motherPdgCode && lMCTrack0.pdgCode() == PDG_t::kPiPlus && lMCTrack1.pdgCode() == PDG_t::kProtonBar && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
                       isTrueCand = true;
-                      MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
+                      mcLifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
                       lmother.SetXYZM(lMother0.px(), lMother0.py(), lMother0.pz(), o2::constants::physics::MassHyperTriton);
                     }
                   }
@@ -783,10 +840,10 @@ struct ThreebodyRecoTask {
           }
         }
 
-        candidateAnalysis<MCLabeledTracksIU>(collision, vtx, if_hasvtx, isTrueCand, lLabel, lmother, MClifetime);
+        candidateAnalysis<MCLabeledTracksIU>(collision, vtx, ifHasCandidate, isTrueCand, lLabel, lmother, mcLifetime, isBachPrimary);
       }
 
-      if (if_hasvtx)
+      if (ifHasCandidate)
         registry.fill(HIST("hEventCounter"), 4.5);
       fillHistos();
       resetHistos();
@@ -803,6 +860,7 @@ struct ThreebodyRecoTask {
                       cand3body.dautpcNsigma[0], cand3body.dautpcNsigma[1], cand3body.dautpcNsigma[2], cand3body.bachelortofNsigma,
                       cand3body.daudcaxytopv[0], cand3body.daudcaxytopv[1], cand3body.daudcaxytopv[2],
                       cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2],
+                      cand3body.isBachPrimary,
                       cand3body.lgencand.P(), cand3body.lgencand.Pt(), cand3body.genct, cand3body.lgencand.Phi(), cand3body.lgencand.Eta(), cand3body.lgencand.Rapidity(),
                       cand3body.isSignal, cand3body.isReco, cand3body.pdgCode, cand3body.survivedEventSelection);
       }
@@ -823,7 +881,7 @@ struct ThreebodyRecoTask {
           posSV = {mcDaughter.vx(), mcDaughter.vy(), mcDaughter.vz()};
         }
       }
-      double MClifetime = RecoDecay::sqrtSumOfSquares(posSV[0] - mcparticle.vx(), posSV[1] - mcparticle.vy(), posSV[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
+      double mcLifetime = RecoDecay::sqrtSumOfSquares(posSV[0] - mcparticle.vx(), posSV[1] - mcparticle.vy(), posSV[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
       outputMCTable(-1,
                     -1, -1, -1, -1, -1,
                     -1, -1, -1, -1,
@@ -835,7 +893,8 @@ struct ThreebodyRecoTask {
                     -1, -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    mcparticle.p(), mcparticle.pt(), MClifetime, mcparticle.phi(), mcparticle.eta(), mcparticle.y(),
+                    false,
+                    mcparticle.p(), mcparticle.pt(), mcLifetime, mcparticle.phi(), mcparticle.eta(), mcparticle.y(),
                     true, false, mcparticle.pdgCode(), isSurEvSelection);
     }
   }

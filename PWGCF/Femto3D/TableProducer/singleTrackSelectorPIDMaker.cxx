@@ -129,9 +129,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       {"O2singlepidpr", {[&]() { workflow.push_back(adaptAnalysisTask<StPidPr>(cfgc)); }}},
       {"O2singlepidde", {[&]() { workflow.push_back(adaptAnalysisTask<StPidDe>(cfgc)); }}},
       {"O2singlepidtr", {[&]() { workflow.push_back(adaptAnalysisTask<StPidTr>(cfgc)); }}},
-      {"O2singlepidhe", {[&]() { workflow.push_back(adaptAnalysisTask<StPidHe>(cfgc)); }}}
-
-    };
+      {"O2singlepidhe", {[&]() { workflow.push_back(adaptAnalysisTask<StPidHe>(cfgc)); }}}};
 
     for (auto const& tableInWorkflow : tables) {
       LOG(info) << tableInWorkflow;
@@ -154,7 +152,14 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       }
     }
   } else {
-    LOG(warning) << "AOD converter: No tables found in the meta data";
+    LOG(warning) << "AOD converter: No tables found in the meta data. Adding all workflows";
+    workflow.push_back(adaptAnalysisTask<StPidEl>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidPi>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidKa>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidPr>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidDe>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidTr>(cfgc));
+    workflow.push_back(adaptAnalysisTask<StPidHe>(cfgc));
   }
   return workflow;
 }
