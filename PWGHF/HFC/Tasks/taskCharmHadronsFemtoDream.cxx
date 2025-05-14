@@ -328,9 +328,15 @@ struct HfTaskCharmHadronsFemtoDream {
       }
       fillFemtoResult(
         col.globalIndex(),
+        p2.timeStamp(),
+        col.posZ(),
         invMass,
         p2.pt(),
         p1.pt(),
+        p2.eta(),
+        p1.eta(),
+        p2.phi(),
+        p1.phi(),
         p2.bdtBkg(),
         p2.bdtPrompt(),
         p2.bdtFD(),
@@ -338,7 +344,6 @@ struct HfTaskCharmHadronsFemtoDream {
         FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
         FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
         col.multNtr(),
-        col.multV0M(),
         p2.charge(),
         pairSign,
         processType,
@@ -426,9 +431,15 @@ struct HfTaskCharmHadronsFemtoDream {
         }
         fillFemtoResult(
           -999., // no need to store the index in the mix-event
+          -999., // no need to store the index in the mix-event
+          -999.,
           invMass,
           p2.pt(),
           p1.pt(),
+          -999.,
+          -999.,
+          -999.,
+          -999.,
           p2.bdtBkg(),
           p2.bdtPrompt(),
           p2.bdtFD(),
@@ -436,7 +447,6 @@ struct HfTaskCharmHadronsFemtoDream {
           FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
           FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
           collision1.multNtr(),
-          collision1.multV0M(),
           p2.charge(),
           pairSign,
           processType,
