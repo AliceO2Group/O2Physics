@@ -139,7 +139,13 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   kfChi2PrimPion,
   kfChi2GeoKaonPion,
   kfChi2GeoProtonPion,
-  kfChi2GeoProtonKaon
+  kfChi2GeoProtonKaon,
+  kfDcaKaonPion,
+  kfDcaProtonPion,
+  kfDcaProtonKaon,
+  kfChi2Geo,
+  kfChi2Topo,
+  kfDecayLengthNormalised
 };
 
 template <typename TypeOutputScore = float, aod::hf_cand::VertexerType reconstructionType = aod::hf_cand::VertexerType::DCAFitter>
@@ -227,6 +233,15 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
           CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2GeoKaonPion, kfChi2GeoProng1Prong2, kfChi2GeoProng0Prong1);
           CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfChi2GeoProtonPion, kfChi2GeoProng0Prong2);
           CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2GeoProtonKaon, kfChi2GeoProng0Prong1, kfChi2GeoProng1Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfDcaKaonPion, kfDcaProng1Prong2, kfDcaProng0Prong1);
+          CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfDcaProtonPion, kfDcaProng0Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfDcaProtonKaon, kfDcaProng0Prong1, kfDcaProng1Prong2);
+          CHECK_AND_FILL_VEC_LCTOPKPI(kfChi2Geo);
+          CHECK_AND_FILL_VEC_LCTOPKPI(kfChi2Topo);
+          case static_cast<uint8_t>(InputFeaturesLcToPKPi::kfDecayLengthNormalised): {
+            inputFeatures.emplace_back(candidate.kfDecayLength() / candidate.kfDecayLengthError());
+            break;
+          }
         }
       }
     }
@@ -297,7 +312,13 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         FILL_MAP_LCTOPKPI(kfChi2PrimPion),
         FILL_MAP_LCTOPKPI(kfChi2GeoKaonPion),
         FILL_MAP_LCTOPKPI(kfChi2GeoProtonPion),
-        FILL_MAP_LCTOPKPI(kfChi2GeoProtonKaon)};
+        FILL_MAP_LCTOPKPI(kfChi2GeoProtonKaon),
+        FILL_MAP_LCTOPKPI(kfDcaKaonPion),
+        FILL_MAP_LCTOPKPI(kfDcaProtonPion),
+        FILL_MAP_LCTOPKPI(kfDcaProtonKaon),
+        FILL_MAP_LCTOPKPI(kfChi2Geo),
+        FILL_MAP_LCTOPKPI(kfChi2Topo),
+        FILL_MAP_LCTOPKPI(kfDecayLengthNormalised)};
       MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapKfFeatures.begin(), mapKfFeatures.end());
     }
   }
