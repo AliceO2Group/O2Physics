@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file NchCumulantsId.cxx
+/// \file nchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
 ///        it is meant to be a blank page for further developments.
 /// \author Pravata Panigrahi <pravata.panigrahi@cern.ch>:: Sadhana Dash (sadhana@phy.iitb.ac.in) and Rahul Verma (rahul.verma@iitb.ac.in)
