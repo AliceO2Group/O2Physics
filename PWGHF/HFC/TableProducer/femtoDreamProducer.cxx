@@ -475,6 +475,8 @@ struct HfFemtoDreamProducer {
           LOGF(fatal, "Please check your Ml configuration!!");
         }
       }
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      int64_t timeStamp = bc.timestamp();
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float BDTScoreBkg,
@@ -483,6 +485,7 @@ struct HfFemtoDreamProducer {
         if (FunctionSelection >= 1){
                 rowCandCharmHad(
                     outputCollision.lastIndex(),
+                    timeStamp,
                     trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
                     trackPos1.globalIndex(),
                     trackNeg.globalIndex(),
