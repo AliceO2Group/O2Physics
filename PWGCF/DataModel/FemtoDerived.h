@@ -211,6 +211,7 @@ enum CharmHadronMassHypo {
   lcToPiKP = 2
 };
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);                  //! Timestamp for the collision
 DECLARE_SOA_COLUMN(TrackId, trackId, int);                          //! track id to match associate particle with charm hadron prongs
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);                         //! Charge of charm hadron
 DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                        //! Track id of charm hadron prong0
@@ -307,6 +308,7 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
 
 DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
+                  fdhf::TimeStamp,
                   fdhf::CharmM,
                   fdhf::CharmPt,
                   fdhf::PtAssoc,
