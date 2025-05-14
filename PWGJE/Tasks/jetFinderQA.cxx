@@ -1301,4 +1301,7 @@ struct JetFinderQATask {
   PROCESS_SWITCH(JetFinderQATask, processOccupancyQA, "occupancy QA on jet derived data", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; // o2-linter: disable=name/o2-task
+}
