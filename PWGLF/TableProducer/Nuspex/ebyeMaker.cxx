@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file ebyeMaker.cxx
+/// \brief table producer for e-by-e analysis in LF
+/// \author Mario Ciacco <mario.ciacco@cern.ch>
+
 #include <vector>
 #include <map>
 #include <utility>
@@ -44,7 +48,6 @@
 
 #include "PWGLF/DataModel/LFEbyeTables.h"
 
-#include "TDatabasePDG.h"
 #include "TFormula.h"
 
 using namespace o2;
@@ -76,7 +79,7 @@ static const std::vector<std::string> particleName{"p"};
 std::array<std::shared_ptr<TH3>, kNpart> tofMass;
 void momTotXYZ(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
-  for (int i = 0; i < 3; ++i) {
+  for (uint64_t i = 0; i < momA.size(); ++i) {
     momA[i] = momB[i] + momC[i];
   }
 }
@@ -117,7 +120,7 @@ float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& m
                                     (1.f * momA[2] + 1.f * momB[2]) * (1.f * momA[2] + 1.f * momB[2])) -
                           (1.f * momA[2] + 1.f * momB[2])));
 }
-float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
 {
   return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
 }
@@ -165,7 +168,7 @@ struct CandidateTrack {
   int64_t globalIndex = -999;
 };
 
-enum selBits {
+enum SelBits {
   kTPCclsTight = BIT(0),
   kTPCclsMid = BIT(1),
   kChi2TPCTight = BIT(2),
@@ -186,7 +189,7 @@ enum PartTypes {
   kPhysPrim = BIT(22)
 };
 
-struct tagRun2V0MCalibration {
+struct TagRun2V0MCalibration {
   bool mCalibrationStored = false;
   TH1* mhVtxAmpCorrV0A = nullptr;
   TH1* mhVtxAmpCorrV0C = nullptr;
@@ -195,13 +198,13 @@ struct tagRun2V0MCalibration {
   TFormula* mMCScale = nullptr;
 } Run2V0MInfo;
 
-struct tagRun2CL0Calibration {
+struct TagRun2CL0Calibration {
   bool mCalibrationStored = false;
   TH1* mhVtxAmpCorr = nullptr;
   TH1* mhMultSelCalib = nullptr;
 } Run2CL0Info;
 
-struct ebyeMaker {
+struct EbyeMaker {
   Produces<aod::CollEbyeTable> collisionEbyeTable;
   Produces<aod::MiniCollTable> miniCollTable;
   Produces<aod::NucleiEbyeTable> nucleiEbyeTable;
@@ -218,8 +221,9 @@ struct ebyeMaker {
   std::vector<int> classIds;
 
   int mRunNumber;
-  float d_bz;
+  float dBz;
   uint8_t nTrackletsColl;
+  uint8_t nTracksColl;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -227,7 +231,7 @@ struct ebyeMaker {
   Configurable<LabeledArray<double>> cfgBetheBlochParamsITS{"cfgBetheBlochParamsITS", {betheBlochDefaultITS, 1, 6, particleName, betheBlochParNames}, "ITS Bethe-Bloch parameterisation for deuteron"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
-  ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis multAxis{"multAxis", {100, 0, 10000}, "Binning for the multiplicity axis"};
   ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0, 100000}, "Binning for the ft0 multiplicity axis"};
 
@@ -235,7 +239,7 @@ struct ebyeMaker {
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
 
   // binning of PID QA histograms
-  ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
+  ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofMassAxis{"tofMassAxis", {1000, 0., 3.f}, "tof mass axis"};
 
@@ -244,8 +248,8 @@ struct ebyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
-  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+  Configurable<bool> storeTracksNum{"storeTracksNum", false, "store the number of tracks instead of tracklets"};
+  Configurable<std::string> genName{"genName", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
 
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
@@ -264,14 +268,14 @@ struct ebyeMaker {
   Configurable<float> lambdaPtMax{"lambdaPtMax", 4.f, "maximum (anti)lambda pT (GeV/c)"};
 
   Configurable<float> trackNcrossedRows{"trackNcrossedRows", 70, "Minimum number of crossed TPC rows"};
-  Configurable<float> trackNclusItsCut{"trackNclusITScut", 2, "Minimum number of ITS clusters"};
-  Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 60, "Minimum number of TPC clusters"};
+  Configurable<float> trackNclusItsCut{"trackNclusItsCut", 2, "Minimum number of ITS clusters"};
+  Configurable<float> trackNclusTpcCut{"trackNclusTpcCut", 60, "Minimum number of TPC clusters"};
   Configurable<float> trackChi2Cut{"trackChi2Cut", 4.f, "Maximum chi2/ncls in TPC"};
   Configurable<LabeledArray<float>> cfgDcaSels{"cfgDcaSels", {dcaSels, 1, 3, particleName, dcaSelsNames}, "DCA selections"};
 
   Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 100, "Minimum number of crossed TPC rows for V0 daughter"};
-  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 0, "Minimum number of ITS clusters for V0 daughter"};
-  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 100, "Minimum number of TPC clusters for V0 daughter"};
+  Configurable<float> v0trackNclusItsCut{"v0trackNclusItsCut", 0, "Minimum number of ITS clusters for V0 daughter"};
+  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTpcCut", 100, "Minimum number of TPC clusters for V0 daughter"};
   Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 5, "Maximum number of shared TPC clusters for V0 daughter"};
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", 0.01f, "veto for V0 compatible with K0s mass"};
@@ -279,8 +283,8 @@ struct ebyeMaker {
 
   Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
-  Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
-  Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
+  Configurable<float> antidTpcInnerParamMax{"antidTpcInnerParamMax", 0.f, "(temporary) tpc inner param cut"};
+  Configurable<float> antidTofMassMax{"antidTofMassMax", 0.3f, "(temporary) tof mass cut"};
 
   Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", -4.f, "TPC PID cut low"};
   Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
@@ -288,13 +292,13 @@ struct ebyeMaker {
   Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
   Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 0.5f, "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcav0pv{"v0setting_dcav0pv", 1.f, "DCA V0 to Pv"};
-  Configurable<float> v0setting_dcadaughtopv{"v0setting_dcadaughtopv", 0.1f, "DCA Pos To PV"};
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.99f, "V0 CosPA"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 5.f, "v0radius"};
-  Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
-  Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
+  Configurable<float> v0settingDcaV0Dau{"v0settingDcaV0Dau", 0.5f, "DCA V0 Daughters"};
+  Configurable<float> v0settingDcaV0Pv{"v0settingDcaV0Pv", 1.f, "DCA V0 to Pv"};
+  Configurable<float> v0settingDcaDaughToPv{"v0settingDcaDaughToPv", 0.1f, "DCA Pos To PV"};
+  Configurable<double> v0settingCosPa{"v0settingCosPa", 0.99f, "V0 CosPA"};
+  Configurable<float> v0settingRadius{"v0settingRadius", 5.f, "v0radius"};
+  Configurable<float> v0settingLifetime{"v0settingLifetime", 40.f, "v0 lifetime cut"};
+  Configurable<float> v0settingNSigmaTpc{"v0settingNSigmaTpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   Configurable<bool> constDCASel{"constDCASel", true, "use DCA selections independent of pt"};
@@ -323,20 +327,20 @@ struct ebyeMaker {
   template <class P>
   int getPartTypeMother(P const& mcPart)
   {
-    for (auto& mother : mcPart.template mothers_as<aod::McParticles>()) {
+    for (const auto& mother : mcPart.template mothers_as<aod::McParticles>()) {
       if (!mother.isPhysicalPrimary())
         return -1;
       int pdgCode = mother.pdgCode();
       switch (std::abs(pdgCode)) {
         case 3122: {
           int foundPi = 0;
-          for (auto& mcDaught : mother.template daughters_as<aod::McParticles>()) {
-            if (std::abs(mcDaught.pdgCode()) == 211) {
+          for (const auto& mcDaught : mother.template daughters_as<aod::McParticles>()) {
+            if (std::abs(mcDaught.pdgCode()) == PDG_t::kPiPlus) {
               foundPi = mcDaught.pdgCode();
               break;
             }
           }
-          if (foundPi * mcPart.pdgCode() < -0.5)
+          if (foundPi * mcPart.pdgCode() < 0)
             return PartTypes::kLa;
           return -1;
         }
@@ -354,13 +358,14 @@ struct ebyeMaker {
   template <class T>
   bool selectV0Daughter(T const& track)
   {
+    const float defNClCROverFind = 0.8f;
     if (std::abs(track.eta()) > etaMaxV0dau) {
       return false;
     }
     if (track.itsNCls() < v0trackNclusItsCut ||
         track.tpcNClsFound() < v0trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < v0trackNclusTpcCut ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
         track.tpcNClsShared() > v0trackNsharedClusTpc) {
       return false;
     }
@@ -379,6 +384,8 @@ struct ebyeMaker {
   template <class T>
   bool selectTrack(T const& track)
   {
+    const float defItsChi2NClCut = 36.f;
+    const float defNClCROverFind = 0.8f;
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
@@ -388,9 +395,9 @@ struct ebyeMaker {
     if (track.itsNCls() < trackNclusItsCut ||
         track.tpcNClsFound() < trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
-        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsCrossedRows() < defNClCROverFind * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > trackChi2Cut ||
-        track.itsChi2NCl() > 36.f) {
+        track.itsChi2NCl() > defItsChi2NClCut) {
       return false;
     }
     if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
@@ -407,7 +414,8 @@ struct ebyeMaker {
   float getITSClSize(T const& track)
   {
     float sum{0.f};
-    for (int iL{0}; iL < 6; ++iL) {
+    const int nLayers = 7;
+    for (int iL{0}; iL < nLayers; ++iL) {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();
@@ -452,7 +460,8 @@ struct ebyeMaker {
         if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
           if (genName->length() != 0) {
             if (Run2V0MInfo.mMCScale != nullptr) {
-              for (int ixpar = 0; ixpar < 6; ++ixpar) {
+              const int nPars = 6;
+              for (int ixpar = 0; ixpar < nPars; ++ixpar) {
                 Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
               }
             } else {
@@ -482,8 +491,8 @@ struct ebyeMaker {
       o2::base::Propagator::initFieldFromGRP(grpmag);
     }
     // Fetch magnetic field from ccdb for current collision
-    d_bz = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
+    dBz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << dBz << " kG";
     mRunNumber = bc.runNumber();
     if (doprocessMiniRun2) {
       o2::ccdb::CcdbApi ccdbApi;
@@ -499,7 +508,7 @@ struct ebyeMaker {
         classIds.push_back(classId);
       }
     }
-    fitter.setBz(d_bz);
+    fitter.setBz(dBz);
 
     // o2::base::Propagator::Instance()->setMatLUT(lut);
   }
@@ -531,17 +540,17 @@ struct ebyeMaker {
     auto fv0c = fv0cs.rawIteratorAt(id);
     float multFV0A = 0;
     float multFV0C = 0;
-    for (float amplitude : fv0a.amplitude()) {
+    for (const float& amplitude : fv0a.amplitude()) {
       multFV0A += amplitude;
     }
 
-    for (float amplitude : fv0c.amplitude()) {
+    for (const float& amplitude : fv0c.amplitude()) {
       multFV0C += amplitude;
     }
 
     float v0m = -1;
     auto scaleMC = [](float x, float pars[6]) {
-      return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
     if (Run2V0MInfo.mMCScale != nullptr) {
@@ -590,7 +599,7 @@ struct ebyeMaker {
   {
 
     mRunNumber = 0;
-    d_bz = 0;
+    dBz = 0;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -663,12 +672,14 @@ struct ebyeMaker {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
+    uint8_t nTracks{0};
+    const float tklEtaCuts[]{1.2, 0.6, 0.7};
     for (const auto& track : tracks) {
 
-      if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
-        if (std::abs(track.eta()) < 0.6)
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < tklEtaCuts[0]) { // tracklet
+        if (std::abs(track.eta()) < tklEtaCuts[1])
           nTracklets[0]++;
-        else if (std::abs(track.eta()) > 0.7)
+        else if (std::abs(track.eta()) > tklEtaCuts[2])
           nTracklets[1]++;
       }
 
@@ -692,6 +703,8 @@ struct ebyeMaker {
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
 
+      nTracks++;
+
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
@@ -711,7 +724,8 @@ struct ebyeMaker {
         float beta{track.hasTOF() ? track.length() / (track.tofSignal() - track.tofEvTime()) * o2::constants::physics::invLightSpeedCm2PS : -999.f};
         beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
-        bool hasTof = track.hasTOF() && track.tofChi2() < 3;
+        const float maxTofChi2 = 3.f;
+        bool hasTof = track.hasTOF() && track.tofChi2() < maxTofChi2;
 
         if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
           if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
@@ -752,6 +766,7 @@ struct ebyeMaker {
     if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
       nTrackletsColl = nTracklets[1];
+      nTracksColl = nTracks;
     }
 
     if (lambdaPtMax > lambdaPtMin) {
@@ -823,7 +838,7 @@ struct ebyeMaker {
         auto nSigmaTPCNeg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
         float tpcSigPr = matter ? posTrack.tpcSignal() : negTrack.tpcSignal();
 
-        if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
+        if (std::abs(nSigmaTPCPos) > v0settingNSigmaTpc || std::abs(nSigmaTPCNeg) > v0settingNSigmaTpc) {
           continue;
         }
 
@@ -833,7 +848,7 @@ struct ebyeMaker {
         }
 
         float dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
-        if (dcaV0dau > v0setting_dcav0dau) {
+        if (dcaV0dau > v0settingDcaV0Dau) {
           continue;
         }
 
@@ -841,41 +856,41 @@ struct ebyeMaker {
         const auto& vtx = fitter.getPCACandidate();
 
         float radiusV0 = std::hypot(vtx[0], vtx[1]);
-        if (radiusV0 < v0setting_radius || radiusV0 > v0radiusMax) {
+        if (radiusV0 < v0settingRadius || radiusV0 > v0radiusMax) {
           continue;
         }
 
-        float dcaV0Pv = CalculateDCAStraightToPV(
+        float dcaV0Pv = calculateDCAStraightToPV(
           vtx[0], vtx[1], vtx[2],
           momPos[0] + momNeg[0],
           momPos[1] + momNeg[1],
           momPos[2] + momNeg[2],
           collision.posX(), collision.posY(), collision.posZ());
-        if (std::abs(dcaV0Pv) > v0setting_dcav0pv) {
+        if (std::abs(dcaV0Pv) > v0settingDcaV0Pv) {
           continue;
         }
 
         double cosPA = RecoDecay::cpa(primVtx, vtx, momV0);
-        if (cosPA < v0setting_cospa) {
+        if (cosPA < v0settingCosPa) {
           continue;
         }
 
         auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
         auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
-        float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
-        if (ML2P_Lambda > v0setting_lifetime) {
+        float mL2PLambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
+        if (mL2PLambda > v0settingLifetime) {
           continue;
         }
 
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
         auto posDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-        if (posDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+        if (posDcaToPv < v0settingDcaDaughToPv && std::abs(dcaInfo[0]) < v0settingDcaDaughToPv) {
           continue;
         }
 
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
         auto negDcaToPv = std::hypot(dcaInfo[0], dcaInfo[1]);
-        if (negDcaToPv < v0setting_dcadaughtopv && std::abs(dcaInfo[0]) < v0setting_dcadaughtopv) {
+        if (negDcaToPv < v0settingDcaDaughToPv && std::abs(dcaInfo[0]) < v0settingDcaDaughToPv) {
           continue;
         }
 
@@ -910,7 +925,7 @@ struct ebyeMaker {
     fillRecoEvent<C, T>(collision, tracks, V0s, centrality);
 
     for (int iP{0}; iP < kNpart; ++iP) {
-      for (auto& candidateTrack : candidateTracks[iP]) {
+      for (auto& candidateTrack : candidateTracks[iP]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         candidateTrack.isreco = true;
 
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
@@ -940,7 +955,7 @@ struct ebyeMaker {
         }
       }
     }
-    for (auto& candidateV0 : candidateV0s) {
+    for (auto& candidateV0 : candidateV0s) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
       candidateV0.isreco = true;
       auto mcLabPos = mcLabels.rawIteratorAt(candidateV0.globalIndexPos);
       auto mcLabNeg = mcLabels.rawIteratorAt(candidateV0.globalIndexNeg);
@@ -949,13 +964,13 @@ struct ebyeMaker {
         auto mcTrackPos = mcLabPos.template mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.template mcParticle_as<aod::McParticles>();
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
-          for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
-            for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
+          for (const auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
+            for (const auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
               if (posMother.globalIndex() != negMother.globalIndex())
                 continue;
-              if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
+              if (!((mcTrackPos.pdgCode() == PDG_t::kProton && mcTrackNeg.pdgCode() == PDG_t::kPiMinus) || (mcTrackPos.pdgCode() == PDG_t::kPiPlus && mcTrackNeg.pdgCode() == PDG_t::kProtonBar)))
                 continue;
-              if (std::abs(posMother.pdgCode()) != 3122) {
+              if (std::abs(posMother.pdgCode()) != PDG_t::kLambda0) {
                 continue;
               }
               if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
@@ -977,8 +992,8 @@ struct ebyeMaker {
 
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
-    auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
-    for (auto& mcPart : mcParticles_thisCollision) {
+    auto mcParticlesThisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
+    for (const auto& mcPart : mcParticlesThisCollision) {
       auto genEta = mcPart.eta();
       if (std::abs(genEta) > etaMax) {
         continue;
@@ -986,12 +1001,12 @@ struct ebyeMaker {
       if (((mcPart.flags() & 0x8) && (doprocessMcRun2 || doprocessMiniMcRun2)) || (mcPart.flags() & 0x2) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
-      if (std::abs(pdgCode) == 3122) {
+      if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
         bool foundPr = false;
-        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcDaught.pdgCode()) == 2212) {
+        for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+          if (std::abs(mcDaught.pdgCode()) == PDG_t::kProton) {
             foundPr = true;
             break;
           }
@@ -1056,19 +1071,19 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
       auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, centrality);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
 
       collisionEbyeTable(centrality, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         lambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1086,7 +1101,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           nucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1100,7 +1115,7 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processRun3, "process (Run 3)", false);
+  PROCESS_SWITCH(EbyeMaker, processRun3, "process (Run 3)", false);
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
   {
@@ -1121,7 +1136,8 @@ struct ebyeMaker {
       float cV0M = 105.f;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
-        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
+        const float centTriggerEdges[]{10.f, 30.f, 50.f};
+        if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= centTriggerEdges[0] && cV0M < centTriggerEdges[1]) || cV0M > centTriggerEdges[2]))))
           continue;
       }
 
@@ -1142,18 +1158,18 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
       auto multTracklets = collision.multTracklets();
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, cV0M);
 
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, cV0M);
       histos.fill(HIST("QA/trackletsVsV0M"), cV0M, multTracklets);
 
       collisionEbyeTable(cV0M, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         lambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1171,7 +1187,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           nucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1185,7 +1201,7 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processRun2, "process (Run 2)", false);
+  PROCESS_SWITCH(EbyeMaker, processRun2, "process (Run 2)", false);
 
   void processMiniRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFullPID const& tracks, aod::Run2TrackExtras const& trackExtraRun2, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, BCsWithRun2Info const&)
   {
@@ -1207,7 +1223,8 @@ struct ebyeMaker {
         continue;
 
       float v0m = getV0M(bc.globalIndex(), collision.posZ(), fv0as, fv0cs);
-      float cV0M = 105.f;
+      float maxV0M = 105.f;
+      float cV0M = maxV0M;
       if (Run2V0MInfo.mCalibrationStored) {
         cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
       }
@@ -1215,16 +1232,16 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
+      fillRecoEvent(collision, tracks, v0TableThisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      for (auto& classId : classIds) {
+      for (const auto& classId : classIds) {
         if (bc.triggerMask() & BIT(classId)) {
           trigger |= 0x2;
-          cV0M = cV0M < 104.f ? cV0M * 100. : cV0M;
+          cV0M = cV0M < (maxV0M - 1.f) ? cV0M * 100. : cV0M;
           break;
         }
       }
@@ -1234,9 +1251,9 @@ struct ebyeMaker {
       if (triggerCut != 0x0 && (trigger & triggerCut) != triggerCut) {
         continue;
       }
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
         float outerPID = getOuterPID(tk);
         auto [itsSignal, nSigmaITS] = getITSSignal(tk, trackExtraRun2);
@@ -1255,11 +1272,11 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processMiniRun2, "process mini tables(Run 2)", false);
+  PROCESS_SWITCH(EbyeMaker, processMiniRun2, "process mini tables(Run 2)", false);
 
   void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
@@ -1277,15 +1294,15 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0Table_thisCollision, centrality, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       collisionEbyeTable(centrality, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1307,7 +1324,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           mcNucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1325,11 +1342,11 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processMcRun3, "process MC (Run 3)", false);
+  PROCESS_SWITCH(EbyeMaker, processMcRun3, "process MC (Run 3)", false);
 
   void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
       initCCDB(bc);
 
@@ -1348,15 +1365,15 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
       collisionEbyeTable(cV0M, collision.posZ());
 
-      for (auto& candidateV0 : candidateV0s) {
+      for (const auto& candidateV0 : candidateV0s) {
         mcLambdaEbyeTable(
           collisionEbyeTable.lastIndex(),
           candidateV0.pt,
@@ -1378,7 +1395,7 @@ struct ebyeMaker {
       }
 
       for (int iP{0}; iP < kNpart; ++iP) {
-        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+        for (const auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
           mcNucleiEbyeTable(
             collisionEbyeTable.lastIndex(),
             candidateTrack.pt,
@@ -1396,7 +1413,7 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processMcRun2, "process MC (Run 2)", false);
+  PROCESS_SWITCH(EbyeMaker, processMcRun2, "process MC (Run 2)", false);
 
   void processMiniMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullPID const& tracks, aod::Run2TrackExtras const& trackExtraRun2, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, aod::V0s const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
@@ -1420,15 +1437,15 @@ struct ebyeMaker {
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
       const uint64_t collIdx = collision.globalIndex();
-      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
-      V0Table_thisCollision.bindExternalIndices(&tracks);
+      auto v0TableThisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      v0TableThisCollision.bindExternalIndices(&tracks);
 
-      fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
+      fillMcEvent(collision, tracks, v0TableThisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, storeTracksNum ? nTracksColl : nTrackletsColl, cV0M);
 
-      for (auto& candidateTrack : candidateTracks[0]) { // protons
+      for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
         if (candidateTrack.isreco) {
           auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1459,11 +1476,11 @@ struct ebyeMaker {
       }
     }
   }
-  PROCESS_SWITCH(ebyeMaker, processMiniMcRun2, "process mini tables for mc(Run 2)", false);
+  PROCESS_SWITCH(EbyeMaker, processMiniMcRun2, "process mini tables for mc(Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ebyeMaker>(cfgc)};
+    adaptAnalysisTask<EbyeMaker>(cfgc)};
 }

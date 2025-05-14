@@ -250,12 +250,12 @@ o2physics_add_dpl_workflow(tree-creator-omegac-st
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-ka
-                    SOURCES treeCreatorOmegacToOmegaKa.cxx
+                    SOURCES treeCreatorOmegac0ToOmegaKa.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tree-creator-omegac0-to-omega-pi
-                    SOURCES treeCreatorOmegacToOmegaPi.cxx
+                    SOURCES treeCreatorOmegac0ToOmegaPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -315,6 +315,10 @@ o2physics_add_dpl_workflow(derived-data-creator-lc-to-p-k-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(derived-data-creator-dstar-to-d0-pi
+                    SOURCES derivedDataCreatorDstarToD0Pi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 # Converters
 
 o2physics_add_dpl_workflow(converter-dstar-indices

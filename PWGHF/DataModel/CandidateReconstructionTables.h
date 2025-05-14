@@ -859,6 +859,7 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug fla
 enum DecayType { BplusToD0Pi = 0 };
 
 enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
+                             BplusToD0KToKPiK,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };
@@ -1913,7 +1914,7 @@ DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug fla
 enum DecayType { LbToLcPi }; // move this to a dedicated cascade namespace in the future?
 
 enum DecayTypeMc : uint8_t { LbToLcPiToPKPiPi = 0,
-                             LbToLcPiToPKPiK,
+                             LbToLcKToPKPiK,
                              B0ToDplusPiToPiKPiPi,
                              PartlyRecoDecay,
                              OtherDecay,
@@ -1987,6 +1988,7 @@ enum DecayType { B0ToDPi };
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
                              BsToDsPiToKKPiPi,
+                             B0ToDplusKToPiKPiK,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };
@@ -2063,6 +2065,8 @@ enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓
                              BsToDsPiToK0starKPiToKKPiPi,   // Bs(bar) → Ds∓ π± → (K0* K∓) π± → (K- K+ π∓) π±
                              B0ToDsPiToPhiPiPiToKKPiPi,     // B0(bar) → Ds± π∓ → (Phi π±) π∓ → (K- K+ π±) π∓
                              B0ToDsPiToK0starKPiToKKPiPi,   // B0(bar) → Ds± π∓ → (K0* K±) π∓ → (K- K+ π±) π∓
+                             BsToDsKToPhiPiKToKKPiK,        // Bs(bar) → Ds± K∓ → (Phi π∓) K∓ → (K- K+ π±) K∓
+                             BsToDsKToK0starKKToKKPiK,      // Bs(bar) → Ds± K∓ → (K0* K±) K∓ → (K- K+ π±) K∓
                              PartlyRecoDecay,               // 4 final state particles have another common b-hadron ancestor
                              OtherDecay,
                              NDecayTypeMc }; // counter of differentiated MC decay types

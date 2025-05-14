@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorOmegacToOmegaPi.cxx
+/// \file treeCreatorOmegac0ToOmegaPi.cxx
 /// \brief Writer of the omegac0 to Omega Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
@@ -217,7 +217,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorOmegacToOmegaPi {
+struct HfTreeCreatorOmegacToOmegaPi { // FIXME: Rename to HfTreeCreatorOmegac0ToOmegaPi
 
   Produces<o2::aod::HfOmegac0ToOmegaPiLites> rowCandidateLite;
   Produces<o2::aod::HfKfOmegacFulls> rowKfCandidateFull;
