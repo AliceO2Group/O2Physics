@@ -306,6 +306,8 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
 DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results for HF femtoscopy
+                  o2::soa::Index<>,
+                  femtodreamparticle::FDCollisionId,
                   fdhf::CharmM,
                   fdhf::CharmPt,
                   fdhf::PtAssoc,
