@@ -1303,5 +1303,5 @@ struct JetFinderQATask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; // o2-linter: disable=name/o2-task
+  return WorkflowSpec{adaptAnalysisTask<JetFinderQATask>(cfgc, TaskName{"jet-finder-charged-qa"})}; // o2-linter: disable=name/o2-task,name/workflow-file
 }
