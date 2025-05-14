@@ -93,7 +93,8 @@ struct HfCandidateSelectorLc {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
-  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
+  o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
   std::vector<float> outputMlLcToPKPi = {};
   std::vector<float> outputMlLcToPiKP = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -142,15 +143,20 @@ struct HfCandidateSelectorLc {
     }
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      hfMlResponseDCA.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      hfMlResponseKF.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        hfMlResponseDCA.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        hfMlResponseKF.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
+        hfMlResponseDCA.setModelPathsLocal(onnxFileNames);
+        hfMlResponseKF.setModelPathsLocal(onnxFileNames);
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
+      hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponseKF.init();
+      hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponseKF.init();
     }
 
     massK0Star892 = o2::constants::physics::MassK0Star892;
@@ -553,13 +559,24 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPKPi = false;
         isSelectedMlLcToPiKP = false;
 
-        if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
-          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, true);
-          isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
-        }
-        if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
-          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
-          isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+        if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+          if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponseDCA.getInputFeatures(candidate, true);
+            isSelectedMlLcToPKPi = hfMlResponseDCA.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
+          }
+          if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponseDCA.getInputFeatures(candidate, false);
+            isSelectedMlLcToPiKP = hfMlResponseDCA.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+          }
+        } else {
+          if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponseKF.getInputFeatures(candidate, true);
+            isSelectedMlLcToPKPi = hfMlResponseKF.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
+          }
+          if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponseKF.getInputFeatures(candidate, false);
+            isSelectedMlLcToPiKP = hfMlResponseKF.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+          }
         }
 
         hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
