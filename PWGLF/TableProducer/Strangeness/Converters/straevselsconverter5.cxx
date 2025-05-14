@@ -31,13 +31,14 @@ struct straevselsconverter5 {
   int lastRun = -1;
   int64_t lastTF = -1;
   uint32_t lastRCT = 0;
-  uint64_t sorTimestamp = 0;             // default SOR timestamp
-  uint64_t eorTimestamp = 1;             // default EOR timestamp
-  int64_t bcSOR = -1;                    // global bc of the start of run
-  int64_t nBCsPerTF = -1;                // duration of TF in bcs, should be 128*3564 or 3
+  uint64_t sorTimestamp = 0; // default SOR timestamp
+  uint64_t eorTimestamp = 1; // default EOR timestamp
+  int64_t bcSOR = -1;        // global bc of the start of run
+  int64_t nBCsPerTF = -1;    // duration of TF in bcs, should be 128*3564 or 3
   std::map<uint64_t, uint32_t>* mapRCT = nullptr;
 
-  uint32_t getRctRaw(int run, uint64_t timestamp, uint64_t globalBC) {
+  uint32_t getRctRaw(int run, uint64_t timestamp, uint64_t globalBC)
+  {
     if (run != lastRun) {
       lastRun = run;
       auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
