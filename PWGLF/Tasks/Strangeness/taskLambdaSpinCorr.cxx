@@ -52,7 +52,8 @@ struct LfTaskLambdaSpinCorr {
   // fill output
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
-  Configurable<bool> fillGEN{"fillGEN", true, "filling generated histograms"};
+  Configurable<bool> fillGEN{"fillGEN", false, "filling generated histograms"};
+  Configurable<bool> fillQA{"fillQA", false, "filling QA histograms"};
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -105,20 +106,27 @@ struct LfTaskLambdaSpinCorr {
 
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+    histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
 
-    ///////// along quantization axes///////////
-    histos.add("hSparseLambdaLambdaQA", "hSparseLambdaLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-    histos.add("hSparseLambdaAntiLambdaQA", "hSparseLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-    histos.add("hSparseAntiLambdaAntiLambdaQA", "hSparseAntiLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+    if (fillQA) {
+      ///////// along quantization axes///////////
+      histos.add("hSparseLambdaLambdaQA", "hSparseLambdaLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      histos.add("hSparseLambdaAntiLambdaQA", "hSparseLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      histos.add("hSparseAntiLambdaLambdaQA", "hSparseAntiLambdaLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      histos.add("hSparseAntiLambdaAntiLambdaQA", "hSparseAntiLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+    }
     if (fillGEN) {
       histos.add("hSparseLambdaLambdaMC", "hSparseLambdaLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseLambdaAntiLambdaMC", "hSparseLambdaAntiLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      histos.add("hSparseAntiLambdaLambdaMC", "hSparseAntiLambdaLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseAntiLambdaAntiLambdaMC", "hSparseAntiLambdaAntiLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-
-      histos.add("hSparseLambdaLambdaMCQA", "hSparseLambdaLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-      histos.add("hSparseLambdaAntiLambdaMCQA", "hSparseLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-      histos.add("hSparseAntiLambdaAntiLambdaMCQA", "hSparseAntiLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      if (fillQA) {
+        histos.add("hSparseLambdaLambdaMCQA", "hSparseLambdaLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+        histos.add("hSparseLambdaAntiLambdaMCQA", "hSparseLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+        histos.add("hSparseAntiLambdaLambdaMCQA", "hSparseAntiLambdaLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+        histos.add("hSparseAntiLambdaAntiLambdaMCQA", "hSparseAntiLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+      }
     }
   }
 
@@ -206,8 +214,8 @@ struct LfTaskLambdaSpinCorr {
                     const ROOT::Math::PxPyPzMVector& Lambdadummy,
                     const ROOT::Math::PxPyPzMVector& AntiLambdadummy)
   {
-    const double minMass = 1.105;
-    const double maxMass = 1.125;
+    const double minMass = 1.0;
+    const double maxMass = 2.0;
     return (lambdaTag && aLambdaTag &&
             (Lambdadummy.M() > minMass && Lambdadummy.M() < maxMass) &&
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
@@ -257,6 +265,8 @@ struct LfTaskLambdaSpinCorr {
         histos.fill(HIST("hSparseLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       if (tag1 && tag4)
         histos.fill(HIST("hSparseLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+      if (tag2 && tag3)
+        histos.fill(HIST("hSparseAntiLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       if (tag2 && tag4)
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
     } else {
@@ -265,6 +275,8 @@ struct LfTaskLambdaSpinCorr {
           histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
         if (tag1 && tag4)
           histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+        if (tag2 && tag3)
+          histos.fill(HIST("hSparseAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
         if (tag2 && tag4)
           histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       }
@@ -309,6 +321,8 @@ struct LfTaskLambdaSpinCorr {
         histos.fill(HIST("hSparseLambdaLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       if (tag1 && tag4)
         histos.fill(HIST("hSparseLambdaAntiLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+      if (tag2 && tag3)
+        histos.fill(HIST("hSparseAntiLambdaLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       if (tag2 && tag4)
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
     } else {
@@ -317,6 +331,8 @@ struct LfTaskLambdaSpinCorr {
           histos.fill(HIST("hSparseLambdaLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
         if (tag1 && tag4)
           histos.fill(HIST("hSparseLambdaAntiLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+        if (tag2 && tag3)
+          histos.fill(HIST("hSparseAntiLambdaLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
         if (tag2 && tag4)
           histos.fill(HIST("hSparseAntiLambdaAntiLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
       }
@@ -401,10 +417,10 @@ struct LfTaskLambdaSpinCorr {
 
   ROOT::Math::PxPyPzMVector lambda, antiLambda, lambdadummy, antiLambdadummy, proton, pion, antiProton, antiPion, fourVecDauCM;
   ROOT::Math::PxPyPzMVector lambda2, antiLambda2, lambdadummy2, antiLambdadummy2, proton2, pion2, antiProton2, antiPion2;
-  ROOT::Math::PxPyPzMVector lambdaLambdapair, lambdaAntiLambdapair, antiLambdaAntiLambdapair;
+  ROOT::Math::PxPyPzMVector lambdaLambdapair, lambdaAntiLambdapair, antiLambdaLambdapair, antiLambdaAntiLambdapair;
   ROOT::Math::PxPyPzMVector lambdamc, antiLambdamc, lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
   ROOT::Math::PxPyPzMVector lambda2mcmc, antiLambda2mc, lambdadummy2mc, antiLambdadummy2mc, proton2mc, pion2mc, antiProton2mc, antiPion2mc;
-  ROOT::Math::PxPyPzMVector lambdaLambdapairmc, lambdaAntiLambdapairmc, antiLambdaAntiLambdapairmc;
+  ROOT::Math::PxPyPzMVector lambdaLambdapairmc, lambdaAntiLambdapairmc, antiLambdaLambdapairmc, antiLambdaAntiLambdapairmc;
 
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
 
@@ -505,7 +521,9 @@ struct LfTaskLambdaSpinCorr {
           tagb = 0;
           tagb2 = 0;
           fillHistograms(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-          fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
+          if (fillQA) {
+            fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
+          }
         }
 
         tagb2 = aLambdaTag2;
@@ -515,18 +533,35 @@ struct LfTaskLambdaSpinCorr {
           tagb = 0;
           taga2 = 0;
           fillHistograms(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-          fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
+          if (fillQA) {
+            fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
+          }
         }
 
         tagb = aLambdaTag;
         taga2 = lambdaTag2;
+
+        if (aLambdaTag && lambdaTag2) {
+          antiLambdaLambdapair = antiLambdadummy + lambdadummy2;
+          taga = 0;
+          tagb2 = 0;
+          fillHistograms(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
+          if (fillQA) {
+            fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
+          }
+        }
+
+        taga = lambdaTag;
+        tagb2 = aLambdaTag2;
 
         if (aLambdaTag && aLambdaTag2) {
           antiLambdaAntiLambdapair = antiLambdadummy + antiLambdadummy2;
           taga = 0;
           taga2 = 0;
           fillHistograms(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
-          fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
+          if (fillQA) {
+            fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
+          }
         }
       }
     }
@@ -629,7 +664,9 @@ struct LfTaskLambdaSpinCorr {
             tagb = 0;
             tagb2 = 0;
             fillHistograms(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-            fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
+            if (fillQA) {
+              fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
+            }
           }
 
           tagb2 = aLambdaTag2;
@@ -639,18 +676,35 @@ struct LfTaskLambdaSpinCorr {
             tagb = 0;
             taga2 = 0;
             fillHistograms(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-            fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
+            if (fillQA) {
+              fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
+            }
           }
 
           tagb = aLambdaTag;
           taga2 = lambdaTag2;
+
+          if (aLambdaTag && lambdaTag2) {
+            antiLambdaLambdapair = antiLambdadummy + lambdadummy2;
+            taga = 0;
+            tagb2 = 0;
+            fillHistograms(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
+            if (fillQA) {
+              fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
+            }
+          }
+
+          taga = lambdaTag;
+          tagb2 = aLambdaTag2;
 
           if (aLambdaTag && aLambdaTag2) {
             antiLambdaAntiLambdapair = antiLambdadummy + antiLambdadummy2;
             taga = 0;
             taga2 = 0;
             fillHistograms(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
-            fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
+            if (fillQA) {
+              fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
+            }
           }
         }
       }
@@ -757,19 +811,33 @@ struct LfTaskLambdaSpinCorr {
           if (tagamc && taga2mc) {
             lambdaLambdapairmc = lambdadummymc + lambdadummy2mc;
             fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdaLambdapairmc, lambdadummymc, lambdadummy2mc, protonmc, proton2mc, centrality, 1);
-            fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaLambdapairmc, lambdadummymc, lambdadummy2mc, protonmc, proton2mc, centrality, 1);
+            if (fillQA) {
+              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaLambdapairmc, lambdadummymc, lambdadummy2mc, protonmc, proton2mc, centrality, 1);
+            }
           }
 
           if (tagamc && tagb2mc) {
             lambdaAntiLambdapairmc = lambdadummymc + antiLambdadummy2mc;
             fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdaAntiLambdapairmc, lambdadummymc, antiLambdadummy2mc, protonmc, antiProton2mc, centrality, 1);
-            fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaAntiLambdapairmc, lambdadummymc, antiLambdadummy2mc, protonmc, antiProton2mc, centrality, 1);
+            if (fillQA) {
+              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaAntiLambdapairmc, lambdadummymc, antiLambdadummy2mc, protonmc, antiProton2mc, centrality, 1);
+            }
+          }
+
+          if (tagbmc && taga2mc) {
+            antiLambdaLambdapairmc = antiLambdadummymc + lambdadummy2mc;
+            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaLambdapairmc, antiLambdadummymc, lambdadummy2mc, antiProtonmc, proton2mc, centrality, 1);
+            if (fillQA) {
+              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaLambdapairmc, antiLambdadummymc, lambdadummy2mc, antiProtonmc, proton2mc, centrality, 1);
+            }
           }
 
           if (tagbmc && tagb2mc) {
             antiLambdaAntiLambdapairmc = antiLambdadummymc + antiLambdadummy2mc;
             fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaAntiLambdapairmc, antiLambdadummymc, antiLambdadummy2mc, antiProtonmc, antiProton2mc, centrality, 1);
-            fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaAntiLambdapairmc, antiLambdadummymc, antiLambdadummy2mc, antiProtonmc, antiProton2mc, centrality, 1);
+            if (fillQA) {
+              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaAntiLambdapairmc, antiLambdadummymc, antiLambdadummy2mc, antiProtonmc, antiProton2mc, centrality, 1);
+            }
           }
         }
       }
