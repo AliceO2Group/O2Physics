@@ -93,6 +93,7 @@ struct DndetaMFTPbPb {
     Configurable<float> maxEta{"maxEta", -2.5f, ""};
     Configurable<int> minNclusterMft{"minNclusterMft", 5,
                                      "minimum number of MFT clusters"};
+    Configurable<float> maxChi2{"maxChi2", 10.f, ""};                                 
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
     Configurable<bool> requireCA{
       "requireCA", false, "Use Cellular Automaton track-finding algorithm"};
@@ -106,6 +107,10 @@ struct DndetaMFTPbPb {
     Configurable<float> maxZvtxDiff{
       "maxZvtxDiff", 1.0f,
       "max allowed Z vtx difference for reconstruced collisions (cm)"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", true, " requireNoCollInTimeRangeStrict"};
+    Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", true, "requireNoCollInRofStrict"};
+    Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "requireNoCollInRofStandard"};
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", true, "requireNoHighMultCollInPrevRof"};                                
     Configurable<bool> requireNoCollInTimeRangeStd{
       "requireNoCollInTimeRangeStd", false,
       "reject collisions corrupted by the cannibalism, with other collisions "
@@ -752,6 +757,8 @@ struct DndetaMFTPbPb {
   {
     if (track.eta() < trackCuts.minEta || track.eta() > trackCuts.maxEta)
       return false;
+    if (track.chi2() > trackCuts.maxChi2)
+      return false;
     if (trackCuts.requireCA && !track.isCA())
       return false;
     if (track.nClusters() < trackCuts.minNclusterMft)
@@ -960,13 +967,37 @@ struct DndetaMFTPbPb {
     if constexpr (fillHis) {
       registry.fill(HIST("hEvtSel"), 6);
     }
+    if (eventCuts.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 7);
+    }
+    if (eventCuts.requireNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 8);
+    }
+    if (eventCuts.requireNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 9);
+    }
+    if (eventCuts.requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 10);
+    }
     if (eventCuts.minOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) <
           eventCuts.minOccupancy) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("hEvtSel"), 7);
+      registry.fill(HIST("hEvtSel"), 11);
     }
     if (eventCuts.maxOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) >
@@ -974,7 +1005,7 @@ struct DndetaMFTPbPb {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("hEvtSel"), 8);
+      registry.fill(HIST("hEvtSel"), 12);
     }
     return true;
   }
