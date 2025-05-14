@@ -93,7 +93,7 @@ struct DndetaMFTPbPb {
     Configurable<float> maxEta{"maxEta", -2.5f, ""};
     Configurable<int> minNclusterMft{"minNclusterMft", 5,
                                      "minimum number of MFT clusters"};
-    Configurable<float> maxChi2{"maxChi2", 10.f, ""};                                 
+    Configurable<float> maxChi2{"maxChi2", 10.f, ""};
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
     Configurable<bool> requireCA{
       "requireCA", false, "Use Cellular Automaton track-finding algorithm"};
@@ -110,7 +110,7 @@ struct DndetaMFTPbPb {
     Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", true, " requireNoCollInTimeRangeStrict"};
     Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", true, "requireNoCollInRofStrict"};
     Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "requireNoCollInRofStandard"};
-    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", true, "requireNoHighMultCollInPrevRof"};                                
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", true, "requireNoHighMultCollInPrevRof"};
     Configurable<bool> requireNoCollInTimeRangeStd{
       "requireNoCollInTimeRangeStd", false,
       "reject collisions corrupted by the cannibalism, with other collisions "
