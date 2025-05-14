@@ -327,6 +327,7 @@ struct HfTaskCharmHadronsFemtoDream {
         originType = p2.originMcRec();
       }
       fillFemtoResult(
+        col.globalIndex(),
         invMass,
         p2.pt(),
         p1.pt(),
@@ -424,6 +425,7 @@ struct HfTaskCharmHadronsFemtoDream {
           originType = p2.originMcRec();
         }
         fillFemtoResult(
+          -999., // no need to store the index in the mix-event
           invMass,
           p2.pt(),
           p1.pt(),
