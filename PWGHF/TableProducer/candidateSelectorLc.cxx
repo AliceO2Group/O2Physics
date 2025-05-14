@@ -143,20 +143,28 @@ struct HfCandidateSelectorLc {
     }
 
     if (applyMl) {
-      hfMlResponseDCA.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      hfMlResponseKF.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponseDCA.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        hfMlResponseKF.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-      } else {
-        hfMlResponseDCA.setModelPathsLocal(onnxFileNames);
-        hfMlResponseKF.setModelPathsLocal(onnxFileNames);
+      if (doprocessNoBayesPidWithDCAFitterN || doprocessBayesPidWithDCAFitterN) {
+        hfMlResponseDCA.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseDCA.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseDCA.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
       }
-      hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponseKF.init();
-      hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponseKF.init();
+      if (doprocessNoBayesPidWithKFParticle || doprocessBayesPidWithKFParticle) {
+        hfMlResponseKF.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseKF.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseKF.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseKF.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseKF.cacheInputFeaturesIndices(namesInputFeatures);
+      }
     }
 
     massK0Star892 = o2::constants::physics::MassK0Star892;
