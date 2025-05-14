@@ -15,6 +15,8 @@
 #include <vector>
 #include <string>
 
+#include "CCDB/BasicCCDBManager.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -31,12 +33,10 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 
+#include "EventFiltering/Zorro.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGHF/Core/HfHelper.h"
-
-// include Zorro
-#include "EventFiltering/Zorro.h"
-#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::framework;
