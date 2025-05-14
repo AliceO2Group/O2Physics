@@ -88,9 +88,9 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   HfHelper hfHelper;
   TrackSelectorPi selectorPion;
 
-  HistogramRegistry registry{"registry"};
-
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
