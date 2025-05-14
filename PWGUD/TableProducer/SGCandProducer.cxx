@@ -366,7 +366,7 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       if (fillTrackTables) {
-        for (auto& track : tracks) {
+        for (const auto& track : tracks) {
           if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
             if (track.isPVContributor()) {
               updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
@@ -381,7 +381,7 @@ struct SGCandProducer {
       // update SGFwdTracks tables
       if (fillFwdTrackTables) {
         if (sameCuts.withFwdTracks()) {
-          for (auto& fwdtrack : fwdtracks) {
+          for (const auto& fwdtrack : fwdtracks) {
             if (!sgSelector.FwdTrkSelector(fwdtrack))
               updateUDFwdTrackTables(fwdtrack, bc.globalBC());
           }
@@ -411,7 +411,7 @@ struct SGCandProducer {
       auto hCountersTrgBcSel = getHist(TH1, "reco/hCountersTrgBcSel");
       auto hLumi = getHist(TH1, "reco/hLumi");
       auto hLumiBcSel = getHist(TH1, "reco/hLumiBcSel");
-      for (auto h : {hCountersTrg, hCountersTrgBcSel, hLumi, hLumiBcSel}) {
+      for (const auto h : {hCountersTrg, hCountersTrgBcSel, hLumi, hLumiBcSel}) {
         h->GetXaxis()->SetBinLabel(1, "TVX");
         h->GetXaxis()->SetBinLabel(2, "TCE");
         h->GetXaxis()->SetBinLabel(3, "ZEM");
@@ -534,7 +534,7 @@ struct McSGCandProducer {
     // This is needed to be able to assign the new daughter indices
     std::map<int64_t, int64_t> oldnew;
     auto lastId = outputMcParticles.lastIndex();
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       auto oldId = mcpart.globalIndex();
       if (mcPartIsSaved.find(oldId) != mcPartIsSaved.end()) {
         oldnew[oldId] = mcPartIsSaved[oldId];
@@ -550,7 +550,7 @@ struct McSGCandProducer {
         // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (auto oldmid : oldmids) {
+        for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           if (verboseInfoMC)
             LOGF(debug, "    m %d", m.globalIndex());
@@ -617,7 +617,7 @@ struct McSGCandProducer {
   void updateUDMcTrackLabels(TTrack const& udtracks, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // loop over all tracks
-    for (auto udtrack : udtracks) {
+    for (const auto& udtrack : udtracks) {
       // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
       auto trackId = udtrack.trackId();
       if (trackId >= 0) {
@@ -727,7 +727,7 @@ struct McSGCandProducer {
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
-          for (auto sgtrack : sgTracks) {
+          for (const auto& sgtrack : sgTracks) {
             if (sgtrack.has_track()) {
               auto track = sgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {
