@@ -47,6 +47,8 @@ struct NchCumulantsId {
   Configurable<float> cfgCutDcaXY{"cfgCutDcaXY", 0.12, "cut for dcaXY"};
   Configurable<float> cfgCutDcaZ{"cfgCutDcaZ", 0.3, "cut for dcaZ"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
+  Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
+  Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
   // Configurables for particle Identification
   Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
@@ -653,7 +655,7 @@ struct NchCumulantsId {
   Filter col = aod::evsel::sel8 == true;
   Filter colFilter = nabs(aod::collision::posZ) < cfgCutPosZ;
   Filter trackFilter = requireGlobalTrackInFilter();
-  Filter trackPt = (aod::track::pt > 0.15f) && (aod::track::pt < 2.0f);
+  Filter trackPt = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
   Filter trackDCAxy = nabs(aod::track::dcaXY) < cfgCutDcaXY;
   Filter trackDCAz = nabs(aod::track::dcaZ) < cfgCutDcaZ;
   Filter tracketa = nabs(aod::track::eta) < cfgCutEta;
@@ -747,9 +749,9 @@ struct NchCumulantsId {
       hist.fill(HIST("sparse1"), nCh, nP, nM, nPr, nAPr, nKa, nAKa, nT, col.centFT0M());
       hist.fill(HIST("sparse2"), nCh, nP, nM, nPi, nAPi, nKa, nAKa, nT, col.centFT0M());
 
-    } // collision ends
-  }   // process ends
-};    // structure ends
+    }// collision ends
+  }// process ends
+};// structure ends
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
