@@ -727,10 +727,10 @@ struct JetHadronRecoil {
   template <typename T, typename U, typename X>
   double getWTAaxisDifference(T const& jet, U const& jetsWTA, X const& /*tracks or particles*/, bool isMatched = false)
   {
-    double deltaPhi;
-    double deltaEta;
-    double deltaY;
-    double dR;
+    double deltaPhi = -1;
+    double deltaEta = -1;
+    double deltaY = -1;
+    double dR = -1;
     if (wtaMethod == 0) {
       // get WTA matched jet - should just be one jet matched geometrically
       if (isMatched) {
