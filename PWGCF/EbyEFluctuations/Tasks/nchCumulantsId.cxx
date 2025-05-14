@@ -36,7 +36,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics; // for constants
 using namespace std;
 
-struct NchCumulantsIdentified {
+struct NchCumulantsId {
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
 
