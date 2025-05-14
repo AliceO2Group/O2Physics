@@ -218,7 +218,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoD0Table(rho, rhoM);
@@ -230,7 +230,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoD0McTable(rho, rhoM);
@@ -246,7 +246,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDplusTable(rho, rhoM);
@@ -258,7 +258,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDplusMcTable(rho, rhoM);
@@ -274,7 +274,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoLcTable(rho, rhoM);
@@ -286,7 +286,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoLcMcTable(rho, rhoM);
@@ -302,7 +302,7 @@ struct RhoEstimatorTask {
         continue;
       }
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoBplusTable(rho, rhoM);
@@ -314,7 +314,7 @@ struct RhoEstimatorTask {
     {
       for (auto& candidate : candidates) {
         inputParticles.clear();
-        jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+        jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
         auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
         rhoBplusMcTable(rho, rhoM);
@@ -330,7 +330,7 @@ struct RhoEstimatorTask {
           continue;
         }
         inputParticles.clear();
-        jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, std::optional{candidate});
+        jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, config.trackingEfficiency, &candidate);
 
         auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
         rhoDielectronTable(rho, rhoM);
@@ -342,7 +342,7 @@ struct RhoEstimatorTask {
   {
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, std::optional{candidate});
+      jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, 1, particles, pdgDatabase, &candidate);
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, config.doSparse);
       rhoDielectronMcTable(rho, rhoM);
