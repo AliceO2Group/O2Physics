@@ -160,6 +160,15 @@ int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
+
+std::vector<std::vector<float>> acceptRange;
+std::vector<std::vector<float>> rejectRange;
+
+std::vector<int> doPID;
+std::vector<float> tofCut;
+std::vector<float> tpcCut;
+
+
 int tracktype = 1;
 
 std::vector<TrackSelection*> trackFilters = {};
@@ -753,6 +762,9 @@ inline float getCharge(float pdgCharge)
   float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
   return charge;
 }
+
+
+
 
 } // namespace identifiedbffilter
 } // namespace analysis
