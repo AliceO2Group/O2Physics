@@ -189,9 +189,9 @@ struct HfTaskCharmHadronsFemtoDream {
 
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDResultsCharm> fillFemtoResultCharm;
-  Produces<o2::aod::FDResultsTrk> fillFemtoResultTrk;
-  Produces<o2::aod::FDResultsColl> fillFemtoResultColl;
+  Produces<o2::aod::FDHfCharm> fillFemtoResultCharm;
+  Produces<o2::aod::FDHfTrk> fillFemtoResultTrk;
+  Produces<o2::aod::FDHfColl> fillFemtoResultColl;
 
   void init(InitContext& /*context*/)
   {
