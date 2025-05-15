@@ -422,9 +422,10 @@ struct OnTheFlyTofPid {
       sumw += w;
     }
 
-    if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > 200.f) {
+    static constexpr float kMaxEventTimeResolution = 200.f;
+    if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > kMaxEventTimeResolution) {
       tzero[0] = 0.;    // [ps]
-      tzero[1] = 200.f; // [ps]
+      tzero[1] = kMaxEventTimeResolution; // [ps]
       return false;
     }
 
