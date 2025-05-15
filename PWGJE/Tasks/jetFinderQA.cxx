@@ -422,7 +422,7 @@ struct JetFinderQATask {
   }
 
   template <typename T>
-  void fillHistograms(T const& jet, float centrality, float occupancy, float hadronicrate, float weight = 1.0)
+  void fillHistograms(T const& jet, float centrality, float occupancy, float hadronicRate, float weight = 1.0)
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -442,7 +442,7 @@ struct JetFinderQATask {
       registry.fill(HIST("h2_centrality_jet_phi"), centrality, jet.phi(), weight);
       registry.fill(HIST("h2_centrality_jet_ntracks"), centrality, jet.tracksIds().size(), weight);
       registry.fill(HIST("h3_centrality_occupancy_jet_pt"), centrality, occupancy, jet.pt(), weight);
-      registry.fill(HIST("h2_intrate_jet_pt"), hadronicrate, jet.pt(), weight);
+      registry.fill(HIST("h2_intrate_jet_pt"), hadronicRate, jet.pt(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_centrality"), jet.r() / 100.0, jet.pt(), centrality, weight);
