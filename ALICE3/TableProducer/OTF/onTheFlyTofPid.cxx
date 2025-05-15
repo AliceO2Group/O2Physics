@@ -310,10 +310,10 @@ struct OnTheFlyTofPid {
       const float radical = (centerDistance * centerDistance - trcCircle.rC * trcCircle.rC + radius * radius) / (2.0f * centerDistance);
       // calculate absolute displacement from center-to-center axis
       const float displace = (0.5f / centerDistance) * std::sqrt(
-                                                   (-centerDistance + trcCircle.rC - radius) *
-                                                   (-centerDistance - trcCircle.rC + radius) *
-                                                   (-centerDistance + trcCircle.rC + radius) *
-                                                   (centerDistance + trcCircle.rC + radius));
+                                                         (-centerDistance + trcCircle.rC - radius) *
+                                                         (-centerDistance - trcCircle.rC + radius) *
+                                                         (-centerDistance + trcCircle.rC + radius) *
+                                                         (centerDistance + trcCircle.rC + radius));
 
       // possible intercept points of track and TOF layer in 2D plane
       const float point1[2] = {radical * ux + displace * vx, radical * uy + displace * vy};
