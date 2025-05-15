@@ -96,6 +96,7 @@ struct UccZdc {
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
   // Configurables Event Selection
+  Configurable<bool> useTimeStamps{"useTimeStamps", true, "Use time stamps for CCDB object calls"};
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
   Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
@@ -252,7 +253,7 @@ struct UccZdc {
       registry.add("NchVsFourParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(4)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
 
       registry.add("RejectedEvtsVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., 3000.}});
-      registry.add("RejectedEvtsVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
+      registry.add("RejectedEvtsVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0, 3000}});
     }
 
     // MC Histograms
@@ -358,10 +359,8 @@ struct UccZdc {
     // Enabling object caching, otherwise each call goes to the CCDB server
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    // Not later than now, will be replaced by the value of the train creation
-    // This avoids that users can replace objects **while** a train is running
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    ccdb->setFatalWhenNull(false);
   }
 
   template <typename CheckCol>
@@ -451,9 +450,7 @@ struct UccZdc {
   void processQA(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /**/, aod::Zdcs const& /**/, aod::FV0As const& /**/, aod::FT0s const& /**/, TheFilteredTracks const& tracks)
   {
     const double ePerNucleon{2.68};
-    // LOG(info) << " Collisions size: " << collisions.size() << " Table's size: " << collisions.tableSize() << "\n";
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-    // LOG(info) << "Run number: " << foundBC.runNumber() << "\n";
     if (!isEventSelected(collision)) {
       return;
     }
@@ -515,14 +512,14 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    // Get Nch-based selection objects from the CCDB
-    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
-    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
-    if (fMeanNch == nullptr) {
-      LOGF(fatal, "Could not load fMeanNch!");
+    bool areParsLoaded{false};
+    if (useTimeStamps) {
+      areParsLoaded = loadMeanSigmaNchParams(foundBC.timestamp());
+    } else {
+      areParsLoaded = loadMeanSigmaNchParams(foundBC.runNumber());
     }
-    if (fSigmaNch == nullptr) {
-      LOGF(fatal, "Could not load fSigmaNch!");
+    if (!areParsLoaded) {
+      return;
     }
 
     float znA{zdc.amplitudeZNA()};
@@ -620,11 +617,6 @@ struct UccZdc {
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
     // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
 
-    efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    if (efficiency == nullptr) {
-      LOGF(fatal, "Could not load efficiency!");
-    }
-
     // has ZDC?
     if (!foundBC.has_zdc()) {
       return;
@@ -676,14 +668,26 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    // Get Nch-based selection objects from the CCDB
-    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, foundBC.timestamp());
-    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, foundBC.timestamp());
-    if (fMeanNch == nullptr) {
-      LOGF(fatal, "Could not load fMeanNch!");
+    // Load Efficiency correction
+    bool isEffLoaded{false};
+    if (useTimeStamps) {
+      isEffLoaded = loadEfficiencyCorrection(foundBC.timestamp());
+    } else {
+      isEffLoaded = loadEfficiencyCorrection(foundBC.runNumber());
     }
-    if (fSigmaNch == nullptr) {
-      LOGF(fatal, "Could not load fSigmaNch!");
+    if (!isEffLoaded) {
+      return;
+    }
+
+    // Get Nch-based selection objects from the CCDB
+    bool areParsLoaded{false};
+    if (useTimeStamps) {
+      areParsLoaded = loadMeanSigmaNchParams(foundBC.timestamp());
+    } else {
+      areParsLoaded = loadMeanSigmaNchParams(foundBC.runNumber());
+    }
+    if (!areParsLoaded) {
+      return;
     }
 
     std::vector<float> pTs;
@@ -783,13 +787,7 @@ struct UccZdc {
       //----- MC reconstructed -----//
       for (const auto& collision : collisions) {
 
-        // To use run-by-run efficiency
         const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-        auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-        // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-        if (!efficiency) {
-          LOGF(fatal, "Efficiency object not found!");
-        }
 
         // Event selection
         if (!isEventSelected(collision)) {
@@ -798,6 +796,17 @@ struct UccZdc {
         // MC collision?
         if (!collision.has_mcCollision()) {
           continue;
+        }
+
+        // Load Efficiency correction
+        bool isEffLoaded{false};
+        if (useTimeStamps) {
+          isEffLoaded = loadEfficiencyCorrection(foundBC.timestamp());
+        } else {
+          isEffLoaded = loadEfficiencyCorrection(foundBC.runNumber());
+        }
+        if (!isEffLoaded) {
+          return;
         }
 
         registry.fill(HIST("T0Ccent"), collision.centFT0C());
@@ -1022,6 +1031,65 @@ struct UccZdc {
       return true;
     } else {
       return false;
+    }
+  }
+
+  template <typename T>
+  bool loadMeanSigmaNchParams(const T& parameter)
+  {
+    fMeanNch = nullptr;
+    fSigmaNch = nullptr;
+    // Get Nch-based selection objects from the CCDB
+    if (useTimeStamps) {
+      fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, parameter);
+      fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, parameter);
+    } else {
+      fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, parameter);
+      fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, parameter);
+      // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    }
+    if (!fMeanNch) {
+      LOGF(fatal, "Could not load fMeanNch from %s", paTHmeanNch.value.c_str());
+      return false;
+    }
+    if (!fSigmaNch) {
+      LOGF(fatal, "Could not load fSigmaNch from %s", paTHsigmaNch.value.c_str());
+      return false;
+    }
+    //        if (fMeanNch) {
+    //            LOGF(info, "Loaded fMeanNch from %s (%p)", paTHmeanNch.value.c_str(), (void*)fMeanNch);
+    //        }
+    //        if (fSigmaNch) {
+    //            LOGF(info, "Loaded fSigmaNch from %s (%p)", paTHsigmaNch.value.c_str(), (void*)fSigmaNch);
+    //        }
+    if (!fMeanNch || !fSigmaNch) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  template <typename T>
+  bool loadEfficiencyCorrection(const T& parameter)
+  {
+    efficiency = nullptr;
+    // Get Nch-based selection objects from the CCDB
+    if (useTimeStamps) {
+      efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, parameter);
+    } else {
+      efficiency = ccdb->getForRun<TH1F>(paTH.value, parameter);
+    }
+    if (!efficiency) {
+      LOGF(fatal, "Could not load efficiency from %s", paTH.value.c_str());
+      return false;
+    }
+    //        if (efficiency) {
+    //            LOGF(info, "Loaded efficiency from %s (%p)", paTH.value.c_str(), (void*)efficiency);
+    //        }
+    if (!efficiency) {
+      return false;
+    } else {
+      return true;
     }
   }
 };
