@@ -1806,6 +1806,7 @@ struct StrangenessInJets {
         */
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
+          /*
           auto getWeight = [&](TH2F* histo) {
             if (!histo) {
               return 1.0;
@@ -1824,7 +1825,7 @@ struct StrangenessInJets {
           wPiplusUe = getWeight(twodWeightsPiplusUe);
           wPiminusJet = getWeight(twodWeightsPiminusJet);
           wPiminusUe = getWeight(twodWeightsPiminusUe);
-
+          */
           int ix = twodWeightsK0Jet->GetXaxis()->FindBin(mcParticle.pt());
           int iy = twodWeightsK0Jet->GetYaxis()->FindBin(mcParticle.eta());
           wK0jet = twodWeightsK0Jet->GetBinContent(ix, iy);
