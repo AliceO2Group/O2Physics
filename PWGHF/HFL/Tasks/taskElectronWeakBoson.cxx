@@ -13,6 +13,9 @@
 /// \brief task for WeakBoson (W/Z) based on electron in mid-rapidity
 /// \author S. Sakai & S. Ito (Univ. of Tsukuba)
 #include <vector>
+#include <string>
+
+#include "CCDB/BasicCCDBManager.h"
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -29,6 +32,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+
+#include "EventFiltering/Zorro.h"
 
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGHF/Core/HfHelper.h"
@@ -76,6 +81,14 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
+  // Skimmed dataset processing configurations
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
+  Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
+
+  // CCDB service object
+  Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
     int charge;
@@ -112,8 +125,23 @@ struct HfTaskElectronWeakBoson {
   // Histogram registry: an object to hold your registrygrams
   HistogramRegistry registry{"registry"};
 
+  // Zorro objects for skimmed data processing
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   void init(InitContext const&)
   {
+    // Configure CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    // CCDB path for debug
+    LOGF(info, "CCDB path for Zorro: %s", cfgCCDBPath.value.c_str());
+
+    // Setup Zorro Summary
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
 
     // define axes you want to use
     const AxisSpec axisZvtx{400, -20, 20, "Zvtx"};
@@ -135,9 +163,11 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisIsoTrack{20, -0.5, 19.5, "Isolation Track"};
     const AxisSpec axisInvMassZ{200, 0, 200, "M_{ee} (GeV/c^{2})"};
     const AxisSpec axisInvMassDy{200, 0, 2, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisTrigger{3, 0, 2, "Trigger status of zorro"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
+    registry.add("hEventCounterInit", "hEventCounterInit", kTH1F, {axisCounter});
     registry.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
     registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
@@ -163,7 +193,11 @@ struct HfTaskElectronWeakBoson {
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
+
+    // hisotgram for EMCal trigger
+    registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
+
   bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                          const SelectedClusters& clusters)
   {
@@ -226,10 +260,54 @@ struct HfTaskElectronWeakBoson {
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
+               aod::BCsWithTimestamps const&,
                SelectedClusters const& emcClusters,
                TrackEle const& tracks,
                o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
+    registry.fill(HIST("hEventCounterInit"), 0.5);
+
+    // Get BC for this collision
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    uint64_t globalBC = bc.globalBC();
+    int runNumber = bc.runNumber();
+
+    // Initialize Zorro for the first event (once per run)
+    static bool isFirstEvent = true;
+    static int lastRunNumber = -1;
+
+    if ((isFirstEvent || runNumber != lastRunNumber) && cfgSkimmedProcessing) {
+      LOGF(info, "Initializing Zorro for run %d", runNumber);
+      uint64_t currentTimestamp = bc.timestamp();
+
+      // add configurable for CCDB path
+      zorro.setBaseCCDBPath(cfgCCDBPath.value);
+
+      // debug for timestamp
+      LOGF(info, "Using CCDB path: %s, timestamp: %llu", cfgCCDBPath.value.c_str(), currentTimestamp);
+
+      // initialize Zorro
+      zorro.initCCDB(ccdb.service, runNumber, currentTimestamp, cfgTriggerName);
+      isFirstEvent = false;
+      lastRunNumber = runNumber;
+    }
+
+    // Check if this is a triggered event using Zorro
+    bool isTriggered = true;
+    if (cfgSkimmedProcessing) {
+      isTriggered = zorro.isSelected(globalBC);
+      registry.fill(HIST("hEMCalTrigger"), isTriggered ? 1 : 0);
+
+      // Skip event if not triggered and we're processing skimmed data
+      if (!isTriggered && cfgSkimmedProcessing) {
+        return;
+      }
+    }
+
+    // initialze for inclusive-electron
+    selectedElectronsIso.clear();
+    selectedElectronsAss.clear();
+
     registry.fill(HIST("hEventCounter"), 0.5);
 
     // LOGF(info, "Collision index : %d", collision.index());
