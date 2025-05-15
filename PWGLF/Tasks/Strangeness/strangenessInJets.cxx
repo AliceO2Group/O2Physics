@@ -15,7 +15,6 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
 /// \since May 22, 2024
 
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
