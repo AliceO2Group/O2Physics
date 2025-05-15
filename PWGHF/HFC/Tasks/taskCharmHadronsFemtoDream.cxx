@@ -267,7 +267,6 @@ struct HfTaskCharmHadronsFemtoDream {
         chargeTrack = NegativeCharge;
       }
 
-
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
       if (kstar > highkstarCut) {
         continue;
