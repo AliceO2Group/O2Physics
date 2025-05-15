@@ -232,6 +232,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   // Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
   std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc;
+  HistogramRegistry registry{"registry"};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "Tcc candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "Tcc candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   void init(InitContext const&)
@@ -272,6 +273,13 @@ struct HfTreeCreatorTccToD0D0Pi {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    hCandidatesD1 = registry.add<TH1>("hCandidatesD1", "D1 candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesD2 = registry.add<TH1>("hCandidatesD2", "D2 candidate counter", {HistType::kTH1D, {axisCands}});
+    hCandidatesTcc = registry.add<TH1>("hCandidatesTcc", "Tcc candidate counter", {HistType::kTH1D, {axisCands}});
+    setLabelHistoCands(hCandidatesD1);
+    setLabelHistoCands(hCandidatesD2);
+    setLabelHistoCands(hCandidatesTcc);
   }
 
   template <typename T>
@@ -297,293 +305,315 @@ struct HfTreeCreatorTccToD0D0Pi {
   }
 
   template <typename CollType, typename CandType, typename TrkType>
-  void runCandCreatorData(CollType const& collision,
+  void runCandCreatorData(CollType const& collisions,
                           CandType const& candidates,
                           aod::TrackAssoc const& trackIndices,
-                          TrkType const&,
-                          aod::BCs const&)
+                          TrkType const&)
   {
 
-    auto primaryVertex = getPrimaryVertex(collision);
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    if (runNumber != bc.runNumber()) {
-      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-      bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
-    }
-    dfTcc.setBz(bz);
-    dfD1.setBz(bz);
-    dfD2.setBz(bz);
-
-    for (const auto& candidateD1 : candidates) {
-
-      auto trackD1Prong0 = candidateD1.template prong0_as<TrkType>();
-      auto trackD1Prong1 = candidateD1.template prong1_as<TrkType>();
-      auto trackParVarD1Prong0 = getTrackParCov(trackD1Prong0);
-      auto trackParVarD1Prong1 = getTrackParCov(trackD1Prong1);
-      // reconstruct the 2-prong secondary vertex
-      hCandidatesD1->Fill(SVFitting::BeforeFit);
-      try {
-        if (dfD1.process(trackParVarD1Prong0, trackParVarD1Prong1) == 0) {
-          continue;
-        }
-      } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for first D0 cannot work, skipping the candidate.";
-        hCandidatesD1->Fill(SVFitting::Fail);
-        continue;
-      }
-      hCandidatesD1->Fill(SVFitting::FitOk);
-      const auto& vertexD1 = dfD1.getPCACandidatePos();
-      trackParVarD1Prong0.propagateTo(vertexD1[0], bz);
-      trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
-      // Get pVec of tracks of D1
-      std::array<float, 3> pVecD1Prong0 = {0};
-      std::array<float, 3> pVecD1Prong1 = {0};
-      dfD1.getTrack(0).getPxPyPzGlo(pVecD1Prong0);
-      dfD1.getTrack(1).getPxPyPzGlo(pVecD1Prong1);
-      // Get D1 momentum
-      std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
-
-      // build a D1 neutral track
-      auto trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
-
-      for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
-
-        auto trackD2Prong0 = candidateD2.template prong0_as<TrkType>();
-        auto trackD2Prong1 = candidateD2.template prong1_as<TrkType>();
-        auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
-        auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
-        // reconstruct the 2-prong secondary vertex
-        hCandidatesD2->Fill(SVFitting::BeforeFit);
-        try {
-          if (dfD2.process(trackParVarD2Prong0, trackParVarD2Prong1) == 0) {
-            continue;
-          }
-        } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for second D0 cannot work, skipping the candidate.";
-          hCandidatesD2->Fill(SVFitting::Fail);
-          continue;
-        }
-        hCandidatesD2->Fill(SVFitting::FitOk);
-        const auto& vertexD2 = dfD2.getPCACandidatePos();
-        trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
-        trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
-        // Get pVec of tracks of D2
-        std::array<float, 3> pVecD2Prong0 = {0};
-        std::array<float, 3> pVecD2Prong1 = {0};
-        dfD2.getTrack(0).getPxPyPzGlo(pVecD2Prong0);
-        dfD2.getTrack(1).getPxPyPzGlo(pVecD2Prong1);
-        // Get D2 momentum
-        std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
-
-        // build a D2 neutral track
-        auto trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
-
-        for (const auto& trackId : trackIndices) {
-          auto trackPion = trackId.template track_as<TrkType>();
-          if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
-            continue;
-          }
-          // minimum pT selection
-          if (trackPion.pt() < ptMinSoftPion) {
-            continue;
-          }
-          if (std::abs(trackPion.dcaXY()) > softPiDcaXYMax || std::abs(trackPion.dcaZ()) > softPiDcaZMax) {
-            continue;
-          }
-          // avoid shared tracks
-          if (
-            (candidateD1.prong0Id() == candidateD2.prong0Id()) ||
-            (candidateD1.prong0Id() == candidateD2.prong1Id()) ||
-            (candidateD1.prong1Id() == candidateD2.prong0Id()) ||
-            (candidateD1.prong1Id() == candidateD2.prong1Id()) ||
-            (candidateD1.prong0Id() == trackPion.globalIndex()) ||
-            (candidateD1.prong1Id() == trackPion.globalIndex()) ||
-            (candidateD2.prong0Id() == trackPion.globalIndex()) ||
-            (candidateD2.prong1Id() == trackPion.globalIndex())) {
-            continue;
-          }
-
-          auto trackParCovPi = getTrackParCov(trackPion);
-          std::array<float, 3> pVecD1New = {0., 0., 0.};
-          std::array<float, 3> pVecD2New = {0., 0., 0.};
-          std::array<float, 3> pVecSoftPi = {0., 0., 0.};
-
-          // find the DCA between the D01, D02 and the bachelor track, for Tcc
-          hCandidatesTcc->Fill(SVFitting::BeforeFit);
-          try {
-            if (dfTcc.process(trackD1, trackD2, trackParCovPi) == 0) {
-              continue;
-            }
-          } catch (const std::runtime_error& error) {
-            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Tcc cannot work, skipping the candidate.";
-            hCandidatesTcc->Fill(SVFitting::Fail);
-            continue;
-          }
-          hCandidatesTcc->Fill(SVFitting::FitOk);
-
-          dfTcc.propagateTracksToVertex();        // propagate the softpi and D0 pair to the Tcc vertex
-          trackD1.getPxPyPzGlo(pVecD1New);        // momentum of D1 at the Tcc vertex
-          trackD2.getPxPyPzGlo(pVecD2New);        // momentum of D2 at the Tcc vertex
-          trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex
-
-          auto chi2PCA = dfTcc.getChi2AtPCACandidate();
-          auto covMatrixPCA = dfTcc.calcPCACovMatrixFlat();
-          hCovSVXX->Fill(covMatrixPCA[0]);
-
-          // get track impact parameters
-          // This modifies track momenta!
-          auto covMatrixPV = primaryVertex.getCov();
-          hCovPVXX->Fill(covMatrixPV[0]);
-          o2::dataformats::DCA impactParameterD1;
-          o2::dataformats::DCA impactParameterD2;
-          o2::dataformats::DCA impactParameterSoftPi;
-
-          trackD1.propagateToDCA(primaryVertex, bz, &impactParameterD1);
-          trackD2.propagateToDCA(primaryVertex, bz, &impactParameterD2);
-          trackParCovPi.propagateToDCA(primaryVertex, bz, &impactParameterSoftPi);
-
-          // Retrieve properties of the two D0 candidates
-          float yD1 = hfHelper.yD0(candidateD1);
-          float yD2 = hfHelper.yD0(candidateD2);
-          float massD01 = -999;
-          float massD02 = -999;
-          float deltaMassD01 = -999;
-          float deltaMassD02 = -999;
-          int candFlagD1 = -999;
-          int candFlagD2 = -999;
-          float cent = evaluateCentralityColl(collision);
-
-          std::vector<float> mlScoresD1;
-          std::vector<float> mlScoresD2;
-
-          if (candidateD1.isSelD0()) {
-            candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
-            std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
-            massD01 = hfHelper.invMassD0ToPiK(candidateD1);
-          }
-          if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
-            candFlagD1 = 2;
-            std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
-            massD01 = hfHelper.invMassD0barToKPi(candidateD1);
-          }
-
-          if (candidateD2.isSelD0()) {
-            candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
-            std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
-            massD02 = hfHelper.invMassD0ToPiK(candidateD2);
-          }
-          if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
-            candFlagD2 = 2;
-            std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
-            massD02 = hfHelper.invMassD0barToKPi(candidateD2);
-          }
-
-          // LOG(info) << " candidateD1.collisionId() " << candidateD1.collisionId()<<" massD01 "<<massD01<<" massD02 "<<massD02 <<"  trackPion.pt() "<< trackPion.pt();
-
-          std::array<double, 2> massD1Daus{MassPiPlus, MassKPlus};
-          std::array<double, 2> massD2Daus{MassPiPlus, MassKPlus};
-
-          if (candidateD1.isSelD0bar()) {
-
-            massD1Daus[0] = MassKPlus;
-            massD1Daus[1] = MassPiPlus;
-          }
-          if (candidateD2.isSelD0bar()) {
-            massD2Daus[0] = MassKPlus;
-            massD2Daus[1] = MassPiPlus;
-          }
-
-          auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
-          auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
-
-          deltaMassD01 = massKpipi1 - massD01;
-          deltaMassD02 = massKpipi2 - massD02;
-
-          auto arrayMomentaDDpi = std::array{pVecD1New, pVecD2New, pVecSoftPi};
-          const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
-          const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
-          const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1New, pVecD2New}, std::array{MassD0, MassD0});
-
-          if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
-            continue;
-          }
-
-          rowCandidateLite(
-            candidateD1.pxProng0(),
-            candidateD1.pxProng1(),
-            candidateD1.pyProng0(),
-            candidateD1.pyProng1(),
-            candidateD1.pzProng0(),
-            candidateD1.pzProng1(),
-            candidateD2.pxProng0(),
-            candidateD2.pxProng1(),
-            candidateD2.pyProng0(),
-            candidateD2.pyProng1(),
-            candidateD2.pzProng0(),
-            candidateD2.pzProng1(),
-            trackPion.px(),
-            trackPion.py(),
-            trackPion.pz(),
-            candFlagD1,
-            candFlagD2,
-            massD01,
-            massD02,
-            deltaMassD01,
-            deltaMassD02,
-            massD0D0Pair,
-            massKpipi1,
-            massKpipi2,
-            massD0D0Pi,
-            deltaMassD0D0Pi,
-            candidateD1.eta(),
-            candidateD2.eta(),
-            trackPion.eta(),
-            candidateD1.phi(),
-            candidateD2.phi(),
-            trackPion.phi(),
-            yD1,
-            yD2,
-            trackPion.y(),
-            trackPion.tpcNSigmaPi(),
-            trackPion.tofNSigmaPi(),
-            mlScoresD1[0],
-            mlScoresD2[0],
-            impactParameterD1.getY(),
-            impactParameterD2.getY(),
-            impactParameterSoftPi.getY(),
-            candidateD1.cpa(),
-            candidateD2.cpa(),
-            chi2PCA,
-            trackPion.sign(),
-            trackPion.dcaXY(),
-            trackPion.dcaZ(),
-            trackPion.itsNCls(),
-            trackPion.tpcNClsCrossedRows(),
-            trackPion.tpcChi2NCl(),
-            cent);
-        } // end of loop track
-      } // end of loop second D0
-    } // end of loop first D0
-  }
-
-  void processDataWithMl(Collisions const& collisions,
-                         SelectedCandidatesMl const& candidates,
-                         aod::TrackAssoc const& trackIndices,
-                         TracksWPid const& tracks,
-                         aod::BCs const& bcs)
-  {
-    rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent(collision, 0, collision.bc().runNumber());
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        bz = o2::base::Propagator::Instance()->getNominalBz();
+        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      }
+      dfTcc.setBz(bz);
+      dfD1.setBz(bz);
+      dfD2.setBz(bz);
+      fillEvent(collision, 0, bc.runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       if (candwD0ThisColl.size() <= 1)
         continue; // only loop the collision that include at least 2 D candidates
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
-    }
+      auto primaryVertex = getPrimaryVertex(collision);
+
+      for (const auto& candidateD1 : candidates) {
+        auto trackD1Prong0 = candidateD1.template prong0_as<TracksWPid>();
+        auto trackD1Prong1 = candidateD1.template prong1_as<TracksWPid>();
+        auto trackParVarD1Prong0 = getTrackParCov(trackD1Prong0);
+        auto trackParVarD1Prong1 = getTrackParCov(trackD1Prong1);
+
+        auto dca0D1 = o2::dataformats::DCA(trackD1Prong0.dcaXY(), trackD1Prong0.dcaZ(), trackD1Prong0.cYY(), trackD1Prong0.cZY(), trackD1Prong0.cZZ());
+        auto dca1D1 = o2::dataformats::DCA(trackD1Prong1.dcaXY(), trackD1Prong1.dcaZ(), trackD1Prong1.cYY(), trackD1Prong1.cZY(), trackD1Prong1.cZZ());
+
+        // repropagate tracks to this collision if needed
+        if (trackD1Prong0.collisionId() != thisCollId) {
+          trackParVarD1Prong0.propagateToDCA(primaryVertex, bz, &dca0D1);
+        }
+
+        if (trackD1Prong0.collisionId() != thisCollId) {
+          trackParVarD1Prong1.propagateToDCA(primaryVertex, bz, &dca1D1);
+        }
+        // reconstruct the 2-prong secondary vertex
+        hCandidatesD1->Fill(SVFitting::BeforeFit);
+        try {
+          if (dfD1.process(trackParVarD1Prong0, trackParVarD1Prong1) == 0) {
+            continue;
+          }
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for first D0 cannot work, skipping the candidate.";
+          hCandidatesD1->Fill(SVFitting::Fail);
+          continue;
+        }
+        hCandidatesD1->Fill(SVFitting::FitOk);
+        const auto& vertexD1 = dfD1.getPCACandidatePos();
+        trackParVarD1Prong0.propagateTo(vertexD1[0], bz);
+        trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
+        // Get pVec of tracks of D1
+        std::array<float, 3> pVecD1Prong0 = {0};
+        std::array<float, 3> pVecD1Prong1 = {0};
+        dfD1.getTrack(0).getPxPyPzGlo(pVecD1Prong0);
+        dfD1.getTrack(1).getPxPyPzGlo(pVecD1Prong1);
+        // Get D1 momentum
+        std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
+        // build a D1 neutral track
+        auto trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
+
+        for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
+
+          auto trackD2Prong0 = candidateD2.template prong0_as<TracksWPid>();
+          auto trackD2Prong1 = candidateD2.template prong1_as<TracksWPid>();
+          auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
+          auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
+
+          auto dca0D2 = o2::dataformats::DCA(trackD2Prong0.dcaXY(), trackD2Prong0.dcaZ(), trackD2Prong0.cYY(), trackD2Prong0.cZY(), trackD2Prong0.cZZ());
+          auto dca1D2 = o2::dataformats::DCA(trackD2Prong1.dcaXY(), trackD2Prong1.dcaZ(), trackD2Prong1.cYY(), trackD2Prong1.cZY(), trackD2Prong1.cZZ());
+
+          // repropagate tracks to this collision if needed
+          if (trackD2Prong0.collisionId() != thisCollId) {
+            trackParVarD2Prong0.propagateToDCA(primaryVertex, bz, &dca0D2);
+          }
+
+          if (trackD2Prong0.collisionId() != thisCollId) {
+            trackParVarD2Prong1.propagateToDCA(primaryVertex, bz, &dca1D2);
+          }
+
+          // reconstruct the 2-prong secondary vertex
+          hCandidatesD2->Fill(SVFitting::BeforeFit);
+          try {
+            if (dfD2.process(trackParVarD2Prong0, trackParVarD2Prong1) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for second D0 cannot work, skipping the candidate.";
+            hCandidatesD2->Fill(SVFitting::Fail);
+            continue;
+          }
+
+          hCandidatesD2->Fill(SVFitting::FitOk);
+          const auto& vertexD2 = dfD2.getPCACandidatePos();
+          trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
+          trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
+          // Get pVec of tracks of D2
+          std::array<float, 3> pVecD2Prong0 = {0};
+          std::array<float, 3> pVecD2Prong1 = {0};
+          dfD2.getTrack(0).getPxPyPzGlo(pVecD2Prong0);
+          dfD2.getTrack(1).getPxPyPzGlo(pVecD2Prong1);
+          // Get D2 momentum
+          std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
+
+          // build a D2 neutral track
+          auto trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
+
+          for (const auto& trackId : trackIndices) {
+            auto trackPion = trackId.template track_as<TrkType>();
+            if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
+              continue;
+            }
+            // minimum pT selection
+            if (trackPion.pt() < ptMinSoftPion) {
+              continue;
+            }
+            if (std::abs(trackPion.dcaXY()) > softPiDcaXYMax || std::abs(trackPion.dcaZ()) > softPiDcaZMax) {
+              continue;
+            }
+            // avoid shared tracks
+            if (
+              (candidateD1.prong0Id() == candidateD2.prong0Id()) ||
+              (candidateD1.prong0Id() == candidateD2.prong1Id()) ||
+              (candidateD1.prong1Id() == candidateD2.prong0Id()) ||
+              (candidateD1.prong1Id() == candidateD2.prong1Id()) ||
+              (candidateD1.prong0Id() == trackPion.globalIndex()) ||
+              (candidateD1.prong1Id() == trackPion.globalIndex()) ||
+              (candidateD2.prong0Id() == trackPion.globalIndex()) ||
+              (candidateD2.prong1Id() == trackPion.globalIndex())) {
+              continue;
+            }
+
+            auto trackParCovPi = getTrackParCov(trackPion);
+            std::array<float, 3> pVecD1New = {0., 0., 0.};
+            std::array<float, 3> pVecD2New = {0., 0., 0.};
+            std::array<float, 3> pVecSoftPi = {0., 0., 0.};
+
+            // find the DCA between the D01, D02 and the bachelor track, for Tcc
+            hCandidatesTcc->Fill(SVFitting::BeforeFit);
+            try {
+              if (dfTcc.process(trackD1, trackD2, trackParCovPi) == 0) {
+                continue;
+              }
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Tcc cannot work, skipping the candidate.";
+              hCandidatesTcc->Fill(SVFitting::Fail);
+              continue;
+            }
+            hCandidatesTcc->Fill(SVFitting::FitOk);
+
+            dfTcc.propagateTracksToVertex();        // propagate the softpi and D0 pair to the Tcc vertex
+            trackD1.getPxPyPzGlo(pVecD1New);        // momentum of D1 at the Tcc vertex
+            trackD2.getPxPyPzGlo(pVecD2New);        // momentum of D2 at the Tcc vertex
+            trackParCovPi.getPxPyPzGlo(pVecSoftPi); // momentum of pi at the Tcc vertex
+
+            auto chi2PCA = dfTcc.getChi2AtPCACandidate();
+            auto covMatrixPCA = dfTcc.calcPCACovMatrixFlat();
+            hCovSVXX->Fill(covMatrixPCA[0]);
+
+            // get track impact parameters
+            // This modifies track momenta!
+            auto covMatrixPV = primaryVertex.getCov();
+            hCovPVXX->Fill(covMatrixPV[0]);
+            o2::dataformats::DCA impactParameterD1;
+            o2::dataformats::DCA impactParameterD2;
+            o2::dataformats::DCA impactParameterSoftPi;
+
+            trackD1.propagateToDCA(primaryVertex, bz, &impactParameterD1);
+            trackD2.propagateToDCA(primaryVertex, bz, &impactParameterD2);
+            trackParCovPi.propagateToDCA(primaryVertex, bz, &impactParameterSoftPi);
+
+            // Retrieve properties of the two D0 candidates
+            float yD1 = hfHelper.yD0(candidateD1);
+            float yD2 = hfHelper.yD0(candidateD2);
+            float massD01 = -999;
+            float massD02 = -999;
+            float deltaMassD01 = -999;
+            float deltaMassD02 = -999;
+            int candFlagD1 = -999;
+            int candFlagD2 = -999;
+            float cent = evaluateCentralityColl(collision);
+
+            std::vector<float> mlScoresD1;
+            std::vector<float> mlScoresD2;
+
+            if (candidateD1.isSelD0()) {
+              candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
+              std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
+              massD01 = hfHelper.invMassD0ToPiK(candidateD1);
+            }
+            if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
+              candFlagD1 = 2;
+              std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
+              massD01 = hfHelper.invMassD0barToKPi(candidateD1);
+            }
+
+            if (candidateD2.isSelD0()) {
+              candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
+              std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
+              massD02 = hfHelper.invMassD0ToPiK(candidateD2);
+            }
+            if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
+              candFlagD2 = 2;
+              std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
+              massD02 = hfHelper.invMassD0barToKPi(candidateD2);
+            }
+
+            // LOG(info) << " candidateD1.collisionId() " << candidateD1.collisionId()<<" massD01 "<<massD01<<" massD02 "<<massD02 <<"  trackPion.pt() "<< trackPion.pt();
+
+            std::array<double, 2> massD1Daus{MassPiPlus, MassKPlus};
+            std::array<double, 2> massD2Daus{MassPiPlus, MassKPlus};
+
+            if (candidateD1.isSelD0bar()) {
+
+              massD1Daus[0] = MassKPlus;
+              massD1Daus[1] = MassPiPlus;
+            }
+            if (candidateD2.isSelD0bar()) {
+              massD2Daus[0] = MassKPlus;
+              massD2Daus[1] = MassPiPlus;
+            }
+
+            auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
+            auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
+
+            deltaMassD01 = massKpipi1 - massD01;
+            deltaMassD02 = massKpipi2 - massD02;
+
+            auto arrayMomentaDDpi = std::array{pVecD1New, pVecD2New, pVecSoftPi};
+            const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
+            const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
+            const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1New, pVecD2New}, std::array{MassD0, MassD0});
+
+            if (deltaMassD0D0Pi > deltaMassCanMax || massD0D0Pi > massCanMax) {
+              continue;
+            }
+
+            rowCandidateLite(
+              candidateD1.pxProng0(),
+              candidateD1.pxProng1(),
+              candidateD1.pyProng0(),
+              candidateD1.pyProng1(),
+              candidateD1.pzProng0(),
+              candidateD1.pzProng1(),
+              candidateD2.pxProng0(),
+              candidateD2.pxProng1(),
+              candidateD2.pyProng0(),
+              candidateD2.pyProng1(),
+              candidateD2.pzProng0(),
+              candidateD2.pzProng1(),
+              trackPion.px(),
+              trackPion.py(),
+              trackPion.pz(),
+              candFlagD1,
+              candFlagD2,
+              massD01,
+              massD02,
+              deltaMassD01,
+              deltaMassD02,
+              massD0D0Pair,
+              massKpipi1,
+              massKpipi2,
+              massD0D0Pi,
+              deltaMassD0D0Pi,
+              candidateD1.eta(),
+              candidateD2.eta(),
+              trackPion.eta(),
+              candidateD1.phi(),
+              candidateD2.phi(),
+              trackPion.phi(),
+              yD1,
+              yD2,
+              trackPion.y(),
+              trackPion.tpcNSigmaPi(),
+              trackPion.tofNSigmaPi(),
+              mlScoresD1[0],
+              mlScoresD2[0],
+              impactParameterD1.getY(),
+              impactParameterD2.getY(),
+              impactParameterSoftPi.getY(),
+              candidateD1.cpa(),
+              candidateD2.cpa(),
+              chi2PCA,
+              trackPion.sign(),
+              trackPion.dcaXY(),
+              trackPion.dcaZ(),
+              trackPion.itsNCls(),
+              trackPion.tpcNClsCrossedRows(),
+              trackPion.tpcChi2NCl(),
+              cent);
+          } // end of loop track
+        } // end of loop second D0
+      } // end of loop first D0
+    } // end of loop collision
+  }
+  void processDataWithMl(Collisions const& collisions,
+                         SelectedCandidatesMl const& candidates,
+                         aod::TrackAssoc const& trackIndices,
+                         TracksWPid const& tracks,
+                         aod::BCsWithTimestamps const&)
+  {
+    rowCandidateFullEvents.reserve(collisions.size());
+    runCandCreatorData(collisions, candidates, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMl, "Process data with DCAFitterN with the ML method and without centrality", false);
 
@@ -591,18 +621,10 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  SelectedCandidatesMl const& candidates,
                                  aod::TrackAssoc const& trackIndices,
                                  TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                                 aod::BCsWithTimestamps const&)
   {
     rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, 0, collision.bc().runNumber());
-      auto thisCollId = collision.globalIndex();
-      auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-      if (candwD0ThisColl.size() <= 1)
-        continue; // only loop the collision that include at least 2 D candidates
-      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
-    }
+    runCandCreatorData(collisions, candidates, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0C, "Process data with DCAFitterN with the ML method and with FT0C centrality", true);
 
@@ -610,18 +632,10 @@ struct HfTreeCreatorTccToD0D0Pi {
                                  SelectedCandidatesMl const& candidates,
                                  aod::TrackAssoc const& trackIndices,
                                  TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                                 aod::BCsWithTimestamps const&)
   {
     rowCandidateFullEvents.reserve(collisions.size());
-    for (const auto& collision : collisions) {
-      fillEvent(collision, 0, collision.bc().runNumber());
-      auto thisCollId = collision.globalIndex();
-      auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-      if (candwD0ThisColl.size() <= 1)
-        continue; // only loop the collision that include at least 2 D candidates
-      auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runCandCreatorData(collision, candwD0ThisColl, trackIdsThisCollision, tracks, bcs);
-    }
+    runCandCreatorData(collisions, candidates, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTreeCreatorTccToD0D0Pi, processDataWithMlWithFT0M, "Process data with DCAFitterN with the ML method and with FT0M centrality", false);
 };
