@@ -208,7 +208,9 @@ struct Phik0shortanalysis {
 
   // Defining the type of the tracks for data and MC
   using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  using FilteredTracks = soa::Filtered<FullTracks>;
   using FullMCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
+  using FilteredMCTracks = soa::Filtered<FullMCTracks>;
 
   using V0DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi>;
   using V0DauMCTracks = soa::Join<V0DauTracks, aod::McTrackLabels>;
@@ -220,6 +222,9 @@ struct Phik0shortanalysis {
 
   Partition<FullTracks> posTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
   Partition<FullTracks> negTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+
+  Partition<FilteredTracks> posFiltTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+  Partition<FilteredTracks> negFiltTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
   Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
   Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
@@ -2259,14 +2264,14 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiPionMCGen, "Process function for Phi-Pion Correlations Efficiency correction in MCGen", false);
 
-  void processdNdetaWPhiData(SelCollisions::iterator const& collision, soa::Filtered<FullTracks> const& fullTracks)
+  void processdNdetaWPhiData(SelCollisions::iterator const& collision, FilteredTracks const& filteredTracks)
   {
     // Check if the event selection is passed
     if (!acceptEventQA<false>(collision, true))
       return;
 
-    auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto posThisColl = posFiltTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto negThisColl = negFiltTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Check if the event contains a phi candidate
     if (!eventHasPhi(posThisColl, negThisColl))
@@ -2274,13 +2279,13 @@ struct Phik0shortanalysis {
 
     float multiplicity = collision.centFT0M();
 
-    for (const auto& track : fullTracks)
+    for (const auto& track : filteredTracks)
       dataEventHist.fill(HIST("h2EtaDistribution"), multiplicity, track.eta());
   }
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
 
-  void processdNdetaWPhiMCReco(SimCollisions const& collisions, soa::Filtered<FullMCTracks> const& fullMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMCReco(SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
     for (const auto& collision : collisions) {
       if (!acceptEventQA<true>(collision, true))
@@ -2296,7 +2301,7 @@ struct Phik0shortanalysis {
 
       float genmultiplicity = mcCollision.centFT0M();
 
-      auto mcTracksThisColl = fullMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      auto mcTracksThisColl = filteredMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
       for (const auto& track : mcTracksThisColl) {
         if (!track.has_mcParticle())
