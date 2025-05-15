@@ -1681,6 +1681,7 @@ struct StrangenessInJets {
         }
       }
 
+      /*
       // Reconstructed Tracks
       for (const auto& track : tracksPerColl) {
 
@@ -1788,7 +1789,7 @@ struct StrangenessInJets {
           registryMC.fill(HIST("pi_minus_rec_in_ue_tof"), multiplicity, track.pt(), wPiminusUe);
         }
       }
-
+      */
       for (const auto& mcParticle : mcParticlesPerColl) {
 
         if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
@@ -1852,6 +1853,7 @@ struct StrangenessInJets {
         }
 
         switch (mcParticle.pdgCode()) {
+          /*
           case kPiPlus: // Pi+
             registryMC.fill(HIST("mc_pi_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiplusJet);
             registryMC.fill(HIST("mc_pi_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiplusUe);
@@ -1882,6 +1884,7 @@ struct StrangenessInJets {
             registryMC.fill(HIST("mc_pr_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrminusUe);
             registryMC.fill(HIST("pr_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
+          */
           case kK0Short: // K0s
             registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), wK0jet);
             registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), wK0Ue);
@@ -2015,12 +2018,14 @@ struct StrangenessInJets {
           // In jet
           if (deltaRjet < rJet) {
             switch (particle.pdgCode()) {
+              /*
               case kPiPlus:
                 registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kPiMinus:
                 registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
+              */
               case kK0Short:
                 registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
@@ -2049,12 +2054,14 @@ struct StrangenessInJets {
 
           if (deltaRue1 < rJet || deltaRue2 < rJet) {
             switch (particle.pdgCode()) {
+              /*
               case kPiPlus:
                 registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kPiMinus:
                 registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
+              */
               case kK0Short:
                 registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
