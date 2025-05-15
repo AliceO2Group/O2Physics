@@ -385,13 +385,6 @@ struct HfTaskCharmHadronsFemtoDream {
           continue;
         }
 
-        int charmHadMc = 0;
-        int originType = 0;
-        if constexpr (isMc) {
-          charmHadMc = p2.flagMc();
-          originType = p2.originMcRec();
-        }
-
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
       }
