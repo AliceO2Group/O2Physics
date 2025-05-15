@@ -47,12 +47,6 @@ struct HfTaskCharmHadronsFemtoDream {
     NegativeCharge = -1
   };
 
-  enum PairSign {
-    PairNotDefined = 0,
-    LikeSignPair = 1,
-    UnLikeSignPair = 2
-  };
-
   /// Binning configurables
   ConfigurableAxis bin4Dkstar{"bin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
   ConfigurableAxis bin4DMult{"bin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
@@ -195,9 +189,9 @@ struct HfTaskCharmHadronsFemtoDream {
 
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDResultsHFCharm> fillFemtoResultCharm;
-  Produces<o2::aod::FDResultsHFTrk> fillFemtoResultTrk;
-  Produces<o2::aod::FDResultsHFColl> fillFemtoResultColl;
+  Produces<o2::aod::FDResultsCharm> fillFemtoResultCharm;
+  Produces<o2::aod::FDResultsTrk> fillFemtoResultTrk;
+  Produces<o2::aod::FDResultsColl> fillFemtoResultColl;
 
   void init(InitContext& /*context*/)
   {
@@ -273,12 +267,6 @@ struct HfTaskCharmHadronsFemtoDream {
         chargeTrack = NegativeCharge;
       }
 
-      int pairSign = 0;
-      if (chargeTrack == p2.charge()) {
-        pairSign = LikeSignPair;
-      } else {
-        pairSign = UnLikeSignPair;
-      }
 
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
       if (kstar > highkstarCut) {
@@ -351,8 +339,6 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     // Mixed events that contain the pair of interest
-    processType = 2; // for mixed event
-
     Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
     PartitionMaskedCol1.bindTable(cols);
 
@@ -386,13 +372,6 @@ struct HfTaskCharmHadronsFemtoDream {
           chargeTrack = PositiveCharge;
         } else {
           chargeTrack = NegativeCharge;
-        }
-
-        int pairSign = 0;
-        if (chargeTrack == p2.charge()) {
-          pairSign = LikeSignPair;
-        } else {
-          pairSign = UnLikeSignPair;
         }
 
         float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
