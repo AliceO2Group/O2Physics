@@ -570,7 +570,8 @@ struct FlowGenericFramework {
       vtxz = collision.posZ();
       float zRes = std::sqrt(collision.covZZ());
       float minZRes = 0.25;
-      if (zRes > minZRes && collision.numContrib() < 20)
+      int minNContrib = 20;
+      if (zRes > minZRes && collision.numContrib() < minNContrib)
         vtxz = -999;
     }
     // auto multV0A = collision.multFV0A();
