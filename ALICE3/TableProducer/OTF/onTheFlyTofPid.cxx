@@ -616,7 +616,6 @@ struct OnTheFlyTofPid {
       const float noSmearingPt = trkWithTime.mNoSmearingPt;
 
       // Straight to Nsigma
-      static std::array<float, kParticles> arrivalTimeInnerTOF, arrivalTimeOuterTOF;
       static std::array<float, kParticles> expectedTimeInnerTOF, expectedTimeOuterTOF;
       static std::array<float, kParticles> deltaTimeInnerTOF, deltaTimeOuterTOF;
       static std::array<float, kParticles> nSigmaInnerTOF, nSigmaOuterTOF;
