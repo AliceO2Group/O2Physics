@@ -182,14 +182,14 @@ struct HfDataCreatorCharmHadPiReduced {
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksPidWithSelAndMc = soa::Join<TracksPidWithSel, aod::McTrackLabels>;
 
-  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>>;
-  using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi>>;
-  using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
+  using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>>;
+  using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using CandsDsFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi>>;
+  using CandsDsFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandsD0Filtered = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>>;
   using CandsD0FilteredWithMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
-  using CandsLcFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>>;
-  using CandsLcFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfMlLcToPKPi>>;
+  using CandsLcFiltered = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>>;
+  using CandsLcFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfMlLcToPKPi>>;
 
   using CollisionsWCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
   using CollisionsWCentAndMcLabels = soa::Join<CollisionsWCent, aod::McCollisionLabels>;
@@ -485,6 +485,17 @@ struct HfDataCreatorCharmHadPiReduced {
             }
           }
         }
+        // B0 → D- K+ → (π- K+ π-) K+
+        if (!flag) {
+          indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kKPlus}, true, &sign, 3);
+          if (indexRec > -1) {
+            // D- → π- K+ π-
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2,3
         if (!flag) {
@@ -604,6 +615,41 @@ struct HfDataCreatorCharmHadPiReduced {
             }
           }
         }
+        // Bs → Ds- K+ → (K- K+ π-) K+
+        if (!flag) {
+          indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kKPlus}, true, &sign, 3);
+          if (indexRec > -1) {
+            // Ds- → K- K+ π-
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              std::vector<int> arrDaughDsIndex;
+              std::array<int, 2> arrPDGDaughDs;
+              RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
+              if (arrDaughDsIndex.size() == NDaughtersDs) {
+                for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
+                  auto daughI = particlesMc.rawIteratorAt(arrDaughDsIndex[iProng]);
+                  arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
+                }
+                // Ds- → Phi π- → K- K+ π- and Ds- → K0* K- → K- K+ π-
+                if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
+                  flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsKToPhiPiKToKKPiK);
+                } else if ((arrPDGDaughDs[0] == arrPDGResonantDKstarK[0] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaughDs[0] == arrPDGResonantDKstarK[1] && arrPDGDaughDs[1] == arrPDGResonantDKstarK[0])) {
+                  flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsKToK0starKKToKKPiK);
+                }
+              }
+            } else {
+              debug = 1;
+              LOGF(debug, "Bs decays in the expected final state but the condition on the intermediate state is not fulfilled");
+            }
+
+            auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersB.back().template mcParticle_as<PParticles>(), Pdg::kBS, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+              checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2,3
         if (!flag) {
@@ -669,7 +715,7 @@ struct HfDataCreatorCharmHadPiReduced {
         // D0(bar) → K+ π-;
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
+          flag = sign * BIT(hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi);
         } else {
           debug = 1;
           LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -684,6 +730,27 @@ struct HfDataCreatorCharmHadPiReduced {
       }
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
+        if (!flag) {
+          // B+ → D0(bar) K+ → (K+ π-) K+
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            // D0(bar) → K+ π-;
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
+            if (indexRec > -1) {
+              flag = sign * BIT(hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK);
+            } else {
+              debug = 1;
+              LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
+            }
+
+            auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersB.back().template mcParticle_as<PParticles>(), Pdg::kBPlus, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+              checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2
         if (!flag) {
@@ -769,7 +836,7 @@ struct HfDataCreatorCharmHadPiReduced {
             //  Lc+ → p K- π+
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiK);
+              flag = sign * BIT(hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK);
             }
           }
         }
@@ -1137,9 +1204,20 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), candC.nSigTpcPr0(), candC.nSigTofPr0(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
-          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), candC.nSigTpcPr1(), candC.nSigTofPr1(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
-          hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), candC.nSigTpcPr2(), candC.nSigTofPr2(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
+          float nSigmaTpcPr0{-999.f}, nSigmaTpcPr1{-999.f}, nSigmaTpcPr2{-999.f};
+          float nSigmaTofPr0{-999.f}, nSigmaTofPr1{-999.f}, nSigmaTofPr2{-999.f};
+          if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+            /// assign non-dummy values only for Lb->LcPi analysis
+            nSigmaTpcPr0 = candC.nSigTpcPr0();
+            nSigmaTpcPr1 = candC.nSigTpcPr1();
+            nSigmaTpcPr2 = candC.nSigTpcPr2();
+            nSigmaTofPr0 = candC.nSigTofPr0();
+            nSigmaTofPr1 = candC.nSigTofPr1();
+            nSigmaTofPr2 = candC.nSigTofPr2();
+          }
+          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), nSigmaTpcPr0, nSigmaTofPr0, charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
+          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), nSigmaTpcPr1, nSigmaTofPr1, charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
+          hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), nSigmaTpcPr2, nSigmaTofPr2, charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
           if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {

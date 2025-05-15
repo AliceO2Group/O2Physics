@@ -257,12 +257,14 @@ enum ParticleOriginMCTruth {
   kDaughter,          //! Particle from a decay
   kMaterial,          //! Particle from a material
   kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
+  kFake,              //! Particle, that has NOT the PDG code of the current analysed particle
   kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
-  kPrompt,            //! Orgin for D0/D0bar mesons
-  kNonPrompt,         //! Orgin for D0/D0bar mesons
-  kNOriginMCTruthTypes
+  kPrompt,            //! Origin for D0/D0bar mesons
+  kNonPrompt,         //! Origin for D0/D0bar mesons
+  kNOriginMCTruthTypes,
+  kElse,
+  kWrongCollision //! Origin for the wrong collision
 };
 
 //! Naming of the different OriginMCTruth types
