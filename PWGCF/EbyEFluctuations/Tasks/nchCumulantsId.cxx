@@ -756,5 +756,5 @@ struct NchCumulantsId {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<NchCumulantsIdentified>(cfgc)};
+    adaptAnalysisTask<NchCumulantsId>(cfgc)};
 }
