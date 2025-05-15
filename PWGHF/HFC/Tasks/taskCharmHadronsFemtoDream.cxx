@@ -366,13 +366,6 @@ struct HfTaskCharmHadronsFemtoDream {
           continue;
         }
 
-        float chargeTrack = 0.;
-        if ((p1.cut() & 2) == 2) {
-          chargeTrack = PositiveCharge;
-        } else {
-          chargeTrack = NegativeCharge;
-        }
-
         float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
         if (kstar > highkstarCut) {
           continue;
