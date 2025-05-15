@@ -145,7 +145,7 @@ struct OnTheFlyTofPid {
       if (lut.value != "inherit") {
         return;
       }
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut.name, lut.value, true)) {
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut, false)) {
         LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
       }
     };
