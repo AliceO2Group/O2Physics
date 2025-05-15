@@ -74,7 +74,7 @@ struct sigma0builder {
   Preslice<V0DerivedMCDatas> perCollisionMCDerived = o2::aod::v0data::straCollisionId;
   Preslice<V0StandardDerivedDatas> perCollisionSTDDerived = o2::aod::v0data::straCollisionId;
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
-  
+
   // pack track quality but separte also afterburner
   // dynamic range: 0-31
   enum selection : int { hasTPC = 0,
@@ -147,7 +147,7 @@ struct sigma0builder {
   Configurable<float> LambdaMaxv0radius{"LambdaMaxv0radius", 60, "Max V0 radius (cm)"};
   Configurable<float> LambdaWindow{"LambdaWindow", 0.05, "Mass window around expected (in GeV/c2)"};
 
-  //// Photon criteria:  
+  //// Photon criteria:
   Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 1.5, "Max pseudorapidity of daughter tracks"};
   Configurable<float> PhotonMinDCAToPv{"PhotonMinDCAToPv", 0.0, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
@@ -353,28 +353,28 @@ struct sigma0builder {
       histos.add("Pi0QA/h2dPtVsMassPi0AfterSel_Candidates", "h2dPtVsMassPi0AfterSel_Candidates", kTH2D, {axisPt, axisPi0Mass});
     }
 
-    if (doprocessGeneratedRun3){
-      
+    if (doprocessGeneratedRun3) {
+
       histos.add("Gen/hGenEvents", "hGenEvents", kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("Gen/hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("Gen/hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
-      
+
       histos.add("Gen/hGenEventCentrality", "hGenEventCentrality", kTH1F, {{101, 0.0f, 101.0f}});
       histos.add("Gen/hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
       histos.add("Gen/hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
       histos.add("Gen/hCentralityVsMultMC", "hCentralityVsMultMC", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
       histos.add("Gen/h2dGenGamma", "h2dGenGamma", kTH2D, {axisCentrality, axisPt});
       histos.add("Gen/h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("Gen/h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});      
+      histos.add("Gen/h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
       histos.add("Gen/h2dGenGammaVsMultMC_RecoedEvt", "h2dGenGammaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
       histos.add("Gen/h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});  
+      histos.add("Gen/h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
       histos.add("Gen/h2dGenGammaVsMultMC", "h2dGenGammaVsMultMC", kTH2D, {axisNch, axisPt});
       histos.add("Gen/h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisNch, axisPt});      
+      histos.add("Gen/h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisNch, axisPt});
       histos.add("Gen/hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20.0f, +20.0f}});
       histos.add("Gen/hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
-            
+
       auto hPrimaryV0s = histos.add<TH1>("Gen/hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
       hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
       hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
@@ -567,7 +567,7 @@ struct sigma0builder {
     }
   }
 
-    // ______________________________________________________
+  // ______________________________________________________
   // Simulated processing
   // Return the list of indices to the recoed collision associated to a given MC collision.
   template <typename TMCollisions, typename TCollisions>
@@ -575,7 +575,7 @@ struct sigma0builder {
   {
     std::vector<int> listBestCollisionIdx(mcCollisions.size());
     for (auto const& mcCollision : mcCollisions) {
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex()); 
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
       int biggestNContribs = -1;
       int bestCollisionIndex = -1;
       for (auto const& collision : groupedCollisions) {
@@ -590,7 +590,7 @@ struct sigma0builder {
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           bestCollisionIndex = collision.globalIndex();
-        }        
+        }
       }
       listBestCollisionIdx[mcCollision.globalIndex()] = bestCollisionIndex;
     }
@@ -621,7 +621,7 @@ struct sigma0builder {
 
       histos.fill(HIST("Gen/hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex()); 
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
       // If so, we consider it
       bool atLeastOne = false;
@@ -633,12 +633,12 @@ struct sigma0builder {
         if (!IsEventAccepted(collision, false)) {
           continue;
         }
-        
+
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
         }
-      
+
         nCollisions++;
         atLeastOne = true;
       }
@@ -656,7 +656,7 @@ struct sigma0builder {
     }
     return;
   }
-  
+
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
   template <typename TMCCollisions, typename TV0MCs, typename TCollisions>
@@ -674,17 +674,17 @@ struct sigma0builder {
 
       histos.fill(HIST("Gen/hPrimaryV0s"), 1);
 
-      // TODO: get generated sigma0s      
+      // TODO: get generated sigma0s
 
       float ptmc = v0MC.ptMC();
       float ymc = 1e3;
       if (v0MC.pdgCode() == 22)
-        ymc = RecoDecay::y(std::array{v0MC.pxMC(), v0MC.pyMC(), v0MC.pzMC()}, o2::constants::physics::MassGamma);         
-           
+        ymc = RecoDecay::y(std::array{v0MC.pxMC(), v0MC.pyMC(), v0MC.pzMC()}, o2::constants::physics::MassGamma);
+
       else if (std::abs(v0MC.pdgCode()) == 3122)
         ymc = v0MC.rapidityMC(1);
 
-      if (std::abs(ymc) > V0Rapidity) 
+      if (std::abs(ymc) > V0Rapidity)
         continue;
 
       auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
@@ -703,9 +703,9 @@ struct sigma0builder {
 
       float centrality = 100.5f;
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);        
+        auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-         
+
         if (v0MC.pdgCode() == 22) {
           histos.fill(HIST("Gen/h2dGenGammaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
@@ -728,7 +728,7 @@ struct sigma0builder {
         histos.fill(HIST("Gen/h2dGenAntiLambda"), centrality, ptmc);
         histos.fill(HIST("Gen/h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-    }    
+    }
   }
 
   template <typename TV0Object>
@@ -1091,7 +1091,7 @@ struct sigma0builder {
     float fSigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
     float fSigmaRap = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
     float fSigmaOPAngle = v1.Angle(v2);
-    float fSigmaCentrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C(); 
+    float fSigmaCentrality = doPPAnalysis ? coll.centFT0M() : coll.centFT0C();
     uint64_t fSigmaTimeStamp = coll.timestamp();
     int fSigmaRunNumber = coll.runNumber();
 
@@ -1197,7 +1197,7 @@ struct sigma0builder {
       //_______________________________________________
       // Wrongly collision association study
       if (doAssocStudy && fhasMCColl) {
-        analyzeV0CollAssoc(coll, fullV0s, bestGammasArray, interactionRate, true);  // Gamma
+        analyzeV0CollAssoc(coll, fullV0s, bestGammasArray, interactionRate, true);   // Gamma
         analyzeV0CollAssoc(coll, fullV0s, bestLambdasArray, interactionRate, false); // Lambda
       }
 
@@ -1390,8 +1390,8 @@ struct sigma0builder {
 
   // Simulated processing in Run 3 (subscribes to MC information too)
   void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, aod::MotherMCParts const& mcmothers)
-  {    
-    analyzeGeneratedV0s(mcCollisions, V0MCCores, collisions);    
+  {
+    analyzeGeneratedV0s(mcCollisions, V0MCCores, collisions);
   }
 
   PROCESS_SWITCH(sigma0builder, processMonteCarlo, "process as if MC data", false);

@@ -74,7 +74,7 @@ struct sigmaanalysis {
   Configurable<bool> fillQAhistos{"fillQAhistos", false, "if true, fill QA histograms"};
   Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study. Only works with MC."};
   Configurable<bool> fillpTResoQAhistos{"fillpTResoQAhistos", false, "if true, fill MC QA histograms for pT resolution study. Only works with MC."};
-  
+
   // Analysis strategy:
   Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};
   Configurable<bool> fselLambdaTPCPID{"fselLambdaTPCPID", true, "Flag to select lambda-like candidates using TPC NSigma."};
@@ -267,7 +267,7 @@ struct sigmaanalysis {
         histos.add(histodir + "/MC/Photon/h2dPosTPCNSigmaEl", "h2dPosTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
         histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaEl", "h2dNegTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
         histos.add(histodir + "/MC/Photon/h2dPosTPCNSigmaPi", "h2dPosTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaPi", "h2dNegTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});        
+        histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaPi", "h2dNegTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
         histos.add(histodir + "/MC/Photon/h2dPAVsPt", "h2dPAVsPt", kTH2F, {axisPA, axisPt});
         histos.add(histodir + "/MC/Photon/hPt_BadCollAssig", "hPt_BadCollAssig", kTH1F, {axisPt});
         histos.add(histodir + "/MC/Photon/h2dPAVsPt_BadCollAssig", "h2dPAVsPt_BadCollAssig", kTH2F, {axisPA, axisPt});
@@ -578,7 +578,7 @@ struct sigmaanalysis {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dNegTPCNSigmaEl"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaEl());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPosTPCNSigmaPi"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaPi());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dNegTPCNSigmaPi"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaPi());
-          
+
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.photonMCPt());
 
           if (!sigma.photonIsCorrectlyAssoc()) {
@@ -857,7 +857,7 @@ struct sigmaanalysis {
   template <typename TV0Object>
   bool processSigmaCandidate(TV0Object const& cand)
   {
-    
+
     // Do ML analysis
     if (fUseMLSel) {
       if ((cand.gammaBDTScore() == -1) || (cand.lambdaBDTScore() == -1) || (cand.antilambdaBDTScore() == -1)) {
