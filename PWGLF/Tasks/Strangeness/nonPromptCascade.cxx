@@ -219,7 +219,7 @@ struct NonPromptCascadeTask {
 
     if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCCDB->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", mRunNumber));
-      o2::base::Propagator::Instance(true)->setMatLUT(lut);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
 
