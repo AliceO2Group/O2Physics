@@ -78,7 +78,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
-  o2::analysis::HfMlResponseB0ToDPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseB0ToDPi<float, true> hfMlResponse;
   float outputMlNotPreselected = -1.;
   std::vector<float> outputMl = {};
   o2::ccdb::CcdbApi ccdbApi;
