@@ -312,7 +312,7 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDResultsHFCharm, "AOD", "FDRESULTSHFCHARM", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDResultsCharm, "AOD", "FDRESULTSCHARM", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
                   fdhf::CharmM,
@@ -326,7 +326,7 @@ DECLARE_SOA_TABLE(FDResultsHFCharm, "AOD", "FDRESULTSHFCHARM", //! table to stor
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
 
-DECLARE_SOA_TABLE(FDResultsHFTrk, "AOD", "FDRESULTSHFTRK", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDResultsTrk, "AOD", "FDRESULTSTRK", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
                   fdhf::TrkPt,
@@ -339,7 +339,7 @@ DECLARE_SOA_TABLE(FDResultsHFTrk, "AOD", "FDRESULTSHFTRK", //! table to store re
                   femtodreamparticle::TPCNSigmaPr,
                   femtodreamparticle::TOFNSigmaPr);
 
-DECLARE_SOA_TABLE(FDResultsHFColl, "AOD", "FDRESULTSHFCOLL", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDResultsColl, "AOD", "FDRESULTSCOLL", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
                   fdhf::VertexZ,
