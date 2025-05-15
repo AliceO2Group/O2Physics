@@ -1179,7 +1179,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNames;
   std::map<int, std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
-  std::vector<AnalysisCompositeCut> fTrackCuts;
+  std::vector<TString> fTrackCuts;
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
   uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
@@ -1233,9 +1233,6 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayTrackCuts = nullptr;
     if (!trackCutsStr.IsNull()) {
       objArrayTrackCuts = trackCutsStr.Tokenize(",");
-      for (int icut = 0; icut < objArrayTrackCuts->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArrayTrackCuts->At(icut)->GetName()));
-      }
     }
     TString muonCutsStr = fConfigCuts.muon.value;
     TObjArray* objArrayMuonCuts = nullptr;
@@ -1261,6 +1258,7 @@ struct AnalysisSameEventPairing {
       fNCutsBarrel = objArray->GetEntries();
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
+        fTrackCuts.push_back(tempStr);
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
           fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
 
@@ -1763,9 +1761,9 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                 if (isAmbiExtra) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                 }
               }
             } else {
@@ -1783,9 +1781,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                   }
                 }
               } else {
@@ -1802,9 +1800,9 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if constexpr (TPairType == VarManager::kDecayToEE) {
-                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                   if (isAmbiExtra) {
-                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                   }
                 }
               }
@@ -1941,7 +1939,7 @@ struct AnalysisSameEventPairing {
               }
             }
             if constexpr (TPairType == VarManager::kDecayToEE) {
-              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
             }
           } else {
             if (pairSign > 0) {
@@ -1958,7 +1956,7 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
               }
             } else {
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -1974,7 +1972,7 @@ struct AnalysisSameEventPairing {
                 }
               }
               if constexpr (TPairType == VarManager::kDecayToEE) {
-                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
               }
             }
           }
