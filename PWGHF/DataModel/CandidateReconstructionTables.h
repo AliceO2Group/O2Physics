@@ -243,6 +243,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision 
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, Tracks, "_0"); //! Index to first prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! Index to second prong
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, Tracks, "_2"); //! Index to third prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong3, prong3, int, Tracks, "_3"); //! Index to fourth prong
 DECLARE_SOA_INDEX_COLUMN(V0, v0);                                 //! Index to V0 prong
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);                       //! Index to cascade prong
 DECLARE_SOA_COLUMN(HFflag, hfflag, uint8_t);                      //! Bitmap to store selection results, o2-linter: disable=name/o2-column (written to disk)
@@ -483,28 +484,28 @@ DECLARE_SOA_COLUMN(ImpactParameterZ2, impactParameterZ2, float);                
 DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
-/// prong PID nsigma
 DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t);           //! number of prongs contributing to the primary-vertex reconstruction
 DECLARE_SOA_COLUMN(BitmapProngsContributorsPV, bitmapProngsContributorsPV, uint8_t); //! bitmap with booleans indicating prongs contributing to the primary-vertex reconstruction
-DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                                   //! TPC nSigma for pion hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                                   //! TPC nSigma for pion hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                                   //! TPC nSigma for pion hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                                   //! TPC nSigma for kaon hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);                                   //! TPC nSigma for kaon hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                                   //! TPC nSigma for kaon hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);                                   //! TPC nSigma for proton hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);                                   //! TPC nSigma for proton hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);                                   //! TPC nSigma for proton hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                                   //! TOF nSigma for pion hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                                   //! TOF nSigma for pion hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                                   //! TOF nSigma for pion hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);                                   //! TOF nSigma for kaon hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);                                   //! TOF nSigma for kaon hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                                   //! TOF nSigma for kaon hypothesis - prong 2
-DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                                   //! TOF nSigma for proton hypothesis - prong 0
-DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                                   //! TOF nSigma for proton hypothesis - prong 1
-DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                                   //! TOF nSigma for proton hypothesis - prong 2
-DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,                         //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+/// prong PID nsigma
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);           //! TPC nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);           //! TPC nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);           //! TPC nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);           //! TPC nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);           //! TPC nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);           //! TPC nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);           //! TPC nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);           //! TPC nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);           //! TPC nSigma for proton hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);           //! TOF nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);           //! TOF nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);           //! TOF nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);           //! TOF nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);           //! TOF nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);           //! TOF nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);           //! TOF nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);           //! TOF nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);           //! TOF nSigma for proton hypothesis - prong 2
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
                            [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
                            [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
