@@ -308,7 +308,7 @@ struct HfTaskCharmHadronsFemtoDream {
         charmHadMc = p2.flagMc();
         originType = p2.originMcRec();
       }
-        
+
       fillFemtoResultCharm(
         col.globalIndex(),
         p2.timeStamp(),
