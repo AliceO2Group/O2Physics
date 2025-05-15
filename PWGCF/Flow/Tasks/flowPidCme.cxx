@@ -10,10 +10,9 @@
 // or submit itself to any jurisdiction.
 
 /// \author ZhengqingWang(zhengqing.wang@cern.ch)
-/// \file   pidcme.cxx
+/// \file   flowPidCme.cxx
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
-// o2-linter: disable=name/workflow-file
 #include <CCDB/BasicCCDBManager.h>
 #include <chrono>
 #include <string>
@@ -74,6 +73,38 @@ DECLARE_SOA_COLUMN(NSigmaPrTOF, nSigmaPrTOF, float);
 DECLARE_SOA_TABLE(Flags, "AOD", "Flags", cme_track_pid_columns::NPidFlag);
 DECLARE_SOA_TABLE(PidInfo, "AOD", "PidInfo", cme_track_pid_columns::AverClusterSizeCosl, cme_track_pid_columns::NSigmaPiITS, cme_track_pid_columns::NSigmaKaITS, cme_track_pid_columns::NSigmaPrITS, cme_track_pid_columns::NSigmaPiTPC, cme_track_pid_columns::NSigmaKaTPC, cme_track_pid_columns::NSigmaPrTPC, cme_track_pid_columns::NSigmaPiTOF, cme_track_pid_columns::NSigmaKaTOF, cme_track_pid_columns::NSigmaPrTOF);
 } // namespace o2::aod
+
+namespace pid_flags
+{
+constexpr int8_t kUnqualified = -1;
+constexpr int8_t kUnPOIHadron = 0;
+constexpr int8_t kPion = 1;
+constexpr int8_t kKaon = 2;
+constexpr int8_t kProton = 3;
+constexpr int8_t kPionITSleft = 4;
+constexpr int8_t kKaonITSleft = 5;
+constexpr int8_t kProtonITSleft = 6;
+constexpr int8_t kPionKaon = 7;
+constexpr int8_t kPionProton = 8;
+constexpr int8_t kKaonProton = 9;
+constexpr int8_t kPionKaonProton = 10;
+constexpr int8_t kPionKaonITSleft = 11;
+constexpr int8_t kPionProtonITSleft = 12;
+constexpr int8_t kKaonProtonITSleft = 13;
+constexpr int8_t kPionKaonProtonITSleft = 14;
+} // namespace pid_flags
+
+namespace event_selection
+{
+constexpr int kFT0AV0ASigma = 5;
+}
+
+namespace fourier_mode
+{
+// constexpr int kMode1 = 1;
+constexpr int kMode2 = 2;
+// constexpr int kMode3 = 3;
+} // namespace fourier_mode
 
 using TracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 using CollisionPID = soa::Join<aod::Collisions, aod::CentFT0Cs>;
@@ -182,8 +213,9 @@ struct FillPIDcolums {
     float average = 0;
     int nclusters = 0;
     const float cosl = 1. / std::cosh(eta);
+    const int nlayerITS = 7;
 
-    for (int layer = 0; layer < 7; layer++) {
+    for (int layer = 0; layer < nlayerITS; layer++) {
       if ((itsClusterSizes >> (layer * 4)) & 0xf) {
         nclusters++;
         average += (itsClusterSizes >> (layer * 4)) & 0xf;
@@ -284,10 +316,14 @@ struct FillPIDcolums {
       pidVectorLower = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMSLower.value : cfgnSigmaCutTPCLower.value;
     }
     float nsigma = 9999.99;
+    const int nPOI = 3;
+    const int piCase = 0;
+    const int kaCase = 1;
+    const int prCase = 2;
     // Fill cross pid QA
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < nPOI; ++i) {
       if (nSigmaToUse[i] > pidVectorLower[i] && nSigmaToUse[i] < pidVectorUpper[i]) {
-        if (i == 0) {
+        if (i == piCase) {
           kIsPi = true;
           if (!cfgQuietMode) {
             if (cfgOpenCrossTrackQAPlots) {
@@ -328,7 +364,7 @@ struct FillPIDcolums {
             }
           }
         }
-        if (i == 1) {
+        if (i == kaCase) {
           kIsKa = true;
           if (!cfgQuietMode) {
             if (cfgOpenCrossTrackQAPlots) {
@@ -369,7 +405,7 @@ struct FillPIDcolums {
             }
           }
         }
-        if (i == 2) {
+        if (i == prCase) {
           kIsPr = true;
           if (!cfgQuietMode) {
             if (cfgOpenCrossTrackQAPlots) {
@@ -419,7 +455,7 @@ struct FillPIDcolums {
       return map[index];
     } else {
       // Select particle with the lowest nsigma (If not allow cross track)
-      for (int i = 0; i < 3; ++i) {
+      for (int i = 0; i < nPOI; ++i) {
         if (std::abs(nSigmaToUse[i]) < nsigma && (nSigmaToUse[i] > pidVectorLower[i] && nSigmaToUse[i] < pidVectorUpper[i])) {
           pid = i;
           nsigma = std::abs(nSigmaToUse[i]);
@@ -984,16 +1020,16 @@ struct FillPIDcolums {
           }
         }
         pidFlag = selectionPidtpctof(track, nSigmaTOFCutPtUpper, nSigmaTOFCutPtLower, nSigmaTPCCutPtUpper, nSigmaTPCCutPtLower);
-        if (!(pidFlag == 0 || pidFlag == -1)) {
+        if (!(pidFlag == pid_flags::kUnqualified || pidFlag == pid_flags::kUnPOIHadron)) {
           // First fill ITS uncut plots
-          if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
+          if ((pidFlag == pid_flags::kPion) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kPionKaonProton)) {
             if (cfgOpenTPCAssistanceTOFOnlyPID && !(track.tpcNSigmaPi() > nSigmaTPCCutPiPtLower && track.tpcNSigmaPi() < nSigmaTPCCutPiPtUpper)) {
               pidFlag = 0;
             }
             if (cfgOpenPIDPtSelection && !(track.pt() > cfgPtCutLower.value[0] && track.pt() < cfgPtCutUpper.value[0])) {
               pidFlag = 0;
             }
-            if (!(cfgQuietMode || pidFlag == 0)) {
+            if (!(cfgQuietMode || pidFlag == pid_flags::kUnPOIHadron)) {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pi"), track.itsNSigmaPi(), track.tpcNSigmaPi());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_Pi"), track.tofNSigmaPi(), track.itsNSigmaPi());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_Pi"), track.tofNSigmaPi(), track.tpcNSigmaPi());
@@ -1048,14 +1084,14 @@ struct FillPIDcolums {
               }
             }
           }
-          if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
+          if ((pidFlag == pid_flags::kKaon) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton)) {
             if (cfgOpenTPCAssistanceTOFOnlyPID && !(track.tpcNSigmaKa() > nSigmaTPCCutKaPtLower && track.tpcNSigmaKa() < nSigmaTPCCutKaPtUpper)) {
               pidFlag = 0;
             }
             if (cfgOpenPIDPtSelection && !(track.pt() > cfgPtCutLower.value[1] && track.pt() < cfgPtCutUpper.value[1])) {
               pidFlag = 0;
             }
-            if (!(cfgQuietMode || pidFlag == 0)) {
+            if (!(cfgQuietMode || pid_flags::kUnPOIHadron)) {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Ka"), track.itsNSigmaKa(), track.tpcNSigmaKa());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_Ka"), track.tofNSigmaKa(), track.itsNSigmaKa());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_Ka"), track.tofNSigmaKa(), track.tpcNSigmaKa());
@@ -1110,14 +1146,14 @@ struct FillPIDcolums {
               }
             }
           }
-          if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
+          if ((pidFlag == pid_flags::kProton) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton)) {
             if (cfgOpenTPCAssistanceTOFOnlyPID && !(track.tpcNSigmaPr() > nSigmaTPCCutPrPtLower && track.tpcNSigmaPr() < nSigmaTPCCutPrPtUpper)) {
               pidFlag = 0;
             }
             if (cfgOpenPIDPtSelection && !(track.pt() > cfgPtCutLower.value[2] && track.pt() < cfgPtCutUpper.value[2])) {
               pidFlag = 0;
             }
-            if (!(cfgQuietMode || pidFlag == 0)) {
+            if (!(cfgQuietMode || pidFlag == pid_flags::kUnPOIHadron)) {
               histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_Pr"), track.itsNSigmaPr(), track.tpcNSigmaPr());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_Pr"), track.tofNSigmaPr(), track.itsNSigmaPr());
               histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_Pr"), track.tofNSigmaPr(), track.tpcNSigmaPr());
@@ -1284,7 +1320,7 @@ struct FillPIDcolums {
                 histosQA.fill(HIST("QA/PID/histTPCChi2Ncls_total_AfterITS"), track.tpcChi2NCl());
                 histosQA.fill(HIST("QA/PID/histITSChi2Ncls_total_AfterITS"), track.itsChi2NCl());
               }
-              if ((pidFlag == 1) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10)) {
+              if ((pidFlag == pid_flags::kPion) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kPionKaonProton)) {
                 histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pi"), track.itsNSigmaPi(), track.tpcNSigmaPi());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_AfterITS_Pi"), track.tofNSigmaPi(), track.itsNSigmaPi());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_AfterITS_Pi"), track.tofNSigmaPi(), track.tpcNSigmaPi());
@@ -1333,7 +1369,7 @@ struct FillPIDcolums {
                   }
                 }
               }
-              if ((pidFlag == 2) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10)) {
+              if ((pidFlag == pid_flags::kKaon) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton)) {
                 histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Ka"), track.itsNSigmaKa(), track.tpcNSigmaKa());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_AfterITS_Ka"), track.tofNSigmaKa(), track.itsNSigmaKa());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_AfterITS_Ka"), track.tofNSigmaKa(), track.tpcNSigmaKa());
@@ -1382,7 +1418,7 @@ struct FillPIDcolums {
                   }
                 }
               }
-              if ((pidFlag == 3) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10)) {
+              if ((pidFlag == pid_flags::kProton) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton)) {
                 histosQA.fill(HIST("QA/PID/histnSigmaITS_nSigmaTPC_AfterITS_Pr"), track.itsNSigmaPr(), track.tpcNSigmaPr());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaITS_AfterITS_Pr"), track.tofNSigmaPr(), track.itsNSigmaPr());
                 histosQA.fill(HIST("QA/PID/histnSigmaTOF_nSigmaTPC_AfterITS_Pr"), track.tofNSigmaPr(), track.tpcNSigmaPr());
@@ -1712,9 +1748,9 @@ struct QAProcessCent {
         for (const auto& trk : tracks) {
           int8_t pidFlag = trk.nPidFlag();
           if (cfgOpenPi) {
-            if ((pidFlag == 1) || (pidFlag == 4) || (pidFlag == 7) || (pidFlag == 8) || (pidFlag == 10) || (pidFlag == 11) || (pidFlag == 12) || (pidFlag == 14)) {
+            if ((pidFlag == pid_flags::kPion) || (pidFlag == pid_flags::kPionITSleft) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kPionKaonProton) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft)) {
               if (trk.sign() > 0) {
-                if (!((pidFlag == 4) || (pidFlag == 11) || (pidFlag == 12) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kPionITSleft) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaPosPiCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1746,7 +1782,7 @@ struct QAProcessCent {
                   vhistnSigmaTOFTPCPtPosPiBeforeCen[currentBin]->Fill(trk.nSigmaPiTOF(), trk.nSigmaPiTPC(), trk.pt());
                 }
               } else if (trk.sign() < 0) {
-                if (!((pidFlag == 4) || (pidFlag == 11) || (pidFlag == 12) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kPionITSleft) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaNegPiCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1781,9 +1817,9 @@ struct QAProcessCent {
             }
           }
           if (cfgOpenKa) {
-            if ((pidFlag == 2) || (pidFlag == 5) || (pidFlag == 7) || (pidFlag == 9) || (pidFlag == 10) || (pidFlag == 11) || (pidFlag == 13) || (pidFlag == 14)) {
+            if ((pidFlag == pid_flags::kKaon) || (pidFlag == pid_flags::kKaonITSleft) || (pidFlag == pid_flags::kPionKaon) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft)) {
               if (trk.sign() > 0) {
-                if (!((pidFlag == 5) || (pidFlag == 11) || (pidFlag == 13) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kKaonITSleft) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaPosKaCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1815,7 +1851,7 @@ struct QAProcessCent {
                   vhistnSigmaTOFTPCPtPosKaBeforeCen[currentBin]->Fill(trk.nSigmaKaTOF(), trk.nSigmaKaTPC(), trk.pt());
                 }
               } else if (trk.sign() < 0) {
-                if (!((pidFlag == 5) || (pidFlag == 11) || (pidFlag == 13) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kKaonITSleft) || (pidFlag == pid_flags::kPionKaonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaNegKaCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1850,9 +1886,9 @@ struct QAProcessCent {
             }
           }
           if (cfgOpenPr) {
-            if ((pidFlag == 3) || (pidFlag == 6) || (pidFlag == 8) || (pidFlag == 9) || (pidFlag == 10) || (pidFlag == 12) || (pidFlag == 13) || (pidFlag == 14)) {
+            if ((pidFlag == pid_flags::kProton) || (pidFlag == pid_flags::kProtonITSleft) || (pidFlag == pid_flags::kPionProton) || (pidFlag == pid_flags::kKaonProton) || (pidFlag == pid_flags::kPionKaonProton) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft)) {
               if (trk.sign() > 0) {
-                if (!((pidFlag == 6) || (pidFlag == 12) || (pidFlag == 13) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kProtonITSleft) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaPosPrCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1884,7 +1920,7 @@ struct QAProcessCent {
                   vhistnSigmaTOFTPCPtPosPrBeforeCen[currentBin]->Fill(trk.nSigmaPrTOF(), trk.nSigmaPrTPC(), trk.pt());
                 }
               } else if (trk.sign() < 0) {
-                if (!((pidFlag == 6) || (pidFlag == 12) || (pidFlag == 13) || (pidFlag == 14))) {
+                if (!((pidFlag == pid_flags::kProtonITSleft) || (pidFlag == pid_flags::kPionProtonITSleft) || (pidFlag == pid_flags::kKaonProtonITSleft) || (pidFlag == pid_flags::kPionKaonProtonITSleft))) {
                   if (cfgOpenPtEtaPhi) {
                     vhistPhiPtEtaNegPrCen[currentBin]->Fill(trk.phi(), trk.pt(), trk.eta());
                   }
@@ -1924,7 +1960,7 @@ struct QAProcessCent {
   }
 };
 
-struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for offline analysis)
+struct FlowPidCme {
   HistogramRegistry histosQA{"histosmain", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2}, "Modulation of interest"};
@@ -2055,9 +2091,9 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
   Filter etafilter = aod::track::eta < cfgMaxEta;
   Filter properPIDfilter = aod::cme_track_pid_columns::nPidFlag >= (int8_t)0;
 
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet1 = ((aod::cme_track_pid_columns::nPidFlag == 1) || (aod::cme_track_pid_columns::nPidFlag == 7) || (aod::cme_track_pid_columns::nPidFlag == 8) || (aod::cme_track_pid_columns::nPidFlag == 10));
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet2 = ((aod::cme_track_pid_columns::nPidFlag == 2) || (aod::cme_track_pid_columns::nPidFlag == 7) || (aod::cme_track_pid_columns::nPidFlag == 9) || (aod::cme_track_pid_columns::nPidFlag == 10));
-  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet3 = ((aod::cme_track_pid_columns::nPidFlag == 3) || (aod::cme_track_pid_columns::nPidFlag == 8) || (aod::cme_track_pid_columns::nPidFlag == 9) || (aod::cme_track_pid_columns::nPidFlag == 10));
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet1 = ((aod::cme_track_pid_columns::nPidFlag == pid_flags::kPion) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaonProton));
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet2 = ((aod::cme_track_pid_columns::nPidFlag == pid_flags::kKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaon) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kKaonProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaonProton));
+  Partition<soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::Flags, aod::PidInfo>>> tracksSet3 = ((aod::cme_track_pid_columns::nPidFlag == pid_flags::kProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kKaonProton) || (aod::cme_track_pid_columns::nPidFlag == pid_flags::kPionKaonProton));
   void init(InitContext const&)
   {
 
@@ -2561,7 +2597,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
     if (cfgOpenEvSelMultCorrelationGlobalTracks) {
       histosQA.fill(HIST("QA/histEventCountDetail"), 9.5);
     }
-    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))) {
+    if (cfgOpenEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > event_selection::kFT0AV0ASigma * fT0AV0ASigma->Eval(collision.multFT0A()))) {
       return 0;
     }
     if (cfgOpenEvSelV0AT0ACut) {
@@ -2608,7 +2644,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
         }
       }
       if ((cenBin >= 0) && (ptBin >= 0)) {
-        if ((track.nPidFlag() == 3) || (track.nPidFlag() == 8) || (track.nPidFlag() == 9) || (track.nPidFlag() == 10)) {
+        if ((track.nPidFlag() == pid_flags::kProton) || (track.nPidFlag() == pid_flags::kPionProton) || (track.nPidFlag() == pid_flags::kKaonProton) || (track.nPidFlag() == pid_flags::kPionKaonProton)) {
           if (cfgkOpenDebugPIDCME) {
             LOGF(info, Form("=========cen_bin: %d pt_bin: %d=========", cenBin, ptBin));
           }
@@ -2646,7 +2682,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
     int detInd = detId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refAInd = refAId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refBInd = refBId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
-    if (nmode == 2) {
+    if (nmode == fourier_mode::kMode2) {
       if (collision.qvecAmp()[detId] > 1e-8) {
         histosQA.fill(HIST("QA/histQvec_CorrL0_V2"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.centFT0C());
         histosQA.fill(HIST("QA/histQvec_CorrL1_V2"), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], collision.centFT0C());
@@ -2678,7 +2714,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
       for (const auto& trk : track1) {
         if (!selTrack(trk, cent))
           continue;
-        if (nmode == 2) {
+        if (nmode == fourier_mode::kMode2) {
           if (trk.sign() > 0) {
             histosQA.fill(HIST("V2/PID/histCosDetV2_Pi"), cent, trk.pt(),
                           std::cos(static_cast<float>(nmode) * (trk.phi() - psiN)));
@@ -2715,7 +2751,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
       for (const auto& trk : track2) {
         if (!selTrack(trk, cent))
           continue;
-        if (nmode == 2) {
+        if (nmode == fourier_mode::kMode2) {
           if (trk.sign() > 0) {
             histosQA.fill(HIST("V2/PID/histCosDetV2_Ka"), cent, trk.pt(),
                           std::cos(static_cast<float>(nmode) * (trk.phi() - psiN)));
@@ -2752,7 +2788,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
       for (const auto& trk : track3) {
         if (!selTrack(trk, cent))
           continue;
-        if (nmode == 2) {
+        if (nmode == fourier_mode::kMode2) {
           if (trk.sign() > 0) {
             histosQA.fill(HIST("V2/PID/histCosDetV2_Pr"), cent, trk.pt(),
                           std::cos(static_cast<float>(nmode) * (trk.phi() - psiN)));
@@ -2797,7 +2833,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk2, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk1.sign() == trk2.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_PiPi_ss"), cent, std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_PiPi_ss"), cent, std::cos((trk1.phi() - trk2.phi())));
@@ -2876,7 +2912,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk2, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk1.sign() == trk2.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_KaKa_ss"), cent, std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_KaKa_ss"), cent, std::cos((trk1.phi() - trk2.phi())));
@@ -2955,7 +2991,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk2, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk1.sign() == trk2.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_PrPr_ss"), cent, std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_PrPr_ss"), cent, std::cos((trk1.phi() - trk2.phi())));
@@ -3034,7 +3070,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk2, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk1.sign() == trk2.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_PiKa_ss"), cent, std::cos((trk1.phi() + trk2.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_PiKa_ss"), cent, std::cos((trk1.phi() - trk2.phi())));
@@ -3113,7 +3149,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk3, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk1.sign() == trk3.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_PiPr_ss"), cent, std::cos((trk1.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_PiPr_ss"), cent, std::cos((trk1.phi() - trk3.phi())));
@@ -3192,7 +3228,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
               continue;
             if (!selTrack(trk3, cent))
               continue;
-            if (nmode == 2) {
+            if (nmode == fourier_mode::kMode2) {
               if (trk2.sign() == trk3.sign()) {
                 histosQA.fill(HIST("PIDCME/histgamma_KaPr_ss"), cent, std::cos((trk2.phi() + trk3.phi() - static_cast<float>(nmode) * psiN)));
                 histosQA.fill(HIST("PIDCME/histdelta_KaPr_ss"), cent, std::cos((trk2.phi() - trk3.phi())));
@@ -3317,6 +3353,8 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
     mult3 = tracks3.size();
     if (mult1 < 1 || mult2 < 1 || mult3 < 1) // Reject Collisions without sufficient particles
       return;
+    const float cenPlotMin = 20;
+    const float cenPlotMax = 30;
     for (auto i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
       int detIndGlobal = detId * 4 + cfgnTotalSystem * 4 * (cfgnMods->at(i) - 2);
       float psiNGlobal = helperEP.GetEventPlane(collision.qvecRe()[detIndGlobal + 3], collision.qvecIm()[detIndGlobal + 3], cfgnMods->at(i));
@@ -3324,8 +3362,8 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
         if (!selTrack(trk, cent))
           continue;
         if (cfgkOpenTPCITSPurityCut && cfgkOpenTPCITSPurityCutQA) {
-          if (cent >= 20 && cent < 30) {
-            if ((trk.nPidFlag() == 3) || (trk.nPidFlag() == 8) || (trk.nPidFlag() == 9) || (trk.nPidFlag() == 10)) {
+          if (cent >= cenPlotMin && cent < cenPlotMax) {
+            if ((trk.nPidFlag() == pid_flags::kProton) || (trk.nPidFlag() == pid_flags::kPionProton) || (trk.nPidFlag() == pid_flags::kKaonProton) || (trk.nPidFlag() == pid_flags::kPionKaonProton)) {
               if (trk.sign() > 0) {
                 histosQA.fill(HIST("QA/histITSPuritycheck_Pr_Pos_Cen_20_30"), trk.nSigmaPrTPC(), trk.nSigmaPrITS(), trk.pt());
               } else {
@@ -3341,7 +3379,7 @@ struct pidcme { // o2-linter: disable=name/struct(keep the saving dir name for o
                         std::cos(static_cast<float>(cfgnMods->at(i)) * (trk.phi() - psiNGlobal)));
         }
       }
-      if (cfgkOpenCME && cfgkOpenHaHa && cfgnMods->at(i) == 2) {
+      if (cfgkOpenCME && cfgkOpenHaHa && cfgnMods->at(i) == fourier_mode::kMode2) {
         for (const auto& trk1 : tracks) {
           if (!selTrack(trk1, cent))
             continue;
@@ -3429,6 +3467,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<FillPIDcolums>(cfgc),
     adaptAnalysisTask<QAProcessCent>(cfgc),
-    adaptAnalysisTask<pidcme>(cfgc),
+    adaptAnalysisTask<FlowPidCme>(cfgc),
   };
 }

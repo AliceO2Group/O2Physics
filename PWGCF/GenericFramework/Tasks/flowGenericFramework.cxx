@@ -86,12 +86,12 @@ struct FlowGenericFramework {
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 8, "Highest order of pt-pt correlations")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
   O2_DEFINE_CONFIGURABLE(cfgFillQA, bool, false, "Fill QA histograms")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
@@ -111,11 +111,14 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgIsGoodITSLayersAll, bool, true, "kIsGoodITSLayersAll");
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, true, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
-  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional evenr cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
   O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "Use kTVXinTRD (reject TRD triggered events)");
   O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "Selects collisions with at least one ITS-TPC track");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
-  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 1.0, "pt cut on TOF for PID");
+  O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
+  O2_DEFINE_CONFIGURABLE(cfgUseDensityDependentCorrection, bool, false, "Use density dependent efficiency correction based on Run 2 measurements");
+  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.7217476707, 0.7384792571, 0.7542625668, 0.7640680200, 0.7701951667, 0.7755299053, 0.7805901710, 0.7849446786, 0.7957356586, 0.8113039262, 0.8211968966, 0.8280558878, 0.8329342135}, "parameter 0 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-2.169488e-05, -2.191913e-05, -2.295484e-05, -2.556538e-05, -2.754463e-05, -2.816832e-05, -2.846502e-05, -2.843857e-05, -2.705974e-05, -2.477018e-05, -2.321730e-05, -2.203315e-05, -2.109474e-05}, "parameter 1 for track density efficiency correction"};
 
   Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull"}, {-0.8, 0.4, -0.8}, {-0.4, 0.8, 0.8}, {0, 0, 0}, {1, 1, 1}}, "Configurations for GFW regions"};
@@ -138,6 +141,7 @@ struct FlowGenericFramework {
   OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
   HistogramRegistry registry{"registry"};
 
+  // QA outputs
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
   std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
   enum OutputTH1Names {
@@ -149,6 +153,7 @@ struct FlowGenericFramework {
     hEventSel,
     kCount_TH1Names
   };
+  // NUA outputs
   enum OutputTH3Names {
     hNUAref = 0,
     hNUAch,
@@ -157,14 +162,40 @@ struct FlowGenericFramework {
     hNUApr,
     kCount_TH3Names
   };
+  enum CentEstimators {
+    kCentFT0C = 0,
+    kCentFT0CVariant1,
+    kCentFT0M,
+    kCentFV0A
+  };
 
-  // define global variables
+  // Define global variables
+  // Generic Framework
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
+
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
   int lastRun = -1;
   std::vector<int> runNumbers;
+
+  // Density dependent eff correction
+  std::vector<TF1*> funcEff;
+  TH1D* hFindPtBin;
+  TF1* funcV2;
+  TF1* funcV3;
+  TF1* funcV4;
+  struct DensityCorr {
+    double psi2Est;
+    double psi3Est;
+    double psi4Est;
+    double v2;
+    double v3;
+    double v4;
+    int density;
+    DensityCorr() : psi2Est(0.), psi3Est(0.), psi4Est(0.), v2(0.), v3(0.), v4(0.), density(0) {}
+  };
+
   // Event selection cuts - Alex
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
@@ -207,11 +238,28 @@ struct FlowGenericFramework {
     cfgGFWBinning->Print();
 
     AxisSpec phiAxis = {phibins, philow, phiup, "#phi"};
-    AxisSpec phiModAxis = {100, 0, constants::math::PI / 9, "fmod(#varphi,#pi/9)"};
     AxisSpec etaAxis = {etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
     AxisSpec ptAxis = {ptbinning, "#it{p}_{T} GeV/#it{c}"};
-    AxisSpec centAxis = {centbinning, "Centrality (%)"};
+    std::string sCentralityEstimator;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        sCentralityEstimator = "FT0C";
+        break;
+      case kCentFT0CVariant1:
+        sCentralityEstimator = "FT0C variant 1";
+        break;
+      case kCentFT0M:
+        sCentralityEstimator = "FT0M";
+        break;
+      case kCentFV0A:
+        sCentralityEstimator = "FV0A";
+        break;
+      default:
+        sCentralityEstimator = "FT0C";
+    }
+    sCentralityEstimator += " centrality (%)";
+    AxisSpec centAxis = {centbinning, sCentralityEstimator.c_str()};
     std::vector<double> nchbinning;
     int nchskip = (nchup - nchlow) / nchbins;
     for (int i = 0; i <= nchbins; ++i) {
@@ -242,11 +290,18 @@ struct FlowGenericFramework {
     if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registry.add("trackQA/before/pt_phi", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
+      registry.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+      registry.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
+      registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+      registry.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
+      registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+
       registry.addClone("trackQA/before/", "trackQA/after/");
       registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, ptreflow, ptrefup}}});
       registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, ptpoilow, ptpoiup}}});
 
+      registry.add("eventQA/before/centrality", "", {HistType::kTH1D, {centAxis}});
+      registry.add("eventQA/before/multiplicity", "", {HistType::kTH1D, {nchAxis}});
       registry.add("eventQA/before/globalTracks_centT0C", "", {HistType::kTH2D, {centAxis, nchAxis}});
       registry.add("eventQA/before/PVTracks_centT0C", "", {HistType::kTH2D, {centAxis, multpvAxis}});
       registry.add("eventQA/before/globalTracks_PVTracks", "", {HistType::kTH2D, {multpvAxis, nchAxis}});
@@ -310,20 +365,6 @@ struct FlowGenericFramework {
     fFCpt->initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
     // Event selection - Alex
     if (cfgUseAdditionalEventCut) {
-      /*
-      //22s cuts
-      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-
-      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-      */
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -334,10 +375,23 @@ struct FlowGenericFramework {
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
     }
-
-    if (cfgUseAdditionalTrackCut) {
-      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+    if (cfgUseDensityDependentCorrection) {
+      std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      funcEff.resize(pTEffBins.size() - 1);
+      // LHC24g3 Eff
+      std::vector<double> f1p0 = cfgTrackDensityP0;
+      std::vector<double> f1p1 = cfgTrackDensityP1;
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+        funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+        funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc]);
+      }
+      funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
+      funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV3->SetParameters(0.0174056, 0.000703329, -1.45044e-05, 1.91991e-07, -1.62137e-09);
+      funcV4 = new TF1("funcV4", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+      funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
   }
 
@@ -543,42 +597,7 @@ struct FlowGenericFramework {
       if (cfgRunByRun)
         th1sList[run][hEventSel]->Fill(9.5);
     }
-
-    /* 22s
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-      return 0;
-    */
     return 1;
-  }
-
-  template <typename TTrack>
-  bool trackSelected(TTrack track, const int& field)
-  {
-    double phimodn = track.phi();
-    if (field < 0) // for negative polarity field
-      phimodn = TwoPI - phimodn;
-    if (track.sign() < 0) // for negative charge
-      phimodn = TwoPI - phimodn;
-    if (phimodn < 0)
-      LOGF(warning, "phi < 0: %g", phimodn);
-
-    phimodn += PI / 18.0; // to center gap in the middle
-    phimodn = fmod(phimodn, PI / 9.0);
-    if (cfgFillQA)
-      registry.fill(HIST("trackQA/before/pt_phi"), track.pt(), phimodn);
-    if (phimodn < fPhiCutHigh->Eval(track.pt()) && phimodn > fPhiCutLow->Eval(track.pt()))
-      return false; // reject track
-    if (cfgFillQA)
-      registry.fill(HIST("trackQA/after/pt_phi"), track.pt(), phimodn);
-    return true;
   }
 
   enum DataType {
@@ -633,12 +652,14 @@ struct FlowGenericFramework {
     AxisSpec phiAxis = {phibins, philow, phiup, "#phi"};
     AxisSpec etaAxis = {etabins, -cfgEta, cfgEta, "#eta"};
     AxisSpec vtxAxis = {vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
+    AxisSpec nchAxis = {nchbins, nchlow, nchup, "N_{ch}"};
+    AxisSpec centAxis = {centbinning, "Centrality (%)"};
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
     histos[hPhi] = registry.add<TH1>(Form("%d/phi", run), "", {HistType::kTH1D, {phiAxis}});
     histos[hEta] = registry.add<TH1>(Form("%d/eta", run), "", {HistType::kTH1D, {etaAxis}});
     histos[hVtxZ] = registry.add<TH1>(Form("%d/vtxz", run), "", {HistType::kTH1D, {vtxAxis}});
-    histos[hMult] = registry.add<TH1>(Form("%d/mult", run), "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    histos[hCent] = registry.add<TH1>(Form("%d/cent", run), "", {HistType::kTH1D, {{90, 0, 90}}});
+    histos[hMult] = registry.add<TH1>(Form("%d/mult", run), "", {HistType::kTH1D, {nchAxis}});
+    histos[hCent] = registry.add<TH1>(Form("%d/cent", run), "", {HistType::kTH1D, {centAxis}});
     histos[hEventSel] = registry.add<TH1>(Form("%d/eventSel", run), "Number of Events;; Counts", {HistType::kTH1D, {{11, 0, 11}}});
     histos[hEventSel]->GetXaxis()->SetBinLabel(1, "Filtered event");
     histos[hEventSel]->GetXaxis()->SetBinLabel(2, "sel8");
@@ -700,7 +721,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TCollision, typename TTracks>
-  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& field, const int& run)
+  void processCollision(TCollision collision, TTracks tracks, const float& centrality, const int& run)
   {
     if (tracks.size() < 1)
       return;
@@ -718,15 +739,51 @@ struct FlowGenericFramework {
     fGFW->Clear();
     fFCpt->clearVector();
     float lRandom = fRndm->Rndm();
+
+    // be cautious, this only works for Pb-Pb
+    // esimate the Event plane and vn for this event
+    DensityCorr densitycorrections;
+    if (cfgUseDensityDependentCorrection) {
+      double psi2Est = 0, psi3Est = 0, psi4Est = 0;
+      double v2 = 0, v3 = 0, v4 = 0;
+      double q2x = 0, q2y = 0;
+      double q3x = 0, q3y = 0;
+      double q4x = 0, q4y = 0;
+      for (const auto& track : tracks) {
+        bool withinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT rang
+        if (withinPtRef) {
+          q2x += std::cos(2 * track.phi());
+          q2y += std::sin(2 * track.phi());
+          q3x += std::cos(3 * track.phi());
+          q3y += std::sin(3 * track.phi());
+          q4x += std::cos(4 * track.phi());
+          q4y += std::sin(4 * track.phi());
+        }
+      }
+      psi2Est = std::atan2(q2y, q2x) / 2.;
+      psi3Est = std::atan2(q3y, q3x) / 3.;
+      psi4Est = std::atan2(q4y, q4x) / 4.;
+      v2 = funcV2->Eval(centrality);
+      v3 = funcV3->Eval(centrality);
+      v4 = funcV4->Eval(centrality);
+      densitycorrections.psi2Est = psi2Est;
+      densitycorrections.psi3Est = psi3Est;
+      densitycorrections.psi4Est = psi4Est;
+      densitycorrections.v2 = v2;
+      densitycorrections.v3 = v3;
+      densitycorrections.v4 = v4;
+      densitycorrections.density = tracks.size();
+    }
+
     for (const auto& track : tracks) {
-      processTrack(track, vtxz, field, run);
+      processTrack(track, vtxz, run, densitycorrections);
     }
     if (!cfgFillWeights)
       fillOutputContainers<dt>((cfgUseNch) ? tracks.size() : centrality, lRandom);
   }
 
   template <typename TTrack>
-  inline void processTrack(TTrack const& track, const float& vtxz, const int& field, const int& run)
+  inline void processTrack(TTrack const& track, const float& vtxz, const int& run, DensityCorr densitycorrections)
   {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TTrack::all_columns>) {
       if (track.mcParticleId() < 0 || !(track.has_mcParticle()))
@@ -739,9 +796,6 @@ struct FlowGenericFramework {
         fillTrackQA<kReco, kBefore>(track, vtxz);
 
       if (mcParticle.eta() < etalow || mcParticle.eta() > etaup || mcParticle.pt() < ptlow || mcParticle.pt() > ptup || track.tpcNClsFound() < cfgNcls)
-        return;
-
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
       int pidIndex = 0;
@@ -758,7 +812,7 @@ struct FlowGenericFramework {
         fillWeights(mcParticle, vtxz, 0, run);
       } else {
         fillPtSums<kReco>(track, vtxz);
-        fillGFW<kReco>(mcParticle, vtxz, pidIndex);
+        fillGFW<kReco>(mcParticle, vtxz, pidIndex, densitycorrections);
       }
 
       if (cfgFillQA) {
@@ -789,7 +843,7 @@ struct FlowGenericFramework {
       }
 
       fillPtSums<kGen>(track, vtxz);
-      fillGFW<kGen>(track, vtxz, pidIndex);
+      fillGFW<kGen>(track, vtxz, pidIndex, densitycorrections);
 
       if (cfgFillQA)
         fillTrackQA<kGen, kAfter>(track, vtxz);
@@ -797,9 +851,6 @@ struct FlowGenericFramework {
       if (cfgFillQA)
         fillTrackQA<kReco, kBefore>(track, vtxz);
       if (track.tpcNClsFound() < cfgNcls)
-        return;
-
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, field))
         return;
 
       int pidIndex = 0;
@@ -811,7 +862,7 @@ struct FlowGenericFramework {
         fillWeights(track, vtxz, pidIndex, run);
       } else {
         fillPtSums<kReco>(track, vtxz);
-        fillGFW<kReco>(track, vtxz, pidIndex);
+        fillGFW<kReco>(track, vtxz, pidIndex, densitycorrections);
       }
       if (cfgFillQA) {
         fillTrackQA<kReco, kAfter>(track, vtxz);
@@ -842,7 +893,7 @@ struct FlowGenericFramework {
   }
 
   template <DataType dt, typename TTrack>
-  inline void fillGFW(TTrack track, const double& vtxz, int pid_index)
+  inline void fillGFW(TTrack track, const double& vtxz, int pid_index, DensityCorr densitycorrections)
   {
     if (cfgUsePID) { // Analysing POI flow with id'ed particles
       double ptmins[] = {ptpoilow, ptpoilow, 0.3, 0.5};
@@ -868,11 +919,32 @@ struct FlowGenericFramework {
       if (withinPtNch && withinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), waccPOI, 32);
     } else { // Analysing only integrated flow
+      bool withinPtRef = (track.pt() > ptreflow && track.pt() < ptrefup);
+      bool withinPtPOI = (track.pt() > ptpoilow && track.pt() < ptpoiup);
+      if (!withinPtPOI && !withinPtRef)
+        return;
       double weff = (dt == kGen) ? 1. : getEfficiency(track);
       if (weff < 0)
         return;
+      if (cfgUseDensityDependentCorrection && withinPtRef && dt != kGen) {
+        double fphi = densitycorrections.v2 * std::cos(2 * (track.phi() - densitycorrections.psi2Est)) + densitycorrections.v3 * std::cos(3 * (track.phi() - densitycorrections.psi3Est)) + densitycorrections.v4 * std::cos(4 * (track.phi() - densitycorrections.psi4Est));
+        fphi = (1 + 2 * fphi);
+        int pTBinForEff = hFindPtBin->FindBin(track.pt());
+        if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
+          float wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * densitycorrections.density);
+          if (wEPeff > 0.) {
+            wEPeff = 1. / wEPeff;
+            weff *= wEPeff;
+          }
+        }
+      }
       double wacc = (dt == kGen) ? 1. : getAcceptance(track, vtxz, 0);
-      fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      if (withinPtRef)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 1);
+      if (withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 2);
+      if (withinPtRef && withinPtPOI)
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), weff * wacc, 4);
     }
     return;
   }
@@ -887,6 +959,13 @@ struct FlowGenericFramework {
       double wacc = getAcceptance(track, vtxz, 0);
       registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("phi_eta_vtxZ"), track.phi(), track.eta(), vtxz, (ft == kAfter) ? wacc : 1.0);
       registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_dcaXY_dcaZ"), track.pt(), track.dcaXY(), track.dcaZ());
+
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("chi2prTPCcls"), track.tpcChi2NCl());
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("chi2prITScls"), track.itsChi2NCl());
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("nTPCClusters"), track.tpcNClsFound());
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("nITSClusters"), track.itsNCls());
+      registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("nTPCCrossedRows"), track.tpcNClsCrossedRows());
+
       if (ft == kAfter) {
         registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_ref"), track.pt());
         registry.fill(HIST("trackQA/") + HIST(FillTimeName[ft]) + HIST("pt_poi"), track.pt());
@@ -911,7 +990,7 @@ struct FlowGenericFramework {
   Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && nabs(aod::track::dcaXY) < cfgDCAxy&& nabs(aod::track::dcaZ) < cfgDCAz;
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTOFPi, aod::pidTPCPi, aod::pidTOFKa, aod::pidTPCKa, aod::pidTOFPr, aod::pidTPCPr>>;
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As>>::iterator const& collision, aod::BCsWithTimestamps const&, GFWTracks const& tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int run = bc.runNumber();
@@ -948,15 +1027,34 @@ struct FlowGenericFramework {
     registry.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgRunByRun)
       th1sList[run][hEventSel]->Fill(2.5);
-    const auto centrality = collision.centFT0C();
+    float centrality;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        centrality = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        centrality = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        centrality = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        centrality = collision.centFV0A();
+        break;
+      default:
+        centrality = collision.centFT0C();
+    }
     if (cfgFillQA)
       fillEventQA<kBefore>(collision, tracks);
+    registry.fill(HIST("eventQA/before/centrality"), centrality);
+    registry.fill(HIST("eventQA/before/multiplicity"), tracks.size());
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), centrality, run))
       return;
     if (cfgFillQA)
       fillEventQA<kAfter>(collision, tracks);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    registry.fill(HIST("eventQA/after/centrality"), centrality);
+    registry.fill(HIST("eventQA/after/multiplicity"), tracks.size());
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processData, "Process analysis for non-derived data", true);
 
@@ -981,8 +1079,7 @@ struct FlowGenericFramework {
 
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCReco, "Process analysis for MC reconstructed events", false);
 
@@ -995,7 +1092,7 @@ struct FlowGenericFramework {
     for (const auto& collision : collisions) {
       centrality = collision.centFT0C();
     }
-    processCollision<kGen>(mcCollision, particles, centrality, -999, 0);
+    processCollision<kGen>(mcCollision, particles, centrality, 0);
   }
   PROCESS_SWITCH(FlowGenericFramework, processMCGen, "Process analysis for MC generated events", false);
 
@@ -1013,8 +1110,7 @@ struct FlowGenericFramework {
     const auto centrality = collision.centRun2V0M();
     if (!cfgFillWeights)
       loadCorrections(bc);
-    auto field = (cfgMagField == 99999) ? getMagneticField(bc.timestamp()) : cfgMagField;
-    processCollision<kReco>(collision, tracks, centrality, field, run);
+    processCollision<kReco>(collision, tracks, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processRun2, "Process analysis for Run 2 converted data", false);
 };

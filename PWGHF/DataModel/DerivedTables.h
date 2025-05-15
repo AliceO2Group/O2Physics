@@ -39,7 +39,7 @@ namespace o2::aod
 // composite species
 // B0 → D− π+ (todo)
 // B+ → D0 π+
-// D*+ → D0 π+ (todo)
+// D*+ → D0 π+
 
 // ================
 // Collision tables
@@ -274,6 +274,7 @@ DECLARE_TABLES_2P(D0, "D0", d0, 2);
 DECLARE_TABLES_3P(Lc, "LC", lc, 3);
 DECLARE_TABLES_3P(Dplus, "DP", dplus, 4);
 DECLARE_TABLES_3P(Bplus, "BP", bplus, 5);
+DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 
 // ================
 // Additional species-specific candidate tables
@@ -302,6 +303,15 @@ DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                  
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);                                     //! transverse momentum of prong 1
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);                                     //! transverse momentum of prong 2
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);                     //! distance of the secondary vertex from the z axis
+// D*± → D0(bar) π±
+DECLARE_SOA_COLUMN(MassD0, massD0, float);                                       //! invariant mass of D0
+DECLARE_SOA_COLUMN(CpaD0, cpaD0, float);                                         //! cosine of pointing angle of D0
+DECLARE_SOA_COLUMN(CpaXYD0, cpaXYD0, float);                                     //! cosine of pointing angle in the transverse plane of D0
+DECLARE_SOA_COLUMN(DecayLengthD0, decayLengthD0, float);                         //! decay length of D0
+DECLARE_SOA_COLUMN(DecayLengthXYD0, decayLengthXYD0, float);                     //! decay length in the transverse plane of D0
+DECLARE_SOA_COLUMN(DecayLengthNormalisedD0, decayLengthNormalisedD0, float);     //! decay length of D0 divided by its uncertainty
+DECLARE_SOA_COLUMN(DecayLengthXYNormalisedD0, decayLengthXYNormalisedD0, float); //! decay length in the transverse plane of D0 divided by its uncertainty
+DECLARE_SOA_COLUMN(NormalisedImpParamSoftPi, normalisedImpParamSoftPi, float);   //! impact parameter of soft pion divided by its uncertainty
 // TOF
 DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
@@ -316,6 +326,7 @@ DECLARE_SOA_COLUMN(NSigTofPiExpKa, nSigTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
+DECLARE_SOA_COLUMN(NSigTofPiSoftPi, nSigTofPiSoftPi, float);
 // TPC
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
@@ -330,6 +341,7 @@ DECLARE_SOA_COLUMN(NSigTpcPiExpKa, nSigTpcPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcPiSoftPi, nSigTpcPiSoftPi, float);
 // TPC+TOF
 DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
@@ -344,6 +356,7 @@ DECLARE_SOA_COLUMN(NSigTpcTofPiExpKa, nSigTpcTofPiExpKa, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPr0, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr1, nSigTpcTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPiSoftPi, nSigTpcTofPiSoftPi, float);
 } // namespace hf_cand_par
 
 // Candidate properties of the charm daughter candidate used for selection of the beauty candidate
@@ -731,6 +744,59 @@ DECLARE_SOA_TABLE_STAGED(HfDplusMcs, "HFDPMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcDecayChanRec,
                          o2::soa::Marker<MarkerDplus>);
 
+// ----------------
+// D*+
+// ----------------
+
+DECLARE_SOA_TABLE_STAGED(HfDstarPars, "HFDSTARPAR", //! Table with candidate properties used for selection
+                         hf_cand_dstar::Chi2PCAD0,
+                         hf_cand_par::CpaD0,
+                         hf_cand_par::CpaXYD0,
+                         hf_cand_par::DecayLengthD0,
+                         hf_cand_par::DecayLengthXYD0,
+                         hf_cand_par::DecayLengthNormalisedD0,
+                         hf_cand_par::DecayLengthXYNormalisedD0,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::PxProng1,
+                         hf_cand::PyProng1,
+                         hf_cand::PzProng1,
+                         hf_cand_dstar::PxD0,
+                         hf_cand_dstar::PyD0,
+                         hf_cand_dstar::PzD0,
+                         hf_cand_dstar::PxSoftPi,
+                         hf_cand_dstar::PySoftPi,
+                         hf_cand_dstar::PzSoftPi,
+                         hf_cand_dstar::PtSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi>,
+                         hf_cand_dstar::SignSoftPi,
+                         hf_cand_dstar::PtD0<hf_cand_dstar::PxD0, hf_cand_dstar::PyD0>,
+                         hf_cand_par::MassD0,
+                         hf_cand::ImpactParameter0,
+                         hf_cand::ImpactParameter1,
+                         hf_cand_dstar::ImpParamSoftPi,
+                         hf_cand_par::ImpactParameterNormalised0,
+                         hf_cand_par::ImpactParameterNormalised1,
+                         hf_cand_par::NormalisedImpParamSoftPi,
+                         hf_cand_par::NSigTpcPi0,
+                         hf_cand_par::NSigTofPi0,
+                         hf_cand_par::NSigTpcTofPi0,
+                         hf_cand_par::NSigTpcKa1,
+                         hf_cand_par::NSigTofKa1,
+                         hf_cand_par::NSigTpcTofKa1,
+                         hf_cand_par::NSigTpcPiSoftPi,
+                         hf_cand_par::NSigTofPiSoftPi,
+                         hf_cand_par::NSigTpcTofPiSoftPi,
+                         o2::soa::Marker<MarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(HfDstarMls, "HFDSTARML", //! Table with candidate selection ML scores
+                         hf_cand_mc::MlScores,
+                         o2::soa::Marker<MarkerDstar>);
+
+DECLARE_SOA_TABLE_STAGED(HfDstarMcs, "HFDSTARMC", //! Table with MC candidate info
+                         hf_cand_mc::FlagMcMatchRec,
+                         hf_cand_mc::OriginMcRec,
+                         o2::soa::Marker<MarkerDstar>);
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_

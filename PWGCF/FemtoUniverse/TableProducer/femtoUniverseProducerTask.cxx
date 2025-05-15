@@ -130,6 +130,7 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confIsForceGRP{"confIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   Configurable<bool> confDoSpher{"confDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+  Configurable<bool> confStoreMCmothers{"confStoreMCmothers", false, "MC truth: Fill with not only primary particles and store mothers' PDG in tempFitVar."};
   Configurable<bool> confFillCollExt{"confFillCollExt", false, "Option to fill collision extended table"};
 
   /// Event cuts
@@ -142,7 +143,6 @@ struct FemtoUniverseProducerTask {
   Configurable<bool> confIsActivateV0{"confIsActivateV0", false, "Activate filling of V0 into femtouniverse tables"};
   Configurable<bool> confActivateSecondaries{"confActivateSecondaries", false, "Fill secondary MC gen particles that were reconstructed"};
   Configurable<bool> confIsActivateCascade{"confIsActivateCascade", false, "Activate filling of Cascade into femtouniverse tables"};
-  Configurable<bool> confIsSelectCascOmega{"confIsSelectCascOmega", false, "Select Omegas for cascade analysis"};
   Configurable<bool> confIsActivatePhi{"confIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> confIsActiveD0{"confIsActiveD0", false, "Activate filling FU tables for D0/D0bar mesons"};
   Configurable<bool> confMCTruthAnalysisWithPID{"confMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
@@ -275,12 +275,14 @@ struct FemtoUniverseProducerTask {
     Configurable<std::vector<float>> confCascChildPIDnSigmaMax{"confCascChildPIDnSigmaMax", std::vector<float>{3.f, 4.f}, "Cascade Child sel: Max. PID nSigma TPC"};
     Configurable<std::vector<int>> confCascChildPIDspecies{"confCascChildPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Proton}, "Cascade Child sel: particle species for PID"};
 
-    Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.25, "Lower limit of the cascade invariant mass"};
-    Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.40, "Upper limit of the cascade invariant mass"};
+    Configurable<float> confXiInvMassLowLimit{"confXiInvMassLowLimit", 1.25, "Lower limit of the Xi invariant mass"};
+    Configurable<float> confXiInvMassUpLimit{"confXiInvMassUpLimit", 1.40, "Upper limit of the Xi invariant mass"};
+    Configurable<float> confOmegaInvMassLowLimit{"confOmegaInvMassLowLimit", 1.60, "Lower limit of the Omega invariant mass"};
+    Configurable<float> confOmegaInvMassUpLimit{"confOmegaInvMassUpLimit", 1.80, "Upper limit of the Omega invariant mass"};
 
-    Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
-    Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
-    Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
+    // Configurable<bool> confCascRejectCompetingMass{"confCascRejectCompetingMass", false, "Switch on to reject Omegas (for Xi) or Xis (for Omegas)"};
+    // Configurable<float> confCascInvCompetingMassLowLimit{"confCascInvCompetingMassLowLimit", 1.66, "Lower limit of the cascade invariant mass for competing mass rejection"};
+    // Configurable<float> confCascInvCompetingMassUpLimit{"confCascInvCompetingMassUpLimit", 1.68, "Upper limit of the cascade invariant mass for competing mass rejection"};
   } ConfCascadeSelection;
 
   // PHI
@@ -543,13 +545,13 @@ struct FemtoUniverseProducerTask {
       cascadeCuts.setChildPIDSpecies(femto_universe_cascade_selection::kBachTrack, ConfCascadeSelection.confCascChildPIDspecies);
 
       // check if works correctly for bachelor track
-      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry, confIsSelectCascOmega);
+      cascadeCuts.init<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kV0Child, aod::femtouniverseparticle::ParticleType::kCascadeBachelor, aod::femtouniverseparticle::CutContainerType>(&cascadeQaRegistry);
       // invmass cuts
-      cascadeCuts.setInvMassLimits(ConfCascadeSelection.confCascInvMassLowLimit, ConfCascadeSelection.confCascInvMassUpLimit);
+      cascadeCuts.setInvMassLimits(ConfCascadeSelection.confXiInvMassLowLimit, ConfCascadeSelection.confOmegaInvMassLowLimit, ConfCascadeSelection.confXiInvMassUpLimit, ConfCascadeSelection.confOmegaInvMassUpLimit);
 
-      if (ConfCascadeSelection.confCascRejectCompetingMass) {
+      /*if (ConfCascadeSelection.confCascRejectCompetingMass) {
         cascadeCuts.setCompetingInvMassLimits(ConfCascadeSelection.confCascInvCompetingMassLowLimit, ConfCascadeSelection.confCascInvCompetingMassUpLimit);
-      }
+      }*/
     }
 
     if (confIsActivatePhi) {
@@ -675,18 +677,21 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename ParticleType>
-  void fillDebugParticleMC(ParticleType const& particle)
+  int32_t getMotherPDG(ParticleType particle)
   {
     auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
     if (!motherparticlesMC.empty()) {
       auto motherparticleMC = motherparticlesMC.front();
-      if (particle.isPhysicalPrimary())
-        outputDebugPartsMC(0);
-      else
-        outputDebugPartsMC(motherparticleMC.pdgCode());
+      return particle.isPhysicalPrimary() ? 0 : motherparticleMC.pdgCode();
     } else {
-      outputDebugPartsMC(9999);
+      return 9999;
     }
+  }
+
+  template <typename ParticleType>
+  void fillDebugParticleMC(ParticleType const& particle)
+  {
+    outputDebugPartsMC(getMotherPDG(particle));
   }
 
   template <typename ParticleType>
@@ -1255,8 +1260,8 @@ struct FemtoUniverseProducerTask {
                       0,
                       0,
                       indexCascChildID,
-                      confIsSelectCascOmega ? casc.mOmega() : casc.mXi(),
-                      confIsSelectCascOmega ? casc.mOmega() : casc.mXi(),
+                      casc.mXi(),
+                      casc.mOmega(),
                       casc.dcaV0daughters(),
                       casc.v0cosPA(col.posX(), col.posY(), col.posZ()),
                       casc.v0radius(),
@@ -1561,7 +1566,8 @@ struct FemtoUniverseProducerTask {
       } else {
         if (!(isKaonNSigma(p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon)))) {
           continue;
-        } else if (!(isKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
+        }
+        if (!(isKaonNSigma(p2.pt(), trackCuts.getNsigmaTPC(p2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p2, o2::track::PID::Kaon)))) {
           continue;
         }
       }
@@ -1691,7 +1697,7 @@ struct FemtoUniverseProducerTask {
             if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (confStoreMCmothers || particle.isPhysicalPrimary() || (confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
                 pass = true;
             }
           }
@@ -1711,6 +1717,8 @@ struct FemtoUniverseProducerTask {
       // auto cutContainer = trackCuts.getCutContainer<aod::femtouniverseparticle::CutContainerType>(track);
       // instead of the bitmask, the PDG of the particle is stored as uint32_t
 
+      int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
       // now the table is filled
       if constexpr (resolveDaughs) {
         tmpIDtrack.push_back(particle.globalIndex());
@@ -1724,7 +1732,7 @@ struct FemtoUniverseProducerTask {
                     aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                     0,
                     pdgCode,
-                    pdgCode,
+                    variablePDG,
                     childIDs,
                     0,
                     0);
@@ -1770,6 +1778,9 @@ struct FemtoUniverseProducerTask {
             }
           }
         }
+
+        int32_t variablePDG = confStoreMCmothers ? getMotherPDG(particle) : particle.pdgCode();
+
         if (!confIsActivateCascade) {
           outputParts(outputCollision.lastIndex(),
                       particle.pt(),
@@ -1778,7 +1789,7 @@ struct FemtoUniverseProducerTask {
                       aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
                       0,
                       static_cast<uint32_t>(particle.pdgCode()),
-                      particle.pdgCode(),
+                      variablePDG,
                       childIDs,
                       0,
                       0);
