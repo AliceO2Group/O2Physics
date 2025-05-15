@@ -1796,12 +1796,14 @@ struct StrangenessInJets {
         if (!mcParticle.isPhysicalPrimary())
           continue;
 
+        /*
         double wPiplusJet(1.0), wPiplusUe(1.0);
         double wPiminusJet(1.0), wPiminusUe(1.0);
         double wKaplusJet(1.0), wKaplusUe(1.0);
         double wKaminusJet(1.0), wKaminusUe(1.0);
         double wPrplusJet(1.0), wPrplusUe(1.0);
         double wPrminusJet(1.0), wPrminusUe(1.0);
+        */
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
           auto getWeight = [&](TH2F* histo) {
