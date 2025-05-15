@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-// Task that produces the generated pT spectrum of a given particle for MC studies based on on the fly MC simulations
-//
-/// \author Nicolas Strangmann <nicolas.strangmann@cern.ch>, Goethe University Frankfurt
+///
+/// \file mcGeneratorStudies.cxx
+///
+/// \brief Task that produces the generated pT spectrum of a given particle for MC studies based on on the fly MC simulations
+///
+/// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) - Goethe University Frankfurt
+///
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -36,7 +39,7 @@ struct MCGeneratorStudies {
   {
     int nParticles = mcParticles.size();
     for (auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) > 0.9f)
+      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) > 0.8f)
         mHistManager.fill(HIST("YieldVsNParticles"), mcParticle.pt(), nParticles);
     }
   }
