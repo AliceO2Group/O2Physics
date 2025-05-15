@@ -39,7 +39,7 @@ struct MCGeneratorStudies {
   {
     int nParticles = mcParticles.size();
     for (auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) > 0.8f)
+      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) < 0.8f)
         mHistManager.fill(HIST("YieldVsNParticles"), mcParticle.pt(), nParticles);
     }
   }
