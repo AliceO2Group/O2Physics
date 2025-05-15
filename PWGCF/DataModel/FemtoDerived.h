@@ -235,9 +235,9 @@ DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To selec
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
-DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                        //! Transverse momentum of associate femto particle
-DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                      //! Eta of associate femto particle
-DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                      //! Phi of associate femto particle
+DECLARE_SOA_COLUMN(TrkPt, trkPt, float);                            //! Transverse momentum of associate femto particle
+DECLARE_SOA_COLUMN(TrkEta, trkEta, float);                          //! Eta of associate femto particle
+DECLARE_SOA_COLUMN(TrkPhi, trkPhi, float);                          //! Phi of associate femto particle
 DECLARE_SOA_COLUMN(Kstar, kstar, float);                            //! Relative momentum in particles pair frame
 DECLARE_SOA_COLUMN(KT, kT, float);                                  //! kT distribution of particle pairs
 DECLARE_SOA_COLUMN(MT, mT, float);                                  //! Transverse mass distribution
@@ -312,36 +312,38 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
-DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDResultsHFCharm, "AOD", "FDRESULTSHFCHARM", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
-                  fdhf::VertexZ,
                   fdhf::CharmM,
                   fdhf::CharmPt,
-                  fdhf::PtAssoc,
                   fdhf::CharmEta,
-                  fdhf::EtaAssoc,
                   fdhf::CharmPhi,
-                  fdhf::PhiAssoc,
+                  fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
                   fdhf::BDTFD,
-                  fdhf::Kstar,
-                  fdhf::KT,
-                  fdhf::MT,
-                  fdhf::Mult,
-                  fdhf::Charge,
-                  fdhf::PairSign,
-                  fdhf::ProcessType,
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
 
-DECLARE_SOA_TABLE(FDResultsHFTrkInfo, "AOD", "FDRESULTSHFTRKINFO", //! table to store results for HF femtoscopy
+DECLARE_SOA_TABLE(FDResultsHFTrk, "AOD", "FDRESULTSHFTRK", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  fdhf::TrkPt,
+                  fdhf::TrkEta,
+                  fdhf::TrkPhi,
+                  femtodreamparticle::Sign,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
                   femtodreamparticle::TPCNClsCrossedRows,
                   femtodreamparticle::TPCNSigmaPr,
                   femtodreamparticle::TOFNSigmaPr);
+
+DECLARE_SOA_TABLE(FDResultsHFColl, "AOD", "FDRESULTSHFCOLL", //! table to store results for HF femtoscopy
+                  fdhf::GIndexCol,
+                  fdhf::TimeStamp,
+                  fdhf::VertexZ,
+                  fdhf::Mult);
 
 DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC", //! Table for reconstructed MC charm hadron candidates
                   o2::soa::Index<>,
