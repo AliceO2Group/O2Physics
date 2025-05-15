@@ -1196,10 +1196,12 @@ struct FlowSP {
         if (cfgFillChargeDependence) {
           if (pos) {
             fillHistograms<kPositive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (cfgFillQAHistos) fillTrackQA<kAfter, kPositive>(track, vtxz, waccP, weffP);
+            if (cfgFillQAHistos)
+              fillTrackQA<kAfter, kPositive>(track, vtxz, waccP, weffP);
           } else {
             fillHistograms<kNegative>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (cfgFillQAHistos) fillTrackQA<kAfter, kNegative>(track, vtxz, waccN, weffN);
+            if (cfgFillQAHistos)
+              fillTrackQA<kAfter, kNegative>(track, vtxz, waccN, weffN);
           }
         }
       } // end of track loop
@@ -1306,7 +1308,8 @@ struct FlowSP {
         if (cfgCentNGlobal)
           centrality = col.centNGlobal();
 
-        if (cfgFillQAHistos) fillEventQA<kBefore>(col, trackSlice);
+        if (cfgFillQAHistos)
+          fillEventQA<kBefore>(col, trackSlice);
 
         if (trackSlice.size() < 1) {
           colSelected = false;
@@ -1323,7 +1326,8 @@ struct FlowSP {
         }
         registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
-       if (cfgFillQAHistos) fillEventQA<kAfter>(col, trackSlice);
+        if (cfgFillQAHistos)
+          fillEventQA<kAfter>(col, trackSlice);
 
       } // leave reconstructed collision loop
 
