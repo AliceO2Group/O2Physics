@@ -189,9 +189,9 @@ struct HfTaskCharmHadronsFemtoDream {
 
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDHfCharm> fillFemtoResultCharm;
-  Produces<o2::aod::FDHfTrk> fillFemtoResultTrk;
-  Produces<o2::aod::FDHfColl> fillFemtoResultColl;
+  Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
+  Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
+  Produces<o2::aod::FDHfColl> rowFemtoResultColl;
 
   void init(InitContext& /*context*/)
   {
@@ -296,7 +296,7 @@ struct HfTaskCharmHadronsFemtoDream {
         originType = p2.originMcRec();
       }
 
-      fillFemtoResultCharm(
+      rowFemtoResultCharm(
         col.globalIndex(),
         p2.timeStamp(),
         invMass,
@@ -310,7 +310,7 @@ struct HfTaskCharmHadronsFemtoDream {
         charmHadMc,
         originType);
 
-      fillFemtoResultTrk(
+      rowFemtoResultTrk(
         col.globalIndex(),
         p2.timeStamp(),
         p1.pt(),
@@ -323,7 +323,7 @@ struct HfTaskCharmHadronsFemtoDream {
         p1.tpcNSigmaPr(),
         p1.tofNSigmaPr());
 
-      fillFemtoResultColl(
+      rowFemtoResultColl(
         col.globalIndex(),
         p2.timeStamp(),
         col.posZ(),
