@@ -15,7 +15,6 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Francesca Ercolessi (francesca.ercolessi@cern.ch), Nicolò Jacazio (nicolo.jacazio@cern.ch)
 /// \since May 22, 2024
 
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
@@ -1681,6 +1680,7 @@ struct StrangenessInJets {
         }
       }
 
+      /*
       // Reconstructed Tracks
       for (const auto& track : tracksPerColl) {
 
@@ -1788,7 +1788,7 @@ struct StrangenessInJets {
           registryMC.fill(HIST("pi_minus_rec_in_ue_tof"), multiplicity, track.pt(), wPiminusUe);
         }
       }
-
+      */
       for (const auto& mcParticle : mcParticlesPerColl) {
 
         if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
@@ -1796,14 +1796,17 @@ struct StrangenessInJets {
         if (!mcParticle.isPhysicalPrimary())
           continue;
 
+        /*
         double wPiplusJet(1.0), wPiplusUe(1.0);
         double wPiminusJet(1.0), wPiminusUe(1.0);
         double wKaplusJet(1.0), wKaplusUe(1.0);
         double wKaminusJet(1.0), wKaminusUe(1.0);
         double wPrplusJet(1.0), wPrplusUe(1.0);
         double wPrminusJet(1.0), wPrminusUe(1.0);
+        */
         double wK0jet(1.0), wK0Ue(1.0), wLambdaJet(1.0), wLambdaUe(1.0), wAntilambdaJet(1.0), wAntilambdaUe(1.0);
         if (applyReweighting) {
+          /*
           auto getWeight = [&](TH2F* histo) {
             if (!histo) {
               return 1.0;
@@ -1822,7 +1825,7 @@ struct StrangenessInJets {
           wPiplusUe = getWeight(twodWeightsPiplusUe);
           wPiminusJet = getWeight(twodWeightsPiminusJet);
           wPiminusUe = getWeight(twodWeightsPiminusUe);
-
+          */
           int ix = twodWeightsK0Jet->GetXaxis()->FindBin(mcParticle.pt());
           int iy = twodWeightsK0Jet->GetYaxis()->FindBin(mcParticle.eta());
           wK0jet = twodWeightsK0Jet->GetBinContent(ix, iy);
@@ -1852,6 +1855,7 @@ struct StrangenessInJets {
         }
 
         switch (mcParticle.pdgCode()) {
+          /*
           case kPiPlus: // Pi+
             registryMC.fill(HIST("mc_pi_plus/in_jet/gen"), multiplicity, mcParticle.pt(), wPiplusJet);
             registryMC.fill(HIST("mc_pi_plus/in_ue/gen"), multiplicity, mcParticle.pt(), wPiplusUe);
@@ -1882,6 +1886,7 @@ struct StrangenessInJets {
             registryMC.fill(HIST("mc_pr_minus/in_ue/gen"), multiplicity, mcParticle.pt(), wPrminusUe);
             registryMC.fill(HIST("pr_minus_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
             break;
+          */
           case kK0Short: // K0s
             registryMC.fill(HIST("K0s_generated_jet"), multiplicity, mcParticle.pt(), wK0jet);
             registryMC.fill(HIST("K0s_generated_ue"), multiplicity, mcParticle.pt(), wK0Ue);
@@ -2015,12 +2020,14 @@ struct StrangenessInJets {
           // In jet
           if (deltaRjet < rJet) {
             switch (particle.pdgCode()) {
+              /*
               case kPiPlus:
                 registryMC.fill(HIST("pi_plus_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
               case kPiMinus:
                 registryMC.fill(HIST("pi_minus_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
+              */
               case kK0Short:
                 registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
                 break;
@@ -2049,12 +2056,14 @@ struct StrangenessInJets {
 
           if (deltaRue1 < rJet || deltaRue2 < rJet) {
             switch (particle.pdgCode()) {
+              /*
               case kPiPlus:
                 registryMC.fill(HIST("pi_plus_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
               case kPiMinus:
                 registryMC.fill(HIST("pi_minus_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
+              */
               case kK0Short:
                 registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
                 break;
