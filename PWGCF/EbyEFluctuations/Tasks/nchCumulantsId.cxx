@@ -750,8 +750,8 @@ struct NchCumulantsId {
       hist.fill(HIST("sparse2"), nCh, nP, nM, nPi, nAPi, nKa, nAKa, nT, col.centFT0M());
 
     } // collision ends
-  }   // process ends
-};    // structure ends
+  } // process ends
+}; // structure ends
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
