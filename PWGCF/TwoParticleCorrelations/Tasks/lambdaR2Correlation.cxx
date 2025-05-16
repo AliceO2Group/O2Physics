@@ -148,6 +148,7 @@ enum TrackLabels {
   kPassV0DauTrackSel,
   kPassV0KinCuts,
   kPassV0TopoSel,
+  kAllV0SelPassed,
   kAllSelPassed,
   kNotPrimaryLambda,
   kNotSecondaryLambda,
@@ -259,6 +260,18 @@ struct LambdaTableProducer {
   Configurable<bool> cV0TypeSelFlag{"cV0TypeSelFlag", false, "V0 Type Selection Flag"};
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
 
+  // Cascade V0
+  Configurable<bool> cRemoveCascLambda{"cRemoveCascLambda", false, "Remove Cascade V0s"};
+  Configurable<float> cMinCascDcaPosToPV{"cMinCascDcaPosToPV", 0.03, "DCA Casc Pos To PV"};
+  Configurable<float> cMinCascDcaNegToPV{"cMinCascDcaNegToPV", 0.03, "DCA Casc Neg To PV"};
+  Configurable<float> cMinCascDcaBachToPV{"cMinCascDcaBachToPV", 0.03, "DCA Casc Bach To PV"};
+  Configurable<float> cMaxCascDcaDaughters{"cMaxCascDcaDaughters", 1.0, "DCA Casc Dau at Casc Decay Vtx"};
+  Configurable<float> cMinCascRadius{"cMinCascRadius", 0.4, "Casc Decay Radius"};
+  Configurable<float> cMinCascV0Radius{"cMinCascV0Radius", 0.9, "Casc V0 Decay Radius"};
+  Configurable<float> cMinCascCosPA{"cMinCascCosPA", 0.99, "Casc CosThetaPA"};
+  Configurable<float> cMinCascV0CosPA{"cMinCascV0CosPA", 0.99, "Casc V0 CosThetaPA"};
+  Configurable<float> cCascMassWindow{"cCascMassWindow", 0.005, "Casc Mass Window"};
+
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
   Configurable<bool> cSelectTrueLambda{"cSelectTrueLambda", true, "Select True Lambda"};
@@ -336,6 +349,8 @@ struct LambdaTableProducer {
     const AxisSpec axisNsigma(401, -10.025, 10.025, {"n#sigma"});
     const AxisSpec axisdEdx(360, 20, 200, "#frac{dE}{dx}");
 
+    const AxisSpec axisCascMass{100, 1.28, 1.38, "M_{#Xi}"};
+
     // Create Histograms.
     // Event histograms
     histos.add("Events/h1f_collisions_info", "# of Collisions", kTH1F, {axisCols});
@@ -380,6 +395,9 @@ struct LambdaTableProducer {
     histos.add("QA/Lambda/h2f_pos_prong_tpc_nsigma_pi_vs_p", "TPC n#sigma Pos Prong", kTH2F, {axisMomPID, axisNsigma});
     histos.add("QA/Lambda/h2f_neg_prong_tpc_nsigma_pi_vs_p", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
 
+    histos.add("QA/Casc/hMassBeforeCuts", "Xi Mass", kTH1F, {axisCascMass});
+    histos.add("QA/Casc/hMass", "Xi Mass", kTH1F, {axisCascMass});
+
     // Kinematic Histograms
     histos.add("McRec/Lambda/hPt", "Transverse Momentum", kTH1F, {axisV0Pt});
     histos.add("McRec/Lambda/hEta", "Pseudorapidity", kTH1F, {axisV0Eta});
@@ -391,7 +409,7 @@ struct LambdaTableProducer {
     histos.addClone("McRec/Lambda/", "McRec/AntiLambda/");
 
     // MC Generated Histograms
-    if (doprocessMCRun3 || doprocessMCRun2 || doprocessRecoGen) {
+    if (doprocessMCRun3 || doprocessMCRun2) {
       // McReco Histos
       histos.add("Tracks/h2f_tracks_pid_before_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("Tracks/h2f_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -446,6 +464,7 @@ struct LambdaTableProducer {
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0DauTrackSel, "kPassV0DauTrackSel");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0KinCuts, "kPassV0KinCuts");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPassV0TopoSel, "kPassV0TopoSel");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAllV0SelPassed, "kAllV0SelPassed");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kAllSelPassed, "kAllSelPassed");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPt, "kEffCorrPt");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRap, "kEffCorrPtRap");
@@ -790,6 +809,57 @@ struct LambdaTableProducer {
     return true;
   }
 
+  // Remove Lambda from Xi ---> Lambda Pi
+  template <typename C, typename V, typename X, typename T>
+  bool removeCascLambda(C const& collision, V const& v0, X const& cascs, T const&)
+  {
+    // Loop over cascades
+    for (auto const& casc : cascs) {
+      // cascade daughters
+      auto cascposdau = casc.template posTrack_as<T>();
+      auto cascnegdau = casc.template negTrack_as<T>();
+      auto bachelor = casc.template bachelor_as<T>();
+
+      // V0 daughters
+      auto v0posdau = v0.template posTrack_as<T>();
+      auto v0negdau = v0.template negTrack_as<T>();
+
+      // topological selection
+      if (std::abs(casc.dcapostopv()) <= cMinCascDcaPosToPV ||
+          std::abs(casc.dcanegtopv()) <= cMinCascDcaNegToPV ||
+          std::abs(casc.dcabachtopv()) <= cMinCascDcaBachToPV ||
+          casc.dcaV0daughters() >= cMaxV0DcaDaughters ||
+          casc.dcacascdaughters() >= cMaxCascDcaDaughters ||
+          casc.cascradius() <= cMinCascRadius ||
+          casc.v0radius() <= cMinCascV0Radius ||
+          casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) <= cMinCascCosPA ||
+          casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) <= cMinCascV0CosPA ||
+          std::abs(cascposdau.eta()) >= cTrackEtaCut ||
+          std::abs(cascnegdau.eta()) >= cTrackEtaCut ||
+          std::abs(bachelor.eta()) >= cTrackEtaCut) {
+        continue;
+      }
+
+      histos.fill(HIST("QA/Casc/hMassBeforeCuts"), casc.mXi());
+
+      // apply mass window selection to Xi
+      if (std::abs(casc.mXi() - MassXiMinus) >= cCascMassWindow) {
+        continue;
+      }
+
+      histos.fill(HIST("QA/Casc/hMass"), casc.mXi());
+
+      // Check if the daughters of cascades match with v0 daughters
+      // The "OR" Logic is Temperory, we can further see the effect of "AND" Logic
+      if (v0posdau.index() == cascposdau.index() || v0negdau.index() == cascnegdau.index()) {
+        return true;
+      }
+    }
+
+    // No Lambda from Cascade
+    return false;
+  }
+
   template <typename T>
   bool getMcMatch(T const& vrec, T const& vgen)
   {
@@ -943,8 +1013,8 @@ struct LambdaTableProducer {
   }
 
   // Reconstructed Level Tables
-  template <RunType run, DMCType dmc, typename C, typename V, typename T>
-  void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks)
+  template <RunType run, DMCType dmc, typename C, typename V, typename T, typename X>
+  void fillLambdaRecoTables(C const& collision, V const& v0tracks, T const& tracks, X const& cascs)
   {
     // Total Collisions
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
@@ -966,6 +1036,7 @@ struct LambdaTableProducer {
     ParticleType v0Type = kLambda;
     float mass = 0., corr_fact = 1.;
 
+    // Loop Over V0s
     for (auto const& v0 : v0tracks) {
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
@@ -985,6 +1056,13 @@ struct LambdaTableProducer {
 
       // Select V0 Type Selection
       if (cV0TypeSelFlag && v0.v0Type() != cV0TypeSelection) {
+        continue;
+      }
+
+      histos.fill(HIST("Tracks/h1f_tracks_info"), kAllV0SelPassed);
+
+      // Remove Lambda V0 coming from Xi -> Lambda Pi
+      if (cRemoveCascLambda && removeCascLambda(collision, v0, cascs, tracks)) {
         continue;
       }
 
@@ -1145,8 +1223,8 @@ struct LambdaTableProducer {
     }
   }
 
-  template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename P>
-  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, P const& mcParticles)
+  template <RunType run, DMCType dmc, typename M, typename C, typename V, typename T, typename X, typename P>
+  void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& V0s, T const& tracks, X const& cascs, P const& mcParticles)
   {
     // Number of Rec Collisions Associated to the McGen Collision
     int nRecCols = collisions.size();
@@ -1173,7 +1251,7 @@ struct LambdaTableProducer {
     histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
     histos.fill(HIST("McGen/h2f_collision_cent"), mcCollision.centFT0M(), cent);
     auto v0Tracks = V0s.sliceBy(perCollision, collisions.begin().globalIndex());
-    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks);
+    fillLambdaRecoTables<run, dmc>(collisions.begin(), v0Tracks, tracks, cascs);
     fillLambdaMcGenTables<run>(mcCollision, mcParticles);
   }
 
@@ -1182,92 +1260,45 @@ struct LambdaTableProducer {
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
+  using CascsTracks = aod::CascDataExt;
   using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
   using McV0Tracks = soa::Join<aod::V0Datas, aod::McV0Labels>;
+  using McCascTracks = soa::Join<aod::CascDataExt, aod::McCascLabels>;
   using TracksMC = soa::Join<Tracks, aod::McTrackLabels>;
 
-  void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processDataRun3(CollisionsRun3::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks, CascsTracks const& cascs)
   {
-    fillLambdaRecoTables<kRun3, kData>(collision, V0s, tracks);
+    fillLambdaRecoTables<kRun3, kData>(collision, V0s, tracks, cascs);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun3, "Process for Run3 DATA", true);
 
-  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks)
+  void processDataRun2(CollisionsRun2::iterator const& collision, aod::V0Datas const& V0s, Tracks const& tracks, CascsTracks const& cascs)
   {
-    fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks);
+    fillLambdaRecoTables<kRun2, kData>(collision, V0s, tracks, cascs);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processDataRun2, "Process for Run2 DATA", false);
 
   void processMCRun3(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun3, aod::McCollisionLabels>> const& collisions,
-                     McV0Tracks const& V0s, TracksMC const& tracks,
+                     McV0Tracks const& V0s, TracksMC const& tracks, McCascTracks const& cascs,
                      aod::McParticles const& mcParticles)
   {
-    analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
+    analyzeMcRecoGen<kRun3, kMC>(mcCollision, collisions, V0s, tracks, cascs, mcParticles);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCRun3, "Process for Run3 MC RecoGen", false);
 
   void processMCRun2(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                      soa::SmallGroups<soa::Join<CollisionsRun2, aod::McCollisionLabels>> const& collisions,
-                     McV0Tracks const& V0s, TracksMC const& tracks,
+                     McV0Tracks const& V0s, TracksMC const& tracks, McCascTracks const& cascs,
                      aod::McParticles const& mcParticles)
   {
-    analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, mcParticles);
+    analyzeMcRecoGen<kRun2, kMC>(mcCollision, collisions, V0s, tracks, cascs, mcParticles);
   }
 
   PROCESS_SWITCH(LambdaTableProducer, processMCRun2, "Process for Run2 MC RecoGen", false);
-
-  void processRecoGen(soa::Join<CollisionsRun3, aod::McCollisionLabels>::iterator const& collision,
-                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&,
-                      McV0Tracks const& V0s, TracksMC const& tracks,
-                      aod::McParticles const& mcParticles)
-  {
-    // Select Collision
-    if (!selCollision<kRun3>(collision) || !collision.has_mcCollision()) {
-      return;
-    }
-
-    // Fill Reco Table
-    fillLambdaRecoTables<kRun3, kMC>(collision, V0s, tracks);
-
-    // Get Generator Level Collision and Particles
-    auto mcCollision = collision.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
-    auto mcGenParticles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-
-    // Fill Gen Table
-    lambdaMCGenCollisionTable(mcCollision.centFT0M(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-
-    // initialize track objects
-    ParticleType v0Type = kLambda;
-    for (auto const& mcpart : mcGenParticles) {
-      if (!mcpart.isPhysicalPrimary()) {
-        continue;
-      }
-
-      if (std::abs(mcpart.y()) > cMaxV0Rap) {
-        continue;
-      }
-
-      // check for Lambda first
-      if (mcpart.pdgCode() == kLambda0) {
-        v0Type = kLambda;
-      } else if (mcpart.pdgCode() == kLambda0Bar) {
-        v0Type = kAntiLambda;
-      } else {
-        continue;
-      }
-
-      // Fill Lambda McGen Table
-      lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(),
-                            mcpart.pt(), mcpart.eta(), mcpart.phi(), mcpart.y(), RecoDecay::m(mcpart.p(), mcpart.e()),
-                            99., -97., (int8_t)v0Type, -999., -999., 1.);
-    }
-  }
-
-  PROCESS_SWITCH(LambdaTableProducer, processRecoGen, "Process for MC RecoGen", false);
 };
 
 struct LambdaTracksExtProducer {
