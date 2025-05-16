@@ -122,6 +122,7 @@ struct JetHadronRecoil {
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hConstituents3D", "3D constituents histogram;p_{T};#eta;#phi", {HistType::kTH3F, {{200, 0, 200}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
                               {"hReferencePtDPhiShifts", "rho shifts;#Delta#phi;p_{T,jet};shifts", {HistType::kTH3F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}, {20, 0.0, 2.0}}}},
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
@@ -246,13 +247,14 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
       for (const auto& constituent : jet.template tracks_as<U>()) {
         if (constituent.pt() > leadingPT) {
           leadingPT = constituent.pt();
         }
-      }
-      if (jet.pt() > pTHatMaxMCD * pTHat) {
-        continue;
+        registry.fill(HIST("hConstituents3D"), constituent.pt(), constituent.eta(), constituent.phi());
       }
       if (leadingPT > maxLeadingTrackPt) {
         continue;
@@ -354,6 +356,9 @@ struct JetHadronRecoil {
     for (const auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         continue;
+      }
+      for (const auto& constituent : jet.template tracks_as<U>()) {
+        registry.fill(HIST("hConstituents3D"), constituent.pt(), constituent.eta(), constituent.phi());
       }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
