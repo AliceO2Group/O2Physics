@@ -13,7 +13,7 @@
 ///
 /// \brief QA task to check PMD info on Run 2 converted data
 /// \author Abhi Modak (abhi.modak@cern.ch)
-/// \since February 19, 2025
+/// \since May 17, 2025
 
 #include <cstdlib>
 #include <cmath>
@@ -24,6 +24,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PmdTable.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TH1F.h"
@@ -34,19 +35,6 @@ using namespace o2::aod::run2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 using namespace o2::framework::expressions;
-
-namespace o2::aod
-{
-namespace pmdtrack
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, collisions);
-DECLARE_SOA_INDEX_COLUMN(BC, bc);
-DECLARE_SOA_SLICE_INDEX_COLUMN(Pmd, pmd);
-} // namespace pmdtrack
-
-DECLARE_SOA_INDEX_TABLE_USER(PMDTracksIndex, BCs, "PMDTRKIDX", pmdtrack::CollisionId, pmdtrack::BCId, pmdtrack::PmdIdSlice);
-} // namespace o2::aod
 
 struct BuiltPmdIndex {
   // build the index table PMDTracksIndex
