@@ -179,16 +179,16 @@ struct HfTaskFlow {
   //      Preslice : DATA
   // =========================
 
-  Preslice<aod::Tracks> dataPerCol = aod::track::collisionId;
+  // Preslice<aod::Tracks> dataPerCol = aod::track::collisionId;
 
   // =========================
   //      Preslice : MC
   // =========================
 
   Preslice<FilteredMftTracksWCollsMcLabels> mftTracksPerCollision = aod::fwdtrack::collisionId;
-  Preslice<HfCandidatesSelD0McRec> d0CandidatesPerCollision = aod::hf_cand::collisionId;
-  Preslice<McParticles> mcPerCol = aod::mcparticle::mcCollisionId;
-  PresliceUnsorted<FilteredCollisionsWSelMultMcLabels> collisionsMcLabelPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  // Preslice<HfCandidatesSelD0McRec> d0CandidatesPerCollision = aod::hf_cand::collisionId;
+  // Preslice<McParticles> mcPerCol = aod::mcparticle::mcCollisionId;
+  // PresliceUnsorted<FilteredCollisionsWSelMultMcLabels> collisionsMcLabelPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   //  configurables for containers
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
@@ -1528,10 +1528,10 @@ struct HfTaskFlow {
     }
   }
 
-  /*
+  // NOTE SmallGroups includes soa::Filtered always -> in the smallGroups there is the equivalent of FilteredCollisionsWSelMultMcLabels
   void processMcEfficiencyMft(FilteredMcCollisions::iterator const& mcCollision,
                               McParticles const& mcParticles,
-                              FilteredCollisionsWSelMultMcLabels const& collisionsMcLabels,
+                              soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>> const& collisionsMcLabels,
                               FilteredMftTracksWCollsMcLabels const& mftTTracksMcLabels)
   {
     LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisionsMcLabels.size());
@@ -1573,7 +1573,6 @@ struct HfTaskFlow {
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processMcEfficiencyMft, "MONTE-CARLO : Extract efficiencies for MFT tracks", false);
-  */
 
 }; // End of struct
 
