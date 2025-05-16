@@ -134,7 +134,6 @@ TH1F* fhEtaA = nullptr;
 TH1F* fhPhiB = nullptr;
 TH1F* fhPhiA = nullptr;
 
-
 TH1F* fhTrackLengthB = nullptr;
 TH1F* fhTrackLengthTOFB = nullptr;
 TH2F* fhTrackTimeB = nullptr;
@@ -143,7 +142,7 @@ TH2F* fhTrackTimeIPB = nullptr;
 TH2F* fhTrackBetaInvIPB = nullptr;
 TH2F* fhdEdxB = nullptr;
 TH2F* fhdEdxIPTPCB = nullptr;
-TH1F* fhTrackLengthA[kIdBfNoOfSpecies + 2]= {nullptr};
+TH1F* fhTrackLengthA[kIdBfNoOfSpecies + 2] = {nullptr};
 TH1F* fhTrackLengthTOFA[kIdBfNoOfSpecies + 2] = {nullptr};
 TH2F* fhdEdxA[kIdBfNoOfSpecies + 2] = {nullptr};
 TH2F* fhdEdxIPTPCA[kIdBfNoOfSpecies + 2] = {nullptr};
@@ -742,39 +741,39 @@ struct IdentifiedBfFilterTracks {
   Configurable<bool> reqTOF{"reqTOF", false, "Require TOF data for PID. Default false"};
   Configurable<bool> onlyTOF{"onlyTOF", false, "Only use TOF data for PID. Default false"};
 
-  //Configurable<int> pidEl{"pidEl", -1, "Identify Electron Tracks"};
-  //Configurable<int> pidPi{"pidPi", -1, "Identify Pion Tracks"};
-  //Configurable<int> pidKa{"pidKa", -1, "Identify Kaon Tracks"};
-  //Configurable<int> pidPr{"pidPr", -1, "Identify Proton Tracks"};
+  // Configurable<int> pidEl{"pidEl", -1, "Identify Electron Tracks"};
+  // Configurable<int> pidPi{"pidPi", -1, "Identify Pion Tracks"};
+  // Configurable<int> pidKa{"pidKa", -1, "Identify Kaon Tracks"};
+  // Configurable<int> pidPr{"pidPr", -1, "Identify Proton Tracks"};
 
-  //Configurable<float> minPIDSigma{"minPIDSigma", -3.0, "Minimum required sigma for PID Acceptance"};
-  //Configurable<float> maxPIDSigma{"maxPIDSigma", 3.0, "Maximum required sigma for PID Acceptance"};
+  // Configurable<float> minPIDSigma{"minPIDSigma", -3.0, "Minimum required sigma for PID Acceptance"};
+  // Configurable<float> maxPIDSigma{"maxPIDSigma", 3.0, "Maximum required sigma for PID Acceptance"};
 
-  //Configurable<std::vector<float>> minPIDSigmas{"minPIDSigmas", {-3.,-3.,-3.,-3.},"Minimum required sigma for PID Acceptance, {e, pi, K, p}"};
-  //Configurable<std::vector<std::vector<float>>> acceptPIDSigmas{"acceptPIDSigmas", {{-3.,3.},{-3.,3.},{-3.,3.},{-3.,3.}},"Sigma range for PID Acceptance, {e, pi, K, p}"};
-  //Configurable<std::vector<float>> minRejectSigmas{"minRejectSigmas", {-1.,-1.,-1.,-1.},"Minimum required sigma for PID double match rejection, {e, pi, K, p}"};
+  // Configurable<std::vector<float>> minPIDSigmas{"minPIDSigmas", {-3.,-3.,-3.,-3.},"Minimum required sigma for PID Acceptance, {e, pi, K, p}"};
+  // Configurable<std::vector<std::vector<float>>> acceptPIDSigmas{"acceptPIDSigmas", {{-3.,3.},{-3.,3.},{-3.,3.},{-3.,3.}},"Sigma range for PID Acceptance, {e, pi, K, p}"};
+  // Configurable<std::vector<float>> minRejectSigmas{"minRejectSigmas", {-1.,-1.,-1.,-1.},"Minimum required sigma for PID double match rejection, {e, pi, K, p}"};
 
-  //Configurable<float> minRejectSigma{"minRejectSigma", -1.0, "Minimum required sigma for PID double match rejection"};
-  //Configurable<float> maxRejectSigma{"maxRejectSigma", 1.0, "Maximum required sigma for PID double match rejection"};
-  
-  Configurable<std::vector<int>>   cfgDoPID{"cfgDoPID", {-1, -1, -1, -1}, "Do PID for particle, {e, pi, K, p}"};
+  // Configurable<float> minRejectSigma{"minRejectSigma", -1.0, "Minimum required sigma for PID double match rejection"};
+  // Configurable<float> maxRejectSigma{"maxRejectSigma", 1.0, "Maximum required sigma for PID double match rejection"};
+
+  Configurable<std::vector<int>> cfgDoPID{"cfgDoPID", {-1, -1, -1, -1}, "Do PID for particle, {e, pi, K, p}"};
   Configurable<std::vector<float>> cfgTOFCut{"cfgTOFCut", {0.8, 0.8, 0.8, 0.8}, "Momentum under which we don't use TOF PID data, {e, pi, K, p}"};
   Configurable<std::vector<float>> cfgTPCCut{"cfgTPCCut", {1.2, 1.2, 1.2, 1.2}, "Momentum over which we don't use TPC PID data, {e, pi, K, p}"};
 
   Configurable<bool> makeNSigmaPlots{"makeNSigmaPlots", false, "Produce the N Sigma Plots for external storage. Default false"};
 
-  struct : ConfigurableGroup{
-    Configurable<std::vector<float>> rejectPIDSigmasEl{"rejectPIDSigmasEl",{0.,1.,1.,1.},"Required sigma for PID double match rejection of electrons for {e, pi, K, p}"};
-    Configurable<std::vector<float>> rejectPIDSigmasPi{"rejectPIDSigmasPi",{1.,0.,1.,1.},"Required sigma for PID double match rejection of pions for {e, pi, K, p}"};
-    Configurable<std::vector<float>> rejectPIDSigmasKa{"rejectPIDSigmasKa",{1.,1.,0.,1.},"Required sigma for PID double match rejection of kaons for {e, pi, K, p}"};
-    Configurable<std::vector<float>> rejectPIDSigmasPr{"rejectPIDSigmasPr",{1.,1.,1.,0.},"Required sigma for PID double match rejection of protons for {e, pi, K, p}"};
+  struct : ConfigurableGroup {
+    Configurable<std::vector<float>> rejectPIDSigmasEl{"rejectPIDSigmasEl", {0., 1., 1., 1.}, "Required sigma for PID double match rejection of electrons for {e, pi, K, p}"};
+    Configurable<std::vector<float>> rejectPIDSigmasPi{"rejectPIDSigmasPi", {1., 0., 1., 1.}, "Required sigma for PID double match rejection of pions for {e, pi, K, p}"};
+    Configurable<std::vector<float>> rejectPIDSigmasKa{"rejectPIDSigmasKa", {1., 1., 0., 1.}, "Required sigma for PID double match rejection of kaons for {e, pi, K, p}"};
+    Configurable<std::vector<float>> rejectPIDSigmasPr{"rejectPIDSigmasPr", {1., 1., 1., 0.}, "Required sigma for PID double match rejection of protons for {e, pi, K, p}"};
   } rejectPIDSigmas;
 
-  struct : ConfigurableGroup{
-    Configurable<std::vector<float>> acceptPIDSigmasEl{"acceptPIDSigmasEl",{-3.,3.},"Sigma range for PID Acceptance for electrons"};
-    Configurable<std::vector<float>> acceptPIDSigmasPi{"acceptPIDSigmasPi",{-3.,3.},"Sigma range for PID Acceptance for pions"};
-    Configurable<std::vector<float>> acceptPIDSigmasKa{"acceptPIDSigmasKa",{-3.,3.},"Sigma range for PID Acceptance for kaons"};
-    Configurable<std::vector<float>> acceptPIDSigmasPr{"acceptPIDSigmasPr",{-3.,3.},"Sigma range for PID Acceptance for protons"};
+  struct : ConfigurableGroup {
+    Configurable<std::vector<float>> acceptPIDSigmasEl{"acceptPIDSigmasEl", {-3., 3.}, "Sigma range for PID Acceptance for electrons"};
+    Configurable<std::vector<float>> acceptPIDSigmasPi{"acceptPIDSigmasPi", {-3., 3.}, "Sigma range for PID Acceptance for pions"};
+    Configurable<std::vector<float>> acceptPIDSigmasKa{"acceptPIDSigmasKa", {-3., 3.}, "Sigma range for PID Acceptance for kaons"};
+    Configurable<std::vector<float>> acceptPIDSigmasPr{"acceptPIDSigmasPr", {-3., 3.}, "Sigma range for PID Acceptance for protons"};
   } acceptPIDSigmas;
 
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
@@ -903,23 +902,23 @@ struct IdentifiedBfFilterTracks {
       fhdEdxB = new TH2F("fHistdEdxB", "dE/dx vs P before; P (GeV/c); dE/dx (a.u.)", ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhdEdxIPTPCB = new TH2F("fHistdEdxIPTPCB", "dE/dx vs P_{IP} before; P (GeV/c); dE/dx (a.u.)", ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhTrackLengthB = new TH1F(TString::Format("fhTrackLengthB").Data(),
-            TString::Format("Track Length; L (cm)").Data(),
-            1000, 0., 1000.0);
+                                TString::Format("Track Length; L (cm)").Data(),
+                                1000, 0., 1000.0);
       fhTrackLengthTOFB = new TH1F(TString::Format("fhTrackLengthTOFB").Data(),
-              TString::Format("Track Length with TOF; L (cm)").Data(),
-              1000, 0.0, 1000.0);
+                                   TString::Format("Track Length with TOF; L (cm)").Data(),
+                                   1000, 0.0, 1000.0);
       fhTrackTimeB = new TH2F(TString::Format("fhTrackTimeB").Data(),
-          TString::Format("Track Time vs P; P (GeV/c); Track Time(ns)").Data(),
-          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                              TString::Format("Track Time vs P; P (GeV/c); Track Time(ns)").Data(),
+                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackBetaInvB = new TH2F(TString::Format("fhTrackBetaInvB").Data(),
-          TString::Format("1/#Beta vs P; P (GeV/c); 1/#Beta(ns/m)").Data(),
-          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                 TString::Format("1/#Beta vs P; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                 ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackTimeIPB = new TH2F(TString::Format("fhTrackTimeIPB").Data(),
-          TString::Format("Track Time vs P_{IP}; P (GeV/c); Track Time(ns)").Data(),
-          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                TString::Format("Track Time vs P_{IP}; P (GeV/c); Track Time(ns)").Data(),
+                                ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackBetaInvIPB = new TH2F(TString::Format("fhTrackBetaInvIPB").Data(),
-          TString::Format("1/#Beta vs P_{IP}; P (GeV/c); 1/#Beta(ns/m)").Data(),
-          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                   TString::Format("1/#Beta vs P_{IP}; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                   ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhPhiA = new TH1F("fHistPhiA", "#phi distribution for reconstructed;#phi;counts", 360, 0.0, constants::math::TwoPI);
       fhDCAxyB = new TH1F("DCAxyB", "DCA_{xy} distribution for reconstructed before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       fhDCAxyA = new TH1F("DCAxyA", "DCA_{xy} distribution for reconstructed;DCA_{xy} (cm);counts", 1000, -4., 4.0);
@@ -1006,23 +1005,23 @@ struct IdentifiedBfFilterTracks {
                                     TString::Format("dE/dx vs P_{IP} reconstructed %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhTrackLengthA[sp] = new TH1F(TString::Format("fhTrackLengthA_%s", speciesName[sp]).Data(),
-                                    TString::Format("Track Length of reconstructed %s; L (cm)", speciesTitle[sp]).Data(),
-                                    1000, 0.0, 1000.0);
+                                      TString::Format("Track Length of reconstructed %s; L (cm)", speciesTitle[sp]).Data(),
+                                      1000, 0.0, 1000.0);
         fhTrackLengthTOFA[sp] = new TH1F(TString::Format("fhTrackLengthTOFA_%s", speciesName[sp]).Data(),
-                                       TString::Format("Track Length of reconstructed %s with TOF; L (cm)", speciesTitle[sp]).Data(),
-                                       1000, 0.0, 1000.0);
+                                         TString::Format("Track Length of reconstructed %s with TOF; L (cm)", speciesTitle[sp]).Data(),
+                                         1000, 0.0, 1000.0);
         fhTrackTimeA[sp] = new TH2F(TString::Format("fhTrackTimeA_%s", speciesName[sp]).Data(),
-                                    TString::Format("Track Time vs P reconstructed %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                    TString::Format("Track Time vs P reconstructed %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(), ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhTrackBetaInvA[sp] = new TH2F(TString::Format("fhTrackBetaInvA_%s", speciesName[sp]).Data(),
-                                    TString::Format("1/#Beta vs P reconstructed %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
-                                    fhTrackTimeIPA[sp] = new TH2F(TString::Format("fhTrackTimeIPA_%s", speciesName[sp]).Data(),
-                                    TString::Format("Track Time vs P_{IP} reconstructed %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                       TString::Format("1/#Beta vs P reconstructed %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                       ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+        fhTrackTimeIPA[sp] = new TH2F(TString::Format("fhTrackTimeIPA_%s", speciesName[sp]).Data(),
+                                      TString::Format("Track Time vs P_{IP} reconstructed %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                      ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhTrackBetaInvIPA[sp] = new TH2F(TString::Format("fhTrackBetaInvIPA_%s", speciesName[sp]).Data(),
-                                    TString::Format("1/#Beta vs P_{IP} reconstructed %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
-        LOGF(info,"Made Histos");
+                                         TString::Format("1/#Beta vs P_{IP} reconstructed %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                         ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+        LOGF(info, "Made Histos");
       }
       fhdEdxA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhdEdxA_WrongSpecies").Data(),
                                                TString::Format("dE/dx vs P reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
@@ -1031,23 +1030,23 @@ struct IdentifiedBfFilterTracks {
                                                     TString::Format("dE/dx vs P_{IP} reconstructed Wrong Species; P (GeV/c); dE/dx (a.u.)").Data(),
                                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhTrackLengthA[kIdBfNoOfSpecies + 1] = new TH1F(TString::Format("fhTrackLengthA_WrongSpecies").Data(),
-                                                    TString::Format("Track Length of reconstructed Wrong Species; L (cm)").Data(),
-                                                    1000, 0.0, 1000.0);
+                                                      TString::Format("Track Length of reconstructed Wrong Species; L (cm)").Data(),
+                                                      1000, 0.0, 1000.0);
       fhTrackLengthTOFA[kIdBfNoOfSpecies + 1] = new TH1F(TString::Format("fhTrackLengthTOFA_WrongSpecies").Data(),
-                                                       TString::Format("Track Length of reconstructed Wrong Species with TOF; L (cm)").Data(),
-                                                       1000, 0.0, 1000.0);
+                                                         TString::Format("Track Length of reconstructed Wrong Species with TOF; L (cm)").Data(),
+                                                         1000, 0.0, 1000.0);
       fhTrackTimeA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackTimeA_WrongSpecies").Data(),
                                                     TString::Format("Track Time vs P reconstructed Wrong Species; P (GeV/c); Track Time(ns)").Data(),
                                                     ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackBetaInvA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackBetaInvA_WrongSpecies").Data(),
-                                                    TString::Format("1/#Beta vs P reconstructed Wrong Species; P (GeV/c); 1/#Beta(ns/m)").Data(),
-                                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                                       TString::Format("1/#Beta vs P reconstructed Wrong Species; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                                       ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackTimeIPA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackTimeIPA_WrongSpecies").Data(),
-                                                    TString::Format("Track Time vs P_{IP} reconstructed Wrong Species; P (GeV/c); Track Time(ns)").Data(),
-                                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                                      TString::Format("Track Time vs P_{IP} reconstructed Wrong Species; P (GeV/c); Track Time(ns)").Data(),
+                                                      ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhTrackBetaInvIPA[kIdBfNoOfSpecies + 1] = new TH2F(TString::Format("fhTrackBetaInvIPA_WrongSpecies").Data(),
-                                                    TString::Format("1/#Beta vs P_{IP} reconstructed Wrong Species; P (GeV/c); 1/#Beta(ns/m)").Data(),
-                                                    ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                                         TString::Format("1/#Beta vs P_{IP} reconstructed Wrong Species; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                                         ptbins, ptlow, ptup, 1000, 0.0, 10.0);
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhXYB);
@@ -1158,35 +1157,35 @@ struct IdentifiedBfFilterTracks {
       fhTruePhiA = new TH1F("fTrueHistPhiA", "#phi distribution (truth);#phi;counts", 360, 0.0, constants::math::TwoPI);
       fhTrueDCAxyB = new TH1F("TrueDCAxyB", "DCA_{xy} distribution for generated before;DCA_{xy} (cm);counts", 1000, -4.0, 4.0);
       fhPrimaryPB = new TH1F(TString::Format("fhPrimaryPB").Data(),
-            TString::Format("p distribution Primary Before Selection;p (GeV/c);dN/dp (c/GeV)").Data(),
-            ptbins, ptlow, ptup);
+                             TString::Format("p distribution Primary Before Selection;p (GeV/c);dN/dp (c/GeV)").Data(),
+                             ptbins, ptlow, ptup);
       fhPrimaryPtB = new TH1F(TString::Format("fhPrimaryPtB"),
-                      TString::Format("p_{T} distribution Primary Before Selection ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)").Data(),
-                      ptbins, ptlow, ptup);
+                              TString::Format("p_{T} distribution Primary Before Selection ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)").Data(),
+                              ptbins, ptlow, ptup);
       fhPrimarydEdxB = new TH2F(TString::Format("fhPrimarydEdxB").Data(),
-                        TString::Format("dE/dx vs P Primary Before Selection; P (GeV/c); dE/dx (a.u.)").Data(),
-                        ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                TString::Format("dE/dx vs P Primary Before Selection; P (GeV/c); dE/dx (a.u.)").Data(),
+                                ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhPrimarydEdxIPTPCB = new TH2F(TString::Format("fhPrimarydEdxIPTPCB").Data(),
-                            TString::Format("dE/dx vs P_{IP} Primary Before Selection; P (GeV/c); dE/dx (a.u.)").Data(),
-                            ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                     TString::Format("dE/dx vs P_{IP} Primary Before Selection; P (GeV/c); dE/dx (a.u.)").Data(),
+                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
       fhPrimaryTrackLengthB = new TH1F(TString::Format("fhPrimaryTrackLengthB").Data(),
-                              TString::Format("Track Length of Primary Before Selection; L (cm)").Data(),
-                              1000, 0.0, 1000.0);
+                                       TString::Format("Track Length of Primary Before Selection; L (cm)").Data(),
+                                       1000, 0.0, 1000.0);
       fhPrimaryTrackLengthTOFB = new TH1F(TString::Format("fhPrimaryTrackLengthTOFB").Data(),
-                                  TString::Format("Track Length of Primary Before Selection with TOF; L (cm)").Data(),
-                                  1000, 0.0, 1000.0);
+                                          TString::Format("Track Length of Primary Before Selection with TOF; L (cm)").Data(),
+                                          1000, 0.0, 1000.0);
       fhPrimaryTrackTimeB = new TH2F(TString::Format("fhPrimaryTrackTimeB").Data(),
-                            TString::Format("Track Time vs P Primary Before Selection; P (GeV/c); Track Time(ns)").Data(),
-                            ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                     TString::Format("Track Time vs P Primary Before Selection; P (GeV/c); Track Time(ns)").Data(),
+                                     ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhPrimaryTrackBetaInvB = new TH2F(TString::Format("fhPrimaryTrackBetaInvB").Data(),
-                            TString::Format("1/#Beta vs P Primary Before Selection; P (GeV/c); 1/#Beta(ns/m)").Data(),
-                            ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                        TString::Format("1/#Beta vs P Primary Before Selection; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                        ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhPrimaryTrackTimeIPB = new TH2F(TString::Format("fhPrimaryTrackTimeIPB").Data(),
-                              TString::Format("Track Time vs P_{IP} Primary Before Selection; P (GeV/c); Track Time(ns)").Data(),
-                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                       TString::Format("Track Time vs P_{IP} Primary Before Selection; P (GeV/c); Track Time(ns)").Data(),
+                                       ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       fhPrimaryTrackBetaInvIPB = new TH2F(TString::Format("fhPrimaryTrackBetaInvIPB").Data(),
-                              TString::Format("1/#Beta vs P_{IP} Primary Before Selection; P (GeV/c); 1/#Beta(ns/m)").Data(),
-                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                          TString::Format("1/#Beta vs P_{IP} Primary Before Selection; P (GeV/c); 1/#Beta(ns/m)").Data(),
+                                          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       if (traceDCAOutliers.mDoIt) {
         fhTrueDCAxyBid = new TH1F("PDGCodeDCAxyB",
                                   TString::Format("PDG code within %.2f<|DCA_{#it{xy}}|<%.2f; PDG code", traceDCAOutliers.mLowValue, traceDCAOutliers.mUpValue).Data(),
@@ -1226,8 +1225,8 @@ struct IdentifiedBfFilterTracks {
                                      TString::Format("N(%s^{#plus}) #minus N(%s^{#minus}) distribution (truth);N(%s^{#plus}) #minus N(%s^{#minus})", speciesTitle[sp], speciesTitle[sp], speciesTitle[sp], speciesTitle[sp]).Data(),
                                      79, -39.5, 39.5);
         fhTruedEdxA[sp] = new TH2F(TString::Format("fhTruedEdxA_%s", speciesName[sp]).Data(),
-                                     TString::Format("dE/dx vs P generated %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                                     ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                   TString::Format("dE/dx vs P generated %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                   ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhTruedEdxIPTPCA[sp] = new TH2F(TString::Format("fhTruedEdxIPTPCA_%s", speciesName[sp]).Data(),
                                         TString::Format("dE/dx vs P_{IP} generated %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
                                         ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
@@ -1235,83 +1234,82 @@ struct IdentifiedBfFilterTracks {
                                           TString::Format("Track Length of generated %s; L (cm)", speciesTitle[sp]).Data(),
                                           1000, 0.0, 1000.0);
         fhTrueTrackLengthTOFA[sp] = new TH1F(TString::Format("fhTrueTrackLengthTOFA_%s", speciesName[sp]).Data(),
-                                              TString::Format("Track Length of generated %s with TOF; L (cm)", speciesTitle[sp]).Data(),
-                                              1000, 0.0, 1000.0);
+                                             TString::Format("Track Length of generated %s with TOF; L (cm)", speciesTitle[sp]).Data(),
+                                             1000, 0.0, 1000.0);
         fhTrueTrackTimeA[sp] = new TH2F(TString::Format("fhTrueTrackTimeA_%s", speciesName[sp]).Data(),
                                         TString::Format("Track Time vs P generated %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
                                         ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhTrueTrackBetaInvA[sp] = new TH2F(TString::Format("fhTrueTrackBetaInvA_%s", speciesName[sp]).Data(),
-                                        TString::Format("1/#Beta vs P generated %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                        ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                           TString::Format("1/#Beta vs P generated %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                           ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhTrueTrackTimeIPA[sp] = new TH2F(TString::Format("fhTrueTrackTimeIPA_%s", speciesName[sp]).Data(),
                                           TString::Format("Track Time vs P_{IP} generated %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
                                           ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhTrueTrackBetaInvIPA[sp] = new TH2F(TString::Format("fhTrueTrackBetaInvIPA_%s", speciesName[sp]).Data(),
-                                          TString::Format("1/#Beta vs P_{IP} generated %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                             TString::Format("1/#Beta vs P_{IP} generated %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                             ptbins, ptlow, ptup, 1000, 0.0, 10.0);
 
         fhPrimaryPA[sp] = new TH1F(TString::Format("fhPrimaryPA_%s", speciesName[sp]).Data(),
-                                TString::Format("p distribution Primary %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
-                                ptbins, ptlow, ptup);
+                                   TString::Format("p distribution Primary %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
+                                   ptbins, ptlow, ptup);
         fhPrimaryPtA[sp] = new TH1F(TString::Format("fhPrimaryPtA_%s", speciesName[sp]),
-                                  TString::Format("p_{T} distribution Primary %s ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                  ptbins, ptlow, ptup);
+                                    TString::Format("p_{T} distribution Primary %s ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                    ptbins, ptlow, ptup);
         fhPrimarydEdxA[sp] = new TH2F(TString::Format("fhPrimarydEdxA_%s", speciesName[sp]).Data(),
-                                    TString::Format("dE/dx vs P Primary %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                      TString::Format("dE/dx vs P Primary %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                      ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhPrimarydEdxIPTPCA[sp] = new TH2F(TString::Format("fhPrimarydEdxIPTPCA_%s", speciesName[sp]).Data(),
-                                        TString::Format("dE/dx vs P_{IP} Primary %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                                        ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                           TString::Format("dE/dx vs P_{IP} Primary %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                           ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhPrimaryTrackLengthA[sp] = new TH1F(TString::Format("fhPrimaryTrackLengthA_%s", speciesName[sp]).Data(),
-                                          TString::Format("Track Length of Primary %s; L (cm)", speciesTitle[sp]).Data(),
-                                          1000, 0.0, 1000.0);
+                                             TString::Format("Track Length of Primary %s; L (cm)", speciesTitle[sp]).Data(),
+                                             1000, 0.0, 1000.0);
         fhPrimaryTrackLengthTOFA[sp] = new TH1F(TString::Format("fhPrimaryTrackLengthTOFA_%s", speciesName[sp]).Data(),
-                                              TString::Format("Track Length of Primary %s with TOF; L (cm)", speciesTitle[sp]).Data(),
-                                              1000, 0.0, 1000.0);
+                                                TString::Format("Track Length of Primary %s with TOF; L (cm)", speciesTitle[sp]).Data(),
+                                                1000, 0.0, 1000.0);
         fhPrimaryTrackTimeA[sp] = new TH2F(TString::Format("fhPrimaryTrackTimeA_%s", speciesName[sp]).Data(),
-                                        TString::Format("Track Time vs P Primary %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
-                                        ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                           TString::Format("Track Time vs P Primary %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                           ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPrimaryTrackBetaInvA[sp] = new TH2F(TString::Format("fhPrimaryTrackBetaInvA_%s", speciesName[sp]).Data(),
-                                        TString::Format("1/#Beta vs P Primary %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                        ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                              TString::Format("1/#Beta vs P Primary %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPrimaryTrackTimeIPA[sp] = new TH2F(TString::Format("fhPrimaryTrackTimeIPA_%s", speciesName[sp]).Data(),
-                                          TString::Format("Track Time vs P_{IP} Primary %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
-                                          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                             TString::Format("Track Time vs P_{IP} Primary %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                             ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPrimaryTrackBetaInvIPA[sp] = new TH2F(TString::Format("fhPrimaryTrackBetaInvIPA_%s", speciesName[sp]).Data(),
-                                                  TString::Format("1/#Beta vs P_{IP} Primary %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                                  ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                                TString::Format("1/#Beta vs P_{IP} Primary %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                                ptbins, ptlow, ptup, 1000, 0.0, 10.0);
 
         fhPurePA[sp] = new TH1F(TString::Format("fhPurePA_%s", speciesName[sp]).Data(),
-                                    TString::Format("p distribution Pure %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup);
+                                TString::Format("p distribution Pure %s;p (GeV/c);dN/dp (c/GeV)", speciesTitle[sp]).Data(),
+                                ptbins, ptlow, ptup);
         fhPurePtA[sp] = new TH1F(TString::Format("fhPurePtA_%s", speciesName[sp]),
-                                    TString::Format("p_{T} distribution Pure %s ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
-                                    ptbins, ptlow, ptup);
+                                 TString::Format("p_{T} distribution Pure %s ;p_{T} (GeV/c);dN/dP_{T} (c/GeV)", speciesTitle[sp]).Data(),
+                                 ptbins, ptlow, ptup);
         fhPuredEdxA[sp] = new TH2F(TString::Format("fhPuredEdxA_%s", speciesName[sp]).Data(),
-                                      TString::Format("dE/dx vs P Pure %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                                      ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                   TString::Format("dE/dx vs P Pure %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                   ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhPuredEdxIPTPCA[sp] = new TH2F(TString::Format("fhPuredEdxIPTPCA_%s", speciesName[sp]).Data(),
-                                            TString::Format("dE/dx vs P_{IP} Pure %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
-                                            ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
+                                        TString::Format("dE/dx vs P_{IP} Pure %s; P (GeV/c); dE/dx (a.u.)", speciesTitle[sp]).Data(),
+                                        ptbins, ptlow, ptup, 1000, 0.0, 1000.0);
         fhPureTrackLengthA[sp] = new TH1F(TString::Format("fhPureTrackLengthA_%s", speciesName[sp]).Data(),
-                                              TString::Format("Track Length of Pure %s; L (cm)", speciesTitle[sp]).Data(),
-                                              1000, 0.0, 1000.0);
+                                          TString::Format("Track Length of Pure %s; L (cm)", speciesTitle[sp]).Data(),
+                                          1000, 0.0, 1000.0);
         fhPureTrackLengthTOFA[sp] = new TH1F(TString::Format("fhPureTrackLengthTOFA_%s", speciesName[sp]).Data(),
-                                                TString::Format("Track Length of Pure %s with TOF; L (cm)", speciesTitle[sp]).Data(),
-                                                1000, 0.0, 1000.0);
+                                             TString::Format("Track Length of Pure %s with TOF; L (cm)", speciesTitle[sp]).Data(),
+                                             1000, 0.0, 1000.0);
         fhPureTrackTimeA[sp] = new TH2F(TString::Format("fhPureTrackTimeA_%s", speciesName[sp]).Data(),
-                                            TString::Format("Track Time vs P Pure %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
-                                            ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                        TString::Format("Track Time vs P Pure %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                        ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPureTrackBetaInvA[sp] = new TH2F(TString::Format("fhPureTrackBetaInvA_%s", speciesName[sp]).Data(),
-                                            TString::Format("1/#Beta vs P Pure %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                            ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                           TString::Format("1/#Beta vs P Pure %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                           ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPureTrackTimeIPA[sp] = new TH2F(TString::Format("fhPureTrackTimeIPA_%s", speciesName[sp]).Data(),
-                                              TString::Format("Track Time vs P_{IP} Pure %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
-                                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
+                                          TString::Format("Track Time vs P_{IP} Pure %s; P (GeV/c); Track Time(ns)", speciesTitle[sp]).Data(),
+                                          ptbins, ptlow, ptup, 1000, 0.0, 10.0);
         fhPureTrackBetaInvIPA[sp] = new TH2F(TString::Format("fhPureTrackBetaInvIPA_%s", speciesName[sp]).Data(),
-                                              TString::Format("1/#Beta vs P_{IP} Pure %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
-                                              ptbins, ptlow, ptup, 1000, 0.0, 10.0);
-          
+                                             TString::Format("1/#Beta vs P_{IP} Pure %s; P (GeV/c); 1/#Beta(ns/m)", speciesTitle[sp]).Data(),
+                                             ptbins, ptlow, ptup, 1000, 0.0, 10.0);
       }
       if (makeNSigmaPlots) {
         for (int sp1 = 0; sp1 < kIdBfNoOfSpecies; ++sp1) {
@@ -1326,14 +1324,14 @@ struct IdentifiedBfFilterTracks {
                                                  48, -6, 6,
                                                  ptbins, ptlow, ptup);
             fhPrimaryNSigmaTPC[sp1][sp2] = new TH2F(TString::Format("fhPrimaryNSigmaTPC%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                                 TString::Format("N #sigma %s from TPC vs P for primary %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                                 48, -6, 6,
-                                                 ptbins, ptlow, ptup);
+                                                    TString::Format("N #sigma %s from TPC vs P for primary %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                                    48, -6, 6,
+                                                    ptbins, ptlow, ptup);
 
             fhPrimaryNSigmaTOF[sp1][sp2] = new TH2F(TString::Format("fhPrimaryNSigmaTOF%s_%s", speciesName[sp1], speciesName[sp2]).Data(),
-                                                 TString::Format("N #sigma %s from TOF vs P for primary %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
-                                                 48, -6, 6,
-                                                 ptbins, ptlow, ptup);
+                                                    TString::Format("N #sigma %s from TOF vs P for primary %s;N #sigma;p (GeV/c)", speciesTitle[sp1], speciesTitle[sp2]).Data(),
+                                                    48, -6, 6,
+                                                    ptbins, ptlow, ptup);
           }
         }
       }
@@ -1447,9 +1445,9 @@ struct IdentifiedBfFilterTracks {
   void fillTrackHistosBeforeSelection(TrackObject const& track);
   template <typename TrackObject>
   void fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp);
-  template<typename ParticleObject>
+  template <typename ParticleObject>
   bool isPrimary(ParticleObject const& particle);
-  template<typename TrackObject>
+  template <typename TrackObject>
   void fillRealPIDTrackHistosAfter(TrackObject const& track, MatchRecoGenSpecies sp);
   template <typename ParticleObject, typename MCCollisionObject>
   void fillParticleHistosBeforeSelection(ParticleObject const& particle,
@@ -1467,7 +1465,7 @@ struct IdentifiedBfFilterTracks {
   void filterTracks(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions,
                     passedtracks const& tracks)
   {
-    //LOGF(info, "Top of filterTracks");
+    // LOGF(info, "Top of filterTracks");
     int naccepted = 0;
     int ncollaccepted = 0;
     if (!fullDerivedData) {
@@ -1665,7 +1663,7 @@ template <typename ParticleObject>
 inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyParticle(ParticleObject const& particle)
 {
   using namespace identifiedbffilter;
-  //LOGF(info, "Top of identifyParticle");
+  // LOGF(info, "Top of identifyParticle");
 
   int pdgcode = std::fabs(particle.pdgCode());
 
@@ -1721,8 +1719,7 @@ inline void IdentifiedBfFilterTracks::identifyRealNSigma(ParticleObject const& p
     fhTrueNSigmaTPC[kIdBfProton][realPID]->Fill(tpcNSigma[kIdBfProton], tpcInnerParam);
     fhTrueNSigmaTOF[kIdBfProton][realPID]->Fill(tofNSigma[kIdBfProton], tpcInnerParam);
 
-
-    if(particle.isPhysicalPrimary()){
+    if (particle.isPhysicalPrimary()) {
       fhPrimaryNSigmaTPC[kIdBfElectron][realPID]->Fill(tpcNSigma[kIdBfElectron], tpcInnerParam);
       fhPrimaryNSigmaTOF[kIdBfElectron][realPID]->Fill(tofNSigma[kIdBfElectron], tpcInnerParam);
       fhPrimaryNSigmaTPC[kIdBfPion][realPID]->Fill(tpcNSigma[kIdBfPion], tpcInnerParam);
@@ -1818,12 +1815,12 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   for (int iSp = 0; iSp < kIdBfNoOfSpecies; iSp++) {
 
     if (track.tpcInnerParam() < tofCut[iSp] && track.tpcInnerParam() < tpcCut[iSp] && !onlyTOF) {
-        nsigmas[iSp] = actualTPCNSigma[iSp];
-    } else if(track.tpcInnerParam() > tofCut[iSp] && track.tpcInnerParam() < tpcCut[iSp] && !onlyTOF && track.hasTOF()){
-        nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
-    } else if(track.hasTOF() && ((track.tpcInnerParam() > tofCut[iSp] && track.tpcInnerParam() > tpcCut[iSp]) || onlyTOF)){
-        nsigmas[iSp] = actualTOFNSigma[iSp];
-    } else{
+      nsigmas[iSp] = actualTPCNSigma[iSp];
+    } else if (track.tpcInnerParam() > tofCut[iSp] && track.tpcInnerParam() < tpcCut[iSp] && !onlyTOF && track.hasTOF()) {
+      nsigmas[iSp] = sqrtf(actualTPCNSigma[iSp] * actualTPCNSigma[iSp] + actualTOFNSigma[iSp] * actualTOFNSigma[iSp]);
+    } else if (track.hasTOF() && ((track.tpcInnerParam() > tofCut[iSp] && track.tpcInnerParam() > tpcCut[iSp]) || onlyTOF)) {
+      nsigmas[iSp] = actualTOFNSigma[iSp];
+    } else {
       return kWrongSpecies;
     }
   }
@@ -1831,7 +1828,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   float minNSigma = 999.0f;
   MatchRecoGenSpecies spMinNSigma = kWrongSpecies;
   for (int sp = 0; sp < kIdBfNoOfSpecies; ++sp) {
-    if (doPID[sp]){                                        // Check if we're IDing PID for this species
+    if (doPID[sp]) {                                       // Check if we're IDing PID for this species
       if (std::fabs(nsigmas[sp]) < std::fabs(minNSigma)) { // Check if species nsigma is less than current nsigma
         minNSigma = nsigmas[sp];                           // If yes, set species nsigma to current nsigma
         spMinNSigma = MatchRecoGenSpecies(sp);             // set current species sp number to current sp
@@ -1840,13 +1837,13 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
   }
   bool doublematch = false;
   MatchRecoGenSpecies spDouble = kWrongSpecies;
-  //LOGF(info,"Looking at accept range");
-  if (minNSigma < acceptRange[spMinNSigma][1] && minNSigma > acceptRange[spMinNSigma][0]) {           // Check that current nsigma is in accpetance range
-    //LOGF(info,"In accept Range");
+  // LOGF(info,"Looking at accept range");
+  if (minNSigma < acceptRange[spMinNSigma][1] && minNSigma > acceptRange[spMinNSigma][0]) { // Check that current nsigma is in accpetance range
+    // LOGF(info,"In accept Range");
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != spMinNSigma) {                                        // for species not current minimum nsigma species
-        //LOGF(info, "looking at Reject Range");
-        if (std::fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) { // If secondary species is in rejection range
+        // LOGF(info, "looking at Reject Range");
+        if (std::fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) {  // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
         }
@@ -1859,10 +1856,10 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       fhTrackLengthA[kIdBfNoOfSpecies]->Fill(track.length());
       fhTrackTimeA[kIdBfNoOfSpecies]->Fill(track.p(), (track.trackTime()));
       fhTrackTimeIPA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), (track.trackTime()));
-      
-      if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-        fhTrackBetaInvA[kIdBfNoOfSpecies]->Fill(track.p(), 1/track.beta());
-        fhTrackBetaInvIPA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), 1/track.beta());
+
+      if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+        fhTrackBetaInvA[kIdBfNoOfSpecies]->Fill(track.p(), 1 / track.beta());
+        fhTrackBetaInvIPA[kIdBfNoOfSpecies]->Fill(track.tpcInnerParam(), 1 / track.beta());
       }
       fhDoublePID->Fill(spMinNSigma, spDouble);
       return kWrongSpecies; // Return wrong species value
@@ -1886,21 +1883,21 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
 template <typename TrackObject>
 inline int8_t IdentifiedBfFilterTracks::acceptTrack(TrackObject const& track)
 {
-  //LOGF(info,"Top of acceptTrack");
+  // LOGF(info,"Top of acceptTrack");
   fillTrackHistosBeforeSelection(track); // <Fill "before selection" histo
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
-      //LOGF(info,"No matching MC particle");
+      // LOGF(info,"No matching MC particle");
       return -1;
     }
   }
 
   if (matchTrackType(track)) {
-    //LOGF(info, "Track type match");
+    // LOGF(info, "Track type match");
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      //LOGF(info, "Track Accepted");
+      // LOGF(info, "Track Accepted");
       fillTrackHistosAfterSelection(track, kIdBfCharged);
       MatchRecoGenSpecies sp = kWrongSpecies;
       if (recoIdMethod == recoIdMethods[0]) {
@@ -2010,7 +2007,7 @@ inline int8_t IdentifiedBfFilterTracks::acceptParticle(ParticleObject& particle,
 template <typename CollisionObjects, typename TrackObject>
 int8_t IdentifiedBfFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track)
 {
-  //LOGF(info,"Top of AmbiguousCheck");
+  // LOGF(info,"Top of AmbiguousCheck");
   bool ambiguoustrack = false;
   int tracktype = 0; /* no ambiguous */
   std::vector<double> zvertexes{};
@@ -2090,85 +2087,85 @@ void IdentifiedBfFilterTracks::fillTrackHistosBeforeSelection(TrackObject const&
 
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
 
-    if(isPrimary(track.template mcParticle_as<aod::McParticles>())){
+    if (isPrimary(track.template mcParticle_as<aod::McParticles>())) {
       fhPrimaryPB->Fill(track.p());
       fhPrimaryPtB->Fill(track.pt());
       fhPrimarydEdxB->Fill(track.p(), track.tpcSignal());
       fhPrimarydEdxIPTPCB->Fill(track.tpcInnerParam(), track.tpcSignal());
       fhPrimaryTrackLengthB->Fill(track.length());
-      if(track.hasTOF() && track.p() > tofCut[0]){
+      if (track.hasTOF() && track.p() > tofCut[0]) {
         fhPrimaryTrackLengthTOFB->Fill(track.length());
         fhPrimaryTrackTimeB->Fill(track.p(), (track.trackTime()));
         fhPrimaryTrackTimeIPB->Fill(track.tpcInnerParam(), (track.trackTime()));
-      
-        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-          fhPrimaryTrackBetaInvB->Fill(track.p(), 1/track.beta());
-          fhPrimaryTrackBetaInvIPB->Fill(track.tpcInnerParam(), 1/track.beta());
+
+        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+          fhPrimaryTrackBetaInvB->Fill(track.p(), 1 / track.beta());
+          fhPrimaryTrackBetaInvIPB->Fill(track.tpcInnerParam(), 1 / track.beta());
         }
       }
     }
   }
 }
-template<typename ParticleObject>
-bool IdentifiedBfFilterTracks::isPrimary(ParticleObject const& particle){
+template <typename ParticleObject>
+bool IdentifiedBfFilterTracks::isPrimary(ParticleObject const& particle)
+{
   return particle.isPhysicalPrimary();
 }
-template<typename TrackObject>
+template <typename TrackObject>
 void IdentifiedBfFilterTracks::fillRealPIDTrackHistosAfter(TrackObject const& track, MatchRecoGenSpecies sp)
 {
 
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     MatchRecoGenSpecies realPID = identifyParticle(track.template mcParticle_as<aod::McParticles>());
-    if(!(realPID < 0)){
+    if (!(realPID < 0)) {
       fhTruedEdxA[realPID]->Fill(track.p(), track.tpcSignal());
       fhTruedEdxIPTPCA[realPID]->Fill(track.tpcInnerParam(), track.tpcSignal());
       fhTrueTrackLengthA[realPID]->Fill(track.length());
-      if(track.hasTOF() && track.p() > tofCut[realPID]){
+      if (track.hasTOF() && track.p() > tofCut[realPID]) {
         fhTrueTrackLengthTOFA[realPID]->Fill(track.length());
         fhTrueTrackTimeA[realPID]->Fill(track.p(), (track.trackTime()));
         fhTrueTrackTimeIPA[realPID]->Fill(track.tpcInnerParam(), (track.trackTime()));
-        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-          fhTrueTrackBetaInvA[realPID]->Fill(track.p(), 1/track.beta());
-          fhTrueTrackBetaInvIPA[realPID]->Fill(track.tpcInnerParam(), 1/track.beta());
+        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+          fhTrueTrackBetaInvA[realPID]->Fill(track.p(), 1 / track.beta());
+          fhTrueTrackBetaInvIPA[realPID]->Fill(track.tpcInnerParam(), 1 / track.beta());
         }
       }
     }
 
-    if(isPrimary(track.template mcParticle_as<aod::McParticles>())){
+    if (isPrimary(track.template mcParticle_as<aod::McParticles>())) {
       fhPrimaryPA[sp]->Fill(track.p());
       fhPrimaryPtA[sp]->Fill(track.pt());
       fhPrimarydEdxA[sp]->Fill(track.p(), track.tpcSignal());
       fhPrimarydEdxIPTPCA[sp]->Fill(track.tpcInnerParam(), track.tpcSignal());
       fhPrimaryTrackLengthA[sp]->Fill(track.length());
-      if(track.hasTOF() && track.p() > tofCut[sp]){
+      if (track.hasTOF() && track.p() > tofCut[sp]) {
         fhPrimaryTrackLengthTOFA[sp]->Fill(track.length());
         fhPrimaryTrackTimeA[sp]->Fill(track.p(), (track.trackTime()));
         fhPrimaryTrackTimeIPA[sp]->Fill(track.tpcInnerParam(), (track.trackTime()));
 
-        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-          fhPrimaryTrackBetaInvA[sp]->Fill(track.p(), 1/track.beta());
-          fhPrimaryTrackBetaInvIPA[sp]->Fill(track.tpcInnerParam(), 1/track.beta());
+        if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+          fhPrimaryTrackBetaInvA[sp]->Fill(track.p(), 1 / track.beta());
+          fhPrimaryTrackBetaInvIPA[sp]->Fill(track.tpcInnerParam(), 1 / track.beta());
         }
       }
 
-      if(sp == realPID){
+      if (sp == realPID) {
         fhPurePA[realPID]->Fill(track.p());
         fhPurePtA[realPID]->Fill(track.pt());
         fhPuredEdxA[realPID]->Fill(track.p(), track.tpcSignal());
         fhPuredEdxIPTPCA[realPID]->Fill(track.tpcInnerParam(), track.tpcSignal());
         fhPureTrackLengthA[realPID]->Fill(track.length());
-        if(track.hasTOF() && track.p() > tofCut[realPID]){
+        if (track.hasTOF() && track.p() > tofCut[realPID]) {
           fhPureTrackLengthTOFA[realPID]->Fill(track.length());
           fhPureTrackTimeA[realPID]->Fill(track.p(), (track.trackTime()));
           fhPureTrackTimeIPA[realPID]->Fill(track.tpcInnerParam(), (track.trackTime()));
-          
-          if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-            fhPureTrackBetaInvA[realPID]->Fill(track.p(), 1/track.beta());
-            fhPureTrackBetaInvIPA[realPID]->Fill(track.tpcInnerParam(), 1/track.beta());
+
+          if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+            fhPureTrackBetaInvA[realPID]->Fill(track.p(), 1 / track.beta());
+            fhPureTrackBetaInvIPA[realPID]->Fill(track.tpcInnerParam(), 1 / track.beta());
           }
         }
       }
-      
     }
   }
 }
@@ -2176,7 +2173,7 @@ template <typename TrackObject>
 void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, MatchRecoGenSpecies sp)
 {
   /* the charged species should have been called first so avoid double counting */
-  //LOGF(info,"Top of AfterSelection");
+  // LOGF(info,"Top of AfterSelection");
   if (sp == kIdBfCharged) {
     fhEtaA->Fill(track.eta());
     fhPhiA->Fill(track.phi());
@@ -2203,14 +2200,14 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
   fhdEdxA[sp]->Fill(track.p(), track.tpcSignal());
   fhdEdxIPTPCA[sp]->Fill(track.tpcInnerParam(), track.tpcSignal());
   fhTrackLengthA[sp]->Fill(track.length());
-  if(track.hasTOF() && track.p() > tofCut[sp]){
+  if (track.hasTOF() && track.p() > tofCut[sp]) {
     fhTrackLengthTOFA[sp]->Fill(track.length());
     fhTrackTimeA[sp]->Fill(track.p(), (track.trackTime()));
     fhTrackTimeIPA[sp]->Fill(track.tpcInnerParam(), (track.trackTime()));
-    
-    if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>){
-      fhTrackBetaInvA[sp]->Fill(track.p(), 1/track.beta());
-      fhTrackBetaInvIPA[sp]->Fill(track.tpcInnerParam(), 1/track.beta());
+
+    if constexpr (framework::has_type_v<aod::pidtofbeta::Beta, typename TrackObject::all_columns>) {
+      fhTrackBetaInvA[sp]->Fill(track.p(), 1 / track.beta());
+      fhTrackBetaInvIPA[sp]->Fill(track.tpcInnerParam(), 1 / track.beta());
     }
   }
   if (track.sign() > 0) {
@@ -2221,7 +2218,7 @@ void IdentifiedBfFilterTracks::fillTrackHistosAfterSelection(TrackObject const& 
     fhPtEtaNegA[sp]->Fill(track.pt(), track.eta());
   }
   if ((fDataType != kData) && (fDataType != kDataNoEvtSel)) {
-    fillRealPIDTrackHistosAfter(track,sp);
+    fillRealPIDTrackHistosAfter(track, sp);
   }
 }
 
