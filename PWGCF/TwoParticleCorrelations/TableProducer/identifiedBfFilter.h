@@ -599,7 +599,8 @@ template <typename CollisionObject>
 inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 {
   float mult = getCentMultPercentile(collision);
-  if (mult < 100 && 0 < mult) {
+  int maxMult = 100; int minMult = 0;
+  if (mult < maxMult && minMult < mult) {
     centmult = mult;
     return true;
   }
@@ -681,7 +682,8 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McC
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < 100 && 0 < centmult) {
+  int maxMult = 100; int minMult = 0;
+  if (centmult < maxMult && minMult < centmult) {
     return true;
   } else {
     return false;
@@ -759,7 +761,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 inline float getCharge(float pdgCharge)
 {
-  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
+  int posCharge = 1; int negCharge = -1;
+  int denom = 3;
+  float charge = (pdgCharge / denom >= posCharge) ? 1.0 : ((pdgCharge / denom <= negCharge) ? -1.0 : 0);
   return charge;
 }
 

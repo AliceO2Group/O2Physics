@@ -1827,18 +1827,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
       return kWrongSpecies;
     }
   }
-  //if (!pidEl) {
-  //  nsigmas[kIdBfElectron] = 999.0f;
-  //}
-  //if (!pidPi) {
-  //  nsigmas[kIdBfPion] = 999.0f;
-  //}
-  //if (!pidKa) {
-  //  nsigmas[kIdBfKaon] = 999.0f;
-  //}
-  //if (!pidPr) {
-  //  nsigmas[kIdBfProton] = 999.0f;
-  //}
 
   float minNSigma = 999.0f;
   MatchRecoGenSpecies spMinNSigma = kWrongSpecies;
@@ -1858,7 +1846,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::identifyTrack(TrackObject c
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) { // iterate over all species while there's no double match and we're in the list
       if (sp != spMinNSigma) {                                        // for species not current minimum nsigma species
         //LOGF(info, "looking at Reject Range");
-        if (fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) { // If secondary species is in rejection range
+        if (std::fabs(nsigmas[sp]) < rejectRange[spMinNSigma][sp]) { // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
         }
