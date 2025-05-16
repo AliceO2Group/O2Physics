@@ -147,6 +147,7 @@ struct HeavyionMultiplicity {
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis occupancyBin{"occupancyBin", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
+  ConfigurableAxis centBinGen{"centBinGen", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
@@ -174,6 +175,7 @@ struct HeavyionMultiplicity {
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec axisOccupancy = {occupancyBin, "occupancy", "OccupancyAxis"};
+    AxisSpec axisCentBinGen = {centBinGen, "GenCentrality", "CentGenAxis"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -251,6 +253,18 @@ struct HeavyionMultiplicity {
       histos.add("MCrecPhiVsEtaHistpp", "MCrecPhiVsEtaHistpp", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("hmcrecdndetapp", "hmcrecdndetapp", kTHnSparseD, {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisTrackType}, false);
       histos.add("hmcgendndetapp", "hmcgendndetapp", kTHnSparseD, {axisVtxZ, centAxis, axisEta, axisPhi, axisSpecies, axisGenPtVary}, false);
+    }
+
+    if (doprocessGen) {
+      histos.add("MultBarrelEta10_vs_FT0A", "MultBarrelEta10_vs_FT0A", kTH2F, {axisMult, axisFt0aMult}, true);
+      histos.add("MultBarrelEta10_vs_FT0C", "MultBarrelEta10_vs_FT0C", kTH2F, {axisMult, axisFt0cMult}, true);
+      histos.add("MultBarrelEta10", "MultBarrelEta10", kTH1F, {axisMult}, true);
+      histos.add("MultFT0A", "MultFT0A", kTH1F, {axisFt0aMult}, true);
+      histos.add("MultFT0C", "MultFT0C", kTH1F, {axisFt0cMult}, true);
+      histos.add("dndeta10_vs_FT0C", "dndeta10_vs_FT0C", kTH2F, {axisEta, axisCentBinGen}, true);
+      histos.add("dndeta10_vs_FT0A", "dndeta10_vs_FT0A", kTH2F, {axisEta, axisCentBinGen}, true);
+      histos.add("mult10_vs_FT0C", "mult10_vs_FT0C", kTH2F, {axisMult, axisCentBinGen}, true);
+      histos.add("mult10_vs_FT0A", "mult10_vs_FT0A", kTH2F, {axisMult, axisCentBinGen}, true);
     }
   }
 
@@ -791,6 +805,26 @@ struct HeavyionMultiplicity {
     } // collision loop
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);
+
+  void processGen(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mccols, aod::McParticles const& GenParticles)
+  {
+    histos.fill(HIST("MultBarrelEta10_vs_FT0A"), mccols.multMCNParticlesEta10(), mccols.multMCFT0A());
+    histos.fill(HIST("MultBarrelEta10_vs_FT0C"), mccols.multMCNParticlesEta10(), mccols.multMCFT0C());
+    histos.fill(HIST("MultBarrelEta10"), mccols.multMCNParticlesEta10());
+    histos.fill(HIST("MultFT0A"), mccols.multMCFT0A());
+    histos.fill(HIST("MultFT0C"), mccols.multMCFT0C());
+    histos.fill(HIST("mult10_vs_FT0A"), mccols.multMCNParticlesEta10(), mccols.multMCFT0A());
+    histos.fill(HIST("mult10_vs_FT0C"), mccols.multMCNParticlesEta10(), mccols.multMCFT0C());
+
+    for (const auto& particle : GenParticles) {
+      if (!isGenTrackSelected(particle)) {
+        continue;
+      }
+      histos.fill(HIST("dndeta10_vs_FT0A"), particle.eta(), mccols.multMCFT0A());
+      histos.fill(HIST("dndeta10_vs_FT0C"), particle.eta(), mccols.multMCFT0C());
+    }
+  }
+  PROCESS_SWITCH(HeavyionMultiplicity, processGen, "process pure MC gen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
