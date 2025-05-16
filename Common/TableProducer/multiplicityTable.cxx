@@ -313,7 +313,7 @@ struct MultiplicityTable {
                    aod::FV0As const&,
                    aod::FV0Cs const&,
                    aod::FT0s const&,
-                   BCsWithTimestampsAndRun2Infos const& bcs)
+                   BCsWithTimestampsAndRun2Infos const&)
   {
     float multFV0A = 0.f;
     float multFV0C = 0.f;
