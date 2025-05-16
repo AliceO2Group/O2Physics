@@ -174,7 +174,7 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
-  std::vector<float> outputMlOmegac = {};
+  float outputMlOmegac = 0.f;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -354,7 +354,7 @@ struct HfCandidateSelectorToOmegaPi {
       // pt-dependent selection
       if (!selectionTopol(candidate)) {
         resultSelections = false;
-        hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored, outputMlOmegac[0],
+        hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored, outputMlOmegac,
                        trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                        trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
         if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
@@ -745,7 +745,7 @@ struct HfCandidateSelectorToOmegaPi {
           std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
           isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCand, outputMlOmegac);
           if (isSelectedMlOmegac) {
-            registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac[0]);
+            registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac);
           } else {
             resultSelections = false;
           }
