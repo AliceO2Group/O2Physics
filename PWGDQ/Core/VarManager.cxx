@@ -926,6 +926,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kPairPhi] = "rad.";
   fgVariableNames[kPairPhiv] = "#varphi_{V}";
   fgVariableUnits[kPairPhiv] = "rad.";
+  fgVariableNames[kDileptonHadronKstar] = "Dilepton-hadron k^{*}";
+  fgVariableUnits[kDileptonHadronKstar] = "GeV/c^{2}";
   fgVariableNames[kDeltaEta] = "#Delta#eta";
   fgVariableUnits[kDeltaEta] = "";
   fgVariableNames[kDeltaPhi] = "#Delta#phi";
@@ -1636,6 +1638,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kPairEta"] = kPairEta;
   fgVarNamesMap["kPairPhi"] = kPairPhi;
   fgVarNamesMap["kPairPhiv"] = kPairPhiv;
+  fgVarNamesMap["kDileptonHadronKstar"] = kDileptonHadronKstar;
   fgVarNamesMap["kDeltaEta"] = kDeltaEta;
   fgVarNamesMap["kDeltaPhi"] = kDeltaPhi;
   fgVarNamesMap["kDeltaPhiSym"] = kDeltaPhiSym;
