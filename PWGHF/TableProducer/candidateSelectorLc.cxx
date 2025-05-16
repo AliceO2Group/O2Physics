@@ -152,7 +152,7 @@ struct HfCandidateSelectorLc {
           hfMlResponseDCA.setModelPathsLocal(onnxFileNames);
         }
         hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDCA.init();
       }
       if (doprocessNoBayesPidWithKFParticle || doprocessBayesPidWithKFParticle) {
         hfMlResponseKF.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
@@ -163,7 +163,7 @@ struct HfCandidateSelectorLc {
           hfMlResponseKF.setModelPathsLocal(onnxFileNames);
         }
         hfMlResponseKF.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponseKF.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseKF.init();
       }
     }
 
