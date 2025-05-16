@@ -63,7 +63,8 @@ struct Estimators {
   static constexpr estID V0A = 16;  // (Run2)
   static constexpr estID V0C = 17;  // (Run2)
   static constexpr estID V0AC = 18; // (Run2 V0M)
-  static constexpr estID nEstimators = 19;
+  static constexpr estID ImpactParameter = 19; // (Run2 V0M)
+  static constexpr estID nEstimators = 20;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -83,7 +84,8 @@ struct Estimators {
                                                               "ETA08",
                                                               "V0A",
                                                               "V0C",
-                                                              "V0AC"};
+                                                              "V0AC",
+                                                              "ImpactParameter"};
   static std::vector<std::string> arrayNames()
   {
     static std::vector<std::string> names;
@@ -115,13 +117,15 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ETA08
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
-                                                                         {0}}; // V0AC (Run2 V0M)
+                                                                         {0},  // V0AC (Run2 V0M)
+                                                                         {0}}; // ImpactParamter
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsImpactParameter;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
@@ -146,6 +150,7 @@ struct mcParticlePrediction {
   ConfigurableAxis binsVxy{"binsVxy", {100, -10, 10}, "Binning of the production vertex (x and y) axis"};
   ConfigurableAxis binsVz{"binsVz", {100, -10, 10}, "Binning of the production vertex (z) axis"};
   ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
+  ConfigurableAxis binsImpactParameter{"binsImpactParameter", {400, 0.0, 20.0}, "Binning of the impact parameter axis"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
   ConfigurableAxis binsMultiplicityReco{"binsMultiplicityReco", {1000, -0.5, -0.5 + 10000}, "Binning of the Multiplicity axis"};
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
@@ -169,6 +174,7 @@ struct mcParticlePrediction {
   Configurable<bool> enableVsITSHistograms{"enableVsITSHistograms", true, "Enables the correlation between ITS and other estimators"};
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
+  Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -182,6 +188,7 @@ struct mcParticlePrediction {
     const AxisSpec axisVy{binsVxy, "Vy"};
     const AxisSpec axisVz{binsVz, "Vz"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisImpactParameter{binsImpactParameter, "Impact parameter (fm)"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
     const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITSIB"};
@@ -258,30 +265,38 @@ struct mcParticlePrediction {
       if (!enabledEstimatorsArray[i]) {
         continue;
       }
+      AxisSpec axisThisEstimator = axisMultiplicity;
+      if (i == Estimators::ImpactParameter) {
+        axisThisEstimator = axisImpactParameter;
+      }
       const char* name = Estimators::estimatorNames[i];
-      hestimators[i] = histos.add<TH1>(Form("multiplicity/%s", name), name, kTH1D, {axisMultiplicity});
+      hestimators[i] = histos.add<TH1>(Form("multiplicity/%s", name), name, kTH1D, {axisThisEstimator});
       hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
 
-      auto make2DH = [&](const std::string& h, const char* ytitle) {
+      auto make2DH = [&](const std::string& h, const char* ytitle, bool isImpactParameterX = false, bool isImpactParameterY = false) {
         auto hist = histos.add<TH2>(Form("%s%s", h.c_str(), name),
                                     name,
                                     kTH2D,
-                                    {axisMultiplicity, axisMultiplicity});
+                                    {isImpactParameterX ? axisImpactParameter : axisMultiplicity,
+                                     isImpactParameterY ? axisImpactParameter : axisMultiplicity});
         hist->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
-        hist->GetXaxis()->SetTitle(Form("Multiplicity %s", ytitle));
+        hist->GetYaxis()->SetTitle(Form("Multiplicity %s", ytitle));
         return hist;
       };
       if (enableVsITSHistograms) {
-        hestimatorsVsITS[i] = make2DH("multiplicity/vsITS/", Estimators::estimatorNames[Estimators::ITSIB]);
+        hestimatorsVsITS[i] = make2DH("multiplicity/vsITS/", Estimators::estimatorNames[Estimators::ITSIB], (i == Estimators::ImpactParameter));
       }
       if (enableVsEta05Histograms) {
-        hestimatorsVsETA05[i] = make2DH("multiplicity/vsETA05/", Estimators::estimatorNames[Estimators::ETA05]);
+        hestimatorsVsETA05[i] = make2DH("multiplicity/vsETA05/", Estimators::estimatorNames[Estimators::ETA05], (i == Estimators::ImpactParameter));
       }
       if (enableVsEta08Histograms) {
-        hestimatorsVsETA08[i] = make2DH("multiplicity/vsETA08/", Estimators::estimatorNames[Estimators::ETA08]);
+        hestimatorsVsETA08[i] = make2DH("multiplicity/vsETA08/", Estimators::estimatorNames[Estimators::ETA08], (i == Estimators::ImpactParameter));
+      }
+      if (enableVsImpactParameterHistograms) {
+        hestimatorsVsImpactParameter[i] = make2DH("multiplicity/vsImpactParameter/", Estimators::estimatorNames[Estimators::ImpactParameter], (i == Estimators::ImpactParameter), true);
       }
 
-      hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
+      hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisThisEstimator});
       hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
       if (!doprocessReco) { // Reco events
@@ -331,11 +346,15 @@ struct mcParticlePrediction {
         if (!enabledEstimatorsArray[j]) {
           continue;
         }
+        AxisSpec axisThisEstimator = axisMultiplicity;
+        if (j == Estimators::ImpactParameter) {
+          axisThisEstimator = axisImpactParameter;
+        }
         const char* name = Estimators::estimatorNames[j];
-        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisMultiplicity});
+        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisThisEstimator});
         hpt[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
-        hyield[j][i] = histosYield.add<TH1>(Form("prediction/yield/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH1D, {axisMultiplicity});
+        hyield[j][i] = histosYield.add<TH1>(Form("prediction/yield/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH1D, {axisThisEstimator});
         hyield[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
       }
     }
@@ -345,7 +364,7 @@ struct mcParticlePrediction {
     histosYield.print();
   }
 
-  std::array<float, Estimators::nEstimators> genMult(const auto& mcParticles)
+  std::array<float, Estimators::nEstimators> genMult(const auto& mcCollision, const auto& mcParticles)
   {
     std::array<float, Estimators::nEstimators> nMult;
     if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
@@ -402,6 +421,9 @@ struct mcParticlePrediction {
         nMult[Estimators::V0AC] = 0;
       }
     }
+    if (enabledEstimatorsArray[Estimators::ImpactParameter]) {
+      nMult[Estimators::ImpactParameter] = mcCollision.impactParameter();
+    }
     return nMult;
   }
 
@@ -419,7 +441,7 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/generated"), 2);
 
-    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcCollision, mcParticles);
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -435,6 +457,9 @@ struct mcParticlePrediction {
       }
       if (enableVsEta08Histograms) {
         hestimatorsVsETA08[i]->Fill(nMult[i], nMult[Estimators::ETA08]);
+      }
+      if (enableVsImpactParameterHistograms) {
+        hestimatorsVsImpactParameter[i]->Fill(nMult[i], nMult[Estimators::ImpactParameter]);
       }
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
@@ -611,7 +636,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    const std::array<float, Estimators::nEstimators>& nMult = genMult(particlesInCollision);
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcCollision, particlesInCollision);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();
