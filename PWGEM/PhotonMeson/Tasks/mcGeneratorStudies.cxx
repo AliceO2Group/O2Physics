@@ -31,16 +31,23 @@ struct MCGeneratorStudies {
   HistogramRegistry mHistManager{"MCGeneratorStudyHistograms"};
   Configurable<int> cfgSelectedParticleCode{"cfgSelectedParticleCode", 111, "PDG code of the particle to be investigated"};
   Configurable<float> cfgMaxZVertex{"cfgMaxZVertex", 10, "Maximum absolute z-vertex distance (cm)"};
+  Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.8, "Maximum absolute rapditity of selected generated particles"};
+  ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
   expressions::Filter zVertexFilter = aod::mccollision::posZ < cfgMaxZVertex && aod::mccollision::posZ > -cfgMaxZVertex;
 
-  void init(InitContext const&) { mHistManager.add("YieldVsNParticles", "pT of selected particles in all MC collisions vs number of all generated particles in event;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N} (Multiplicity)};#bf{#it{N}}", HistType::kTH2F, {{200, 0, 20}, {1000, 0, 10000}}); }
+  void init(InitContext const&)
+  {
+    mHistManager.add("Multiplicity", "Number of generated particles per MC collision;#bf{#it{N} (Multiplicity)};#bf{#it{N}_{MC collisions}}", HistType::kTH1F, {cfgMultiplicityBinning});
+    mHistManager.add("YieldVsMultiplicity", "pT of selected particles in all MC collisions vs number of all generated particles in event;#bf{#it{p}_{T} (GeV/#it{c})};#bf{#it{N} (Multiplicity)};#bf{#it{N}}", HistType::kTH2F, {{200, 0, 20}, cfgMultiplicityBinning});
+  }
 
   void process(soa::Filtered<aod::McCollisions>::iterator const&, aod::McParticles const& mcParticles)
   {
     int nParticles = mcParticles.size();
+    mHistManager.fill(HIST("Multiplicity"), nParticles);
     for (auto& mcParticle : mcParticles) {
-      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) < 0.8f)
-        mHistManager.fill(HIST("YieldVsNParticles"), mcParticle.pt(), nParticles);
+      if (mcParticle.pdgCode() == cfgSelectedParticleCode && std::abs(mcParticle.y()) < cfgRapidityCut)
+        mHistManager.fill(HIST("YieldVsMultiplicity"), mcParticle.pt(), nParticles);
     }
   }
 };

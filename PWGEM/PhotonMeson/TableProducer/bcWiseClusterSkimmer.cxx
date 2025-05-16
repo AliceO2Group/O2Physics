@@ -75,6 +75,7 @@ struct bcWiseClusterSkimmer {
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", false, "Only store kTVXinEMC triggered BCs"};
   Configurable<bool> cfgRequireGoodRCTQuality{"cfgRequireGoodRCTQuality", false, "Only store BCs with good quality of T0 and EMC in RCT"};
   Configurable<bool> cfgStoreMu{"cfgStoreMu", false, "Calculate and store mu (probablity of a TVX collision in the BC) per BC. Otherwise fill with 0"};
+  ConfigurableAxis cfgMultiplicityBinning{"cfgMultiplicityBinning", {1000, 0, 10000}, "Binning used for the binning of the number of particles in the event"};
 
   aod::rctsel::RCTFlagsChecker isFT0EMCGoodRCTChecker{aod::rctsel::kFT0Bad, aod::rctsel::kEMCBad};
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
@@ -97,6 +98,8 @@ struct bcWiseClusterSkimmer {
     const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "NoBorder"};
     for (int iBin = 0; iBin < nEventBins; iBin++)
       mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+
+    mHistManager.add("CentralityVsGenMultiplicity", "Centrality vs number of generated MC particles;Centrality;#bf{#it{N}_{gen}}", HistType::kTH2F, {{102, 0., 102}, cfgMultiplicityBinning});
 
     LOG(info) << "BC wise cluster skimmer cuts:";
     LOG(info) << "------------------------------------";
@@ -310,6 +313,10 @@ struct bcWiseClusterSkimmer {
       auto mcCollisionsBC = mcCollisions.sliceBy(mcCollperBC, bc.globalIndex());
       for (const auto& mcCollision : mcCollisionsBC) {
         auto mcParticlesInColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+        double centrality = 101.5;
+        if (collisionsInBC.size() > 0)
+          centrality = collisionsInBC.iteratorAt(0).centFT0M();
+        mHistManager.fill(HIST("CentralityVsGenMultiplicity"), centrality, mcParticlesInColl.size());
         for (const auto& mcParticle : mcParticlesInColl) {
           if (mcParticle.pdgCode() != 111 || std::abs(mcParticle.y()) > cfgRapidityCut || !isGammaGammaDecay(mcParticle, mcParticles) || mcParticle.pt() < cfgMinPtGenPi0)
             continue;
