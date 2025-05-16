@@ -169,11 +169,6 @@ struct UccZdc {
   Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch_9May2025", "base path to the ccdb object"};
   Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch_9May2025", "base path to the ccdb object"};
 
-  // the efficiency has been previously stored in the CCDB as TH1F histogram
-  TH1F* efficiency = nullptr;
-  TF1* fSigmaNch = nullptr;
-  TF1* fMeanNch = nullptr;
-
   void init(InitContext const&)
   {
     // define axes you want to use
@@ -208,6 +203,7 @@ struct UccZdc {
     x->SetBinLabel(16, "Within TDC cut?");
     x->SetBinLabel(17, "Within ZEM cut?");
 
+    LOG(info) << "\tuseTimeStamps=" << useTimeStamps.value;
     LOG(info) << "\titsRequirement=" << itsRequirement.value;
     LOG(info) << "\trequireITS=" << requireITS.value;
     LOG(info) << "\trequireTPC=" << requireTPC.value;
@@ -512,13 +508,15 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    bool areParsLoaded{false};
-    if (useTimeStamps) {
-      areParsLoaded = loadMeanSigmaNchParams(foundBC.timestamp());
-    } else {
-      areParsLoaded = loadMeanSigmaNchParams(foundBC.runNumber());
+    // Load Mean Nch and Sigma Nch from CCDB
+    auto fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, foundBC.runNumber());
+    auto fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, foundBC.runNumber());
+    if (!fMeanNch) {
+      LOGF(fatal, "Could not load fMeanNch from %s", paTHmeanNch.value.c_str());
+      return;
     }
-    if (!areParsLoaded) {
+    if (!fSigmaNch) {
+      LOGF(fatal, "Could not load fSigmaNch from %s", paTHsigmaNch.value.c_str());
       return;
     }
 
@@ -669,24 +667,21 @@ struct UccZdc {
     }
 
     // Load Efficiency correction
-    bool isEffLoaded{false};
-    if (useTimeStamps) {
-      isEffLoaded = loadEfficiencyCorrection(foundBC.timestamp());
-    } else {
-      isEffLoaded = loadEfficiencyCorrection(foundBC.runNumber());
-    }
-    if (!isEffLoaded) {
+    auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    if (!efficiency) {
+      LOGF(fatal, "Could not load efficiency from %s", paTH.value.c_str());
       return;
     }
 
     // Get Nch-based selection objects from the CCDB
-    bool areParsLoaded{false};
-    if (useTimeStamps) {
-      areParsLoaded = loadMeanSigmaNchParams(foundBC.timestamp());
-    } else {
-      areParsLoaded = loadMeanSigmaNchParams(foundBC.runNumber());
+    auto fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, foundBC.runNumber());
+    auto fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, foundBC.runNumber());
+    if (!fMeanNch) {
+      LOGF(fatal, "Could not load fMeanNch from %s", paTHmeanNch.value.c_str());
+      return;
     }
-    if (!areParsLoaded) {
+    if (!fSigmaNch) {
+      LOGF(fatal, "Could not load fSigmaNch from %s", paTHsigmaNch.value.c_str());
       return;
     }
 
@@ -799,13 +794,14 @@ struct UccZdc {
         }
 
         // Load Efficiency correction
-        bool isEffLoaded{false};
-        if (useTimeStamps) {
-          isEffLoaded = loadEfficiencyCorrection(foundBC.timestamp());
-        } else {
-          isEffLoaded = loadEfficiencyCorrection(foundBC.runNumber());
-        }
-        if (!isEffLoaded) {
+        //                bool isEffLoaded{false};
+        //                if (useTimeStamps) { isEffLoaded = loadEfficiencyCorrection(foundBC.timestamp()); }
+        //                else { isEffLoaded = loadEfficiencyCorrection(foundBC.runNumber()); }
+        //                if(!isEffLoaded) { return; }
+
+        auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+        if (!efficiency) {
+          LOGF(fatal, "Could not load efficiency from %s", paTH.value.c_str());
           return;
         }
 
@@ -1034,64 +1030,59 @@ struct UccZdc {
     }
   }
 
+  /*
   template <typename T>
   bool loadMeanSigmaNchParams(const T& parameter)
   {
-    fMeanNch = nullptr;
-    fSigmaNch = nullptr;
-    // Get Nch-based selection objects from the CCDB
-    if (useTimeStamps) {
-      fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, parameter);
-      fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, parameter);
-    } else {
-      fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, parameter);
-      fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, parameter);
-      // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
-    }
-    if (!fMeanNch) {
-      LOGF(fatal, "Could not load fMeanNch from %s", paTHmeanNch.value.c_str());
-      return false;
-    }
-    if (!fSigmaNch) {
-      LOGF(fatal, "Could not load fSigmaNch from %s", paTHsigmaNch.value.c_str());
-      return false;
-    }
-    //        if (fMeanNch) {
-    //            LOGF(info, "Loaded fMeanNch from %s (%p)", paTHmeanNch.value.c_str(), (void*)fMeanNch);
-    //        }
-    //        if (fSigmaNch) {
-    //            LOGF(info, "Loaded fSigmaNch from %s (%p)", paTHsigmaNch.value.c_str(), (void*)fSigmaNch);
-    //        }
-    if (!fMeanNch || !fSigmaNch) {
-      return false;
-    } else {
-      return true;
-    }
+      fMeanNch = nullptr;
+      fSigmaNch = nullptr;
+      // Get Nch-based selection objects from the CCDB
+      if(useTimeStamps){
+          fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, parameter);
+          fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, parameter);
+      } else{
+          fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, parameter);
+          fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, parameter);
+          // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+      }
+      if (!fMeanNch) {
+          LOGF(fatal, "Could not load fMeanNch from %s", paTHmeanNch.value.c_str());
+          return false;
+      }
+      if (!fSigmaNch) {
+          LOGF(fatal, "Could not load fSigmaNch from %s", paTHsigmaNch.value.c_str());
+          return false;
+      }
+      //        if (fMeanNch) {
+      //            LOGF(info, "Loaded fMeanNch from %s (%p)", paTHmeanNch.value.c_str(), (void*)fMeanNch);
+      //        }
+      //        if (fSigmaNch) {
+      //            LOGF(info, "Loaded fSigmaNch from %s (%p)", paTHsigmaNch.value.c_str(), (void*)fSigmaNch);
+      //        }
+      if(!fMeanNch || !fSigmaNch) { return false; }
+      else{ return true; }
   }
 
   template <typename T>
   bool loadEfficiencyCorrection(const T& parameter)
   {
-    efficiency = nullptr;
-    // Get Nch-based selection objects from the CCDB
-    if (useTimeStamps) {
-      efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, parameter);
-    } else {
-      efficiency = ccdb->getForRun<TH1F>(paTH.value, parameter);
-    }
-    if (!efficiency) {
-      LOGF(fatal, "Could not load efficiency from %s", paTH.value.c_str());
-      return false;
-    }
-    //        if (efficiency) {
-    //            LOGF(info, "Loaded efficiency from %s (%p)", paTH.value.c_str(), (void*)efficiency);
-    //        }
-    if (!efficiency) {
-      return false;
-    } else {
-      return true;
-    }
-  }
+      efficiency = nullptr;
+      // Get Nch-based selection objects from the CCDB
+      if(useTimeStamps){
+          efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, parameter);
+      } else{
+          efficiency = ccdb->getForRun<TH1F>(paTH.value, parameter);
+      }
+      if (!efficiency) {
+          LOGF(fatal, "Could not load efficiency from %s", paTH.value.c_str());
+          return false;
+      }
+      //        if (efficiency) {
+      //            LOGF(info, "Loaded efficiency from %s (%p)", paTH.value.c_str(), (void*)efficiency);
+      //        }
+      if(!efficiency) { return false; }
+      else{ return true; }
+  }*/
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
