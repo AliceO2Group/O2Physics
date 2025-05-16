@@ -286,7 +286,7 @@ struct kinkBuilder {
       o2::base::Propagator::Instance()->PropagateToXBxByBz(trackParCovMoth, LayerRadii[trackMoth.itsNCls() - 1]);
 
       o2::track::TrackParCov trackParCovMothPV = getTrackParCov(trackMoth);
-      gpu::gpustd::array<float, 2> dcaInfoMoth;
+      std::array<float, 2> dcaInfoMoth;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovMothPV, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoMoth);
 
       if (std::abs(dcaInfoMoth[0]) > maxDCAMothToPV) {
@@ -305,7 +305,7 @@ struct kinkBuilder {
       }
 
       // propagate to PV
-      gpu::gpustd::array<float, 2> dcaInfoDaug;
+      std::array<float, 2> dcaInfoDaug;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovDaug, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
       if (std::abs(dcaInfoDaug[0]) < minDCADaugToPV) {
         continue;

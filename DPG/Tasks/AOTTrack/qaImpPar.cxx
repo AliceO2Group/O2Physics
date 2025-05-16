@@ -692,7 +692,7 @@ struct QaImpactPar {
           }
         } else {
           auto trackPar = getTrackPar(track);
-          o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+          std::array<float, 2> dcaInfo{-999., -999.};
           if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
             impParRPhi = dcaInfo[0] * toMicrometers;
             impParZ = dcaInfo[1] * toMicrometers;
