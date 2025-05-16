@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -11,24 +11,24 @@
 
 /// \file nchCumulantsId.cxx
 /// \brief Event by Event conserved charges fluctuations
-///        it is meant to be a blank page for further developments.
-/// \author Pravata Panigrahi <pravata.panigrahi@cern.ch>:: Sadhana Dash (sadhana@phy.iitb.ac.in) and Rahul Verma (rahul.verma@iitb.ac.in)
+/// \author Pravata Panigrahi <pravata.panigrahi@cern.ch> :: Sadhana Dash(sadhana@phy.iitb.ac.in)
+
 #include <algorithm>
 #include <vector>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,8 +47,6 @@ struct NchCumulantsId {
   Configurable<float> cfgCutDcaXY{"cfgCutDcaXY", 0.12, "cut for dcaXY"};
   Configurable<float> cfgCutDcaZ{"cfgCutDcaZ", 0.3, "cut for dcaZ"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "cut for eta"};
-  Configurable<float> cfgCutPtMax{"cfgCutPtMax", 3.0, "max cut for pT"};
-  Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.15, "min cut for pT"};
 
   // Configurables for particle Identification
   Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", false, "cfgId01CheckVetoCut"};
@@ -655,7 +653,7 @@ struct NchCumulantsId {
   Filter col = aod::evsel::sel8 == true;
   Filter colFilter = nabs(aod::collision::posZ) < cfgCutPosZ;
   Filter trackFilter = requireGlobalTrackInFilter();
-  Filter trackPt = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
+  Filter trackPt = (aod::track::pt > 0.15f) && (aod::track::pt < 2.0f);
   Filter trackDCAxy = nabs(aod::track::dcaXY) < cfgCutDcaXY;
   Filter trackDCAz = nabs(aod::track::dcaZ) < cfgCutDcaZ;
   Filter tracketa = nabs(aod::track::eta) < cfgCutEta;
@@ -749,9 +747,9 @@ struct NchCumulantsId {
       hist.fill(HIST("sparse1"), nCh, nP, nM, nPr, nAPr, nKa, nAKa, nT, col.centFT0M());
       hist.fill(HIST("sparse2"), nCh, nP, nM, nPi, nAPi, nKa, nAKa, nT, col.centFT0M());
 
-    }//collision ends
-  }//process ends
-};//structure ends
+    } // collision ends
+  }   // process ends
+};    // structure ends
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
