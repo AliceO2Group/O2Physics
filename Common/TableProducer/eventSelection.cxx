@@ -266,16 +266,30 @@ struct BcSelectionTask {
 
     if (run != lastRun) {
       lastRun = run;
-      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
-      // first bc of the first orbit
-      bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
-      // duration of TF in bcs
-      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
-      // SOR and EOR timestamps
-      sorTimestamp = runInfo.sor;
-      eorTimestamp = runInfo.eor;
+      if (run >= 300000 && run < 500000) {                  // unanchored Run3 MC
+        auto runDuration = ccdb->getRunDuration(run, true); // fatalise if timestamps are not found
+        // SOR and EOR timestamps
+        sorTimestamp = runDuration.first;  // timestamp of the SOR/SOX/STF in ms
+        eorTimestamp = runDuration.second; // timestamp of the EOR/EOX/ETF in ms
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", sorTimestamp / 2 + eorTimestamp / 2);
+        auto orbitResetMUS = (*ctp)[0];
+        // first bc of the first orbit
+        bcSOR = static_cast<int64_t>((sorTimestamp * 1000 - orbitResetMUS) / o2::constants::lhc::LHCOrbitMUS) * nBCsPerOrbit;
+        // duration of TF in bcs
+        nBCsPerTF = 32; // hard-coded for Run3 MC (no info from ccdb at the moment)
+      } else {
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+        // SOR and EOR timestamps
+        sorTimestamp = runInfo.sor;
+        eorTimestamp = runInfo.eor;
+        // first bc of the first orbit
+        bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
+        // duration of TF in bcs
+        nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
+      }
+
       // timestamp of the middle of the run used to access run-wise CCDB entries
-      int64_t ts = runInfo.sor / 2 + runInfo.eor / 2;
+      int64_t ts = sorTimestamp / 2 + eorTimestamp / 2;
       // access ITSROF and TF border margins
       par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
       mITSROFrameStartBorderMargin = confITSROFrameStartBorderMargin < 0 ? par->fITSROFrameStartBorderMargin : confITSROFrameStartBorderMargin;
