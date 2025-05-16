@@ -109,13 +109,13 @@ DECLARE_SOA_COLUMN(Definition, definition, int);                       //! clust
 
 } // namespace emcalcluster
 // table of clusters that could be matched to a collision
-DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTERS", //!
+DECLARE_SOA_TABLE(EMCALClusters, "AOD", "EMCALCLUSTER", //!
                   o2::soa::Index<>, emcalcluster::CollisionId, emcalcluster::ID, emcalcluster::Energy,
                   emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
                   emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
                   emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
 // table of ambiguous clusters that could not be matched to a collision
-DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
+DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLU", //!
                   o2::soa::Index<>, emcalcluster::BCId, emcalcluster::ID, emcalcluster::Energy,
                   emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
                   emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
@@ -150,9 +150,9 @@ DECLARE_SOA_INDEX_COLUMN(Calo, calo);                 //! linked to calo cells
 // declare index column pointing to ambiguous cluster table
 DECLARE_SOA_INDEX_COLUMN(EMCALAmbiguousCluster, emcalambiguouscluster); //! linked to EMCalAmbiguousClusters table
 } // namespace emcalclustercell
-DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELLS",                                               //!
+DECLARE_SOA_TABLE(EMCALClusterCells, "AOD", "EMCCLUSCELL",                                                //!
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalclustercell::CaloId);          //!
-DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCLS",                                    //!
+DECLARE_SOA_TABLE(EMCALAmbiguousClusterCells, "AOD", "EMCAMBBCLUSCL",                                     //!
                   o2::soa::Index<>, emcalclustercell::EMCALAmbiguousClusterId, emcalclustercell::CaloId); //!
 using EMCALClusterCell = EMCALClusterCells::iterator;
 using EMCALAmbiguousClusterCell = EMCALAmbiguousClusterCells::iterator;
@@ -160,8 +160,25 @@ namespace emcalmatchedtrack
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
 } // namespace emcalmatchedtrack
+namespace emcalcellmatchedtrack
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(Track, track); //! Array of MC particles that deposited energy in this calo cell
+} // namespace emcalcellmatchedtrack
 DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                                     //!
                   o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
+DECLARE_SOA_TABLE(EMCALCellTracks, "AOD", "EMCALCELLTRACK",                                        //!
+                  o2::soa::Index<>, emcalcellmatchedtrack::TrackIds);                              //!
 using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
+using EMCALCellTrack = EMCALCellTracks::iterator;
+
+namespace sortedtrack
+{
+DECLARE_SOA_COLUMN(Eta, eta, float); //! track pseudorapidity (calculated at EMCal surface)
+DECLARE_SOA_COLUMN(Phi, phi, float); //! track azimuthal angle (calculated at EMCal surface)
+} // namespace sortedtrack
+DECLARE_SOA_TABLE(SortedTracks, "AOD", "SORTEDTRACK", //!
+                  o2::soa::Index<>, emcalcluster::BCId, emcalmatchedtrack::TrackId,
+                  sortedtrack::Eta, sortedtrack::Phi); //!
+using SortedTrack = SortedTracks::iterator;
 } // namespace o2::aod
 #endif // PWGJE_DATAMODEL_EMCALCLUSTERS_H_
