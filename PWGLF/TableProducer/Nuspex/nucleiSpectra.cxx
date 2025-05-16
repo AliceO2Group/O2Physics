@@ -183,6 +183,7 @@ constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};
 constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};
 static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
+static const std::vector<int> hfMothCodes{511, 521, 531, 541, 5122}; // b-mesons + Lambda_b
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> flowConfigNames{"Save flow hists"};
@@ -948,6 +949,17 @@ struct nucleiSpectra {
             if (particle.getProcess() == 4) {
               c.fromWeakDecay = true;
             }
+          } else {
+            // if the particle has a hf mother it is flagged as secondary
+            if (particle.has_mothers()) {
+              for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+                if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                  c.isSecondary = true;
+                  c.fromWeakDecay = true;
+                  break;
+                }
+              }
+            }
           }
 
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0)) {
@@ -962,6 +974,15 @@ struct nucleiSpectra {
       isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
+        if (particle.has_mothers()) {
+          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+              c.flags |= kIsSecondaryFromWeakDecay;
+              MotherpdgCode = motherparticle.pdgCode();
+              break;
+            }
+          }
+        }
       } else if (particle.has_mothers()) {
         c.flags |= kIsSecondaryFromWeakDecay;
         for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
