@@ -41,7 +41,6 @@
 
 #include "EventFiltering/filterTables.h"
 
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 
 using namespace o2;
