@@ -148,8 +148,8 @@ struct HfFemtoDreamProducer {
 
   float magField;
   int runNumber;
-  using CandidateLc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>;
-  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfCand3ProngMcRec>;
+  using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;
+  using CandidateLcMc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfCand3ProngMcRec>;
 
   using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
@@ -475,37 +475,41 @@ struct HfFemtoDreamProducer {
           LOGF(fatal, "Please check your Ml configuration!!");
         }
       }
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      int64_t timeStamp = bc.timestamp();
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float BDTScoreBkg,
                            float BDTScorePrompt,
                            float BDTScoreFD) {
         if (FunctionSelection >= 1){
-                rowCandCharmHad(
-                    outputCollision.lastIndex(),
-                    trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
-                    trackPos1.globalIndex(),
-                    trackNeg.globalIndex(),
-                    trackPos2.globalIndex(),
-                    trackPos1.pt(),
-                    trackNeg.pt(),
-                    trackPos2.pt(),
-                    trackPos1.eta(),
-                    trackNeg.eta(),
-                    trackPos2.eta(),
-                    trackPos1.phi(),
-                    trackNeg.phi(),
-                    trackPos2.phi(),
-                    1 << CandFlag,
-                    BDTScoreBkg,
-                    BDTScorePrompt,
-                    BDTScoreFD);
+          rowCandCharmHad(
+            outputCollision.lastIndex(),
+            timeStamp,
+            trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
+            trackPos1.globalIndex(),
+            trackNeg.globalIndex(),
+            trackPos2.globalIndex(),
+            trackPos1.pt(),
+            trackNeg.pt(),
+            trackPos2.pt(),
+            trackPos1.eta(),
+            trackNeg.eta(),
+            trackPos2.eta(),
+            trackPos1.phi(),
+            trackNeg.phi(),
+            trackPos2.phi(),
+            1 << CandFlag,
+            BDTScoreBkg,
+            BDTScorePrompt,
+            BDTScoreFD);
 
-                // Row for MC candidate charm hadron (if constexpr isMc)
-                if constexpr (isMc) {
-                  rowCandMcCharmHad(
-                    candidate.flagMcMatchRec(),
-                    candidate.originMcRec());}
+          // Row for MC candidate charm hadron (if constexpr isMc)
+          if constexpr (isMc) {
+            rowCandMcCharmHad(
+              candidate.flagMcMatchRec(),
+              candidate.originMcRec());
+          }
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));

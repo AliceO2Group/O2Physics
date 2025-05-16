@@ -144,6 +144,7 @@ class VarManager : public TObject
     kElectronMuon,              // e.g. Electron - muon correlations
     kBcToThreeMuons,            // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,                // e.g. B+           -> e+ e- K+
+    kJpsiEEProton,              // e.g. Jpsi-proton correlation, Jpsi to e+e-
     kXtoJpsiPiPi,               // e.g. X(3872)      -> J/psi pi+ pi-
     kChictoJpsiEE,              // e.g. Chi_c1      -> J/psi e+ e-
     kDstarToD0KPiPi,            // e.g. D*+ -> D0 pi+ -> K- pi+ pi+
@@ -791,6 +792,9 @@ class VarManager : public TObject
     kKFJpsiDCAxy,
     kKFPairDeviationFromPV,
     kKFPairDeviationxyFromPV,
+    kS12,
+    kS13,
+    kS23,
     kNPairVariables,
 
     // Candidate-track correlation variables
@@ -806,6 +810,7 @@ class VarManager : public TObject
     kDeltaPhi,
     kDeltaPhiSym,
     kNCorrelationVariables,
+    kDileptonHadronKstar,
 
     // Dilepton-track-track variables
     kQuadMass,
@@ -3073,6 +3078,9 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
     values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 
   if (pairType == kTripleCandidateToPKPi) {
@@ -3334,6 +3342,10 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+    values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 }
 
@@ -4047,6 +4059,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[VarManager::kPairPtDau] = v12.Pt();
     }
     values[VarManager::kPt] = track.pt();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0 || procCodeJpsi == 0) {
@@ -4710,7 +4725,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values = fgValues;
   }
 
-  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
+  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau] || fgUsedVars[kDileptonHadronKstar]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), hadronMass);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -4722,6 +4737,11 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kPairPtDau] = dilepton.pt();
     values[kMassDau] = hadronMass;
     values[kDeltaMass] = v12.M() - dilepton.mass();
+    // Calculate kstar of Dilepton and hadron pair
+    ROOT::Math::PtEtaPhiMVector v12_Qvect = v1 - v2;
+    double Pinv = v12.M();
+    double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
+    values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
   }
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
