@@ -112,6 +112,11 @@ struct strangederivedbuilder {
   Produces<aod::MotherMCParts> motherMCParts; // mc particles for mothers
 
   //__________________________________________________
+  // UPC specific information
+  Produces<aod::ZDCNeutrons> zdcNeutrons;              // Primary neutrons within ZDC acceptance
+  Produces<aod::ZDCNMCCollRefs> zdcNeutronsMCCollRefs; // references collisions from ZDCNeutrons
+
+  //__________________________________________________
   // Q-vectors
   Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
   Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
@@ -516,7 +521,8 @@ struct strangederivedbuilder {
                         energyCommonZNA, energyCommonZNC,
                         // Collision flags
                         collision.flags(),
-                        collision.alias_raw());
+                        collision.alias_raw(),
+                        collision.rct_raw());
         } else { // We are in Run 2
           strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
                            collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
@@ -836,12 +842,14 @@ struct strangederivedbuilder {
 
     //__________________________________________________
     // mark mcParticles for referencing
-    for (auto const& v0 : V0s)
+    for (auto const& v0 : V0s) {
       if (v0.has_mcMotherParticle())
         motherReference[v0.mcMotherParticleId()] = 0;
-    for (auto const& ca : Cascades)
+    }
+    for (auto const& ca : Cascades) {
       if (ca.has_mcMotherParticle())
         motherReference[ca.mcMotherParticleId()] = 0;
+    }
     //__________________________________________________
     // Figure out the numbering of the new mcMother table
     // assume filling per order
@@ -853,10 +861,20 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // populate track references
-    for (auto const& v0 : V0s)
-      v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
-    for (auto const& ca : Cascades)
-      cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+    for (auto const& v0 : V0s) {
+      if (v0.mcMotherParticleId() > -1) {
+        v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
+      } else {
+        v0mothers(-1); // joinable with V0Datas
+      }
+    }
+    for (auto const& ca : Cascades) {
+      if (ca.mcMotherParticleId() > -1) {
+        cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+      } else {
+        cascmothers(-1); // joinable with CascDatas
+      }
+    }
     //__________________________________________________
     // populate motherMCParticles
     for (auto const& tr : mcParticles) {
@@ -1053,6 +1071,26 @@ struct strangederivedbuilder {
     straOrigin(origin.dataframeID());
   }
 
+  void processSimulatedZDCNeutrons(soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const& mcParticlesEntireTable)
+  {
+    for (const auto& mccollision : mcCollisions) {
+      const uint64_t mcCollIndex = mccollision.globalIndex();
+      auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
+
+      for (const auto& mcPart : mcParticles) {
+        if (std::abs(mcPart.pdgCode()) == kNeutron) { // check if it is a neutron or anti-neutron
+          if (std::abs(mcPart.eta()) > 8.7) {         // check if it is within ZDC acceptance
+            zdcNeutrons(mcPart.pdgCode(), mcPart.statusCode(), mcPart.flags(),
+                        mcPart.vx(), mcPart.vy(), mcPart.vz(), mcPart.vt(),
+                        mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+
+            zdcNeutronsMCCollRefs(mcPart.mcCollisionId());
+          }
+        }
+      }
+    }
+  }
+
   // debug processing
   PROCESS_SWITCH(strangederivedbuilder, processDataframeIDs, "Produce data frame ID tags", false);
 
@@ -1076,6 +1114,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processPureSimulation, "Produce pure simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processBinnedGenerated, "Produce binned generated information", false);
+  PROCESS_SWITCH(strangederivedbuilder, processSimulatedZDCNeutrons, "Produce generated neutrons (within ZDC acceptance) table for UPC analysis", false);
 
   // event plane information
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);

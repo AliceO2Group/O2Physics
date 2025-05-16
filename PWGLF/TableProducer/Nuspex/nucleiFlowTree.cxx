@@ -137,13 +137,16 @@ struct nucleiFlowTree {
 
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>;
 
+  // Configurable Harmonics index
+  Configurable<int> cfgHarmonics{"cfgHarmonics", 2, "Harmonics index for flow analysis"};
+
   // Collisions with chentrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
 
   // Flow analysis
   using CollWithEP = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>::iterator;
 
-  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBTots, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
+  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorTPCallVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -413,23 +416,23 @@ struct nucleiFlowTree {
             collision.qTPCR(),
           });
         } else if constexpr (requires {
-                               collision.qvecFT0AIm();
+                               collision.qvecFT0AImVec()[cfgHarmonics - 2];
                              }) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
             collision.centFT0M(),
             collision.centFT0A(),
             collision.centFT0C(),
-            computeEventPlane(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
-            computeEventPlane(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
-            computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
-            computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
-            computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
+            computeEventPlane(collision.qvecFT0AImVec()[cfgHarmonics - 2], collision.qvecFT0AReVec()[cfgHarmonics - 2]),
+            computeEventPlane(collision.qvecFT0CImVec()[cfgHarmonics - 2], collision.qvecFT0CReVec()[cfgHarmonics - 2]),
+            computeEventPlane(collision.qvecTPCallImVec()[cfgHarmonics - 2], collision.qvecTPCallReVec()[cfgHarmonics - 2]),
+            computeEventPlane(collision.qvecTPCnegImVec()[cfgHarmonics - 2], collision.qvecTPCnegReVec()[cfgHarmonics - 2]),
+            computeEventPlane(collision.qvecTPCposImVec()[cfgHarmonics - 2], collision.qvecTPCposReVec()[cfgHarmonics - 2]),
             collision.sumAmplFT0A(),
             collision.sumAmplFT0C(),
-            static_cast<float>(collision.nTrkBTot()),
-            static_cast<float>(collision.nTrkBNeg()),
-            static_cast<float>(collision.nTrkBPos())});
+            static_cast<float>(collision.nTrkTPCall()),
+            static_cast<float>(collision.nTrkTPCneg()),
+            static_cast<float>(collision.nTrkTPCpos())});
         }
         if (flag & kTriton) {
           if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)

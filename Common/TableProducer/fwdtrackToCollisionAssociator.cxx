@@ -64,6 +64,7 @@ struct FwdTrackToCollisionAssociation {
     collisionAssociator.setUsePvAssociation(false);
     collisionAssociator.setIncludeUnassigned(includeUnassigned);
     collisionAssociator.setFillTableOfCollIdsPerTrack(fillTableOfCollIdsPerTrack);
+    collisionAssociator.setBcWindow(bcWindowForOneSigma);
   }
 
   void processFwdAssocWithTime(Collisions const& collisions,

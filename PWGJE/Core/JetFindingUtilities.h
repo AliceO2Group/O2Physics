@@ -20,7 +20,6 @@
 #include <array>
 #include <vector>
 #include <string>
-#include <optional>
 #include <cmath>
 #include <memory>
 #include <TRandom3.h>
@@ -99,15 +98,14 @@ constexpr bool isEMCALClusterTable()
  */
 
 template <typename T, typename U>
-void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, std::optional<U> const& candidate = std::nullopt)
+void analyseTracks(std::vector<fastjet::PseudoJet>& inputParticles, T const& tracks, int trackSelection, double trackingEfficinecy, const U* candidate = nullptr)
 {
   for (auto& track : tracks) {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
       continue;
     }
-    if (candidate != std::nullopt) {
-      auto cand = candidate.value();
-      if (jetcandidateutilities::isDaughterTrack(track, cand, tracks)) {
+    if (candidate != nullptr) {
+      if (jetcandidateutilities::isDaughterTrack(track, *candidate, tracks)) {
         continue;
       }
     }
@@ -337,7 +335,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
  * @param candidate optional hf candidiate
  */
 template <bool checkIsDaughter, typename T, typename U>
-void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, std::optional<U> const& candidate = std::nullopt)
+void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::string particleSelection, int jetTypeParticleLevel, T const& particles, o2::framework::Service<o2::framework::O2DatabasePDG> pdgDatabase, const U* candidate = nullptr)
 {
   for (auto& particle : particles) {
     if (particleSelection == "PhysicalPrimary" && !particle.isPhysicalPrimary()) { // CHECK : Does this exclude the HF hadron?
@@ -361,13 +359,12 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
       continue;
     }
     if constexpr (jetcandidateutilities::isMcCandidate<U>() && !jetv0utilities::isV0McCandidate<U>()) {
-      if (candidate != std::nullopt) {
-        auto cand = candidate.value();
-        if (cand.mcParticleId() == particle.globalIndex()) {
+      if (candidate != nullptr) {
+        if ((*candidate).mcParticleId() == particle.globalIndex()) {
           continue;
         }
         if constexpr (checkIsDaughter) {
-          auto hfParticle = cand.template mcParticle_as<T>();
+          auto hfParticle = (*candidate).template mcParticle_as<T>();
           if (jetcandidateutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
             continue;
           }
@@ -375,9 +372,8 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
       }
     }
     if constexpr (jetv0utilities::isV0McTable<U>()) { // note that for V0s the candidate table is given to this function, not a single candidate
-      if (candidate != std::nullopt) {
-        auto cands = candidate.value();
-        for (auto const& cand : cands) {
+      if (candidate != nullptr) {
+        for (auto const& cand : (*candidate)) {
           if (cand.mcParticleId() == particle.globalIndex()) {
             continue;
           }
