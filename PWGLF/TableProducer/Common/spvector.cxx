@@ -21,6 +21,7 @@
 #include <TMath.h>
 #include <array>
 #include <cmath>
+#include <iostream>
 #include "Math/Vector4D.h"
 #include "TRandom3.h"
 #include "TF1.h"
@@ -530,6 +531,7 @@ struct spvector {
 
       Bool_t res = 0;
       Bool_t resfine = 0;
+      Int_t check = 1;
 
       if (coarse1) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
@@ -624,7 +626,8 @@ struct spvector {
         res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
-      if (res == 0 || resfine == 0) {
+      if (res == 0 && resfine == 0 && check == 0) {
+        LOG(info) << "Histograms are null";
       }
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
