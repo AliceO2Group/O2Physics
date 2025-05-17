@@ -876,8 +876,8 @@ class VarManager : public TObject
     kToRabs
   };
 
-  static TString fgVariableNames[kNVars]; // variable names
-  static TString fgVariableUnits[kNVars]; // variable units
+  static TString fgVariableNames[kNVars];      // variable names
+  static TString fgVariableUnits[kNVars];      // variable units
   static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
@@ -2180,11 +2180,6 @@ void VarManager::FillTrack(T const& track, float* values)
       }
     }
 
-    if constexpr ((fillMap & MuonRealign) > 0) {
-      values[kMuonChi2] = track.chi2();
-      values[kMuonTrackType] = track.trackType();
-    }
-
     if (fgUsedVars[kM11REFoverMpsingle]) {
       float m = o2::constants::physics::MassMuon;
       ROOT::Math::PtEtaPhiMVector v(track.pt(), track.eta(), track.phi(), m);
@@ -2518,7 +2513,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the muon extra table
-  if constexpr ((fillMap & ReducedMuonExtra) > 0 || (fillMap & Muon) > 0) {
+  if constexpr ((fillMap & ReducedMuonExtra) > 0 || (fillMap & Muon) > 0 || (fillMap & MuonRealign) > 0) {
     values[kMuonNClusters] = track.nClusters();
     values[kMuonPDca] = track.pDca();
     values[kMCHBitMap] = track.mchBitMap();
