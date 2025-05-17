@@ -48,6 +48,8 @@ using namespace o2::framework;
 using namespace o2::mch;
 using namespace o2::framework::expressions;
 
+using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
+
 const int fgNDetElemCh[10] = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
 const int fgSNDetElemCh[11] = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
 
@@ -101,7 +103,6 @@ struct MuonRealignment {
   TGeoManager* geoRef = nullptr;
 
   Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
-  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
 
   int GetDetElemId(int iDetElemNumber)
   {
@@ -222,89 +223,18 @@ struct MuonRealignment {
     mImproveCutChi2 = 2. * cfgSigmaCutImprove.value * cfgSigmaCutImprove.value;
   }
 
-  template <typename TEvent, typename TMuons, typename TMuonCls, typename AssocMuons>
-  void runMuonRealignment(TEvent const& collision, aod::BCsWithTimestamps const&, TMuons const&, TMuonCls const& clusters, AssocMuons const& fwdtrackIndices)
+  template <typename TMuons, typename TMuonCls>
+  void runMuonRealignment(TMuons const& muons, TMuonCls const& clusters)
   {
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    if (fCurrentRun != bc.runNumber()) {
-      // Load magnetic field information from CCDB/local
-      if (fUseRemoteField) {
-        ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-        if (grpmag != nullptr) {
-          base::Propagator::initFieldFromGRP(grpmag);
-          TrackExtrap::setField();
-          TrackExtrap::useExtrapV2();
-        } else {
-          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
-        }
-      } else {
-        if (std::filesystem::exists(grpPathLocal.value)) {
-          const auto grp = parameters::GRPObject::loadFrom(grpPathLocal.value);
-          base::Propagator::initFieldFromGRP(grp);
-          TrackExtrap::setField();
-          TrackExtrap::useExtrapV2();
-        } else {
-          LOGF(fatal, "GRP object is not available in local path: %s", grpPathLocal.value);
-        }
-      }
-
-      // Load geometry information from CCDB/local
-      LOGF(info, "Loading reference aligned geometry from CCDB no later than %d", nolaterthanRef.value);
-      ccdb->setCreatedNotAfter(nolaterthanRef.value); // this timestamp has to be consistent with what has been used in reco
-      geoRef = ccdb->getForTimeStamp<TGeoManager>(geoRefPath, bc.timestamp());
-      ccdb->clearCache(geoRefPath);
-      if (geoRef != nullptr) {
-        transformation = geo::transformationFromTGeoManager(*geoRef);
-      } else {
-        LOGF(fatal, "Reference aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
-      }
-      for (int i = 0; i < 156; i++) {
-        int iDEN = GetDetElemId(i);
-        transformRef[iDEN] = transformation(iDEN);
-      }
-
-      if (fUseRemoteGeometry) {
-        LOGF(info, "Loading new aligned geometry from CCDB no later than %d", nolaterthanNew.value);
-        ccdb->setCreatedNotAfter(nolaterthanNew.value); // make sure this timestamp can be resolved regarding the reference one
-        geoNew = ccdb->getForTimeStamp<TGeoManager>(geoNewPath, bc.timestamp());
-        ccdb->clearCache(geoNewPath);
-        if (geoNew != nullptr) {
-          transformation = geo::transformationFromTGeoManager(*geoNew);
-        } else {
-          LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
-        }
-        for (int i = 0; i < 156; i++) {
-          int iDEN = GetDetElemId(i);
-          transformNew[iDEN] = transformation(iDEN);
-        }
-      } else {
-        LOGF(info, "Loading new aligned geometry from local path: %s", geoNewPathLocal.value);
-        if (std::filesystem::exists(geoNewPathLocal.value)) {
-          base::GeometryManager::loadGeometry(geoNewPathLocal.value);
-          transformation = geo::transformationFromTGeoManager(*gGeoManager);
-          for (int i = 0; i < 156; i++) {
-            int iDEN = GetDetElemId(i);
-            transformNew[iDEN] = transformation(iDEN);
-          }
-        } else {
-          LOGF(fatal, "New geometry file is not available in local path: %s", geoNewPathLocal.value);
-        }
-      }
-
-      fCurrentRun = bc.runNumber();
-    }
-
     // Reserve storage for output table
-    realignFwdTrks.reserve(fwdtrackIndices.size());
-    realignFwdTrksCov.reserve(fwdtrackIndices.size());
+    realignFwdTrks.reserve(muons.size());
+    realignFwdTrksCov.reserve(muons.size());
 
     // Loop over forward tracks using association indices
     FwdTrkCovRealignInfo fwdTrkCovRealignInfo;
-    for (auto const& muonId : fwdtrackIndices) {
-      auto muon = muonId.template fwdtrack_as<TMuons>();
+    for (auto const& muon : muons) {
       int muonRealignId = muon.globalIndex();
-      if ((muon.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) || (muon.trackType() == aod::fwdtrack::ForwardTrackTypeEnum::MCHStandaloneTrack)) {
+      if (int(muon.trackType() > 2)) {
 
         auto clustersSliced = clusters.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
         mch::Track convertedTrack = mch::Track();                            // Temporary variable to store re-aligned clusters
@@ -370,7 +300,10 @@ struct MuonRealignment {
         LOGF(debug, "TrackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d", muon.globalIndex(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.chi2(), muon.nClusters());
         LOGF(debug, "Re-aligned trackParm %d, x:%g  y:%g  z:%g  phi:%g  tgl:%g  InvQPt:%g  chi2:%g  nClusters:%d  removable:%d", muonRealignId, fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), convertedTrack.getNClusters(), removable);
         // Fill refitted track info
-        realignFwdTrks(muonId.collisionId(), muonId.fwdtrackId(), muon.trackType(), fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), fwdtrack.getTrackChi2(), removable);
+        realignFwdTrks(muon.collisionId(), muon.trackType(), fwdtrack.getX(), fwdtrack.getY(), fwdtrack.getZ(), fwdtrack.getPhi(), fwdtrack.getTgl(), fwdtrack.getInvQPt(), convertedTrack.getNClusters(), muon.pDca(), muon.rAtAbsorberEnd(), removable, fwdtrack.getTrackChi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                       muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(),
+                       muon.mchBitMap(), muon.midBitMap(), muon.midBoards(),
+                       muon.trackTime(), muon.trackTimeRes());
         realignFwdTrksCov(fwdTrkCovRealignInfo.sigX, fwdTrkCovRealignInfo.sigY, fwdTrkCovRealignInfo.sigPhi,
                           fwdTrkCovRealignInfo.sigTgl, fwdTrkCovRealignInfo.sig1Pt, fwdTrkCovRealignInfo.rhoXY,
                           fwdTrkCovRealignInfo.rhoPhiX, fwdTrkCovRealignInfo.rhoPhiY, fwdTrkCovRealignInfo.rhoTglX,
@@ -378,22 +311,100 @@ struct MuonRealignment {
                           fwdTrkCovRealignInfo.rho1PtY, fwdTrkCovRealignInfo.rho1PtPhi, fwdTrkCovRealignInfo.rho1PtTgl);
         muonRealignId++;
       } else {
-        // Fill nothing for global muons
-        realignFwdTrks(muonId.collisionId(), muonId.fwdtrackId(), muon.trackType(), 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, -1.0);
-        realignFwdTrksCov(0.f, 0.f, 0.f, 0.f, 0.f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        realignFwdTrks(muon.collisionId(), muon.trackType(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(), 0, muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                       muon.matchScoreMCHMFT(), muon.matchMFTTrackId(), muon.matchMCHTrackId(),
+                       muon.mchBitMap(), muon.midBitMap(), muon.midBoards(),
+                       muon.trackTime(), muon.trackTimeRes());
+        realignFwdTrksCov(muon.sigmaX(), muon.sigmaY(), muon.sigmaPhi(), muon.sigmaTgl(), muon.sigma1Pt(), muon.rhoXY(), muon.rhoPhiY(), muon.rhoPhiX(), muon.rhoTglX(), muon.rhoTglY(), muon.rhoTglPhi(), muon.rho1PtX(), muon.rho1PtY(), muon.rho1PtPhi(), muon.rho1PtTgl());
         muonRealignId++;
       }
     }
   }
 
-  void processMuonReAlignmentWithAssoc(aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs, aod::FwdTracks const& tracks, aod::FwdTrkCls const& clusters, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processMuonReAlignment(aod::Collisions const& collisions, aod::BCsWithTimestamps const&, MyMuonsWithCov const& tracks, aod::FwdTrkCls const& clusters)
   {
-    for (auto& collision : collisions) {
-      auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      runMuonRealignment(collision, bcs, tracks, clusters, muonIdsThisCollision);
+    bool FirstEvent = true;
+    for (auto const& collision : collisions) {
+
+      if (!FirstEvent) {
+        break;
+      }
+
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (fCurrentRun != bc.runNumber()) {
+        // Load magnetic field information from CCDB/local
+        if (fUseRemoteField) {
+          ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+          grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+          if (grpmag != nullptr) {
+            base::Propagator::initFieldFromGRP(grpmag);
+            TrackExtrap::setField();
+            TrackExtrap::useExtrapV2();
+          } else {
+            LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
+          }
+        } else {
+          if (std::filesystem::exists(grpPathLocal.value)) {
+            const auto grp = parameters::GRPObject::loadFrom(grpPathLocal.value);
+            base::Propagator::initFieldFromGRP(grp);
+            TrackExtrap::setField();
+            TrackExtrap::useExtrapV2();
+          } else {
+            LOGF(fatal, "GRP object is not available in local path: %s", grpPathLocal.value);
+          }
+        }
+
+        // Load geometry information from CCDB/local
+        LOGF(info, "Loading reference aligned geometry from CCDB no later than %d", nolaterthanRef.value);
+        ccdb->setCreatedNotAfter(nolaterthanRef.value); // this timestamp has to be consistent with what has been used in reco
+        geoRef = ccdb->getForTimeStamp<TGeoManager>(geoRefPath, bc.timestamp());
+        ccdb->clearCache(geoRefPath);
+        if (geoRef != nullptr) {
+          transformation = geo::transformationFromTGeoManager(*geoRef);
+        } else {
+          LOGF(fatal, "Reference aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
+        }
+        for (int i = 0; i < 156; i++) {
+          int iDEN = GetDetElemId(i);
+          transformRef[iDEN] = transformation(iDEN);
+        }
+
+        if (fUseRemoteGeometry) {
+          LOGF(info, "Loading new aligned geometry from CCDB no later than %d", nolaterthanNew.value);
+          ccdb->setCreatedNotAfter(nolaterthanNew.value); // make sure this timestamp can be resolved regarding the reference one
+          geoNew = ccdb->getForTimeStamp<TGeoManager>(geoNewPath, bc.timestamp());
+          ccdb->clearCache(geoNewPath);
+          if (geoNew != nullptr) {
+            transformation = geo::transformationFromTGeoManager(*geoNew);
+          } else {
+            LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
+          }
+          for (int i = 0; i < 156; i++) {
+            int iDEN = GetDetElemId(i);
+            transformNew[iDEN] = transformation(iDEN);
+          }
+        } else {
+          LOGF(info, "Loading new aligned geometry from local path: %s", geoNewPathLocal.value);
+          if (std::filesystem::exists(geoNewPathLocal.value)) {
+            base::GeometryManager::loadGeometry(geoNewPathLocal.value);
+            transformation = geo::transformationFromTGeoManager(*gGeoManager);
+            for (int i = 0; i < 156; i++) {
+              int iDEN = GetDetElemId(i);
+              transformNew[iDEN] = transformation(iDEN);
+            }
+          } else {
+            LOGF(fatal, "New geometry file is not available in local path: %s", geoNewPathLocal.value);
+          }
+        }
+
+        fCurrentRun = bc.runNumber();
+      }
+      FirstEvent = false;
     }
+
+    runMuonRealignment(tracks, clusters);
   }
-  PROCESS_SWITCH(MuonRealignment, processMuonReAlignmentWithAssoc, "Process to produce realigned muons based on associated fwdtracks info", true);
+  PROCESS_SWITCH(MuonRealignment, processMuonReAlignment, "Process to do muon realignment", true);
 };
 
 // Extends the fwdtracksrealign table with expression columns
@@ -405,6 +416,7 @@ struct MuonRealignmentSpawner {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MuonRealignment>(cfgc),
-                      adaptAnalysisTask<MuonRealignmentSpawner>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<MuonRealignment>(cfgc),
+    adaptAnalysisTask<MuonRealignmentSpawner>(cfgc)};
 }
