@@ -85,7 +85,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::Tracks, aod::TracksExtra, aod::Trac
                                         aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyBarrelTracksWithCovNoTOF = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                              aod::pidTPCFullEl, aod::pidTPCFullPi,
-                                             aod::pidTPCFullKa, aod::pidTPCFullPr>;                                        
+                                             aod::pidTPCFullKa, aod::pidTPCFullPr>;
 using MyBarrelTracksWithV0Bits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
