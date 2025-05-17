@@ -51,7 +51,6 @@ DECLARE_SOA_COLUMN(DeltaPhiMatch, deltaPhiMatch, float); //! dPhi matched track 
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);              //! electron information with Emcal
 } // namespace hf_sel_electron
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_sel_electron::CollisionId,
                   hf_sel_electron::TrackId,
                   hf_sel_electron::EtaTrack,
@@ -83,13 +82,12 @@ DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of th
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
 DECLARE_SOA_COLUMN(TpcNSigmaElTrack, tpcNSigmaElTrack, float); //! tpcNSigma of the electron track(TPC PID)
 DECLARE_SOA_COLUMN(TofNSigmaElTrack, tofNSigmaElTrack, float); //! tofNSigma of the electron track(TOF PID)
-DECLARE_SOA_COLUMN(IsLSElectron, isLSElectron, int);           //! Like sign electron information
-DECLARE_SOA_COLUMN(IsULSElectron, isULSElectron, int);         //! Unlike sign electron information
+DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                 //! Number of Like sign electron pair
+DECLARE_SOA_COLUMN(NElPairUS, nElPairUS, int);                 //! Number of UnLike sign electron pair
 DECLARE_SOA_COLUMN(IsEmcal, isEmcal, bool);                    //! electron information
 } // namespace hf_corr_sel_electron
 
 DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_corr_sel_electron::CollisionId,
                   hf_corr_sel_electron::TrackId,
                   hf_corr_sel_electron::EtaTrack,
@@ -97,8 +95,8 @@ DECLARE_SOA_TABLE(HfCorrSelEl, "AOD", "HfCORRSELEL", //! Electron Informations
                   hf_corr_sel_electron::PtTrack,
                   hf_corr_sel_electron::TpcNSigmaElTrack,
                   hf_corr_sel_electron::TofNSigmaElTrack,
-                  hf_corr_sel_electron::IsLSElectron,
-                  hf_corr_sel_electron::IsULSElectron,
+                  hf_corr_sel_electron::NElPairLS,
+                  hf_corr_sel_electron::NElPairUS,
                   hf_corr_sel_electron::IsEmcal);
 
 // definition of columns and tables for Mc Gen HfElectron Selection
@@ -114,7 +112,6 @@ DECLARE_SOA_COLUMN(IsNonHfeMc, isNonHfeMc, bool);   //! Non-Heavy flavour  elect
 } // namespace hf_mcgen_sel_electron
 
 DECLARE_SOA_TABLE(HfMcGenSelEl, "AOD", "HFMCGENSELEL", //! Electron Informations
-                  o2::soa::Index<>,
                   hf_mcgen_sel_electron::McCollisionId,
                   hf_mcgen_sel_electron::TrackId,
                   hf_mcgen_sel_electron::EtaTrackMc,
