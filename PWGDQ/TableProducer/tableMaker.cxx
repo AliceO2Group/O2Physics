@@ -119,7 +119,7 @@ using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
 using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 using MyMuonsColl = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using MyMuonsCollWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
-using MyMuonsRealignWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign>;
+using MyMuonsRealignCollWithCov = soa::Join<aod::FwdTracksReAlign, aod::FwdTrksCovReAlign, aod::FwdTracksDCA, aod::FwdTrkCompColls>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
@@ -139,7 +139,7 @@ constexpr static uint32_t gkTrackFillMapForElectronMuon = VarManager::ObjTypes::
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkMuonFillMapWithCovAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov | VarManager::ObjTypes::AmbiMuon;
-constexpr static uint32_t gkMuonRealignFillMapWithCov = VarManager::ObjTypes::MuonRealign | VarManager::ObjTypes::MuonCovRealign;
+constexpr static uint32_t gkMuonRealignFillMapWithCovAmbi = VarManager::ObjTypes::MuonRealign | VarManager::ObjTypes::MuonCovRealign | VarManager::ObjTypes::AmbiMuon;
 constexpr static uint32_t gkTrackFillMapWithAmbi = VarManager::ObjTypes::Track | VarManager::ObjTypes::AmbiTrack;
 constexpr static uint32_t gkMFTFillMap = VarManager::ObjTypes::TrackMFT;
 
@@ -227,10 +227,8 @@ struct TableMaker {
 
   Preslice<MyBarrelTracks> perCollisionTracks = aod::track::collisionId;
   Preslice<MyMuons> perCollisionMuons = aod::fwdtrack::collisionId;
-  PresliceUnsorted<MyMuonsRealignWithCov> perCollisionMuonsRealign = aod::fwdtrackrealign::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-  PresliceUnsorted<MyMuonsRealignWithCov> fwdtrackRealignPerMuon = aod::fwdtrackrealign::fwdtrackId;
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
@@ -845,8 +843,8 @@ struct TableMaker {
   } // end fullSkimming()
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TMuonRealignFillMap, typename TEvent, typename TTracks, typename TMuons, typename TMuonsRealign, typename AssocTracks, typename AssocMuons>
-  void fullSkimmingIndices(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, TMuonsRealign const& tracksMuonRealign, AssocTracks const& trackIndices, AssocMuons const& fwdtrackIndices)
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename AssocTracks, typename AssocMuons>
+  void fullSkimmingIndices(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, AssocTracks const& trackIndices, AssocMuons const& fwdtrackIndices)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
@@ -1106,7 +1104,7 @@ struct TableMaker {
       muonBasic.reserve(tracksMuon.size());
       muonExtra.reserve(tracksMuon.size());
       muonInfo.reserve(tracksMuon.size());
-      if constexpr (static_cast<bool>((TMuonFillMap & VarManager::ObjTypes::MuonCov) || (TMuonRealignFillMap & VarManager::ObjTypes::MuonCovRealign))) {
+      if constexpr (static_cast<bool>((TMuonFillMap & VarManager::ObjTypes::MuonCov) || (TMuonFillMap & VarManager::ObjTypes::MuonCovRealign))) {
         muonCov.reserve(tracksMuon.size());
       }
       // loop over muons
@@ -1118,28 +1116,10 @@ struct TableMaker {
       std::map<int, int> newMatchIndex;
 
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
-        auto muon = muonId.template fwdtrack_as<TMuons>();
+        auto muon = tracksMuon.rawIteratorAt(muonId.fwdtrackId());
         trackFilteringTag = static_cast<uint64_t>(0);
-        int realignRemoveFlag = 0;
-        if constexpr (static_cast<bool>(TMuonRealignFillMap)) {
-          // Update muon information using realigned tracks
-          if (static_cast<int>(muon.trackType()) > 2) {
-            // Update only MCH or MCH-MID tracks with realigned information
-            auto muonRealignSelected = tracksMuonRealign.sliceBy(fwdtrackRealignPerMuon, muonId.fwdtrackId());
-            if (muonRealignSelected.size() == 1) {
-              for (const auto& muonRealign : muonRealignSelected) {
-                VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
-                realignRemoveFlag = muonRealign.isRemovable();
-              }
-            } else {
-              LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
-            }
-          } else {
-            VarManager::FillTrack<TMuonFillMap>(muon);
-          }
-        } else {
-          VarManager::FillTrack<TMuonFillMap>(muon);
-        }
+
+        VarManager::FillTrack<TMuonFillMap>(muon);
 
         if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
           nDel += muon.index() - (idxPrev + 1);
@@ -1153,7 +1133,7 @@ struct TableMaker {
             trackTempFilterMap |= (uint8_t(1) << i);
         }
 
-        if (!trackTempFilterMap || realignRemoveFlag) { // does not pass the cuts
+        if (!trackTempFilterMap) { // does not pass the cuts
           nDel++;
         } else { // it passes the cuts and will be saved in the tables
           newEntryNb[muon.index()] = muon.index() - nDel;
@@ -1162,7 +1142,7 @@ struct TableMaker {
 
       // now let's save the muons with the correct indices and matches
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
-        auto muon = muonId.template fwdtrack_as<TMuons>();
+        auto muon = tracksMuon.rawIteratorAt(muonId.fwdtrackId());
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::AmbiMuon) > 0) {
           if (fIsAmbiguous) {
             isAmbiguous = (muon.compatibleCollIds().size() != 1);
@@ -1171,55 +1151,19 @@ struct TableMaker {
         trackFilteringTag = static_cast<uint64_t>(0);
         trackTempFilterMap = uint8_t(0);
 
-        if constexpr (static_cast<bool>(TMuonRealignFillMap)) {
-          // Update muon information using realigned tracks
-          if (static_cast<int>(muon.trackType()) > 2) {
-            // Update only MCH or MCH-MID tracks with realigned information
-            auto muonRealignSelected = tracksMuonRealign.sliceBy(fwdtrackRealignPerMuon, muonId.fwdtrackId());
-            int realignRemoveFlag = 0;
-            if (muonRealignSelected.size() == 1) {
-              for (const auto& muonRealign : muonRealignSelected) {
-                LOGF(debug, "Muon original  - collisionId:%d x:%g y:%g z:%g phi:%g tgl:%g signed1pt:%g pt:%g p:%g eta:%g chi2:%g", muon.collisionId(), muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(), muon.pt(), muon.p(), muon.eta(), muon.chi2());
-                LOGF(debug, "Muon realigned - collisionId:%d x:%g y:%g z:%g phi:%g tgl:%g signed1pt:%g pt:%g p:%g eta:%g chi2:%g", muonRealign.collisionId(), muonRealign.x(), muonRealign.y(), muonRealign.z(), muonRealign.phi(), muonRealign.tgl(), muonRealign.signed1Pt(), muonRealign.pt(), muonRealign.p(), muonRealign.eta(), muonRealign.chi2());
-                VarManager::FillTrack<TMuonRealignFillMap>(muonRealign);
-                realignRemoveFlag = muonRealign.isRemovable();
-
-                // recalculte pDca for global muon tracks
-                VarManager::FillTrackCollision<TMuonRealignFillMap>(muonRealign, collision);
-
-                if (fPropMuon) {
-                  VarManager::FillPropagateMuon<TMuonRealignFillMap>(muonRealign, collision);
-                }
-              }
-
-              if (realignRemoveFlag) {
-                continue;
-              }
-
-            } else {
-              LOGF(fatal, "Inconsistent size of realigned muon track candidates.");
-            }
-          } else {
-            // For global tracks, their matched muon tracks should be updated already
-
-            VarManager::FillTrack<TMuonFillMap>(muon);
-
-            // recalculte pDca for global muon tracks
-            VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
-
-            if (fPropMuon) {
-              VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
-            }
+        if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonRealign)) {
+          if (static_cast<bool>(muon.isRemovable())) {
+            continue;
           }
-        } else {
-          VarManager::FillTrack<TMuonFillMap>(muon);
+        }
 
-          // recalculte pDca for global muon tracks
-          VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
+        VarManager::FillTrack<TMuonFillMap>(muon);
 
-          if (fPropMuon) {
-            VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
-          }
+        // recalculte pDca for global muon tracks
+        VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
+
+        if (fPropMuon) {
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
         }
 
         if (fDoDetailedQA) {
@@ -1274,7 +1218,7 @@ struct TableMaker {
 
         muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
-        if constexpr (static_cast<bool>((TMuonFillMap & VarManager::ObjTypes::MuonCov))) {
+        if constexpr (static_cast<bool>((TMuonFillMap & VarManager::ObjTypes::MuonCov) || (TMuonFillMap & VarManager::ObjTypes::MuonCovRealign))) {
 
           if (fPropMuon) {
             muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
@@ -1684,17 +1628,16 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
   void processAssociatedRealignedMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
-                                                 soa::Filtered<MyMuonsCollWithCov> const& tracksMuon, MyMuonsRealignWithCov const& tracksMuonRealign, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+                                                 soa::Filtered<MyMuonsRealignCollWithCov> const& tracksMuon, aod::AmbiguousFwdTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      auto muonsRealignThisCollision = tracksMuonRealign.sliceBy(perCollisionMuonsRealign, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi, gkMuonRealignFillMapWithCov>(collision, bcs, nullptr, tracksMuon, muonsRealignThisCollision, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMap, 0u, gkMuonRealignFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1703,7 +1646,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCovAmbi, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
@@ -1712,7 +1655,7 @@ struct TableMaker {
   {
     for (auto& collision : collisions) {
       auto muonIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
-      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCovAmbi, 0u>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr, muonIdsThisCollision);
+      fullSkimmingIndices<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCovAmbi>(collision, bcs, nullptr, tracksMuon, nullptr, muonIdsThisCollision);
     }
   }
 
