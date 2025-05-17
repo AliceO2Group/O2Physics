@@ -21,6 +21,7 @@
 #include <TMath.h>
 #include <array>
 #include <cmath>
+#include <iostream>
 #include "Math/Vector4D.h"
 #include "TRandom3.h"
 #include "TF1.h"
@@ -305,11 +306,11 @@ struct spvector {
     TAxis* channelAxis = hrecentereSp->GetAxis(4);    // Axis 4: channel
 
     // Find bin indices for centrality, vx, vy, vz, and channel (for meanxA, 0.5)
-    binCoords[0] = centralityAxis->FindBin(centrality); // Centrality
-    binCoords[1] = vxAxis->FindBin(vx);                 // vx
-    binCoords[2] = vyAxis->FindBin(vy);                 // vy
-    binCoords[3] = vzAxis->FindBin(vz);                 // vz
-    binCoords[4] = channelAxis->FindBin(0.5);           // Channel for meanxA
+    binCoords[0] = centralityAxis->FindBin(centrality + 0.00001); // Centrality
+    binCoords[1] = vxAxis->FindBin(vx + 0.00001);                 // vx
+    binCoords[2] = vyAxis->FindBin(vy + 0.00001);                 // vy
+    binCoords[3] = vzAxis->FindBin(vz + 0.00001);                 // vz
+    binCoords[4] = channelAxis->FindBin(0.5);                     // Channel for meanxA
 
     // Get the global bin for meanxA
     int globalBinMeanxA = hrecentereSp->GetBin(binCoords);
@@ -353,25 +354,25 @@ struct spvector {
       hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSpp.value, ts);
       }*/
 
-    double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
-    double meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
-    double meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
-    double meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
+    double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 0.5));
+    double meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 1.5));
+    double meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 2.5));
+    double meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality + 0.00001, 3.5));
 
-    double meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
-    double meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
-    double meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
-    double meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
+    double meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx + 0.00001, 0.5));
+    double meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx + 0.00001, 1.5));
+    double meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx + 0.00001, 2.5));
+    double meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx + 0.00001, 3.5));
 
-    double meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
-    double meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
-    double meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
-    double meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+    double meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy + 0.00001, 0.5));
+    double meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy + 0.00001, 1.5));
+    double meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy + 0.00001, 2.5));
+    double meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy + 0.00001, 3.5));
 
-    double meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
-    double meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
-    double meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
-    double meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+    double meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz + 0.00001, 0.5));
+    double meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz + 0.00001, 1.5));
+    double meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz + 0.00001, 2.5));
+    double meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz + 0.00001, 3.5));
 
     qxZDCA = qxZDCA - meanxAcent - meanxAvx - meanxAvy - meanxAvz;
     qyZDCA = qyZDCA - meanyAcent - meanyAvx - meanyAvy - meanyAvz;
@@ -440,7 +441,7 @@ struct spvector {
     }
 
     // if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && eventSelected(collision, centrality) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, bc.timestamp());
@@ -457,7 +458,7 @@ struct spvector {
       for (std::size_t iChA = 0; iChA < 8; iChA++) {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
-          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz, chanelid + 0.5));
+          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz + 0.00001, chanelid + 0.5));
         }
 
         if (iChA < 4) {
@@ -530,6 +531,7 @@ struct spvector {
 
       Bool_t res = 0;
       Bool_t resfine = 0;
+      Int_t check = 1;
 
       if (coarse1) {
         if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
@@ -624,7 +626,8 @@ struct spvector {
         res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
-      if (res == 0 || resfine == 0) {
+      if (res == 0 && resfine == 0 && check == 0) {
+        LOG(info) << "Histograms are null";
       }
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
