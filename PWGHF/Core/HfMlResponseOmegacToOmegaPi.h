@@ -64,13 +64,24 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
 
   cosPaOmegacToPv = 0,
   kfDcaXYPiFromOmegac,
-  cosThetaStarPiFromOmegac,
   chi2TopoPiFromOmegacToPv,
   dcaCharmBaryonDau,
   invMassCascade,
   massCascChi2OverNdf,
-  cosPaCascToPv,
   kfDcaXYCascToPv,
+  cosPaCascToPv,
+  cosThetaStarPiFromOmegac,
+  chi2NdfTopoOmegacToPv,
+  ldlCasc,
+  dcaCascDau,
+  cosPaCascToOmegac,
+  decayLenXYCasc,
+  ldlOmegac,
+  chi2NdfTopoCascToOmegac,
+  chi2NdfTopoCascToPv,
+  chi2GeoOmegac,
+  chi2GeoCasc,
+
   nSigmaTPCPiFromV0,
   nSigmaTPCPiFromOmegac,
   nSigmaTPCKaFromCasc
@@ -99,16 +110,26 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, cosPaOmegacToPv, cosPACharmBaryon);
         CHECK_AND_FILL_VEC_OMEGAC0(kfDcaXYPiFromOmegac);
-        CHECK_AND_FILL_VEC_OMEGAC0(cosThetaStarPiFromOmegac);
         CHECK_AND_FILL_VEC_OMEGAC0(chi2TopoPiFromOmegacToPv);
         CHECK_AND_FILL_VEC_OMEGAC0(dcaCharmBaryonDau);
         CHECK_AND_FILL_VEC_OMEGAC0(invMassCascade);
         CHECK_AND_FILL_VEC_OMEGAC0(massCascChi2OverNdf);
         CHECK_AND_FILL_VEC_OMEGAC0(kfDcaXYCascToPv);
-        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, cosPaOmegacToPv, cosPACharmBaryon);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, cosPaCascToPv, cosPACasc);
+        CHECK_AND_FILL_VEC_OMEGAC0(cosThetaStarPiFromOmegac);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, chi2NdfTopoOmegacToPv, chi2TopoOmegacToPv);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, ldlCasc, cascldl);
+        CHECK_AND_FILL_VEC_OMEGAC0(dcaCascDau);
+        CHECK_AND_FILL_VEC_OMEGAC0(cosPaCascToOmegac);
+        CHECK_AND_FILL_VEC_OMEGAC0(decayLenXYCasc);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, ldlOmegac, omegacldl);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, chi2NdfTopoCascToOmegac, chi2TopoCascToOmegac);
+        CHECK_AND_FILL_VEC_OMEGAC0_FULL(candidate, chi2NdfTopoCascToPv, chi2TopoCascToPv);
+        CHECK_AND_FILL_VEC_OMEGAC0(chi2GeoOmegac);
+        CHECK_AND_FILL_VEC_OMEGAC0(chi2GeoCasc);
+
         // TPC PID variables
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(lamProngPi, nSigmaTPCPiFromV0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_OMEGAC0_FULL(cascProng, nSigmaTPCKaFromCasc, tpcNSigmaKa);
@@ -125,16 +146,26 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
 
-      FILL_MAP_OMEGAC0(invMassCascade),
       FILL_MAP_OMEGAC0(cosPaOmegacToPv),
-      FILL_MAP_OMEGAC0(dcaCharmBaryonDau),
       FILL_MAP_OMEGAC0(kfDcaXYPiFromOmegac),
-      FILL_MAP_OMEGAC0(cosThetaStarPiFromOmegac),
       FILL_MAP_OMEGAC0(chi2TopoPiFromOmegacToPv),
+      FILL_MAP_OMEGAC0(dcaCharmBaryonDau),
+      FILL_MAP_OMEGAC0(invMassCascade),
       FILL_MAP_OMEGAC0(massCascChi2OverNdf),
-      FILL_MAP_OMEGAC0(cosPaCascToPv),
       FILL_MAP_OMEGAC0(kfDcaXYCascToPv),
-      // TPC PID variables
+      FILL_MAP_OMEGAC0(cosPaCascToPv),
+      FILL_MAP_OMEGAC0(cosThetaStarPiFromOmegac),
+      FILL_MAP_OMEGAC0(chi2NdfTopoOmegacToPv),
+      FILL_MAP_OMEGAC0(ldlCasc),
+      FILL_MAP_OMEGAC0(dcaCascDau),
+      FILL_MAP_OMEGAC0(cosPaCascToOmegac),
+      FILL_MAP_OMEGAC0(decayLenXYCasc),
+      FILL_MAP_OMEGAC0(ldlOmegac),
+      FILL_MAP_OMEGAC0(chi2NdfTopoCascToOmegac),
+      FILL_MAP_OMEGAC0(chi2NdfTopoCascToPv),
+      FILL_MAP_OMEGAC0(chi2GeoOmegac),
+      FILL_MAP_OMEGAC0(chi2GeoCasc),
+
       FILL_MAP_OMEGAC0(nSigmaTPCPiFromV0),
       FILL_MAP_OMEGAC0(nSigmaTPCKaFromCasc),
       FILL_MAP_OMEGAC0(nSigmaTPCPiFromOmegac),
