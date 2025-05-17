@@ -14,6 +14,7 @@
 ///
 /// \author prottay.das@cern.ch
 
+#include <fairlogger/Logger.h>
 #include <tuple>
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -48,7 +49,13 @@ using std::array;
 struct LfTaskLambdaSpinCorr {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-
+  // mixing
+  ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
+  Configurable<int> nMix{"nMix", 5, "number of event mixing"};
+  Configurable<float> ptMix{"ptMix", 1.0, "pt cut on mixing"};
+  Configurable<float> etaMix{"etaMix", 0.4, "eta cut on mixing"};
+  Configurable<float> phiMix{"phiMix", 0.2, "phi cut on mixing"};
   // fill output
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
@@ -65,6 +72,7 @@ struct LfTaskLambdaSpinCorr {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   // Configs for V0
   Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
+  Configurable<float> confV0PtMax{"confV0PtMax", 0.f, "Maximum transverse momentum of V0"};
   Configurable<float> confV0Rap{"confV0Rap", 0.8f, "Rapidity range of V0"};
   Configurable<double> confV0DCADaughMax{"confV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
   Configurable<double> confV0CPAMin{"confV0CPAMin", 0.9998f, "Minimum CPA of V0"};
@@ -86,15 +94,14 @@ struct LfTaskLambdaSpinCorr {
   Configurable<int> iMNbins{"iMNbins", 100, "Number of bins in invariant mass"};
   Configurable<float> lbinIM{"lbinIM", 1.0, "lower bin value in IM histograms"};
   Configurable<float> hbinIM{"hbinIM", 1.2, "higher bin value in IM histograms"};
-  Configurable<int> iMNbinspair{"iMNbinspair", 100, "Number of bins in invariant mass pair"};
-  Configurable<float> lbinIMpair{"lbinIMpair", 1.0, "lower bin value in IMpair histograms"};
-  Configurable<float> hbinIMpair{"hbinIMpair", 1.2, "higher bin value in IMpair histograms"};
+  Configurable<int> iMNbinspair{"iMNbinspair", 400, "Number of bins in invariant mass pair"};
+  Configurable<float> lbinIMpair{"lbinIMpair", 0.0, "lower bin value in IMpair histograms"};
+  Configurable<float> hbinIMpair{"hbinIMpair", 8.0, "higher bin value in IMpair histograms"};
 
   ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
   ConfigurableAxis configthnAxisPt{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
 
-  SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
@@ -106,25 +113,25 @@ struct LfTaskLambdaSpinCorr {
 
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-    histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+
+    histos.add("hSparseLambdaLambdaMixed", "hSparseLambdaLambdaMixed", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+    histos.add("hSparseLambdaAntiLambdaMixed", "hSparseLambdaAntiLambdaMixed", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
+    histos.add("hSparseAntiLambdaAntiLambdaMixed", "hSparseAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
 
     if (fillQA) {
       ///////// along quantization axes///////////
       histos.add("hSparseLambdaLambdaQA", "hSparseLambdaLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseLambdaAntiLambdaQA", "hSparseLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-      histos.add("hSparseAntiLambdaLambdaQA", "hSparseAntiLambdaLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseAntiLambdaAntiLambdaQA", "hSparseAntiLambdaAntiLambdaQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     }
     if (fillGEN) {
       histos.add("hSparseLambdaLambdaMC", "hSparseLambdaLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseLambdaAntiLambdaMC", "hSparseLambdaAntiLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-      histos.add("hSparseAntiLambdaLambdaMC", "hSparseAntiLambdaLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       histos.add("hSparseAntiLambdaAntiLambdaMC", "hSparseAntiLambdaAntiLambdaMC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       if (fillQA) {
         histos.add("hSparseLambdaLambdaMCQA", "hSparseLambdaLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
         histos.add("hSparseLambdaAntiLambdaMCQA", "hSparseLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
-        histos.add("hSparseAntiLambdaLambdaMCQA", "hSparseAntiLambdaLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
         histos.add("hSparseAntiLambdaAntiLambdaMCQA", "hSparseAntiLambdaAntiLambdaMCQA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
       }
     }
@@ -144,6 +151,9 @@ struct LfTaskLambdaSpinCorr {
     float ctauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * (o2::constants::physics::MassLambda);
 
     if (pT < confV0PtMin) {
+      return false;
+    }
+    if (pT > confV0PtMax) {
       return false;
     }
     if (dcaDaughv0 > confV0DCADaughMax) {
@@ -221,16 +231,21 @@ struct LfTaskLambdaSpinCorr {
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
   }
 
-  void fillHistograms(bool tag1, bool tag2, bool tag3, bool tag4, const ROOT::Math::PxPyPzMVector& particlepair,
+  void fillHistograms(bool tag1, bool tag2, bool tag3, bool tag4,
                       const ROOT::Math::PxPyPzMVector& particle1, const ROOT::Math::PxPyPzMVector& particle2,
                       const ROOT::Math::PxPyPzMVector& daughpart1, const ROOT::Math::PxPyPzMVector& daughpart2,
-                      double centrality, bool datatype)
+                      double centrality, int datatype)
   {
 
-    ROOT::Math::Boost boostPairToCM{particlepair.BoostToCM()}; // boosting vector for pair CM
+    auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
+    auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
+    auto pairDummy = particle1Dummy + particle2Dummy;
+    // auto pairParticle = particle1 + particle2;
+
+    ROOT::Math::Boost boostPairToCM{pairDummy.BoostToCM()}; // boosting vector for pair CM
     // Boosting both Lambdas to Lambda-Lambda pair rest frame
-    auto lambda1CM = boostPairToCM(particle1);
-    auto lambda2CM = boostPairToCM(particle2);
+    auto lambda1CM = boostPairToCM(particle1Dummy);
+    auto lambda2CM = boostPairToCM(particle2Dummy);
 
     // Step 2: Boost Each Lambda to its Own Rest Frame
     ROOT::Math::Boost boostLambda1ToCM{lambda1CM.BoostToCM()};
@@ -244,97 +259,50 @@ struct LfTaskLambdaSpinCorr {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-    // Method2
-    /*
-    ROOT::Math::XYZVector quantizationAxis = lambda1CM.Vect().Unit(); // Unit vector along Lambda1's direction in pair rest frame
-    double cosTheta1 = proton1LambdaRF.Vect().Unit().Dot(quantizationAxis);
-    double cosTheta2 = proton2LambdaRF.Vect().Unit().Dot(-quantizationAxis); // Opposite for Lambda2
-
-    double theta1 = std::acos(cosTheta1); // angle in radians
-    double theta2 = std::acos(cosTheta2); // angle in radians
-    double cosThetaDiff = std::cos(theta1 - theta2);
-    */
-    // STAR method
     double cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
-
-    auto lowptcut = 0.5;
-    auto highptcut = 10.0;
-
-    if (datatype == 1) {
-      if (tag1 && tag3)
-        histos.fill(HIST("hSparseLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag1 && tag4)
-        histos.fill(HIST("hSparseLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag2 && tag3)
-        histos.fill(HIST("hSparseAntiLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag2 && tag4)
-        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-    } else {
-      if (particle1.Pt() > lowptcut && particle1.Pt() < highptcut && particle2.Pt() > lowptcut && particle2.Pt() < highptcut) {
-        if (tag1 && tag3)
-          histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag1 && tag4)
-          histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag2 && tag3)
-          histos.fill(HIST("hSparseAntiLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag2 && tag4)
-          histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+    double deltaR = TMath::Sqrt(TMath::Power(particle1.Eta() - particle2.Eta(), 2.0) + TMath::Power(particle1.Phi() - particle2.Phi(), 2.0));
+    if (datatype == 0) {
+      if (tag1 && tag3) {
+        histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag4) {
+        histos.fill(HIST("hSparseAntiLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag1 && tag4) {
+        histos.fill(HIST("hSparseLambdaAntiLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag3) {
+        histos.fill(HIST("hSparseLambdaAntiLambda"), particle2.M(), particle1.M(), cosThetaDiff, centrality, deltaR);
       }
     }
-  }
-
-  void fillHistograms2(bool tag1, bool tag2, bool tag3, bool tag4, const ROOT::Math::PxPyPzMVector& particlepair,
-                       const ROOT::Math::PxPyPzMVector& particle1, const ROOT::Math::PxPyPzMVector& particle2,
-                       const ROOT::Math::PxPyPzMVector& daughpart1, const ROOT::Math::PxPyPzMVector& daughpart2,
-                       double centrality, bool datatype)
-  {
-
-    ROOT::Math::Boost boostPairToCM{particlepair.BoostToCM()}; // boosting vector for pair CM
-    // Boosting both Lambdas to Lambda-Lambda pair rest frame
-    auto lambda1CM = boostPairToCM(particle1);
-    auto lambda2CM = boostPairToCM(particle2);
-
-    // Step 2: Boost Each Lambda to its Own Rest Frame
-    ROOT::Math::Boost boostLambda1ToCM{lambda1CM.BoostToCM()};
-    ROOT::Math::Boost boostLambda2ToCM{lambda2CM.BoostToCM()};
-
-    ROOT::Math::XYZVector quantizationAxis = lambda1CM.Vect().Unit(); // Unit vector along Lambda1's direction in pair rest frame
-
-    // Also boost the daughter protons to the same frame
-    auto proton1pairCM = boostPairToCM(daughpart1); // proton1 to pair CM
-    auto proton2pairCM = boostPairToCM(daughpart2); // proton2 to pair CM
-
-    // Boost protons into their respective Lambda rest frames
-    auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
-    auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
-
-    double cosTheta1 = proton1LambdaRF.Vect().Unit().Dot(quantizationAxis);
-    double cosTheta2 = proton2LambdaRF.Vect().Unit().Dot(quantizationAxis);
-
-    double cosThetaDiff = cosTheta1 * cosTheta2;
-
-    auto lowptcut = 0.5;
-    auto highptcut = 10.0;
 
     if (datatype == 1) {
-      if (tag1 && tag3)
-        histos.fill(HIST("hSparseLambdaLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag1 && tag4)
-        histos.fill(HIST("hSparseLambdaAntiLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag2 && tag3)
-        histos.fill(HIST("hSparseAntiLambdaLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-      if (tag2 && tag4)
-        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMCQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-    } else {
-      if (particle1.Pt() > lowptcut && particle1.Pt() < highptcut && particle2.Pt() > lowptcut && particle2.Pt() < highptcut) {
-        if (tag1 && tag3)
-          histos.fill(HIST("hSparseLambdaLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag1 && tag4)
-          histos.fill(HIST("hSparseLambdaAntiLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag2 && tag3)
-          histos.fill(HIST("hSparseAntiLambdaLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
-        if (tag2 && tag4)
-          histos.fill(HIST("hSparseAntiLambdaAntiLambdaQA"), particle1.M(), particle2.M(), cosThetaDiff, centrality, particlepair.M());
+      if (tag1 && tag3) {
+        histos.fill(HIST("hSparseLambdaLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag4) {
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag1 && tag4) {
+        histos.fill(HIST("hSparseLambdaAntiLambdaMC"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag3) {
+        histos.fill(HIST("hSparseLambdaAntiLambdaMC"), particle2.M(), particle1.M(), cosThetaDiff, centrality, deltaR);
+      }
+    }
+
+    if (datatype == 2) {
+      if (tag1 && tag3) {
+        histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag4) {
+        histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag1 && tag4) {
+        histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
+      }
+      if (tag2 && tag3) {
+        histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle2.M(), particle1.M(), cosThetaDiff, centrality, deltaR);
       }
     }
   }
@@ -366,11 +334,6 @@ struct LfTaskLambdaSpinCorr {
     }
 
     if (!selectionV0(collision, v0)) {
-      return {0, 0, false}; // Fails selection
-    }
-
-    const auto netav = 0.8;
-    if (std::abs(v0.eta()) > netav) {
       return {0, 0, false}; // Fails selection
     }
 
@@ -415,14 +378,10 @@ struct LfTaskLambdaSpinCorr {
     return {lambdaTag, aLambdaTag, true}; // Valid candidate
   }
 
-  ROOT::Math::PxPyPzMVector lambda, antiLambda, lambdadummy, antiLambdadummy, proton, pion, antiProton, antiPion, fourVecDauCM;
-  ROOT::Math::PxPyPzMVector lambda2, antiLambda2, lambdadummy2, antiLambdadummy2, proton2, pion2, antiProton2, antiPion2;
-  ROOT::Math::PxPyPzMVector lambdaLambdapair, lambdaAntiLambdapair, antiLambdaLambdapair, antiLambdaAntiLambdapair;
-  ROOT::Math::PxPyPzMVector lambdamc, antiLambdamc, lambdadummymc, antiLambdadummymc, protonmc, pionmc, antiProtonmc, antiPionmc;
-  ROOT::Math::PxPyPzMVector lambda2mcmc, antiLambda2mc, lambdadummy2mc, antiLambdadummy2mc, proton2mc, pion2mc, antiProton2mc, antiPion2mc;
-  ROOT::Math::PxPyPzMVector lambdaLambdapairmc, lambdaAntiLambdapairmc, antiLambdaLambdapairmc, antiLambdaAntiLambdapairmc;
-
-  ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
+  ROOT::Math::PxPyPzMVector lambda, antiLambda, proton, pion, antiProton, antiPion;
+  ROOT::Math::PxPyPzMVector lambda2, antiLambda2, proton2, pion2, antiProton2, antiPion2;
+  ROOT::Math::PxPyPzMVector lambdamc, antiLambdamc, protonmc, pionmc, antiProtonmc, antiPionmc;
+  ROOT::Math::PxPyPzMVector lambda2mc, antiLambda2mc, proton2mc, pion2mc, antiProton2mc, antiPion2mc;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
@@ -433,17 +392,12 @@ struct LfTaskLambdaSpinCorr {
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using ResoV0s = aod::V0Datas;
 
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/, ResoV0s const& V0s, aod::BCs const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/, ResoV0s const& V0s)
   {
-
     if (!collision.sel8()) {
       return;
     }
     auto centrality = collision.centFT0C();
-    /*if (!collision.triggereventsp()) {
-      return;
-      }*/
-
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
@@ -451,122 +405,196 @@ struct LfTaskLambdaSpinCorr {
     if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
-
     histos.fill(HIST("hCentrality"), centrality);
-
     for (const auto& v0 : V0s) {
-
       auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
-      if (!isValid)
+      if (!isValid) {
         continue;
-
+      }
+      if (lambdaTag && aLambdaTag) {
+        continue;
+      }
       if (lambdaTag) {
         proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
         antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
-        lambdadummy = proton + antiPion;
+        lambda = proton + antiPion;
       }
       if (aLambdaTag) {
         antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassProton);
         pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
-        antiLambdadummy = antiProton + pion;
+        antiLambda = antiProton + pion;
       }
-
-      if (shouldReject(lambdaTag, aLambdaTag, lambdadummy, antiLambdadummy)) {
-        continue;
-      }
-
-      int taga = lambdaTag;
-      int tagb = aLambdaTag;
 
       auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
       auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
 
       // 2nd loop for combination of lambda lambda
       for (const auto& v02 : V0s) {
-
-        if (v0.v0Id() >= v02.v0Id())
+        if (v02.v0Id() <= v0.v0Id()) {
           continue;
-
+        }
         auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(v02, collision);
-        if (!isValid2)
+        if (!isValid2) {
           continue;
-
+        }
+        if (lambdaTag2 && aLambdaTag2) {
+          continue;
+        }
         if (lambdaTag2) {
           proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassProton);
           antiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassPionCharged);
-          lambdadummy2 = proton2 + antiPion2;
+          lambda2 = proton2 + antiPion2;
         }
         if (aLambdaTag2) {
           antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassProton);
           pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassPionCharged);
-          antiLambdadummy2 = antiProton2 + pion2;
+          antiLambda2 = antiProton2 + pion2;
         }
-
-        if (shouldReject(lambdaTag2, aLambdaTag2, lambdadummy2, antiLambdadummy2)) {
-          continue;
-        }
-
-        int taga2 = lambdaTag2;
-        int tagb2 = aLambdaTag2;
-
         auto postrack2 = v02.template posTrack_as<AllTrackCandidates>();
         auto negtrack2 = v02.template negTrack_as<AllTrackCandidates>();
-
         if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
-          continue; // no shared decay products
+          continue;
         }
-
         if (lambdaTag && lambdaTag2) {
-          lambdaLambdapair = lambdadummy + lambdadummy2;
-          tagb = 0;
-          tagb2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-          if (fillQA) {
-            fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-          }
+          fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 0);
         }
-
-        tagb2 = aLambdaTag2;
-
-        if (lambdaTag && aLambdaTag2) {
-          lambdaAntiLambdapair = lambdadummy + antiLambdadummy2;
-          tagb = 0;
-          taga2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-          if (fillQA) {
-            fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-          }
-        }
-
-        tagb = aLambdaTag;
-        taga2 = lambdaTag2;
-
-        if (aLambdaTag && lambdaTag2) {
-          antiLambdaLambdapair = antiLambdadummy + lambdadummy2;
-          taga = 0;
-          tagb2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
-          if (fillQA) {
-            fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
-          }
-        }
-
-        taga = lambdaTag;
-        tagb2 = aLambdaTag2;
-
         if (aLambdaTag && aLambdaTag2) {
-          antiLambdaAntiLambdapair = antiLambdadummy + antiLambdadummy2;
-          taga = 0;
-          taga2 = 0;
-          fillHistograms(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
-          if (fillQA) {
-            fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
+          fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 0);
+        }
+        if (lambdaTag && aLambdaTag2) {
+          fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 0);
+        }
+        if (aLambdaTag && lambdaTag2) {
+          fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 0);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(LfTaskLambdaSpinCorr, processData, "Process data", false);
+
+  // Processing Event Mixing
+  SliceCache cache;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningType colBinning{{axisVertex, axisMultiplicityClass}, true};
+  Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
+  void processME(EventCandidates const& collisions, AllTrackCandidates const&, ResoV0s const& V0s)
+  {
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, nMix, -1, collisions, collisions)) {
+      // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+      if (!collision1.sel8() || !collision2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      auto centrality = collision1.centFT0C();
+      auto groupV01 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto groupV02 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
+      // for (auto& [t1, t2, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02, groupV03))) {
+      // LOGF(info, "Mixed event collisions: (%d, %d, %d)", t1.collisionId(),t2.collisionId(),t3.collisionId());
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
+        bool pairfound = false;
+        if (t2.v0Id() <= t1.v0Id()) {
+          continue;
+        }
+        if (t1.collisionId() != t2.collisionId()) {
+          continue;
+        }
+        auto [lambdaTag1, aLambdaTag1, isValid1] = getLambdaTags(t1, collision1);
+        auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(t2, collision1);
+        if (!isValid1) {
+          continue;
+        }
+        if (!isValid2) {
+          continue;
+        }
+        if (lambdaTag1 && aLambdaTag1) {
+          continue;
+        }
+        if (lambdaTag2 && aLambdaTag2) {
+          continue;
+        }
+        for (const auto& t3 : groupV03) {
+          if (t1.collisionId() == t3.collisionId()) {
+            continue;
+          }
+          auto [lambdaTag3, aLambdaTag3, isValid3] = getLambdaTags(t3, collision2);
+          if (!isValid3) {
+            continue;
+          }
+          if (lambdaTag3 && aLambdaTag3) {
+            continue;
+          }
+
+          if (lambdaTag1 != lambdaTag3 || aLambdaTag1 != aLambdaTag3) {
+            continue;
+          }
+          if (std::abs(t1.pt() - t3.pt()) > ptMix) {
+            continue;
+          }
+          if (std::abs(t1.eta() - t3.eta()) > etaMix) {
+            continue;
+          }
+          if (std::abs(t1.phi() - t3.phi()) > phiMix) {
+            continue;
+          }
+
+          if (lambdaTag2) {
+            proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
+            antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
+            lambda = proton + antiPion;
+          }
+          if (aLambdaTag2) {
+            antiProton = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassProton);
+            pion = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassPionCharged);
+            antiLambda = antiProton + pion;
+          }
+          if (lambdaTag3) {
+            proton2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassProton);
+            antiPion2 = ROOT::Math::PxPyPzMVector(t3.pxneg(), t3.pyneg(), t3.pzneg(), o2::constants::physics::MassPionCharged);
+            lambda2 = proton2 + antiPion2;
+          }
+          if (aLambdaTag3) {
+            antiProton2 = ROOT::Math::PxPyPzMVector(t3.pxneg(), t3.pyneg(), t3.pzneg(), o2::constants::physics::MassProton);
+            pion2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassPionCharged);
+            antiLambda2 = antiProton2 + pion2;
+          }
+          if (lambdaTag2 && lambdaTag3) {
+            fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 2);
+          }
+          if (aLambdaTag2 && aLambdaTag3) {
+            fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 2);
+          }
+          if (lambdaTag2 && aLambdaTag3) {
+            fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 2);
+          }
+          if (aLambdaTag2 && lambdaTag3) {
+            fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 2);
+          }
+          pairfound = true;
+          if (pairfound) {
+            // LOGF(info, "Pair found");
+            break;
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(LfTaskLambdaSpinCorr, processData, "Process data", true);
+  PROCESS_SWITCH(LfTaskLambdaSpinCorr, processME, "Process data ME", true);
 
   using CollisionMCTrueTable = aod::McCollisions;
   using TrackMCTrueTable = aod::McParticles;
@@ -585,126 +613,72 @@ struct LfTaskLambdaSpinCorr {
       if (!RecCollision.sel8()) {
         continue;
       }
-
       if (!RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-        continue;
+        // continue;
       }
-
       if (std::abs(RecCollision.posZ()) > cfgCutVertex) {
         continue;
       }
-
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("hCentrality"), centrality);
-
       for (const auto& v0 : V0s) {
-
         auto [lambdaTag, aLambdaTag, isValid] = getLambdaTagsMC(v0, RecCollision);
-        if (!isValid)
+        if (!isValid) {
           continue;
-
+        }
         if (lambdaTag) {
           proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
           antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
-          lambdadummy = proton + antiPion;
+          lambda = proton + antiPion;
         }
         if (aLambdaTag) {
           antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassProton);
           pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
-          antiLambdadummy = antiProton + pion;
+          antiLambda = antiProton + pion;
         }
-
-        if (shouldReject(lambdaTag, aLambdaTag, lambdadummy, antiLambdadummy)) {
+        if (lambdaTag && aLambdaTag) {
           continue;
         }
-
-        int taga = lambdaTag;
-        int tagb = aLambdaTag;
-
         auto postrack1 = v0.template posTrack_as<TrackMCRecTable>();
         auto negtrack1 = v0.template negTrack_as<TrackMCRecTable>();
-
         // 2nd loop for combination of lambda lambda
         for (const auto& v02 : V0s) {
-
-          if (v0.v0Id() >= v02.v0Id())
+          if (v02.v0Id() <= v0.v0Id()) {
             continue;
-
+          }
           auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTagsMC(v02, RecCollision);
-          if (!isValid2)
+          if (!isValid2) {
             continue;
-
+          }
           if (lambdaTag2) {
             proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassProton);
             antiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassPionCharged);
-            lambdadummy2 = proton2 + antiPion2;
+            lambda2 = proton2 + antiPion2;
           }
           if (aLambdaTag2) {
             antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassProton);
             pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassPionCharged);
-            antiLambdadummy2 = antiProton2 + pion2;
+            antiLambda2 = antiProton2 + pion2;
           }
-
-          if (shouldReject(lambdaTag2, aLambdaTag2, lambdadummy2, antiLambdadummy2)) {
+          if (lambdaTag && aLambdaTag) {
             continue;
           }
-
-          int taga2 = lambdaTag2;
-          int tagb2 = aLambdaTag2;
-
           auto postrack2 = v02.template posTrack_as<TrackMCRecTable>();
           auto negtrack2 = v02.template negTrack_as<TrackMCRecTable>();
-
           if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
             continue; // no shared decay products
           }
-
           if (lambdaTag && lambdaTag2) {
-            lambdaLambdapair = lambdadummy + lambdadummy2;
-            tagb = 0;
-            tagb2 = 0;
-            fillHistograms(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-            if (fillQA) {
-              fillHistograms2(taga, tagb, taga2, tagb2, lambdaLambdapair, lambdadummy, lambdadummy2, proton, proton2, centrality, 0);
-            }
+            fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 0);
           }
-
-          tagb2 = aLambdaTag2;
-
-          if (lambdaTag && aLambdaTag2) {
-            lambdaAntiLambdapair = lambdadummy + antiLambdadummy2;
-            tagb = 0;
-            taga2 = 0;
-            fillHistograms(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-            if (fillQA) {
-              fillHistograms2(taga, tagb, taga2, tagb2, lambdaAntiLambdapair, lambdadummy, antiLambdadummy2, proton, antiProton2, centrality, 0);
-            }
-          }
-
-          tagb = aLambdaTag;
-          taga2 = lambdaTag2;
-
-          if (aLambdaTag && lambdaTag2) {
-            antiLambdaLambdapair = antiLambdadummy + lambdadummy2;
-            taga = 0;
-            tagb2 = 0;
-            fillHistograms(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
-            if (fillQA) {
-              fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaLambdapair, antiLambdadummy, lambdadummy2, antiProton, proton2, centrality, 0);
-            }
-          }
-
-          taga = lambdaTag;
-          tagb2 = aLambdaTag2;
-
           if (aLambdaTag && aLambdaTag2) {
-            antiLambdaAntiLambdapair = antiLambdadummy + antiLambdadummy2;
-            taga = 0;
-            taga2 = 0;
-            fillHistograms(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
-            if (fillQA) {
-              fillHistograms2(taga, tagb, taga2, tagb2, antiLambdaAntiLambdapair, antiLambdadummy, antiLambdadummy2, antiProton, antiProton2, centrality, 0);
-            }
+            fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 0);
+          }
+          if (lambdaTag && aLambdaTag2) {
+            fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 0);
+          }
+          if (aLambdaTag && lambdaTag2) {
+            fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 0);
           }
         }
       }
@@ -752,12 +726,12 @@ struct LfTaskLambdaSpinCorr {
         }
         if (pdg1 == PDG_t::kLambda0) {
           tagamc = 1;
-          lambdadummymc = protonmc + antiPionmc;
+          lambdamc = protonmc + antiPionmc;
         }
 
         if (pdg1 == PDG_t::kLambda0Bar) {
           tagbmc = 1;
-          antiLambdadummymc = antiProtonmc + pionmc;
+          antiLambdamc = antiProtonmc + pionmc;
         }
 
         for (const auto& mcParticle2 : GenParticles) {
@@ -800,51 +774,147 @@ struct LfTaskLambdaSpinCorr {
 
           if (pdg2 == PDG_t::kLambda0) {
             taga2mc = 1;
-            lambdadummy2mc = proton2mc + antiPion2mc;
+            lambda2mc = proton2mc + antiPion2mc;
           }
 
           if (pdg2 == PDG_t::kLambda0Bar) {
             tagb2mc = 1;
-            antiLambdadummy2mc = antiProton2mc + pion2mc;
+            antiLambda2mc = antiProton2mc + pion2mc;
           }
 
           if (tagamc && taga2mc) {
-            lambdaLambdapairmc = lambdadummymc + lambdadummy2mc;
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdaLambdapairmc, lambdadummymc, lambdadummy2mc, protonmc, proton2mc, centrality, 1);
-            if (fillQA) {
-              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaLambdapairmc, lambdadummymc, lambdadummy2mc, protonmc, proton2mc, centrality, 1);
-            }
+            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdamc, lambda2mc, protonmc, proton2mc, centrality, 1);
           }
-
           if (tagamc && tagb2mc) {
-            lambdaAntiLambdapairmc = lambdadummymc + antiLambdadummy2mc;
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdaAntiLambdapairmc, lambdadummymc, antiLambdadummy2mc, protonmc, antiProton2mc, centrality, 1);
-            if (fillQA) {
-              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, lambdaAntiLambdapairmc, lambdadummymc, antiLambdadummy2mc, protonmc, antiProton2mc, centrality, 1);
-            }
+            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdamc, antiLambda2mc, protonmc, antiProton2mc, centrality, 1);
           }
 
           if (tagbmc && taga2mc) {
-            antiLambdaLambdapairmc = antiLambdadummymc + lambdadummy2mc;
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaLambdapairmc, antiLambdadummymc, lambdadummy2mc, antiProtonmc, proton2mc, centrality, 1);
-            if (fillQA) {
-              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaLambdapairmc, antiLambdadummymc, lambdadummy2mc, antiProtonmc, proton2mc, centrality, 1);
-            }
+            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdamc, lambda2mc, antiProtonmc, proton2mc, centrality, 1);
           }
 
           if (tagbmc && tagb2mc) {
-            antiLambdaAntiLambdapairmc = antiLambdadummymc + antiLambdadummy2mc;
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaAntiLambdapairmc, antiLambdadummymc, antiLambdadummy2mc, antiProtonmc, antiProton2mc, centrality, 1);
-            if (fillQA) {
-              fillHistograms2(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdaAntiLambdapairmc, antiLambdadummymc, antiLambdadummy2mc, antiProtonmc, antiProton2mc, centrality, 1);
-            }
+            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdamc, antiLambda2mc, antiProtonmc, antiProton2mc, centrality, 1);
           }
         }
       }
     }
   }
-
   PROCESS_SWITCH(LfTaskLambdaSpinCorr, processMC, "Process montecarlo", false);
+
+  // Processing Event Mixing MC
+  void processMEMC(CollisionMCRecTableCentFT0C const& collisions, TrackMCRecTable const&, V0TrackCandidatesMC const& V0s)
+  {
+    for (auto& [collision1, collision2] : selfCombinations(colBinning, nMix, -1, collisions, collisions)) {
+      // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
+
+      if (collision1.index() == collision2.index()) {
+        continue;
+      }
+      if (!collision1.sel8() || !collision2.sel8()) {
+        continue;
+      }
+      if (std::abs(collision1.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      if (std::abs(collision2.posZ()) > cfgCutVertex) {
+        continue;
+      }
+
+      auto centrality = collision1.centFT0C();
+      auto groupV01 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto groupV02 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
+      auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
+      // for (auto& [t1, t2, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02, groupV03))) {
+      // LOGF(info, "Mixed event collisions: (%d, %d, %d)", t1.collisionId(),t2.collisionId(),t3.collisionId());
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
+        bool pairfound = false;
+        if (t2.v0Id() <= t1.v0Id()) {
+          continue;
+        }
+        if (t1.collisionId() != t2.collisionId()) {
+          continue;
+        }
+        auto [lambdaTag1, aLambdaTag1, isValid1] = getLambdaTagsMC(t1, collision1);
+        auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTagsMC(t2, collision1);
+        if (!isValid1) {
+          continue;
+        }
+        if (!isValid2) {
+          continue;
+        }
+        if (lambdaTag1 && aLambdaTag1) {
+          continue;
+        }
+        if (lambdaTag2 && aLambdaTag2) {
+          continue;
+        }
+        for (const auto& t3 : groupV03) {
+          if (t1.collisionId() == t3.collisionId()) {
+            continue;
+          }
+          auto [lambdaTag3, aLambdaTag3, isValid3] = getLambdaTagsMC(t3, collision2);
+          if (!isValid3) {
+            continue;
+          }
+          if (lambdaTag3 && aLambdaTag3) {
+            continue;
+          }
+          if (lambdaTag1 != lambdaTag3 || aLambdaTag1 != aLambdaTag3) {
+            continue;
+          }
+          if (std::abs(t1.pt() - t3.pt()) > ptMix) {
+            continue;
+          }
+          if (std::abs(t1.eta() - t3.eta()) > etaMix) {
+            continue;
+          }
+          if (std::abs(t1.phi() - t3.phi()) > phiMix) {
+            continue;
+          }
+
+          if (lambdaTag2) {
+            proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
+            antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
+            lambda = proton + antiPion;
+          }
+          if (aLambdaTag2) {
+            antiProton = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassProton);
+            pion = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassPionCharged);
+            antiLambda = antiProton + pion;
+          }
+          if (lambdaTag3) {
+            proton2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassProton);
+            antiPion2 = ROOT::Math::PxPyPzMVector(t3.pxneg(), t3.pyneg(), t3.pzneg(), o2::constants::physics::MassPionCharged);
+            lambda2 = proton2 + antiPion2;
+          }
+          if (aLambdaTag3) {
+            antiProton2 = ROOT::Math::PxPyPzMVector(t3.pxneg(), t3.pyneg(), t3.pzneg(), o2::constants::physics::MassProton);
+            pion2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassPionCharged);
+            antiLambda2 = antiProton2 + pion2;
+          }
+          if (lambdaTag2 && lambdaTag3) {
+            fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 2);
+          }
+          if (aLambdaTag2 && aLambdaTag3) {
+            fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 2);
+          }
+          if (lambdaTag2 && aLambdaTag3) {
+            fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 2);
+          }
+          if (aLambdaTag2 && lambdaTag3) {
+            fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 2);
+          }
+          pairfound = true;
+          if (pairfound) {
+            // LOGF(info, "Pair found");
+            break;
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(LfTaskLambdaSpinCorr, processMEMC, "Process MC ME", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
