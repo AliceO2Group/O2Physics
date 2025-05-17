@@ -211,6 +211,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   void init(InitContext const&)
   {
+    std::vector<double> multBinning = {0.0, 5.0, 10.0, 20.0, 30.0f, 40.0, 50.0, 60.0f, 70.0, 80.0, 100.0, 200.0, 99999.0};
     // Axes
     AxisSpec aXiMassAxis = {200, 1.28f, 1.36f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
@@ -220,6 +221,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     AxisSpec aCPAAxis = {1000, 0.95f, 1.0f, "#it{cos #theta_{p}}"};
     AxisSpec tranRadAxis = {1000, 0.0f, 100.0f, "#it{r}_{xy} (cm)"};
     AxisSpec aDCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
+    AxisSpec multAxis = {multBinning, "Multiplicity"};
 
     // Histograms
     rXiQA.add("hMassXi", "hMassXi", {HistType::kTH1F, {aXiMassAxis}});
@@ -238,6 +240,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {aDCAToPVAxis}});
     rXiQA.add("hInvMpT", "hInvMpT", kTH2F, {{ptAxis}, {aXiMassAxis}});
+    rXiQA.add("hInvMpTmult", "hInvMpTmult", kTH3F, {{ptAxis}, {aXiMassAxis}, {multAxis}});
 
     eventHisto.init(&qaRegistry);
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
@@ -377,6 +380,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);
       bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
+
+      rXiQA.fill(HIST("hInvMpTmult"), part.pt(), part.mLambda(), multCol);
     }
 
     for (const auto& part : groupPartsOne) {
