@@ -13,7 +13,6 @@
 /// \brief Task for muon re-alignment at analysis level
 /// \author Chi Zhang <chi.zhang@cern.ch>, CEA-Saclay
 
-#include <filesystem>
 #include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -79,15 +78,11 @@ struct MuonRealignment {
   Configurable<std::string> geoRefPath{"geoRefPath", "GLO/Config/GeometryAligned", "Path of the reference geometry file"};
   Configurable<std::string> geoNewPath{"geoNewPath", "GLO/Config/GeometryAligned", "Path of the new geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> grpPathLocal{"grpPathLocal", "", "Local path of the GRP object if not using CCDB"};
-  Configurable<std::string> geoNewPathLocal{"geoNewPathLocal", "", "Local path of the GRP object if not using CCDB"};
   Configurable<int64_t> nolaterthanRef{"ccdb-no-later-than-ref", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object of reference basis"};
   Configurable<int64_t> nolaterthanNew{"ccdb-no-later-than-new", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object of new basis"};
   Configurable<double> cfgChamberResolutionX{"cfgChamberResolutionX", 0.04, "Chamber resolution along X configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
   Configurable<double> cfgChamberResolutionY{"cfgChamberResolutionY", 0.04, "Chamber resolution along Y configuration for refit"}; // 0.4cm pp, 0.2cm PbPb
   Configurable<double> cfgSigmaCutImprove{"cfgSigmaCutImprove", 6., "Sigma cut for track improvement"};                            // 6 for pp, 4 for PbPb
-  Configurable<bool> fUseRemoteField{"cfgUseRemoteField", true, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<bool> fUseRemoteGeometry{"cfgUseRemoteGeometry", false, "Chose whether to fetch new geometry from ccdb or set it manually"};
 
   parameters::GRPMagField* grpmag = nullptr;
   base::MatLayerCylSet* lut = nullptr;
@@ -234,7 +229,7 @@ struct MuonRealignment {
     FwdTrkCovRealignInfo fwdTrkCovRealignInfo;
     for (auto const& muon : muons) {
       int muonRealignId = muon.globalIndex();
-      if (int(muon.trackType() > 2)) {
+      if (static_cast<int>(muon.trackType() > 2)) {
 
         auto clustersSliced = clusters.sliceBy(perMuon, muon.globalIndex()); // Slice clusters by muon id
         mch::Track convertedTrack = mch::Track();                            // Temporary variable to store re-aligned clusters
@@ -333,25 +328,14 @@ struct MuonRealignment {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (fCurrentRun != bc.runNumber()) {
         // Load magnetic field information from CCDB/local
-        if (fUseRemoteField) {
-          ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-          grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
-          if (grpmag != nullptr) {
-            base::Propagator::initFieldFromGRP(grpmag);
-            TrackExtrap::setField();
-            TrackExtrap::useExtrapV2();
-          } else {
-            LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
-          }
+        ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (grpmag != nullptr) {
+          base::Propagator::initFieldFromGRP(grpmag);
+          TrackExtrap::setField();
+          TrackExtrap::useExtrapV2();
         } else {
-          if (std::filesystem::exists(grpPathLocal.value)) {
-            const auto grp = parameters::GRPObject::loadFrom(grpPathLocal.value);
-            base::Propagator::initFieldFromGRP(grp);
-            TrackExtrap::setField();
-            TrackExtrap::useExtrapV2();
-          } else {
-            LOGF(fatal, "GRP object is not available in local path: %s", grpPathLocal.value);
-          }
+          LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
         }
 
         // Load geometry information from CCDB/local
@@ -369,32 +353,18 @@ struct MuonRealignment {
           transformRef[iDEN] = transformation(iDEN);
         }
 
-        if (fUseRemoteGeometry) {
-          LOGF(info, "Loading new aligned geometry from CCDB no later than %d", nolaterthanNew.value);
-          ccdb->setCreatedNotAfter(nolaterthanNew.value); // make sure this timestamp can be resolved regarding the reference one
-          geoNew = ccdb->getForTimeStamp<TGeoManager>(geoNewPath, bc.timestamp());
-          ccdb->clearCache(geoNewPath);
-          if (geoNew != nullptr) {
-            transformation = geo::transformationFromTGeoManager(*geoNew);
-          } else {
-            LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
-          }
-          for (int i = 0; i < 156; i++) {
-            int iDEN = GetDetElemId(i);
-            transformNew[iDEN] = transformation(iDEN);
-          }
+        LOGF(info, "Loading new aligned geometry from CCDB no later than %d", nolaterthanNew.value);
+        ccdb->setCreatedNotAfter(nolaterthanNew.value); // make sure this timestamp can be resolved regarding the reference one
+        geoNew = ccdb->getForTimeStamp<TGeoManager>(geoNewPath, bc.timestamp());
+        ccdb->clearCache(geoNewPath);
+        if (geoNew != nullptr) {
+          transformation = geo::transformationFromTGeoManager(*geoNew);
         } else {
-          LOGF(info, "Loading new aligned geometry from local path: %s", geoNewPathLocal.value);
-          if (std::filesystem::exists(geoNewPathLocal.value)) {
-            base::GeometryManager::loadGeometry(geoNewPathLocal.value);
-            transformation = geo::transformationFromTGeoManager(*gGeoManager);
-            for (int i = 0; i < 156; i++) {
-              int iDEN = GetDetElemId(i);
-              transformNew[iDEN] = transformation(iDEN);
-            }
-          } else {
-            LOGF(fatal, "New geometry file is not available in local path: %s", geoNewPathLocal.value);
-          }
+          LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
+        }
+        for (int i = 0; i < 156; i++) {
+          int iDEN = GetDetElemId(i);
+          transformNew[iDEN] = transformation(iDEN);
         }
 
         fCurrentRun = bc.runNumber();
