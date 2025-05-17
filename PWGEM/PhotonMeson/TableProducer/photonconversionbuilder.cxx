@@ -412,7 +412,7 @@ struct PhotonConversionBuilder {
     // }
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto pTrack = getTrackParCov(pos);
     if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {

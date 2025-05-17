@@ -676,7 +676,7 @@ struct nucleiSpectra {
         }
       }
 
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       o2::base::Propagator::Instance()->propagateToDCA(collVtx, mTrackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
       float beta{o2::pid::tof::Beta::GetBeta(track)};

@@ -114,8 +114,8 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       auto trackParPos = getTrackPar(trackPos);
       auto trackParNeg = getTrackPar(trackNeg);
-      o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
+      std::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
+      std::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
       std::array<float, 3> pVecPos{trackPos.pVector()};
       std::array<float, 3> pVecNeg{trackNeg.pVector()};
       if (trackPos.collisionId() != thisCollId) {
@@ -171,9 +171,9 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
       auto trackParThird = getTrackPar(trackThird);
-      o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
+      std::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
+      std::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
+      std::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
       std::array<float, 3> pVecFirst{trackFirst.pVector()};
       std::array<float, 3> pVecSecond{trackSecond.pVector()};
       std::array<float, 3> pVecThird{trackThird.pVector()};
@@ -248,8 +248,8 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       auto trackParPos = getTrackPar(trackPos);
       auto trackParNeg = getTrackPar(trackNeg);
-      o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
+      std::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
+      std::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
       std::array<float, 3> pVecPos{trackPos.pVector()};
       std::array<float, 3> pVecNeg{trackNeg.pVector()};
       if (trackPos.collisionId() != thisCollId) {
@@ -323,9 +323,9 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
       auto trackParThird = getTrackPar(trackThird);
-      o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
+      std::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
+      std::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
+      std::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
       std::array<float, 3> pVecFirst{trackFirst.pVector()};
       std::array<float, 3> pVecSecond{trackSecond.pVector()};
       std::array<float, 3> pVecThird{trackThird.pVector()};

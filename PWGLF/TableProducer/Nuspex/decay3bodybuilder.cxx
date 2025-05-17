@@ -824,7 +824,7 @@ struct decay3bodyBuilder {
     registry.fill(HIST("hVtx3BodyCounter"), kVtxPIDCut);
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto Track0Par = getTrackPar(t0);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);

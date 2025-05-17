@@ -682,7 +682,7 @@ struct hypertriton3bodyFinder {
     FillVtxCounter(kVtxDcaDau, isTrue3bodyVtx);
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto Track0Par = getTrackPar(dPtrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);

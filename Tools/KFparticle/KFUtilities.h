@@ -156,8 +156,8 @@ KFParticle createKFParticleFromTrackParCov(const o2::track::TrackParametrization
 /// @return o2::track::TrackParametrizationWithError track
 o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
 {
-  o2::gpu::gpustd::array<float, 3> xyz, pxpypz;
-  o2::gpu::gpustd::array<float, 21> cv;
+  std::array<float, 3> xyz, pxpypz;
+  std::array<float, 21> cv;
 
   // get parameters from kfParticle
   xyz[0] = kfParticle.GetX();

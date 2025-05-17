@@ -971,9 +971,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
       // impact parameters
-      gpu::gpustd::array<float, 2> impactParameterV0Dau0;
-      gpu::gpustd::array<float, 2> impactParameterV0Dau1;
-      gpu::gpustd::array<float, 2> impactParameterKaFromCasc;
+      std::array<float, 2> impactParameterV0Dau0;
+      std::array<float, 2> impactParameterV0Dau1;
+      std::array<float, 2> impactParameterKaFromCasc;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, omegaDauChargedTrackParCov, 2.f, matCorr, &impactParameterKaFromCasc);
@@ -1443,9 +1443,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
       // impact parameters
-      gpu::gpustd::array<float, 2> impactParameterV0Dau0;
-      gpu::gpustd::array<float, 2> impactParameterV0Dau1;
-      gpu::gpustd::array<float, 2> impactParameterKaFromCasc;
+      std::array<float, 2> impactParameterV0Dau0;
+      std::array<float, 2> impactParameterV0Dau1;
+      std::array<float, 2> impactParameterKaFromCasc;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, xiDauChargedTrackParCov, 2.f, matCorr, &impactParameterKaFromCasc);

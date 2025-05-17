@@ -838,7 +838,7 @@ struct lambdakzeroBuilder {
       statisticsRegistry.v0statsUnassociated[kV0TPCrefit]++;
 
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto posTrackPar = getTrackPar(posTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, posTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);

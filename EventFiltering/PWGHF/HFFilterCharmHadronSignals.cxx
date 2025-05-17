@@ -162,8 +162,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
 
         auto trackParPos = getTrackPar(trackPos);
         auto trackParNeg = getTrackPar(trackNeg);
-        o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
-        o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
+        std::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
+        std::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
         std::array<float, 3> pVecPos{trackPos.pVector()};
         std::array<float, 3> pVecNeg{trackNeg.pVector()};
         if (trackPos.collisionId() != thisCollId) {
@@ -218,7 +218,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
           }
 
           auto trackParThird = getTrackPar(track);
-          o2::gpu::gpustd::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
+          std::array<float, 2> dcaThird{track.dcaXY(), track.dcaZ()};
           std::array<float, 3> pVecThird = track.pVector();
           if (track.collisionId() != thisCollId) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParThird, 2.f, noMatCorr, &dcaThird);
@@ -268,9 +268,9 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
         auto trackParFirst = getTrackPar(trackFirst);
         auto trackParSecond = getTrackPar(trackSecond);
         auto trackParThird = getTrackPar(trackThird);
-        o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
-        o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
-        o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
+        std::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
+        std::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
+        std::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
         std::array<float, 3> pVecFirst = trackFirst.pVector();
         std::array<float, 3> pVecSecond = trackSecond.pVector();
         std::array<float, 3> pVecThird = trackThird.pVector();

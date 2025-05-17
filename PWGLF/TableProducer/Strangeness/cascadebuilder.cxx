@@ -862,8 +862,8 @@ struct cascadeBuilder {
   // from Carolina Reetz (thank you!)
   o2::track::TrackParCov getTrackParCovFromKFP(const KFParticle& kfParticle, const o2::track::PID pid, const int sign)
   {
-    o2::gpu::gpustd::array<float, 3> xyz, pxpypz;
-    o2::gpu::gpustd::array<float, 21> cv;
+    std::array<float, 3> xyz, pxpypz;
+    std::array<float, 21> cv;
 
     // get parameters from kfParticle
     xyz[0] = kfParticle.GetX();
@@ -909,7 +909,7 @@ struct cascadeBuilder {
     // Calculate DCAxy of the cascade (with bending)
     o2::track::TrackPar wrongV0 = fitter.createParentTrackPar();
     wrongV0.setAbsCharge(0); // charge zero
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     dcaInfo[0] = 999;
     dcaInfo[1] = 999;
 
@@ -989,7 +989,7 @@ struct cascadeBuilder {
 
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -1273,7 +1273,7 @@ struct cascadeBuilder {
 
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -1514,14 +1514,14 @@ struct cascadeBuilder {
     cascadecandidate.yOmega = KFOmega.GetRapidity();
 
     // KF Cascade covariance matrix
-    o2::gpu::gpustd::array<float, 21> covCascKF;
+    std::array<float, 21> covCascKF;
     for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covCascKF[i] = KFXi.GetCovariance(i);
       cascadecandidate.kfCascadeCov[i] = covCascKF[i];
     }
 
     // KF V0 covariance matrix
-    o2::gpu::gpustd::array<float, 21> covV0KF;
+    std::array<float, 21> covV0KF;
     for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covV0KF[i] = KFV0.GetCovariance(i);
       cascadecandidate.kfV0Cov[i] = covV0KF[i];
@@ -1839,7 +1839,7 @@ struct cascadeBuilder {
         auto cascadeTrack = trackedCascade.template track_as<TTrackTo>();
         auto cascadeTrackPar = getTrackParCov(cascadeTrack);
         auto const& collision = cascade.collision();
-        gpu::gpustd::array<float, 2> dcaInfo;
+        std::array<float, 2> dcaInfo;
         lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, cascadeTrackPar, 2.f, matCorrCascade, &dcaInfo);
 

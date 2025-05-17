@@ -364,7 +364,7 @@ struct HfDataCreatorCharmResoReduced {
     if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
       return false;
     // daughters DCA to V0's collision primary vertex
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     auto trackPosPar = getTrackPar(trackPos);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPosPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto trackPosDcaXY = dcaInfo[0];
@@ -860,7 +860,7 @@ struct HfDataCreatorCharmResoReduced {
           // propagate V0 to primary vertex (if enabled)
           if (propagateV0toPV) {
             std::array<float, 3> pVecV0Orig = {candidateV0.mom[0], candidateV0.mom[1], candidateV0.mom[2]};
-            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo;
             auto trackParK0 = o2::track::TrackPar(candidateV0.pos, pVecV0Orig, 0, true);
             trackParK0.setPID(o2::track::PID::K0);
             trackParK0.setAbsCharge(0);
@@ -942,7 +942,7 @@ struct HfDataCreatorCharmResoReduced {
 
           // if the track has been reassociated, re-propagate it to PV (minor difference)
           auto trackParCovTrack = getTrackParCov(track);
-          o2::gpu::gpustd::array<float, 2> dcaTrack{track.dcaXY(), track.dcaZ()};
+          std::array<float, 2> dcaTrack{track.dcaXY(), track.dcaZ()};
           std::array<float, 3> pVecTrack = track.pVector();
           if (track.collisionId() != collision.globalIndex()) {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovTrack, 2.f, matCorr, &dcaTrack);
