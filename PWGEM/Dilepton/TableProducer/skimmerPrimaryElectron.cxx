@@ -655,6 +655,7 @@ struct prefilterPrimaryElectron {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
+  Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> max_dcaxy{"max_dcaxy", 0.3, "DCAxy To PV for loose track sample"};
   Configurable<float> max_dcaz{"max_dcaz", 0.3, "DCAz To PV for loose track sample"};
   Configurable<float> minpt{"minpt", 0.1, "min pt for track for loose track sample"};
@@ -695,7 +696,7 @@ struct prefilterPrimaryElectron {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (!doprocessDummy) {
+    if (!doprocessDummy && fillQAHistogram) {
       addHistograms();
     }
   }
@@ -902,8 +903,10 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, track)) {
           continue;
         }
-        fRegistry.fill(HIST("Track/hPt"), track.pt());
-        fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Track/hPt"), track.pt());
+          fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+        }
         if (track.sign() > 0) {
           posTracks_per_coll.emplace_back(track);
         } else {
@@ -934,10 +937,14 @@ struct prefilterPrimaryElectron {
           ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron);                                                       // signal track
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], empos.sign(), ele.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
-          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+            fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          }
           if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
-            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+            if (fillQAHistogram) {
+              fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+            }
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
             if (v12.M() < max_mee_vec->at(i)) {
@@ -974,10 +981,14 @@ struct prefilterPrimaryElectron {
           ROOT::Math::PtEtaPhiMVector v2(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], emele.px(), emele.py(), emele.pz(), pos.sign(), emele.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
-          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+            fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+          }
           if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
-            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+            if (fillQAHistogram) {
+              fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+            }
           }
           for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
             if (v12.M() < max_mee_vec->at(i)) {
@@ -1013,8 +1024,10 @@ struct prefilterPrimaryElectron {
           ROOT::Math::PtEtaPhiMVector v2(track_par_cov_recalc.getPt(), track_par_cov_recalc.getEta(), track_par_cov_recalc.getPhi(), o2::constants::physics::MassElectron); // loose track
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], empos.px(), empos.py(), empos.pz(), pos.sign(), empos.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
-          fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
+            fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+          }
         } // end of signal positron loop
       } // end of loose positon loop
 
@@ -1041,8 +1054,10 @@ struct prefilterPrimaryElectron {
           ROOT::Math::PtEtaPhiMVector v2(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron);                                                       // signal track
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(emele.px(), emele.py(), emele.pz(), pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], emele.sign(), ele.sign(), d_bz);
-          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
-          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
+            fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+          }
 
         } // end of signal electron loop
       } // end of loose electron loop
@@ -1071,9 +1086,10 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
-
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
+        }
       } // end of ULS pairing
     } // end of collision loop
 
@@ -1102,15 +1118,19 @@ struct prefilterPrimaryElectron {
         if (!checkTrack(collision, pos)) { // track cut is applied to loose sample
           continue;
         }
-        fRegistry.fill(HIST("Track/hPt"), pos.pt());
-        fRegistry.fill(HIST("Track/hEtaPhi"), pos.phi(), pos.eta());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Track/hPt"), pos.pt());
+          fRegistry.fill(HIST("Track/hEtaPhi"), pos.phi(), pos.eta());
+        }
       }
       for (const auto& neg : negTracks_per_coll) {
         if (!checkTrack(collision, neg)) { // track cut is applied to loose sample
           continue;
         }
-        fRegistry.fill(HIST("Track/hPt"), neg.pt());
-        fRegistry.fill(HIST("Track/hEtaPhi"), neg.phi(), neg.eta());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Track/hPt"), neg.pt());
+          fRegistry.fill(HIST("Track/hEtaPhi"), neg.phi(), neg.eta());
+        }
       }
 
       for (const auto& [ele, empos] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, positrons_per_coll))) {
@@ -1126,10 +1146,14 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron); // signal track
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), ele.px(), ele.py(), ele.pz(), empos.sign(), ele.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        }
         if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
-          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), ele.tpcInnerParam(), ele.tpcNSigmaEl());
+          }
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
           if (v12.M() < max_mee_vec->at(i)) {
@@ -1156,10 +1180,14 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);       // loose track
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), emele.px(), emele.py(), emele.pz(), pos.sign(), emele.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/uls/hMvsPt"), v12.M(), v12.Pt());
+        }
         if (v12.M() < max_mee_vec->at(static_cast<int>(max_mee_vec->size()) - 1)) {
-          fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+          if (fillQAHistogram) {
+            fRegistry.fill(HIST("Track/hTPCNsigmaEl"), pos.tpcInnerParam(), pos.tpcNSigmaEl());
+          }
         }
         for (int i = 0; i < static_cast<int>(max_mee_vec->size()); i++) {
           if (v12.M() < max_mee_vec->at(i)) {
@@ -1186,8 +1214,10 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(empos.pt(), empos.eta(), empos.phi(), o2::constants::physics::MassElectron); // signal track
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(empos.px(), empos.py(), empos.pz(), pos.px(), pos.py(), pos.pz(), empos.sign(), pos.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/before/lspp/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/lspp/hMvsPt"), v12.M(), v12.Pt());
+        }
       } // end of LS++ pairing
 
       for (const auto& [ele, emele] : combinations(CombinationsFullIndexPolicy(negTracks_per_coll, electrons_per_coll))) {
@@ -1203,8 +1233,10 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(emele.pt(), emele.eta(), emele.phi(), o2::constants::physics::MassElectron); // signal track
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(emele.px(), emele.py(), emele.pz(), ele.px(), ele.py(), ele.pz(), emele.sign(), ele.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/before/lsmm/hMvsPt"), v12.M(), v12.Pt());
+        }
       } // end of LS-- pairing
 
     } // end of collision loop
@@ -1227,8 +1259,10 @@ struct prefilterPrimaryElectron {
         ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
-        fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
-        fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
+        if (fillQAHistogram) {
+          fRegistry.fill(HIST("Pair/after/uls/hMvsPhiV"), phiv, v12.M());
+          fRegistry.fill(HIST("Pair/after/uls/hMvsPt"), v12.M(), v12.Pt());
+        }
       } // end of ULS pairing
     } // end of collision loop
 
