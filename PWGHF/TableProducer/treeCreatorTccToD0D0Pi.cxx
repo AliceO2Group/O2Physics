@@ -216,6 +216,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   double bz{0.};
+  int runNumber{0};
 
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using TracksWPid = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
@@ -421,7 +422,7 @@ struct HfTreeCreatorTccToD0D0Pi {
               if (trackD2Prong0.collisionId() != thisCollId) {
                 trackParVarD2Prong0.propagateToDCA(primaryVertex, bz, &dca0D2);
               }
-              if (trackD2Prong0.collisionId() != thisCollId) {
+              if (trackD2Prong1.collisionId() != thisCollId) {
                 trackParVarD2Prong1.propagateToDCA(primaryVertex, bz, &dca1D2);
               }
 
