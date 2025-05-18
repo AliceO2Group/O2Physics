@@ -272,7 +272,6 @@ struct HfTreeCreatorTccToD0D0Pi {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-      runNumber = 0;
 
       hCandidatesD1 = registry.add<TH1>("hCandidatesD1", "D1 candidate counter", {HistType::kTH1D, {axisCands}});
       hCandidatesD2 = registry.add<TH1>("hCandidatesD2", "D2 candidate counter", {HistType::kTH1D, {axisCands}});
