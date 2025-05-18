@@ -806,22 +806,42 @@ struct HeavyionMultiplicity {
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);
 
-  void processGen(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mccols, aod::McParticles const& GenParticles)
+  void processGen(aod::McCollisions::iterator const&, aod::McParticles const& GenParticles)
   {
-    histos.fill(HIST("MultBarrelEta10_vs_FT0A"), mccols.multMCNParticlesEta10(), mccols.multMCFT0A());
-    histos.fill(HIST("MultBarrelEta10_vs_FT0C"), mccols.multMCNParticlesEta10(), mccols.multMCFT0C());
-    histos.fill(HIST("MultBarrelEta10"), mccols.multMCNParticlesEta10());
-    histos.fill(HIST("MultFT0A"), mccols.multMCFT0A());
-    histos.fill(HIST("MultFT0C"), mccols.multMCFT0C());
-    histos.fill(HIST("mult10_vs_FT0A"), mccols.multMCNParticlesEta10(), mccols.multMCFT0A());
-    histos.fill(HIST("mult10_vs_FT0C"), mccols.multMCNParticlesEta10(), mccols.multMCFT0C());
+
+    int multFT0A = 0;
+    int multFT0C = 0;
+    int multBarrelEta10 = 0;
 
     for (const auto& particle : GenParticles) {
       if (!isGenTrackSelected(particle)) {
         continue;
       }
-      histos.fill(HIST("dndeta10_vs_FT0A"), particle.eta(), mccols.multMCFT0A());
-      histos.fill(HIST("dndeta10_vs_FT0C"), particle.eta(), mccols.multMCFT0C());
+      if (std::abs(particle.eta()) < 1.0) {
+        multBarrelEta10++;
+      }
+      if (-3.3 < particle.eta() && particle.eta() < -2.1) {
+        multFT0C++;
+      }
+      if (3.5 < particle.eta() && particle.eta() < 4.9) {
+        multFT0A++;
+      }
+    }
+
+    histos.fill(HIST("MultBarrelEta10_vs_FT0A"), multBarrelEta10, multFT0A);
+    histos.fill(HIST("MultBarrelEta10_vs_FT0C"), multBarrelEta10, multFT0C);
+    histos.fill(HIST("MultBarrelEta10"), multBarrelEta10);
+    histos.fill(HIST("MultFT0A"), multFT0A);
+    histos.fill(HIST("MultFT0C"), multFT0C);
+    histos.fill(HIST("mult10_vs_FT0A"), multBarrelEta10, multFT0A);
+    histos.fill(HIST("mult10_vs_FT0C"), multBarrelEta10, multFT0C);
+
+    for (const auto& particle : GenParticles) {
+      if (!isGenTrackSelected(particle)) {
+        continue;
+      }
+      histos.fill(HIST("dndeta10_vs_FT0A"), particle.eta(), multFT0A);
+      histos.fill(HIST("dndeta10_vs_FT0C"), particle.eta(), multFT0C);
     }
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processGen, "process pure MC gen", false);
