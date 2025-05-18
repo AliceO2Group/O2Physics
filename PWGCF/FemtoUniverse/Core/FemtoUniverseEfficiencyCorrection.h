@@ -25,7 +25,6 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 
 #include <vector>
 #include <string>
@@ -97,7 +96,17 @@ class EfficiencyCorrection
           continue;
         }
 
-        hLoaded[idx] = timestamp > 0 ? loadHistFromCCDB(timestamp) : nullptr;
+        if (timestamp > 0) {
+          if (config->confEffCorVariables->size() == 1) {
+            hLoaded[idx] = loadHistFromCCDB<TH1>(timestamp);
+          } else if (config->confEffCorVariables->size() == 2) {
+            hLoaded[idx] = loadHistFromCCDB<TH2>(timestamp);
+          } else {
+            LOGF(fatal, notify("unknown configuration for efficiency variables"));
+          }
+        } else {
+          hLoaded[idx] = nullptr;
+        }
       }
     }
   }
@@ -131,12 +140,11 @@ class EfficiencyCorrection
     auto mcParticle = particle.fdMCParticle();
 
     if (mcParticle.pdgMCTruth() == particlePDG) {
-      // TODO question: fill with particle vs mcParticle, pt, eta, multV0M?
       switch (mcParticle.partOriginMCTruth()) {
         case (o2::aod::femtouniverse_mc_particle::kPrimary):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hPrimary"),
                              mcParticle.pt(),
-                             particle.eta(),
+                             mcParticle.eta(),
                              particle.fdCollision().multV0M());
           break;
 
@@ -145,28 +153,28 @@ class EfficiencyCorrection
         case (o2::aod::femtouniverse_mc_particle::kDaughterSigmaplus):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hSecondary"),
                              mcParticle.pt(),
-                             particle.eta(),
+                             mcParticle.eta(),
                              particle.fdCollision().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kMaterial):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMaterial"),
                              mcParticle.pt(),
-                             particle.eta(),
+                             mcParticle.eta(),
                              particle.fdCollision().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kFake):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hFake"),
                              mcParticle.pt(),
-                             particle.eta(),
+                             mcParticle.eta(),
                              particle.fdCollision().multV0M());
           break;
 
         default:
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hOther"),
                              mcParticle.pt(),
-                             particle.eta(),
+                             mcParticle.eta(),
                              particle.fdCollision().multV0M());
           break;
       }
@@ -179,23 +187,19 @@ class EfficiencyCorrection
     auto hWeights = hLoaded[partNo - 1];
 
     if (shouldApplyCorrection && hWeights) {
-      auto dim = hWeights->GetDimension();
-
-      if (dim != 3) {
-        LOGF(fatal, notify("Histogram \"%s\" has wrong dimension %d != 3"), config->confEffCorCCDBPath.value, dim);
+      auto dim = static_cast<size_t>(hWeights->GetDimension());
+      if (dim != config->confEffCorVariables.value.size()) {
+        LOGF(fatal, notify("Histogram \"%s\" has wrong dimension %d != %d"), config->confEffCorCCDBPath.value, dim, config->confEffCorVariables.value.size());
         return weight;
       }
 
       auto bin = -1;
       if (config->confEffCorVariables.value == std::vector<std::string>{"pt"}) {
-        auto projected = hWeights->Project3D("x");
-        bin = projected->FindBin(particle.pt());
+        bin = hLoaded[partNo - 1]->FindBin(particle.pt());
       } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "eta"}) {
-        auto projected = hWeights->Project3D("xy");
-        bin = projected->FindBin(particle.pt(), particle.eta());
+        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "cent-mult"}) {
-        auto projected = hWeights->Project3D("xz");
-        bin = projected->FindBin(particle.pt(), particle.fdCollision().multV0M());
+        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.fdCollision().multV0M());
       } else {
         LOGF(fatal, notify("unknown configuration for efficiency variables"));
         return weight;
@@ -212,7 +216,7 @@ class EfficiencyCorrection
     return fmt::format("[EFFICIENCY CORRECTION] {}", msg);
   }
 
-  static auto isHistEmpty(TH3* hist) -> bool
+  static auto isHistEmpty(TH1* hist) -> bool
   {
     if (!hist) {
       return true;
@@ -225,9 +229,10 @@ class EfficiencyCorrection
     return true;
   }
 
-  auto loadHistFromCCDB(const int64_t timestamp) const -> TH3*
+  template <typename H>
+  auto loadHistFromCCDB(const int64_t timestamp) const -> H*
   {
-    auto hWeights = ccdb.getForTimeStamp<TH3>(config->confEffCorCCDBPath, timestamp);
+    auto hWeights = ccdb.getForTimeStamp<H>(config->confEffCorCCDBPath, timestamp);
     if (!hWeights || hWeights->IsZombie()) {
       LOGF(error, notify("Could not load histogram \"%s/%ld\""), config->confEffCorCCDBPath.value, timestamp);
       return nullptr;
@@ -247,7 +252,7 @@ class EfficiencyCorrection
   bool shouldFillHistograms{false};
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<TH3*, 2> hLoaded{};
+  std::array<TH1*, 2> hLoaded{};
 
   framework::HistogramRegistry* histRegistry{};
   static constexpr std::string_view histDirectory{"EfficiencyCorrection"};

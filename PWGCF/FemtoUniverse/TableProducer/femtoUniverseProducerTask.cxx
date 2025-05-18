@@ -903,8 +903,8 @@ struct FemtoUniverseProducerTask {
   {
     for (const auto& c : col) {
       const auto vtxZ = c.posZ();
-      float mult = 0;
-      int multNtr = 0;
+      float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
+      int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
       if (std::abs(vtxZ) > confEvtZvtx) {
         continue;
