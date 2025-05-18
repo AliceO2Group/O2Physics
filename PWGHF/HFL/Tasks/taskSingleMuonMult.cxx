@@ -16,6 +16,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <array>
 
 #include <TPDGCode.h>
 #include <TString.h>
@@ -55,8 +56,8 @@ struct HfTaskSingleMuonMult {
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "maximum pseudorapidity of tracks"};
   Configurable<float> etaMin{"etaMin", -3.6, "minimum pseudorapidity"};
   Configurable<float> etaMax{"etaMax", -2.5, "maximum pseudorapidity"};
-  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA value for small Rabsorb"};
-  Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA value for large Rabsorb"};
+  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA value for small RAbsorb"};
+  Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA value for large RAbsorb"};
   Configurable<float> rAbsorbMin{"rAbsorbMin", 17.6, "R at absorber end minimum value"};
   Configurable<float> rAbsorbMax{"rAbsorbMax", 89.5, "R at absorber end maximum value"};
   Configurable<float> rAbsorbMid{"rAbsorbMid", 26.5, "R at absorber end split point for different p*DCA selections"};
@@ -71,7 +72,6 @@ struct HfTaskSingleMuonMult {
   Filter globalTrackFilter = ((o2::aod::track::isGlobalTrack == true) && (nabs(o2::aod::track::eta) < etaTrackMax) && ((o2::aod::track::pt) > ptTrackMin));
 
   HistogramRegistry registry{"registry"};
-  static constexpr std::string_view kTrackType[] = {"TrackType0", "TrackType1", "TrackType2", "TrackType3", "TrackType4"};
 
   void init(InitContext&)
   {
@@ -96,41 +96,26 @@ struct HfTaskSingleMuonMult {
     AxisSpec axisTrackType{8, -1.5, 6.5, "TrackType"};
     AxisSpec axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
 
-    HistogramConfigSpec hCentrality{HistType::kTH1F, {axisCent}};
-    HistogramConfigSpec hEvent{HistType::kTH1F, {axisEvent}};
-    HistogramConfigSpec hEventSize{HistType::kTH1F, {axisEventSize}};
-    HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
+    registry.add("hCentrality", "Centrality Percentile", {HistType::kTH1F, {axisCent}});
+    registry.add("hEvent", " Number of Events", {HistType::kTH1F, {axisEvent}});
+    registry.add("hEventSize", "Event Size", {HistType::kTH1F, {axisEventSize}});
+    registry.add("hVtxZBeforeSel", "Z-vertex distribution before zVtx Cut", {HistType::kTH1F, {axisVtxZ}});
+    registry.add("hVtxZAfterSel", "Z-vertex distribution after zVtx Cut", {HistType::kTH1F, {axisVtxZ}});
 
-    HistogramConfigSpec hMuTrkSel{HistType::kTH1F, {axisMuTrk}};
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10};
-    HistogramConfigSpec hTHnMuDeltaPt{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10};
-    HistogramConfigSpec h3DCA{HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}};
-    HistogramConfigSpec hTHnCh{HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisSign}, 5};
-    HistogramConfigSpec h3MultNchNmu{HistType::kTH3F, {axisCent, axisNCh, axisNMu}};
+    registry.add("hMuTrkSel", "Selection of muon tracks at various kinematic cuts", {HistType::kTH1F, {axisMuTrk}});
+    registry.add("hMuBeforeMatchMFT", "Muon information before any Kinemeatic cuts applied", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("hMuBeforeAccCuts", "Muon information before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("h3DCABeforeAccCuts", "DCAx,DCAy,DCAz information before Acceptance cuts", {HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}});
+    registry.add("hMuDeltaPtBeforeAccCuts", "Muon information with DeltaPt before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10});
+    registry.add("hMuAfterEtaCuts", "Muon information after applying Eta cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("hMuAfterRAbsorbCuts", "Muon information after applying RAbsorb cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("hMuAfterPdcaCuts", "Muon information after applying Pdca cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("hMuAfterAccCuts", "Muon information after applying all Kinematic cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
+    registry.add("h3DCAAfterAccCuts", "DCAx,DCAy,DCAz information after Acceptance cuts", {HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}});
+    registry.add("hMuDeltaPtAfterAccCuts", "Muon information with DeltaPt after applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisDeltaPt}, 10});
 
-    HistogramConfigSpec h2PtMc{HistType::kTH2F, {axisPt, axisPtDif}};
-    HistogramConfigSpec h2EtaMc{HistType::kTH2F, {axisEta, axisEtaDif}};
-
-    registry.add("hCentrality", "", hCentrality);
-    registry.add("hEvent", "", hEvent);
-    registry.add("hEventSize", "", hEventSize);
-    registry.add("hVtxZBeforeSel", "", hVtxZ);
-    registry.add("hVtxZAfterSel", "", hVtxZ);
-
-    registry.add("hMuTrkSel", "", hMuTrkSel);
-    registry.add("hMuBeforeMatchMFT", "", hTHnMu);
-    registry.add("hMuBeforeAccCuts", "", hTHnMu);
-    registry.add("h3DCABeforeAccCuts", "", h3DCA);
-    registry.add("hMuDeltaPtBeforeAccCuts", "", hTHnMuDeltaPt);
-    registry.add("hMuAfterEtaCuts", "", hTHnMu);
-    registry.add("hMuAfterRabsorbCuts", "", hTHnMu);
-    registry.add("hMuAfterPdcaCuts", "", hTHnMu);
-    registry.add("hMuAfterAccCuts", "", hTHnMu);
-    registry.add("h3DCAAfterAccCuts", "", h3DCA);
-    registry.add("hMuDeltaPtAfterAccCuts", "", hTHnMuDeltaPt);
-
-    registry.add("hTHnTrk", "", hTHnCh);
-    registry.add("h3MultNchNmu", "", h3MultNchNmu);
+    registry.add("hTHnTrk", "Muon information with multiplicity", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisSign}, 5});
+    registry.add("h3MultNchNmu", "Number of muons and multiplicity", {HistType::kTH3F, {axisCent, axisNCh, axisNMu}});
 
     auto hEvstat = registry.get<TH1>(HIST("hEvent"));
     auto* xEv = hEvstat->GetXaxis();
@@ -142,12 +127,14 @@ struct HfTaskSingleMuonMult {
     auto* xMu = hMustat->GetXaxis();
     xMu->SetBinLabel(1, "noCut");
     xMu->SetBinLabel(2, "etaCut");
-    xMu->SetBinLabel(3, "RabsorbCut");
+    xMu->SetBinLabel(3, "RAbsorbCut");
     xMu->SetBinLabel(4, "pDcaCut");
     xMu->SetBinLabel(5, "chi2Cut");
 
-    const uint8_t muonTrackType[]{0, 1, 2, 3, 4};
-    for (const auto& trktype : muonTrackType) {
+    // Select the types of muon tracks to be analysed.
+    const uint8_t muonTypeSelect[]{0, 1, 2, 3, 4};
+    constexpr std::size_t nTypes{std::size(muonTypeSelect)};
+    for (const auto& trktype : muonTypeSelect) {
       registry.add(Form("h3MultNchNmu_TrackType%d", trktype), "", h3MultNchNmu);
     }
   }
@@ -185,10 +172,9 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hTHnTrk"), cent, nCh, track.pt(), track.eta(), track.sign());
     }
 
-    // muons
+    // muons per event
     int nMu{0};
-    constexpr std::size_t nTypes{5};
-    int nMuTrackType[nTypes] = {0};
+    int nMuType[nTypes] = {0};
 
     for (const auto& muon : muons) {
       const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
@@ -223,7 +209,7 @@ struct HfTaskSingleMuonMult {
         continue;
       }
       registry.fill(HIST("hMuTrkSel"), 3);
-      registry.fill(HIST("hMuAfterRabsorbCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
+      registry.fill(HIST("hMuAfterRAbsorbCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       if ((rAbsorb < rAbsorbMid) && (pDca >= pDcaMin)) {
         continue;
@@ -244,7 +230,7 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCAAfterAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
       nMu++;
-      nMuTrackType[muTrackType]++;
+      nMuType[muTrackType]++;
 
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
@@ -258,10 +244,11 @@ struct HfTaskSingleMuonMult {
 
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);
 
+    // Fill number of muons of various types with multiplicity
     static_for<0, 4>([&](auto i) {
-      constexpr int kIndex = i.value;
-      if (nMuTrackType[kIndex] > 0) {
-        registry.fill(std::string(HIST("h3MultNchNmu_")) + std::string(HIST(kTrackType[kIndex])), cent, nCh, nMuTrackType[kIndex]);
+      constexpr int kType = i.value;
+      if (nMuType[kType] > 0) {
+        registry.fill(std::string(HIST("h3MultNchNmu_TrackType")) + std::string(HIST(kType)), cent, nCh, nMuType[kType]);
       }
     });
     chTracks.clear();
