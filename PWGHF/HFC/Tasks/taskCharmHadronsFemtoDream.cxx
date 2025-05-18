@@ -47,12 +47,6 @@ struct HfTaskCharmHadronsFemtoDream {
     NegativeCharge = -1
   };
 
-  enum PairSign {
-    PairNotDefined = 0,
-    LikeSignPair = 1,
-    UnLikeSignPair = 2
-  };
-
   /// Binning configurables
   ConfigurableAxis bin4Dkstar{"bin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
   ConfigurableAxis bin4DMult{"bin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
@@ -195,8 +189,9 @@ struct HfTaskCharmHadronsFemtoDream {
 
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDResultsHF> fillFemtoResult;
-  Produces<o2::aod::FDResultsHFTrkInfo> fillFemtoResultTrkInfo;
+  Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
+  Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
+  Produces<o2::aod::FDHfColl> rowFemtoResultColl;
 
   void init(InitContext& /*context*/)
   {
@@ -243,24 +238,11 @@ struct HfTaskCharmHadronsFemtoDream {
     registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
 
-  template <typename Part1>
-  void fillTableTrkInfo(Part1 const& p1)
-  {
-    fillFemtoResultTrkInfo(
-      p1.tpcNClsFound(),
-      p1.tpcNClsFindable(),
-      p1.tpcNClsCrossedRows(),
-      p1.tpcNSigmaPr(),
-      p1.tofNSigmaPr());
-  }
-
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
   {
     fillCollision(col);
-
-    processType = 1; // for same event
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
@@ -285,23 +267,10 @@ struct HfTaskCharmHadronsFemtoDream {
         chargeTrack = NegativeCharge;
       }
 
-      int pairSign = 0;
-      if (chargeTrack == p2.charge()) {
-        pairSign = LikeSignPair;
-      } else {
-        pairSign = UnLikeSignPair;
-      }
-
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
       if (kstar > highkstarCut) {
         continue;
       }
-
-      // if (chargeTrack == 1) {
-      //   partSign = 1;
-      // } else {
-      //   partSign = 1 << 1;
-      // }
 
       float invMass;
       if (p2.candidateSelFlag() == 1) {
@@ -326,24 +295,39 @@ struct HfTaskCharmHadronsFemtoDream {
         charmHadMc = p2.flagMc();
         originType = p2.originMcRec();
       }
-      fillFemtoResult(
+
+      rowFemtoResultCharm(
+        col.globalIndex(),
+        p2.timeStamp(),
         invMass,
         p2.pt(),
-        p1.pt(),
+        p2.eta(),
+        p2.phi(),
+        p2.charge(),
         p2.bdtBkg(),
         p2.bdtPrompt(),
         p2.bdtFD(),
-        kstar,
-        FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
-        FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
-        col.multNtr(),
-        col.multV0M(),
-        p2.charge(),
-        pairSign,
-        processType,
         charmHadMc,
         originType);
-      fillTableTrkInfo(p1);
+
+      rowFemtoResultTrk(
+        col.globalIndex(),
+        p2.timeStamp(),
+        p1.pt(),
+        p1.eta(),
+        p1.phi(),
+        chargeTrack,
+        p1.tpcNClsFound(),
+        p1.tpcNClsFindable(),
+        p1.tpcNClsCrossedRows(),
+        p1.tpcNSigmaPr(),
+        p1.tofNSigmaPr());
+
+      rowFemtoResultColl(
+        col.globalIndex(),
+        p2.timeStamp(),
+        col.posZ(),
+        col.multNtr());
 
       sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
@@ -354,8 +338,6 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     // Mixed events that contain the pair of interest
-    processType = 2; // for mixed event
-
     Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
     PartitionMaskedCol1.bindTable(cols);
 
@@ -384,20 +366,6 @@ struct HfTaskCharmHadronsFemtoDream {
           continue;
         }
 
-        float chargeTrack = 0.;
-        if ((p1.cut() & 2) == 2) {
-          chargeTrack = PositiveCharge;
-        } else {
-          chargeTrack = NegativeCharge;
-        }
-
-        int pairSign = 0;
-        if (chargeTrack == p2.charge()) {
-          pairSign = LikeSignPair;
-        } else {
-          pairSign = UnLikeSignPair;
-        }
-
         float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
         if (kstar > highkstarCut) {
           continue;
@@ -416,31 +384,6 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
-
-        int charmHadMc = 0;
-        int originType = 0;
-        if constexpr (isMc) {
-          charmHadMc = p2.flagMc();
-          originType = p2.originMcRec();
-        }
-        fillFemtoResult(
-          invMass,
-          p2.pt(),
-          p1.pt(),
-          p2.bdtBkg(),
-          p2.bdtPrompt(),
-          p2.bdtFD(),
-          kstar,
-          FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
-          FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
-          collision1.multNtr(),
-          collision1.multV0M(),
-          p2.charge(),
-          pairSign,
-          processType,
-          charmHadMc,
-          originType);
-        fillTableTrkInfo(p1);
 
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
