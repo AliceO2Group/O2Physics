@@ -84,7 +84,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
 
 // reconstructed track information
 DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
-                  o2::soa::Index<>, emprimarytrack::CollisionId, collision::PosZ, collision::NumContrib,
+                  o2::soa::Index<>, emprimarytrack::CollisionId, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange,
                   track::Pt, track::Eta, track::Phi, track::Tgl, track::Signed1Pt,
                   track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY,
                   track::TPCNClsFindable, emprimarytrack::TPCNClsFound, emprimarytrack::TPCNClsCrossedRows,
