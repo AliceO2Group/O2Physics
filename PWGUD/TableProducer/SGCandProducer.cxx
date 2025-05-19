@@ -14,7 +14,8 @@
 ///
 /// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
 /// \since  23.11.2023
-//
+/// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
+///
 
 #include <cmath>
 #include <vector>
@@ -46,6 +47,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::dataformats;
+using namespace o2::aod::rctsel;
 
 #define getHist(type, name) std::get<std::shared_ptr<type>>(histPointers[name])
 
@@ -363,7 +365,7 @@ struct SGCandProducer {
                            fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
+      outputCollisionSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, occ, ir, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC, collision.rct_raw());
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
         auto zdc = newbc.zdc();

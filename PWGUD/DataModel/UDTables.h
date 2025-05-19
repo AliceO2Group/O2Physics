@@ -111,6 +111,9 @@ DECLARE_SOA_COLUMN(ITSROFb, itsROFb, int);
 DECLARE_SOA_COLUMN(Sbp, sbp, int);
 DECLARE_SOA_COLUMN(ZvtxFT0vPV, zVtxFT0vPV, int);
 DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int);
+DECLARE_SOA_COLUMN(RctMask, rctMask, uint32_t); //! run condition table mask
+// information about mask names -> Common/CCDB/RCTSelectionFlags.h
+
 // Gap Side Information
 DECLARE_SOA_COLUMN(GapSide, gapSide, uint8_t); // 0 for side A, 1 for side C, 2 for both sides (or use an enum for better readability)
 // FIT selection flags
@@ -249,6 +252,24 @@ DECLARE_SOA_TABLE_VERSIONED(UDCollisionSelExtras_002, "AOD", "UDCOLSELEXTRA", 2,
                             udcollision::ZvtxFT0vPV,      //! kIsGoodZvtxFT0vsPV
                             udcollision::VtxITSTPC);      //! kIsVertexITSTPC
 
+DECLARE_SOA_TABLE_VERSIONED(UDCollisionSelExtras_003, "AOD", "UDCOLSELEXTRA", 3,
+                            udcollision::ChFT0A,          //! number of active channels in FT0A
+                            udcollision::ChFT0C,          //! number of active channels in FT0C
+                            udcollision::ChFDDA,          //! number of active channels in FDDA
+                            udcollision::ChFDDC,          //! number of active channels in FDDC
+                            udcollision::ChFV0A,          //! number of active channels in FV0A
+                            udcollision::OccupancyInTime, //! Occupancy
+                            udcollision::HadronicRate,    //! Interaction Rate
+                            udcollision::Trs,             //! kNoCollInTimeRangeStandard
+                            udcollision::Trofs,           //! kNoCollInRofStandard
+                            udcollision::Hmpr,            //! kNoHighMultCollInPrevRof
+                            udcollision::TFb,             //! kNoTimeFrameBorder
+                            udcollision::ITSROFb,         //! kNoITSROFrameBorder
+                            udcollision::Sbp,             //! kNoSameBunchPileup
+                            udcollision::ZvtxFT0vPV,      //! kIsGoodZvtxFT0vsPV
+                            udcollision::VtxITSTPC,       //! kIsVertexITSTPC
+                            udcollision::RctMask);        //! RCT mask
+
 // central barrel-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
@@ -272,7 +293,7 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
                   udcollision::UDMcCollisionId);
 
 using UDCollisions = UDCollisions_001;
-using UDCollisionSelExtras = UDCollisionSelExtras_002;
+using UDCollisionSelExtras = UDCollisionSelExtras_003;
 
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;
