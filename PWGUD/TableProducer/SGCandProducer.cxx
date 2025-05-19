@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file SGCandProducer.cxx
+/// \brief Produces PWGUD derived table from standard tables
+///
+/// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
+/// \since  23.11.2023
+//
 
 #include <cmath>
 #include <vector>
@@ -21,6 +28,8 @@
 #include "DataFormatsFIT/Triggers.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -74,6 +83,7 @@ struct SGCandProducer {
   // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
+
   //  SG selector
   SGSelector sgSelector;
   ctpRateFetcher mRateFetcher;
@@ -102,6 +112,8 @@ struct SGCandProducer {
     "registry",
     {}};
   std::map<std::string, HistPtr> histPointers;
+
+  int runNumber = -1;
 
   // function to update UDFwdTracks, UDFwdTracksExtra
   template <typename TFwdTrack>
@@ -179,6 +191,78 @@ struct SGCandProducer {
                      track.isPVContributor());
     outputTracksLabel(track.globalIndex());
   }
+
+  // function to process trigger counters, accounting for BC selection bits
+  void processCountersTrg(BCs const& bcs, aod::FT0s const&, aod::Zdcs const&)
+  {
+    const auto& firstBc = bcs.iteratorAt(0);
+    if (runNumber != firstBc.runNumber())
+      runNumber = firstBc.runNumber();
+
+    auto hCountersTrg = getHist(TH1, "reco/hCountersTrg");
+    auto hCountersTrgBcSel = getHist(TH1, "reco/hCountersTrgBcSel");
+    auto hLumi = getHist(TH1, "reco/hLumi");
+    auto hLumiBcSel = getHist(TH1, "reco/hLumiBcSel");
+
+    // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
+    float csTCE = 10.36e6;
+    float csZEM = 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+    float csZNC = 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+    if (runNumber > 543437 && runNumber < 543514) {
+      csTCE = 8.3e6;
+    }
+    if (runNumber >= 543514) {
+      csTCE = 4.10e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+    }
+
+    for (const auto& bc : bcs) {
+      bool hasFT0 = bc.has_foundFT0();
+      bool hasZDC = bc.has_foundZDC();
+      if (!hasFT0 && !hasZDC)
+        continue;
+      bool isSelectedBc = true;
+      if (rejectAtTFBoundary && !bc.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        isSelectedBc = false;
+      if (noITSROFrameBorder && !bc.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        isSelectedBc = false;
+      if (hasFT0) {
+        auto ft0TrgMask = bc.ft0().triggerMask();
+        if (TESTBIT(ft0TrgMask, o2::fit::Triggers::bitVertex)) {
+          hCountersTrg->Fill("TVX", 1);
+          if (isSelectedBc)
+            hCountersTrgBcSel->Fill("TVX", 1);
+        }
+        if (TESTBIT(ft0TrgMask, o2::fit::Triggers::bitVertex) && TESTBIT(ft0TrgMask, o2::fit::Triggers::bitCen)) {
+          hCountersTrg->Fill("TCE", 1);
+          hLumi->Fill("TCE", 1. / csTCE);
+          if (isSelectedBc) {
+            hCountersTrgBcSel->Fill("TCE", 1);
+            hLumiBcSel->Fill("TCE", 1. / csTCE);
+          }
+        }
+      }
+      if (hasZDC) {
+        if (bc.selection_bit(aod::evsel::kIsBBZNA) || bc.selection_bit(aod::evsel::kIsBBZNC)) {
+          hCountersTrg->Fill("ZEM", 1);
+          hLumi->Fill("ZEM", 1. / csZEM);
+          if (isSelectedBc) {
+            hCountersTrgBcSel->Fill("ZEM", 1);
+            hLumiBcSel->Fill("ZEM", 1. / csZEM);
+          }
+        }
+        if (bc.selection_bit(aod::evsel::kIsBBZNC)) {
+          hCountersTrg->Fill("ZNC", 1);
+          hLumi->Fill("ZNC", 1. / csZNC);
+          if (isSelectedBc) {
+            hCountersTrgBcSel->Fill("ZNC", 1);
+            hLumiBcSel->Fill("ZNC", 1. / csZNC);
+          }
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(SGCandProducer, processCountersTrg, "Produce trigger counters and luminosity histograms", true);
 
   // function to process reconstructed data
   template <typename TCol>
@@ -289,7 +373,7 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       if (fillTrackTables) {
-        for (auto& track : tracks) {
+        for (const auto& track : tracks) {
           if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
             if (track.isPVContributor()) {
               updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
@@ -304,7 +388,7 @@ struct SGCandProducer {
       // update SGFwdTracks tables
       if (fillFwdTrackTables) {
         if (sameCuts.withFwdTracks()) {
-          for (auto& fwdtrack : fwdtracks) {
+          for (const auto& fwdtrack : fwdtracks) {
             if (!sgSelector.FwdTrkSelector(fwdtrack))
               updateUDFwdTrackTables(fwdtrack, bc.globalBC());
           }
@@ -324,6 +408,22 @@ struct SGCandProducer {
     histPointers.clear();
     if (context.mOptions.get<bool>("processData")) {
       histPointers.insert({"reco/Stat", registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}})});
+
+      const AxisSpec axisCountersTrg{10, 0.5, 10.5, ""};
+      histPointers.insert({"reco/hCountersTrg", registry.add("reco/hCountersTrg", "Trigger counts before selections; Trigger; Counts", {HistType::kTH1F, {axisCountersTrg}})});
+      histPointers.insert({"reco/hCountersTrgBcSel", registry.add("reco/hCountersTrgSel", "Trigger counts after BC selections; Trigger; Counts", {HistType::kTH1F, {axisCountersTrg}})});
+      histPointers.insert({"reco/hLumi", registry.add("reco/hLumi", "Integrated luminosity before selections; Trigger; Luminosity, 1/#mub", {HistType::kTH1F, {axisCountersTrg}})});
+      histPointers.insert({"reco/hLumiBcSel", registry.add("reco/hLumiBcSel", "Integrated luminosity before selections; Trigger; Luminosity, 1/#mub", {HistType::kTH1F, {axisCountersTrg}})});
+      auto hCountersTrg = getHist(TH1, "reco/hCountersTrg");
+      auto hCountersTrgBcSel = getHist(TH1, "reco/hCountersTrgBcSel");
+      auto hLumi = getHist(TH1, "reco/hLumi");
+      auto hLumiBcSel = getHist(TH1, "reco/hLumiBcSel");
+      for (const auto& h : {hCountersTrg, hCountersTrgBcSel, hLumi, hLumiBcSel}) {
+        h->GetXaxis()->SetBinLabel(1, "TVX");
+        h->GetXaxis()->SetBinLabel(2, "TCE");
+        h->GetXaxis()->SetBinLabel(3, "ZEM");
+        h->GetXaxis()->SetBinLabel(4, "ZNC");
+      }
     }
     if (context.mOptions.get<bool>("processMcData")) {
       histPointers.insert({"MCreco/Stat", registry.add("MCreco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}})});
@@ -441,7 +541,7 @@ struct McSGCandProducer {
     // This is needed to be able to assign the new daughter indices
     std::map<int64_t, int64_t> oldnew;
     auto lastId = outputMcParticles.lastIndex();
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       auto oldId = mcpart.globalIndex();
       if (mcPartIsSaved.find(oldId) != mcPartIsSaved.end()) {
         oldnew[oldId] = mcPartIsSaved[oldId];
@@ -452,12 +552,12 @@ struct McSGCandProducer {
     }
 
     // all particles of the McCollision are saved
-    for (auto mcpart : McParts) {
+    for (const auto& mcpart : McParts) {
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
         // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-        for (auto oldmid : oldmids) {
+        for (const auto& oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           if (verboseInfoMC)
             LOGF(debug, "    m %d", m.globalIndex());
@@ -524,7 +624,7 @@ struct McSGCandProducer {
   void updateUDMcTrackLabels(TTrack const& udtracks, std::map<int64_t, int64_t>& mcPartIsSaved)
   {
     // loop over all tracks
-    for (auto udtrack : udtracks) {
+    for (const auto& udtrack : udtracks) {
       // udtrack (UDTCs) -> track (TCs) -> mcTrack (McParticles) -> udMcTrack (UDMcParticles)
       auto trackId = udtrack.trackId();
       if (trackId >= 0) {
@@ -634,7 +734,7 @@ struct McSGCandProducer {
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
-          for (auto sgtrack : sgTracks) {
+          for (const auto& sgtrack : sgTracks) {
             if (sgtrack.has_track()) {
               auto track = sgtrack.track_as<TCs>();
               if (track.has_mcParticle()) {

@@ -150,7 +150,7 @@ struct AmbiguousTrackPropagation {
     auto bc = bcs.begin();
     initCCDB(bc);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     float bestDCA[2];
     o2::track::TrackParametrization<float> bestTrackPar;
     for (auto& track : tracks) {

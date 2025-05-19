@@ -93,6 +93,7 @@ struct DndetaMFTPbPb {
     Configurable<float> maxEta{"maxEta", -2.5f, ""};
     Configurable<int> minNclusterMft{"minNclusterMft", 5,
                                      "minimum number of MFT clusters"};
+    Configurable<float> maxChi2{"maxChi2", 10.f, ""};
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
     Configurable<bool> requireCA{
       "requireCA", false, "Use Cellular Automaton track-finding algorithm"};
@@ -106,6 +107,10 @@ struct DndetaMFTPbPb {
     Configurable<float> maxZvtxDiff{
       "maxZvtxDiff", 1.0f,
       "max allowed Z vtx difference for reconstruced collisions (cm)"};
+    Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", true, " requireNoCollInTimeRangeStrict"};
+    Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", true, "requireNoCollInRofStrict"};
+    Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "requireNoCollInRofStandard"};
+    Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", true, "requireNoHighMultCollInPrevRof"};
     Configurable<bool> requireNoCollInTimeRangeStd{
       "requireNoCollInTimeRangeStd", false,
       "reject collisions corrupted by the cannibalism, with other collisions "
@@ -215,7 +220,7 @@ struct DndetaMFTPbPb {
     }
 
     auto hev = registry.add<TH1>("hEvtSel", "hEvtSel", HistType::kTH1F,
-                                 {{12, -0.5f, +11.5f}});
+                                 {{16, -0.5f, +15.5f}});
     hev->GetXaxis()->SetBinLabel(1, "All collisions");
     hev->GetXaxis()->SetBinLabel(2, "Ev. sel.");
     hev->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
@@ -223,10 +228,14 @@ struct DndetaMFTPbPb {
     hev->GetXaxis()->SetBinLabel(5, "Z-vtx cut");
     hev->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStd");
     hev->GetXaxis()->SetBinLabel(7, "kNoCollInTimeRangeNarrow");
-    hev->GetXaxis()->SetBinLabel(8, "Below min occup.");
-    hev->GetXaxis()->SetBinLabel(9, "Above max occup.");
-    hev->GetXaxis()->SetBinLabel(10, "Below min IR (kHz)");
-    hev->GetXaxis()->SetBinLabel(11, "Above max IR (kHz)");
+    hev->GetXaxis()->SetBinLabel(8, "kNoCollInTimeRangeStrict");
+    hev->GetXaxis()->SetBinLabel(9, "kNoCollInRofStrict");
+    hev->GetXaxis()->SetBinLabel(10, "kNoCollInRofStandard");
+    hev->GetXaxis()->SetBinLabel(11, "kNoHighMultCollInPrevRof");
+    hev->GetXaxis()->SetBinLabel(12, "Below min occup.");
+    hev->GetXaxis()->SetBinLabel(13, "Above max occup.");
+    hev->GetXaxis()->SetBinLabel(14, "Below min IR (kHz)");
+    hev->GetXaxis()->SetBinLabel(15, "Above max IR (kHz)");
 
     auto hBcSel = registry.add<TH1>("hBcSel", "hBcSel", HistType::kTH1F,
                                     {{3, -0.5f, +2.5f}});
@@ -736,13 +745,13 @@ struct DndetaMFTPbPb {
       return false;
     }
     if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 9);
+      registry.fill(HIST("hEvtSel"), 13);
     }
     if (eventCuts.maxIR >= 0 && ir > eventCuts.maxIR) {
       return false;
     }
     if (fillHis) {
-      registry.fill(HIST("hEvtSel"), 10);
+      registry.fill(HIST("hEvtSel"), 14);
     }
     return true;
   }
@@ -751,6 +760,8 @@ struct DndetaMFTPbPb {
   bool isTrackSelected(const T& track)
   {
     if (track.eta() < trackCuts.minEta || track.eta() > trackCuts.maxEta)
+      return false;
+    if (track.chi2() > trackCuts.maxChi2)
       return false;
     if (trackCuts.requireCA && !track.isCA())
       return false;
@@ -960,13 +971,37 @@ struct DndetaMFTPbPb {
     if constexpr (fillHis) {
       registry.fill(HIST("hEvtSel"), 6);
     }
+    if (eventCuts.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 7);
+    }
+    if (eventCuts.requireNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 8);
+    }
+    if (eventCuts.requireNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 9);
+    }
+    if (eventCuts.requireNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("hEvtSel"), 10);
+    }
     if (eventCuts.minOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) <
           eventCuts.minOccupancy) {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("hEvtSel"), 7);
+      registry.fill(HIST("hEvtSel"), 11);
     }
     if (eventCuts.maxOccupancy >= 0 &&
         getOccupancy(collision, eventCuts.occupancyEstimator) >
@@ -974,7 +1009,7 @@ struct DndetaMFTPbPb {
       return false;
     }
     if constexpr (fillHis) {
-      registry.fill(HIST("hEvtSel"), 8);
+      registry.fill(HIST("hEvtSel"), 12);
     }
     return true;
   }
