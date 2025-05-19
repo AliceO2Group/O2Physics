@@ -493,8 +493,9 @@ DECLARE_SOA_TABLE(SignalMCreco, "AOD", "SignalMCreco",
 struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
   int rhoPrime = 30113;
-  int four = 4;
-  int two = 2;
+  int numFourPionTracks = 4;
+  int numPiPlus = 2;
+  int numPiMinus = 2;
   float zeroPointEight = 0.8;
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -553,7 +554,6 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
 
     // TPC nSigma
-    // histosData.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
@@ -565,7 +565,6 @@ struct ExclusiveRhoTo4Pi {
 
     // TOF nSigma
     histosData.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
-    // histosData.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // TOF nSigma of other particles with selected pion tracks
@@ -575,13 +574,11 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("tofNSigmaMu_WTS_PID_Pi", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // Track Transverse Momentum
-    // histosData.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS_PID_Pi_contributed", "pT with track selection and PID selection of Pi which are contributed to selected event; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
 
     // Track Rapidity
-    // histosData.add("rapidity_track_WOTS", "Rapidity without track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS", "Rapidity with track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS_PID_Pi", "Rapidity with track selection and PID selection of Pi; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS_PID_Pi_contributed", "Rapidity with track selection and PID selection of Pi which are contributed to selected event; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
@@ -690,7 +687,6 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}});
 
     // TPC nSigma
-    // histosMCreco.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
@@ -702,7 +698,6 @@ struct ExclusiveRhoTo4Pi {
 
     // TOF nSigma
     histosMCreco.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
-    // histosMCreco.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // TOF nSigma of other particles with selected pion tracks
@@ -712,13 +707,11 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.add("tofNSigmaMu_WTS_PID_Pi", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // Track Transverse Momentum
-    // histosMCreco.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS_PID_Pi_contributed", "pT with track selection and PID selection of Pi which are contributed to selected event; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
 
     // Track Rapidity
-    // histosMCreco.add("rapidity_track_WOTS", "Rapidity without track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS", "Rapidity with track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS_PID_Pi", "Rapidity with track selection and PID selection of Pi; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS_PID_Pi_contributed", "Rapidity with track selection and PID selection of Pi which are contributed to selected event; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
@@ -922,12 +915,12 @@ struct ExclusiveRhoTo4Pi {
       histosData.fill(HIST("rapidity_track_WTS_PID_Pi"), selectedPionTrackVector.Rapidity());
     } // End of loop over tracks with selection and PID selection of Pions
 
-    if (numSelectedPionTracks != four) {
+    if (numSelectedPionTracks != numFourPionTracks) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTracks == two && numPiPlusTracks == two) {
+    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
@@ -1027,7 +1020,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTracks != two && numPiPlusTracks != two) {
+    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
 
       ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
@@ -1087,7 +1080,7 @@ struct ExclusiveRhoTo4Pi {
 
     for (const auto& particle : mcParts) {
 
-      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != four)) {
+      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != numFourPionTracks)) {
         continue;
       }
 
@@ -1108,7 +1101,7 @@ struct ExclusiveRhoTo4Pi {
 
     } // End of loop over MC particles
 
-    if (static_cast<int>(piPlusvectors.size()) != two || static_cast<int>(piMinusvectors.size()) != two) {
+    if (static_cast<int>(piPlusvectors.size()) != numPiPlus || static_cast<int>(piMinusvectors.size()) != numPiMinus) {
       return;
     }
 
@@ -1259,12 +1252,12 @@ struct ExclusiveRhoTo4Pi {
       histosMCreco.fill(HIST("rapidity_track_WTS_PID_Pi"), selectedPionTrackVector.Rapidity());
     } // End of loop over tracks with selection and PID selection of Pions
 
-    if (numSelectedPionTracks != four) {
+    if (numSelectedPionTracks != numFourPionTracks) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTRacks == two && numPiPlusTracks == two) {
+    if (numPionMinusTRacks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
@@ -1354,7 +1347,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTRacks != two && numPiPlusTracks != two) {
+    if (numPionMinusTRacks != numPiMinus && numPiPlusTracks != numPiPlus) {
       ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
