@@ -21,7 +21,7 @@ auto* getHistogram(TFile* file, const std::string& name, const std::string& proj
 }
 
 template <typename H>
-auto* cloneHistogram(H* hist, const std::string& name)
+H* cloneHistogram(H* hist, const std::string& name)
 {
   return dynamic_cast<H*>(hist->Clone(name.c_str()));
 }
@@ -45,7 +45,7 @@ void forEachBin(TH1* hist, auto func)
 
 void calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, const std::string& projection)
 {
-  assert(projection == "x" || projection == "xy" || projection == "xz");
+  assert(projection == "x" || projection == "yx" || projection == "zx");
 
   auto isAlien{false};
   if (resultsPath.string().starts_with("alien://")) {
