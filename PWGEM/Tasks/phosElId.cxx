@@ -1061,17 +1061,17 @@ struct TpcElIdMassSpectrum {
     auto isGoodElectronForSignal = [&](const MyTracks::iterator& track) -> bool {
       if (!track.has_collision() || !track.hasTPC())
         return false;
-      if (!((track.pt() > PtMin) && (track.pt() < PtMax)))
+      if (track.pt() <= PtMin || track.pt() >= PtMax)
         return false;
-      if (!(std::fabs(track.eta()) < EtaMax))
+      if (std::fabs(track.eta()) >= EtaMax)
         return false;
-      if (!(std::fabs(track.dcaXY()) < DCAxyMax))
+      if (std::fabs(track.dcaXY()) >= DCAxyMax)
         return false;
-      if (!(std::fabs(track.dcaZ()) < DCAzMax))
+      if (std::fabs(track.dcaZ()) >= DCAzMax)
         return false;
-      if (!(track.itsChi2NCl() < ITSchi2Max))
+      if (track.itsChi2NCl() >= ITSchi2Max)
         return false;
-      if (!(track.tpcChi2NCl() < TPCchi2Max))
+      if (track.tpcChi2NCl() >= TPCchi2Max)
         return false;
       if (!((track.itsClusterMap() & uint8_t(1)) > 0))
         return false;
@@ -1081,15 +1081,16 @@ struct TpcElIdMassSpectrum {
         return false;
       if (track.tpcNClsCrossedRows() < TPCnclsCRMin || track.tpcNClsCrossedRows() > TPCnclsCRMax)
         return false;
+
       bool isTPCElectron = (track.tpcNSigmaEl() > TPCNSigmaElMin) && (track.tpcNSigmaEl() < TPCNSigmaElMax);
       bool isTOFElectron = (track.tofNSigmaEl() > TOFNSigmaElMin) && (track.tofNSigmaEl() < TOFNSigmaElMax);
-      if (!(isTPCElectron || isTOFElectron))
+      if (!isTPCElectron && !isTOFElectron)
         return false;
-      if (!((track.tpcNSigmaPi() < TPCNSigmaPiMin) || (track.tpcNSigmaPi() > TPCNSigmaPiMax)))
-        return false;
-      if (!((track.tpcNSigmaKa() < TPCNSigmaKaMin) || (track.tpcNSigmaKa() > TPCNSigmaKaMax)))
-        return false;
-      if (!((track.tpcNSigmaPr() < TPCNSigmaPrMin) || (track.tpcNSigmaPr() > TPCNSigmaPrMax)))
+
+      bool isPion = (track.tpcNSigmaPi() >= TPCNSigmaPiMin && track.tpcNSigmaPi() <= TPCNSigmaPiMax);
+      bool isKaon = (track.tpcNSigmaKa() >= TPCNSigmaKaMin && track.tpcNSigmaKa() <= TPCNSigmaKaMax);
+      bool isProton = (track.tpcNSigmaPr() >= TPCNSigmaPrMin && track.tpcNSigmaPr() <= TPCNSigmaPrMax);
+      if (isPion || isKaon || isProton)
         return false;
       return true;
     };
@@ -1107,18 +1108,22 @@ struct TpcElIdMassSpectrum {
         return false;
       if (track.tpcNClsCrossedRows() < TPCnclsCRMin || track.tpcNClsCrossedRows() > TPCnclsCRMax)
         return false;
-      if (!(std::fabs(track.eta()) < EtaMax))
+      if (std::fabs(track.eta()) >= EtaMax)
+        return false;
+      if (std::fabs(track.dcaXY()) >= DCAxyMax)
+        return false;
+      if (std::fabs(track.dcaZ()) >= DCAzMax)
         return false;
 
       bool isTPCElectron = (track.tpcNSigmaEl() > TPCNSigmaElMin) && (track.tpcNSigmaEl() < TPCNSigmaElMax);
       bool isTOFElectron = (track.tofNSigmaEl() > TOFNSigmaElMin) && (track.tofNSigmaEl() < TOFNSigmaElMax);
-      if (!(isTPCElectron || isTOFElectron))
+      if (!isTPCElectron && !isTOFElectron)
         return false;
 
-      bool isPion = (track.tpcNSigmaPi() > TPCNSigmaPiMin) && (track.tpcNSigmaPi() < TPCNSigmaPiMax);
-      bool isKaon = (track.tpcNSigmaKa() > TPCNSigmaKaMin) && (track.tpcNSigmaKa() < TPCNSigmaKaMax);
-      bool isProton = (track.tpcNSigmaPr() > TPCNSigmaPrMin) && (track.tpcNSigmaPr() < TPCNSigmaPrMax);
-      if (isPion || isKaon || isProton)
+      bool isPionSignal = (track.tpcNSigmaPi() >= TPCNSigmaPiMin && track.tpcNSigmaPi() <= TPCNSigmaPiMax);
+      bool isKaonSignal = (track.tpcNSigmaKa() >= TPCNSigmaKaMin && track.tpcNSigmaKa() <= TPCNSigmaKaMax);
+      bool isProtonSignal = (track.tpcNSigmaPr() >= TPCNSigmaPrMin && track.tpcNSigmaPr() <= TPCNSigmaPrMax);
+      if (isPionSignal || isKaonSignal || isProtonSignal)
         return false;
       return true;
     };
@@ -1138,7 +1143,7 @@ struct TpcElIdMassSpectrum {
         return false;
       if (std::fabs(track.dcaXY()) > DCAxyMax || std::fabs(track.dcaZ()) > DCAzMax)
         return false;
-      if (!(std::fabs(track.eta()) < EtaMax))
+      if (std::fabs(track.eta()) >= EtaMax)
         return false;
       return true;
     };
@@ -1148,13 +1153,13 @@ struct TpcElIdMassSpectrum {
         return false;
       bool isTPCElectron = (track.tpcNSigmaEl() > TPCNSigmaElMin) && (track.tpcNSigmaEl() < TPCNSigmaElMax);
       bool isTOFElectron = (track.tofNSigmaEl() > TOFNSigmaElMin) && (track.tofNSigmaEl() < TOFNSigmaElMax);
-      if (!(isTPCElectron || isTOFElectron))
+      if (!isTPCElectron && !isTOFElectron)
         return false;
 
-      bool isPion = (track.tpcNSigmaPi() > TPCNSigmaPiMin) && (track.tpcNSigmaPi() < TPCNSigmaPiMax);
-      bool isKaon = (track.tpcNSigmaKa() > TPCNSigmaKaMin) && (track.tpcNSigmaKa() < TPCNSigmaKaMax);
-      bool isProton = (track.tpcNSigmaPr() > TPCNSigmaPrMin) && (track.tpcNSigmaPr() < TPCNSigmaPrMax);
-      if (isPion || isKaon || isProton)
+      bool isPionSignal = (track.tpcNSigmaPi() >= TPCNSigmaPiMin && track.tpcNSigmaPi() <= TPCNSigmaPiMax);
+      bool isKaonSignal = (track.tpcNSigmaKa() >= TPCNSigmaKaMin && track.tpcNSigmaKa() <= TPCNSigmaKaMax);
+      bool isProtonSignal = (track.tpcNSigmaPr() >= TPCNSigmaPrMin && track.tpcNSigmaPr() <= TPCNSigmaPrMax);
+      if (isPionSignal || isKaonSignal || isProtonSignal)
         return false;
       return true;
     };
@@ -1182,7 +1187,7 @@ struct TpcElIdMassSpectrum {
 
         if (track1_iterator.sign() == track2_iterator.sign()) {
           bool track1IsPositive = track1_iterator.sign() * bz > 0;
-          if (track1IsPositive) { // Both positive
+          if (track1IsPositive) {
             mHistManager.fill(HIST("TPCee/h_MS_pp_v_pt_v_cent"), pairMass, pairPt, cent);
             if (collision.alias_bit(mEvSelTrig))
               mHistManager.fill(HIST("TPCee/h_MS_pp_kTVXinPHOS_v_pt_v_cent"), pairMass, pairPt, cent);
@@ -1191,7 +1196,7 @@ struct TpcElIdMassSpectrum {
               if (collision.alias_bit(mEvSelTrig))
                 mHistManager.fill(HIST("TPCee/h_MS_pp_phosRange_kTVXinPHOS_v_pt_v_cent"), pairMass, pairPt, cent);
             }
-          } else { // Both negative
+          } else {
             mHistManager.fill(HIST("TPCee/h_MS_mm_v_pt_v_cent"), pairMass, pairPt, cent);
             if (collision.alias_bit(mEvSelTrig))
               mHistManager.fill(HIST("TPCee/h_MS_mm_kTVXinPHOS_v_pt_v_cent"), pairMass, pairPt, cent);
@@ -1201,7 +1206,7 @@ struct TpcElIdMassSpectrum {
                 mHistManager.fill(HIST("TPCee/h_MS_mm_phosRange_kTVXinPHOS_v_pt_v_cent"), pairMass, pairPt, cent);
             }
           }
-        } else { // Opposite sign (for dielectron and Chic)
+        } else {
           mHistManager.fill(HIST("TPCee/h_MS_mp_v_pt_v_cent"), pairMass, pairPt, cent);
           if (collision.alias_bit(mEvSelTrig))
             mHistManager.fill(HIST("TPCee/h_MS_mp_kTVXinPHOS_v_pt_v_cent"), pairMass, pairPt, cent);
@@ -1217,7 +1222,7 @@ struct TpcElIdMassSpectrum {
               if (cluE < mMinCluE || cluE > mMaxCluE || gamma.ncell() < mMinCluNcell || gamma.time() > mMaxCluTime || gamma.time() < mMinCluTime)
                 continue;
               bool matchFlag = false;
-              bool isJpsi = (pairMass > eeMassMin && pairMass < eeMassMax); // pairMass is from the e+e- pair
+              bool isJpsi = (pairMass > eeMassMin && pairMass < eeMassMax);
               bool isDispOK = testLambda(cluE, gamma.m02(), gamma.m20());
               for (auto const& match : matches) {
                 if (gamma.index() == match.caloClusterId()) {
@@ -1230,10 +1235,12 @@ struct TpcElIdMassSpectrum {
               double tripletMass = (fourVectorP1 + fourVectorP2 + fourVectorP3).M();
               double tripletPt = (fourVectorP1 + fourVectorP2 + fourVectorP3).Pt();
               double tripletMinusPairPlusJpsiMass = tripletMass - pairMass + JpsiMass;
+
               mHistManager.fill(HIST("TPCeePhosGamma/h_MS_v_3pt_v_cent"), tripletMass, tripletPt, cent);
               mHistManager.fill(HIST("TPCeePhosGamma/h_minusee_MS_v_3pt_v_cent"), tripletMinusPairPlusJpsiMass, tripletPt, cent);
               mHistManager.fill(HIST("TPCeePhosGamma/h_MS_v_cluE_v_cent"), tripletMass, cluE, cent);
               mHistManager.fill(HIST("TPCeePhosGamma/h_minusee_MS_v_cluE_v_cent"), tripletMinusPairPlusJpsiMass, cluE, cent);
+
               if (!matchFlag) {
                 mHistManager.fill(HIST("TPCeePhosGamma/h_MS_noMatches_v_3pt_v_cent"), tripletMass, tripletPt, cent);
                 mHistManager.fill(HIST("TPCeePhosGamma/h_minusee_MS_noMatches_v_3pt_v_cent"), tripletMinusPairPlusJpsiMass, tripletPt, cent);
@@ -1261,7 +1268,7 @@ struct TpcElIdMassSpectrum {
             }
           }
         }
-      } // End of dielectron and Chic analysis
+      }
 
       if (isGoodTagElectron(track1_iterator) && isGoodProbeBaseTrack(track2_iterator)) {
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> pTag1, pProbe2;
@@ -1271,27 +1278,27 @@ struct TpcElIdMassSpectrum {
         float ptProbe2 = track2_iterator.pt();
         bool tag1IsPositive = track1_iterator.sign() * bz > 0;
 
-        if (track1_iterator.sign() == track2_iterator.sign()) { // Same Sign
-          if (tag1IsPositive) {                                 // Tag is positive (e+h+)
+        if (track1_iterator.sign() == track2_iterator.sign()) {
+          if (tag1IsPositive) {
             mHistManager.fill(HIST("TPCeff/h_eh_pp_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
-          } else { // Tag is negative (e-h-)
+          } else {
             mHistManager.fill(HIST("TPCeff/h_eh_mm_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
           }
-        } else { // Opposite Sign (e+/-h-/+)
+        } else {
           mHistManager.fill(HIST("TPCeff/h_eh_mp_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
         }
         if (isProbeIdentifiedAsElectron(track2_iterator)) {
           if (track1_iterator.sign() == track2_iterator.sign()) {
-            if (tag1IsPositive) { // e+e+
+            if (tag1IsPositive) {
               mHistManager.fill(HIST("TPCeff/h_ee_pp_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
-            } else { // e-e-
+            } else {
               mHistManager.fill(HIST("TPCeff/h_ee_mm_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
             }
-          } else { // e+/-e-/+
+          } else {
             mHistManager.fill(HIST("TPCeff/h_ee_mp_mass_spectra_v_pt_v_cent"), massTag1Probe2, ptProbe2, cent);
           }
         }
-      } // End of Scenario 1 (track1=tag, track2=probe)
+      }
 
       if (isGoodTagElectron(track2_iterator) && isGoodProbeBaseTrack(track1_iterator)) {
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> pTag2, pProbe1;
@@ -1301,30 +1308,29 @@ struct TpcElIdMassSpectrum {
         float ptProbe1 = track1_iterator.pt();
         bool tag2IsPositive = track2_iterator.sign() * bz > 0;
 
-        if (track2_iterator.sign() == track1_iterator.sign()) { // Same Sign
-          if (tag2IsPositive) {                                 // Tag is positive (e+h+)
+        if (track2_iterator.sign() == track1_iterator.sign()) {
+          if (tag2IsPositive) {
             mHistManager.fill(HIST("TPCeff/h_eh_pp_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
-          } else { // Tag is negative (e-h-)
+          } else {
             mHistManager.fill(HIST("TPCeff/h_eh_mm_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
           }
-        } else { // Opposite Sign (e+/-h-/+)
+        } else {
           mHistManager.fill(HIST("TPCeff/h_eh_mp_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
         }
         if (isProbeIdentifiedAsElectron(track1_iterator)) {
           if (track2_iterator.sign() == track1_iterator.sign()) {
-            if (tag2IsPositive) { // e+e+
+            if (tag2IsPositive) {
               mHistManager.fill(HIST("TPCeff/h_ee_pp_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
-            } else { // e-e-
+            } else {
               mHistManager.fill(HIST("TPCeff/h_ee_mm_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
             }
-          } else { // e+/-e-/+
+          } else {
             mHistManager.fill(HIST("TPCeff/h_ee_mp_mass_spectra_v_pt_v_cent"), massTag2Probe1, ptProbe1, cent);
           }
         }
-      } // End of Scenario 2 (track2=tag, track1=probe)
-    } // end of track combinations loop
+      }
+    }
 
-    // twoPhoton analysis part
     for (auto const& gamma1 : clusters) {
       float cluE1 = gamma1.e();
       if (cluE1 < mMinCluE || cluE1 > mMaxCluE || gamma1.ncell() < mMinCluNcell || gamma1.time() > mMaxCluTime || gamma1.time() < mMinCluTime)
@@ -1358,8 +1364,10 @@ struct TpcElIdMassSpectrum {
         fourVectorG2.SetPxPyPzE(gamma2.px(), gamma2.py(), gamma2.pz(), cluE2);
         double pairMassGG = (fourVectorG1 + fourVectorG2).M();
         double pairPtGG = (fourVectorG1 + fourVectorG2).Pt();
+
         if (pairMassGG < mMassSpectrumLowerCutoff)
           continue;
+
         mHistManager.fill(HIST("twoPhoton/MS_noCuts"), pairMassGG, pairPtGG, cent);
         if (matchFlag1 || matchFlag2)
           continue;
