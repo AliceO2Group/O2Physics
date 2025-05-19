@@ -34,16 +34,17 @@ using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels>;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPr, aod::pidTPCFullAl, aod::pidTPCFullTr, aod::pidTPCFullPi>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-namespace{
-  constexpr int kITSLayers = 7;
-  constexpr int kITSInnerBarrelLayers = 3;
-  constexpr int kITSOuterBarrelLayers = 4;
-  std::shared_ptr<TH1> hMotherCounter;
-  std::shared_ptr<TH1> hDauAlphaCounter;
-  std::shared_ptr<TH1> hDauTritonCounter;
-  std::shared_ptr<TH1> hDauProtonCounter;
-  std::shared_ptr<TH1> hDauPionCounter;
-}
+namespace
+{
+constexpr int kITSLayers = 7;
+constexpr int kITSInnerBarrelLayers = 3;
+constexpr int kITSOuterBarrelLayers = 4;
+std::shared_ptr<TH1> hMotherCounter;
+std::shared_ptr<TH1> hDauAlphaCounter;
+std::shared_ptr<TH1> hDauTritonCounter;
+std::shared_ptr<TH1> hDauProtonCounter;
+std::shared_ptr<TH1> hDauPionCounter;
+} // namespace
 
 //-------------------------------Check the decay channel of H4S-------------------------------
 enum Channel {
@@ -59,7 +60,7 @@ Channel getDecayChannelH4S(TMCParticle const& particle, std::vector<int>& list)
   if (std::abs(particle.pdgCode()) != o2::constants::physics::Pdg::kHyperHelium4Sigma) {
     return kNDecayChannel;
   }
-  
+
   // list: charged, charged or empty, neutral
   list.clear();
   list.resize(3, -1);
@@ -127,7 +128,7 @@ Channel getDecayChannelH4S(TMCParticle const& particle, std::vector<int>& list)
 }
 
 //--------------------------------------------------------------
-//check if the mcparticle is daughter of hyperhelium4sigma
+// check if the mcparticle is daughter of hyperhelium4sigma
 template <typename TMCParticle>
 bool isDaughterTrack(TMCParticle const& mcparticle, int pdgcode = o2::constants::physics::Pdg::kHyperHelium4Sigma)
 {
@@ -334,7 +335,7 @@ struct Hyperhelium4sigmaQa {
       hMotherCounter->GetXaxis()->SetBinLabel(4, "has collision");
       hMotherCounter->GetXaxis()->SetBinLabel(5, "ITSonly");
       hMotherCounter->GetXaxis()->SetBinLabel(6, "ITS hits");
-      hMotherCounter->GetXaxis()->SetBinLabel(7, "ITS IR"); 
+      hMotherCounter->GetXaxis()->SetBinLabel(7, "ITS IR");
       hMotherCounter->GetXaxis()->SetBinLabel(8, "ITS chi2");
       hMotherCounter->GetXaxis()->SetBinLabel(9, "pt");
       recoQAHist.add<TH2>("hTrueMotherRVsDiffPt", ";#Delta p_{T} (GeV/#it{c});R (cm);", HistType::kTH2F, {diffPtAxis, radiusAxis});
@@ -396,7 +397,7 @@ struct Hyperhelium4sigmaQa {
   // qa for mother track selection
   template <typename TTrack>
   bool motherTrackCheck(const TTrack& track, const std::shared_ptr<TH1> hist)
-  { 
+  {
     hist->Fill(1);
 
     if (std::abs(track.eta()) > etaMax) {
@@ -404,12 +405,12 @@ struct Hyperhelium4sigmaQa {
     }
     hist->Fill(2);
 
-    if (!track.has_collision()){
+    if (!track.has_collision()) {
       return false;
     }
     hist->Fill(3);
 
-    if (!track.hasITS() || track.hasTPC() || track.hasTOF()){
+    if (!track.hasITS() || track.hasTPC() || track.hasTOF()) {
       return false;
     }
     hist->Fill(4);
@@ -465,7 +466,7 @@ struct Hyperhelium4sigmaQa {
 
     if (track.hasTOF()) {
       return;
-    } 
+    }
     hist->Fill(6);
   }
 
