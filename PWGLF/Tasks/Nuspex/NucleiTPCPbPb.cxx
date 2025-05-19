@@ -174,7 +174,7 @@ struct NucleitpcPbPb {
     const AxisSpec axisdEdx{2000, 0, 2000, "d#it{E}/d#it{x}"};
     const AxisSpec axisCent{100, 0, 100, "centrality"};
     const AxisSpec axisVtxZ{100, -20, 20, "z"};
-    const AxisSpec ptAxis{100, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptAxis{1000, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axiseta{100, -1, 1, "eta"};
     const AxisSpec axisrapidity{100, -2, 2, "rapidity"};
     const AxisSpec axismass{100, 0, 20, "mass^{2}"};
