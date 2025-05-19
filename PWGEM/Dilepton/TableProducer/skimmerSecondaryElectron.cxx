@@ -242,7 +242,7 @@ struct skimmerSecondaryElectron {
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
       std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz

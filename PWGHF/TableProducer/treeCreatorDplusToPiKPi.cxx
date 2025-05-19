@@ -260,9 +260,9 @@ struct HfTreeCreatorDplusToPiKPi {
 
   HfHelper hfHelper;
 
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -452,7 +452,7 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   void processData(aod::Collisions const& collisions,
-                   soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>> const& candidates,
+                   soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>> const& candidates,
                    TracksWPid const&)
   {
     // Filling event properties
@@ -481,7 +481,7 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processData, "Process data", true);
 
   void processDataWCent(CollisionsCent const& collisions,
-                        soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDplusToPiKPi>> const& candidates,
+                        soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>> const& candidates,
                         TracksWPid const&)
   {
     // Filling event properties

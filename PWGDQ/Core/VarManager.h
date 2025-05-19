@@ -792,6 +792,9 @@ class VarManager : public TObject
     kKFJpsiDCAxy,
     kKFPairDeviationFromPV,
     kKFPairDeviationxyFromPV,
+    kS12,
+    kS13,
+    kS23,
     kNPairVariables,
 
     // Candidate-track correlation variables
@@ -873,8 +876,8 @@ class VarManager : public TObject
     kToRabs
   };
 
-  static TString fgVariableNames[kNVars]; // variable names
-  static TString fgVariableUnits[kNVars]; // variable units
+  static TString fgVariableNames[kNVars];      // variable names
+  static TString fgVariableUnits[kNVars];      // variable units
   static std::map<TString, int> fgVarNamesMap; // key: variables short name, value: order in the Variables enum
   static void SetDefaultVarNames();
 
@@ -2177,11 +2180,6 @@ void VarManager::FillTrack(T const& track, float* values)
       }
     }
 
-    if constexpr ((fillMap & MuonRealign) > 0) {
-      values[kMuonChi2] = track.chi2();
-      values[kMuonTrackType] = track.trackType();
-    }
-
     if (fgUsedVars[kM11REFoverMpsingle]) {
       float m = o2::constants::physics::MassMuon;
       ROOT::Math::PtEtaPhiMVector v(track.pt(), track.eta(), track.phi(), m);
@@ -2515,7 +2513,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the muon extra table
-  if constexpr ((fillMap & ReducedMuonExtra) > 0 || (fillMap & Muon) > 0) {
+  if constexpr ((fillMap & ReducedMuonExtra) > 0 || (fillMap & Muon) > 0 || (fillMap & MuonRealign) > 0) {
     values[kMuonNClusters] = track.nClusters();
     values[kMuonPDca] = track.pDca();
     values[kMCHBitMap] = track.mchBitMap();
@@ -3075,6 +3073,9 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
     values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 
   if (pairType == kTripleCandidateToPKPi) {
@@ -3336,6 +3337,10 @@ void VarManager::FillTripleMC(T1 const& t1, T2 const& t2, T3 const& t3, float* v
     values[kEta] = v123.Eta();
     values[kPhi] = v123.Phi();
     values[kRap] = -v123.Rapidity();
+    values[kCharge] = t1.sign() + t2.sign() + t3.sign();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
   }
 }
 
@@ -4049,6 +4054,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[VarManager::kPairPtDau] = v12.Pt();
     }
     values[VarManager::kPt] = track.pt();
+    values[kS12] = (v1 + v2).M2();
+    values[kS13] = (v1 + v3).M2();
+    values[kS23] = (v2 + v3).M2();
 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0 || procCodeJpsi == 0) {
