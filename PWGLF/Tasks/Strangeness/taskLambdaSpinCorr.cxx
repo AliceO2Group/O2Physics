@@ -610,7 +610,7 @@ struct LfTaskLambdaSpinCorr {
   using CollisionMCRecTableCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
-  void processMC(CollisionMCRecTableCentFT0C::iterator const& collision, TrackMCRecTable const& tracks, V0TrackCandidatesMC const& V0s)
+  void processMC(CollisionMCRecTableCentFT0C::iterator const& collision, TrackMCRecTable const& /*tracks*/, V0TrackCandidatesMC const& V0s)
   {
 
     // for (const auto& RecCollis : collision) {
