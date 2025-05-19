@@ -72,7 +72,7 @@ struct HfTaskSingleMuonMult {
   Filter globalTrackFilter = ((o2::aod::track::isGlobalTrack == true) && (nabs(o2::aod::track::eta) < etaTrackMax) && ((o2::aod::track::pt) > ptTrackMin));
 
   HistogramRegistry registry{"registry"};
-
+  
   void init(InitContext&)
   {
     AxisSpec axisCent = {101, -0.5, 100.5, "centrality"};
@@ -116,6 +116,7 @@ struct HfTaskSingleMuonMult {
 
     registry.add("hTHnTrk", "Muon information with multiplicity", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisSign}, 5});
     registry.add("h3MultNchNmu", "Number of muons and multiplicity", {HistType::kTH3F, {axisCent, axisNCh, axisNMu}});
+    registry.add("hMultNchNmuTrackType", "Number of muons with different types and multiplicity", {HistType::kTHnSparseF, {axisCent, axisNCh, axisNMu, axisTrackType},4});
 
     auto hEvstat = registry.get<TH1>(HIST("hEvent"));
     auto* xEv = hEvstat->GetXaxis();
@@ -130,13 +131,10 @@ struct HfTaskSingleMuonMult {
     xMu->SetBinLabel(3, "RAbsorbCut");
     xMu->SetBinLabel(4, "pDcaCut");
     xMu->SetBinLabel(5, "chi2Cut");
-
-    // Select the types of muon tracks to be analysed.
-    const uint8_t muonTypeSelect[]{0, 1, 2, 3, 4};
-    constexpr std::size_t nTypes{std::size(muonTypeSelect)};
-    for (const auto& trktype : muonTypeSelect) {
-      registry.add(Form("h3MultNchNmu_TrackType%d", trktype), "", h3MultNchNmu);
-    }
+    
+    // Number the types of muon tracks
+    constexpr uint8_t nTrackTypes{static_cast<uint8_t>(ForwardTrackTypeEnum::MCHStandaloneTrack)};
+    
   }
 
   void process(MyCollisions::iterator const& collision,
@@ -174,7 +172,7 @@ struct HfTaskSingleMuonMult {
 
     // muons per event
     int nMu{0};
-    int nMuType[nTypes] = {0};
+    int nMuType[nTrackTypes+1] = {0};
 
     for (const auto& muon : muons) {
       const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
@@ -245,10 +243,10 @@ struct HfTaskSingleMuonMult {
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);
 
     // Fill number of muons of various types with multiplicity
-    static_for<0, 4>([&](auto i) {
-      constexpr int kType = i.value;
-      if (nMuType[kType] > 0) {
-        registry.fill(std::string(HIST("h3MultNchNmu_TrackType")) + std::string(HIST(kType)), cent, nCh, nMuType[kType]);
+    static_for<0u, nTrackTypes>([&](auto i) {
+      constexpr int iType{i.value};
+      if (nMuType[iType] > 0) {
+        registry.fill(std::string(HIST("hMultNchNmuTrackType")), cent, nCh, nMuType[iType], iType);
       }
     });
     chTracks.clear();
