@@ -240,6 +240,7 @@ struct LfTaskLambdaSpinCorr {
     auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
     auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
     auto pairDummy = particle1Dummy + particle2Dummy;
+
     // auto pairParticle = particle1 + particle2;
 
     ROOT::Math::Boost boostPairToCM{pairDummy.BoostToCM()}; // boosting vector for pair CM
