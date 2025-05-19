@@ -581,8 +581,8 @@ struct HfTreeCreatorLcToPKPi {
       std::copy(candidateMlScore.mlProbLcToPiKP().begin(), candidateMlScore.mlProbLcToPiKP().end(), std::back_inserter(mlScores));
     }
     constexpr int IndexFirstClass{0};
-    constexpr int IndexSecondClass{0};
-    constexpr int IndexThirdClass{0};
+    constexpr int IndexSecondClass{1};
+    constexpr int IndexThirdClass{2};
     if (mlScores.size() == 0)
       return; // when candidateSelectorLc rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
     mlScoreFirstClass = mlScores.at(IndexFirstClass);
