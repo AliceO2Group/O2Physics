@@ -246,7 +246,7 @@ struct HfTaskSingleMuonMult {
       if (nMuType[indexType] > 0) {
         registry.fill(HIST("hMultNchNmuTrackType"), cent, nCh, nMuType[indexType], indexType);
       }
-    };
+    }
     chTracks.clear();
   }
 };
