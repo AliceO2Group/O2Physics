@@ -54,6 +54,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::constants::math;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -1514,14 +1515,14 @@ struct HfTaskFlow {
   int getSpecies(int pdgCode)
   {
     switch (pdgCode) {
-      case 211: // pion
-      case -211:
+      case PDG_t::kPiPlus:  // positive pion
+      case PDG_t::kPiMinus: // negative pion
         return 0;
-      case 321: // Kaon
-      case -321:
+      case PDG_t::kKPlus:  // positive kaon
+      case PDG_t::kKMinus: // negative kaon
         return 1;
-      case 2212: // proton
-      case -2212:
+      case PDG_t::kProton:    // proton
+      case PDG_t::kProtonBar: // proton bar
         return 2;
       default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
         return 3;
