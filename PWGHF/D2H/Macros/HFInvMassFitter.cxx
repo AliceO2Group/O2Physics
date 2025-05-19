@@ -19,6 +19,7 @@
 
 #include "HFInvMassFitter.h"
 
+#include <TDatabasePDG.h>
 #include <TLine.h>
 
 #include <RooRealVar.h>
@@ -45,7 +46,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mMinMass(0),
                                      mMaxMass(5),
                                      mTypeOfBkgPdf(Expo),
-                                     mMassParticle(1.864),
+                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                      mTypeOfSgnPdf(SingleGaus),
                                      mTypeOfReflPdf(1),
                                      mMass(1.865),
@@ -112,7 +113,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mMinMass(minValue),
                                                                                                                                     mMaxMass(maxValue),
                                                                                                                                     mTypeOfBkgPdf(fitTypeBkg),
-                                                                                                                                    mMassParticle(1.864),
+                                                                                                                                    mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                                                                                                                     mTypeOfSgnPdf(fitTypeSgn),
                                                                                                                                     mTypeOfReflPdf(1),
                                                                                                                                     mMass(1.865),
@@ -205,10 +206,10 @@ void HFInvMassFitter::doFit()
   RooRealVar* mass = mWorkspace->var("mass");
   RooDataHist dataHistogram("dataHistogram", "data", *mass, Import(*mHistoInvMass));
 
-  if (mTypeOfBkgPdf == 6) { // MC
+  if (mTypeOfBkgPdf == NoBkg) { // MC
     mass->setRange("signal", mMass - 3. * mSigmaSgn, mMass + 3. * mSigmaSgn);
   } else {
-    if (mTypeOfSgnPdf == 3) { // Second Peak fit range
+    if (mTypeOfSgnPdf == GausSec) { // Second Peak fit range
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mSecMass - mNSigmaForSidebands * mSecSigma);
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
@@ -230,7 +231,7 @@ void HFInvMassFitter::doFit()
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                       // Create signal pdf
 
   // fit MC or Data
-  if (mTypeOfBkgPdf == 6) {                                                                                    // MC
+  if (mTypeOfBkgPdf == NoBkg) {                                                                                // MC
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
     if (!strcmp(mFitOption.Data(), "Chi2")) {
@@ -244,7 +245,7 @@ void HFInvMassFitter::doFit()
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
   } else {                                           // data
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
-    if (mTypeOfSgnPdf == 3) { // two peak fit
+    if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
@@ -355,23 +356,23 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*bkgFuncExpo);
   delete bkgFuncExpo;
   // bkg poly1
-  RooRealVar PolyParam0("PolyParam0", "Parameter of Poly function", 0.5, -5., 5.);
-  RooRealVar PolyParam1("PolyParam1", "Parameter of Poly function", 0.2, -5., 5.);
-  RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(PolyParam0, PolyParam1));
+  RooRealVar polyParam0("polyParam0", "Parameter of Poly function", 0.5, -5., 5.);
+  RooRealVar polyParam1("polyParam1", "Parameter of Poly function", 0.2, -5., 5.);
+  RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(polyParam0, polyParam1));
   workspace.import(*bkgFuncPoly1);
   delete bkgFuncPoly1;
   // bkg poly2
-  RooRealVar PolyParam2("PolyParam2", "Parameter of Poly function", 0.2, -5., 5.);
-  RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(PolyParam0, PolyParam1, PolyParam2));
+  RooRealVar polyParam2("polyParam2", "Parameter of Poly function", 0.2, -5., 5.);
+  RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(polyParam0, polyParam1, polyParam2));
   workspace.import(*bkgFuncPoly2);
   delete bkgFuncPoly2;
   // bkg poly3
-  RooRealVar PolyParam3("PolyParam3", "Parameter of Poly function", 0.2, -1., 1.);
-  RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(PolyParam0, PolyParam1, PolyParam2, PolyParam3));
+  RooRealVar polyParam3("polyParam3", "Parameter of Poly function", 0.2, -1., 1.);
+  RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(polyParam0, polyParam1, polyParam2, polyParam3));
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
-  RooRealVar PowParam1("PowParam1", "Parameter of Pow function", 0.13957);
+  RooRealVar PowParam1("PowParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooRealVar PowParam2("PowParam2", "Parameter of Pow function", 1., -10, 10);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-PowParam1)^PowParam2", RooArgSet(mass, PowParam1, PowParam2));
   workspace.import(*bkgFuncPow);
@@ -379,7 +380,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // pow * exp
   RooRealVar PowExpoParam1("PowExpoParam1", "Parameter of PowExpo function", 1 / 2);
   RooRealVar PowExpoParam2("PowExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
-  RooRealVar massPi("massPi", "mass of pion", 0.13957);
+  RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar PowExpoParam3("PowExpoParam3", "PowExpoParam1 + 1", RooArgList(PowExpoParam1));
   RooFormulaVar PowExpoParam4("PowExpoParam4", "1./PowExpoParam2", RooArgList(PowExpoParam2));
   RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, PowExpoParam3, PowExpoParam4, massPi);
@@ -507,18 +508,18 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
   // reflection poly3
-  RooRealVar PolyReflParam0("PolyReflParam0", "PolyReflParam0", 0.5, -1., 1.);
-  RooRealVar PolyReflParam1("PolyReflParam1", "PolyReflParam1", 0.2, -1., 1.);
-  RooRealVar PolyReflParam2("PolyReflParam2", "PolyReflParam2", 0.2, -1., 1.);
-  RooRealVar PolyReflParam3("PolyReflParam3", "PolyReflParam3", 0.2, -1., 1.);
-  RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(PolyReflParam0, PolyReflParam1, PolyReflParam2, PolyReflParam3));
+  RooRealVar polyReflParam0("polyReflParam0", "polyReflParam0", 0.5, -1., 1.);
+  RooRealVar polyReflParam1("polyReflParam1", "polyReflParam1", 0.2, -1., 1.);
+  RooRealVar polyReflParam2("polyReflParam2", "polyReflParam2", 0.2, -1., 1.);
+  RooRealVar polyReflParam3("polyReflParam3", "polyReflParam3", 0.2, -1., 1.);
+  RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3));
   workspace.import(*reflFuncPoly3);
   delete reflFuncPoly3;
   // reflection poly6
-  RooRealVar PolyReflParam4("PolyReflParam4", "PolyReflParam4", 0.2, -1., 1.);
-  RooRealVar PolyReflParam5("PolyReflParam5", "PolyReflParam5", 0.2, -1., 1.);
-  RooRealVar PolyReflParam6("PolyReflParam6", "PolyReflParam6", 0.2, -1., 1.);
-  RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(PolyReflParam0, PolyReflParam1, PolyReflParam2, PolyReflParam3, PolyReflParam4, PolyReflParam5, PolyReflParam6));
+  RooRealVar polyReflParam4("polyReflParam4", "polyReflParam4", 0.2, -1., 1.);
+  RooRealVar polyReflParam5("polyReflParam5", "polyReflParam5", 0.2, -1., 1.);
+  RooRealVar polyReflParam6("polyReflParam6", "polyReflParam6", 0.2, -1., 1.);
+  RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3, polyReflParam4, polyReflParam5, polyReflParam6));
   workspace.import(*reflFuncPoly6);
   delete reflFuncPoly6;
 }
@@ -539,14 +540,14 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
     textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
-    if (mTypeOfBkgPdf != 6) {
+    if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
     }
     if (mReflPdf) {
       textInfoLeft->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
     }
-    if (mTypeOfBkgPdf != 6) {
+    if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
       textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdf));
     }
@@ -856,30 +857,30 @@ void HFInvMassFitter::setReflFuncFixed()
       fracRefl->setConstant(kTRUE);
     } break;
     case 2: {
-      RooRealVar* PolyReflParam0 = mWorkspace->var("PolyReflParam0");
-      RooRealVar* PolyReflParam1 = mWorkspace->var("PolyReflParam1");
-      RooRealVar* PolyReflParam2 = mWorkspace->var("PolyReflParam2");
-      RooRealVar* PolyReflParam3 = mWorkspace->var("PolyReflParam3");
-      PolyReflParam0->setConstant(kTRUE);
-      PolyReflParam1->setConstant(kTRUE);
-      PolyReflParam2->setConstant(kTRUE);
-      PolyReflParam3->setConstant(kTRUE);
+      RooRealVar* polyReflParam0 = mWorkspace->var("polyReflParam0");
+      RooRealVar* polyReflParam1 = mWorkspace->var("polyReflParam1");
+      RooRealVar* polyReflParam2 = mWorkspace->var("polyReflParam2");
+      RooRealVar* polyReflParam3 = mWorkspace->var("polyReflParam3");
+      polyReflParam0->setConstant(kTRUE);
+      polyReflParam1->setConstant(kTRUE);
+      polyReflParam2->setConstant(kTRUE);
+      polyReflParam3->setConstant(kTRUE);
     } break;
     case 3: {
-      RooRealVar* PolyReflParam0 = mWorkspace->var("PolyReflParam0");
-      RooRealVar* PolyReflParam1 = mWorkspace->var("PolyReflParam1");
-      RooRealVar* PolyReflParam2 = mWorkspace->var("PolyReflParam2");
-      RooRealVar* PolyReflParam3 = mWorkspace->var("PolyReflParam3");
-      RooRealVar* PolyReflParam4 = mWorkspace->var("PolyReflParam4");
-      RooRealVar* PolyReflParam5 = mWorkspace->var("PolyReflParam5");
-      RooRealVar* PolyReflParam6 = mWorkspace->var("PolyReflParam6");
-      PolyReflParam0->setConstant(kTRUE);
-      PolyReflParam1->setConstant(kTRUE);
-      PolyReflParam2->setConstant(kTRUE);
-      PolyReflParam3->setConstant(kTRUE);
-      PolyReflParam4->setConstant(kTRUE);
-      PolyReflParam5->setConstant(kTRUE);
-      PolyReflParam6->setConstant(kTRUE);
+      RooRealVar* polyReflParam0 = mWorkspace->var("polyReflParam0");
+      RooRealVar* polyReflParam1 = mWorkspace->var("polyReflParam1");
+      RooRealVar* polyReflParam2 = mWorkspace->var("polyReflParam2");
+      RooRealVar* polyReflParam3 = mWorkspace->var("polyReflParam3");
+      RooRealVar* polyReflParam4 = mWorkspace->var("polyReflParam4");
+      RooRealVar* polyReflParam5 = mWorkspace->var("polyReflParam5");
+      RooRealVar* polyReflParam6 = mWorkspace->var("polyReflParam6");
+      polyReflParam0->setConstant(kTRUE);
+      polyReflParam1->setConstant(kTRUE);
+      polyReflParam2->setConstant(kTRUE);
+      polyReflParam3->setConstant(kTRUE);
+      polyReflParam4->setConstant(kTRUE);
+      polyReflParam5->setConstant(kTRUE);
+      polyReflParam6->setConstant(kTRUE);
     } break;
     default:
       break;

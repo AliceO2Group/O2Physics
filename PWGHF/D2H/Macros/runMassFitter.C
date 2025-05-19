@@ -168,39 +168,21 @@ int runMassFitter(const TString& configFileName)
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] == 0) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Expo;
-    } else if (bkgFuncConfig[iSliceVar] == 1) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly1;
-    } else if (bkgFuncConfig[iSliceVar] == 2) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly2;
-    } else if (bkgFuncConfig[iSliceVar] == 3) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Pow;
-    } else if (bkgFuncConfig[iSliceVar] == 4) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::PowExpo;
-    } else if (bkgFuncConfig[iSliceVar] == 5) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly3;
-    } else if (bkgFuncConfig[iSliceVar] == 6) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::NoBkg;
-    } else {
+    if (bkgFuncConfig[iSliceVar] < HFInvMassFitter::Expo || bkgFuncConfig[iSliceVar] > HFInvMassFitter::NoBkg) {
       std::cerr << "ERROR: only Expo, Poly1, Poly2, Pow and PowEx background "
                    "functions supported! Exit"
                 << std::endl;
       return -1;
     }
+    bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
 
-    if (sgnFuncConfig[iSliceVar] == 0) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::SingleGaus;
-    } else if (sgnFuncConfig[iSliceVar] == 1) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::DoubleGaus;
-    } else if (sgnFuncConfig[iSliceVar] == 2) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::DoubleGausSigmaRatioPar;
-    } else {
+    if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
       std::cerr << "ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal "
                    "functions supported! Exit"
                 << std::endl;
       return -1;
     }
+    sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
   TString massAxisTitle = "";
@@ -457,7 +439,8 @@ int runMassFitter(const TString& configFileName)
 
     Double_t reflOverSgn = 0;
     double markerSize = 1.;
-    if (nSliceVarBins > 15) {
+    const int NSliceVarBinsLarge = 15;
+    if (nSliceVarBins > NSliceVarBinsLarge) {
       markerSize = 0.5;
     }
 
@@ -694,31 +677,11 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 
 void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
-  if (nSliceVarBins < 2) {
-    canvas->cd();
-  } else if (nSliceVarBins == 2 || nSliceVarBins == 3) {
-    canvas->Divide(nSliceVarBins, 1);
-  } else if (nSliceVarBins == 4 || nSliceVarBins == 6 || nSliceVarBins == 8) {
-    canvas->Divide(nSliceVarBins / 2, 2);
-  } else if (nSliceVarBins == 5 || nSliceVarBins == 7) {
-    canvas->Divide((nSliceVarBins + 1) / 2, 2);
-  } else if (nSliceVarBins == 9 || nSliceVarBins == 12 || nSliceVarBins == 15) {
-    canvas->Divide(nSliceVarBins / 3, 3);
-  } else if (nSliceVarBins == 10 || nSliceVarBins == 11) {
-    canvas->Divide(4, 3);
-  } else if (nSliceVarBins == 13 || nSliceVarBins == 14) {
-    canvas->Divide(5, 3);
-  } else if (nSliceVarBins > 15 && nSliceVarBins <= 20 && nSliceVarBins % 4 == 0) {
-    canvas->Divide(nSliceVarBins / 4, 4);
-  } else if (nSliceVarBins > 15 && nSliceVarBins <= 20 && nSliceVarBins % 4 != 0) {
-    canvas->Divide(5, 4);
-  } else if (nSliceVarBins == 21) {
-    canvas->Divide(7, 3);
-  } else if (nSliceVarBins > 21 && nSliceVarBins <= 25) {
-    canvas->Divide(5, 5);
-  } else if (nSliceVarBins > 25 && nSliceVarBins % 2 == 0) {
-    canvas->Divide(nSliceVarBins / 2, 2);
-  } else {
-    canvas->Divide((nSliceVarBins + 1) / 2, 2);
+  const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
+  constexpr int rectangularSidesDiffMax = 2;
+  for (int rectangularSidesDiff = 0; rectangularSidesDiff < rectangularSidesDiffMax; ++rectangularSidesDiff) {
+    if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
+      canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
+    }
   }
 }
