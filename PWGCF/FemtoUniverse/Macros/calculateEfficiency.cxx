@@ -16,8 +16,11 @@ namespace fs = std::filesystem;
 
 auto* getHistogram(TFile* file, const std::string& name, const std::string& projection)
 {
-  // TODO: I think axes after projection are transposed
-  return dynamic_cast<TH3F*>(file->Get(name.c_str()))->Project3D(projection.c_str());
+  auto* hist{dynamic_cast<TH3*>(file->Get(name.c_str()))};
+  if (projection == "none") {
+    return hist;
+  }
+  return dynamic_cast<TH3*>(hist->Project3D(projection.c_str()));
 }
 
 template <typename H>
@@ -30,12 +33,20 @@ void forEachBin(TH1* hist, auto func)
 {
   if (hist->GetDimension() == 1) {
     for (auto x{1}; x <= hist->GetNbinsX(); ++x) {
-      func(x, 0);
+      func(x, 0, 0);
     }
   } else if (hist->GetDimension() == 2) {
     for (auto x{1}; x <= hist->GetNbinsX(); ++x) {
       for (auto y{1}; y <= hist->GetNbinsY(); ++y) {
-        func(x, y);
+        func(x, y, 0);
+      }
+    }
+  } else if (hist->GetDimension() == 3) {
+    for (auto x{1}; x <= hist->GetNbinsX(); ++x) {
+      for (auto y{1}; y <= hist->GetNbinsY(); ++y) {
+        for (auto z{1}; z <= hist->GetNbinsZ(); ++z) {
+          func(x, y, z);
+        }
       }
     }
   } else {
@@ -45,7 +56,7 @@ void forEachBin(TH1* hist, auto func)
 
 void calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, const std::string& projection)
 {
-  assert(projection == "x" || projection == "yx" || projection == "zx");
+  assert(projection == "x" || projection == "yx" || projection == "zx" || projection == "none");
 
   auto isAlien{false};
   if (resultsPath.string().starts_with("alien://")) {
@@ -82,15 +93,15 @@ void calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, 
   auto* histWeights{cloneHistogram(histPrimary, "hWeights")};
   histWeights->Reset();
 
-  forEachBin(histPrimary, [&](int x, int y) {
-    auto primVal{histPrimary->GetBinContent(x, y)};
-    auto primErr{histPrimary->GetBinError(x, y)};
+  forEachBin(histPrimary, [&](int x, int y, int z) {
+    auto primVal{histPrimary->GetBinContent(x, y, z)};
+    auto primErr{histPrimary->GetBinError(x, y, z)};
 
-    auto secVal{histSecondary->GetBinContent(x, y)};
-    auto secErr{histSecondary->GetBinError(x, y)};
+    auto secVal{histSecondary->GetBinContent(x, y, z)};
+    auto secErr{histSecondary->GetBinError(x, y, z)};
 
-    auto truthVal{histTruth->GetBinContent(x, y)};
-    auto truthErr{histTruth->GetBinError(x, y)};
+    auto truthVal{histTruth->GetBinContent(x, y, z)};
+    auto truthErr{histTruth->GetBinError(x, y, z)};
 
     auto effVal{0.};
     auto effErr{0.};
@@ -99,8 +110,8 @@ void calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, 
       effErr = std::sqrt(std::pow(primErr / truthVal, 2) + std::pow((primVal * truthErr / std::pow(truthVal, 2)), 2));
     }
 
-    histEfficiency->SetBinContent(x, y, effVal);
-    histEfficiency->SetBinError(x, y, effErr);
+    histEfficiency->SetBinContent(x, y, z, effVal);
+    histEfficiency->SetBinError(x, y, z, effErr);
 
     auto totalVal{primVal + secVal};
     auto totalErr{std::hypot(primErr, secErr)};
@@ -119,8 +130,8 @@ void calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, 
       weightErr = std::sqrt(std::pow(contErr / effVal, 2) + std::pow((1 - contVal) * effErr / std::pow(effVal, 2), 2));
     }
 
-    histWeights->SetBinContent(x, y, weightVal);
-    histWeights->SetBinError(x, y, weightErr);
+    histWeights->SetBinContent(x, y, z, weightVal);
+    histWeights->SetBinError(x, y, z, weightErr);
   });
 
   outputFile->WriteTObject(histEfficiency);

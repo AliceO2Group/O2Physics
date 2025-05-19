@@ -101,6 +101,8 @@ class EfficiencyCorrection
             hLoaded[idx] = loadHistFromCCDB<TH1>(timestamp);
           } else if (config->confEffCorVariables->size() == 2) {
             hLoaded[idx] = loadHistFromCCDB<TH2>(timestamp);
+          } else if (config->confEffCorVariables->size() == 3) {
+            hLoaded[idx] = loadHistFromCCDB<TH3>(timestamp);
           } else {
             LOGF(fatal, notify("unknown configuration for efficiency variables"));
           }
@@ -200,6 +202,8 @@ class EfficiencyCorrection
         bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "cent-mult"}) {
         bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.fdCollision().multV0M());
+      } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "eta", "cent-mult"}) {
+        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
       } else {
         LOGF(fatal, notify("unknown configuration for efficiency variables"));
         return weight;
