@@ -209,7 +209,7 @@ struct TrackPropagationTester {
     }
     initCCDB(bcs.begin());
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     int lNAll = 0;
     int lNaccTPC = 0;

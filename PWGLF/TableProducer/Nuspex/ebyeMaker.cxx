@@ -670,7 +670,7 @@ struct EbyeMaker {
     candidateTracks[1].clear();
     candidateV0s.clear();
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     uint8_t nTracklets[2]{0, 0};
     uint8_t nTracks{0};
     const float tklEtaCuts[]{1.2, 0.6, 0.7};

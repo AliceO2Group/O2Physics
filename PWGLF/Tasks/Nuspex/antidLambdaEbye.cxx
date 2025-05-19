@@ -584,7 +584,7 @@ struct antidLambdaEbye {
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     int nTracklets[2]{0, 0};
     for (const auto& track : tracks) {
 

@@ -2585,7 +2585,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParCovPos = getTrackParCov(trackPos);
   auto trackParCovNeg = getTrackParCov(trackNeg);
   std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
-  gpu::gpustd::array<float, 2> dcaInfoPos, dcaInfoNeg;
+  std::array<float, 2> dcaInfoPos, dcaInfoNeg;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPos, 2.f, dcaFitter.getMatCorrType(), &dcaInfoPos);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovNeg, 2.f, dcaFitter.getMatCorrType(), &dcaInfoNeg);
 
@@ -2655,7 +2655,7 @@ inline bool HfFilterHelper::buildV0(V const& v0Indices, T const& tracks, C const
   auto trackParV0 = dcaFitter.createParentTrackParCov();
   trackParV0.setAbsCharge(0);
   trackParV0.setPID(o2::track::PID::K0);
-  gpu::gpustd::array<float, 2> dcaInfoV0;
+  std::array<float, 2> dcaInfoV0;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, dcaFitter.getMatCorrType(), &dcaInfoV0);
   v0Cand.dcav0topv = dcaInfoV0[0];
 
@@ -2707,7 +2707,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
     return false;
   }
 
-  gpu::gpustd::array<float, 2> dcaInfoBach;
+  std::array<float, 2> dcaInfoBach;
   auto bachTrackParCov = getTrackParCov(trackBachelor);
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackParCov, 2.f, dcaFitter.getMatCorrType(), &dcaInfoBach);
 
@@ -2781,7 +2781,7 @@ inline bool HfFilterHelper::buildCascade(Casc const& cascIndices, V const& v0Ind
   auto trackParCasc = dcaFitter.createParentTrackParCov();
   trackParCasc.setAbsCharge(1);
   trackParCasc.setPID(o2::track::PID::XiMinus);
-  gpu::gpustd::array<float, 2> dcaInfoCasc;
+  std::array<float, 2> dcaInfoCasc;
   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCasc, 2.f, dcaFitter.getMatCorrType(), &dcaInfoCasc);
   cascCand.dcaXYCascToPV = dcaInfoCasc[0];
   cascCand.dcacascdaughters = std::sqrt(dcaFitter.getChi2AtPCACandidate());

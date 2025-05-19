@@ -491,9 +491,9 @@ struct nucleiFilter {
       vtxXYZ[1] -= collision.posY();
       vtxXYZ[2] -= collision.posZ();
 
-      o2::gpu::gpustd::array<float, 3> momHe3 = {0.};
-      o2::gpu::gpustd::array<float, 3> momPi = {0.};
-      o2::gpu::gpustd::array<float, 3> momTot = {0.};
+      std::array<float, 3> momHe3 = {0.};
+      std::array<float, 3> momPi = {0.};
+      std::array<float, 3> momTot = {0.};
       auto& hePropTrack = fitter2body.getTrack(0);
       auto& piPropTrack = fitter2body.getTrack(1);
       hePropTrack.getPxPyPzGlo(momHe3);
@@ -590,7 +590,7 @@ struct nucleiFilter {
       }
 
       // Calculate DCA with respect to the collision associated to the SV, not individual tracks
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
 
       auto track0Par = getTrackPar(track0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);

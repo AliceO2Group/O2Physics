@@ -329,7 +329,7 @@ struct EbyeMult {
     auto tracks = tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks.clear();
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     int nTracklets[2]{0, 0};
     int nTracks{0};
     for (const auto& track : tracks) {

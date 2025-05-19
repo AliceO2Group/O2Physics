@@ -293,7 +293,7 @@ struct HfCandidateCreatorSigmac0plusplus {
         auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
         initCCDB(bc, runNumber, ccdb, isRun2Ccdb ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2Ccdb);
         auto trackParSoftPi = getTrackPar(trackSoftPi);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
         if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
           return;

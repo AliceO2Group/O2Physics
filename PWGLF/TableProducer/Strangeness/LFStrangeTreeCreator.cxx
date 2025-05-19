@@ -288,7 +288,7 @@ struct LFStrangeTreeCreator {
   {
     candidateV0s.clear();
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     for (const auto& v0 : V0s) {
       auto posTrack = v0.posTrack_as<T>();

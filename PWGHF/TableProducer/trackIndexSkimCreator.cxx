@@ -813,7 +813,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       /// Track propagation to the PV refit considering also the material budget
       /// Mandatory for tracks updated at most only to the innermost ITS layer
       auto trackPar = getTrackPar(trackToRemove);
-      o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+      std::array<float, 2> dcaInfo{-999., -999.};
       if (o2::base::Propagator::Instance()->propagateToDCABxByBz({primVtxBaseRecalc.getX(), primVtxBaseRecalc.getY(), primVtxBaseRecalc.getZ()}, trackPar, 2.f, noMatCorr, &dcaInfo)) {
         pvCoord[0] = primVtxBaseRecalc.getX();
         pvCoord[1] = primVtxBaseRecalc.getY();
@@ -916,7 +916,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
         initCCDB(bc, runNumber, ccdb, config.isRun2 ? config.ccdbPathGrp : config.ccdbPathGrpMag, lut, config.isRun2);
         auto trackPar = getTrackPar(track);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
         trackPt = trackPar.getPt();
         trackEta = trackPar.getEta();
@@ -2121,7 +2121,7 @@ struct HfTrackIndexSkimCreator {
 
         auto trackParVarPos1 = getTrackParCov(trackPos1);
         std::array<float, 3> pVecTrackPos1{trackPos1.pVector()};
-        o2::gpu::gpustd::array<float, 2> dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
+        std::array<float, 2> dcaInfoPos1{trackPos1.dcaXY(), trackPos1.dcaZ()};
         if (thisCollId != trackPos1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos1, 2.f, noMatCorr, &dcaInfoPos1);
           getPxPyPz(trackParVarPos1, pVecTrackPos1);
@@ -2139,7 +2139,7 @@ struct HfTrackIndexSkimCreator {
 
           auto trackParVarNeg1 = getTrackParCov(trackNeg1);
           std::array<float, 3> pVecTrackNeg1{trackNeg1.pVector()};
-          o2::gpu::gpustd::array<float, 2> dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
+          std::array<float, 2> dcaInfoNeg1{trackNeg1.dcaXY(), trackNeg1.dcaZ()};
           if (thisCollId != trackNeg1.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg1, 2.f, noMatCorr, &dcaInfoNeg1);
             getPxPyPz(trackParVarNeg1, pVecTrackNeg1);
@@ -2373,7 +2373,7 @@ struct HfTrackIndexSkimCreator {
 
               auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
               auto trackParVarPos2 = getTrackParCov(trackPos2);
-              o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+              std::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2625,7 +2625,7 @@ struct HfTrackIndexSkimCreator {
 
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-              o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+              std::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
 
               // preselection of 3-prong candidates
               if (isSelected3ProngCand) {
@@ -2869,7 +2869,7 @@ struct HfTrackIndexSkimCreator {
                 std::array<float, 3> pVecTrackPos2{trackPos2.pVector()};
                 if (thisCollId != trackPos2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                   auto trackParVarPos2 = getTrackParCov(trackPos2);
-                  o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
+                  std::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarPos2, 2.f, noMatCorr, &dcaInfoPos2);
                   getPxPyPz(trackParVarPos2, pVecTrackPos2);
                 }
@@ -2906,7 +2906,7 @@ struct HfTrackIndexSkimCreator {
                 std::array<float, 3> pVecTrackNeg2{trackNeg2.pVector()};
                 if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
                   auto trackParVarNeg2 = getTrackParCov(trackNeg2);
-                  o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
+                  std::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                   getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
                 }
@@ -3135,7 +3135,7 @@ struct HfTrackIndexSkimCreatorCascades {
         std::array<float, 3> pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
         if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
-          o2::gpu::gpustd::array<float, 2> dcaInfoBach{bach.dcaXY(), bach.dcaZ()};
+          std::array<float, 2> dcaInfoBach{bach.dcaXY(), bach.dcaZ()};
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackBach, 2.f, noMatCorr, &dcaInfoBach);
           getPxPyPz(trackBach, pVecBach);
         }

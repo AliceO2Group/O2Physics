@@ -2195,7 +2195,7 @@ struct StrangenessBuilder {
 
       // recalculate DCAxy, DCAz with strange track
       auto strangeTrackParCov = getTrackParCov(strangeTrack);
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       strangeTrackParCov.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
       o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, strangeTrackParCov, 2.f, straHelper.fitter.getMatCorrType(), &dcaInfo);
       straHelper.cascade.cascadeDCAxy = dcaInfo[0];
