@@ -25,10 +25,10 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-#include <cstdio>   // for fclose
-#include <iostream> // std::cout
-#include <string>   // std::string
-#include <vector>   // std::vector
+#include <cstdio> // for fclose
+#include <stdexcept>
+#include <string> // std::string
+#include <vector> // std::vector
 
 #include <TDatabasePDG.h>
 #include <TFile.h>
@@ -67,8 +67,7 @@ int runMassFitter(const TString& configFileName)
   // load config
   FILE* configFile = fopen(configFileName.Data(), "r");
   if (!configFile) {
-    std::cerr << "ERROR: Missing configuration json file: " << configFileName << std::endl;
-    return -1;
+    throw std::runtime_error("ERROR: Missing configuration json file: " + configFileName);
   }
 
   Document config;
@@ -169,18 +168,12 @@ int runMassFitter(const TString& configFileName)
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
     if (bkgFuncConfig[iSliceVar] < HFInvMassFitter::Expo || bkgFuncConfig[iSliceVar] > HFInvMassFitter::NoBkg) {
-      std::cerr << "ERROR: only Expo, Poly1, Poly2, Pow and PowEx background "
-                   "functions supported! Exit"
-                << std::endl;
-      return -1;
+      throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
     bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
 
     if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
-      std::cerr << "ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal "
-                   "functions supported! Exit"
-                << std::endl;
-      return -1;
+      throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
@@ -206,8 +199,7 @@ int runMassFitter(const TString& configFileName)
     massAxisTitle = "#it{M}(pi^{+}) (GeV/#it{c}^{2})";
     massPDG = TDatabasePDG::Instance()->GetParticle("D*+")->Mass();
   } else {
-    std::cerr << "ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit" << std::endl;
-    return -1;
+    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
   }
 
   // load inv-mass histograms
@@ -236,12 +228,10 @@ int runMassFitter(const TString& configFileName)
         hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
         hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
         if (!hMassRefl[iSliceVar]) {
-          std::cerr << "ERROR: MC reflection histogram not found! Exit!" << std::endl;
-          return -1;
+          throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
         }
         if (!hMassSgn[iSliceVar]) {
-          std::cerr << "ERROR: MC prompt or FD histogram not found! Exit!" << std::endl;
-          return -1;
+          throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
         }
       }
     } else {
@@ -253,8 +243,7 @@ int runMassFitter(const TString& configFileName)
       }
     }
     if (!hMass[iSliceVar]) {
-      std::cerr << "ERROR: input histogram for fit not found! Exit!" << std::endl;
-      return -1;
+      throw std::runtime_error("ERROR: input histogram for fit not found! Exit!");
     }
     hMass[iSliceVar]->SetDirectory(nullptr);
   }
@@ -370,7 +359,7 @@ int runMassFitter(const TString& configFileName)
       hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
       hSigmaToFix->SetDirectory(0);
       if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        std::cout << "WARNING: Different number of bins for this analysis and histo for fix sigma!" << std::endl;
+        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
       }
       inputFileSigma->Close();
     }
@@ -385,7 +374,7 @@ int runMassFitter(const TString& configFileName)
     hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
     hMeanToFix->SetDirectory(0);
     if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
-      std::cout << "WARNING: Different number of bins for this analysis and histo for fix mean" << std::endl;
+      printf("WARNING: Different number of bins for this analysis and histo for fix mean\n");
     }
     inputFileMean->Close();
   }
@@ -501,18 +490,16 @@ int runMassFitter(const TString& configFileName)
       if (fixSigma) {
         if (fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(hSigmaToFix->GetBinContent(iSliceVar + 1));
-          std::cout << "*****************************"
-                    << "\n"
-                    << "FIXED SIGMA: " << hSigmaToFix->GetBinContent(iSliceVar + 1) << "\n"
-                    << "*****************************" << std::endl;
+          printf("*****************************\n");
+          printf("FIXED SIGMA: %f\n", hSigmaToFix->GetBinContent(iSliceVar + 1));
+          printf("*****************************\n");
         } else if (!fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
-          std::cout << "*****************************"
-                    << "\n"
-                    << "FIXED SIGMA: " << fixSigmaManual[iSliceVar] << "\n"
-                    << "*****************************" << std::endl;
+          printf("*****************************\n");
+          printf("FIXED SIGMA: %f\n", fixSigmaManual[iSliceVar]);
+          printf("*****************************\n");
         } else {
-          std::cout << "WARNING: impossible to fix sigma! Wrong fix sigma file or value!" << std::endl;
+          printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
         }
       }
 

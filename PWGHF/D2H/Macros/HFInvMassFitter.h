@@ -20,7 +20,7 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
-#include <iostream> // std::cout
+#include <cstdio>
 
 #include <RooPlot.h>
 #include <RooRealVar.h>
@@ -116,7 +116,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limit!" << std::endl;
+      printf("Invalid Gaussian mean limit!\n");
     }
     setInitialGaussianMean(mean);
     mMassLowLimit = meanLowLimit;
@@ -127,7 +127,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limit for reflection!" << std::endl;
+      printf("Invalid Gaussian mean limit for reflection!\n");
     }
     setInitialGaussianMean(mean);
     mMassReflLowLimit = meanLowLimit;
@@ -148,7 +148,7 @@ class HFInvMassFitter : public TNamed
   void setFixSecondGaussianSigma(Double_t sigma)
   {
     if (mTypeOfSgnPdf != DoubleGaus) {
-      std::cout << "Fit type should be 2Gaus!" << std::endl;
+      printf("Fit type should be 2Gaus!\n");
     }
     setInitialSecondGaussianSigma(sigma);
     mFixedSigmaDoubleGaus = kTRUE;
@@ -157,7 +157,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mTypeOfSgnPdf != DoubleGaus &&
         mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      std::cout << "Fit type should be 2Gaus or 2GausSigmaRatio!" << std::endl;
+      printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
     }
     setInitialFracDoubleGaus(frac);
     mFixedFracDoubleGaus = kTRUE;
@@ -165,7 +165,7 @@ class HFInvMassFitter : public TNamed
   void setFixRatioToGausSigma(Double_t sigmaFrac)
   {
     if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      std::cout << "Fit type should be set to k2GausSigmaRatioPar!" << std::endl;
+      printf("Fit type should be set to k2GausSigmaRatioPar!\n");
     }
     setInitialRatioDoubleGausSigma(sigmaFrac);
     mFixedRatioDoubleGausSigma = kTRUE;
