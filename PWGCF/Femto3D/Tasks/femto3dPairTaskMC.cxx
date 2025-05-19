@@ -105,7 +105,8 @@ struct FemtoCorrelationsMC {
   std::pair<int, std::vector<float>> TOFcuts_2;
 
   using FilteredCollisions = soa::Join<aod::SingleCollSels, aod::SingleCollExtras>;
-  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
+  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPrs, aod::SinglePIDDes>;
+  // using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
 
   typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
   typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
@@ -142,6 +143,8 @@ struct FemtoCorrelationsMC {
 
   void init(o2::framework::InitContext&)
   {
+
+    o2::aod::ITSResponse::setMCDefaultParameters(); // set MC parametrisation for the ITS PID
 
     IsIdentical = (_sign_1 * _particlePDG_1 == _sign_2 * _particlePDG_2);
 
