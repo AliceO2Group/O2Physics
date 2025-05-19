@@ -1126,7 +1126,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
         // apply selections on pion tracks
         auto trackParCovPion = getTrackParCov(trackPion);
-        o2::gpu::gpustd::array<float, 2> dcaPion{trackPion.dcaXY(), trackPion.dcaZ()};
+        std::array<float, 2> dcaPion{trackPion.dcaXY(), trackPion.dcaZ()};
         std::array<float, 3> pVecPion = trackPion.pVector();
         if (trackPion.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPion, 2.f, noMatCorr, &dcaPion);
