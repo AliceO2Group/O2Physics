@@ -236,7 +236,7 @@ struct NucleitpcPbPb {
       if (std::abs(track.eta()) > cfgCutEta)
         continue;
       for (size_t i = 0; i < primaryParticles.size(); i++) {
-        if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire )
+        if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
           continue;
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
           continue;
