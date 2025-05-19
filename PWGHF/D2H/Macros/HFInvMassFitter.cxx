@@ -372,18 +372,18 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
-  RooRealVar PowParam1("PowParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  RooRealVar PowParam2("PowParam2", "Parameter of Pow function", 1., -10, 10);
-  RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-PowParam1)^PowParam2", RooArgSet(mass, PowParam1, PowParam2));
+  RooRealVar powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
+  RooRealVar powParam2("powParam2", "Parameter of Pow function", 1., -10, 10);
+  RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-powParam1)^powParam2", RooArgSet(mass, powParam1, powParam2));
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
-  RooRealVar PowExpoParam1("PowExpoParam1", "Parameter of PowExpo function", 1 / 2);
-  RooRealVar PowExpoParam2("PowExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
+  RooRealVar powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1 / 2);
+  RooRealVar powExpoParam2("powExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  RooFormulaVar PowExpoParam3("PowExpoParam3", "PowExpoParam1 + 1", RooArgList(PowExpoParam1));
-  RooFormulaVar PowExpoParam4("PowExpoParam4", "1./PowExpoParam2", RooArgList(PowExpoParam2));
-  RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, PowExpoParam3, PowExpoParam4, massPi);
+  RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
+  RooFormulaVar powExpoParam4("powExpoParam4", "1./powExpoParam2", RooArgList(powExpoParam2));
+  RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, powExpoParam3, powExpoParam4, massPi);
   workspace.import(*bkgFuncPowExpo);
   delete bkgFuncPowExpo;
 

@@ -439,7 +439,7 @@ int runMassFitter(const TString& configFileName)
 
     Double_t reflOverSgn = 0;
     double markerSize = 1.;
-    const int NSliceVarBinsLarge = 15;
+    constexpr int NSliceVarBinsLarge = 15;
     if (nSliceVarBins > NSliceVarBinsLarge) {
       markerSize = 0.5;
     }
@@ -678,8 +678,8 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
   const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
-  constexpr int rectangularSidesDiffMax = 2;
-  for (int rectangularSidesDiff = 0; rectangularSidesDiff < rectangularSidesDiffMax; ++rectangularSidesDiff) {
+  constexpr int RectangularSidesDiffMax = 2;
+  for (int rectangularSidesDiff = 0; rectangularSidesDiff < RectangularSidesDiffMax; ++rectangularSidesDiff) {
     if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
       canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
     }
