@@ -280,74 +280,74 @@ int runMassFitter(const TString& configFileName)
 
   // define output histos
   auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits);
+                             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                    nSliceVarBins, sliceVarLimits);
+                                    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaRatio = new TH1D(
     "hRawYieldsSigmaRatio",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma2 = new TH1D(
     "hRawYieldsSigma2", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMean = new TH1D(
     "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsFracGaus2 = new TH1D(
     "hRawYieldsFracGaus2",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificance = new TH1D(
     "hRawYieldsSignificance",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSgnOverBkg =
     new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignal =
     new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Signal (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkg =
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquare =
     new TH1D("hRawYieldsChiSquare",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits);
+             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSecondPeak = new TH1D(
     "hRawYieldsSecondPeak", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield second peak",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMeanSecondPeak =
     new TH1D("hRawYieldsMeanSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");mean second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaSecondPeak =
     new TH1D("hRawYieldsSigmaSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificanceSecondPeak =
     new TH1D("hRawYieldsSignificanceSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");signficance second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaRatioSecondFirstPeak =
     new TH1D("hRawYieldsSigmaRatioSecondFirstPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak / width first peak",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSoverBSecondPeak = new TH1D(
     "hRawYieldsSoverBSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignalSecondPeak = new TH1D(
     "hRawYieldsSignalSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkgSecondPeak =
     new TH1D("hRawYieldsBkgSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");Background second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
-  auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits);
+  auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
   const char* hFitConfigXLabel[nConfigsToSave] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
   hFitConfig->SetStats(0);
   hFitConfig->LabelsDeflate("X");
