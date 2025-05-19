@@ -39,7 +39,7 @@ namespace
 {
 constexpr int kITSLayers = 7;
 constexpr int kITSInnerBarrelLayers = 3;
-constexpr int kITSOuterBarrelLayers = 4;
+// constexpr int kITSOuterBarrelLayers = 4;
 std::shared_ptr<TH1> hMotherCounter;
 std::shared_ptr<TH1> hDauAlphaCounter;
 std::shared_ptr<TH1> hDauTritonCounter;
