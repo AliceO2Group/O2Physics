@@ -31,7 +31,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptdptfilter.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
