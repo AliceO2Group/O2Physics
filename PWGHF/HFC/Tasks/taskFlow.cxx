@@ -50,11 +50,12 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::constants::math;
-using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -1514,18 +1515,15 @@ struct HfTaskFlow {
 
   int getSpecies(int pdgCode)
   {
-    switch (pdgCode) {
-      case PDG_t::kPiPlus:  // positive pion
-      case PDG_t::kPiMinus: // negative pion
-        return 0;
-      case PDG_t::kKPlus:  // positive kaon
-      case PDG_t::kKMinus: // negative kaon
-        return 1;
-      case PDG_t::kProton:    // proton
-      case PDG_t::kProtonBar: // proton bar
-        return 2;
+    switch (std::abs(pdgCode)) {
+      case PDG_t::kPiPlus: // positive or negative pion
+        return Pion;
+      case PDG_t::kKPlus: // positive or negative kaon
+        return Kaon;
+      case PDG_t::kProton: // proton or proton bar
+        return Proton;
       default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
-        return 3;
+        return NHfProngSpecies;
     }
   }
 
