@@ -133,7 +133,7 @@ struct HfTaskSingleMuonMult {
     xMu->SetBinLabel(5, "chi2Cut");
 
     // Number the types of muon tracks
-    constexpr uint8_t nTrackTypes{static_cast<uint8_t>(ForwardTrackTypeEnum::MCHStandaloneTrack)};
+    constexpr uint8_t NTrackTypes{static_cast<uint8_t>(ForwardTrackTypeEnum::MCHStandaloneTrack)};
   }
 
   void process(MyCollisions::iterator const& collision,
@@ -171,7 +171,7 @@ struct HfTaskSingleMuonMult {
 
     // muons per event
     int nMu{0};
-    int nMuType[nTrackTypes + 1] = {0};
+    int nMuType[NTrackTypes + 1] = {0};
 
     for (const auto& muon : muons) {
       const auto pt{muon.pt()}, eta{muon.eta()}, theta{90.0f - ((std::atan(muon.tgl())) * constants::math::Rad2Deg)}, pDca{muon.pDca()}, rAbsorb{muon.rAtAbsorberEnd()}, chi2{muon.chi2MatchMCHMFT()};
@@ -242,12 +242,11 @@ struct HfTaskSingleMuonMult {
     registry.fill(HIST("h3MultNchNmu"), cent, nCh, nMu);
 
     // Fill number of muons of various types with multiplicity
-    static_for<0u, nTrackTypes>([&](auto i) {
-      constexpr int iType{i.value};
-      if (nMuType[iType] > 0) {
-        registry.fill(std::string(HIST("hMultNchNmuTrackType")), cent, nCh, nMuType[iType], iType);
+    for (auto indexType{0u}; indexType <= NTrackTypes; ++indexType) {
+      if (nMuType[indexType] > 0) {
+        registry.fill(HIST("hMultNchNmuTrackType"), cent, nCh, nMuType[indexType], indexType);
       }
-    });
+    };
     chTracks.clear();
   }
 };
