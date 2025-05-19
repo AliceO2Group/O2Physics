@@ -14,6 +14,7 @@
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
 #include <vector>
+#include <memory>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
