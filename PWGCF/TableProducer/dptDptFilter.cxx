@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dptdptfilter.cxx
+/// \file dptDptFilter.cxx
 /// \brief Filters collisions and tracks according to selection criteria
 /// \author victor.gonzalez.sebastian@gmail.com
 
@@ -46,7 +46,7 @@
 #include <TH3.h>
 #include <TProfile3D.h>
 
-#include "PWGCF/TableProducer/dptdptfilter.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
 using namespace o2;
 using namespace o2::framework;

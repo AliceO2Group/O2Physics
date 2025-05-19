@@ -24,7 +24,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptdptfilter.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
 using namespace o2;
 using namespace o2::framework;

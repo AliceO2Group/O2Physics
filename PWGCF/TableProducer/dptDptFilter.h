@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dptdptfilter.h
+/// \file dptDptFilter.h
 /// \brief Filters collisions and tracks according to selection criteria
 /// \author victor.gonzalez.sebastian@gmail.com
 

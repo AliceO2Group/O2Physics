@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dptdptcorrelations.cxx
+/// \file dptDptCorrelations.cxx
 /// \brief implements two-particle correlations base data collection
 /// \author victor.gonzalez.sebastian@gmail.com
 
@@ -44,7 +44,7 @@
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptdptfilter.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
 using namespace o2;
 using namespace o2::framework;
