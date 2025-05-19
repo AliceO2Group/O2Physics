@@ -58,6 +58,7 @@ struct singleTrackSelector {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgSkimming{"cfgSkimming", "fPD", "Configurable for skimming"};
+  Configurable<bool> CBThadronPID{"CBThadronPID", false, "Apply ev. sel. based on RCT flag `hadronPID`"}; // more in Common/CCDB/RCTSelectionFlags.h
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -134,6 +135,8 @@ struct singleTrackSelector {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   SliceCache cache;
 
+  rctsel::RCTFlagsChecker myChecker{"CBT_hadronPID"};
+
   void init(InitContext&)
   {
 
@@ -147,6 +150,8 @@ struct singleTrackSelector {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    myChecker.init("CBT_hadronPID", true);
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
@@ -348,6 +353,9 @@ struct singleTrackSelector {
 
     const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+
+    if (!myChecker(*collision) && CBThadronPID)
+      return;
 
     registry.fill(HIST("hNEvents"), 0.5);
     if (applySkimming) {
