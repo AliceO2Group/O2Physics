@@ -56,6 +56,7 @@ DECLARE_SOA_COLUMN(Pzp, pzp, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(TrackTypep, tracktypep, int);
 DECLARE_SOA_COLUMN(EnergyN, energyN, float);
 DECLARE_SOA_COLUMN(Pxn, pxn, float);
 DECLARE_SOA_COLUMN(Pyn, pyn, float);
@@ -63,6 +64,7 @@ DECLARE_SOA_COLUMN(Pzn, pzn, float);
 DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(TrackTypen, tracktypen, int);
 // zn
 DECLARE_SOA_COLUMN(Tzna, tzna, float);
 DECLARE_SOA_COLUMN(Ezna, ezna, float);
@@ -77,8 +79,8 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::RunNumber,
                   dimu::M, dimu::Energy, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
                   dimu::PhiAv, dimu::PhiCh,
-                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
-                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin,
+                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip, dimu::TrackTypep,
+                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin, dimu::TrackTypen,
                   dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
 } // namespace o2::aod
 
@@ -125,9 +127,11 @@ DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(TrackTypep, tracktypep, int);
 DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(TrackTypen, tracktypen, int);
 // gen info dimuon
 DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenRap, genRap, float);
@@ -147,8 +151,8 @@ DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
                   recodimu::RunNumber,
                   recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
-                  recodimu::Ptp, recodimu::Etap, recodimu::Phip,
-                  recodimu::Ptn, recodimu::Etan, recodimu::Phin,
+                  recodimu::Ptp, recodimu::Etap, recodimu::Phip, recodimu::TrackTypep,
+                  recodimu::Ptn, recodimu::Etan, recodimu::Phin, recodimu::TrackTypen,
                   recodimu::GenPt, recodimu::GenRap, recodimu::GenPhi,
                   recodimu::GenPtp, recodimu::GenEtap, recodimu::GenPhip,
                   recodimu::GenPtn, recodimu::GenEtan, recodimu::GenPhin);
@@ -164,8 +168,8 @@ const float kRAbsMid = 26.5;
 const float kRAbsMax = 89.5;
 const float kPDca1 = 200.;
 const float kPDca2 = 200.;
-const float kEtaMin = -4.0;
-const float kEtaMax = -2.5;
+float kEtaMin = -4.0;
+float kEtaMax = -2.5;
 const float kPtMin = 0.;
 
 struct FwdMuonsUPC {
@@ -227,6 +231,10 @@ struct FwdMuonsUPC {
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
   Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
+  // my track type
+  // 0 = MCH-MID-MFT
+  // 1 = MCH-MID
+  Configurable<int> myTrackType{"myTrackType",3,"My track type"};
 
   void init(InitContext&)
   {
@@ -459,7 +467,7 @@ struct FwdMuonsUPC {
     float eta = p.Eta();
     float pt = p.Pt();
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
-
+    LOGF(info,"eta min = %f",kEtaMin);
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
@@ -521,12 +529,6 @@ struct FwdMuonsUPC {
       return;
     }
 
-    // track selection
-    if (!isMuonSelected(*tr1))
-      return;
-    if (!isMuonSelected(*tr2))
-      return;
-
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
@@ -534,6 +536,27 @@ struct FwdMuonsUPC {
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
     if (nMIDs != 2)
+      return;
+
+    // MFT-MID match selection (if MFT is requested by the trackType)
+    if(myTrackType==0){
+      // if MFT is requested check that the tracks is inside the MFT acceptance
+      kEtaMin = -3.6;
+      kEtaMax = -2.5;
+
+      int nMFT = 0;
+      if(tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+        nMFT++;
+      if(tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+        nMFT++;
+      if(nMFT != 2)
+        return;
+    }
+
+    // track selection
+    if (!isMuonSelected(*tr1))
+      return;
+    if (!isMuonSelected(*tr2))
       return;
 
     // form Lorentz vectors
@@ -641,15 +664,15 @@ struct FwdMuonsUPC {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     }
   }
@@ -749,12 +772,6 @@ struct FwdMuonsUPC {
       return;
     }
 
-    // track selection
-    if (!isMuonSelected(*tr1))
-      return;
-    if (!isMuonSelected(*tr2))
-      return;
-
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
@@ -762,6 +779,27 @@ struct FwdMuonsUPC {
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
     if (nMIDs != 2)
+      return;
+
+    // MFT-MID match selection (if MFT is requested by the trackType)
+    if(myTrackType==0){
+      // if MFT is requested check that the tracks is inside the MFT acceptance
+      kEtaMin = -3.6;
+      kEtaMax = -2.5;
+
+      int nMFT = 0;
+      if(tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+        nMFT++;
+      if(tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+        nMFT++;
+      if(nMFT != 2)
+        return;
+    }
+
+    // track selection
+    if (!isMuonSelected(*tr1))
+      return;
+    if (!isMuonSelected(*tr2))
       return;
 
     // form Lorentz vectors
@@ -859,8 +897,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
@@ -869,8 +907,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi(),
