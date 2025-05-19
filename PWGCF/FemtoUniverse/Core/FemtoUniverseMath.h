@@ -64,13 +64,14 @@ class FemtoUniverseMath
     return 0.5 * trackRelK.P();
   }
 
+  /// Boost particles from LAB Frame to Pair Rest Frame (for lambda daughters)
   /// \tparam T type of tracks
   /// \param part1 Particle 1
   /// \param mass1 Mass of particle 1
   /// \param part2 Particle 2
   /// \param mass2 Mass of particle 2
   template <typename T>
-  static float getthetastar(const T& part1, const float mass1, const T& part2, const float mass2)
+  static ROOT::Math::PxPyPzMVector boostPRF(const T& part1, const float mass1, const T& part2, const float mass2)
   {
     const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
     const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
@@ -88,10 +89,7 @@ class FemtoUniverseMath
     partOneCMS = boostPRF(partOneCMS);
     partTwoCMS = boostPRF(partTwoCMS);
 
-    const ROOT::Math::PtEtaPhiMVector partOneCMSGeo(partOneCMS);
-    const ROOT::Math::PtEtaPhiMVector partTwoCMSGeo(partTwoCMS);
-
-    return (partOneCMSGeo.Theta() - partTwoCMSGeo.Theta());
+    return partOneCMS;
   }
 
   /// Compute the qij of a pair of particles

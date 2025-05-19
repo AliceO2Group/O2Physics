@@ -24,12 +24,14 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
 
 using namespace o2;
 using namespace o2::analysis::femto_universe;
@@ -38,6 +40,9 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct femtoUniverseDebugV0 {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   SliceCache cache;
 
   Configurable<int> ConfPDGCodeV0{"ConfPDGCodePartOne", 3122, "V0 - PDG code"};
@@ -71,6 +76,7 @@ struct femtoUniverseDebugV0 {
   /// Histogram output
   HistogramRegistry EventRegistry{"Event", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"FullV0QA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry thetaRegistry{"ThetaQA", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext&)
   {
@@ -78,14 +84,16 @@ struct femtoUniverseDebugV0 {
     posChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildPos.value, true);
     negChildHistos.init(&V0Registry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, ConfPDGCodeChildNeg, true);
     V0Histos.init(&V0Registry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, false, ConfPDGCodeV0.value, true);
+
+    thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {50, -5, 5}});
   }
 
-  /// Porduce QA plots for V0 selection in FemtoUniverse framework
+  /// Produce QA plots for V0 selection in FemtoUniverse framework
   void process(o2::aod::FdCollision const& col, FemtoFullParticles const& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     eventHisto.fillQA(col);
-    for (auto& part : groupPartsOne) {
+    for (const auto& part : groupPartsOne) {
       if (!part.has_children()) {
         continue;
       }
@@ -95,14 +103,21 @@ struct femtoUniverseDebugV0 {
         LOG(warn) << "Indices of V0 children do not match";
         continue;
       }
-      // check cuts on V0 children
-      if ((posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (posChild.cut() & ConfCutChildPos) == ConfCutChildPos) &&
-          (negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) && (negChild.cut() & ConfCutChildNeg) == ConfCutChildNeg) &&
+
+      // Check cuts on V0 children
+      if (posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           isFullPIDSelected(posChild.pidCut(), posChild.p(), 999.f, ConfChildPosIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildPosPidnSigmaMax.value, 1.f) &&
           isFullPIDSelected(negChild.pidCut(), negChild.p(), 999.f, ConfChildNegIndex.value, ConfChildnSpecies.value, ConfChildPIDnSigmaMax.value, ConfChildNegPidnSigmaMax.value, 1.f)) {
+        auto protonMass = pdg->Mass(2212);
+        auto pionMass = pdg->Mass(211);
+        auto protonBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, protonMass, negChild, pionMass);
+        auto cosineTheta = (protonBoosted.Px() * part.px() + protonBoosted.Py() * part.py() + protonBoosted.Pz() * part.pz()) / (protonBoosted.P() * part.p());
+
         V0Histos.fillQA<false, true>(part);
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);
+        thetaRegistry.fill(HIST("Theta/hTheta"), part.p(), cosineTheta);
       }
     }
   }
