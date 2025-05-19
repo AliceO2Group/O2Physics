@@ -39,8 +39,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-typedef ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>> LorentzVecM;
-typedef ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> LorentzVecE;
 
 namespace o2::aod
 {
@@ -790,8 +788,8 @@ struct ExclusiveRhoTo4Pi {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    LorentzVecE pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    LorentzVecE pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
     //  TVector3 beta = (-1. / fourpion.E()) * fourpion.Vect();
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
@@ -820,8 +818,8 @@ struct ExclusiveRhoTo4Pi {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    LorentzVecE pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    LorentzVecE pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
     ROOT::Math::PtEtaPhiMVector v2 = pair2;
     ROOT::Math::PtEtaPhiMVector v12 = fourpion;
@@ -892,7 +890,7 @@ struct ExclusiveRhoTo4Pi {
     int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
 
     for (int i = 0; i < numSelectedTracks; i++) {
-      LorentzVecM selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
       histosData.fill(HIST("tpcSignal"), selectedTrackVector.P(), selectedTracks[i].tpcSignal());
       histosData.fill(HIST("tofBeta"), selectedTrackVector.P(), selectedTracks[i].beta());
       histosData.fill(HIST("tpcNSigmaPi_WTS"), selectedTracks[i].tpcNSigmaPi(), selectedTrackVector.Pt());
@@ -907,7 +905,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of loop over tracks with selection only
 
     for (int i = 0; i < numSelectedPionTracks; i++) {
-      LorentzVecM selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
       histosData.fill(HIST("tpcSignal_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].tpcSignal());
       histosData.fill(HIST("tofBeta_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].beta());
       histosData.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPi(), selectedPionTrackVector.Pt());
@@ -933,10 +931,10 @@ struct ExclusiveRhoTo4Pi {
 
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
-      LorentzVecM p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
 
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p1.Pt());
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p2.Pt());
@@ -953,7 +951,7 @@ struct ExclusiveRhoTo4Pi {
       k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
       k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
 
-      LorentzVecM p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       k1234 = k1 + k2 + k3 + k4;
 
       k13 = k1 + k3;
@@ -1031,12 +1029,12 @@ struct ExclusiveRhoTo4Pi {
     // Selecting Events with net charge != 0 for estimation of background
     if (numPionMinusTracks != two && numPiPlusTracks != two) {
 
-      LorentzVecM p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
 
-      LorentzVecM p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
 
       bkgFromData(
         collision.posX(), collision.posY(), collision.posZ(),
@@ -1083,8 +1081,8 @@ struct ExclusiveRhoTo4Pi {
   // Begin of MC Generation function-----------------------------------------------------------------------------------------------------------------------------------------------
   void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParts)
   {
-    std::vector<LorentzVecM> piPlusvectors;
-    std::vector<LorentzVecM> piMinusvectors;
+    std::vector<ROOT::Math::PxPyPzMVector> piPlusvectors;
+    std::vector<ROOT::Math::PxPyPzMVector> piMinusvectors;
     TVector3 particleVector;
 
     for (const auto& particle : mcParts) {
@@ -1099,7 +1097,7 @@ struct ExclusiveRhoTo4Pi {
       histosMCgen.fill(HIST("rhoPrime_eta"), particleVector.Eta());
 
       for (const auto& daughter : particle.daughters_as<aod::UDMcParticles>()) {
-        LorentzVecM daughterVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
+        ROOT::Math::PxPyPzMVector daughterVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
         if (daughter.pdgCode() == PDG_t::kPiPlus) {
           piPlusvectors.push_back(daughterVector);
         }
@@ -1114,7 +1112,7 @@ struct ExclusiveRhoTo4Pi {
       return;
     }
 
-    LorentzVecM p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
+    ROOT::Math::PxPyPzMVector p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
 
     histosMCgen.fill(HIST("pion_pT"), piPlusvectors[0].Pt());
     histosMCgen.fill(HIST("pion_pT"), piPlusvectors[1].Pt());
@@ -1229,7 +1227,7 @@ struct ExclusiveRhoTo4Pi {
     int numPionMinusTRacks = static_cast<int>(selectedPionMinusTracks.size());
 
     for (int i = 0; i < numSelectedTracks; i++) {
-      LorentzVecM selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
       histosMCreco.fill(HIST("tpcSignal"), selectedTrackVector.P(), selectedTracks[i].tpcSignal());
       histosMCreco.fill(HIST("tofBeta"), selectedTrackVector.P(), selectedTracks[i].beta());
       histosMCreco.fill(HIST("tpcNSigmaPi_WTS"), selectedTracks[i].tpcNSigmaPi(), selectedTrackVector.Pt());
@@ -1244,7 +1242,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of loop over tracks with selection only
 
     for (int i = 0; i < numSelectedPionTracks; i++) {
-      LorentzVecM selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
       histosMCreco.fill(HIST("tpcSignal_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].tpcSignal());
       histosMCreco.fill(HIST("tofBeta_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].beta());
       histosMCreco.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPi(), selectedPionTrackVector.Pt());
@@ -1270,10 +1268,10 @@ struct ExclusiveRhoTo4Pi {
 
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
-      LorentzVecM p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
 
       histosMCreco.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p1.Pt());
       histosMCreco.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p2.Pt());
@@ -1290,7 +1288,7 @@ struct ExclusiveRhoTo4Pi {
       k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
       k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
 
-      LorentzVecM p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       k1234 = k1 + k2 + k3 + k4;
 
       k13 = k1 + k3;
@@ -1357,12 +1355,12 @@ struct ExclusiveRhoTo4Pi {
 
     // Selecting Events with net charge != 0 for estimation of background
     if (numPionMinusTRacks != two && numPiPlusTracks != two) {
-      LorentzVecM p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
-      LorentzVecM p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
 
-      LorentzVecM p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
 
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosMCreco.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
