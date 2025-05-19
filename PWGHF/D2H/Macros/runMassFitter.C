@@ -21,6 +21,11 @@
 
 #include "HFInvMassFitter.h"
 
+// if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
+#include <cstdio>   // for fclose
 #include <iostream> // std::cout
 #include <string>   // std::string
 #include <vector>   // std::vector
@@ -28,10 +33,6 @@
 #include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
-
-// if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
 
 #endif
 
@@ -159,8 +160,9 @@ int runMassFitter(const TString& configFileName)
   bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
-  int bkgFunc[nSliceVarBins], sgnFunc[nSliceVarBins];
-  double sliceVarLimits[nSliceVarBins + 1];
+  std::vector<int> bkgFunc(nSliceVarBins);
+  std::vector<int> sgnFunc(nSliceVarBins);
+  std::vector<double> sliceVarLimits(nSliceVarBins + 1);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
@@ -240,9 +242,9 @@ int runMassFitter(const TString& configFileName)
     }
   }
 
-  TH1* hMassSgn[nSliceVarBins];
-  TH1* hMassRefl[nSliceVarBins];
-  TH1* hMass[nSliceVarBins];
+  std::vector<TH1*> hMassSgn(nSliceVarBins);
+  std::vector<TH1*> hMassRefl(nSliceVarBins);
+  std::vector<TH1*> hMass(nSliceVarBins);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
@@ -408,9 +410,9 @@ int runMassFitter(const TString& configFileName)
 
   // fit histograms
 
-  TH1* hMassForFit[nSliceVarBins];
-  TH1* hMassForRefl[nSliceVarBins];
-  TH1* hMassForSgn[nSliceVarBins];
+  std::vector<TH1*> hMassForFit(nSliceVarBins);
+  std::vector<TH1*> hMassForRefl(nSliceVarBins);
+  std::vector<TH1*> hMassForSgn(nSliceVarBins);
 
   Int_t canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
@@ -420,7 +422,9 @@ int runMassFitter(const TString& configFileName)
 
   Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const Int_t nCanvases = ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
-  TCanvas *canvasMass[nCanvases], *canvasResiduals[nCanvases], *canvasRefl[nCanvases];
+  std::vector<TCanvas*> canvasMass(nCanvases);
+  std::vector<TCanvas*> canvasResiduals(nCanvases);
+  std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
     canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas),
