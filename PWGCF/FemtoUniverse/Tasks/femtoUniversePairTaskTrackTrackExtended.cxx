@@ -321,9 +321,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   void init(InitContext&)
   {
-    auto axis = std::vector<framework::AxisSpec>{{240, 0, 6}, {29, -2, 2}, {2000, 0, 20000}};
-    effCorrection.init(&effCorrRegistry, axis);
-
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true, std::nullopt); // last true = isDebug
     if (!confIsSame) {
@@ -345,6 +342,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     vPIDPartOne = trackonefilter.confPIDPartOne.value;
     vPIDPartTwo = tracktwofilter.confPIDPartTwo.value;
     kNsigma = twotracksconfigs.confTrkPIDnSigmaMax.value;
+
+    effCorrection.init(
+      &effCorrRegistry,
+      {
+        static_cast<framework::AxisSpec>(confTempFitVarpTBins),
+        {confEtaBins, -2, 2},
+        confMultBins,
+      } //
+    );
   }
 
   template <typename CollisionType>
