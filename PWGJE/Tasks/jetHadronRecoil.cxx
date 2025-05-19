@@ -375,10 +375,10 @@ struct JetHadronRecoil {
             registry.fill(HIST("hDeltaRSignalPart"), dR, weight);
           }
           registry.fill(HIST("hDeltaRpTDPhiSignalPart"), jet.pt(), dphi, dR, weight);
-        }
-        registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt(), weight);
-        if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-          registry.fill(HIST("hSignalPt"), jet.pt(), weight);
+          registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt(), weight);
+          if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+            registry.fill(HIST("hSignalPt"), jet.pt(), weight);
+          }
         }
         if (!isSigCol) {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
@@ -386,10 +386,10 @@ struct JetHadronRecoil {
             registry.fill(HIST("hDeltaRPartReference"), dR, weight);
           }
           registry.fill(HIST("hDeltaRpTDPhiReferencePart"), jet.pt(), dphi, dR, weight);
-        }
-        registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt(), weight);
-        if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-          registry.fill(HIST("hReferencePt"), jet.pt(), weight);
+          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt(), weight);
+          if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+            registry.fill(HIST("hReferencePt"), jet.pt(), weight);
+          }
         }
       }
     }
