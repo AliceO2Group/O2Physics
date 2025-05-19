@@ -27,7 +27,6 @@
 #include "PWGUD/Core/SGTrackSelector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TString.h>
-#include "TLorentzVector.h"
 #include <TMath.h>
 #include "Math/Vector4D.h"
 #include "Math/Vector3D.h"
@@ -494,7 +493,10 @@ DECLARE_SOA_TABLE(SignalMCreco, "AOD", "SignalMCreco",
 struct ExclusiveRhoTo4Pi {
   SGSelector sgSelector;
   int rhoPrime = 30113;
-  uint16_t numPVContrib = 4;
+  int numFourPionTracks = 4;
+  int numPiPlus = 2;
+  int numPiMinus = 2;
+  float zeroPointEight = 0.8;
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
   Produces<aod::MCgen> generatedMC;
@@ -503,16 +505,16 @@ struct ExclusiveRhoTo4Pi {
   HistogramRegistry histosData{"histosData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCgen{"histosMCgen", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosMCreco{"histosMCreco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry histosFastData{"histosFastData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry histosFastMCreco{"histosFastMCreco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Configurable<float> vZCut{"vZCut", 10., "Vertex Cut"};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
   Configurable<float> ft0aCut{"ft0aCut", 150., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
   Configurable<float> zdcCut{"zdcCut", 1., "ZDC threshold"};
 
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
+  Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
   Configurable<float> dcaZcut{"dcaZcut", 2, "dcaZ cut"};
   Configurable<float> dcaXYcut{"dcaXYcut", 0, "dcaXY cut"};
   Configurable<float> tpcChi2Cut{"tpcChi2Cut", 4, "Max tpcChi2NCl"};
@@ -523,6 +525,9 @@ struct ExclusiveRhoTo4Pi {
 
   Configurable<float> nSigmaTPCcut{"nSigmaTPCcut", 3, "TPC cut"};
   Configurable<float> nSigmaTOFcut{"nSigmaTOFcut", 3, "TOF cut"};
+
+  Configurable<float> rhoRapCut{"rhoRapCut", 0.5, "Max abs Rapidity of rho"};
+  Configurable<float> rhoPtCut{"rhoPtCut", 0.15, "Min Pt of rho"};
 
   Configurable<int> nBinsPt{"nBinsPt", 1000, "Number of bins for pT"};
   Configurable<int> nBinsInvariantMass{"nBinsInvariantMass", 1000, "Number of bins for Invariant Mass"};
@@ -549,7 +554,6 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("tpcNClsFindable", "TPC N Cls Findable; N Cls Findable; Counts", kTH1F, {{200, 0, 200}});
 
     // TPC nSigma
-    histosData.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
@@ -561,7 +565,6 @@ struct ExclusiveRhoTo4Pi {
 
     // TOF nSigma
     histosData.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
-    histosData.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosData.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // TOF nSigma of other particles with selected pion tracks
@@ -571,13 +574,11 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("tofNSigmaMu_WTS_PID_Pi", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // Track Transverse Momentum
-    histosData.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosData.add("pT_track_WTS_PID_Pi_contributed", "pT with track selection and PID selection of Pi which are contributed to selected event; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
 
     // Track Rapidity
-    histosData.add("rapidity_track_WOTS", "Rapidity without track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS", "Rapidity with track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS_PID_Pi", "Rapidity with track selection and PID selection of Pi; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosData.add("rapidity_track_WTS_PID_Pi_contributed", "Rapidity with track selection and PID selection of Pi which are contributed to selected event; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
@@ -686,7 +687,6 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}});
 
     // TPC nSigma
-    histosMCreco.add("tpcNSigmaPi_WOTS", "TPC nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tpcNSigmaPi_WTS", "TPC nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tpcNSigmaPi_WTS_PID_Pi", "TPC nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
@@ -698,7 +698,6 @@ struct ExclusiveRhoTo4Pi {
 
     // TOF nSigma
     histosMCreco.add("tofNSigmaPi_WTS", "TOF nSigma Pion with track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
-    histosMCreco.add("tofNSigmaPi_WOTS", "TOF nSigma Pion without track selection; Events", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
     histosMCreco.add("tofNSigmaPi_WTS_PID_Pi", "TOF nSigma Pion with track selection and PID Selection of Pi; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // TOF nSigma of other particles with selected pion tracks
@@ -708,13 +707,11 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.add("tofNSigmaMu_WTS_PID_Pi", "TOF nSigma Muon with track selection and PID Selection of Pion; Entries", kTH2F, {{1000, -15, 15}, {nBinsPt, 0, 10}});
 
     // Track Transverse Momentum
-    histosMCreco.add("pT_track_WOTS", "pT without track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS", "pT with track selection; pT [GeV/c]; Counts", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS_PID_Pi", "pT with track selection and PID selection of Pi; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
     histosMCreco.add("pT_track_WTS_PID_Pi_contributed", "pT with track selection and PID selection of Pi which are contributed to selected event; pT [GeV/c]; Events", kTH1F, {{nBinsPt, 0, 2}});
 
     // Track Rapidity
-    histosMCreco.add("rapidity_track_WOTS", "Rapidity without track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS", "Rapidity with track selection; y; Counts", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS_PID_Pi", "Rapidity with track selection and PID selection of Pi; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
     histosMCreco.add("rapidity_track_WTS_PID_Pi_contributed", "Rapidity with track selection and PID selection of Pi which are contributed to selected event; y; Events", kTH1F, {{nBinsRapidity, -2.5, 2.5}});
@@ -774,18 +771,6 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.add("phi_cosTheta_pair_1", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
     histosMCreco.add("phi_cosTheta_pair_2", "Phi vs cosTheta; #phi; cos(#theta)", kTH2F, {{nBinsPhi, -3.2, 3.2}, {nBinsCosTheta, -1, 1}});
 
-    // Fast Data Stuff
-    histosFastData.add("4PionMassWithCut", "", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
-    histosFastData.add("4PionMassFull", "", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
-    histosFastData.add("4PionPt", "", kTH1F, {{nBinsPt, 0, 10}});
-    histosFastData.add("4PionRapidity", "", kTH1F, {{nBinsRapidity, -1, 1}});
-
-    // Fast MC reco Stuff
-    histosFastMCreco.add("4PionMassWithCut", "", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
-    histosFastMCreco.add("4PionMassFull", "", kTH1F, {{nBinsInvariantMass, invariantMassMin, invariantMassMax}});
-    histosFastMCreco.add("4PionPt", "", kTH1F, {{nBinsPt, 0, 10}});
-    histosFastMCreco.add("4PionRapidity", "", kTH1F, {{nBinsRapidity, -1, 1}});
-
   } // End of init function
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -796,8 +781,8 @@ struct ExclusiveRhoTo4Pi {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
 
     //  TVector3 beta = (-1. / fourpion.E()) * fourpion.Vect();
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
@@ -826,8 +811,8 @@ struct ExclusiveRhoTo4Pi {
     double massOfLead208 = 193.6823;
     double momentumBeam = std::sqrt(halfSqrtSnn * halfSqrtSnn * 208 * 208 - massOfLead208 * massOfLead208);
 
-    TLorentzVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
-    TLorentzVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
+    ROOT::Math::PxPyPzEVector pProjCM(0., 0., -momentumBeam, halfSqrtSnn * 208); // projectile
+    ROOT::Math::PxPyPzEVector pTargCM(0., 0., momentumBeam, halfSqrtSnn * 208);  // target
     ROOT::Math::PtEtaPhiMVector v1 = pair1;
     ROOT::Math::PtEtaPhiMVector v2 = pair2;
     ROOT::Math::PtEtaPhiMVector v12 = fourpion;
@@ -847,18 +832,17 @@ struct ExclusiveRhoTo4Pi {
   } // End of phiCollinsSoperFrame function------------------------------------------------------------------------------------------------------------------------
 
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  using UDtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
-  using UDCollisionFull = UDCollisionsFull::iterator;
+  Filter vertexCut = (nabs(o2::aod::collision::posZ) <= vZCut) && (o2::aod::collision::numContrib == numPVContrib);
+  Filter fitcuts = o2::aod::udcollision::totalFV0AmplitudeA < fv0Cut && o2::aod::udcollision::totalFT0AmplitudeA < ft0aCut && o2::aod::udcollision::totalFT0AmplitudeC < ft0cCut;
+  Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA < zdcCut) && (o2::aod::udzdc::energyCommonZNC < zdcCut);
+  using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
+  using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
+  using UDCollision = UDCollisions::iterator;
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
   // Begin of Process function--------------------------------------------------------------------------------------------------------------------------------------------------
-  void processData(UDCollisionFull const& collision, UDtracksfull const& tracks)
+  void processData(UDCollision const& collision, UDtracks const& tracks)
   {
-
-    if (std::abs(collision.posZ()) > 10) {
-      return;
-    }
 
     int gapSide = collision.gapSide();
     std::vector<float> parameters = {pvCut, dcaZcut, dcaXYcut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, pTcut};
@@ -866,12 +850,6 @@ struct ExclusiveRhoTo4Pi {
     histosData.fill(HIST("GapSide"), gapSide);
     histosData.fill(HIST("TrueGapSide"), truegapSide);
     histosData.fill(HIST("EventCounts"), 1);
-    gapSide = truegapSide;
-
-    if ((gapSide != 2)) {
-      return;
-    }
-
     histosData.fill(HIST("vertexZ"), collision.posZ());
     histosData.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosData.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
@@ -879,108 +857,77 @@ struct ExclusiveRhoTo4Pi {
     histosData.fill(HIST("ZDC_A"), collision.energyCommonZNA());
     histosData.fill(HIST("ZDC_C"), collision.energyCommonZNC());
 
-    if (collision.numContrib() != 4) {
-      return;
-    }
-
-    std::vector<decltype(tracks.begin())> WOTS_tracks;
-    std::vector<decltype(tracks.begin())> WTS_tracks;
-    std::vector<decltype(tracks.begin())> WTS_PID_Pi_tracks;
-    std::vector<decltype(tracks.begin())> Pi_plus_tracks;
-    std::vector<decltype(tracks.begin())> Pi_minus_tracks;
+    std::vector<decltype(tracks.begin())> selectedTracks;
+    std::vector<decltype(tracks.begin())> selectedPionTracks;
+    std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
+    std::vector<decltype(tracks.begin())> selectedPionMinusTracks;
 
     for (const auto& t0 : tracks) {
-
-      WOTS_tracks.push_back(t0);
-
       if (trackselector(t0, parameters)) {
-        WTS_tracks.push_back(t0);
-
+        selectedTracks.push_back(t0);
         if (selectionPIDPion(t0, true, nSigmaTPCcut, nSigmaTOFcut)) {
-          WTS_PID_Pi_tracks.push_back(t0);
+          selectedPionTracks.push_back(t0);
           if (t0.sign() == 1) {
-            Pi_plus_tracks.push_back(t0);
+            selectedPionPlusTracks.push_back(t0);
           }
           if (t0.sign() == -1) {
-            Pi_minus_tracks.push_back(t0);
+            selectedPionMinusTracks.push_back(t0);
           }
         } // End of Selection PID Pion
-
       } // End of track selections
-
     } // End of loop over tracks
 
-    int numTracksWOTS = static_cast<int>(WOTS_tracks.size());
-    int numTracksWTS = static_cast<int>(WTS_tracks.size());
-    int numTracksWTSandPIDpi = static_cast<int>(WTS_PID_Pi_tracks.size());
-    int numPiPlusTracks = static_cast<int>(Pi_plus_tracks.size());
-    int numPionMinusTRacks = static_cast<int>(Pi_minus_tracks.size());
+    int numSelectedTracks = static_cast<int>(selectedTracks.size());
+    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
+    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
+    int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
 
-    TLorentzVector tempWOTS;
-    for (int i = 0; i < numTracksWOTS; i++) {
-      tempWOTS.SetXYZM(WOTS_tracks[i].px(), WOTS_tracks[i].py(), WOTS_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-      histosData.fill(HIST("tpcNSigmaPi_WOTS"), WOTS_tracks[i].tpcNSigmaPi(), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaPi_WOTS"), WOTS_tracks[i].tofNSigmaPi(), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosData.fill(HIST("pT_track_WOTS"), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosData.fill(HIST("rapidity_track_WOTS"), tempWOTS.Rapidity());
-    } // End of loop over tracks without selection
-
-    TLorentzVector tempWTS;
-    for (int i = 0; i < numTracksWTS; i++) {
-      tempWTS.SetXYZM(WTS_tracks[i].px(), WTS_tracks[i].py(), WTS_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-      histosData.fill(HIST("tpcSignal"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].tpcSignal());
-      histosData.fill(HIST("tofBeta"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].beta());
-      histosData.fill(HIST("tpcNSigmaPi_WTS"), WTS_tracks[i].tpcNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaPi_WTS"), WTS_tracks[i].tofNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosData.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosData.fill(HIST("rapidity_track_WTS"), tempWTS.Rapidity());
-
-      histosData.fill(HIST("itsChi2NCl"), WTS_tracks[i].itsChi2NCl());
-      histosData.fill(HIST("tpcChi2NCl"), WTS_tracks[i].tpcChi2NCl());
-      histosData.fill(HIST("tpcNClsFindable"), WTS_tracks[i].tpcNClsFindable());
-      histosData.fill(HIST("dcaXY"), WTS_tracks[i].dcaXY());
-      histosData.fill(HIST("dcaZ"), WTS_tracks[i].dcaZ());
-
+    for (int i = 0; i < numSelectedTracks; i++) {
+      ROOT::Math::PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      histosData.fill(HIST("tpcSignal"), selectedTrackVector.P(), selectedTracks[i].tpcSignal());
+      histosData.fill(HIST("tofBeta"), selectedTrackVector.P(), selectedTracks[i].beta());
+      histosData.fill(HIST("tpcNSigmaPi_WTS"), selectedTracks[i].tpcNSigmaPi(), selectedTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaPi_WTS"), selectedTracks[i].tofNSigmaPi(), selectedTrackVector.Pt());
+      histosData.fill(HIST("pT_track_WTS"), selectedTrackVector.Pt());
+      histosData.fill(HIST("rapidity_track_WTS"), selectedTrackVector.Rapidity());
+      histosData.fill(HIST("itsChi2NCl"), selectedTracks[i].itsChi2NCl());
+      histosData.fill(HIST("tpcChi2NCl"), selectedTracks[i].tpcChi2NCl());
+      histosData.fill(HIST("tpcNClsFindable"), selectedTracks[i].tpcNClsFindable());
+      histosData.fill(HIST("dcaXY"), selectedTracks[i].dcaXY());
+      histosData.fill(HIST("dcaZ"), selectedTracks[i].dcaZ());
     } // End of loop over tracks with selection only
 
-    TLorentzVector tempWTSPIDPi;
-    for (int i = 0; i < numTracksWTSandPIDpi; i++) {
-
-      tempWTSPIDPi.SetXYZM(WTS_PID_Pi_tracks[i].px(), WTS_PID_Pi_tracks[i].py(), WTS_PID_Pi_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-
-      histosData.fill(HIST("tpcSignal_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
-      histosData.fill(HIST("tofBeta_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
-
-      histosData.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPi(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tpcNSigmaKa_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaKa(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tpcNSigmaPr_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPr(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tpcNSigmaEl_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaEl(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tpcNSigmaMu_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaMu(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-
-      histosData.fill(HIST("tofNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaPi(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaKa_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaKa(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaPr_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaPr(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaEl_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaEl(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("tofNSigmaMu_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaMu(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-
-      histosData.fill(HIST("pT_track_WTS_PID_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosData.fill(HIST("rapidity_track_WTS_PID_Pi"), tempWTSPIDPi.Rapidity());
+    for (int i = 0; i < numSelectedPionTracks; i++) {
+      ROOT::Math::PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      histosData.fill(HIST("tpcSignal_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].tpcSignal());
+      histosData.fill(HIST("tofBeta_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].beta());
+      histosData.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPi(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tpcNSigmaKa_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaKa(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tpcNSigmaPr_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPr(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tpcNSigmaEl_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaEl(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tpcNSigmaMu_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaMu(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaPi(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaKa_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaKa(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaPr_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaPr(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaEl_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaEl(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("tofNSigmaMu_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaMu(), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("pT_track_WTS_PID_Pi"), selectedPionTrackVector.Pt());
+      histosData.fill(HIST("rapidity_track_WTS_PID_Pi"), selectedPionTrackVector.Rapidity());
     } // End of loop over tracks with selection and PID selection of Pions
 
-    if (numTracksWTSandPIDpi != 4) {
+    if (numSelectedPionTracks != numFourPionTracks) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTRacks == 2 && numPiPlusTracks == 2) {
+    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
-      TLorentzVector p1, p2, p3, p4, p1234;
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
-      p1.SetXYZM(Pi_plus_tracks[0].px(), Pi_plus_tracks[0].py(), Pi_plus_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(Pi_plus_tracks[1].px(), Pi_plus_tracks[1].py(), Pi_plus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(Pi_minus_tracks[0].px(), Pi_minus_tracks[0].py(), Pi_minus_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(Pi_minus_tracks[1].px(), Pi_minus_tracks[1].py(), Pi_minus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
 
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p1.Pt());
       histosData.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p2.Pt());
@@ -997,7 +944,7 @@ struct ExclusiveRhoTo4Pi {
       k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
       k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
 
-      p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       k1234 = k1 + k2 + k3 + k4;
 
       k13 = k1 + k3;
@@ -1014,25 +961,25 @@ struct ExclusiveRhoTo4Pi {
         collision.posX(), collision.posY(), collision.posZ(),
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(), collision.timeZNA(), collision.timeZNC(),
-        Pi_plus_tracks[0].dcaXY(), Pi_plus_tracks[1].dcaXY(), Pi_minus_tracks[0].dcaXY(), Pi_minus_tracks[1].dcaXY(),
+        selectedPionPlusTracks[0].dcaXY(), selectedPionPlusTracks[1].dcaXY(), selectedPionMinusTracks[0].dcaXY(), selectedPionMinusTracks[1].dcaXY(),
 
-        Pi_plus_tracks[0].dcaZ(), Pi_plus_tracks[1].dcaZ(), Pi_minus_tracks[0].dcaZ(), Pi_minus_tracks[1].dcaZ(),
+        selectedPionPlusTracks[0].dcaZ(), selectedPionPlusTracks[1].dcaZ(), selectedPionMinusTracks[0].dcaZ(), selectedPionMinusTracks[1].dcaZ(),
 
-        Pi_plus_tracks[0].tpcNSigmaPi(), Pi_plus_tracks[1].tpcNSigmaPi(), Pi_minus_tracks[0].tpcNSigmaPi(), Pi_minus_tracks[1].tpcNSigmaPi(),
+        selectedPionPlusTracks[0].tpcNSigmaPi(), selectedPionPlusTracks[1].tpcNSigmaPi(), selectedPionMinusTracks[0].tpcNSigmaPi(), selectedPionMinusTracks[1].tpcNSigmaPi(),
 
-        Pi_plus_tracks[0].tpcNSigmaKa(), Pi_plus_tracks[1].tpcNSigmaKa(), Pi_minus_tracks[0].tpcNSigmaKa(), Pi_minus_tracks[1].tpcNSigmaKa(),
+        selectedPionPlusTracks[0].tpcNSigmaKa(), selectedPionPlusTracks[1].tpcNSigmaKa(), selectedPionMinusTracks[0].tpcNSigmaKa(), selectedPionMinusTracks[1].tpcNSigmaKa(),
 
-        Pi_plus_tracks[0].tpcNSigmaPr(), Pi_plus_tracks[1].tpcNSigmaPr(), Pi_minus_tracks[0].tpcNSigmaPr(), Pi_minus_tracks[1].tpcNSigmaPr(),
+        selectedPionPlusTracks[0].tpcNSigmaPr(), selectedPionPlusTracks[1].tpcNSigmaPr(), selectedPionMinusTracks[0].tpcNSigmaPr(), selectedPionMinusTracks[1].tpcNSigmaPr(),
 
-        Pi_plus_tracks[0].tpcNSigmaEl(), Pi_plus_tracks[1].tpcNSigmaEl(), Pi_minus_tracks[0].tpcNSigmaEl(), Pi_minus_tracks[1].tpcNSigmaEl(),
+        selectedPionPlusTracks[0].tpcNSigmaEl(), selectedPionPlusTracks[1].tpcNSigmaEl(), selectedPionMinusTracks[0].tpcNSigmaEl(), selectedPionMinusTracks[1].tpcNSigmaEl(),
 
-        Pi_plus_tracks[0].tpcNSigmaMu(), Pi_plus_tracks[1].tpcNSigmaMu(), Pi_minus_tracks[0].tpcNSigmaMu(), Pi_minus_tracks[1].tpcNSigmaMu(),
+        selectedPionPlusTracks[0].tpcNSigmaMu(), selectedPionPlusTracks[1].tpcNSigmaMu(), selectedPionMinusTracks[0].tpcNSigmaMu(), selectedPionMinusTracks[1].tpcNSigmaMu(),
 
-        Pi_plus_tracks[0].tpcChi2NCl(), Pi_plus_tracks[1].tpcChi2NCl(), Pi_minus_tracks[0].tpcChi2NCl(), Pi_minus_tracks[1].tpcChi2NCl(),
+        selectedPionPlusTracks[0].tpcChi2NCl(), selectedPionPlusTracks[1].tpcChi2NCl(), selectedPionMinusTracks[0].tpcChi2NCl(), selectedPionMinusTracks[1].tpcChi2NCl(),
 
-        Pi_plus_tracks[0].tpcNClsFindable(), Pi_plus_tracks[1].tpcNClsFindable(), Pi_minus_tracks[0].tpcNClsFindable(), Pi_minus_tracks[1].tpcNClsFindable(),
+        selectedPionPlusTracks[0].tpcNClsFindable(), selectedPionPlusTracks[1].tpcNClsFindable(), selectedPionMinusTracks[0].tpcNClsFindable(), selectedPionMinusTracks[1].tpcNClsFindable(),
 
-        Pi_plus_tracks[0].itsChi2NCl(), Pi_plus_tracks[1].itsChi2NCl(), Pi_minus_tracks[0].itsChi2NCl(), Pi_minus_tracks[1].itsChi2NCl(),
+        selectedPionPlusTracks[0].itsChi2NCl(), selectedPionPlusTracks[1].itsChi2NCl(), selectedPionMinusTracks[0].itsChi2NCl(), selectedPionMinusTracks[1].itsChi2NCl(),
 
         p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
         p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
@@ -1041,9 +988,9 @@ struct ExclusiveRhoTo4Pi {
         p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
         fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
 
-      if (std::fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
-        if (p1234.Pt() < 0.15) {
+        if (p1234.Pt() < rhoPtCut) {
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
 
@@ -1060,11 +1007,11 @@ struct ExclusiveRhoTo4Pi {
           histosData.fill(HIST("phi_cosTheta_pair_1"), fourPiPhiPair1, fourPiCosThetaPair1);
           histosData.fill(HIST("phi_cosTheta_pair_2"), fourPiPhiPair2, fourPiCosThetaPair2);
         }
-        if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
+        if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainB"), p1234.M());
         }
-        if (p1234.Pt() > 0.80) {
+        if (p1234.Pt() > zeroPointEight) {
           histosData.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainC"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainC"), p1234.M());
         }
@@ -1073,225 +1020,67 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTRacks != 2 && numPiPlusTracks != 2) {
+    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
 
-      TLorentzVector p1, p2, p3, p4, p1234;
-      TLorentzVector tempVec;
-      p1.SetXYZM(WTS_PID_Pi_tracks[0].px(), WTS_PID_Pi_tracks[0].py(), WTS_PID_Pi_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(WTS_PID_Pi_tracks[1].px(), WTS_PID_Pi_tracks[1].py(), WTS_PID_Pi_tracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(WTS_PID_Pi_tracks[2].px(), WTS_PID_Pi_tracks[2].py(), WTS_PID_Pi_tracks[2].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(WTS_PID_Pi_tracks[3].px(), WTS_PID_Pi_tracks[3].py(), WTS_PID_Pi_tracks[3].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
 
-      p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
 
       bkgFromData(
         collision.posX(), collision.posY(), collision.posZ(),
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
         collision.timeZNA(), collision.timeZNC(),
-        WTS_PID_Pi_tracks[0].dcaXY(), WTS_PID_Pi_tracks[1].dcaXY(), WTS_PID_Pi_tracks[0].dcaXY(), WTS_PID_Pi_tracks[1].dcaXY(),
-        WTS_PID_Pi_tracks[0].dcaZ(), WTS_PID_Pi_tracks[1].dcaZ(), WTS_PID_Pi_tracks[0].dcaZ(), WTS_PID_Pi_tracks[1].dcaZ(),
-        WTS_PID_Pi_tracks[0].tpcNSigmaPi(), WTS_PID_Pi_tracks[1].tpcNSigmaPi(), WTS_PID_Pi_tracks[0].tpcNSigmaPi(), WTS_PID_Pi_tracks[1].tpcNSigmaPi(),
-        WTS_PID_Pi_tracks[0].tpcNSigmaKa(), WTS_PID_Pi_tracks[1].tpcNSigmaKa(), WTS_PID_Pi_tracks[0].tpcNSigmaKa(), WTS_PID_Pi_tracks[1].tpcNSigmaKa(),
-        WTS_PID_Pi_tracks[0].tpcNSigmaPr(), WTS_PID_Pi_tracks[1].tpcNSigmaPr(), WTS_PID_Pi_tracks[0].tpcNSigmaPr(), WTS_PID_Pi_tracks[1].tpcNSigmaPr(),
-        WTS_PID_Pi_tracks[0].tpcNSigmaEl(), WTS_PID_Pi_tracks[1].tpcNSigmaEl(), WTS_PID_Pi_tracks[0].tpcNSigmaEl(), WTS_PID_Pi_tracks[1].tpcNSigmaEl(),
-        WTS_PID_Pi_tracks[0].tpcNSigmaMu(), WTS_PID_Pi_tracks[1].tpcNSigmaMu(), WTS_PID_Pi_tracks[0].tpcNSigmaMu(), WTS_PID_Pi_tracks[1].tpcNSigmaMu(),
-        WTS_PID_Pi_tracks[0].itsChi2NCl(), WTS_PID_Pi_tracks[1].itsChi2NCl(), WTS_PID_Pi_tracks[0].itsChi2NCl(), WTS_PID_Pi_tracks[1].itsChi2NCl(),
-        WTS_PID_Pi_tracks[0].tpcChi2NCl(), WTS_PID_Pi_tracks[1].tpcChi2NCl(), WTS_PID_Pi_tracks[0].tpcChi2NCl(), WTS_PID_Pi_tracks[1].tpcChi2NCl(),
-        WTS_PID_Pi_tracks[0].tpcNClsFindable(), WTS_PID_Pi_tracks[1].tpcNClsFindable(), WTS_PID_Pi_tracks[0].tpcNClsFindable(), WTS_PID_Pi_tracks[1].tpcNClsFindable(),
+        selectedPionTracks[0].dcaXY(), selectedPionTracks[1].dcaXY(), selectedPionTracks[0].dcaXY(), selectedPionTracks[1].dcaXY(),
+        selectedPionTracks[0].dcaZ(), selectedPionTracks[1].dcaZ(), selectedPionTracks[0].dcaZ(), selectedPionTracks[1].dcaZ(),
+        selectedPionTracks[0].tpcNSigmaPi(), selectedPionTracks[1].tpcNSigmaPi(), selectedPionTracks[0].tpcNSigmaPi(), selectedPionTracks[1].tpcNSigmaPi(),
+        selectedPionTracks[0].tpcNSigmaKa(), selectedPionTracks[1].tpcNSigmaKa(), selectedPionTracks[0].tpcNSigmaKa(), selectedPionTracks[1].tpcNSigmaKa(),
+        selectedPionTracks[0].tpcNSigmaPr(), selectedPionTracks[1].tpcNSigmaPr(), selectedPionTracks[0].tpcNSigmaPr(), selectedPionTracks[1].tpcNSigmaPr(),
+        selectedPionTracks[0].tpcNSigmaEl(), selectedPionTracks[1].tpcNSigmaEl(), selectedPionTracks[0].tpcNSigmaEl(), selectedPionTracks[1].tpcNSigmaEl(),
+        selectedPionTracks[0].tpcNSigmaMu(), selectedPionTracks[1].tpcNSigmaMu(), selectedPionTracks[0].tpcNSigmaMu(), selectedPionTracks[1].tpcNSigmaMu(),
+        selectedPionTracks[0].itsChi2NCl(), selectedPionTracks[1].itsChi2NCl(), selectedPionTracks[0].itsChi2NCl(), selectedPionTracks[1].itsChi2NCl(),
+        selectedPionTracks[0].tpcChi2NCl(), selectedPionTracks[1].tpcChi2NCl(), selectedPionTracks[0].tpcChi2NCl(), selectedPionTracks[1].tpcChi2NCl(),
+        selectedPionTracks[0].tpcNClsFindable(), selectedPionTracks[1].tpcNClsFindable(), selectedPionTracks[0].tpcNClsFindable(), selectedPionTracks[1].tpcNClsFindable(),
         p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
         p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
         p1.Phi(), p2.Phi(), p3.Phi(), p4.Phi(),
         p1.Rapidity(), p2.Rapidity(), p3.Rapidity(), p4.Rapidity(),
         p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M());
 
-      if (std::fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
 
-        if (p1234.Pt() < 0.15) {
+        if (p1234.Pt() < rhoPtCut) {
           histosData.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainA"), p1234.M());
         }
-        if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
+        if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosData.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainB"), p1234.M());
         }
-        if (p1234.Pt() > 0.80) {
+        if (p1234.Pt() > zeroPointEight) {
           histosData.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainC"), p1234.Rapidity());
           histosData.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainC"), p1234.M());
         }
       } // End of Rapidity range selection
-
     } // End of Analysis for non 0 charge events
-
   } // End of 4 Pion Analysis Process function for Data
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "The Process for 4 Pion Analysis from data", true);
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-  Filter collCuts = (nabs(o2::aod::collision::posZ) < 10.0f) && (o2::aod::collision::numContrib == numPVContrib);
-  Filter fitCuts = (o2::aod::udcollision::totalFT0AmplitudeA < ft0aCut) && (o2::aod::udcollision::totalFT0AmplitudeC < ft0cCut) && (o2::aod::udcollision::totalFV0AmplitudeA < fv0Cut);
-  Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA < zdcCut) && (o2::aod::udzdc::energyCommonZNC < zdcCut);
-  Filter trackCuts = (o2::aod::track::tpcChi2NCl < tpcChi2Cut) && (o2::aod::track::tpcNClsFindable > tpcNClsFindableCut) && (o2::aod::track::itsChi2NCl < itsChi2Cut) && (nabs(o2::aod::track::eta) < etaCut) && (o2::aod::track::pt > pTcut) && (nabs(o2::aod::track::dcaZ) < dcaZcut) && (nabs(o2::aod::track::dcaXY) < dcaXYcut);
-  Filter udtrackCuts = (o2::aod::udtrack::isPVContributor == true);
-  Filter pidCuts = (nabs(o2::aod::pidtpc::tpcNSigmaPi) < nSigmaTPCcut);
-  using FilteredTracks = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
-  using FilteredCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>>;
-  using FilteredCollisionsFull = FilteredCollisions::iterator;
-
-  // // Begin of FAST Process function--------------------------------------------------------------------------------------------------------------------------------------------------
-  void processDataFast(FilteredCollisionsFull const& collision, FilteredTracks const& tracks)
-  {
-
-    if (tracks.size() != 4) {
-      return;
-    }
-
-    std::vector<decltype(tracks.begin())> pionPlusTracks;
-    std::vector<decltype(tracks.begin())> pionMinusTracks;
-
-    for (const auto& track : tracks) {
-      if ((!selectionPIDPion(track, true, nSigmaTPCcut, nSigmaTOFcut))) {
-        continue;
-      }
-      if (track.sign() == 1) {
-        pionPlusTracks.push_back(track);
-      }
-      if (track.sign() == -1) {
-        pionMinusTracks.push_back(track);
-      }
-    } // end of loop over tracks
-
-    if ((pionPlusTracks.size() + pionMinusTracks.size()) != 4) {
-      return;
-    }
-
-    if (pionPlusTracks.size() == 2 || pionMinusTracks.size() == 2) {
-
-      TLorentzVector p1, p2, p3, p4, p1234;
-      ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
-
-      p1.SetXYZM(pionPlusTracks[0].px(), pionPlusTracks[0].py(), pionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(pionPlusTracks[1].px(), pionPlusTracks[1].py(), pionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(pionMinusTracks[0].px(), pionMinusTracks[0].py(), pionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(pionMinusTracks[1].px(), pionMinusTracks[1].py(), pionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-
-      k1.SetCoordinates(p1.Pt(), p1.Eta(), p1.Phi(), o2::constants::physics::MassPionCharged);
-      k2.SetCoordinates(p2.Pt(), p2.Eta(), p2.Phi(), o2::constants::physics::MassPionCharged);
-      k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
-      k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
-
-      p1234 = p1 + p2 + p3 + p4;
-      k1234 = k1 + k2 + k3 + k4;
-
-      k13 = k1 + k3;
-      k14 = k1 + k4;
-      k23 = k2 + k3;
-      k24 = k2 + k4;
-
-      double fourPiPhiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
-      double fourPiPhiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
-      double fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-      double fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
-
-      sigFromData(
-        collision.posX(), collision.posY(), collision.posZ(),
-        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
-        collision.timeZNA(), collision.timeZNC(),
-        pionPlusTracks[0].dcaXY(), pionPlusTracks[1].dcaXY(), pionMinusTracks[0].dcaXY(), pionMinusTracks[1].dcaXY(),
-        pionPlusTracks[0].dcaZ(), pionPlusTracks[1].dcaZ(), pionMinusTracks[0].dcaZ(), pionMinusTracks[1].dcaZ(),
-        pionPlusTracks[0].tpcNSigmaPi(), pionPlusTracks[1].tpcNSigmaPi(), pionMinusTracks[0].tpcNSigmaPi(), pionMinusTracks[1].tpcNSigmaPi(),
-        pionPlusTracks[0].tpcNSigmaKa(), pionPlusTracks[1].tpcNSigmaKa(), pionMinusTracks[0].tpcNSigmaKa(), pionMinusTracks[1].tpcNSigmaKa(),
-        pionPlusTracks[0].tpcNSigmaPr(), pionPlusTracks[1].tpcNSigmaPr(), pionMinusTracks[0].tpcNSigmaPr(), pionMinusTracks[1].tpcNSigmaPr(),
-        pionPlusTracks[0].tpcNSigmaEl(), pionPlusTracks[1].tpcNSigmaEl(), pionMinusTracks[0].tpcNSigmaEl(), pionMinusTracks[1].tpcNSigmaEl(),
-        pionPlusTracks[0].tpcNSigmaMu(), pionPlusTracks[1].tpcNSigmaMu(), pionMinusTracks[0].tpcNSigmaMu(), pionMinusTracks[1].tpcNSigmaMu(),
-        pionPlusTracks[0].tpcChi2NCl(), pionPlusTracks[1].tpcChi2NCl(), pionMinusTracks[0].tpcChi2NCl(), pionMinusTracks[1].tpcChi2NCl(),
-        pionPlusTracks[0].tpcNClsFindable(), pionPlusTracks[1].tpcNClsFindable(), pionMinusTracks[0].tpcNClsFindable(), pionMinusTracks[1].tpcNClsFindable(),
-        pionPlusTracks[0].itsChi2NCl(), pionPlusTracks[1].itsChi2NCl(), pionMinusTracks[0].itsChi2NCl(), pionMinusTracks[1].itsChi2NCl(),
-        p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
-        p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
-        p1.Phi(), p2.Phi(), p3.Phi(), p4.Phi(),
-        p1.Rapidity(), p2.Rapidity(), p3.Rapidity(), p4.Rapidity(),
-        p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
-        fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
-
-      histosFastData.fill(HIST("4PionPt"), p1234.Pt());
-      histosFastData.fill(HIST("4PionRapidity"), p1234.Rapidity());
-      histosFastData.fill(HIST("4PionMassFull"), p1234.M());
-
-      if ((p1234.Pt() < 0.15) && (std::abs(p1234.Rapidity()) < 0.5)) {
-        histosFastData.fill(HIST("4PionMassWithCut"), p1234.M());
-      }
-    } // End 0 charge event
-
-    if (pionPlusTracks.size() != 2 && pionMinusTracks.size() != 2) {
-      std::vector<decltype(tracks.begin())> allTracks;
-      int piPlussize = static_cast<int>(pionPlusTracks.size());
-      int piMinussize = static_cast<int>(pionMinusTracks.size());
-
-      for (int i = 0; i < piPlussize; i++) {
-        allTracks.push_back(pionPlusTracks[i]);
-      }
-      for (int i = 0; i < piMinussize; i++) {
-        allTracks.push_back(pionMinusTracks[i]);
-      }
-
-      TLorentzVector p1, p2, p3, p4, p1234;
-
-      p1.SetXYZM(allTracks[0].px(), allTracks[0].py(), allTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(allTracks[1].px(), allTracks[1].py(), allTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(allTracks[2].px(), allTracks[2].py(), allTracks[2].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(allTracks[3].px(), allTracks[3].py(), allTracks[3].pz(), o2::constants::physics::MassPionCharged);
-
-      p1234 = p1 + p2 + p3 + p4;
-
-      bkgFromData(
-        collision.posX(), collision.posY(), collision.posZ(),
-        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(), collision.timeZNA(), collision.timeZNC(),
-        allTracks[0].dcaXY(), allTracks[1].dcaXY(), allTracks[2].dcaXY(), allTracks[3].dcaXY(),
-
-        allTracks[0].dcaZ(), allTracks[1].dcaZ(), allTracks[2].dcaZ(), allTracks[3].dcaZ(),
-
-        allTracks[0].tpcNSigmaPi(), allTracks[1].tpcNSigmaPi(), allTracks[2].tpcNSigmaPi(), allTracks[3].tpcNSigmaPi(),
-
-        allTracks[0].tpcNSigmaKa(), allTracks[1].tpcNSigmaKa(), allTracks[2].tpcNSigmaKa(), allTracks[3].tpcNSigmaKa(),
-
-        allTracks[0].tpcNSigmaPr(), allTracks[1].tpcNSigmaPr(), allTracks[2].tpcNSigmaPr(), allTracks[3].tpcNSigmaPr(),
-
-        allTracks[0].tpcNSigmaEl(), allTracks[1].tpcNSigmaEl(), allTracks[2].tpcNSigmaEl(), allTracks[3].tpcNSigmaEl(),
-
-        allTracks[0].tpcNSigmaMu(), allTracks[1].tpcNSigmaMu(), allTracks[2].tpcNSigmaMu(), allTracks[3].tpcNSigmaMu(),
-
-        allTracks[0].tpcChi2NCl(), allTracks[1].tpcChi2NCl(), allTracks[2].tpcChi2NCl(), allTracks[3].tpcChi2NCl(),
-
-        allTracks[0].tpcNClsFindable(), allTracks[1].tpcNClsFindable(), allTracks[2].tpcNClsFindable(), allTracks[3].tpcNClsFindable(),
-
-        allTracks[0].itsChi2NCl(), allTracks[1].itsChi2NCl(), allTracks[2].itsChi2NCl(), allTracks[3].itsChi2NCl(),
-
-        p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
-        p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
-        p1.Phi(), p2.Phi(), p3.Phi(), p4.Phi(),
-        p1.Rapidity(), p2.Rapidity(), p3.Rapidity(), p4.Rapidity(),
-        p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M());
-
-    } // end of non 0 charge event
-
-  } // End of 4 Pion Analysis Process function for Fast Data
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processDataFast, "The Process for 4 Pion Analysis from data fast", true);
-  // //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
   // Begin of MC Generation function-----------------------------------------------------------------------------------------------------------------------------------------------
   void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParts)
   {
-    std::vector<TLorentzVector> piPlusvectors;
-    std::vector<TLorentzVector> piMinusvectors;
-    TLorentzVector daughterVector;
+    std::vector<ROOT::Math::PxPyPzMVector> piPlusvectors;
+    std::vector<ROOT::Math::PxPyPzMVector> piMinusvectors;
     TVector3 particleVector;
 
     for (const auto& particle : mcParts) {
 
-      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != 4)) {
+      if ((particle.pdgCode() != rhoPrime) || (particle.daughters_as<aod::UDMcParticles>().size() != numFourPionTracks)) {
         continue;
       }
 
@@ -1301,7 +1090,7 @@ struct ExclusiveRhoTo4Pi {
       histosMCgen.fill(HIST("rhoPrime_eta"), particleVector.Eta());
 
       for (const auto& daughter : particle.daughters_as<aod::UDMcParticles>()) {
-        daughterVector.SetXYZM(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
+        ROOT::Math::PxPyPzMVector daughterVector(daughter.px(), daughter.py(), daughter.pz(), o2::constants::physics::MassPionCharged);
         if (daughter.pdgCode() == PDG_t::kPiPlus) {
           piPlusvectors.push_back(daughterVector);
         }
@@ -1312,11 +1101,11 @@ struct ExclusiveRhoTo4Pi {
 
     } // End of loop over MC particles
 
-    if (piPlusvectors.size() != 2 || piMinusvectors.size() != 2) {
+    if (static_cast<int>(piPlusvectors.size()) != numPiPlus || static_cast<int>(piMinusvectors.size()) != numPiMinus) {
       return;
     }
 
-    TLorentzVector p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
+    ROOT::Math::PxPyPzMVector p1234 = piPlusvectors[0] + piPlusvectors[1] + piMinusvectors[0] + piMinusvectors[1];
 
     histosMCgen.fill(HIST("pion_pT"), piPlusvectors[0].Pt());
     histosMCgen.fill(HIST("pion_pT"), piPlusvectors[1].Pt());
@@ -1380,16 +1169,13 @@ struct ExclusiveRhoTo4Pi {
   } // End of 4 Pion MC Generation Process function
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
-  using CollisionStuff = soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
+  // Begin of MC Reconstruction function-----------------------------------------------------------------------------------------------------------------------------------------------
+  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
   using CollisionTotal = CollisionStuff::iterator;
   using TrackStuff = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
   void processMCrec(CollisionTotal const& collision, TrackStuff const& tracks)
   {
-
-    if (std::abs(collision.posZ()) > 10) {
-      return;
-    }
 
     if (!collision.has_udMcCollision()) {
       return;
@@ -1401,12 +1187,6 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.fill(HIST("GapSide"), gapSide);
     histosMCreco.fill(HIST("TrueGapSide"), truegapSide);
     histosMCreco.fill(HIST("EventCounts"), 1);
-    gapSide = truegapSide;
-
-    if ((gapSide != 2)) {
-      return;
-    }
-
     histosMCreco.fill(HIST("vertexZ"), collision.posZ());
     histosMCreco.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosMCreco.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
@@ -1414,108 +1194,77 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.fill(HIST("ZDC_A"), collision.energyCommonZNA());
     histosMCreco.fill(HIST("ZDC_C"), collision.energyCommonZNC());
 
-    if (collision.numContrib() != 4) {
-      return;
-    }
-
-    std::vector<decltype(tracks.begin())> WOTS_tracks;
-    std::vector<decltype(tracks.begin())> WTS_tracks;
-    std::vector<decltype(tracks.begin())> WTS_PID_Pi_tracks;
-    std::vector<decltype(tracks.begin())> Pi_plus_tracks;
-    std::vector<decltype(tracks.begin())> Pi_minus_tracks;
+    std::vector<decltype(tracks.begin())> selectedTracks;
+    std::vector<decltype(tracks.begin())> selectedPionTracks;
+    std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
+    std::vector<decltype(tracks.begin())> selectedPionMinusTracks;
 
     for (const auto& t0 : tracks) {
-
-      WOTS_tracks.push_back(t0);
-
       if (trackselector(t0, parameters) && t0.has_udMcParticle()) {
-        WTS_tracks.push_back(t0);
-
+        selectedTracks.push_back(t0);
         if (selectionPIDPion(t0, true, nSigmaTPCcut, nSigmaTOFcut)) {
-          WTS_PID_Pi_tracks.push_back(t0);
+          selectedPionTracks.push_back(t0);
           if (t0.sign() == 1) {
-            Pi_plus_tracks.push_back(t0);
+            selectedPionPlusTracks.push_back(t0);
           }
           if (t0.sign() == -1) {
-            Pi_minus_tracks.push_back(t0);
+            selectedPionMinusTracks.push_back(t0);
           }
         } // End of Selection PID Pion
-
       } // End of track selections
-
     } // End of loop over tracks
 
-    int numTracksWOTS = static_cast<int>(WOTS_tracks.size());
-    int numTracksWTS = static_cast<int>(WTS_tracks.size());
-    int numTracksWTSandPIDpi = static_cast<int>(WTS_PID_Pi_tracks.size());
-    int numPiPlusTracks = static_cast<int>(Pi_plus_tracks.size());
-    int numPionMinusTRacks = static_cast<int>(Pi_minus_tracks.size());
+    int numSelectedTracks = static_cast<int>(selectedTracks.size());
+    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
+    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
+    int numPionMinusTRacks = static_cast<int>(selectedPionMinusTracks.size());
 
-    TLorentzVector tempWOTS;
-    for (int i = 0; i < numTracksWOTS; i++) {
-      tempWOTS.SetXYZM(WOTS_tracks[i].px(), WOTS_tracks[i].py(), WOTS_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-      histosMCreco.fill(HIST("tpcNSigmaPi_WOTS"), WOTS_tracks[i].tpcNSigmaPi(), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaPi_WOTS"), WOTS_tracks[i].tofNSigmaPi(), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosMCreco.fill(HIST("pT_track_WOTS"), std::sqrt(WOTS_tracks[i].px() * WOTS_tracks[i].px() + WOTS_tracks[i].py() * WOTS_tracks[i].py()));
-      histosMCreco.fill(HIST("rapidity_track_WOTS"), tempWOTS.Rapidity());
-
-    } // End of loop over tracks without selection
-
-    TLorentzVector tempWTS;
-    for (int i = 0; i < numTracksWTS; i++) {
-      tempWTS.SetXYZM(WTS_tracks[i].px(), WTS_tracks[i].py(), WTS_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-      histosMCreco.fill(HIST("tpcSignal"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].tpcSignal());
-      histosMCreco.fill(HIST("tofBeta"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py() + WTS_tracks[i].pz() * WTS_tracks[i].pz()), WTS_tracks[i].beta());
-      histosMCreco.fill(HIST("tpcNSigmaPi_WTS"), WTS_tracks[i].tpcNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaPi_WTS"), WTS_tracks[i].tofNSigmaPi(), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosMCreco.fill(HIST("pT_track_WTS"), std::sqrt(WTS_tracks[i].px() * WTS_tracks[i].px() + WTS_tracks[i].py() * WTS_tracks[i].py()));
-      histosMCreco.fill(HIST("rapidity_track_WTS"), tempWTS.Rapidity());
-
-      histosMCreco.fill(HIST("itsChi2NCl"), WTS_tracks[i].itsChi2NCl());
-      histosMCreco.fill(HIST("tpcChi2NCl"), WTS_tracks[i].tpcChi2NCl());
-      histosMCreco.fill(HIST("tpcNClsFindable"), WTS_tracks[i].tpcNClsFindable());
-      histosMCreco.fill(HIST("dcaXY"), WTS_tracks[i].dcaXY());
-      histosMCreco.fill(HIST("dcaZ"), WTS_tracks[i].dcaZ());
+    for (int i = 0; i < numSelectedTracks; i++) {
+      ROOT::Math::PxPyPzMVector selectedTrackVector(selectedTracks[i].px(), selectedTracks[i].py(), selectedTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      histosMCreco.fill(HIST("tpcSignal"), selectedTrackVector.P(), selectedTracks[i].tpcSignal());
+      histosMCreco.fill(HIST("tofBeta"), selectedTrackVector.P(), selectedTracks[i].beta());
+      histosMCreco.fill(HIST("tpcNSigmaPi_WTS"), selectedTracks[i].tpcNSigmaPi(), selectedTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaPi_WTS"), selectedTracks[i].tofNSigmaPi(), selectedTrackVector.Pt());
+      histosMCreco.fill(HIST("pT_track_WTS"), selectedTrackVector.Pt());
+      histosMCreco.fill(HIST("rapidity_track_WTS"), selectedTrackVector.Rapidity());
+      histosMCreco.fill(HIST("itsChi2NCl"), selectedTracks[i].itsChi2NCl());
+      histosMCreco.fill(HIST("tpcChi2NCl"), selectedTracks[i].tpcChi2NCl());
+      histosMCreco.fill(HIST("tpcNClsFindable"), selectedTracks[i].tpcNClsFindable());
+      histosMCreco.fill(HIST("dcaXY"), selectedTracks[i].dcaXY());
+      histosMCreco.fill(HIST("dcaZ"), selectedTracks[i].dcaZ());
     } // End of loop over tracks with selection only
 
-    TLorentzVector tempWTSPIDPi;
-    for (int i = 0; i < numTracksWTSandPIDpi; i++) {
-
-      tempWTSPIDPi.SetXYZM(WTS_PID_Pi_tracks[i].px(), WTS_PID_Pi_tracks[i].py(), WTS_PID_Pi_tracks[i].pz(), o2::constants::physics::MassPionCharged);
-
-      histosMCreco.fill(HIST("tpcSignal_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].tpcSignal());
-      histosMCreco.fill(HIST("tofBeta_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py() + WTS_PID_Pi_tracks[i].pz() * WTS_PID_Pi_tracks[i].pz()), WTS_PID_Pi_tracks[i].beta());
-
-      histosMCreco.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPi(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tpcNSigmaKa_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaKa(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tpcNSigmaPr_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaPr(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tpcNSigmaEl_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaEl(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tpcNSigmaMu_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tpcNSigmaMu(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-
-      histosMCreco.fill(HIST("tofNSigmaPi_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaPi(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaKa_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaKa(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaPr_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaPr(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaEl_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaEl(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("tofNSigmaMu_WTS_PID_Pi"), WTS_PID_Pi_tracks[i].tofNSigmaMu(), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-
-      histosMCreco.fill(HIST("pT_track_WTS_PID_Pi"), std::sqrt(WTS_PID_Pi_tracks[i].px() * WTS_PID_Pi_tracks[i].px() + WTS_PID_Pi_tracks[i].py() * WTS_PID_Pi_tracks[i].py()));
-      histosMCreco.fill(HIST("rapidity_track_WTS_PID_Pi"), tempWTSPIDPi.Rapidity());
+    for (int i = 0; i < numSelectedPionTracks; i++) {
+      ROOT::Math::PxPyPzMVector selectedPionTrackVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+      histosMCreco.fill(HIST("tpcSignal_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].tpcSignal());
+      histosMCreco.fill(HIST("tofBeta_Pi"), selectedPionTrackVector.P(), selectedPionTracks[i].beta());
+      histosMCreco.fill(HIST("tpcNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPi(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tpcNSigmaKa_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaKa(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tpcNSigmaPr_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaPr(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tpcNSigmaEl_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaEl(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tpcNSigmaMu_WTS_PID_Pi"), selectedPionTracks[i].tpcNSigmaMu(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaPi_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaPi(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaKa_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaKa(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaPr_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaPr(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaEl_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaEl(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("tofNSigmaMu_WTS_PID_Pi"), selectedPionTracks[i].tofNSigmaMu(), selectedPionTrackVector.Pt());
+      histosMCreco.fill(HIST("pT_track_WTS_PID_Pi"), std::sqrt(selectedPionTracks[i].px() * selectedPionTracks[i].px() + selectedPionTracks[i].py() * selectedPionTracks[i].py()));
+      histosMCreco.fill(HIST("rapidity_track_WTS_PID_Pi"), selectedPionTrackVector.Rapidity());
     } // End of loop over tracks with selection and PID selection of Pions
 
-    if (numTracksWTSandPIDpi != 4) {
+    if (numSelectedPionTracks != numFourPionTracks) {
       return;
     }
 
     // Selecting Events with net charge = 0
-    if (numPionMinusTRacks == 2 && numPiPlusTracks == 2) {
+    if (numPionMinusTRacks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
-      TLorentzVector p1, p2, p3, p4, p1234;
       ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
 
-      p1.SetXYZM(Pi_plus_tracks[0].px(), Pi_plus_tracks[0].py(), Pi_plus_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(Pi_plus_tracks[1].px(), Pi_plus_tracks[1].py(), Pi_plus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(Pi_minus_tracks[0].px(), Pi_minus_tracks[0].py(), Pi_minus_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(Pi_minus_tracks[1].px(), Pi_minus_tracks[1].py(), Pi_minus_tracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
 
       histosMCreco.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p1.Pt());
       histosMCreco.fill(HIST("pT_track_WTS_PID_Pi_contributed"), p2.Pt());
@@ -1532,7 +1281,7 @@ struct ExclusiveRhoTo4Pi {
       k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
       k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
 
-      p1234 = p1 + p2 + p3 + p4;
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
       k1234 = k1 + k2 + k3 + k4;
 
       k13 = k1 + k3;
@@ -1550,16 +1299,16 @@ struct ExclusiveRhoTo4Pi {
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
         collision.timeZNA(), collision.timeZNC(),
-        Pi_plus_tracks[0].dcaXY(), Pi_plus_tracks[1].dcaXY(), Pi_minus_tracks[0].dcaXY(), Pi_minus_tracks[1].dcaXY(),
-        Pi_plus_tracks[0].dcaZ(), Pi_plus_tracks[1].dcaZ(), Pi_minus_tracks[0].dcaZ(), Pi_minus_tracks[1].dcaZ(),
-        Pi_plus_tracks[0].tpcNSigmaPi(), Pi_plus_tracks[1].tpcNSigmaPi(), Pi_minus_tracks[0].tpcNSigmaPi(), Pi_minus_tracks[1].tpcNSigmaPi(),
-        Pi_plus_tracks[0].tpcNSigmaKa(), Pi_plus_tracks[1].tpcNSigmaKa(), Pi_minus_tracks[0].tpcNSigmaKa(), Pi_minus_tracks[1].tpcNSigmaKa(),
-        Pi_plus_tracks[0].tpcNSigmaPr(), Pi_plus_tracks[1].tpcNSigmaPr(), Pi_minus_tracks[0].tpcNSigmaPr(), Pi_minus_tracks[1].tpcNSigmaPr(),
-        Pi_plus_tracks[0].tpcNSigmaEl(), Pi_plus_tracks[1].tpcNSigmaEl(), Pi_minus_tracks[0].tpcNSigmaEl(), Pi_minus_tracks[1].tpcNSigmaEl(),
-        Pi_plus_tracks[0].tpcNSigmaMu(), Pi_plus_tracks[1].tpcNSigmaMu(), Pi_minus_tracks[0].tpcNSigmaMu(), Pi_minus_tracks[1].tpcNSigmaMu(),
-        Pi_plus_tracks[0].tpcChi2NCl(), Pi_plus_tracks[1].tpcChi2NCl(), Pi_minus_tracks[0].tpcChi2NCl(), Pi_minus_tracks[1].tpcChi2NCl(),
-        Pi_plus_tracks[0].tpcNClsFindable(), Pi_plus_tracks[1].tpcNClsFindable(), Pi_minus_tracks[0].tpcNClsFindable(), Pi_minus_tracks[1].tpcNClsFindable(),
-        Pi_plus_tracks[0].itsChi2NCl(), Pi_plus_tracks[1].itsChi2NCl(), Pi_minus_tracks[0].itsChi2NCl(), Pi_minus_tracks[1].itsChi2NCl(),
+        selectedPionPlusTracks[0].dcaXY(), selectedPionPlusTracks[1].dcaXY(), selectedPionMinusTracks[0].dcaXY(), selectedPionMinusTracks[1].dcaXY(),
+        selectedPionPlusTracks[0].dcaZ(), selectedPionPlusTracks[1].dcaZ(), selectedPionMinusTracks[0].dcaZ(), selectedPionMinusTracks[1].dcaZ(),
+        selectedPionPlusTracks[0].tpcNSigmaPi(), selectedPionPlusTracks[1].tpcNSigmaPi(), selectedPionMinusTracks[0].tpcNSigmaPi(), selectedPionMinusTracks[1].tpcNSigmaPi(),
+        selectedPionPlusTracks[0].tpcNSigmaKa(), selectedPionPlusTracks[1].tpcNSigmaKa(), selectedPionMinusTracks[0].tpcNSigmaKa(), selectedPionMinusTracks[1].tpcNSigmaKa(),
+        selectedPionPlusTracks[0].tpcNSigmaPr(), selectedPionPlusTracks[1].tpcNSigmaPr(), selectedPionMinusTracks[0].tpcNSigmaPr(), selectedPionMinusTracks[1].tpcNSigmaPr(),
+        selectedPionPlusTracks[0].tpcNSigmaEl(), selectedPionPlusTracks[1].tpcNSigmaEl(), selectedPionMinusTracks[0].tpcNSigmaEl(), selectedPionMinusTracks[1].tpcNSigmaEl(),
+        selectedPionPlusTracks[0].tpcNSigmaMu(), selectedPionPlusTracks[1].tpcNSigmaMu(), selectedPionMinusTracks[0].tpcNSigmaMu(), selectedPionMinusTracks[1].tpcNSigmaMu(),
+        selectedPionPlusTracks[0].tpcChi2NCl(), selectedPionPlusTracks[1].tpcChi2NCl(), selectedPionMinusTracks[0].tpcChi2NCl(), selectedPionMinusTracks[1].tpcChi2NCl(),
+        selectedPionPlusTracks[0].tpcNClsFindable(), selectedPionPlusTracks[1].tpcNClsFindable(), selectedPionMinusTracks[0].tpcNClsFindable(), selectedPionMinusTracks[1].tpcNClsFindable(),
+        selectedPionPlusTracks[0].itsChi2NCl(), selectedPionPlusTracks[1].itsChi2NCl(), selectedPionMinusTracks[0].itsChi2NCl(), selectedPionMinusTracks[1].itsChi2NCl(),
         p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
         p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
         p1.Phi(), p2.Phi(), p3.Phi(), p4.Phi(),
@@ -1567,9 +1316,9 @@ struct ExclusiveRhoTo4Pi {
         p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
         phiPair1, phiPair2, cosThetaPair1, cosThetaPair2);
 
-      if (std::fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosMCreco.fill(HIST("pT_event_0charge_WTS_PID_Pi"), p1234.Pt());
-        if (p1234.Pt() < 0.15) {
+        if (p1234.Pt() < rhoPtCut) {
           histosMCreco.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainA"), p1234.M());
 
@@ -1585,11 +1334,11 @@ struct ExclusiveRhoTo4Pi {
           histosMCreco.fill(HIST("phi_cosTheta_pair_1"), phiPair1, cosThetaPair1);
           histosMCreco.fill(HIST("phi_cosTheta_pair_2"), phiPair2, cosThetaPair2);
         }
-        if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
+        if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosMCreco.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainB"), p1234.M());
         }
-        if (p1234.Pt() > 0.80) {
+        if (p1234.Pt() > zeroPointEight) {
           histosMCreco.fill(HIST("rapidity_event_0charge_WTS_PID_Pi_domainC"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_0charge_WTS_PID_Pi_domainC"), p1234.M());
         }
@@ -1598,28 +1347,26 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for 0 charge events
 
     // Selecting Events with net charge != 0 for estimation of background
-    if (numPionMinusTRacks != 2 && numPiPlusTracks != 2) {
+    if (numPionMinusTRacks != numPiMinus && numPiPlusTracks != numPiPlus) {
+      ROOT::Math::PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
 
-      TLorentzVector p1, p2, p3, p4, p1234;
-      p1.SetXYZM(WTS_PID_Pi_tracks[0].px(), WTS_PID_Pi_tracks[0].py(), WTS_PID_Pi_tracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(WTS_PID_Pi_tracks[1].px(), WTS_PID_Pi_tracks[1].py(), WTS_PID_Pi_tracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(WTS_PID_Pi_tracks[2].px(), WTS_PID_Pi_tracks[2].py(), WTS_PID_Pi_tracks[2].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(WTS_PID_Pi_tracks[3].px(), WTS_PID_Pi_tracks[3].py(), WTS_PID_Pi_tracks[3].pz(), o2::constants::physics::MassPionCharged);
+      ROOT::Math::PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
 
-      p1234 = p1 + p2 + p3 + p4;
-
-      if (std::fabs(p1234.Rapidity()) < 0.5) {
+      if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosMCreco.fill(HIST("pT_event_non0charge_WTS_PID_Pi"), p1234.Pt());
 
-        if (p1234.Pt() < 0.15) {
+        if (p1234.Pt() < rhoPtCut) {
           histosMCreco.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainA"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainA"), p1234.M());
         }
-        if (p1234.Pt() > 0.15 && p1234.Pt() < 0.80) {
+        if (p1234.Pt() > rhoPtCut && p1234.Pt() < zeroPointEight) {
           histosMCreco.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainB"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainB"), p1234.M());
         }
-        if (p1234.Pt() > 0.80) {
+        if (p1234.Pt() > zeroPointEight) {
           histosMCreco.fill(HIST("rapidity_event_non0charge_WTS_PID_Pi_domainC"), p1234.Rapidity());
           histosMCreco.fill(HIST("invMass_event_non0charge_WTS_PID_Pi_domainC"), p1234.M());
         }
@@ -1629,104 +1376,6 @@ struct ExclusiveRhoTo4Pi {
 
   } // End of 4 Pion Analysis Process function for MC Reconstruction
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "The Process for 4 Pion Analysis from MC Reconstruction", false);
-
-  using FilteredTrackStuff = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>>;
-  using FilteredCollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
-  using FilteredCollisionTotal = FilteredCollisionStuff::iterator;
-
-  void processMCrecFast(FilteredCollisionTotal const& collision, FilteredTrackStuff const& tracks)
-  {
-
-    if ((tracks.size() != 4) || (!collision.has_udMcCollision())) {
-      return;
-    }
-
-    std::vector<decltype(tracks.begin())> pionPlusTracks;
-    std::vector<decltype(tracks.begin())> pionMinusTracks;
-
-    for (const auto& track : tracks) {
-      if ((!selectionPIDPion(track, true, nSigmaTPCcut, nSigmaTOFcut)) || (!track.has_udMcParticle())) {
-        continue;
-      }
-      if (track.sign() == 1) {
-        pionPlusTracks.push_back(track);
-      }
-      if (track.sign() == -1) {
-        pionMinusTracks.push_back(track);
-      }
-    } // end of loop over tracks
-
-    if ((pionPlusTracks.size() + pionMinusTracks.size()) != 4) {
-      return;
-    }
-
-    if (pionPlusTracks.size() == 2 || pionMinusTracks.size() == 2) {
-
-      TLorentzVector p1, p2, p3, p4, p1234;
-      ROOT::Math::PtEtaPhiMVector k1, k2, k3, k4, k1234, k13, k14, k23, k24;
-
-      p1.SetXYZM(pionPlusTracks[0].px(), pionPlusTracks[0].py(), pionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p2.SetXYZM(pionPlusTracks[1].px(), pionPlusTracks[1].py(), pionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-      p3.SetXYZM(pionMinusTracks[0].px(), pionMinusTracks[0].py(), pionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
-      p4.SetXYZM(pionMinusTracks[1].px(), pionMinusTracks[1].py(), pionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
-
-      k1.SetCoordinates(p1.Pt(), p1.Eta(), p1.Phi(), o2::constants::physics::MassPionCharged);
-      k2.SetCoordinates(p2.Pt(), p2.Eta(), p2.Phi(), o2::constants::physics::MassPionCharged);
-      k3.SetCoordinates(p3.Pt(), p3.Eta(), p3.Phi(), o2::constants::physics::MassPionCharged);
-      k4.SetCoordinates(p4.Pt(), p4.Eta(), p4.Phi(), o2::constants::physics::MassPionCharged);
-
-      p1234 = p1 + p2 + p3 + p4;
-      k1234 = k1 + k2 + k3 + k4;
-
-      k13 = k1 + k3;
-      k14 = k1 + k4;
-      k23 = k2 + k3;
-      k24 = k2 + k4;
-
-      double fourPiPhiPair1 = phiCollinsSoperFrame(k13, k24, k1234);
-      double fourPiPhiPair2 = phiCollinsSoperFrame(k14, k23, k1234);
-      double fourPiCosThetaPair1 = cosThetaCollinsSoperFrame(k13, k24, k1234);
-      double fourPiCosThetaPair2 = cosThetaCollinsSoperFrame(k14, k23, k1234);
-
-      sigFromMC(
-        collision.posX(), collision.posY(), collision.posZ(),
-        collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(), collision.timeZNA(), collision.timeZNC(),
-        pionPlusTracks[0].dcaXY(), pionPlusTracks[1].dcaXY(), pionMinusTracks[0].dcaXY(), pionMinusTracks[1].dcaXY(),
-
-        pionPlusTracks[0].dcaZ(), pionPlusTracks[1].dcaZ(), pionMinusTracks[0].dcaZ(), pionMinusTracks[1].dcaZ(),
-
-        pionPlusTracks[0].tpcNSigmaPi(), pionPlusTracks[1].tpcNSigmaPi(), pionMinusTracks[0].tpcNSigmaPi(), pionMinusTracks[1].tpcNSigmaPi(),
-
-        pionPlusTracks[0].tpcNSigmaKa(), pionPlusTracks[1].tpcNSigmaKa(), pionMinusTracks[0].tpcNSigmaKa(), pionMinusTracks[1].tpcNSigmaKa(),
-
-        pionPlusTracks[0].tpcNSigmaPr(), pionPlusTracks[1].tpcNSigmaPr(), pionMinusTracks[0].tpcNSigmaPr(), pionMinusTracks[1].tpcNSigmaPr(),
-
-        pionPlusTracks[0].tpcNSigmaEl(), pionPlusTracks[1].tpcNSigmaEl(), pionMinusTracks[0].tpcNSigmaEl(), pionMinusTracks[1].tpcNSigmaEl(),
-
-        pionPlusTracks[0].tpcNSigmaMu(), pionPlusTracks[1].tpcNSigmaMu(), pionMinusTracks[0].tpcNSigmaMu(), pionMinusTracks[1].tpcNSigmaMu(),
-
-        pionPlusTracks[0].tpcChi2NCl(), pionPlusTracks[1].tpcChi2NCl(), pionMinusTracks[0].tpcChi2NCl(), pionMinusTracks[1].tpcChi2NCl(),
-        pionPlusTracks[0].tpcNClsFindable(), pionPlusTracks[1].tpcNClsFindable(), pionMinusTracks[0].tpcNClsFindable(), pionMinusTracks[1].tpcNClsFindable(),
-        pionPlusTracks[0].itsChi2NCl(), pionPlusTracks[1].itsChi2NCl(), pionMinusTracks[0].itsChi2NCl(), pionMinusTracks[1].itsChi2NCl(),
-        p1.Pt(), p2.Pt(), p3.Pt(), p4.Pt(),
-        p1.Eta(), p2.Eta(), p3.Eta(), p4.Eta(),
-        p1.Phi(), p2.Phi(), p3.Phi(), p4.Phi(),
-        p1.Rapidity(), p2.Rapidity(), p3.Rapidity(), p4.Rapidity(),
-        p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(),
-        fourPiPhiPair1, fourPiPhiPair2, fourPiCosThetaPair1, fourPiCosThetaPair2);
-
-      histosFastMCreco.fill(HIST("4PionPt"), p1234.Pt());
-      histosFastMCreco.fill(HIST("4PionRapidity"), p1234.Rapidity());
-      histosFastMCreco.fill(HIST("4PionMassFull"), p1234.M());
-
-      if ((p1234.Pt() < 0.15) && (std::abs(p1234.Rapidity()) < 0.5)) {
-        histosFastMCreco.fill(HIST("4PionMassWithCut"), p1234.M());
-      }
-    } // End 0 charge event
-  } // End of 4 Pion Analysis Process function for Fast MC Reconstruction
-
-  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrecFast, "The Process for 4 Pion Analysis from Fast MC Reconstruction", false);
 
 }; // End of Struct exclusiveRhoTo4Pi
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
