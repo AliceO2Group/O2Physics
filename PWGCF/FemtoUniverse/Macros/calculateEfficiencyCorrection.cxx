@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file calculateEffCor.cxx
+/// \file calculateEfficiencyCorrection.cxx
 /// \brief Macro for calculating efficiency corrections based on 3D histograms
 /// \author Dawid Karpiński, WUT Warsaw, dawid.karpinski@cern.ch
 
@@ -21,13 +21,14 @@
 #include <TH2F.h>
 #include <TH3F.h>
 #include <TSystem.h>
+#include <unistd.h>
+
 #include <cassert>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <format>
 #include <string>
-#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -82,17 +83,17 @@ auto setAxisTitles(TH1* hist, const std::string& projection) -> void
 
   if (hist->GetDimension() == 2) {
     if (projection == "yx") {
-      yAxis->SetTitle("#it{#eta} (rad)");
+      yAxis->SetTitle("#it{#eta}");
     } else if (projection == "zx") {
-      yAxis->SetTitle("Cent/Mult");
+      yAxis->SetTitle("mult");
     }
   } else if (hist->GetDimension() == 3) {
-    yAxis->SetTitle("#it{#eta} (rad)");
-    zAxis->SetTitle("Cent/Mult");
+    yAxis->SetTitle("#it{#eta}");
+    zAxis->SetTitle("mult");
   }
 }
 
-auto calculateEfficiency(const fs::path& resultsPath, const fs::path& histPath, const std::string& projection) -> void
+auto calculateEfficiencyCorrection(const fs::path& resultsPath, const fs::path& histPath, const std::string& projection) -> void
 {
   assert(!resultsPath.empty() && !histPath.empty());
   if (projection != "" && projection != "x" && projection != "yx" && projection != "zx") {
@@ -204,7 +205,7 @@ auto printUsage(const char* name) -> void
             << "    Available projections:\n"
             << "      x - projection onto pT axis (1D histogram)\n"
             << "      yx - projection onto pT, eta (2D histogram)\n"
-            << "      zx - projection onto pT, centrality/multiplicity (2D histogram)\n";
+            << "      zx - projection onto pT, mult (2D histogram)\n";
 }
 
 int main(int argc, char** argv)
@@ -234,6 +235,6 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  calculateEfficiency(results, hist, proj);
+  calculateEfficiencyCorrection(results, hist, proj);
   return 0;
 }

@@ -29,6 +29,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <ranges>
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
@@ -48,7 +49,7 @@ struct EffCorConfigurableGroup : framework::ConfigurableGroup {
   framework::Configurable<std::string> confEffCorCCDBUrl{"confEffCorCCDBUrl", "http://alice-ccdb.cern.ch", "[Efficiency Correction] CCDB URL to use"};
   framework::Configurable<std::string> confEffCorCCDBPath{"confEffCorCCDBPath", "", "[Efficiency Correction] CCDB path to histograms"};
   framework::Configurable<std::vector<std::string>> confEffCorCCDBTimestamps{"confEffCorCCDBTimestamps", {}, "[Efficiency Correction] Timestamps of histograms in CCDB (0 can be used as a placeholder, e.g. when running subwagons)"};
-  framework::Configurable<std::vector<std::string>> confEffCorVariables{"confEffCorVariables", {"pt"}, "[Efficiency Correction] Variables for efficiency correction histogram dimensions (available: pt, eta, cent-mult)"};
+  framework::Configurable<std::string> confEffCorVariables{"confEffCorVariables", "pt", "[Efficiency Correction] Variables for efficiency correction histogram dimensions (available: 'pt'; 'pt,eta'; 'pt,mult'; 'pt,eta,mult')"};
 };
 
 class EfficiencyCorrection
@@ -66,14 +67,12 @@ class EfficiencyCorrection
     if (shouldFillHistograms) {
       for (const auto& suffix : histSuffix) {
         auto path = std::format("{}/{}", histDirectory, suffix);
-
-        registry->add((path + "/hMCTruth").c_str(), "MCTruth; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
-
-        registry->add((path + "/hPrimary").c_str(), "Primary; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hSecondary").c_str(), "Secondary; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hMaterial").c_str(), "Material; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hFake").c_str(), "Fake; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hOther").c_str(), "Other; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hMCTruth").c_str(), "MCTruth; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hPrimary").c_str(), "Primary; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hSecondary").c_str(), "Secondary; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hMaterial").c_str(), "Material; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hFake").c_str(), "Fake; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hOther").c_str(), "Other; #it{p}_{T} (GeV/#it{c}); #it{#eta}; Mult", framework::kTH3F, axisSpecs);
       }
     }
 
@@ -97,14 +96,19 @@ class EfficiencyCorrection
         }
 
         if (timestamp > 0) {
-          if (config->confEffCorVariables->size() == 1) {
-            hLoaded[idx] = loadHistFromCCDB<TH1>(timestamp);
-          } else if (config->confEffCorVariables->size() == 2) {
-            hLoaded[idx] = loadHistFromCCDB<TH2>(timestamp);
-          } else if (config->confEffCorVariables->size() == 3) {
-            hLoaded[idx] = loadHistFromCCDB<TH3>(timestamp);
-          } else {
-            LOGF(fatal, notify("unknown configuration for efficiency variables"));
+          switch (getDimensionFromVariables()) {
+            case 1:
+              hLoaded[idx] = loadHistFromCCDB<TH1>(timestamp);
+              break;
+            case 2:
+              hLoaded[idx] = loadHistFromCCDB<TH2>(timestamp);
+              break;
+            case 3:
+              hLoaded[idx] = loadHistFromCCDB<TH3>(timestamp);
+              break;
+            default:
+              LOGF(fatal, notify("Unknown configuration for efficiency variables"));
+              break;
           }
         } else {
           hLoaded[idx] = nullptr;
@@ -183,29 +187,29 @@ class EfficiencyCorrection
     }
   }
 
-  auto getWeight(ParticleNo partNo, auto particle) const -> float
+  auto getWeight(ParticleNo partNo, auto particle) -> float
   {
     auto weight = 1.0f;
     auto hWeights = hLoaded[partNo - 1];
 
     if (shouldApplyCorrection && hWeights) {
       auto dim = static_cast<size_t>(hWeights->GetDimension());
-      if (dim != config->confEffCorVariables.value.size()) {
+      if (dim != getDimensionFromVariables()) {
         LOGF(fatal, notify("Histogram \"%s\" has wrong dimension %d != %d"), config->confEffCorCCDBPath.value, dim, config->confEffCorVariables.value.size());
         return weight;
       }
 
       auto bin = -1;
-      if (config->confEffCorVariables.value == std::vector<std::string>{"pt"}) {
+      if (config->confEffCorVariables.value == "pt") {
         bin = hLoaded[partNo - 1]->FindBin(particle.pt());
-      } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "eta"}) {
+      } else if (config->confEffCorVariables.value == "pt,eta") {
         bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta());
-      } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "cent-mult"}) {
+      } else if (config->confEffCorVariables.value == "pt,mult") {
         bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.fdCollision().multV0M());
-      } else if (config->confEffCorVariables.value == std::vector<std::string>{"pt", "eta", "cent-mult"}) {
+      } else if (config->confEffCorVariables.value == "pt,eta,mult") {
         bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
       } else {
-        LOGF(fatal, notify("unknown configuration for efficiency variables"));
+        LOGF(fatal, notify("Unknown configuration for efficiency variables"));
         return weight;
       }
       weight = hWeights->GetBinContent(bin);
@@ -248,6 +252,12 @@ class EfficiencyCorrection
 
     LOGF(info, notify("Successfully loaded %ld"), timestamp);
     return hWeights;
+  }
+
+  auto getDimensionFromVariables() -> size_t
+  {
+    auto parts = std::views::split(config->confEffCorVariables.value, ',');
+    return std::ranges::distance(parts);
   }
 
   EffCorConfigurableGroup* config{};
