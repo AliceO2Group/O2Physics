@@ -79,10 +79,10 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsPOS, bool, false, "Fill NUA weights only for positive charges");
   O2_DEFINE_CONFIGURABLE(cfgFillWeightsNEG, bool, false, "Fill NUA weights only for negative charges");
   // Additional track Selections
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, true, "Bool to enable Additional Track Cut");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsUseAdditionalTrackCut, bool, false, "Bool to enable Additional Track Cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoubleTrackFunction, bool, true, "Include track cut at low pt");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsTrackCutSize, float, 0.06, "Spread of track cut");
-  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, true, "Apply Pt dependent DCAz cut");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDoDCApt, bool, false, "Apply Pt dependent DCAz cut");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt1, float, 0.1, "DcaZ < a * b / pt^1.1 -> this sets a");
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCApt2, float, 0.035, "DcaZ < a * b / pt^1.1 -> this sets b");
   // Additional event selections
@@ -173,13 +173,14 @@ struct FlowSP {
     evSel_kNoCollInTimeRangeStandard,
     evSel_kIsVertexITSTPC,
     evSel_MultCuts,
-    evSel_CentCuts,
     evSel_kIsGoodITSLayersAll,
     evSel_isSelectedZDC,
-    nEventSelections
+    nEventSelections,
+    evSel_CentCuts
   };
 
   enum TrackSelectionsUnFiltered {
+    trackSel_ZeroCharge,
     trackSel_Eta,
     trackSel_Pt,
     trackSel_DCAxy,
@@ -188,7 +189,6 @@ struct FlowSP {
     trackSel_NCls,
     trackSel_FshCls,
     trackSel_TPCBoundary,
-    trackSel_ZeroCharge,
     trackSel_ParticleWeights,
     nTrackSelections
   };
@@ -210,7 +210,7 @@ struct FlowSP {
   };
 
   static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
-  static constexpr std::string_view Time[] = {"before/", "after"};
+  static constexpr std::string_view Time[] = {"before/", "after/"};
 
   void init(InitContext const&)
   {
@@ -285,16 +285,17 @@ struct FlowSP {
 
         if (doprocessData || doprocessMCReco) {
           // track QA for pos, neg, incl
-          registry.add<TH1>("incl/QA/hPt", "", kTH1D, {axisPt});
-          registry.add<TH1>("incl/QA/hPhi", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hPhiCorrected", "", kTH1D, {axisPhi});
-          registry.add<TH1>("incl/QA/hEta", "", kTH1D, {axisEta});
-          registry.add<TH3>("incl/QA/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
-          registry.add<TH2>("incl/QA/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
-          registry.add<TH2>("incl/QA/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
-          registry.add("incl/QA/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
-          registry.add("incl/QA/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
-          registry.add("incl/QA/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+          registry.add<TH1>("incl/QA/before/hPt", "", kTH1D, {axisPt});
+          registry.add<TH1>("incl/QA/before/hPhi", "", kTH1D, {axisPhi});
+          registry.add<TH1>("incl/QA/before/hEta", "", kTH1D, {axisEta});
+          registry.add<TH3>("incl/QA/before/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
+          registry.add<TH2>("incl/QA/before/hDCAxy_pt", "", kTH2D, {axisPt, axisDCAxy});
+          registry.add<TH2>("incl/QA/before/hDCAz_pt", "", kTH2D, {axisPt, axisDCAz});
+          registry.add("incl/QA/before/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
+          registry.add("incl/QA/before/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
+          registry.add("incl/QA/before/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
+
+          registry.addClone("incl/QA/before/", "incl/QA/after/");
         }
       }
 
@@ -347,20 +348,22 @@ struct FlowSP {
         }
 
         if (cfgFillMixedHarmonics) {
-          registry.add<TProfile>("incl/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
-          registry.add<TProfile>("incl/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_pt_MH", "", kTProfile, {axisPt});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_pt_MH", "", kTProfile, {axisPt});
 
-          registry.add<TProfile>("incl/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
-          registry.add<TProfile>("incl/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_cent_MH", "", kTProfile, {axisCent});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_cent_MH", "", kTProfile, {axisCent});
 
-          registry.add<TProfile>("incl/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
-          registry.add<TProfile>("incl/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCxUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCyUx_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAxCyUy_eta_MH", "", kTProfile, {axisEtaVn});
+          registry.add<TProfile>("incl/v2/vnAyCxUy_eta_MH", "", kTProfile, {axisEtaVn});
+
+          registry.addClone("incl/v2/", "incl/v3/");
         }
 
         if (cfgFillEventPlane) {
@@ -386,6 +389,8 @@ struct FlowSP {
           registry.add<TH1>("QA/hSPplaneA", "hSPplaneA", kTH1D, {axisPhiPlane});
           registry.add<TH1>("QA/hSPplaneC", "hSPplaneC", kTH1D, {axisPhiPlane});
           registry.add<TH1>("QA/hSPplaneFull", "hSPplaneFull", kTH1D, {axisPhiPlane});
+
+          registry.add("QA/hCentFull", " ; Centrality (%); ", {HistType::kTH1D, {axisCent}});
 
           registry.add<TProfile>("QA/hCosPhiACosPhiC", "hCosPhiACosPhiC; Centrality(%); #LT Cos(#Psi^{A})Cos(#Psi^{C})#GT", kTProfile, {axisCent});
           registry.add<TProfile>("QA/hSinPhiASinPhiC", "hSinPhiASinPhiC; Centrality(%); #LT Sin(#Psi^{A})Sin(#Psi^{C})#GT", kTProfile, {axisCent});
@@ -441,9 +446,9 @@ struct FlowSP {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoCollInTimeRangeStandard + 1, "kNoCollInTimeRangeStandard");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Mult cuts (Alex)");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
 
     registry.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(trackSel_Eta + 1, "Eta");
@@ -648,7 +653,7 @@ struct FlowSP {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  bool eventSelected(TCollision collision, const int& multTrk)
   {
     if (!collision.sel8())
       return 0;
@@ -730,10 +735,6 @@ struct FlowSP {
 
       registry.fill(HIST("hEventCount"), evSel_MultCuts);
     }
-
-    if (centrality > cfgCentMax || centrality < cfgCentMin)
-      return 0;
-    registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     if (cfgEvSelsIsGoodITSLayersAll) {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
@@ -857,37 +858,37 @@ struct FlowSP {
     registry.fill(HIST(Charge[ct]) + HIST("vnC_pt"), track.pt(), (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), wacc * weff);
 
     if (cfgFillMixedHarmonics) {
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_eta_MH"), track.eta(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_eta_MH"), track.eta(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_eta_MH"), track.eta(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_eta_MH"), track.eta(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_pt_MH"), track.pt(), (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_pt_MH"), track.pt(), (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_pt_MH"), track.pt(), (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_pt_MH"), track.pt(), (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCxUx_cent_MH"), centrality, (uxMH * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUx_cent_MH"), centrality, (uxMH * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAxCyUy_cent_MH"), centrality, (uyMH * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v2/vnAyCxUy_cent_MH"), centrality, (uyMH * qyA * qxC) / corrQQy, wacc * weff);
 
       // -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_eta_MH"), track.eta(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_eta_MH"), track.eta(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_eta_MH"), track.eta(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_eta_MH"), track.eta(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_eta_MH"), track.eta(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_eta_MH"), track.eta(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_eta_MH"), track.eta(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_eta_MH"), track.eta(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_pt_MH"), track.pt(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_pt_MH"), track.pt(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_pt_MH"), track.pt(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_pt_MH"), track.pt(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_pt_MH"), track.pt(), (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_pt_MH"), track.pt(), (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_pt_MH"), track.pt(), (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_pt_MH"), track.pt(), (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
 
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCxUx_cent_MH"), centrality, (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUx_cent_MH"), centrality, (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAxCyUy_cent_MH"), centrality, (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
-      registry.fill(HIST(Charge[ct]) + HIST("vnAyCxUy_cent_MH"), centrality, (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCxUx_cent_MH"), centrality, (uxMH2 * qxA * qxC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUx_cent_MH"), centrality, (uxMH2 * qyA * qyC) / corrQQy, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAxCyUy_cent_MH"), centrality, (uyMH2 * qxA * qyC) / corrQQx, wacc * weff);
+      registry.fill(HIST(Charge[ct]) + HIST("v3/vnAyCxUy_cent_MH"), centrality, (uyMH2 * qyA * qxC) / corrQQy, wacc * weff);
     }
 
     if (cfgFillXandYterms) {
@@ -947,19 +948,20 @@ struct FlowSP {
     }
   }
 
-  template <ChargeType ct, typename TrackObject>
+  template <FillType ft, ChargeType ct, typename TrackObject>
   inline void fillTrackQA(TrackObject track, double vz, float wacc = 1, float weff = 1)
   {
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPt"), track.pt());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi"), track.phi());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhiCorrected"), track.phi(), wacc * weff);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hEta"), track.eta());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAxy_pt"), track.pt(), track.dcaXY());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hDCAz_pt"), track.pt(), track.dcaZ());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_pt"), track.pt(), track.tpcNClsFound());
-    registry.fill(HIST(Charge[ct]) + HIST("QA/hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls());
+    static constexpr std::string_view Time[] = {"before/", "after/"};
+
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt"), track.pt(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi"), track.phi(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hEta"), track.eta(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz, wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), wacc * weff);
+    registry.fill(HIST(Charge[ct]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
   }
 
   template <FillType ft, ModeType md, typename TrackObject>
@@ -999,6 +1001,18 @@ struct FlowSP {
     }
   }
 
+  template <ModeType md, typename McParticleObject>
+  inline void fillPrimaryHistos(McParticleObject mcparticle)
+  {
+    static constexpr std::string_view Time[] = {"/before", "/after"};
+
+    if (!mcparticle.isPhysicalPrimary()) {
+      registry.fill(HIST("trackMCReco") + HIST(Time[md]) + HIST("/hIsPhysicalPrimary"), 0);
+    } else {
+      registry.fill(HIST("trackMCReco") + HIST(Time[md]) + HIST("/hIsPhysicalPrimary"), 1);
+    }
+  }
+
   void processData(UsedCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
@@ -1027,7 +1041,7 @@ struct FlowSP {
     if (cfgCentNGlobal)
       centrality = collision.centNGlobal();
 
-    if (!eventSelected(collision, tracks.size(), centrality))
+    if (!eventSelected(collision, tracks.size()))
       return;
 
     if (collision.isSelected()) {
@@ -1047,8 +1061,7 @@ struct FlowSP {
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
 
       if (cfgFillQAHistos) {
-        fillEventQA<kAfter>(collision, tracks);
-
+        registry.fill(HIST("QA/hCentFull"), centrality, 1);
         registry.fill(HIST("QA/hSPplaneA"), psiA, 1);
         registry.fill(HIST("QA/hSPplaneC"), psiC, 1);
         registry.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
@@ -1064,6 +1077,14 @@ struct FlowSP {
         registry.fill(HIST("QA/qAqCX"), centrality, qxA * qxC);
         registry.fill(HIST("QA/qAqCY"), centrality, qyA * qyC);
       }
+
+      if (centrality > cfgCentMax || centrality < cfgCentMin)
+        return;
+
+      registry.fill(HIST("hEventCount"), evSel_CentCuts);
+
+      if (cfgFillQAHistos)
+        fillEventQA<kAfter>(collision, tracks);
 
       double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
 
@@ -1105,14 +1126,23 @@ struct FlowSP {
         float weffP = 1., waccP = 1.;
         float weffN = 1., waccN = 1.;
 
-        if (!trackSelected(track, field))
-          continue;
-
         if (track.sign() == 0.0)
           continue;
 
         registry.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
         bool pos = (track.sign() > 0) ? true : false;
+
+        // Fill QA histograms before track selection
+        if (cfgFillQAHistos) {
+          fillTrackQA<kBefore, kInclusive>(track, vtxz);
+          if (pos)
+            fillTrackQA<kBefore, kPositive>(track, vtxz);
+          else
+            fillTrackQA<kBefore, kNegative>(track, vtxz);
+        }
+
+        if (!trackSelected(track, field))
+          continue;
 
         // Fill NUA weights
         if (cfgFillWeights) {
@@ -1161,20 +1191,23 @@ struct FlowSP {
         fillHistograms<kInclusive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
 
         if (cfgFillQAHistos)
-          fillTrackQA<kInclusive>(track, vtxz, wacc, weff);
+          fillTrackQA<kAfter, kInclusive>(track, vtxz, wacc, weff);
 
         if (cfgFillChargeDependence) {
           if (pos) {
             fillHistograms<kPositive>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kPositive>(track, vtxz, waccP, weffP);
+            if (cfgFillQAHistos)
+              fillTrackQA<kAfter, kPositive>(track, vtxz, waccP, weffP);
           } else {
             fillHistograms<kNegative>(track, wacc, weff, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            fillTrackQA<kNegative>(track, vtxz, waccN, weffN);
+            if (cfgFillQAHistos)
+              fillTrackQA<kAfter, kNegative>(track, vtxz, waccN, weffN);
           }
         }
       } // end of track loop
     } // end of collision isSelected loop
   }
+
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
 
   void processMCReco(CC const& collision, aod::BCsWithTimestamps const&, TCs const& tracks, FilteredTCs const& filteredTracks, aod::McParticles const&)
@@ -1197,8 +1230,13 @@ struct FlowSP {
     if (cfgFillQAHistos)
       fillEventQA<kBefore>(collision, tracks);
 
-    if (!eventSelected(collision, filteredTracks.size(), centrality))
+    if (!eventSelected(collision, filteredTracks.size()))
       return;
+
+    if (centrality > cfgCentMax || centrality < cfgCentMin)
+      return;
+
+    registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     if (!collision.has_mcCollision()) {
       LOGF(info, "No mccollision found for this collision");
@@ -1220,12 +1258,8 @@ struct FlowSP {
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
 
-      if (!mcParticle.isPhysicalPrimary()) {
-        registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 0);
-        continue;
-      } else {
-        registry.fill(HIST("trackMCReco/before/hIsPhysicalPrimary"), 1);
-      }
+      if (cfgFillQAHistos)
+        fillTrackQA<kBefore, kInclusive>(track, vtxz);
 
       if (!trackSelected(track, field))
         continue;
@@ -1233,7 +1267,7 @@ struct FlowSP {
       fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
 
       if (cfgFillQAHistos)
-        fillTrackQA<kInclusive>(track, vtxz);
+        fillTrackQA<kAfter, kInclusive>(track, vtxz);
 
     } // end of track loop
   }
@@ -1273,16 +1307,29 @@ struct FlowSP {
           centrality = col.centFV0A();
         if (cfgCentNGlobal)
           centrality = col.centNGlobal();
-        fillEventQA<kBefore>(col, trackSlice);
+
+        if (cfgFillQAHistos)
+          fillEventQA<kBefore>(col, trackSlice);
+
         if (trackSlice.size() < 1) {
           colSelected = false;
           continue;
         }
-        if (!eventSelected(col, filteredTrackSlice.size(), centrality)) {
+        if (!eventSelected(col, filteredTrackSlice.size())) {
           colSelected = false;
           continue;
         }
-        fillEventQA<kAfter>(col, trackSlice);
+
+        if (centrality > cfgCentMax || centrality < cfgCentMin) {
+          colSelected = false;
+          continue;
+        }
+        registry.fill(HIST("hEventCount"), evSel_CentCuts);
+
+        if (cfgFillQAHistos)
+          fillEventQA<kAfter>(col, trackSlice);
+
+      } // leave reconstructed collision loop
 
         if (!colSelected)
           continue;
@@ -1294,7 +1341,6 @@ struct FlowSP {
             continue;
 
           int charge = 0;
-          ;
 
           auto pdgCode = particle.pdgCode();
           auto pdgInfo = pdg->GetParticle(pdgCode);
@@ -1330,7 +1376,6 @@ struct FlowSP {
             registry.fill(HIST("trackMCGen/after/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
           }
         }
-      }
     }
   }
   PROCESS_SWITCH(FlowSP, processMCGen, "Process analysis for MC generated events", false);
