@@ -2029,7 +2029,7 @@ struct AnalysisSameEventPairing {
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<TPairType>(t1, t2);
-              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues); 
               if (useMiniTree.fConfigMiniTree) {
                 // WARNING! To be checked
                 dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
@@ -2137,7 +2137,7 @@ struct AnalysisSameEventPairing {
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
               //mcDecision |= (static_cast<uint32_t>(1) << isig);
-              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2);
+              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2);//NOTE: This feature will only work for muons 
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
             }
           }
