@@ -86,7 +86,7 @@ struct TrackEfficiency {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
   int acceptSplitCollisionsCase0 = 0; // acceptSplitCollisions case: only look at mcCollisions that are not split
-  int acceptSplitCollisionsCase2 = 2; //acceptSplitCollisions case: accept split mcCollisions but only look at the first reco collision associated with it
+  int acceptSplitCollisionsCase2 = 2; // acceptSplitCollisions case: accept split mcCollisions but only look at the first reco collision associated with it
   // int acceptSplitCollisionsCase1 = 1; is in the else{} case
 
   bool isChargedParticle(int code)
@@ -278,7 +278,7 @@ struct TrackEfficiency {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                     // check only that the first reconstructed collision passes the check
+    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                 // check only that the first reconstructed collision passes the check
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
@@ -444,7 +444,7 @@ struct TrackEfficiency {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                                          // check only that the first reconstructed collision passes the check
+    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                 // check only that the first reconstructed collision passes the check
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
@@ -692,7 +692,7 @@ struct TrackEfficiency {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                     // check only that the first reconstructed collision passes the check
+    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                 // check only that the first reconstructed collision passes the check
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
@@ -753,7 +753,7 @@ struct TrackEfficiency {
 
     bool hasSel8Coll = false;
     bool centralityCheck = false;
-    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                     // check only that the first reconstructed collision passes the check
+    if (acceptSplitCollisions == acceptSplitCollisionsCase2) {                                                 // check only that the first reconstructed collision passes the check
       if (jetderiveddatautilities::selectCollision(collisions.begin(), eventSelectionBits, skipMBGapEvents)) { // Skipping MC events that have not a single selected reconstructed collision ; effect unclear if mcColl is split
         hasSel8Coll = true;
       }
