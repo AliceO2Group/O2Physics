@@ -36,7 +36,6 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "EventFiltering/filterTables.h"
@@ -128,7 +127,9 @@ struct JetHadronRecoil {
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
                               {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hSignalPtHard", "jet p_{T} vs #hat{p};p_{T,jet};#frac{p_{T,trig}}{#hat{p}}", {HistType::kTH2F, {{500, -100, 400}, {20, 0, 5}}}},
                               {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hReferencePtHard", "jet p_{T} vs #hat{p};p_{T,jet};#frac{p_{T,trig}}{#hat{p}}", {HistType::kTH2F, {{500, -100, 400}, {20, 0, 5}}}},
                               {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
@@ -195,7 +196,9 @@ struct JetHadronRecoil {
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
+    std::vector<double> ptTTAr;
     double phiTT = 0;
+    double ptTT = 0;
     int trigNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
@@ -214,11 +217,13 @@ struct JetHadronRecoil {
       }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
+        ptTTAr.push_back(track.pt());
         registry.fill(HIST("hSignalTriggers"), track.pt(), weight);
         nTT++;
       }
       if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(track.phi());
+        ptTTAr.push_back(track.pt());
         registry.fill(HIST("hReferenceTriggers"), track.pt(), weight);
         nTT++;
       }
@@ -230,6 +235,7 @@ struct JetHadronRecoil {
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
+      ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
@@ -279,6 +285,7 @@ struct JetHadronRecoil {
           registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt() - (rho * jet.area()), weight);
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt() - (rho * jet.area()), weight);
+            registry.fill(HIST("hSignalPtHard"), jet.pt() - (rho * jet.area()), ptTT / pTHat, weight);
           }
         }
         if (!isSigCol) {
@@ -296,6 +303,7 @@ struct JetHadronRecoil {
           }
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt() - (rhoReference * jet.area()), weight);
+            registry.fill(HIST("hReferencePtHard"), jet.pt() - (rhoReference * jet.area()), ptTT / pTHat, weight);
           }
         }
       }
