@@ -156,6 +156,9 @@ struct UccZdc {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<ccdb::BasicCCDBManager> ccdb;
 
+  TF1* fMeanNch = nullptr;
+  TF1* fSigmaNch = nullptr;
+
   void init(InitContext const&)
   {
     // define axes you want to use
@@ -288,6 +291,21 @@ struct UccZdc {
     // This avoids that users can replace objects **while** a train is running
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, now);
+    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, now);
+    if (!fMeanNch) {
+      LOGF(fatal, "fMeanNch object not found!");
+    }
+    if (!fSigmaNch) {
+      LOGF(fatal, "fSigmaNch object not found!");
+    }
+
+    LOG(info) << "\tnow=" << now;
+    LOG(info) << "\tapplyEff=" << applyEff.value;
+    LOG(info) << "\tpaTH=" << paTH.value;
+    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
+    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
   }
 
   template <typename CheckCol>
@@ -461,12 +479,6 @@ struct UccZdc {
 
     // Nch-based selection
     if (useMidRapNchSel) {
-      auto fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, foundBC.runNumber());
-      auto fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, foundBC.runNumber());
-      if (!fMeanNch || !fSigmaNch) {
-        return;
-      }
-
       const double meanNch{fMeanNch->Eval(normT0M)};
       const double sigmaNch{fSigmaNch->Eval(normT0M)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
@@ -605,13 +617,8 @@ struct UccZdc {
       glbTracks++;
     }
 
+    // Nch-based selection
     if (useMidRapNchSel) {
-      auto fMeanNch = ccdb->getForRun<TF1>(paTHmeanNch.value, foundBC.runNumber());
-      auto fSigmaNch = ccdb->getForRun<TF1>(paTHsigmaNch.value, foundBC.runNumber());
-      if (!fMeanNch || !fSigmaNch) {
-        return;
-      }
-
       const double meanNch{fMeanNch->Eval(normT0M)};
       const double sigmaNch{fSigmaNch->Eval(normT0M)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
