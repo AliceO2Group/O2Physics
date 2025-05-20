@@ -81,15 +81,15 @@ struct Filter2Prong {
       return; // rejected collision
     if (cfgVerbosity > 0 && candidates.size() > 0)
       LOGF(info, "Candidates for collision: %lu, cfcollisions: %lu, CFTracks: %lu", candidates.size(), cfcollisions.size(), cftracks.size());
-    for (auto& c : candidates) {
+    for (const auto& c : candidates) {
       int prongCFId[2] = {-1, -1};
-      for (auto& cftrack : cftracks) {
+      for (const auto& cftrack : cftracks) {
         if (c.prong0Id() == cftrack.trackId()) {
           prongCFId[0] = cftrack.globalIndex();
           break;
         }
       }
-      for (auto& cftrack : cftracks) {
+      for (const auto& cftrack : cftracks) {
         if (c.prong1Id() == cftrack.trackId()) {
           prongCFId[1] = cftrack.globalIndex();
           break;
@@ -106,10 +106,10 @@ struct Filter2Prong {
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
         if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
           mlvecd.clear();
-          for (float val : c.mlProbD0())
+          for (const float val : c.mlProbD0())
             mlvecd.push_back(val);
           mlvecdbar.clear();
-          for (float val : c.mlProbD0bar())
+          for (const float val : c.mlProbD0bar())
             mlvecdbar.push_back(val);
           output2ProngTrackmls(cfcollisions.begin().globalIndex(), mlvecd, mlvecdbar);
         }
@@ -120,10 +120,10 @@ struct Filter2Prong {
                            prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
         if constexpr (std::experimental::is_detected<HasMLProb, typename HFCandidatesType::iterator>::value) {
           mlvecd.clear();
-          for (float val : c.mlProbD0())
+          for (const float val : c.mlProbD0())
             mlvecd.push_back(val);
           mlvecdbar.clear();
-          for (float val : c.mlProbD0bar())
+          for (const float val : c.mlProbD0bar())
             mlvecdbar.push_back(val);
           output2ProngTrackmls(cfcollisions.begin().globalIndex(), mlvecd, mlvecdbar);
         }
@@ -146,7 +146,7 @@ struct Filter2Prong {
   void processMC(aod::McCollisions::iterator const&, aod::CFMcParticleRefs const& cfmcparticles, aod::McParticles const& mcparticles)
   {
     // The main filter outputs the primary MC particles. Here we just resolve the daughter indices that are needed for the efficiency matching.
-    for (auto& r : cfmcparticles) {
+    for (const auto& r : cfmcparticles) {
       const auto& mcParticle = mcparticles.iteratorAt(r.mcParticleId());
       if (mcParticle.daughtersIds().size() != 2) {
         output2ProngMcParts(-1, -1);
@@ -154,7 +154,7 @@ struct Filter2Prong {
       }
       int prongCFId[2] = {-1, -1};
       for (uint i = 0; i < 2; ++i) {
-        for (auto& cfmcpart : cfmcparticles) {
+        for (const auto& cfmcpart : cfmcparticles) {
           if (mcParticle.daughtersIds()[i] == cfmcpart.mcParticleId()) {
             prongCFId[i] = cfmcpart.globalIndex();
             break;
@@ -172,16 +172,16 @@ struct Filter2Prong {
   {
     if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
-    for (auto& cftrack1 : cftracks) {
-      auto p1 = tracks.iteratorAt(cftrack1.trackId());
+    for (const auto& cftrack1 : cftracks) {
+      const auto& p1 = tracks.iteratorAt(cftrack1.trackId() - tracks.begin().globalIndex());
       if (p1.sign() != 1)
         continue;
       if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart1PID, p1), o2::aod::pidutils::tofNSigma(cfgImPart1PID, p1)) <= 0.0f)
         continue;
-      for (auto& cftrack2 : cftracks) {
+      for (const auto& cftrack2 : cftracks) {
         if (cftrack2.globalIndex() == cftrack1.globalIndex())
           continue;
-        auto p2 = tracks.iteratorAt(cftrack2.trackId());
+        const auto& p2 = tracks.iteratorAt(cftrack2.trackId() - tracks.begin().globalIndex());
         if (p2.sign() != -1)
           continue;
         if (sigmaFormula->Eval(o2::aod::pidutils::tpcNSigma(cfgImPart2PID, p2), o2::aod::pidutils::tofNSigma(cfgImPart2PID, p2)) <= 0.0f)
