@@ -313,30 +313,30 @@ struct HfTreeCreatorTccToD0D0Pi {
   {
 
     for (const auto& collision : collisions) {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       auto primaryVertex = getPrimaryVertex(collision);
-      if (runNumber != bc.runNumber()) {
-        LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-        bz = o2::base::Propagator::Instance()->getNominalBz();
-        LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
-      }
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      fillEvent(collision, 0, bc.runNumber());
 
       if (buildVertex) {
+        if (runNumber != bc.runNumber()) {
+          LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+          initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+          bz = o2::base::Propagator::Instance()->getNominalBz();
+          LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        }
         dfTcc.setBz(bz);
         dfD1.setBz(bz);
         dfD2.setBz(bz);
       }
-      fillEvent(collision, 0, bc.runNumber());
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       if (candwD0ThisColl.size() <= 1)
         continue; // only loop the collision that include at least 2 D candidates
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
-      for (const auto& candidateD1 : candidates) {
-        for (auto candidateD2 = candidateD1 + 1; candidateD2 != candidates.end(); ++candidateD2) {
-          for (const auto& trackId : trackIndices) {
+      for (const auto& candidateD1 : candwD0ThisColl) {
+        for (auto candidateD2 = candidateD1 + 1; candidateD2 != candwD0ThisColl.end(); ++candidateD2) {
+          for (const auto& trackId : trackIdsThisCollision) {
 
             auto trackPion = trackId.template track_as<TrkType>();
             if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
