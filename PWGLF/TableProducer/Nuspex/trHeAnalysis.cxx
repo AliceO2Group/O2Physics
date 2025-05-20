@@ -327,7 +327,7 @@ struct TrHeAnalysis {
           track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
             kinemOptions.yHighCut;
         histos.fill(HIST("histogram/cuts"), 0);
-        if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
+        if (std::abs(track.p()) < kinemOptions.pCut) {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
@@ -366,10 +366,10 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    track.tpcInnerParam() / (1.f * track.sign()),
+                    track.getRigidity(track),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
-                    track.p() / (1.f * track.sign()), track.beta());
+                    getRigidity(track), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
@@ -391,10 +391,10 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (1.f * track.sign()),
+                        getRigidity(track),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        track.p() / (1.f * track.sign()), track.beta());
+                        getRigidity, track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -437,10 +437,10 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (2.f * track.sign()),
+                        getRigidity(track),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        track.p() / (2.f * track.sign()), track.beta());
+                        getRigidity(track), track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -481,7 +481,7 @@ struct TrHeAnalysis {
           track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
             kinemOptions.yHighCut;
         histos.fill(HIST("histogram/cuts"), 0);
-        if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
+        if (std::abs(track.p()) < kinemOptions.pCut) {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
@@ -520,7 +520,7 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    track.tpcInnerParam() / (1.f * track.sign()),
+                    getRigidity(track) / (1.f * track.sign()),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
                     track.p() / (1.f * track.sign()), track.beta());
@@ -544,7 +544,7 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (1.f * track.sign()),
+                        getRigidity(track) / (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
                         track.p() / (1.f * track.sign()), track.beta());
@@ -589,10 +589,10 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (2.f * track.sign()),
+                        getRigidity(track),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        track.p() / (2.f * track.sign()), track.beta());
+                        getRigidity(track), track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -625,7 +625,7 @@ struct TrHeAnalysis {
   template <class T>
   float getTPCnSigma(T const& track, Particle const& particle)
   {
-    const float rigidity = track.tpcInnerParam();
+    const float rigidity = getRigidity(track);
     if (!track.hasTPC())
       return -999;
 
