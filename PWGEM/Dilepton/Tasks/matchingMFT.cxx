@@ -34,7 +34,6 @@
 #include "ReconstructionDataFormats/TrackFwd.h"
 
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PropagatedFwdTrackTables.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -354,19 +353,6 @@ struct matchingMFT {
       dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYYatDCA + dcaY * dcaY * cXXatDCA - 2. * dcaX * dcaY * cXYatDCA) / det / 2.)); // dca xy in sigma
     }
     float sigma_dcaXY = dcaXY / dcaXYinSigma;
-
-    // o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
-    // float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
-    // float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
-    // float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
-    // o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
-    // float dpt = (ptMatchedMCHMID - pt) / pt;
-    // float deta = etaMatchedMCHMID - eta;
-    // float dphi = phiMatchedMCHMID - phi;
-    // o2::math_utils::bringToPMPi(dphi);
-    // if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f || std::fabs(dpt) > maxRelDPt) {
-    //   return;
-    // }
 
     o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToDCA);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
