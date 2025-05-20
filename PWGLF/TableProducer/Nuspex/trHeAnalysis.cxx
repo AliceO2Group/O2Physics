@@ -36,7 +36,6 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <TF1.h>
-#include <TLorentzVector.h>
 
 namespace o2::aod
 {
@@ -366,7 +365,7 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    track.getRigidity(track),
+                    getRigidity(track),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
                     getRigidity(track), track.beta());
@@ -394,7 +393,7 @@ struct TrHeAnalysis {
                         getRigidity(track),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        getRigidity, track.beta());
+                        getRigidity(track), track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
