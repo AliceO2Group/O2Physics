@@ -248,8 +248,8 @@ struct HfTreeCreatorDsToKKPi {
 
   HfHelper hfHelper;
 
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi>>;
-  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
+  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi>>;
+  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
