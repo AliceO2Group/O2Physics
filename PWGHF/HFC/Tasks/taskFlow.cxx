@@ -693,6 +693,24 @@ struct HfTaskFlow {
   }
 
   // =========================
+  //      Helper functions
+  // =========================
+
+  HfProngSpecies getSpecies(int pdgCode)
+  {
+    switch (std::abs(pdgCode)) {
+      case PDG_t::kPiPlus: // positive or negative pion
+        return HfProngSpecies::Pion;
+      case PDG_t::kKPlus: // positive or negative kaon
+        return HfProngSpecies::Kaon;
+      case PDG_t::kProton: // proton or proton bar
+        return HfProngSpecies::Proton;
+      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
+        return HfProngSpecies::NHfProngSpecies;
+    }
+  }
+
+  // =========================
   //      Cuts with functions
   // =========================
 
@@ -1512,20 +1530,6 @@ struct HfTaskFlow {
   //    EFFICIENCIES PROCESS FUNCTIONS
   // ===================================================================================================================================================================================================================================================================
   // ===================================================================================================================================================================================================================================================================
-
-  int getSpecies(int pdgCode)
-  {
-    switch (std::abs(pdgCode)) {
-      case PDG_t::kPiPlus: // positive or negative pion
-        return Pion;
-      case PDG_t::kKPlus: // positive or negative kaon
-        return Kaon;
-      case PDG_t::kProton: // proton or proton bar
-        return Proton;
-      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
-        return NHfProngSpecies;
-    }
-  }
 
   // NOTE SmallGroups includes soa::Filtered always -> in the smallGroups there is the equivalent of FilteredCollisionsWSelMultMcLabels
   void processMcEfficiencyMft(FilteredMcCollisions::iterator const& mcCollision,
