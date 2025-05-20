@@ -647,9 +647,10 @@ struct TrHeAnalysis {
     constexpr int kBitsPerLayer = 4;
     constexpr int kBitMask = (1 << kBitsPerLayer) - 1;
     int sum = 0, n = 0;
-    for (int i = 0; i < 8; i++) {
-      sum += (track.itsClusterSizes() >> (4 * i) & 15);
-      if (track.itsClusterSizes() >> (4 * i) & 15)
+    for (int i = 0; i < kNumLayers; i++) {
+      int clsSize = (track.itsClusterSizes() >> (kBitsPerLayer * i)) & kBitMask;
+      sum += clsSize;
+      if (clsSize)
         n++;
     }
     return n > 0 ? static_cast<float>(sum) / n : 0.f;
