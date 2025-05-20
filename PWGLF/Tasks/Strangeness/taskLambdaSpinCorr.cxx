@@ -240,6 +240,7 @@ struct LfTaskLambdaSpinCorr {
     auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
     auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
     auto pairDummy = particle1Dummy + particle2Dummy;
+
     // auto pairParticle = particle1 + particle2;
 
     ROOT::Math::Boost boostPairToCM{pairDummy.BoostToCM()}; // boosting vector for pair CM
@@ -430,7 +431,7 @@ struct LfTaskLambdaSpinCorr {
 
       // 2nd loop for combination of lambda lambda
       for (const auto& v02 : V0s) {
-        if (v02.v0Id() <= v0.v0Id()) {
+        if (v02.index() <= v0.index()) {
           continue;
         }
         auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(v02, collision);
@@ -506,14 +507,20 @@ struct LfTaskLambdaSpinCorr {
       auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
       // for (auto& [t1, t2, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02, groupV03))) {
       // LOGF(info, "Mixed event collisions: (%d, %d, %d)", t1.collisionId(),t2.collisionId(),t3.collisionId());
+      auto maxV0Size = 1100;
+      if (groupV01.size() > maxV0Size || groupV02.size() > maxV0Size || groupV03.size() > maxV0Size) {
+        continue;
+      }
+      bool pairStatus[1150][1150] = {{false}};
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
         bool pairfound = false;
-        if (t2.v0Id() <= t1.v0Id()) {
+        if (t2.index() <= t1.index()) {
           continue;
         }
         if (t1.collisionId() != t2.collisionId()) {
           continue;
         }
+
         auto [lambdaTag1, aLambdaTag1, isValid1] = getLambdaTags(t1, collision1);
         auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTags(t2, collision1);
         if (!isValid1) {
@@ -529,6 +536,10 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
         for (const auto& t3 : groupV03) {
+          if (pairStatus[t3.index()][t2.index()]) {
+            // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
+            continue;
+          }
           if (t1.collisionId() == t3.collisionId()) {
             continue;
           }
@@ -539,7 +550,6 @@ struct LfTaskLambdaSpinCorr {
           if (lambdaTag3 && aLambdaTag3) {
             continue;
           }
-
           if (lambdaTag1 != lambdaTag3 || aLambdaTag1 != aLambdaTag3) {
             continue;
           }
@@ -552,7 +562,6 @@ struct LfTaskLambdaSpinCorr {
           if (std::abs(t1.phi() - t3.phi()) > phiMix) {
             continue;
           }
-
           if (lambdaTag2) {
             proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
             antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
@@ -586,6 +595,8 @@ struct LfTaskLambdaSpinCorr {
             fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 2);
           }
           pairfound = true;
+          pairStatus[t3.index()][t2.index()] = true;
+          // LOGF(info, "v0 id: (%d, %d)", t3.index(), t2.index());
           if (pairfound) {
             // LOGF(info, "Pair found");
             break;
@@ -596,206 +607,79 @@ struct LfTaskLambdaSpinCorr {
   }
   PROCESS_SWITCH(LfTaskLambdaSpinCorr, processME, "Process data ME", true);
 
-  using CollisionMCTrueTable = aod::McCollisions;
-  using TrackMCTrueTable = aod::McParticles;
-
-  using CollisionMCRecTableCentFT0C = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::PVMults>>;
-  using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
-  // using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
-  using FilTrackMCRecTable = TrackMCRecTable;
-  Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
+  using CollisionMCRecTableCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
+  using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
-
-  void processMC(CollisionMCTrueTable::iterator const& /*TrueCollision*/, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& /*RecTracks*/, V0TrackCandidatesMC const& V0s)
+  void processMC(CollisionMCRecTableCentFT0C::iterator const& collision, TrackMCRecTable const& /*tracks*/, V0TrackCandidatesMC const& V0s)
   {
 
-    for (const auto& RecCollision : RecCollisions) {
-      if (!RecCollision.sel8()) {
+    // for (const auto& RecCollis : collision) {
+    if (!collision.sel8()) {
+      return;
+    }
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
+      return;
+    }
+    auto centrality = collision.centFT0C();
+    histos.fill(HIST("hCentrality"), centrality);
+    for (const auto& v0 : V0s) {
+      auto [lambdaTag, aLambdaTag, isValid] = getLambdaTagsMC(v0, collision);
+      if (!isValid) {
         continue;
       }
-      if (!RecCollision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-        // continue;
+      if (lambdaTag) {
+        proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
+        antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
+        lambda = proton + antiPion;
       }
-      if (std::abs(RecCollision.posZ()) > cfgCutVertex) {
+      if (aLambdaTag) {
+        antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassProton);
+        pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
+        antiLambda = antiProton + pion;
+      }
+      if (lambdaTag && aLambdaTag) {
         continue;
       }
-      auto centrality = RecCollision.centFT0C();
-      histos.fill(HIST("hCentrality"), centrality);
-      for (const auto& v0 : V0s) {
-        auto [lambdaTag, aLambdaTag, isValid] = getLambdaTagsMC(v0, RecCollision);
-        if (!isValid) {
+      auto postrack1 = v0.template posTrack_as<TrackMCRecTable>();
+      auto negtrack1 = v0.template negTrack_as<TrackMCRecTable>();
+      // 2nd loop for combination of lambda lambda
+      for (const auto& v02 : V0s) {
+        if (v02.index() <= v0.index()) {
           continue;
         }
-        if (lambdaTag) {
-          proton = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassProton);
-          antiPion = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
-          lambda = proton + antiPion;
+        auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTagsMC(v02, collision);
+        if (!isValid2) {
+          continue;
         }
-        if (aLambdaTag) {
-          antiProton = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassProton);
-          pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
-          antiLambda = antiProton + pion;
+        if (lambdaTag2) {
+          proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassProton);
+          antiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassPionCharged);
+          lambda2 = proton2 + antiPion2;
+        }
+        if (aLambdaTag2) {
+          antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassProton);
+          pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassPionCharged);
+          antiLambda2 = antiProton2 + pion2;
         }
         if (lambdaTag && aLambdaTag) {
           continue;
         }
-        auto postrack1 = v0.template posTrack_as<TrackMCRecTable>();
-        auto negtrack1 = v0.template negTrack_as<TrackMCRecTable>();
-        // 2nd loop for combination of lambda lambda
-        for (const auto& v02 : V0s) {
-          if (v02.v0Id() <= v0.v0Id()) {
-            continue;
-          }
-          auto [lambdaTag2, aLambdaTag2, isValid2] = getLambdaTagsMC(v02, RecCollision);
-          if (!isValid2) {
-            continue;
-          }
-          if (lambdaTag2) {
-            proton2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassProton);
-            antiPion2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassPionCharged);
-            lambda2 = proton2 + antiPion2;
-          }
-          if (aLambdaTag2) {
-            antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassProton);
-            pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassPionCharged);
-            antiLambda2 = antiProton2 + pion2;
-          }
-          if (lambdaTag && aLambdaTag) {
-            continue;
-          }
-          auto postrack2 = v02.template posTrack_as<TrackMCRecTable>();
-          auto negtrack2 = v02.template negTrack_as<TrackMCRecTable>();
-          if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
-            continue; // no shared decay products
-          }
-          if (lambdaTag && lambdaTag2) {
-            fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 0);
-          }
-          if (aLambdaTag && aLambdaTag2) {
-            fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 0);
-          }
-          if (lambdaTag && aLambdaTag2) {
-            fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 0);
-          }
-          if (aLambdaTag && lambdaTag2) {
-            fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 0);
-          }
+        auto postrack2 = v02.template posTrack_as<TrackMCRecTable>();
+        auto negtrack2 = v02.template negTrack_as<TrackMCRecTable>();
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
+          continue; // no shared decay products
         }
-      }
-
-      //*******generated****************
-      for (const auto& mcParticle : GenParticles) {
-        if (std::abs(mcParticle.y()) > confV0Rap) {
-          continue;
+        if (lambdaTag && lambdaTag2) {
+          fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 0);
         }
-        if (std::abs(mcParticle.pdgCode()) != PDG_t::kLambda0) {
-          continue;
+        if (aLambdaTag && aLambdaTag2) {
+          fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 0);
         }
-
-        int tagamc = 0;
-        int tagbmc = 0;
-        int taga2mc = 0;
-        int tagb2mc = 0;
-
-        auto pdg1 = mcParticle.pdgCode();
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        int daughsize = 2;
-        if (kDaughters.size() != daughsize) {
-          continue;
+        if (lambdaTag && aLambdaTag2) {
+          fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 0);
         }
-
-        for (const auto& kCurrentDaughter : kDaughters) {
-
-          if (std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter.pdgCode()) != PDG_t::kPiPlus) {
-            continue;
-          }
-
-          if (kCurrentDaughter.pdgCode() == PDG_t::kProton) {
-            protonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
-          }
-          if (kCurrentDaughter.pdgCode() == PDG_t::kPiMinus) {
-            antiPionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
-          }
-
-          if (kCurrentDaughter.pdgCode() == PDG_t::kProtonBar) {
-            antiProtonmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassProton);
-          }
-          if (kCurrentDaughter.pdgCode() == PDG_t::kPiPlus) {
-            pionmc = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), o2::constants::physics::MassPionCharged);
-          }
-        }
-        if (pdg1 == PDG_t::kLambda0) {
-          tagamc = 1;
-          lambdamc = protonmc + antiPionmc;
-        }
-
-        if (pdg1 == PDG_t::kLambda0Bar) {
-          tagbmc = 1;
-          antiLambdamc = antiProtonmc + pionmc;
-        }
-
-        for (const auto& mcParticle2 : GenParticles) {
-          if (std::abs(mcParticle2.y()) > confV0Rap) {
-            continue;
-          }
-          if (std::abs(mcParticle2.pdgCode()) != PDG_t::kLambda0) {
-            continue;
-          }
-          if (mcParticle.globalIndex() >= mcParticle2.globalIndex()) {
-            continue;
-          }
-
-          auto pdg2 = mcParticle2.pdgCode();
-          auto kDaughters2 = mcParticle2.daughters_as<aod::McParticles>();
-
-          if (kDaughters2.size() != daughsize) {
-            continue;
-          }
-
-          for (const auto& kCurrentDaughter2 : kDaughters2) {
-            if (std::abs(kCurrentDaughter2.pdgCode()) != PDG_t::kProton && std::abs(kCurrentDaughter2.pdgCode()) != PDG_t::kPiPlus) {
-              continue;
-            }
-
-            if (kCurrentDaughter2.pdgCode() == PDG_t::kProton) {
-              proton2mc = ROOT::Math::PxPyPzMVector(kCurrentDaughter2.px(), kCurrentDaughter2.py(), kCurrentDaughter2.pz(), o2::constants::physics::MassProton);
-            }
-            if (kCurrentDaughter2.pdgCode() == PDG_t::kPiMinus) {
-              antiPion2mc = ROOT::Math::PxPyPzMVector(kCurrentDaughter2.px(), kCurrentDaughter2.py(), kCurrentDaughter2.pz(), o2::constants::physics::MassPionCharged);
-            }
-
-            if (kCurrentDaughter2.pdgCode() == PDG_t::kProtonBar) {
-              antiProton2mc = ROOT::Math::PxPyPzMVector(kCurrentDaughter2.px(), kCurrentDaughter2.py(), kCurrentDaughter2.pz(), o2::constants::physics::MassProton);
-            }
-            if (kCurrentDaughter2.pdgCode() == PDG_t::kPiPlus) {
-              pion2mc = ROOT::Math::PxPyPzMVector(kCurrentDaughter2.px(), kCurrentDaughter2.py(), kCurrentDaughter2.pz(), o2::constants::physics::MassPionCharged);
-            }
-          }
-
-          if (pdg2 == PDG_t::kLambda0) {
-            taga2mc = 1;
-            lambda2mc = proton2mc + antiPion2mc;
-          }
-
-          if (pdg2 == PDG_t::kLambda0Bar) {
-            tagb2mc = 1;
-            antiLambda2mc = antiProton2mc + pion2mc;
-          }
-
-          if (tagamc && taga2mc) {
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdamc, lambda2mc, protonmc, proton2mc, centrality, 1);
-          }
-          if (tagamc && tagb2mc) {
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, lambdamc, antiLambda2mc, protonmc, antiProton2mc, centrality, 1);
-          }
-
-          if (tagbmc && taga2mc) {
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdamc, lambda2mc, antiProtonmc, proton2mc, centrality, 1);
-          }
-
-          if (tagbmc && tagb2mc) {
-            fillHistograms(tagamc, tagbmc, taga2mc, tagb2mc, antiLambdamc, antiLambda2mc, antiProtonmc, antiProton2mc, centrality, 1);
-          }
+        if (aLambdaTag && lambdaTag2) {
+          fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 0);
         }
       }
     }
@@ -827,9 +711,14 @@ struct LfTaskLambdaSpinCorr {
       auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
       // for (auto& [t1, t2, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02, groupV03))) {
       // LOGF(info, "Mixed event collisions: (%d, %d, %d)", t1.collisionId(),t2.collisionId(),t3.collisionId());
+      auto maxV0Size = 1100;
+      if (groupV01.size() > maxV0Size || groupV02.size() > maxV0Size || groupV03.size() > maxV0Size) {
+        continue;
+      }
+      bool pairStatus[1150][1150] = {{false}};
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
         bool pairfound = false;
-        if (t2.v0Id() <= t1.v0Id()) {
+        if (t2.index() <= t1.index()) {
           continue;
         }
         if (t1.collisionId() != t2.collisionId()) {
@@ -850,6 +739,10 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
         for (const auto& t3 : groupV03) {
+          if (pairStatus[t3.index()][t2.index()]) {
+            // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
+            continue;
+          }
           if (t1.collisionId() == t3.collisionId()) {
             continue;
           }
@@ -872,7 +765,6 @@ struct LfTaskLambdaSpinCorr {
           if (std::abs(t1.phi() - t3.phi()) > phiMix) {
             continue;
           }
-
           if (lambdaTag2) {
             proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
             antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
@@ -906,6 +798,7 @@ struct LfTaskLambdaSpinCorr {
             fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 2);
           }
           pairfound = true;
+          pairStatus[t3.index()][t2.index()] = true;
           if (pairfound) {
             // LOGF(info, "Pair found");
             break;
