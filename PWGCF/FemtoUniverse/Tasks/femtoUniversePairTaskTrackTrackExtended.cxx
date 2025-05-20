@@ -349,8 +349,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         static_cast<framework::AxisSpec>(confTempFitVarpTBins),
         {confEtaBins, -2, 2},
         confMultBins,
-      } //
-    );
+      });
   }
 
   template <typename CollisionType>

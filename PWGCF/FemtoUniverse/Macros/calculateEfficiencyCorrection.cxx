@@ -25,7 +25,7 @@
 
 #include <cassert>
 #include <cmath>
-#include <filesystem>
+#include <filesystem> // NOLINT
 #include <iostream>
 #include <format>
 #include <string>
