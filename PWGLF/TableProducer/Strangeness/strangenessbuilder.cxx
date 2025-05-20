@@ -1357,7 +1357,7 @@ struct StrangenessBuilder {
       if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
         if (preSelectOpts.preselectOnlyDesiredV0s) {
           float lPt = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0], 
+            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
             straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
 
           if (
