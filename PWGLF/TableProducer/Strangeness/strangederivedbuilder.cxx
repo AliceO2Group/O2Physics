@@ -245,7 +245,8 @@ struct strangederivedbuilder {
     if (doprocessTrackExtrasV0sOnly +
           doprocessTrackExtras +
           doprocessTrackExtrasNoPID +
-          doprocessTrackExtrasMC >
+          doprocessTrackExtrasMC +
+          doprocessTrackExtrasMCNoPID >
         1) {
       LOGF(fatal, "You have enabled more than one process function associated to TracksExtra. Please check your configuration! Aborting now.");
     }
@@ -330,6 +331,9 @@ struct strangederivedbuilder {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, no PID");
     }
     if (doprocessTrackExtrasMC) {
+      LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
+    }
+    if (doprocessTrackExtrasMCNoPID) {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
     }
     LOGF(info, "====] cascade interlink processing [==============================");
@@ -836,6 +840,11 @@ struct strangederivedbuilder {
     fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
   }
 
+  void processTrackExtrasMCNoPID(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
+  }
+
   void processStrangeMothers(soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::McParticles const& mcParticles)
   {
     std::vector<int> motherReference(mcParticles.size(), -1); // index -1: not used / no reference
@@ -1108,6 +1117,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasNoPID, "Produce track extra information (V0s + casc), no PID", false);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMC, "Produce track extra information (V0s + casc)", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMCNoPID, "Produce track extra information (V0s + casc), no PID", false);
   PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);
