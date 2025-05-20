@@ -136,6 +136,7 @@ class Particle
   int charge;
   float resolution;
   std::vector<float> betheParams;
+  static constexpr int kNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
            LabeledArray<float> bethe)
@@ -149,7 +150,7 @@ class Particle
       bethe.get(name, "resolution"); // Access the "resolution" parameter
 
     betheParams.clear();
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < kNumBetheParams; ++i) {
       betheParams.push_back(bethe.get(name, i));
     }
   }
@@ -642,6 +643,9 @@ struct TrHeAnalysis {
   template <class T>
   float getMeanItsClsSize(T const& track)
   {
+    constexpr int kNumLayers = 8;
+    constexpr int kBitsPerLayer = 4;
+    constexpr int kBitMask = (1 << kBitsPerLayer) - 1;
     int sum = 0, n = 0;
     for (int i = 0; i < 8; i++) {
       sum += (track.itsClusterSizes() >> (4 * i) & 15);
