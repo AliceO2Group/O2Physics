@@ -235,7 +235,7 @@ struct JetHadronRecoil {
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
-      ptTT = ptTT[trigNumber];
+      ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
