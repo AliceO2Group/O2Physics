@@ -2278,6 +2278,7 @@ struct Phik0shortanalysis {
       return;
 
     float multiplicity = collision.centFT0M();
+    dataEventHist.fill(HIST("hMultiplicityPercent"), multiplicity);
 
     for (const auto& track : filteredTracks)
       dataEventHist.fill(HIST("h2EtaDistribution"), multiplicity, track.eta());
@@ -2300,6 +2301,7 @@ struct Phik0shortanalysis {
         continue;
 
       float genmultiplicity = mcCollision.centFT0M();
+      mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
 
       auto mcTracksThisColl = filteredMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -2336,6 +2338,7 @@ struct Phik0shortanalysis {
     }
 
     float genmultiplicity = mcCollision.centFT0M();
+    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
