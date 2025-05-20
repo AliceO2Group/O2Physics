@@ -305,7 +305,7 @@ class strangenessBuilderHelper
     }
 
     // Calculate DCA with respect to the collision associated to the V0
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     // do DCA to PV on copies instead of originals
     auto positiveTrackParamCopy = positiveTrackParam;
@@ -485,7 +485,7 @@ class strangenessBuilderHelper
     }
 
     // Calculate DCA with respect to the collision associated to the V0
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     // do DCA to PV on copies instead of originals
     auto positiveTrackParamCopy = positiveTrackParam;
@@ -713,7 +713,7 @@ class strangenessBuilderHelper
 
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -937,7 +937,7 @@ class strangenessBuilderHelper
 
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -1175,14 +1175,14 @@ class strangenessBuilderHelper
     cascade.massOmega = MOmega;
 
     // KF Cascade covariance matrix
-    o2::gpu::gpustd::array<float, 21> covCascKF;
+    std::array<float, 21> covCascKF;
     for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covCascKF[i] = KFXi.GetCovariance(i);
       cascade.covariance[i] = covCascKF[i];
     }
 
     // KF V0 covariance matrix
-    o2::gpu::gpustd::array<float, 21> covV0KF;
+    std::array<float, 21> covV0KF;
     for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covV0KF[i] = KFV0.GetCovariance(i);
       cascade.kfTrackCovarianceV0[i] = covV0KF[i];
@@ -1259,7 +1259,7 @@ class strangenessBuilderHelper
     // Calculate DCAxy of the cascade (with bending)
     o2::track::TrackPar wrongV0 = fitter.createParentTrackPar();
     wrongV0.setAbsCharge(0); // charge zero
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     dcaInfo[0] = 999;
     dcaInfo[1] = 999;
 
