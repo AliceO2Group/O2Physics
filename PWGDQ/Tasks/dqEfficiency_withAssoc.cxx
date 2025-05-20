@@ -1252,7 +1252,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> recSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
-    //Configurable<bool> runMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
+    // Configurable<bool> runMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
   } fConfigMC;
 
   struct : ConfigurableGroup {
@@ -2029,7 +2029,7 @@ struct AnalysisSameEventPairing {
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<TPairType>(t1, t2);
-              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues); 
+              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
               if (useMiniTree.fConfigMiniTree) {
                 // WARNING! To be checked
                 dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
@@ -2073,9 +2073,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-  /*  if (fConfigMC.runMCGenPair) {
-      runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
-    }*/
+    /*  if (fConfigMC.runMCGenPair) {
+        runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
+      }*/
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -2083,9 +2083,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-   /* if (fConfigMC.runMCGenPair) {
-      runMCGen<VarManager::kDecayToMuMu>(mcEvents, mcTracks);
-    }*/
+    /* if (fConfigMC.runMCGenPair) {
+       runMCGen<VarManager::kDecayToMuMu>(mcEvents, mcTracks);
+     }*/
   }
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -2136,8 +2136,8 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              //mcDecision |= (static_cast<uint32_t>(1) << isig);
-              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2);//NOTE: This feature will only work for muons 
+              // mcDecision |= (static_cast<uint32_t>(1) << isig);
+              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
             }
           }
