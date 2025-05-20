@@ -1357,10 +1357,10 @@ struct StrangenessBuilder {
       if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
         if (preSelectOpts.preselectOnlyDesiredV0s) {
           float lPt = RecoDecay::sqrtSumOfSquares(
-              straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0], 
-              straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
+            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0], 
+            straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
 
-          if(
+          if (
             !( // photon PID and mass selection
               std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
               std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
@@ -1376,8 +1376,7 @@ struct StrangenessBuilder {
             !( // antiLambda PID and mass selection
               std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
               std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) 
-          ) {
+              std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1862,9 +1861,9 @@ struct StrangenessBuilder {
 
       if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
         if (preSelectOpts.preselectOnlyDesiredCascades) {
-          if(
+          if (
             float lPt = RecoDecay::sqrtSumOfSquares(
-              straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0], 
+              straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
               straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1]);
 
             !( // XiMinus PID and mass selection
@@ -1890,8 +1889,7 @@ struct StrangenessBuilder {
               std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
               std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
               std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin)
-          ) {
+              std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin)) {
             products.cascdataLink(-1);
             interlinks.cascadeToCascCores.push_back(-1);
             continue;
