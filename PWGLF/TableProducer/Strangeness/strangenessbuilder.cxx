@@ -1824,7 +1824,7 @@ struct StrangenessBuilder {
         // limited commodity, this isn't the default option.
 
         // check if cached - if not, skip
-        if (v0Map[cascade.v0Id] < 0) {
+        if (cascade.v0Id < 0 || v0Map[cascade.v0Id] < 0) {
           // this V0 hasn't been stored / cached
           products.cascdataLink(-1);
           interlinks.cascadeToCascCores.push_back(-1);
