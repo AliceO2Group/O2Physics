@@ -210,6 +210,8 @@ struct Multiplicity {
 
   MultEst classestimator = kV0M;
 
+  static constexpr float kForMultiplicityPtLowLimit = 0.001f;
+  static constexpr float kForMultiplicityPtHighLimit = 50.0f;
   float multiplicityClass = -1.0;
   float multiplicity = 0.0;
   bool inelgth0 = false;
@@ -277,16 +279,16 @@ struct Multiplicity {
       case kProton:
         /* not clear if we should use IsPhysicalPrimary here */
         /* TODO: adapt to FT0M Run 3 and other estimators */
-        if (0.001 < p.pt() && p.pt() < 50.0) {
-          if (p.eta() < 1.0 && -1.0 < p.eta()) {
+        if (kForMultiplicityPtLowLimit < p.pt() && p.pt() < kForMultiplicityPtHighLimit) {
+          if (p.eta() < 1.0f && -1.0f < p.eta()) {
             inelgth0 = true;
           }
-          addTo(p, v0am, 2.8, 5.1);
-          addTo(p, v0cm, -3.7, -1.7);
-          addTo(p, cl1m, -1.4, 1.4);
-          addTo(p, cl1EtaGapM, -1.4, -0.8);
-          addTo(p, cl1EtaGapM, 0.8, 1.4);
-          addTo(p, dNchdEta, -0.5, 0.5);
+          addTo(p, v0am, 2.8f, 5.1f);
+          addTo(p, v0cm, -3.7f, -1.7f);
+          addTo(p, cl1m, -1.4f, 1.4f);
+          addTo(p, cl1EtaGapM, -1.4f, -0.8f);
+          addTo(p, cl1EtaGapM, 0.8f, 1.4f);
+          addTo(p, dNchdEta, -0.5f, 0.5f);
           nPart++;
         }
         break;
@@ -359,13 +361,13 @@ struct Multiplicity {
 
 struct DptDptFilter {
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
-    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
-    Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
-    Configurable<std::string> cfgCCDBPeriod{"input_ccdbperiod", "LHC22o", "The CCDB dataset period for the input file"};
+    Configurable<std::string> cfgCCDBUrl{"cfgCCDBUrl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
+    Configurable<std::string> cfgCCDBPathName{"cfgCCDBPathName", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> cfgCCDBDate{"cfgCCDBDate", "20220307", "The CCDB date for the input file"};
+    Configurable<std::string> cfgCCDBPeriod{"cfgCCDBPeriod", "LHC22o", "The CCDB dataset period for the input file"};
   } cfginputfile;
-  Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
+  Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
+  Configurable<std::string> cfgCentMultEstimator{"cfgCentMultEstimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
 
   struct : ConfigurableGroup {
     std::string prefix = "cfgEventSelection";
@@ -379,11 +381,11 @@ struct DptDptFilter {
       Configurable<float> cfgMaxOccupancy{"cfgMaxOccupancy", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
     } cfgOccupancySelection;
   } cfgEventSelection;
-  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
-  Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
-  Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
+  Configurable<std::string> cfgSystem{"cfgSystem", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
+  Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
+  Configurable<std::string> cfgTriggSel{"cfgTriggSel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
+  Configurable<std::string> cfgCentSpec{"cfgCentSpec", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
+  Configurable<float> cfgOverallMinP{"cfgOverallMinP", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
   struct : ConfigurableGroup {
     std::string prefix = "cfgTpcExclusion";
     Configurable<int> method{"method", 0, "The method for excluding tracks within the TPC. 0: no exclusion; 1: static; 2: dynamic. Default: 0"};
@@ -392,10 +394,10 @@ struct DptDptFilter {
     Configurable<std::string> negativeLowCut{"negativeLowCut", "pi/9.0 - (0.0892/x + 0.0251)", "The lower cut function for negative tracks"};
     Configurable<std::string> negativeUpCut{"negativeUpCut", "pi/9 - (0.0787/x - 0.0236)", "The upper cut function for negative tracks"};
   } cfgTpcExclusion;
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
+  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"cfgBinning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
-  Configurable<bool> cfgTraceCollId0{"tracecollid0", false, "Trace particles in collisions id 0. Default false"};
+  Configurable<bool> cfgTraceCollId0{"cfgTraceCollId0", false, "Trace particles in collisions id 0. Default false"};
 
   OutputObj<TList> fOutput{"DptDptFilterCollisionsInfo", OutputObjHandlingPolicy::AnalysisObject};
 
@@ -794,27 +796,27 @@ struct DptDptFilterTracks {
   std::string cfgCCDBDate{"20220307"};
   std::string cfgCCDBPeriod{"LHC22o"};
 
-  Configurable<bool> cfgOutDebugInfo{"outdebuginfo", false, "Out detailed debug information per track into a text file. Default false"};
-  Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
-  Configurable<bool> cfgOnlyInOneSide{"onlyinoneside", false, "select tracks that don't cross the TPC central membrane. Default false"};
-  Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
-  Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
-  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
-  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
-  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
+  Configurable<bool> cfgOutDebugInfo{"cfgOutDebugInfo", false, "Out detailed debug information per track into a text file. Default false"};
+  Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
+  Configurable<int> cfgTrackType{"cfgTrackType", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
+  Configurable<bool> cfgOnlyInOneSide{"cfgOnlyInOneSide", false, "select tracks that don't cross the TPC central membrane. Default false"};
+  Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"cfgTraceDCAOutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
+  Configurable<float> cfgTraceOutOfSpeciesParticles{"cfgTraceOutOfSpeciesParticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
+  Configurable<int> cfgRecoIdMethod{"cfgRecoIdMethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
+  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"cfgTuneTrackSelection", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, tpcshcls-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,0.4,false,2.4,false,3.2,false}"};
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"cfgPionPIDSelection",
                                                                        {},
                                                                        "PID criteria for pions"};
-  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgKaonPIDSelection{"kapidsel",
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgKaonPIDSelection{"cfgKaonPIDSelection",
                                                                        {},
                                                                        "PID criteria for kaons"};
-  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgProtonPIDSelection{"prpidsel",
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgProtonPIDSelection{"cfgProtonPIDSelection",
                                                                          {},
                                                                          "PID criteria for protons"};
-  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgElectronPIDSelection{"elpidsel",
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgElectronPIDSelection{"cfgElectronPIDSelection",
                                                                            {},
                                                                            "PID criteria for electrons"};
-  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgMuonPIDSelection{"mupidsel",
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgMuonPIDSelection{"cfgMuonPIDSelection",
                                                                        {},
                                                                        "PID criteria for muons"};
 
@@ -833,18 +835,18 @@ struct DptDptFilterTracks {
 
     /* update with the configurable values */
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "overallminp", overallminp, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgOverallMinP", overallminp, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPhibinshift", phibinshift, false);
 
     TpcExclusionMethod tpcExclude = kNOEXCLUSION; ///< exclude tracks within the TPC according to this method
     std::string pLowCut;
@@ -861,10 +863,10 @@ struct DptDptFilterTracks {
       tpcExclude = static_cast<TpcExclusionMethod>(tmpTpcExclude);
     }
     /* self configure the CCDB access to the input file */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBUrl", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPathName", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBDate", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPeriod", cfgCCDBPeriod, false);
 
     /* create the output list which will own the task histograms */
     TList* fOutputList = new TList();
@@ -892,9 +894,9 @@ struct DptDptFilterTracks {
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     std::string tmpstr;
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystem", tmpstr, false);
     fSystem = getSystemType(tmpstr);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
 
     /* required ambiguous tracks checks? */
@@ -1536,8 +1538,14 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
 template <StrongDebugging outdebug, typename CollisionObjects, typename TrackObject>
 int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track)
 {
+  enum AmbiguityTypes {
+    kNoAmbiguous = 0,             /* no ambiguous track */
+    kOnePossibilitySame = 1,      /* the track is present in the collision association table but has the same associated collision so the track is not ambiguous */
+    kOnePossibilityDifferent = 2, /* the track is present in the collision association table and has a diffetent collision associeted so the track is ambiguous */
+    kMoreThanOnePossibility = 3   /* the track is associated to more than one collision in the collision association table so the track is ambiguous */
+  };
   bool ambiguoustrack = false;
-  int ambtracktype = 0; /* no ambiguous */
+  AmbiguityTypes ambtracktype = kNoAmbiguous;
   std::vector<double> zvertexes{};
   /* ambiguous tracks checks if required */
   if constexpr (has_type_v<aod::track_association::CollisionIds, typename TrackObject::all_columns>) {
@@ -1547,17 +1555,17 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
           /* ambiguous track! */
           ambiguoustrack = true;
           /* in principle we should not be here because the track is associated to two collisions at least */
-          ambtracktype = 2;
+          ambtracktype = kOnePossibilityDifferent;
           zvertexes.push_back(collisions.iteratorAt(track.collisionId()).posZ());
           zvertexes.push_back(collisions.iteratorAt(track.compatibleCollIds()[0]).posZ());
         } else {
           /* we consider the track as no ambiguous */
-          ambtracktype = 1;
+          ambtracktype = kOnePossibilitySame;
         }
       } else {
         /* ambiguous track! */
         ambiguoustrack = true;
-        ambtracktype = 3;
+        ambtracktype = kMoreThanOnePossibility;
         /* the track is associated to more than one collision */
         for (const auto& collIdx : track.compatibleCollIds()) {
           zvertexes.push_back(collisions.iteratorAt(collIdx).posZ());
@@ -1572,7 +1580,7 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
     fhAmbiguousTrackType->Fill(ambtracktype, multiplicityClass);
     fhAmbiguousTrackPt->Fill(track.pt(), multiplicityClass);
     fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityClass);
-    if (ambtracktype == 2) {
+    if (ambtracktype == kOnePossibilityDifferent) {
       fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityClass);
     } else {
       fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityClass);

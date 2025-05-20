@@ -32,6 +32,7 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -67,12 +68,19 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
-int nNoOfDimensions = 1;         // number of dimensions for the NUA & NUE corrections
-bool processpairs = false;       // process pairs analysis
-bool processmixedevents = false; // process mixed events
-bool ptorder = false;            // consider pt ordering
-bool invmass = false;            // produce the invariant mass histograms
-bool corrana = false;            // produce the correlation analysis histograms
+enum HistoDimensions {
+  kNONE = 0,
+  k1D,
+  k2D,
+  k3D,
+  k4D
+};
+HistoDimensions nNoOfDimensions = k1D; // number of dimensions for the NUA & NUE corrections
+bool processpairs = false;             // process pairs analysis
+bool processmixedevents = false;       // process mixed events
+bool ptorder = false;                  // consider pt ordering
+bool invmass = false;                  // produce the invariant mass histograms
+bool corrana = false;                  // produce the correlation analysis histograms
 
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
@@ -85,7 +93,7 @@ std::vector<std::vector<std::string>> trackPairsNames; ///< the track pairs name
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
-struct DptDptCorrelationsTask {
+struct DptDptCorrelations {
 
   /* the data collecting engine */
   template <bool smallsingles>
@@ -140,11 +148,7 @@ struct DptDptCorrelationsTask {
     {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
-      if (!(phi < phiup)) {
-        return phi - constants::math::TwoPI;
-      } else {
-        return phi;
-      }
+      return RecoDecay::constrainAngle(phi, philow);
     }
 
     /// \brief Returns the zero based bin index of the eta phi passed track
@@ -226,7 +230,7 @@ struct DptDptCorrelationsTask {
 
       float value = deltaphilow + (deltaPhiIx + 0.5) * deltaphibinwidth;
 
-      return (value < (deltaphiup - constants::math::PI)) ? value : value - constants::math::TwoPI;
+      return RecoDecay::constrainAngle(value, deltaphilow - constants::math::PI);
     }
 
     /// \brief Returns the TH2 global bin for the differential histograms
@@ -304,10 +308,10 @@ struct DptDptCorrelationsTask {
       for (uint i = 0; i < corrs.size(); ++i) {
         if (corrs[i] != nullptr) {
           if (nNoOfDimensions != corrs[i]->GetDimension()) {
-            LOGF(fatal, "  Corrections received dimensions %d for track id %d different than expected %d", corrs[i]->GetDimension(), i, nNoOfDimensions);
+            LOGF(fatal, "  Corrections received dimensions %d for track id %d different than expected %d", corrs[i]->GetDimension(), i, static_cast<int>(nNoOfDimensions));
           } else {
             LOGF(info, "  Storing NUA&NUE corrections %s for track id %d with %d dimensions %s",
-                 corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, nNoOfDimensions, corrs[i] != nullptr ? "yes" : "no");
+                 corrs[i] != nullptr ? corrs[i]->GetName() : "nullptr", i, static_cast<int>(nNoOfDimensions), corrs[i] != nullptr ? "yes" : "no");
           }
         }
         fhNuaNue[i] = corrs[i];
@@ -315,15 +319,15 @@ struct DptDptCorrelationsTask {
           int nbins = 0;
           double avg = 0.0;
           for (int ix = 0; ix < fhNuaNue[i]->GetNbinsX(); ++ix) {
-            if (nNoOfDimensions == 1) {
+            if (nNoOfDimensions == k1D) {
               nbins++;
               avg += fhNuaNue[i]->GetBinContent(ix + 1);
             } else {
               for (int iy = 0; iy < fhNuaNue[i]->GetNbinsY(); ++iy) {
-                if (nNoOfDimensions == 2) {
+                if (nNoOfDimensions == k2D) {
                   nbins++;
                   avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1);
-                } else if (nNoOfDimensions == 3 || nNoOfDimensions == 4) {
+                } else if (nNoOfDimensions == k3D || nNoOfDimensions == k4D) {
                   for (int iz = 0; iz < fhNuaNue[i]->GetNbinsZ(); ++iz) {
                     nbins++;
                     avg += fhNuaNue[i]->GetBinContent(ix + 1, iy + 1, iz + 1);
@@ -348,18 +352,20 @@ struct DptDptCorrelationsTask {
       ccdbstored = true;
     }
 
-    template <int nDim, typename TrackListObject>
+    template <correlationstask::HistoDimensions nDim, typename TrackListObject>
     std::vector<float>* getTrackCorrections(TrackListObject const& tracks, float zvtx)
     {
+      using namespace correlationstask;
+
       std::vector<float>* corr = new std::vector<float>(tracks.size(), 1.0f);
       int index = 0;
       for (const auto& t : tracks) {
         if (fhNuaNue[t.trackacceptedid()] != nullptr) {
-          if constexpr (nDim == 1) {
+          if constexpr (nDim == k1D) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.pt()));
-          } else if constexpr (nDim == 2) {
+          } else if constexpr (nDim == k2D) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(t.eta(), t.pt()));
-          } else if constexpr (nDim == 3) {
+          } else if constexpr (nDim == k3D) {
             (*corr)[index] = fhNuaNue[t.trackacceptedid()]->GetBinContent(fhNuaNue[t.trackacceptedid()]->FindFixBin(zvtx, getEtaPhiIndex(t) + 0.5, t.pt()));
           }
         }
@@ -373,14 +379,14 @@ struct DptDptCorrelationsTask {
     {
       using namespace correlationstask;
 
-      if (nNoOfDimensions == 1) {
-        return getTrackCorrections<1>(tracks, zvtx);
-      } else if (nNoOfDimensions == 2) {
-        return getTrackCorrections<2>(tracks, zvtx);
-      } else if (nNoOfDimensions == 3) {
-        return getTrackCorrections<3>(tracks, zvtx);
+      if (nNoOfDimensions == k1D) {
+        return getTrackCorrections<k1D>(tracks, zvtx);
+      } else if (nNoOfDimensions == k2D) {
+        return getTrackCorrections<k2D>(tracks, zvtx);
+      } else if (nNoOfDimensions == k3D) {
+        return getTrackCorrections<k3D>(tracks, zvtx);
       }
-      return getTrackCorrections<4>(tracks, zvtx);
+      return getTrackCorrections<k4D>(tracks, zvtx);
     }
 
     template <typename TrackListObject>
@@ -507,12 +513,7 @@ struct DptDptCorrelationsTask {
           }
           float deltaeta = track1.eta() - track2.eta();
           float deltaphi = track1.phi() - track2.phi();
-          while (deltaphi >= deltaphiup) {
-            deltaphi -= constants::math::TwoPI;
-          }
-          while (deltaphi < deltaphilow) {
-            deltaphi += constants::math::TwoPI;
-          }
+          deltaphi = RecoDecay::constrainAngle(deltaphi, deltaphilow);
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
             if constexpr (docorrelations) {
@@ -908,17 +909,17 @@ struct DptDptCorrelationsTask {
 
   /* pair conversion suppression defaults */
   static constexpr float kCfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
-  Configurable<LabeledArray<float>> cfgPairCut{"paircut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Conversion suppressions"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Conversion suppressions"};
   /* two tracks cut */
-  Configurable<float> cfgTwoTrackCut{"twotrackcut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
-  Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
+  Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
+  Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
-  Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
-  Configurable<bool> cfgDoInvMass{"doinvmass", false, "Do the invariant mass analyis, true = yes. Default = false"};
-  Configurable<bool> cfgDoCorrelations{"docorrelations", true, "Do the correlations analysis, true = yes. Default = true"};
-  Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
-  Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
-  Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
+  Configurable<bool> cfgSmallDCE{"cfgSmallDCE", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
+  Configurable<bool> cfgDoInvMass{"cfgDoInvMass", false, "Do the invariant mass analyis, true = yes. Default = false"};
+  Configurable<bool> cfgDoCorrelations{"cfgDoCorrelations", true, "Do the correlations analysis, true = yes. Default = true"};
+  Configurable<bool> cfgProcessPairs{"cfgProcessPairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
+  Configurable<bool> cfgProcessME{"cfgProcessME", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
+  Configurable<bool> cfgPtOrder{"cfgPtOrder", false, "enforce pT_1 < pT_2. Defalut: false"};
   Configurable<int> cfgNoOfDimensions{"cfgNoOfDimensions", 1, "Number of dimensions for the NUA&NUE corrections. Default 1"};
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
@@ -944,17 +945,17 @@ struct DptDptCorrelationsTask {
     }
 
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPhibinshift", phibinshift, false);
     philow = 0.0f;
     phiup = constants::math::TwoPI;
     processpairs = cfgProcessPairs.value;
@@ -962,20 +963,20 @@ struct DptDptCorrelationsTask {
     ptorder = cfgPtOrder.value;
     invmass = cfgDoInvMass.value;
     corrana = cfgDoCorrelations.value;
-    nNoOfDimensions = cfgNoOfDimensions.value;
+    nNoOfDimensions = static_cast<HistoDimensions>(cfgNoOfDimensions.value);
 
     /* self configure the CCDB access to the input file */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBUrl", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPathName", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBDate", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPeriod", cfgCCDBPeriod, false);
     loadfromccdb = cfgCCDBPathName.length() > 0;
 
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
     phibinwidth = (phiup - philow) / static_cast<float>(phibins);
 
-    /* the differential bining */
+    /* the differential binning */
     deltaetabins = etabins * 2 - 1;
     deltaetalow = etalow - etaup, deltaetaup = etaup - etalow;
     deltaetabinwidth = (deltaetaup - deltaetalow) / static_cast<float>(deltaetabins);
@@ -1009,7 +1010,7 @@ struct DptDptCorrelationsTask {
     {
       /* self configure the desired species */
       o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
       std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
         auto includeIt = [&pidselector, &initContext](int spid, auto name) {
@@ -1054,7 +1055,7 @@ struct DptDptCorrelationsTask {
 
       /* self configure the centrality/multiplicity ranges */
       std::string centspec;
-      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec, false)) {
+      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCentSpec", centspec, false)) {
         LOGF(info, "Got the centralities specification: %s", centspec.c_str());
         auto tokens = TString(centspec.c_str()).Tokenize(",");
         ncmranges = tokens->GetEntries();
@@ -1393,7 +1394,7 @@ struct DptDptCorrelationsTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevel, "Process reco level correlations", false);
+  PROCESS_SWITCH(DptDptCorrelations, processRecLevel, "Process reco level correlations", false);
 
   void processRecLevelCheck(aod::Collisions const& collisions, aod::Tracks const& tracks)
   {
@@ -1420,7 +1421,7 @@ struct DptDptCorrelationsTask {
     LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
     LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelCheck, "Process reco level checks", true);
+  PROCESS_SWITCH(DptDptCorrelations, processRecLevelCheck, "Process reco level checks", true);
 
   void processGenLevelCheck(aod::McCollisions const& mccollisions, aod::McParticles const& particles)
   {
@@ -1447,7 +1448,7 @@ struct DptDptCorrelationsTask {
     LOGF(info, "  First not assigned track index %d", firstNotAssignedIndex);
     LOGF(info, "  Last not assigned track index %d", lastNotAssignedIndex);
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelCheck, "Process generator level checks", true);
+  PROCESS_SWITCH(DptDptCorrelations, processGenLevelCheck, "Process generator level checks", true);
 
   void processRecLevelNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
@@ -1456,7 +1457,7 @@ struct DptDptCorrelationsTask {
   {
     processSame<false>(collision, tracks, collision.bc_as<aod::BCsWithTimestamps>().timestamp());
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelNotStored, "Process reco level correlations for not stored derived data", true);
+  PROCESS_SWITCH(DptDptCorrelations, processRecLevelNotStored, "Process reco level correlations for not stored derived data", true);
 
   void processGenLevel(
     soa::Filtered<aod::DptDptCFAcceptedTrueCollisions>::iterator const& collision,
@@ -1464,7 +1465,7 @@ struct DptDptCorrelationsTask {
   {
     processSame<true>(collision, tracks);
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevel, "Process generator level correlations", false);
+  PROCESS_SWITCH(DptDptCorrelations, processGenLevel, "Process generator level correlations", false);
 
   void processGenLevelNotStored(
     soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>::iterator const& collision,
@@ -1472,7 +1473,7 @@ struct DptDptCorrelationsTask {
   {
     processSame<true>(collision, particles);
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelNotStored, "Process generator level correlations for not stored derived data", false);
+  PROCESS_SWITCH(DptDptCorrelations, processGenLevelNotStored, "Process generator level correlations for not stored derived data", false);
 
   std::vector<double>
     vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
@@ -1480,6 +1481,7 @@ struct DptDptCorrelationsTask {
   SliceCache cache;
   using BinningZVtxMultRec = ColumnBinningPolicy<aod::collision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
   BinningZVtxMultRec bindingOnVtxAndMultRec{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
+  static constexpr int kNoOfLoggingCombinations = 10;
 
   void processRecLevelMixed(soa::Filtered<aod::DptDptCFAcceptedCollisions> const& collisions, aod::BCsWithTimestamps const&, soa::Filtered<aod::ScannedTracks> const& tracks)
   {
@@ -1489,7 +1491,7 @@ struct DptDptCorrelationsTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < kNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS, "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1503,7 +1505,7 @@ struct DptDptCorrelationsTask {
       processMixed<false>(collision1, tracks1, tracks2, collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelMixed, "Process reco level mixed events correlations", false);
+  PROCESS_SWITCH(DptDptCorrelations, processRecLevelMixed, "Process reco level mixed events correlations", false);
 
   void processRecLevelMixedNotStored(
     soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>> const& collisions,
@@ -1524,7 +1526,7 @@ struct DptDptCorrelationsTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairreco) {
-      if (logcomb < 10) {
+      if (logcomb < kNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
@@ -1555,7 +1557,7 @@ struct DptDptCorrelationsTask {
                           collision1.bc_as<aod::BCsWithTimestamps>().timestamp());
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processRecLevelMixedNotStored, "Process reco level mixed events correlations for not stored derived data", false);
+  PROCESS_SWITCH(DptDptCorrelations, processRecLevelMixedNotStored, "Process reco level mixed events correlations for not stored derived data", false);
 
   using BinningZVtxMultGen = ColumnBinningPolicy<aod::mccollision::PosZ, aod::dptdptfilter::DptDptCFCollisionCentMult>;
   BinningZVtxMultGen bindingOnVtxAndMultGen{{vtxBinsEdges, multBinsEdges}, true}; // true is for 'ignore overflows' (true by default)
@@ -1568,7 +1570,7 @@ struct DptDptCorrelationsTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < kNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS, "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(), collision1.posZ(), collision1.centmult(), collision1.collisionaccepted() ? "accepted" : "not accepted",
              collision2.globalIndex(), collision2.posZ(), collision2.centmult(), collision2.collisionaccepted() ? "accepted" : "not accepted");
@@ -1581,7 +1583,7 @@ struct DptDptCorrelationsTask {
       processMixed<true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelMixed, "Process generator level mixed events correlations", false);
+  PROCESS_SWITCH(DptDptCorrelations, processGenLevelMixed, "Process generator level mixed events correlations", false);
 
   void processGenLevelMixedNotStored(soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>> const& collisions, soa::Filtered<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>> const& tracks)
   {
@@ -1599,7 +1601,7 @@ struct DptDptCorrelationsTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Received %d generated collisions", collisions.size());
     int logcomb = 0;
     for (auto const& [collision1, tracks1, collision2, tracks2] : pairgen) {
-      if (logcomb < 10) {
+      if (logcomb < kNoOfLoggingCombinations) {
         LOGF(DPTDPTLOGCOLLISIONS,
              "Received generated collision pair: %ld (%f, %f): %s, %ld (%f, %f): %s",
              collision1.globalIndex(),
@@ -1626,7 +1628,7 @@ struct DptDptCorrelationsTask {
       processMixed<true>(collision1, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processGenLevelMixedNotStored, "Process generator level mixed events correlations for not stored derived data", false);
+  PROCESS_SWITCH(DptDptCorrelations, processGenLevelMixedNotStored, "Process generator level mixed events correlations for not stored derived data", false);
 
   /// cleans the output object when the task is not used
   void processCleaner(soa::Filtered<aod::DptDptCFAcceptedCollisions> const& colls)
@@ -1634,13 +1636,13 @@ struct DptDptCorrelationsTask {
     LOGF(DPTDPTLOGCOLLISIONS, "Got %d new collisions", colls.size());
     fOutput->Clear();
   }
-  PROCESS_SWITCH(DptDptCorrelationsTask, processCleaner, "Cleaner process for not used output", false);
+  PROCESS_SWITCH(DptDptCorrelations, processCleaner, "Cleaner process for not used output", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),  // o2-linter: disable=name/o2-task
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})}; // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<DptDptCorrelations>(cfgc, TaskName{"DptDptCorrelationsRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),  // o2-linter: disable=name/o2-task (It is adapted multiple times)
+    adaptAnalysisTask<DptDptCorrelations>(cfgc, TaskName{"DptDptCorrelationsGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})}; // o2-linter: disable=name/o2-task (It is adapted multiple times)
   return workflow;
 }
