@@ -67,13 +67,13 @@ class EfficiencyCorrection
       for (const auto& suffix : histSuffix) {
         auto path = std::format("{}/{}", histDirectory, suffix);
 
-        registry->add((path + "/hMCTruth").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hMCTruth").c_str(), "MCTruth; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
 
-        registry->add((path + "/hPrimary").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hSecondary").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hMaterial").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hFake").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
-        registry->add((path + "/hOther").c_str(), "; ; Entries", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hPrimary").c_str(), "Primary; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hSecondary").c_str(), "Secondary; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hMaterial").c_str(), "Material; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hFake").c_str(), "Fake; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
+        registry->add((path + "/hOther").c_str(), "Other; pT; Eta; Cent/Mult", framework::kTH3F, axisSpecs);
       }
     }
 
