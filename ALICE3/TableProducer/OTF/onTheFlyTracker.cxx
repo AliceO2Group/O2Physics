@@ -276,7 +276,7 @@ struct OnTheFlyTracker {
         mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
         mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
       }
-      for (auto e : mapPdgLut) {
+      for (const auto& e : mapPdgLut) {
         if (!mSmearer.loadTable(e.first, e.second)) {
           LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
