@@ -339,7 +339,7 @@ struct taggingHFE {
     fRegistry.addClone("Dpm/electron/", "Dpm/kaon/"); // D+ -> K- pi+ e+ nu, Br = 0.0402 | D+ -> anti-K*(892)0 e+ nu, Br = 0.0540 // D+ -> anti-K0S e+ nu, Br = 0.0872
     fRegistry.addClone("Ds/electron/", "Ds/kaon/");   // Ds+ -> K0S e+ nu, Br = 0.0034 // Ds+ -> phi e+ nu, Br = 0.0239
 
-    fRegistry.add("Generated/D0/prompt/hs", "#eta correlation from charm hadron;p_{T,e} (GeV/c);p_{T,K} (GeV/c);#eta_{e};#eta_{K};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {100, -5, +5}, {100, -5, 5}}, false);
+    fRegistry.add("Generated/D0/prompt/hs", "#eta correlation from charm hadron;p_{T,e} (GeV/c);p_{T,K} (GeV/c);#eta_{e};#eta_{K};", kTHnSparseF, {{100, 0, 10}, {100, 0, 10}, {200, -10, +10}, {200, -10, 10}}, false);
     fRegistry.addClone("Generated/D0/prompt/", "Generated/D0/nonprompt/");
   }
 
