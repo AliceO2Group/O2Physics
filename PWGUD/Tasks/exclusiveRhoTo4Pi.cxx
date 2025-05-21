@@ -512,6 +512,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> ft0aCut{"ft0aCut", 150., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
   Configurable<float> zdcCut{"zdcCut", 1., "ZDC threshold"};
+  Configurable<float> occupancyCut{"occupancyCut", 1000, "Occupancy Cut"};
 
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
@@ -545,8 +546,8 @@ struct ExclusiveRhoTo4Pi {
     histosData.add("GapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histosData.add("TrueGapSide", "Gap Side; Events", kTH1F, {{4, -1.5, 2.5}});
     histosData.add("EventCounts", "Total Events; Events", kTH1F, {{10, 0, 10}});
-
     histosData.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -20, 20}});
+    histosData.add("occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{1500, 0, 1500}});
     histosData.add("dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{10000, -5, 5}});
     histosData.add("dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{10000, -10, 10}});
     histosData.add("tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
@@ -676,6 +677,7 @@ struct ExclusiveRhoTo4Pi {
     // MC Reco Stuff
 
     histosMCreco.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{1000, -20, 20}});
+    histosMCreco.add("occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{1500, 0, 1500}});
     histosMCreco.add("dcaXY", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{10000, -5, 5}});
     histosMCreco.add("dcaZ", "dcaZ; dcaZ [cm]; Counts", kTH1F, {{10000, -10, 10}});
     histosMCreco.add("tpcChi2NCl", "TPC Chi2/NCl; Chi2/NCl; Counts", kTH1F, {{200, 0, 200}});
@@ -835,8 +837,9 @@ struct ExclusiveRhoTo4Pi {
   Filter vertexCut = (nabs(o2::aod::collision::posZ) <= vZCut) && (o2::aod::collision::numContrib == numPVContrib);
   Filter fitcuts = o2::aod::udcollision::totalFV0AmplitudeA < fv0Cut && o2::aod::udcollision::totalFT0AmplitudeA < ft0aCut && o2::aod::udcollision::totalFT0AmplitudeC < ft0cCut;
   Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA < zdcCut) && (o2::aod::udzdc::energyCommonZNC < zdcCut);
+  Filter occupCut = nabs(o2::aod::udcollision::occupancyInTime) < occupancyCut;
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
+  using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
   using UDCollision = UDCollisions::iterator;
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -851,6 +854,7 @@ struct ExclusiveRhoTo4Pi {
     histosData.fill(HIST("TrueGapSide"), truegapSide);
     histosData.fill(HIST("EventCounts"), 1);
     histosData.fill(HIST("vertexZ"), collision.posZ());
+    histosData.fill(HIST("occupancy"), collision.occupancyInTime());
     histosData.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosData.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
     histosData.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
@@ -1170,7 +1174,7 @@ struct ExclusiveRhoTo4Pi {
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
   // Begin of MC Reconstruction function-----------------------------------------------------------------------------------------------------------------------------------------------
-  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
+  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
   using CollisionTotal = CollisionStuff::iterator;
   using TrackStuff = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
@@ -1188,6 +1192,7 @@ struct ExclusiveRhoTo4Pi {
     histosMCreco.fill(HIST("TrueGapSide"), truegapSide);
     histosMCreco.fill(HIST("EventCounts"), 1);
     histosMCreco.fill(HIST("vertexZ"), collision.posZ());
+    histosMCreco.fill(HIST("occupancy"), collision.occupancyInTime());
     histosMCreco.fill(HIST("V0A"), collision.totalFV0AmplitudeA());
     histosMCreco.fill(HIST("FT0A"), collision.totalFT0AmplitudeA());
     histosMCreco.fill(HIST("FT0C"), collision.totalFT0AmplitudeC());
