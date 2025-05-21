@@ -770,7 +770,7 @@ class TestMagicNumber(TestSpec):
     references = [Reference.O2, Reference.ISO_CPP]
     suffixes = [".h", ".cxx", ".C"]
     pattern_compare = r"([<>]=?|[!=]=)"
-    pattern_number = r"[\+-]?([\d\.]+)f?"
+    pattern_number = r"[\+-]?([\d\.]+(e[\+-]?\d+)?)f?"
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
