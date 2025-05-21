@@ -19,6 +19,7 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
+#include <utility>
 #include <set>
 #include <map>
 #include <string>
@@ -85,6 +86,7 @@ DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
 DECLARE_SOA_COLUMN(MassDileptonCandidate, massDileptonCandidate, float);
 DECLARE_SOA_COLUMN(deltamassBcandidate, deltaMBcandidate, float);
 DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
+DECLARE_SOA_COLUMN(EtaBcandidate, etaBcandidate, float);
 DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
 DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
 DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
@@ -92,6 +94,42 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
+DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
+DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
+DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
+DECLARE_SOA_COLUMN(Etapair, etapair, float);
+DECLARE_SOA_COLUMN(Ptleg1, ptleg1, float);
+DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
+DECLARE_SOA_COLUMN(Ptleg2, ptleg2, float);
+DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrassoc, tpcnsigmaPrassoc, float);
+DECLARE_SOA_COLUMN(TOFnsigmaKaassoc, tofnsigmaKaassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaElleg1, tpcnsigmaElleg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPileg1, tpcnsigmaPileg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrleg1, tpcnsigmaPrleg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaElleg2, tpcnsigmaElleg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPileg2, tpcnsigmaPileg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrleg2, tpcnsigmaPrleg2, float);
+DECLARE_SOA_COLUMN(DCAXYassoc, dcaXYassoc, float);
+DECLARE_SOA_COLUMN(DCAZassoc, dcaZassoc, float);
+DECLARE_SOA_COLUMN(DCAXYleg1, dcaXYleg1, float);
+DECLARE_SOA_COLUMN(DCAZleg1, dcaZleg1, float);
+DECLARE_SOA_COLUMN(DCAXYleg2, dcaXYleg2, float);
+DECLARE_SOA_COLUMN(DCAZleg2, dcaZleg2, float);
+DECLARE_SOA_COLUMN(ITSClusterMapassoc, itsClusterMapassoc, uint8_t);
+DECLARE_SOA_COLUMN(ITSClusterMapleg1, itsClusterMapleg1, uint8_t);
+DECLARE_SOA_COLUMN(ITSClusterMapleg2, itsClusterMapleg2, uint8_t);
+DECLARE_SOA_COLUMN(ITSChi2assoc, itsChi2assoc, float);
+DECLARE_SOA_COLUMN(ITSChi2leg1, itsChi2leg1, float);
+DECLARE_SOA_COLUMN(ITSChi2leg2, itsChi2leg2, float);
+DECLARE_SOA_COLUMN(TPCNclsassoc, tpcNclsassoc, float);
+DECLARE_SOA_COLUMN(TPCNclsleg1, tpcNclsleg1, float);
+DECLARE_SOA_COLUMN(TPCNclsleg2, tpcNclsleg2, float);
+DECLARE_SOA_COLUMN(TPCChi2assoc, tpcChi2assoc, float);
+DECLARE_SOA_COLUMN(TPCChi2leg1, tpcChi2leg1, float);
+DECLARE_SOA_COLUMN(TPCChi2leg2, tpcChi2leg2, float);
 DECLARE_SOA_BITMAP_COLUMN(IsJpsiFromBSelected, isJpsiFromBSelected, 32);
 // Candidate columns for prompt-non-prompt JPsi separation
 DECLARE_SOA_COLUMN(Massee, massJPsi2ee, float);
@@ -111,9 +149,19 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuo
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMBA", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTERA", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONSA",
-                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate,
+                  dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltamassBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::EtaBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2,
+                  dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
+                  dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::TPCnsigmaPileg1, dqanalysisflags::TPCnsigmaPrleg1,
+                  dqanalysisflags::TPCnsigmaElleg2, dqanalysisflags::TPCnsigmaPileg2, dqanalysisflags::TPCnsigmaPrleg2,
+                  dqanalysisflags::DCAXYassoc, dqanalysisflags::DCAZassoc, dqanalysisflags::DCAXYleg1, dqanalysisflags::DCAZleg1, dqanalysisflags::DCAXYleg2, dqanalysisflags::DCAZleg2,
+                  dqanalysisflags::ITSClusterMapassoc, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSClusterMapleg2,
+                  dqanalysisflags::ITSChi2assoc, dqanalysisflags::ITSChi2leg1, dqanalysisflags::ITSChi2leg2,
+                  dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
+                  dqanalysisflags::TPCChi2assoc, dqanalysisflags::TPCChi2leg1, dqanalysisflags::TPCChi2leg2,
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs);
 } // namespace o2::aod
@@ -1178,6 +1226,8 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNames;
   std::map<int, std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
+  std::vector<TString> fTrackCuts;
+  std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
   uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
   uint32_t fMuonFilterMask;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
@@ -1213,6 +1263,7 @@ struct AnalysisSameEventPairing {
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
     std::vector<TString> names;
+    fTrackCuts.clear();
 
     // NOTE: Pair cuts are only applied on the histogram output. The produced pair tables do not have these cuts applied
     TString cutNamesStr = fConfigCuts.pair.value;
@@ -1254,6 +1305,7 @@ struct AnalysisSameEventPairing {
       fNCutsBarrel = objArray->GetEntries();
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
+        fTrackCuts.push_back(tempStr);
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
           fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
 
@@ -1263,20 +1315,16 @@ struct AnalysisSameEventPairing {
               Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
               Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
             histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+            names.push_back(Form("PairsBarrelSEPM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsBarrelSEPP_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsBarrelSEMM_ambiguousextra_%s", objArray->At(icut)->GetName()));
+            histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
             if (fEnableBarrelMixingHistos) {
               names.push_back(Form("PairsBarrelMEPM_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEPP_%s", objArray->At(icut)->GetName()));
               names.push_back(Form("PairsBarrelMEMM_%s", objArray->At(icut)->GetName()));
-              histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
+              histNames += Form("%s;%s;%s;", names[6].Data(), names[7].Data(), names[8].Data());
             }
-            names.push_back(Form("PairsBarrelSEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            names.push_back(Form("PairsBarrelSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
-            histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 6 : 3)].Data(), names[(fEnableBarrelMixingHistos ? 7 : 4)].Data(), names[(fEnableBarrelMixingHistos ? 8 : 5)].Data());
-            histNames += Form("%s;%s;%s;", names[(fEnableBarrelMixingHistos ? 9 : 6)].Data(), names[(fEnableBarrelMixingHistos ? 10 : 7)].Data(), names[(fEnableBarrelMixingHistos ? 11 : 8)].Data());
             fTrackHistNames[icut] = names;
 
             TString cutNamesStr = fConfigCuts.pair.value;
@@ -1529,6 +1577,7 @@ struct AnalysisSameEventPairing {
       dielectronAllList.reserve(1);
       dimuonAllList.reserve(1);
     }
+    fAmbiguousPairs.clear();
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
@@ -1720,50 +1769,87 @@ struct AnalysisSameEventPairing {
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
         bool isUnambiguous = false;
+        bool isLeg1Ambi = false;
+        bool isLeg2Ambi = false;
+        bool isAmbiExtra = false;
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
             isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
+            isLeg1Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 28) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)));
+            isLeg2Ambi = (twoTrackFilter & (static_cast<uint32_t>(1) << 29) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
+            if constexpr (TPairType == VarManager::kDecayToEE) {
+              if (isLeg1Ambi && isLeg2Ambi) {
+                std::pair<uint32_t, uint32_t> iPair(a1.reducedtrackId(), a2.reducedtrackId());
+                if (fAmbiguousPairs.find(iPair) != fAmbiguousPairs.end()) {
+                  if (fAmbiguousPairs[iPair] & (static_cast<uint32_t>(1) << icut)) { // if this pair is already stored with this cut
+                    isAmbiExtra = true;
+                  } else {
+                    fAmbiguousPairs[iPair] |= static_cast<uint32_t>(1) << icut;
+                  }
+                } else {
+                  fAmbiguousPairs[iPair] = static_cast<uint32_t>(1) << icut;
+                }
+              }
+            }
             if (sign1 * sign2 < 0) {
-              fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch);
-              if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
-              }
-              if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
-              }
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
+                if (isAmbiInBunch) {
+                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
+                }
+                if (isAmbiOutOfBunch) {
+                  fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                }
                 if (isUnambiguous) {
                   fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
                 }
               }
+              if constexpr (TPairType == VarManager::kDecayToEE) {
+                fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                if (isAmbiExtra) {
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                }
+              }
             } else {
               if (sign1 > 0) {
-                fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                }
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                  }
                   if (isUnambiguous) {
                     fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
                   }
                 }
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelSEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  if (isAmbiExtra) {
+                    fHistMan->FillHistClass(Form("PairsBarrelSEPP_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  }
+                }
               } else {
-                fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
-                if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
-                }
-                if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
-                }
                 if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                  fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+                  if (isAmbiInBunch) {
+                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
+                  }
+                  if (isAmbiOutOfBunch) {
+                    fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                  }
                   if (isUnambiguous) {
                     fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                  }
+                }
+                if constexpr (TPairType == VarManager::kDecayToEE) {
+                  fHistMan->FillHistClass(Form("PairsBarrelSEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+                  if (isAmbiExtra) {
+                    fHistMan->FillHistClass(Form("PairsBarrelSEMM_ambiguousextra_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
                   }
                 }
               }
@@ -1887,8 +1973,8 @@ struct AnalysisSameEventPairing {
           isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
           isUnambiguous = !((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)));
           if (pairSign == 0) {
-            fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
             if constexpr (TPairType == VarManager::kDecayToMuMu) {
+              fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
               if (isAmbiInBunch) {
                 fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
               }
@@ -1899,10 +1985,13 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
               }
             }
+            if constexpr (TPairType == VarManager::kDecayToEE) {
+              fHistMan->FillHistClass(Form("PairsBarrelMEPM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+            }
           } else {
             if (pairSign > 0) {
-              fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
                   fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
                 }
@@ -1913,9 +2002,12 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
                 }
               }
+              if constexpr (TPairType == VarManager::kDecayToEE) {
+                fHistMan->FillHistClass(Form("PairsBarrelMEPP_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
+              }
             } else {
-              fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
               if constexpr (TPairType == VarManager::kDecayToMuMu) {
+                fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
                   fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
                 }
@@ -1925,6 +2017,9 @@ struct AnalysisSameEventPairing {
                 if (isUnambiguous) {
                   fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
                 }
+              }
+              if constexpr (TPairType == VarManager::kDecayToEE) {
+                fHistMan->FillHistClass(Form("PairsBarrelMEMM_%s", fTrackCuts[icut].Data()), VarManager::fgValues);
               }
             }
           }
@@ -1939,6 +2034,7 @@ struct AnalysisSameEventPairing {
   {
     events.bindExternalIndices(&assocs);
     int mixingDepth = fConfigMixingDepth.value;
+    fAmbiguousPairs.clear();
     for (auto& [event1, event2] : selfCombinations(hashBin, mixingDepth, -1, events, events)) {
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEvent<TEventFillMap>(event1, VarManager::fgValues);
@@ -3133,6 +3229,21 @@ struct AnalysisDileptonTrack {
           // compute needed quantities
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
+          // table to be written out for ML analysis
+          BmesonsTable(fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kPairEta],
+                       fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
+                       fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
+                       fValuesHadron[VarManager::kVertexingChi2PCA],
+                       track.pt(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.pt(), lepton1.eta(), lepton2.pt(), lepton2.eta(),
+                       track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
+                       lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
+                       lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
+                       track.dcaXY(), track.dcaZ(), lepton1.dcaXY(), lepton1.dcaZ(), lepton2.dcaXY(), lepton2.dcaZ(),
+                       track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
+                       track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
+                       track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),
+                       track.tpcChi2NCl(), lepton1.tpcChi2NCl(), lepton2.tpcChi2NCl(),
+                       dilepton.filterMap_raw(), trackSelection);
         }
         if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) {
           trackSelection = (assoc.isBarrelSelected_raw() & fTrackCutBitMap);
@@ -3199,11 +3310,6 @@ struct AnalysisDileptonTrack {
             }
           } // end loop over track cuts
         } // end loop over dilepton cuts
-        // table to be written out for ML analysis
-        BmesonsTable(fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
-                     fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
-                     fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
-                     fValuesHadron[VarManager::kVertexingChi2PCA], dilepton.filterMap_raw(), trackSelection);
       }
     }
   }

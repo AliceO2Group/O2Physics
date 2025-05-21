@@ -526,7 +526,7 @@ struct TreeCreatorElectronMLDDA {
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
-      emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(),
+      emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                       track.pt(), track.eta(), track.phi(), track.tgl(), track.signed1Pt(),
                       dcaXY, dcaZ, track_par_cov_recalc.getSigmaY2(), track_par_cov_recalc.getSigmaZ2(), track_par_cov_recalc.getSigmaZY(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
