@@ -709,10 +709,11 @@ struct FemtoUniverseProducerTask {
           particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary;
         } else if (!motherparticlesMC.empty()) {
           auto motherparticleMC = motherparticlesMC.front();
-          if (motherparticleMC.producedByGenerator())
+          if (motherparticleMC.producedByGenerator()) {
             particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
-          particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          } else {
+            particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kMaterial;
+          }
         }
       } else {
         particleOrigin = aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kFake;
@@ -903,8 +904,8 @@ struct FemtoUniverseProducerTask {
   {
     for (const auto& c : col) {
       const auto vtxZ = c.posZ();
-      float mult = 0;
-      int multNtr = 0;
+      float mult = confIsRun3 ? c.multFV0M() : 0.5 * (c.multFV0M());
+      int multNtr = confIsRun3 ? c.multNTracksPV() : c.multTracklets();
 
       if (std::abs(vtxZ) > confEvtZvtx) {
         continue;
