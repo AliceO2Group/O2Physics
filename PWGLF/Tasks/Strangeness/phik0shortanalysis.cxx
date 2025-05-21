@@ -58,6 +58,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::track;
 
 struct Phik0shortanalysis {
   // Histograms are defined with HistogramRegistry
@@ -186,6 +187,11 @@ struct Phik0shortanalysis {
   double massK0S = o2::constants::physics::MassK0Short;
   double massLambda = o2::constants::physics::MassLambda0;
 
+  // Defining track flags
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionITS = TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF | TrackSelectionFlags::kITSHits;
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionTPC = TrackSelectionFlags::kTPCNCls | TrackSelectionFlags::kTPCCrossedRowsOverNCls | TrackSelectionFlags::kTPCChi2NDF;
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA = TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
@@ -194,8 +200,12 @@ struct Phik0shortanalysis {
   // Defining filters on V0s (cannot filter on dynamic columns)
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
-  // Defining filters on tracks (cannot filter on dynamic columns)
-  Filter trackFilter = requireGlobalTrackWoDCAInFilter();
+  // Defining filters on tracks
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionFlags::kInAcceptanceTracks);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
@@ -2278,6 +2288,7 @@ struct Phik0shortanalysis {
       return;
 
     float multiplicity = collision.centFT0M();
+    dataEventHist.fill(HIST("hMultiplicityPercent"), multiplicity);
 
     for (const auto& track : filteredTracks)
       dataEventHist.fill(HIST("h2EtaDistribution"), multiplicity, track.eta());
@@ -2300,6 +2311,7 @@ struct Phik0shortanalysis {
         continue;
 
       float genmultiplicity = mcCollision.centFT0M();
+      mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
 
       auto mcTracksThisColl = filteredMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -2336,6 +2348,7 @@ struct Phik0shortanalysis {
     }
 
     float genmultiplicity = mcCollision.centFT0M();
+    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
 
     for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.eta()) > trackConfigs.etaMax)
