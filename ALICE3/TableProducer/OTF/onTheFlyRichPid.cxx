@@ -47,6 +47,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/trackUtilities.h"
+#include "ALICE3/Core/TrackUtilities.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -446,34 +447,6 @@ struct OnTheFlyRichPid {
     updateProjectiveParameters();
   }
 
-  /// Function to convert a McParticle into a perfect Track
-  /// \param particle the particle to convert (mcParticle)
-  /// \param o2track the address of the resulting TrackParCov
-  template <typename McParticleType>
-  o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle)
-  {
-    // FIXME: this is a fundamentally important piece of code.
-    // It could be placed in a utility file instead of here.
-    auto pdgInfo = pdg->GetParticle(particle.pdgCode());
-    int charge = 0;
-    if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge() / 3;
-    }
-    std::array<float, 5> params;
-    std::array<float, 15> covm = {0.};
-    float s, c, x;
-    o2::math_utils::sincos(particle.phi(), s, c);
-    o2::math_utils::rotateZInv(particle.vx(), particle.vy(), x, params[0], s, c);
-    params[1] = particle.vz();
-    params[2] = 0.; // since alpha = phi
-    auto theta = 2. * std::atan(std::exp(-particle.eta()));
-    params[3] = 1. / std::tan(theta);
-    params[4] = charge / particle.pt();
-
-    // Return TrackParCov
-    return o2::track::TrackParCov(x, particle.phi(), params, covm);
-  }
-
   /// check if particle reaches radiator
   /// \param track the input track
   /// \param radius the radius of the layer you're calculating the length to
@@ -778,7 +751,7 @@ struct OnTheFlyRichPid {
         continue;
 
       auto mcParticle = track.mcParticle();
-      o2::track::TrackParCov o2track = convertMCParticleToO2Track(mcParticle);
+      o2::track::TrackParCov o2track = o2::upgrade::convertMCParticleToO2Track(mcParticle, pdg);
 
       // float xPv = error_value;
       if (o2track.propagateToDCA(mcPvVtx, dBz)) {
