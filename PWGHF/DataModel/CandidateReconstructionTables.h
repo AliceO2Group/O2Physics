@@ -857,13 +857,19 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle 
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
-enum DecayType { BplusToD0Pi = 0 };
+enum DecayType { BplusToD0Pi = 0,
+                 BplusToJPsiK };
 
 enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
                              BplusToD0KToKPiK,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };
+
+enum class DecayTypeBToJPsiMc : uint8_t { BplusToJPsiKToMuMuK = 0,
+                                          PartlyRecoDecay,
+                                          OtherDecay,
+                                          NDecayTypeMc };
 } // namespace hf_cand_bplus
 
 // declare dedicated BPlus decay candidate table
@@ -1985,7 +1991,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 // mapping of decay types
-enum DecayType { B0ToDPi };
+enum DecayType { B0ToDPi = 0,
+                 B0ToJPsiK0Star };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
@@ -2061,7 +2068,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 // mapping of decay types
-enum DecayType { BsToDsPi };
+enum DecayType { BsToDsPi = 0,
+                 BsToJPsiPhi };
 
 enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
                              BsToDsPiToK0starKPiToKKPiPi,   // Bs(bar) → Ds∓ π± → (K0* K∓) π± → (K- K+ π∓) π±
