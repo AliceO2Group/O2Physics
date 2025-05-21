@@ -68,6 +68,8 @@ using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps
 struct alice3decayFinder {
   SliceCache cache;
 
+  Produces<aod::Alice3D0Meson> candidateD0meson; //contains D0 and D0bar selected candidates (separated, i.e. each row with a single mass hypothesis)
+
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
   Configurable<bool> doDCAplotsD{"doDCAplotsD", true, "do daughter prong DCA plots for D mesons"};
@@ -160,7 +162,10 @@ struct alice3decayFinder {
     float mass;
     std::array<float, 3> posSV;
     std::array<float, 3> P;
+    std::array<float, 3> Pdaug; //positive track
+    std::array<float, 3> Ndaug; //negative track
     float pt;
+    float phi;
     float eta;
     float cosPA;
     float cosPAxy;
@@ -172,6 +177,7 @@ struct alice3decayFinder {
     float dcaDau;
     float mass;
     float pt;
+    float phi;
     float eta;
   } lcbaryon;
 
@@ -201,10 +207,17 @@ struct alice3decayFinder {
     posTrack.getPxPyPzGlo(posP);
     negTrack.getPxPyPzGlo(negP);
     dmeson.dcaDau = TMath::Sqrt(fitter.getChi2AtPCACandidate());
+    dmeson.Pdaug[0] = posP[0];
+    dmeson.Pdaug[1] = posP[1];
+    dmeson.Pdaug[2] = posP[2];
+    dmeson.Ndaug[0] = negP[0];
+    dmeson.Ndaug[1] = negP[1];
+    dmeson.Ndaug[2] = negP[2];
 
     // return mass
     dmeson.mass = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{posMass, negMass});
     dmeson.pt = std::hypot(posP[0] + negP[0], posP[1] + negP[1]);
+    dmeson.phi = RecoDecay::phi(array{posP[0] + negP[0], posP[1] + negP[1]});
     dmeson.eta = RecoDecay::eta(array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]});
     const auto posSV = fitter.getPCACandidate();
     dmeson.posSV[0] = posSV[0];
@@ -253,6 +266,7 @@ struct alice3decayFinder {
     // return mass
     lcbaryon.mass = RecoDecay::m(array{array{P0[0], P0[1], P0[2]}, array{P1[0], P1[1], P1[2]}, array{P2[0], P2[1], P2[2]}}, array{p0mass, p1mass, p2mass});
     lcbaryon.pt = std::hypot(P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]);
+    lcbaryon.phi = RecoDecay::phi(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1]});
     lcbaryon.eta = RecoDecay::eta(array{P0[0] + P1[0] + P2[0], P0[1] + P1[1] + P2[1], P0[2] + P1[2] + P2[2]});
     return true;
   }
@@ -388,7 +402,7 @@ struct alice3decayFinder {
         histos.fill(HIST("h2dDCAxyVsPtKaMinusFromD"), track.pt(), track.dcaXY() * 1e+4);
     }
 
-    // D mesons
+    // D0 mesons
     for (auto const& posTrackRow : tracksPiPlusFromDgrouped) {
       for (auto const& negTrackRow : tracksKaMinusFromDgrouped) {
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
@@ -433,9 +447,21 @@ struct alice3decayFinder {
         histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
+
+        //store D0 in output table
+        candidateD0meson(collision.globalIndex(),
+                         dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2],
+                         dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2],
+                         dmeson.P[0], dmeson.P[1], dmeson.P[2],
+                         dmeson.pt,
+                         dmeson.mass,
+                         dmeson.eta,
+                         dmeson.phi,
+                         1,  //isSelD0 - temporary arrangement for now, to be refined after adding MC truth information
+                         0); //isSelD0bar
       }
     }
-    // D mesons
+    // D0bar mesons
     for (auto const& posTrackRow : tracksKaPlusFromDgrouped) {
       for (auto const& negTrackRow : tracksPiMinusFromDgrouped) {
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
@@ -480,6 +506,18 @@ struct alice3decayFinder {
         histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
+
+        //store D0bar in output table
+        candidateD0meson(collision.globalIndex(),
+                         dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2],
+                         dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2],
+                         dmeson.P[0], dmeson.P[1], dmeson.P[2],
+                         dmeson.pt,
+                         dmeson.mass,
+                         dmeson.eta,
+                         dmeson.phi,
+                         0,  //isSelD0 - temporary arrangement for now, to be refined after adding MC truth information
+                         1); //isSelD0bar
       }
     }
   }
