@@ -58,6 +58,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::track;
 
 struct Phik0shortanalysis {
   // Histograms are defined with HistogramRegistry
