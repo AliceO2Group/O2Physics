@@ -253,8 +253,8 @@ struct HfCandidateCreatorLbExpressions {
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
 
-  void processMc(aod::HfCand3Prong const& lcCandidates,
-                 aod::TracksWMc const& tracks,
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
                  aod::McParticles const& mcParticles,
                  aod::HfCandLbProngs const& candsLb)
   {
