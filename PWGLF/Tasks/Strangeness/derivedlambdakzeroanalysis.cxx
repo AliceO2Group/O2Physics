@@ -38,7 +38,7 @@
 #include <vector>
 
 #include <TFile.h>
-#include <TH2F.h>
+#include <TH2D.h>
 #include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
@@ -554,7 +554,7 @@ struct derivedlambdakzeroanalysis {
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{21, -0.5f, +20.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1D, {{21, -0.5f, +20.5f}});
     if (isRun3) {
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
@@ -605,30 +605,30 @@ struct derivedlambdakzeroanalysis {
       }
     }
 
-    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0.0f, 101.0f}});
-    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
+    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
 
-    histos.add("hEventPVz", "hEventPVz", kTH1F, {{100, -20.0f, +20.0f}});
-    histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
+    histos.add("hEventPVz", "hEventPVz", kTH1D, {{100, -20.0f, +20.0f}});
+    histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     if (doprocessGeneratedRun3 || doprocessGeneratedRun2) {
-      histos.add("hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20.0f, +20.0f}});
-      histos.add("hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
+      histos.add("hEventPVzMC", "hEventPVzMC", kTH1D, {{100, -20.0f, +20.0f}});
+      histos.add("hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     }
 
-    histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
-    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {{101, 0.0f, 101.0f}, axisOccupancy});
+    histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{101, 0.0f, 101.0f}, axisOccupancy});
 
-    histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
-    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
-    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2F, {{101, 0.0f, 101.0f}, axisSelGap});
+    histos.add("hGapSide", "Gap side; Entries", kTH1D, {{5, -0.5, 4.5}});
+    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axisSelGap});
+    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{101, 0.0f, 101.0f}, axisSelGap});
 
-    histos.add("hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
-    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {{101, 0.0f, 101.0f}, axisIRBinning});
+    histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisIRBinning});
+    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {{101, 0.0f, 101.0f}, axisIRBinning});
 
-    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2F, {axisIRBinning, axisOccupancy});
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2D, {axisIRBinning, axisOccupancy});
 
     // for QA and test purposes
-    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
+    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1D, {axisRawCentrality});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
@@ -641,297 +641,297 @@ struct derivedlambdakzeroanalysis {
 
     // histograms versus mass
     if (analyseK0Short) {
-      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisCentrality, axisPt, axisK0Mass});
       // Non-UPC info
-      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisCentrality, axisPt, axisK0Mass});
       // UPC info
-      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3F, {axisCentrality, axisPt, axisK0Mass});
-      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3F, {axisCentrality, axisPt, axisK0Mass});
-      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisCentrality, axisPt, axisK0Mass});
       if (doTPCQA) {
-        histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("K0Short/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-        histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("K0Short/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("K0Short/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("K0Short/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisK0Mass});
-        histos.add("K0Short/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
-        histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("K0Short/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("K0Short/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("K0Short/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
+        histos.add("K0Short/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
+        histos.add("K0Short/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
+        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("K0Short/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
       }
     }
     if (analyseLambda) {
-      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassLambda", "h3dMassLambda", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
-      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       // UPC info
-      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       if (doTPCQA) {
-        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-        histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("Lambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("Lambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("Lambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
-        histos.add("Lambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
-        histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("Lambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("Lambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("Lambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
+        histos.add("Lambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
+        histos.add("Lambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
+        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("Lambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
       }
     }
     if (analyseAntiLambda) {
-      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
-      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       // UPC info
-      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
       if (doTPCQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
-        histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("AntiLambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("AntiLambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("AntiLambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
-        histos.add("AntiLambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
-        histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("AntiLambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("AntiLambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3F, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3F, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3F, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("AntiLambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3F, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
+        histos.add("AntiLambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
+        histos.add("AntiLambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
+        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
+        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
+        histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
+        histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("AntiLambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
       }
     }
 
     if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
-      histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
+      histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisCentrality, axisPt, axisPtXi});
     if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
-      histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
+      histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisCentrality, axisPt, axisPtXi});
 
     // demo // fast
-    histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
+    histos.add("hMassK0Short", "hMassK0Short", kTH1D, {axisK0Mass});
 
     // QA histograms if requested
     if (doCompleteTopoQA) {
       // initialize for K0short...
       if (analyseK0Short) {
-        histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-        histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-        histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
-        histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
-        histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
-        histos.add("K0Short/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
+        histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+        histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+        histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
+        histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
+        histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
+        histos.add("K0Short/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnD, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
       if (analyseLambda) {
-        histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
-        histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
-        histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
-        histos.add("Lambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
+        histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
+        histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
+        histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("Lambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnD, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
       if (analyseAntiLambda) {
-        histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("AntiLambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
-        histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
-        histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
-        histos.add("AntiLambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
+        histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("AntiLambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
+        histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
+        histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("AntiLambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnD, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
     }
 
     if (doPlainTopoQA) {
       // All candidates received
-      histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-      histos.add("hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
-      histos.add("hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
-      histos.add("hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
-      histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-      histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
+      histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
+      histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
+      histos.add("hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
+      histos.add("hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
+      histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+      histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
       if (analyseK0Short) {
-        histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
-        histos.add("K0Short/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
-        histos.add("K0Short/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
-        histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
+        histos.add("K0Short/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
+        histos.add("K0Short/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
+        histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
       }
       if (analyseLambda) {
-        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
-        histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
-        histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
-        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
+        histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
+        histos.add("Lambda/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
+        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
       }
       if (analyseAntiLambda) {
-        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
-        histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
-        histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
-        histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
-        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
+        histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
+        histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
+        histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
+        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
       }
     }
 
     // Check if doing the right thing in AP space please
-    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisAPAlpha, axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2D, {axisAPAlpha, axisAPQt});
 
     // Creation of histograms: MC generated
     if ((doprocessGeneratedRun3 || doprocessGeneratedRun2)) {
-      histos.add("hGenEvents", "hGenEvents", kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
+      histos.add("hGenEvents", "hGenEvents", kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
-      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1F, {{101, 0.0f, 101.0f}});
+      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
 
-      histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
-      histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
 
-      histos.add("hCentralityVsMultMC", "hCentralityVsMultMC", kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+      histos.add("hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
 
       histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});

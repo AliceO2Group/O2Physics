@@ -1252,7 +1252,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> recSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
-    Configurable<bool> runMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
+    // Configurable<bool> runMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
   } fConfigMC;
 
   struct : ConfigurableGroup {
@@ -2050,9 +2050,9 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    if (fConfigMC.runMCGenPair) {
+    /*if (fConfigMC.runMCGenPair) {
       runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
-    }
+    }*/
     // runSameEventPairing<true, VarManager::kElectronMuon, gkEventFillMap, gkTrackFillMap>(event, tracks, muons);
   }
 
@@ -2062,9 +2062,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    if (fConfigMC.runMCGenPair) {
+    /*if (fConfigMC.runMCGenPair) {
       runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
-    }
+    }*/
   }
 
   void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
@@ -2073,9 +2073,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCovWithColl>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    if (fConfigMC.runMCGenPair) {
-      runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
-    }
+    /*  if (fConfigMC.runMCGenPair) {
+        runMCGen<VarManager::kDecayToEE>(mcEvents, mcTracks);
+      }*/
   }
 
   void processMuonOnlySkimmed(MyEventsVtxCovSelected const& events,
@@ -2083,9 +2083,9 @@ struct AnalysisSameEventPairing {
   {
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(events, muonAssocsPerCollision, muonAssocs, muons, mcEvents, mcTracks);
     // Feature replaced by processMCGen
-    if (fConfigMC.runMCGenPair) {
-      runMCGen<VarManager::kDecayToMuMu>(mcEvents, mcTracks);
-    }
+    /* if (fConfigMC.runMCGenPair) {
+       runMCGen<VarManager::kDecayToMuMu>(mcEvents, mcTracks);
+     }*/
   }
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -2126,6 +2126,24 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end loop over reconstructed events
+    if (fHasTwoProngGenMCsignals) {
+      for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
+        auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+        auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+        if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+          for (auto& sig : fGenMCSignals) {
+            if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+              continue;
+            }
+            if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+              // mcDecision |= (static_cast<uint32_t>(1) << isig);
+              VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+              fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+            }
+          }
+        }
+      }
+    }
   }
 
   void processDummy(MyEvents&)
