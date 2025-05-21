@@ -453,7 +453,7 @@ struct HeavyNeutralMesonFilter {
     mHistManager.fill(HIST("Event/fZvtxBefore"), collision.posZ());
 
     // Ensure evts are consistent with Sel8 and Vtx-z selection
-    bool keepFemtoEvent[hnmtrigger::kNFemtoTriggers] = {false, false, false, false, false, false};       // Set based on number of found pairs (see above) - used to flag femto events
+    bool keepFemtoEvent[hnmtrigger::kNFemtoTriggers] = {false, false, false, false, false, false}; // Set based on number of found pairs (see above) - used to flag femto events
     if (!isSelectedEvent(collision)) {
       tags(keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kPPOmega], keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kEtaPrimeP], keepFemtoEvent[hnmtrigger::kPPEtaPrime], keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
       return;
