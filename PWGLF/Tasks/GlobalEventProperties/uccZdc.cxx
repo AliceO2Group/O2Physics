@@ -45,6 +45,7 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TPDGCode.h"
+#include "TF1.h"
 
 using namespace std;
 using namespace o2;
@@ -64,56 +65,64 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 } // namespace o2::aod
 
 struct UccZdc {
+
+  static constexpr float collEnergy{2.68};
+  static constexpr float zEro{0.};
+
+  // Configurables Event Selection
+  Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "use isNoCollInTimeRangeStrict?"};
+  Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "use isNoCollInTimeRangeStandard?"};
+  Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "use isNoCollInRofStrict?"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "use isNoCollInRofStandard?"};
+  Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "use isNoHighMultCollInPrevRof?"};
+  Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", false, "use isNoCollInTimeRangeNarrow?"};
+  Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
+  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
+  Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut"};
+  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut"};
+  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
+  Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
+
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
+  Configurable<float> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
+  Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
+  Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
+  Configurable<float> minOccCut{"minOccCut", 0., "min Occu cut"};
+  Configurable<float> maxOccCut{"maxOccCut", 500., "max Occu cut"};
+  Configurable<float> minNchSel{"minNchSel", 5., "min Nch Selection"};
+  Configurable<float> evtFracMCcl{"evtFracMCcl", 0.5, "fraction of events for MC closure"};
 
+  // Track-kinematics selection
   Configurable<float> minPt{"minPt", 0.1, "minimum pt of the tracks"};
   Configurable<float> maxPt{"maxPt", 50., "maximum pt of the tracks"};
   Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
 
   // Configurables, binning
-  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 100, "N bins FV0 amp"};
   Configurable<float> maxAmpFV0{"maxAmpFV0", 2000, "Max FV0 amp"};
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
   Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
-  Configurable<int> nBinsZDC{"nBinsZDC", 400, "nBinsZDC"};
-  Configurable<int> nBinsZEM{"nBinsZEM", 100, "nBinsZEM"};
+  Configurable<int> nBinsZDC{"nBinsZDC", 400, "N bins ZDC"};
+  Configurable<float> minZN{"minZN", 0, "Min ZN signal"};
   Configurable<float> maxZN{"maxZN", 150, "Max ZN signal"};
   Configurable<float> maxZP{"maxZP", 60, "Max ZP signal"};
   Configurable<float> maxZEM{"maxZEM", 2200, "Max ZEM signal"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
-  Configurable<float> minMeanpT{"minMeanpT", 0.5, "minimum [pT]"};
-  Configurable<float> maxMeanpT{"maxMeanpT", 1.1, "maximum [pT]"};
-  Configurable<int> nBinsMeanpT{"nBinsMeanpT", 160, "# bins [pT]"};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0C binning"};
 
-  // Configurables Event Selection
-  Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
-  Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
-  Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
-  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "isNoCollInRofStandard?"};
-  Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "isNoHighMultCollInPrevRof?"};
-  Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", false, "isNoCollInTimeRangeNarrow?"};
-  Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
-  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
-  Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
-  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
-
-  Configurable<float> znBasedCut{"znBasedCut", 100, "ZN-based cut"};
-  Configurable<float> zemCut{"zemCut", 1000., "ZEM cut"};
-  Configurable<float> tdcCut{"tdcCut", 1., "TDC cut"};
-  Configurable<float> minOccCut{"minOccCut", 0, "min Occu cut"};
-  Configurable<float> maxOccCut{"maxOccCut", 500, "max Occu cut"};
-  Configurable<int> minITSnCls{"minITSnCls", 5, "min ITSnCls"};
+  // CCDB paths
+  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
+  Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch_9May2025", "base path to the ccdb object"};
+  Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch_9May2025", "base path to the ccdb object"};
 
   enum EvCutLabel {
     All = 1,
@@ -135,33 +144,16 @@ struct UccZdc {
     Zem
   };
 
-  static constexpr float zEro{0.};
-  static constexpr float oneHalf{0.5};
-
-  // Filters
   // Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt) && requireGlobalTrackInFilter());
-  // Remove the GlobalTrack filter to count also ITS tracks
   Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt));
 
   // Apply Filters
-  // using TheFilteredCollisions = soa::Filtered<o2::aod::ColEvSels>;
-  // using TheFilteredCollision = TheFilteredCollisions::iterator;
   using TheFilteredTracks = soa::Filtered<o2::aod::TracksSel>;
-  // using TheFilteredTrack = TheFilteredTracks::iterator;
-
-  // using TheFilteredSimCollisions = soa::Filtered<o2::aod::SimCollisions>;
   using TheFilteredSimTracks = soa::Filtered<o2::aod::SimTracks>;
 
   // Histograms: Data
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
-  Configurable<std::string> uRl{"uRl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> noLaterThan{"noLaterThan", 1740173636328, "latest acceptable timestamp of creation for the object"};
-
-  // the efficiency has been previously stored in the CCDB as TH1F histogram
-  TH1F* efficiency = nullptr;
 
   void init(InitContext const&)
   {
@@ -176,7 +168,19 @@ struct UccZdc {
     const AxisSpec axisEneCh{300, 0., 300., "Energy of non-zero channels"};
 
     registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
+    registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
+    registry.add("NchUncorrected", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{300, 0., 3000.}});
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
+    registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
+    registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
+    registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0, 3000}});
+    registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
+    registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
+    registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
+    registry.add("ZposVsEta", "", kTProfile, {axisZpos});
+    registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
+    registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
+
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
@@ -197,48 +201,33 @@ struct UccZdc {
     x->SetBinLabel(16, "Within TDC cut?");
     x->SetBinLabel(17, "Within ZEM cut?");
 
-    //  Histograms: paritcle-level info
     if (doprocessZdcCollAss) {
-      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
-      registry.add("ZposVsEta", "", kTProfile, {axisZpos});
-      registry.add("EtaVsPhi", ";#eta;#varphi", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
-      registry.add("sigma1Pt", ";;#sigma(p_{T})/p_{T};", kTProfile, {axisPt});
-      registry.add("dcaXYvspT", ";DCA_{xy} (cm);;", kTH2F, {{{50, -1., 1.}, {axisPt}}});
-
-      registry.add("NchRaw", ";#it{N}_{ch} (|#eta| < 0.8);", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsPt", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);;", kTH2F, {{{nBinsNch, minNch, maxNch}, {axisPt}}});
-      registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsOneParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected); ZNA+ZNC; #LT[#it{p}_{T}^{(1)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("NchVsTwoParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(2)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("NchVsThreeParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(3)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("NchVsFourParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(4)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
     }
 
-    // MC Histograms
     if (doprocessMCclosure) {
-      registry.add("RandomNumber", "", kTH1F, {{100, 0., 1.}});
+      registry.add("RandomNumber", "", kTH1F, {{50, 0., 1.}});
       registry.add("EvtsDivided", ";Event type;Entries;", kTH1F, {{2, -0.5, 1.5}});
       auto hEvtsDiv = registry.get<TH1>(HIST("EvtsDivided"));
       auto* xEvtsDiv = hEvtsDiv->GetXaxis();
       xEvtsDiv->SetBinLabel(1, "MC closure");
       xEvtsDiv->SetBinLabel(2, "Corrections");
-
+      // MC closure
       registry.add("NchGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsOneParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsTwoParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(2)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsThreeParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsFourParCorrGen", "MC closure;#it{N}_{ch} (|#eta| < 0.8);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-
-      registry.add("T0Ccent", "Filled at MC closure + Corrections;;Entries", kTH1F, {axisCent});
-      registry.add("NchRaw", "MC closure;#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("Nch", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsOneParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsTwoParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(2)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsThreeParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(3)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchVsFourParCorr", "MC closure;#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(4)}]#GT", kTProfile, {{nBinsNch, minNch, maxNch}});
-
       // Corrections
+      registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
+      registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
       registry.add("nRecColvsCent", "", kTH2F, {{6, -0.5, 5.5}, {{axisCent}}});
       registry.add("Pt_all_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
       registry.add("Pt_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
@@ -248,9 +237,6 @@ struct UccZdc {
       registry.add("Pt_sigpos", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
       registry.add("Pt_signeg", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
       registry.add("Pt_re", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
-      registry.add("EtaVsPhi", "Corrections;;#varphi;", kTH2F, {{{axisEta}, {100, -0.1 * PI, +2.1 * PI}}});
-      registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
-      registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("PtMC_ch", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
       registry.add("PtMC_pi", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
       registry.add("PtMC_ka", "Corrections;;;", kTH2F, {{axisCent}, {axisPt}});
@@ -266,61 +252,47 @@ struct UccZdc {
     }
 
     if (doprocessQA) {
-      registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
-
-      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZN}}});
-
-      registry.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-      registry.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-      registry.add("ZPA", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
-      registry.add("ZNC", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-      registry.add("ZPC", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
+      registry.add("Debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
+      registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 1800.}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 600.}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
+      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 1800.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 600.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNAamp", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
+      registry.add("ZPAamp", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
+      registry.add("ZNCamp", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
+      registry.add("ZPCamp", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
       registry.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZN}, {30, -0.5, maxZN}}});
       registry.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZP}, {100, -0.5, maxZP}}});
       registry.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
       registry.add("ZNCVsZPC", ";ZPC;ZNC;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
-      registry.add("ZNCcvsZNCsum", ";ZNC common;ZNC sum towers;", kTH2F, {{{30, -0.5, maxZN}, {30, -0.5, maxZN}}});
-      registry.add("ZNAcvsZNAsum", ";ZNA common;ZNA sum towers;", kTH2F, {{{30, -0.5, maxZN}, {30, -0.5, maxZN}}});
-      registry.add("ZPCcvsZPCsum", ";ZPC common;ZPC sum towers;", kTH2F, {{{30, -0.5, maxZP}, {30, -0.5, maxZP}}});
-      registry.add("ZPAcvsZPAsum", ";ZPA common;ZPA sum towers;", kTH2F, {{{30, -0.5, maxZP}, {30, -0.5, maxZP}}});
       registry.add("ZNVsZEM", ";ZEM;ZNA+ZNC;", kTH2F, {{{60, -0.5, maxZEM}, {60, -0.5, maxZN}}});
-      registry.add("ZNCVstdc", ";t_{ZNC};ZNC;", kTH2F, {{{30, -15., 15.}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNAVstdc", ";t_{ZNA};ZNA;", kTH2F, {{{30, -15., 15.}, {30, -0.5, maxZN}}});
-      registry.add("ZPCVstdc", ";t_{ZPC};ZPC;", kTH2F, {{{30, -15., 15}, {20, -0.5, maxZP}}});
-      registry.add("ZPAVstdc", ";t_{ZPA};ZPA;", kTH2F, {{{30, -15., 15.}, {20, -0.5, maxZP}}});
-      registry.add("ZEM1Vstdc", ";t_{ZEM1};ZEM1;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
-      registry.add("ZEM2Vstdc", ";t_{ZEM2};ZEM2;", kTH2F, {{{30, -15., 15.}, {30, -0.5, 2000.5}}});
-      registry.add("debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
-
-      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTProfile, {{nBinsAmpFV0, 0., maxAmpFV0}});
-
-      registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsMeanPt", ";#it{N}_{ch} (|#eta|<0.8);#LT[#it{p}_{T}]#GT (|#eta|<0.8);", kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);#LT ITS+TPC tracks #GT (|#eta|<0.8);", kTProfile, {{6000, -0.5, 5999.5}});
-      registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;#LTITS+TPC tracks#GT (|#eta|<0.8);", kTProfile, {{6000, -0.5, 5999.5}});
-      registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
-      registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
-      registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZN}}});
+      registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
+      registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
+      registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
       registry.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
 
-    ccdb->setURL(uRl.value);
+    LOG(info) << "\tapplyEff=" << applyEff.value;
+    LOG(info) << "\tpaTH=" << paTH.value;
+    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
+    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(noLaterThan.value);
-    LOGF(info, "Getting object %s", paTH.value.data());
-    efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, noLaterThan);
-    if (!efficiency) {
-      LOGF(fatal, "Efficiency object not found!");
-    }
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
   }
 
   template <typename CheckCol>
@@ -409,7 +381,6 @@ struct UccZdc {
 
   void processQA(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /**/, aod::Zdcs const& /**/, aod::FV0As const& /**/, aod::FT0s const& /**/, TheFilteredTracks const& tracks)
   {
-
     // LOG(info) << " Collisions size: " << collisions.size() << " Table's size: " << collisions.tableSize() << "\n";
     const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
     // LOG(info) << "Run number: " << foundBC.runNumber() << "\n";
@@ -445,12 +416,25 @@ struct UccZdc {
       aV0A = -999.;
     }
 
+    const double normT0M{(aT0A + aT0C) / 100.};
+    float znA{zdc.amplitudeZNA()};
+    float znC{zdc.amplitudeZNC()};
+    float zpA{zdc.amplitudeZPA()};
+    float zpC{zdc.amplitudeZPC()};
+    float aZEM1{zdc.amplitudeZEM1()};
+    float aZEM2{zdc.amplitudeZEM2()};
     float tZNA{zdc.timeZNA()};
     float tZNC{zdc.timeZNC()};
     float tZPA{zdc.timeZPA()};
     float tZPC{zdc.timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
+    znA /= collEnergy;
+    znC /= collEnergy;
+    zpA /= collEnergy;
+    zpC /= collEnergy;
+    float sumZNs{znA + znC};
+    float sumZEMs{aZEM1 + aZEM2};
 
     // TDC cut
     if (isTDCcut) {
@@ -460,10 +444,6 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
     }
 
-    float aZEM1{zdc.amplitudeZEM1()};
-    float aZEM2{zdc.amplitudeZEM2()};
-    float sumZEMs{aZEM1 + aZEM2};
-
     // ZEM cut
     if (isZEMcut) {
       if (sumZEMs < zemCut) {
@@ -472,144 +452,50 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
-    float znA{zdc.amplitudeZNA()};
-    float znC{zdc.amplitudeZNC()};
-    float zpA{zdc.amplitudeZPA()};
-    float zpC{zdc.amplitudeZPC()};
-    znA /= 2.81;
-    znC /= 2.81;
-    zpA /= 2.81;
-    zpC /= 2.81;
-
-    float tZEM1{zdc.timeZEM1()};
-    float tZEM2{zdc.timeZEM2()};
-    float sumZNs{znA + znC};
-
-    float sumZNC = (zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3];
-    float sumZNA = (zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3];
-    float sumZPC = (zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3];
-    float sumZPA = (zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3];
-
     int itsTracks = 0, glbTracks = 0;
-    float et = 0., meanpt = 0.;
     for (const auto& track : tracks) {
-      if (track.hasITS() && track.itsNCls() >= minITSnCls) {
+      if (track.hasITS()) {
         itsTracks++;
       }
       // Track Selection
-      if (track.isGlobalTrack()) {
-        glbTracks++;
-        meanpt += track.pt();
-        et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+      if (!track.isGlobalTrack()) {
+        continue;
       }
+      glbTracks++;
     }
 
-    registry.fill(HIST("zPos"), collision.posZ());
-    registry.fill(HIST("T0Ccent"), collision.centFT0C());
-
-    registry.fill(HIST("ZNCcvsZNCsum"), sumZNC / 2.81, zdc.energyCommonZNC() / 2.81);
-    registry.fill(HIST("ZNAcvsZNAsum"), sumZNA / 2.81, zdc.energyCommonZNA() / 2.81);
-    registry.fill(HIST("ZPCcvsZPCsum"), sumZPC / 2.81, zdc.energyCommonZPC() / 2.81);
-    registry.fill(HIST("ZPAcvsZPAsum"), sumZPA / 2.81, zdc.energyCommonZPA() / 2.81);
-
-    registry.fill(HIST("ZNA"), znA);
-    registry.fill(HIST("ZNC"), znC);
-    registry.fill(HIST("ZPA"), zpA);
-    registry.fill(HIST("ZPC"), zpC);
-    registry.fill(HIST("ZN"), znA + znC);
-    registry.fill(HIST("ZNAVsZNC"), znC, znA);
-    registry.fill(HIST("ZNAVsZPA"), zpA, znA);
-    registry.fill(HIST("ZNCVsZPC"), zpC, znC);
-    registry.fill(HIST("ZPAVsZPC"), zpC, zpA);
-    registry.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
-    registry.fill(HIST("ZNCVstdc"), tZNC, znC);
-    registry.fill(HIST("ZNAVstdc"), tZNA, znA);
-    registry.fill(HIST("ZPCVstdc"), tZPC, zpC);
-    registry.fill(HIST("ZPAVstdc"), tZPA, zpA);
-    registry.fill(HIST("ZEM1Vstdc"), tZEM1, aZEM1);
-    registry.fill(HIST("ZEM2Vstdc"), tZEM2, aZEM2);
-    registry.fill(HIST("debunch"), tZDCdif, tZDCsum);
-
-    registry.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
-    registry.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
-    registry.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
-
-    if (sumZNs > znBasedCut) {
-      return;
-    }
-
-    registry.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
-    registry.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
-    registry.fill(HIST("NchVsFT0C"), aT0C / 100., glbTracks);
-    registry.fill(HIST("NchVsFT0M"), (aT0A + aT0C) / 100., glbTracks);
-
-    registry.fill(HIST("NchVsEt"), et, glbTracks);
-    registry.fill(HIST("NchVsMeanPt"), glbTracks, meanpt / glbTracks);
-    registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), glbTracks);
-    registry.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
-    registry.fill(HIST("ZNAVsNch"), glbTracks, znA);
-    registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
-    registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
-    registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
-  }
-  PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
-
-  void processZdcCollAss(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
-  {
-
-    if (!isEventSelected(collision)) {
-      return;
-    }
-
-    const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
-    // has ZDC?
-    if (!foundBC.has_zdc()) {
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
-
-    if (!foundBC.has_ft0()) {
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
-
-    float znA{foundBC.zdc().amplitudeZNA()};
-    float znC{foundBC.zdc().amplitudeZNC()};
-    float aZEM1{foundBC.zdc().amplitudeZEM1()};
-    float aZEM2{foundBC.zdc().amplitudeZEM2()};
-    float tZNA{foundBC.zdc().timeZNA()};
-    float tZNC{foundBC.zdc().timeZNC()};
-    float tZPA{foundBC.zdc().timeZPA()};
-    float tZPC{foundBC.zdc().timeZPC()};
-    float tZDCdif{tZNC + tZPC - tZNA - tZPA};
-    float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= 2.81;
-    znC /= 2.81;
-    float sumZNs{znA + znC};
-    float sumZEMs{aZEM1 + aZEM2};
-
-    // TDC cut
-    if (isTDCcut) {
-      if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
+    bool skipEvent{false};
+    if (useMidRapNchSel) {
+      auto hMeanNch = ccdb->getForTimeStamp<TH1F>(paTHmeanNch.value, foundBC.timestamp());
+      auto hSigmaNch = ccdb->getForTimeStamp<TH1F>(paTHsigmaNch.value, foundBC.timestamp());
+      if (!hMeanNch) {
+        LOGF(info, "hMeanNch NOT LOADED!");
         return;
       }
-      registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
-    }
-
-    // ZEM cut
-    if (isZEMcut) {
-      if (sumZEMs < zemCut) {
+      if (!hSigmaNch) {
+        LOGF(info, "hSigmaNch NOT LOADED!");
         return;
       }
-      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
+
+      const int binT0M{hMeanNch->FindBin(normT0M)};
+      const double meanNch{hMeanNch->GetBinContent(binT0M)};
+      const double sigmaNch{hSigmaNch->GetBinContent(binT0M)};
+      const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+      const double diffMeanNch{meanNch - glbTracks};
+
+      if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
+        registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
+        registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+      } else {
+        skipEvent = true;
+      }
     }
 
-    registry.fill(HIST("zPos"), collision.posZ());
-    registry.fill(HIST("T0Ccent"), collision.centFT0C());
+    if (!skipEvent) {
+      return;
+    }
 
-    std::vector<float> pTs;
-    std::vector<float> wIs;
-    // Calculates the event weight, W_k
+    float et = 0., meanpt = 0.;
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -620,9 +506,173 @@ struct UccZdc {
       registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
       registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
       registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+      et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
+      meanpt += track.pt();
+    }
+
+    registry.fill(HIST("zPos"), collision.posZ());
+    registry.fill(HIST("T0Ccent"), collision.centFT0C());
+    registry.fill(HIST("ZNAamp"), znA);
+    registry.fill(HIST("ZNCamp"), znC);
+    registry.fill(HIST("ZPAamp"), zpA);
+    registry.fill(HIST("ZPCamp"), zpC);
+    registry.fill(HIST("ZNamp"), sumZNs);
+    registry.fill(HIST("ZNAVsZNC"), znC, znA);
+    registry.fill(HIST("ZNAVsZPA"), zpA, znA);
+    registry.fill(HIST("ZNCVsZPC"), zpC, znC);
+    registry.fill(HIST("ZPAVsZPC"), zpC, zpA);
+    registry.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
+    registry.fill(HIST("Debunch"), tZDCdif, tZDCsum);
+    registry.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
+    registry.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
+    registry.fill(HIST("ZNVsFT0M"), normT0M, sumZNs);
+    registry.fill(HIST("NchVsFV0A"), aV0A / 100., glbTracks);
+    registry.fill(HIST("NchVsFT0A"), aT0A / 100., glbTracks);
+    registry.fill(HIST("NchVsFT0C"), aT0C / 100., glbTracks);
+    registry.fill(HIST("NchVsFT0M"), normT0M, glbTracks);
+    registry.fill(HIST("NchUncorrected"), glbTracks);
+    registry.fill(HIST("Nch"), glbTracks);
+    registry.fill(HIST("NchVsEt"), et, glbTracks);
+    registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), glbTracks);
+    registry.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
+    registry.fill(HIST("ZNAVsNch"), glbTracks, znA);
+    registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
+    registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
+    registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
+    if (glbTracks >= minNchSel) {
+      registry.fill(HIST("NchVsOneParCorr"), glbTracks, meanpt / glbTracks);
+    }
+  }
+  PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
+
+  void processZdcCollAss(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
+  {
+    if (!isEventSelected(collision)) {
+      return;
+    }
+
+    const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+    // LOGF(info, "Getting object %s for run number %i from timestamp=%llu", paTH.value.data(), foundBC.runNumber(), foundBC.timestamp());
+
+    // has ZDC?
+    if (!foundBC.has_zdc()) {
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
+
+    float aT0A = 0., aT0C = 0.;
+    if (foundBC.has_ft0()) {
+      for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
+        aT0A += amplitude;
+      }
+      for (const auto& amplitude : foundBC.ft0().amplitudeC()) {
+        aT0C += amplitude;
+      }
+    } else {
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
+
+    const double normT0M{(aT0A + aT0C) / 100.};
+    float znA{foundBC.zdc().amplitudeZNA()};
+    float znC{foundBC.zdc().amplitudeZNC()};
+    float aZEM1{foundBC.zdc().amplitudeZEM1()};
+    float aZEM2{foundBC.zdc().amplitudeZEM2()};
+    float tZNA{foundBC.zdc().timeZNA()};
+    float tZNC{foundBC.zdc().timeZNC()};
+    float tZPA{foundBC.zdc().timeZPA()};
+    float tZPC{foundBC.zdc().timeZPC()};
+    float tZDCdif{tZNC + tZPC - tZNA - tZPA};
+    float tZDCsum{tZNC + tZPC + tZNA + tZPA};
+    znA /= collEnergy;
+    znC /= collEnergy;
+    float sumZNs{znA + znC};
+    float sumZEMs{aZEM1 + aZEM2};
+
+    // TDC cut
+    if (isTDCcut) {
+      if (std::sqrt(std::pow(tZDCdif, 2.) + std::pow(tZDCsum, 2.)) > tdcCut) {
+        return;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
+    }
+
+    // ZEM cut
+    if (isZEMcut) {
+      if (sumZEMs < zemCut) {
+        return;
+      }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
+    }
+
+    registry.fill(HIST("zPos"), collision.posZ());
+    registry.fill(HIST("T0Ccent"), collision.centFT0C());
+
+    // Nch-based selection
+    int glbTracks{0};
+    for (const auto& track : tracks) {
+      // Track Selection
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+      registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+      registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+      registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
+      registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+      glbTracks++;
+    }
+
+    bool skipEvent{false};
+    if (useMidRapNchSel) {
+      auto hMeanNch = ccdb->getForTimeStamp<TH1F>(paTHmeanNch.value, foundBC.timestamp());
+      auto hSigmaNch = ccdb->getForTimeStamp<TH1F>(paTHsigmaNch.value, foundBC.timestamp());
+      if (!hMeanNch) {
+        LOGF(info, "hMeanNch NOT LOADED!");
+        return;
+      }
+      if (!hSigmaNch) {
+        LOGF(info, "hSigmaNch NOT LOADED!");
+        return;
+      }
+
+      const int binT0M{hMeanNch->FindBin(normT0M)};
+      const double meanNch{hMeanNch->GetBinContent(binT0M)};
+      const double sigmaNch{hSigmaNch->GetBinContent(binT0M)};
+      const double nSigmaSelection{nSigmaNchCut * sigmaNch};
+      const double diffMeanNch{meanNch - glbTracks};
+
+      if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
+        registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
+        registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+      } else {
+        skipEvent = true;
+      }
+    }
+
+    if (!skipEvent) {
+      return;
+    }
+
+    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    if (!efficiency) {
+      return;
+    }
+
+    std::vector<float> pTs;
+    std::vector<float> wIs;
+    // Calculates the event weight, W_k
+    for (const auto& track : tracks) {
+      // Track Selection
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
 
       float pt{track.pt()};
-      double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
+      double weight{1.};
+      if (applyEff) {
+        weight = efficiency->GetBinContent(efficiency->FindBin(pt));
+      }
       if (weight > 0.) {
         pTs.emplace_back(pt);
         wIs.emplace_back(weight);
@@ -633,7 +683,7 @@ struct UccZdc {
     p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
     getPTpowers(pTs, wIs, p1, w1, p2, w2, p3, w3, p4, w4);
     const double nch{static_cast<double>(pTs.size())};
-    if (!(nch != 0.)) {
+    if (nch < minNchSel) {
       return;
     }
 
@@ -664,12 +714,9 @@ struct UccZdc {
     double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
     double fourParCorr{numFourParCorr / denFourParCorr};
 
-    if (sumZNs > znBasedCut) {
-      return;
-    }
-
     registry.fill(HIST("Nch"), w1);
-    registry.fill(HIST("NchRaw"), nch);
+    registry.fill(HIST("ZNamp"), sumZNs);
+    registry.fill(HIST("NchUncorrected"), glbTracks);
     registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
     registry.fill(HIST("NchVsOneParCorrVsZN"), w1, sumZNs, oneParCorr, w1);
     registry.fill(HIST("NchVsTwoParCorrVsZN"), w1, sumZNs, twoParCorr, denTwoParCorr);
@@ -681,32 +728,52 @@ struct UccZdc {
   // Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<TheFilteredSimTracks> perCollision = aod::track::collisionId;
   TRandom* randPointer = new TRandom();
-  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
+  void processMCclosure(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<o2::aod::SimCollisions> const& collisions, o2::aod::BCsRun3 const& /*bcs*/, aod::McParticles const& mcParticles, TheFilteredSimTracks const& simTracks)
   {
+
     float rndNum = randPointer->Uniform(0.0, 1.0);
     registry.fill(HIST("RandomNumber"), rndNum);
 
-    // Half of the statistics for MC closure
-    if (rndNum >= zEro && rndNum < oneHalf) {
-      registry.fill(HIST("EvtsDivided"), 0);
-      //----- MC reconstructed -----//
-      for (const auto& collision : collisions) {
-        // Event selection
-        if (!isEventSelected(collision)) {
+    for (const auto& collision : collisions) {
+
+      // Event selection
+      if (!isEventSelected(collision)) {
+        continue;
+      }
+      // MC collision?
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
+      // Vtx_z selection MC
+      if (std::fabs(mccollision.posZ()) > posZcut) {
+        continue;
+      }
+
+      registry.fill(HIST("zPos"), collision.posZ());
+      registry.fill(HIST("zPosMC"), mccollision.posZ());
+      registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
+      registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
+
+      const auto& cent{collision.centFT0C()};
+      registry.fill(HIST("T0Ccent"), cent);
+
+      // Half of the statistics for MC closure
+      if (rndNum >= zEro && rndNum < evtFracMCcl) {
+        registry.fill(HIST("EvtsDivided"), 0);
+
+        // To use run-by-run efficiency
+        const auto& foundBC = collision.foundBC_as<o2::aod::BCsRun3>();
+        // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+        auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+        if (!efficiency) {
           continue;
         }
-        // MC collision?
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-
-        registry.fill(HIST("T0Ccent"), collision.centFT0C());
-        registry.fill(HIST("zPos"), collision.posZ());
-
-        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
 
         std::vector<float> pTs;
         std::vector<float> wIs;
+        const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
@@ -716,15 +783,16 @@ struct UccZdc {
 
           float pt{track.pt()};
           double weight{efficiency->GetBinContent(efficiency->FindBin(pt))};
-          if (weight > 0.) {
-            pTs.emplace_back(pt);
-            wIs.emplace_back(weight);
+          if (!(weight > 0.)) {
+            continue;
           }
+          pTs.emplace_back(pt);
+          wIs.emplace_back(weight);
         }
 
         const double nch{static_cast<double>(pTs.size())};
-        if (!(nch != 0.)) {
-          return;
+        if (nch < minNchSel) {
+          continue;
         }
 
         double p1, p2, p3, p4, w1, w2, w3, w4;
@@ -744,20 +812,13 @@ struct UccZdc {
         const double fourParCorr{numFourParCorr / denFourParCorr};
 
         registry.fill(HIST("Nch"), w1);
-        registry.fill(HIST("NchRaw"), nch);
+        registry.fill(HIST("NchUncorrected"), nch);
         registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
         registry.fill(HIST("NchVsTwoParCorr"), w1, twoParCorr, denTwoParCorr);
         registry.fill(HIST("NchVsThreeParCorr"), w1, threeParCorr, denThreeParCorr);
         registry.fill(HIST("NchVsFourParCorr"), w1, fourParCorr, denFourParCorr);
 
         //--------------------------- Generated MC ---------------------------
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
-        if (std::fabs(mccollision.posZ()) > posZcut) {
-          continue;
-        }
-        registry.fill(HIST("zPosMC"), mccollision.posZ());
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
-
         std::vector<float> pTsMC;
         std::vector<float> wIsMC;
         // Calculates the event weight, W_k
@@ -778,6 +839,10 @@ struct UccZdc {
         }
 
         const double nchMC{static_cast<double>(pTsMC.size())};
+        if (nchMC < minNchSel) {
+          continue;
+        }
+
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
         p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
         getPTpowers(pTsMC, wIsMC, p1MC, w1MC, p2MC, w2MC, p3MC, w3MC, p4MC, w4MC);
@@ -799,35 +864,25 @@ struct UccZdc {
         registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
         registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
         registry.fill(HIST("NchvsFourParCorrGen"), nchMC, fourParCorrMC, denFourParCorrMC);
-      }
-    } else {
-      registry.fill(HIST("EvtsDivided"), 1);
-      //----- MC reconstructed -----//
-      for (const auto& collision : collisions) {
-        // Event selection
-        if (!isEventSelected(collision)) {
-          continue;
-        }
-        // MC collision?
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-
-        registry.fill(HIST("zPos"), collision.posZ());
-        registry.fill(HIST("nRecColvsCent"), collisions.size(), collision.centFT0C());
-
-        const auto& cent{collision.centFT0C()};
-        registry.fill(HIST("T0Ccent"), cent);
-
+      } else { // Correction with the remaining half of the sample
+        registry.fill(HIST("EvtsDivided"), 1);
+        //----- MC reconstructed -----//
         const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
+          // Track Selection
+          if (!track.isGlobalTrack()) {
+            continue;
+          }
+          // Has MC particle?
           if (!track.has_mcParticle()) {
             continue;
           }
 
           const auto& particle{track.mcParticle()};
           registry.fill(HIST("Pt_all_ch"), cent, track.pt());
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
           registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
 
           if (!particle.isPhysicalPrimary()) {
             continue;
@@ -850,13 +905,6 @@ struct UccZdc {
         }
 
         // Generated MC
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::All);
-        if (std::fabs(mccollision.posZ()) > posZcut) {
-          continue;
-        }
-        registry.fill(HIST("zPosMC"), mccollision.posZ());
-        registry.fill(HIST("hEventCounterMC"), EvCutLabel::VtxZ);
-
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -883,8 +931,8 @@ struct UccZdc {
             registry.fill(HIST("PtMC_re"), cent, particle.pt());
           }
         }
-      }
-    } // Half of statistics for corrections
+      } // Half of statistics for corrections
+    } // Collisions
   }
   PROCESS_SWITCH(UccZdc, processMCclosure, "Process MC closure", false);
 
@@ -905,33 +953,6 @@ struct UccZdc {
       wFour += std::pow(wEighti, 4.);
     }
   }
-
-  // Single-Track Selection
-  // template <typename T2>
-  // bool passedTrackSelection(const T2& track) {
-  //   if (track.eta() < minEta || track.eta() > maxEta) return false;
-  //   if (track.pt() < minPt) return false;
-  //
-  //   if (!track.hasITS()) return false;
-  //   if (track.itsNCls() < minItsNclusters) return false;
-  //   if (!track.hasTPC()) return false;
-  //   if (track.tpcNClsFound() < minTpcNclusters) return false;
-  //   if (track.tpcNClsCrossedRows() < minTpcNcrossedRows) return false;
-  //   if (track.tpcChi2NCl() > maxChiSquareTpc) return false;
-  //   if (track.itsChi2NCl() > maxChiSquareIts) return false;
-  //   // pt-dependent selection
-  //   if (setDCAselectionPtDep) {
-  //     if (std::fabs(track.dcaXY()) > (par0 + par1 / track.pt())) return
-  //     false; if (std::fabs(track.dcaZ()) > (par0 + par1 / track.pt()))
-  //     return false;
-  //   }
-  //   // standard selection
-  //   if (!setDCAselectionPtDep) {
-  //     if (std::fabs(track.dcaXY()) > maxDcaxy) return false;
-  //     if (std::fabs(track.dcaZ()) > maxDcaz) return false;
-  //   }
-  //   return true;
-  // }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

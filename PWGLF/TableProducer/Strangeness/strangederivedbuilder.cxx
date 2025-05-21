@@ -245,7 +245,8 @@ struct strangederivedbuilder {
     if (doprocessTrackExtrasV0sOnly +
           doprocessTrackExtras +
           doprocessTrackExtrasNoPID +
-          doprocessTrackExtrasMC >
+          doprocessTrackExtrasMC +
+          doprocessTrackExtrasMCNoPID >
         1) {
       LOGF(fatal, "You have enabled more than one process function associated to TracksExtra. Please check your configuration! Aborting now.");
     }
@@ -330,6 +331,9 @@ struct strangederivedbuilder {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, no PID");
     }
     if (doprocessTrackExtrasMC) {
+      LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
+    }
+    if (doprocessTrackExtrasMCNoPID) {
       LOGF(info, "TracksExtra processing type.......: V0s + cascades, Monte Carlo");
     }
     LOGF(info, "====] cascade interlink processing [==============================");
@@ -836,18 +840,25 @@ struct strangederivedbuilder {
     fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
   }
 
+  void processTrackExtrasMCNoPID(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracksExtra, aod::V0s const&)
+  {
+    fillTrackExtras(V0s, Cascades, KFCascades, TraCascades, tracksExtra);
+  }
+
   void processStrangeMothers(soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::McParticles const& mcParticles)
   {
     std::vector<int> motherReference(mcParticles.size(), -1); // index -1: not used / no reference
 
     //__________________________________________________
     // mark mcParticles for referencing
-    for (auto const& v0 : V0s)
+    for (auto const& v0 : V0s) {
       if (v0.has_mcMotherParticle())
         motherReference[v0.mcMotherParticleId()] = 0;
-    for (auto const& ca : Cascades)
+    }
+    for (auto const& ca : Cascades) {
       if (ca.has_mcMotherParticle())
         motherReference[ca.mcMotherParticleId()] = 0;
+    }
     //__________________________________________________
     // Figure out the numbering of the new mcMother table
     // assume filling per order
@@ -859,10 +870,20 @@ struct strangederivedbuilder {
     }
     //__________________________________________________
     // populate track references
-    for (auto const& v0 : V0s)
-      v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
-    for (auto const& ca : Cascades)
-      cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+    for (auto const& v0 : V0s) {
+      if (v0.mcMotherParticleId() > -1) {
+        v0mothers(motherReference[v0.mcMotherParticleId()]); // joinable with V0Datas
+      } else {
+        v0mothers(-1); // joinable with V0Datas
+      }
+    }
+    for (auto const& ca : Cascades) {
+      if (ca.mcMotherParticleId() > -1) {
+        cascmothers(motherReference[ca.mcMotherParticleId()]); // joinable with CascDatas
+      } else {
+        cascmothers(-1); // joinable with CascDatas
+      }
+    }
     //__________________________________________________
     // populate motherMCParticles
     for (auto const& tr : mcParticles) {
@@ -1096,6 +1117,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasNoPID, "Produce track extra information (V0s + casc), no PID", false);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMC, "Produce track extra information (V0s + casc)", false);
+  PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasMCNoPID, "Produce track extra information (V0s + casc), no PID", false);
   PROCESS_SWITCH(strangederivedbuilder, processStrangeMothers, "Produce tables with mother info for V0s + casc", true);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkTracked, "Produce tables interconnecting cascades", false);
   PROCESS_SWITCH(strangederivedbuilder, processCascadeInterlinkKF, "Produce tables interconnecting cascades", false);

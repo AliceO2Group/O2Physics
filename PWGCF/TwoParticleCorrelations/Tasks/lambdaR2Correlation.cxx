@@ -159,6 +159,10 @@ enum TrackLabels {
   kEffCorrPtRap,
   kEffCorrPtRapPhi,
   kNoEffCorr,
+  kPFCorrPt,
+  kPFCorrPtRap,
+  kPFCorrPtRapPhi,
+  kNoPFCorr,
   kGenTotAccLambda,
   kGenLambdaNoDau,
   kGenLambdaToPrPi
@@ -248,7 +252,6 @@ struct LambdaTableProducer {
   Configurable<double> cMinV0CosPA{"cMinV0CosPA", 0.995, "Minimum V0 CosPA to PV"};
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.01, "Reject K0Short Candidates"};
   Configurable<bool> cKshortRejFlag{"cKshortRejFlag", true, "K0short Mass Rej Flag"};
-  Configurable<double> cLambdaMassWindow{"cLambdaMassWindow", 0.005, "Lambda Mass Window"};
 
   // V0s kinmatic acceptance
   Configurable<float> cMinV0Mass{"cMinV0Mass", 1.10, "V0 Mass Min"};
@@ -257,6 +260,8 @@ struct LambdaTableProducer {
   Configurable<float> cMaxV0Pt{"cMaxV0Pt", 4.2, "Minimum V0 pT"};
   Configurable<float> cMaxV0Rap{"cMaxV0Rap", 0.5, "|rap| cut"};
   Configurable<bool> cDoEtaAnalysis{"cDoEtaAnalysis", false, "Do Eta Analysis"};
+  Configurable<bool> cV0TypeSelFlag{"cV0TypeSelFlag", false, "V0 Type Selection Flag"};
+  Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
 
   // V0s MC
   Configurable<bool> cHasMcFlag{"cHasMcFlag", true, "Has Mc Tag"};
@@ -275,9 +280,11 @@ struct LambdaTableProducer {
   Configurable<bool> cDoTrackMcMatching{"cDoTrackMcMatching", false, "Do Track Mc Matching Flag"};
 
   // Efficiency Correction
-  Configurable<bool> cCorrectionFlag{"cCorrectionFlag", false, "Efficiency Correction Flag"};
-  Configurable<int> cCorrFactHist{"cCorrFactHist", 0, "Correction Factor Histogram"};
-  Configurable<bool> cDoEtaCorr{"cDoEtaCorr", false, "Do Eta Corr"};
+  Configurable<bool> cCorrectionFlag{"cCorrectionFlag", false, "Correction Flag"};
+  Configurable<bool> cGetEffFact{"cGetEffFact", false, "Get Efficiency Factor Flag"};
+  Configurable<bool> cGetPrimFrac{"cGetPrimFrac", false, "Get Primary Fraction Flag"};
+  Configurable<int> cCorrFactHist{"cCorrFactHist", 0, "Efficiency Factor Histogram"};
+  Configurable<int> cPrimFracHist{"cPrimFracHist", 0, "Primary Fraction Histogram"};
 
   // CCDB
   Configurable<std::string> cUrlCCDB{"cUrlCCDB", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
@@ -296,6 +303,13 @@ struct LambdaTableProducer {
                                                             {"hEffVsPtYPhiLambda", "hEffVsPtYPhiAntiLambda"},
                                                             {"hEffVsPtEtaPhiLambda", "hEffVsPtEtaPhiAntiLambda"}};
 
+  // initialize corr_factor objects
+  std::vector<std::vector<std::string>> vPrimFracStrings = {{"hPrimFracVsPtLambda", "hPrimFracVsPtAntiLambda"},
+                                                            {"hPrimFracVsPtYLambda", "hPrimFracVsPtYAntiLambda"},
+                                                            {"hPrimFracVsPtEtaLambda", "hPrimFracVsPtEtaAntiLambda"},
+                                                            {"hPrimFracVsPtYPhiLambda", "hPrimFracVsPtYPhiAntiLambda"},
+                                                            {"hPrimFracVsPtEtaPhiLambda", "hPrimFracVsPtEtaPhiAntiLambda"}};
+
   // Initialize Global Variables
   float cent = 0.;
 
@@ -307,7 +321,7 @@ struct LambdaTableProducer {
 
     // initialize axis specifications
     const AxisSpec axisCols(5, 0.5, 5.5, "");
-    const AxisSpec axisTrks(25, 0.5, 25.5, "");
+    const AxisSpec axisTrks(30, 0.5, 30.5, "");
     const AxisSpec axisCent(100, 0, 100, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisVz(220, -11, 11, "V_{z} (cm)");
@@ -450,6 +464,10 @@ struct LambdaTableProducer {
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRap, "kEffCorrPtRap");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kEffCorrPtRapPhi, "kEffCorrPtRapPhi");
     histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoEffCorr, "kNoEffCorr");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPFCorrPt, "kPFCorrPt");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPFCorrPtRap, "kPFCorrPtRap");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kPFCorrPtRapPhi, "kPFCorrPtRapPhi");
+    histos.get<TH1>(HIST("Tracks/h1f_tracks_info"))->GetXaxis()->SetBinLabel(TrackLabels::kNoPFCorr, "kNoPFCorr");
   }
 
   template <RunType run, typename C>
@@ -828,7 +846,7 @@ struct LambdaTableProducer {
   template <ParticleType part, typename V>
   float getCorrectionFactors(V const& v0)
   {
-    // Check for efficiency correction flag and Rec/Gen Data
+    // Check for efficiency correction flag
     if (!cCorrectionFlag) {
       return 1.;
     }
@@ -842,29 +860,56 @@ struct LambdaTableProducer {
       return 1.;
     }
 
-    // get ccdb object
-    TObject* obj = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
-    TH1F* hist = reinterpret_cast<TH1F*>(obj->Clone());
-    float retVal = 0.;
-    float rap = (cDoEtaCorr) ? v0.eta() : v0.yLambda();
+    // initialize efficiency factor and primary fraction values
+    float effFact = 1., primFrac = 1.;
+    float rap = (cDoEtaAnalysis) ? v0.eta() : v0.yLambda();
 
-    if (hist->GetDimension() == OneDimCorr) {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPt);
-      retVal = hist->GetBinContent(hist->FindBin(v0.pt()));
-    } else if (hist->GetDimension() == TwoDimCorr) {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRap);
-      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap));
-    } else if (hist->GetDimension() == ThreeDimCorr) {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapPhi);
-      retVal = hist->GetBinContent(hist->FindBin(v0.pt(), rap, v0.phi()));
-    } else {
-      histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
-      LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
-      retVal = 1.;
+    // Get Efficiency Factor
+    if (cGetEffFact) {
+      TObject* objEff = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
+      TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
+      if (histEff->GetDimension() == OneDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPt);
+        effFact = histEff->GetBinContent(histEff->FindBin(v0.pt()));
+      } else if (histEff->GetDimension() == TwoDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRap);
+        effFact = histEff->GetBinContent(histEff->FindBin(v0.pt(), rap));
+      } else if (histEff->GetDimension() == ThreeDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtRapPhi);
+        effFact = histEff->GetBinContent(histEff->FindBin(v0.pt(), rap, v0.phi()));
+      } else {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kNoEffCorr);
+        LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
+        effFact = 1.;
+      }
+      delete objEff;
+      delete histEff;
     }
 
-    delete hist;
-    return retVal;
+    // Get Primary Fraction
+    // (The dimension of this could be different than efficiency because of large errors !!!)
+    if (cGetPrimFrac) {
+      TObject* objPrm = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str())));
+      TH1F* histPrm = reinterpret_cast<TH1F*>(objPrm->Clone());
+      if (histPrm->GetDimension() == OneDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPt);
+        primFrac = histPrm->GetBinContent(histPrm->FindBin(v0.pt()));
+      } else if (histPrm->GetDimension() == TwoDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtRap);
+        primFrac = histPrm->GetBinContent(histPrm->FindBin(v0.pt(), rap));
+      } else if (histPrm->GetDimension() == ThreeDimCorr) {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtRapPhi);
+        primFrac = histPrm->GetBinContent(histPrm->FindBin(v0.pt(), rap, v0.phi()));
+      } else {
+        histos.fill(HIST("Tracks/h1f_tracks_info"), kNoPFCorr);
+        LOGF(warning, "CCDB OBJECT IS NOT A HISTOGRAM !!!");
+        primFrac = 1.;
+      }
+      delete objPrm;
+      delete histPrm;
+    }
+
+    return primFrac / effFact;
   }
 
   template <ParticleType part, typename V>
@@ -969,7 +1014,7 @@ struct LambdaTableProducer {
       // check for corresponding MCGen Particle
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
-        if (!v0.has_mcParticle() || !v0.template posTrack_as<T>().has_mcParticle() || !v0.template negTrack_as<T>().has_mcParticle()) {
+        if (!v0.has_mcParticle()) {
           continue;
         }
       }
@@ -979,6 +1024,11 @@ struct LambdaTableProducer {
 
       // Select V0 Particle as Lambda/AntiLambda
       if (!selV0Particle(collision, v0, tracks, v0Type)) {
+        continue;
+      }
+
+      // Select V0 Type Selection
+      if (cV0TypeSelFlag && v0.v0Type() != cV0TypeSelection) {
         continue;
       }
 
@@ -1238,12 +1288,17 @@ struct LambdaTracksExtProducer {
     const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
     const AxisSpec axisCPA(100, 0.995, 1.0, "cos(#theta_{PA})");
     const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
+    const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
+    const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
 
     // Histograms Booking
     histos.add("h1i_totlambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_totantilambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_lambda_mult", "Multiplicity", kTH1I, {axisMult});
     histos.add("h1i_antilambda_mult", "Multiplicity", kTH1I, {axisMult});
+    histos.add("h2d_n2_etaphi_LaP_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaP_LaP", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("h2d_n2_etaphi_LaM_LaM", "#rho_{2}^{SharePair}", kTH2D, {axisDEta, axisDPhi});
 
     // InvMass, DcaDau and CosPA
     histos.add("Reco/h1f_lambda_invmass", "M_{p#pi}", kTH1F, {axisMass});
@@ -1297,15 +1352,19 @@ struct LambdaTracksExtProducer {
           continue;
         }
 
-        // check only lambda-lambda || antilambda-antilambda
-        if (lambda.v0Type() != track.v0Type()) {
-          continue;
-        }
-
         // check if lambda shares daughters with any other track
         if (lambda.posTrackId() == track.posTrackId() || lambda.negTrackId() == track.negTrackId()) {
           vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
+
+          // Fill DEta-DPhi Histogram
+          if ((lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) || (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda)) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
+            histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(), RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          }
 
           // decision based on mass closest to PdgMass of Lambda
           if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0)) {
@@ -1416,7 +1475,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisPosZ(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisCent(105, 0, 105, "FT0M (%)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
-    const AxisSpec axisMass(100, 1.06, 1.16, "Inv Mass (GeV/#it{c}^{2})");
+    const AxisSpec axisMass(100, 1.06, 1.16, "M_{#Lambda} (GeV/#it{c}^{2})");
     const AxisSpec axisPt(cNPtBins, cMinPt, cMaxPt, "p_{T} (GeV/#it{c})");
     const AxisSpec axisEta(cNRapBins, cMinRap, cMaxRap, "#eta");
     const AxisSpec axisRap(cNRapBins, cMinRap, cMaxRap, "y");

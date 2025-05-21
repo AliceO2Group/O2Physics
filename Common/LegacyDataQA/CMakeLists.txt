@@ -23,3 +23,8 @@ o2physics_add_dpl_workflow(tpcpidqa
                     SOURCES tpcpidqa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pmd-qa
+                    SOURCES pmdQa.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

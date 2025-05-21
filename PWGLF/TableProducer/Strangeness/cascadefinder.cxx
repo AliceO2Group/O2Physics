@@ -244,7 +244,7 @@ struct cascadefinder {
             auto lCascadeTrack = fitterCasc.createParentTrackPar();
             lCascadeTrack.setAbsCharge(-1);                // to be sure
             lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo;
             dcaInfo[0] = 999;
             dcaInfo[1] = 999;
 
@@ -334,7 +334,7 @@ struct cascadefinder {
             auto lCascadeTrack = fitterCasc.createParentTrackPar();
             lCascadeTrack.setAbsCharge(+1);                // to be sure
             lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo;
             dcaInfo[0] = 999;
             dcaInfo[1] = 999;
 

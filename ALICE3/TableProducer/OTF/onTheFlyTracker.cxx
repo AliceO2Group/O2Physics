@@ -561,6 +561,7 @@ struct OnTheFlyTracker {
 
     // generate collision time
     auto ir = irSampler.generateCollisionTime();
+    const float eventCollisionTime = ir.timeInBCNS;
 
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
@@ -659,7 +660,7 @@ struct OnTheFlyTracker {
         isDecayDaughter = true;
 
       multiplicityCounter++;
-      const float t = (ir.timeInBCNS + gRandom->Gaus(0., 100.)) * 1e-3;
+      const float t = (eventCollisionTime + gRandom->Gaus(0., 100.)) * 1e-3;
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsPerfect(3);
       std::vector<o2::track::TrackParCov> xiDaughterTrackParCovsTracked(3);
       std::vector<bool> isReco(3);
@@ -869,6 +870,9 @@ struct OnTheFlyTracker {
                       posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.resZ);
                     }
 
+                    if (std::isnan(phi))
+                      continue; // Catch when getXatLabR misses layer[i]
+
                     // towards adding cluster: move to track alpha
                     double alpha = cascadeTrack.getAlpha();
                     double xyz1[3]{
@@ -1023,7 +1027,7 @@ struct OnTheFlyTracker {
                primaryVertex.getSigmaX2(), primaryVertex.getSigmaXY(), primaryVertex.getSigmaY2(),
                primaryVertex.getSigmaXZ(), primaryVertex.getSigmaYZ(), primaryVertex.getSigmaZ2(),
                0, primaryVertex.getChi2(), primaryVertex.getNContributors(),
-               0, 0);
+               eventCollisionTime, 0.f); // For the moment the event collision time is taken as the "GEANT" time, the computation of the event time is done a posteriori from the tracks in the OTF TOF PID task
     collLabels(mcCollision.globalIndex(), 0);
     collisionsAlice3(dNdEta);
     // *+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*+~+*
