@@ -81,8 +81,8 @@ struct OnTheFlyTracker {
   Produces<aod::TracksDCA> tracksDCA;
   Produces<aod::TracksDCACov> tracksDCACov;
   Produces<aod::CollisionsAlice3> collisionsAlice3;
-  Produces<aod::TracksAlice3> tracksAlice3;
-  Produces<aod::TracksExtraA3> tracksExtraA3;
+  Produces<aod::TracksAlice3> TracksAlice3;
+  Produces<aod::TracksExtraA3> TracksExtraA3;
   Produces<aod::UpgradeCascades> upgradeCascades;
 
   // optionally produced, empty (to be tuned later)
@@ -450,28 +450,28 @@ struct OnTheFlyTracker {
   void decayParticle(McParticleType particle, o2::track::TrackParCov track, std::vector<TLorentzVector>& decayDaughters, std::vector<double>& xiDecayVertex, std::vector<double>& laDecayVertex)
   {
     double u = rand.Uniform(0, 1);
-    static constexpr double xiMass = o2::constants::physics::MassXiMinus;
-    static constexpr double laMass = o2::constants::physics::MassLambda;
-    static constexpr double piMass = o2::constants::physics::MassPionCharged;
-    static constexpr double prMass = o2::constants::physics::MassProton;
+    double xi_mass = o2::constants::physics::MassXiMinus;
+    double la_mass = o2::constants::physics::MassLambda;
+    double pi_mass = o2::constants::physics::MassPionCharged;
+    double pr_mass = o2::constants::physics::MassProton;
 
-    double xiGamma = 1 / sqrt(1 + (particle.p() * particle.p()) / (xiMass * xiMass));
-    double xiCtau = 4.91 * xiGamma;
-    double xiRxyz = (-xiCtau * log(1 - u));
+    double xi_gamma = 1 / sqrt(1 + (particle.p() * particle.p()) / (xi_mass * xi_mass));
+    double xi_ctau = 4.91 * xi_gamma;
+    double xi_rxyz = (-xi_ctau * log(1 - u));
     float sna, csa;
     o2::math_utils::CircleXYf_t xi_circle;
     track.getCircleParams(magneticField, xi_circle, sna, csa);
-    double xiRxy = xiRxyz / sqrt(1. + track.getTgl() * track.getTgl());
-    double theta = xiRxy / xi_circle.rC;
+    double xi_rxy = xi_rxyz / sqrt(1. + track.getTgl() * track.getTgl());
+    double theta = xi_rxy / xi_circle.rC;
     double newX = ((particle.vx() - xi_circle.xC) * std::cos(theta) - (particle.vy() - xi_circle.yC) * std::sin(theta)) + xi_circle.xC;
     double newY = ((particle.vy() - xi_circle.yC) * std::cos(theta) + (particle.vx() - xi_circle.xC) * std::sin(theta)) + xi_circle.yC;
     double newPx = particle.px() * std::cos(theta) - particle.py() * std::sin(theta);
     double newPy = particle.py() * std::cos(theta) + particle.px() * std::sin(theta);
     xiDecayVertex.push_back(newX);
     xiDecayVertex.push_back(newY);
-    xiDecayVertex.push_back(particle.vz() + xiRxyz * (particle.pz() / particle.p()));
+    xiDecayVertex.push_back(particle.vz() + xi_rxyz * (particle.pz() / particle.p()));
 
-    std::vector<double> xiDaughters = {laMass, piMass};
+    std::vector<double> xiDaughters = {la_mass, pi_mass};
     TLorentzVector xi(newPx, newPy, particle.pz(), particle.e());
     TGenPhaseSpace xiDecay;
     xiDecay.SetDecay(xi, 2, xiDaughters.data());
@@ -479,13 +479,13 @@ struct OnTheFlyTracker {
     decayDaughters.push_back(*xiDecay.GetDecay(1));
     TLorentzVector la = *xiDecay.GetDecay(0);
 
-    double laGamma = 1 / sqrt(1 + (la.P() * la.P()) / (laMass * laMass));
-    double laCtau = 7.89 * laGamma;
-    std::vector<double> laDaughters = {piMass, prMass};
-    double laRxyz = (-laCtau * log(1 - u));
-    laDecayVertex.push_back(xiDecayVertex[0] + laRxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[1] + laRxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
-    laDecayVertex.push_back(xiDecayVertex[2] + laRxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
+    double la_gamma = 1 / sqrt(1 + (la.P() * la.P()) / (la_mass * la_mass));
+    double la_ctau = 7.89 * la_gamma;
+    std::vector<double> laDaughters = {pi_mass, pr_mass};
+    double la_rxyz = (-la_ctau * log(1 - u));
+    laDecayVertex.push_back(xiDecayVertex[0] + la_rxyz * (xiDecay.GetDecay(0)->Px() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[1] + la_rxyz * (xiDecay.GetDecay(0)->Py() / xiDecay.GetDecay(0)->P()));
+    laDecayVertex.push_back(xiDecayVertex[2] + la_rxyz * (xiDecay.GetDecay(0)->Pz() / xiDecay.GetDecay(0)->P()));
 
     TGenPhaseSpace laDecay;
     laDecay.SetDecay(la, 2, laDaughters.data());
@@ -1032,7 +1032,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
-      tracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
+      TracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -1045,7 +1045,7 @@ struct OnTheFlyTracker {
         trackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
-      tracksAlice3(true);
+      TracksAlice3(true);
     }
     // populate ghost tracks
     for (const auto& trackParCov : ghostTracksAlice3) {
@@ -1081,7 +1081,7 @@ struct OnTheFlyTracker {
                             trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                             trackParCov.getSigma1Pt2());
       tracksLabels(trackParCov.mcLabel, 0);
-      tracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
+      TracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -1094,7 +1094,7 @@ struct OnTheFlyTracker {
         trackSelection(static_cast<uint8_t>(0), false, false, false, false, false, false);
         trackSelectionExtension(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
       }
-      tracksAlice3(false);
+      TracksAlice3(false);
     }
 
     for (const auto& cascade : cascadesAlice3) {
