@@ -664,15 +664,15 @@ struct FwdMuonsUPC {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     }
   }
@@ -897,8 +897,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
@@ -907,8 +907,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), (int)myTrackType,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), (int)myTrackType,
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi(),
