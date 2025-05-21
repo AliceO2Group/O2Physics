@@ -174,7 +174,7 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
-  std::vector<float> outputMlOmegac = {};
+  std::vector<float> outputMlOmegac = {-1.0f};
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
