@@ -84,6 +84,7 @@ struct HStrangeCorrelation {
   Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
   Configurable<bool> doTriggPhysicalPrimary{"doTriggPhysicalPrimary", false, "require physical primary for trigger particles"};
   Configurable<bool> doAssocPhysicalPrimary{"doAssocPhysicalPrimary", false, "require physical primary for associated particles"};
+  Configurable<bool> doAssocPhysicalPrimaryInGen{"doAssocPhysicalPrimaryInGen", false, "require physical primary for associated particles in Generated Partilces"};
   Configurable<bool> doLambdaPrimary{"doLambdaPrimary", false, "do primary selection for lambda"};
   Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
   Configurable<bool> doMixingQAandEventQA{"doMixingQAandEventQA", true, "if true, add EvnetQA and MixingQA hist to histos"};
@@ -1843,7 +1844,7 @@ struct HStrangeCorrelation {
     }
 
     for (auto const& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary())
+      if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
         continue;
       static_for<0, 7>([&](auto i) {
         constexpr int Index = i.value;
@@ -1881,7 +1882,7 @@ struct HStrangeCorrelation {
 
     if (collisions.size() > 1) {
       for (auto const& mcParticle : mcParticles) {
-        if (!mcParticle.isPhysicalPrimary())
+        if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary())
           continue;
         if (std::abs(mcParticle.y()) > ySel)
           continue;
@@ -1936,7 +1937,7 @@ struct HStrangeCorrelation {
     }
 
     for (auto const& mcParticle : mcParticles) {
-      if (!mcParticle.isPhysicalPrimary()) {
+      if (doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
         continue;
       }
       double geta = mcParticle.eta();
