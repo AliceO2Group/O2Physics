@@ -95,7 +95,7 @@ std::vector<std::shared_ptr<TH2>> hNsigmaPt;
 std::vector<std::shared_ptr<TH2>> hmass;
 } // namespace
 //----------------------------------------------------------------------------------------------------------------
-struct Nucleitpcpbpb {
+struct NucleitpcPbPb {
   Preslice<aod::TrackAssoc> perCollision = aod::track_association::collisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> cfgDebug{"cfgDebug", 1, "debug level"};
@@ -309,7 +309,7 @@ struct Nucleitpcpbpb {
         continue;
     }
   }
-  PROCESS_SWITCH(Nucleitpcpbpb, processData, "data analysis", true);
+  PROCESS_SWITCH(NucleitpcPbPb, processData, "data analysis", true);
   //----------------------------------------------------------------------------------------------------------------
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -502,5 +502,5 @@ struct Nucleitpcpbpb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Nucleitpcpbpb>(cfgc)};
+    adaptAnalysisTask<NucleitpcPbPb>(cfgc)};
 }
