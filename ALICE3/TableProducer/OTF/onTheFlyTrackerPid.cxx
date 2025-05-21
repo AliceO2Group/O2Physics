@@ -23,6 +23,7 @@
 #include <utility>
 #include <map>
 #include <string>
+#include <algorithm>
 #include <vector>
 
 #include "Framework/AnalysisDataModel.h"
@@ -106,7 +107,7 @@ struct OnTheFlyTrackerPid {
     // std::array<float, kMaxForwardLayers> timeOverThresholdForward;
     // std::array<float, kMaxForwardLayers> clusterSizeForward;
 
-    auto noSignalTrack = []() {
+    auto noSignalTrack = [&]() {
       tableUpgradeTrkPidSignals(0.f, 0.f);          // no PID information
       tableUpgradeTrkPids(0.f, 0.f, 0.f, 0.f, 0.f); // no PID information
     };
@@ -151,13 +152,14 @@ struct OnTheFlyTrackerPid {
           // Order them by ToT
           std::sort(timeOverThresholdBarrel.begin(), timeOverThresholdBarrel.end());
           std::sort(clusterSizeBarrel.begin(), clusterSizeBarrel.end());
+          static constexpr int kTruncatedMean = 5;
           // Take the mean of the first 5 values
-          for (int i = 0; i < 5; i++) {
+          for (int i = 0; i < kTruncatedMean; i++) {
             meanToT += timeOverThresholdBarrel[i];
             meanClusterSize += clusterSizeBarrel[i];
           }
-          meanToT /= 5;
-          meanClusterSize /= 5;
+          meanToT /= kTruncatedMean;
+          meanClusterSize /= kTruncatedMean;
           // Fill the table
           tableUpgradeTrkPidSignals(meanToT, meanClusterSize);
         } break;
