@@ -23,9 +23,11 @@ o2physics_target_root_dictionary(ALICE3Core
 
 o2physics_add_library(FastTracker
                       SOURCES FastTracker.cxx
+                              DetLayer.cxx
                       PUBLIC_LINK_LIBRARIES O2::Framework
                                             O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(FastTracker
                       HEADERS FastTracker.h
+                              DetLayer.h
                       LINKDEF FastTrackerLinkDef.h)
