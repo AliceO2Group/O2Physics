@@ -207,7 +207,7 @@ struct HfCandidateCreatorLbReduced {
                          pVecLc[0], pVecLc[1], pVecLc[2],
                          pVecPion[0], pVecPion[1], pVecPion[2],
                          dcaLc.getY(), dcaPion.getY(),
-                         std::sqrt(dcaLc.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()), candLc.globalIndex(), trackPion.globalIndex(), -999.);
+                         std::sqrt(dcaLc.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
         rowCandidateProngs(candLc.globalIndex(), trackPion.globalIndex());
 
@@ -302,7 +302,7 @@ struct HfCandidateCreatorLbReducedExpressions {
     for (const auto& candLb : candsLb) {
       bool filledMcInfo{false};
       for (const auto& rowLcPiMcRec : rowsLcPiMcRec) {
-        if ((rowLcPiMcRec.prong0LcId() != candLb.prong0LcId()) || (rowLcPiMcRec.prong1TrackId() != candLb.prong1TrackId())) {
+        if ((rowLcPiMcRec.prong0Id() != candLb.prong0Id()) || (rowLcPiMcRec.prong1Id() != candLb.prong1Id())) {
           continue;
         }
         rowLbMcRec(rowLcPiMcRec.flagMcMatchRec(), rowLcPiMcRec.flagWrongCollision(), rowLcPiMcRec.debugMcRec(), rowLcPiMcRec.ptMother());

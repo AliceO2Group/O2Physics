@@ -379,7 +379,7 @@ struct HfTaskLbReduced {
   {
     auto ptCandLb = candidate.pt();
     auto invMassLb = hfHelper.invMassLbToLcPi(candidate);
-    auto candLc = candidate.template prong0Lc_as<CandsLc>();
+    auto candLc = candidate.template prong0_as<CandsLc>();
     auto ptLc = candidate.ptProng0();
     auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
     // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
@@ -538,7 +538,7 @@ struct HfTaskLbReduced {
         if constexpr (withLbMl) {
           candidateMlScoreSig = candidate.mlProbLbToLcPi();
         }
-        auto prong1 = candidate.template prong1Track_as<TracksPion>();
+        auto prong1 = candidate.template prong1_as<TracksPion>();
 
         float ptMother = -1.;
         if constexpr (doMc) {
