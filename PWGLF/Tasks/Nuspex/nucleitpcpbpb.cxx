@@ -309,7 +309,7 @@ struct nucleitpcpbpb {
         continue;
     }
   }
-  PROCESS_SWITCH(NucleitpcPbPb, processData, "data analysis", true);
+  PROCESS_SWITCH(nucleitpcpbpb, processData, "data analysis", true);
   //----------------------------------------------------------------------------------------------------------------
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -502,5 +502,5 @@ struct nucleitpcpbpb {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<NucleitpcPbPb>(cfgc)};
+    adaptAnalysisTask<nucleitpcpbpb>(cfgc)};
 }
