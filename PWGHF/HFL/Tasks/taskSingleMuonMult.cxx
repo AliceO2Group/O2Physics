@@ -66,10 +66,13 @@ struct HfTaskSingleMuonMult {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
   using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
   using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-  using MyTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
+  using MyTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
 
   // Filter Global Track for Multiplicty
-  Filter globalTrackFilter = ((o2::aod::track::isGlobalTrack == true) && (nabs(o2::aod::track::eta) < etaTrackMax) && ((o2::aod::track::pt) > ptTrackMin));
+  Filter trackFilter = ((nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin));
+
+  // Number the types of muon tracks
+  static constexpr uint8_t NTrackTypes{ForwardTrackTypeEnum::MCHStandaloneTrack + 1};
 
   HistogramRegistry registry{"registry"};
 
@@ -131,9 +134,6 @@ struct HfTaskSingleMuonMult {
     xMu->SetBinLabel(3, "RAbsorbCut");
     xMu->SetBinLabel(4, "pDcaCut");
     xMu->SetBinLabel(5, "chi2Cut");
-
-    // Number the types of muon tracks
-    constexpr uint8_t NTrackTypes{static_cast<uint8_t>(ForwardTrackTypeEnum::MCHStandaloneTrack + 1)};
   }
 
   void process(MyCollisions::iterator const& collision,
@@ -159,7 +159,13 @@ struct HfTaskSingleMuonMult {
     registry.fill(HIST("hCentrality"), cent);
 
     // Charged particles
-    std::size_t nCh{tracks.size()};
+    for (const auto& track : tracks) {
+      if (!track.isGlobalTrack()) {
+        continue;
+      }
+    }
+
+    auto nCh{tracks.size()};
     if (nCh < 1) {
       return;
     }
@@ -247,7 +253,6 @@ struct HfTaskSingleMuonMult {
         registry.fill(HIST("hMultNchNmuTrackType"), cent, nCh, nMuType[indexType], indexType);
       }
     }
-    chTracks.clear();
   }
 };
 
