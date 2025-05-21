@@ -1131,6 +1131,10 @@ struct HStrangeCorrelation {
         histos.add(fmt::format("GeneratedWithPV/h{}_MidYVsMult", kParticlenames[i]).c_str(), "", kTH2F, {axisPtQA, axisMult});
         histos.add(fmt::format("GeneratedWithPV/h{}_MidYVsMult_TwoPVsOrMore", kParticlenames[i]).c_str(), "", kTH2F, {axisPtQA, axisMult});
       }
+      histos.add("GeneratedWithPV/hLambdaFromXiZero", "", kTH2F, {axisPtQA, axisEta});
+      histos.add("GeneratedWithPV/hLambdaFromXiMinus", "", kTH2F, {axisPtQA, axisEta});
+      histos.add("GeneratedWithPV/hAntiLambdaFromXiZero", "", kTH2F, {axisPtQA, axisEta});
+      histos.add("GeneratedWithPV/hAntiLambdaFromXiPlus", "", kTH2F, {axisPtQA, axisEta});
     }
     if (doprocessClosureTest) {
       for (int i = 0; i < 9; i++) {
@@ -1148,6 +1152,10 @@ struct HStrangeCorrelation {
       histos.add("hAntiLambdaXiPlusFeeddownMatrix", "hAntiLambdaXiPlusFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
       histos.add("hAntiLambdaXiZeroFeeddownMatrix", "hAntiLambdaXiZeroFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
       histos.add("hAntiLambdaOmegaFeeddownMatrix", "hAntiLambdaOmegaFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
+      histos.add("hLambdaFromXiMinusEtaVsPtVsPhi", "hLambdaFromXiMinusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+      histos.add("hLambdaFromXiZeroEtaVsPtVsPhi", "hLambdaFromXiZeroEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+      histos.add("hAntiLambdaFromXiPlusEtaVsPtVsPhi", "hAntiLambdaFromXiPlusEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+      histos.add("hAntiLambdaFromXiZeroEtaVsPtVsPhi", "hAntiLambdaFromXiZeroEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
 
     // visual inspection of sizes
@@ -1944,6 +1952,47 @@ struct HStrangeCorrelation {
       double gpt = mcParticle.pt();
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus)
         histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta);
+      if (mcParticle.pdgCode() == PDG_t::kLambda0 && !doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
+        if (std::abs(geta) > etaSel) {
+          continue;
+        }
+        auto lamMothers = mcParticle.mothers_as<aod::McParticles>();
+        if (lamMothers.size() == 1) {
+          for (const auto& lamParticleMother : lamMothers) {
+            if (std::abs(lamParticleMother.eta()) > etaSel) {
+              continue;
+            }
+            if (lamParticleMother.pdgCode() == PDG_t::kXiMinus) // Xi Minus Mother Matched
+            {
+              histos.fill(HIST("GeneratedWithPV/hLambdaFromXiMinus"), gpt, geta);
+            }
+            if (lamParticleMother.pdgCode() == o2::constants::physics::Pdg::kXi0) // Xi Zero Mother Matched
+            {
+              histos.fill(HIST("GeneratedWithPV/hLambdaFromXiZero"), gpt, geta);
+            }
+          }
+        }
+      }
+      if (mcParticle.pdgCode() == PDG_t::kLambda0Bar && !doAssocPhysicalPrimaryInGen && !mcParticle.isPhysicalPrimary()) {
+        if (std::abs(geta) > etaSel) {
+          continue;
+        }
+        auto lamMothers = mcParticle.mothers_as<aod::McParticles>();
+        if (lamMothers.size() == 1) {
+          for (const auto& lamParticleMother : lamMothers) {
+            if (std::abs(lamParticleMother.eta()) > etaSel) {
+              continue;
+            }
+            if (lamParticleMother.pdgCode() == PDG_t::kXiPlusBar) {
+              histos.fill(HIST("GeneratedWithPV/hAntiLambdaFromXiPlus"), gpt, geta);
+            }
+            if (lamParticleMother.pdgCode() == -o2::constants::physics::Pdg::kXi0) // Xi Zero Mother Matched
+            {
+              histos.fill(HIST("GeneratedWithPV/hAntiLambdaFromXiZero"), gpt, geta);
+            }
+          }
+        }
+      }
       static_for<0, 7>([&](auto i) {
         constexpr int Index = i.value;
         if (i == 0 || i == 7) {
@@ -2196,10 +2245,12 @@ struct HStrangeCorrelation {
               if (v0mcParticleMother.pdgCode() == PDG_t::kXiMinus) // Xi Minus Mother Matched
               {
                 histos.fill(HIST("hLambdaXiMinusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+                histos.fill(HIST("hLambdaFromXiMinusEtaVsPtVsPhi"), v0mcParticle.pt(), v0mcParticle.eta(), v0mcParticle.phi());
               }
               if (v0mcParticleMother.pdgCode() == o2::constants::physics::Pdg::kXi0) // Xi Zero Mother Matched
               {
                 histos.fill(HIST("hLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+                histos.fill(HIST("hLambdaFromXiZeroEtaVsPtVsPhi"), v0mcParticle.pt(), v0mcParticle.eta(), v0mcParticle.phi());
               }
               if (v0mcParticleMother.pdgCode() == PDG_t::kOmegaMinus) // Omega Mother Matched
               {
@@ -2218,10 +2269,12 @@ struct HStrangeCorrelation {
               if (v0mcParticleMother.pdgCode() == PDG_t::kXiPlusBar) // Xi Plus Mother Matched
               {
                 histos.fill(HIST("hAntiLambdaXiPlusFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+                histos.fill(HIST("hAntiLambdaFromXiPlusEtaVsPtVsPhi"), v0mcParticle.pt(), v0mcParticle.eta(), v0mcParticle.phi());
               }
               if (v0mcParticleMother.pdgCode() == -o2::constants::physics::Pdg::kXi0) // Anti Xi Zero Mother Matched
               {
                 histos.fill(HIST("hAntiLambdaXiZeroFeeddownMatrix"), v0mcParticle.pt(), v0mcParticleMother.pt());
+                histos.fill(HIST("hAntiLambdaFromXiZeroEtaVsPtVsPhi"), v0mcParticle.pt(), v0mcParticle.eta(), v0mcParticle.phi());
               }
               if (v0mcParticleMother.pdgCode() == PDG_t::kOmegaPlusBar) // Omega Mother Matched
               {
