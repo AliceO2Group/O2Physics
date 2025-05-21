@@ -1034,26 +1034,26 @@ struct HStrangeCorrelation {
       histos.add("hClosureQAPtTrigger", "hClosureQAPtTrigger", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
       histos.add("hClosureQAPtAssociatedK0", "hClosureQAPtAssociatedK0", kTH2F, {axisPtQA, {5, -0.5f, 4.5f}});
     }
-    if (doprocessMCGenerated|| doprocessClosureTest) {
+    if (doprocessMCGenerated || doprocessClosureTest) {
       histos.add("hClosureTestEventCounter", "hClosureTestEventCounter", kTH1F, {{10, 0, 10}});
     }
-    if (doprocessSameEventHV0s||doprocessSameEventHCascades||doprocessSameEventHPions||doprocessSameEventHHadrons) {
+    if (doprocessSameEventHV0s || doprocessSameEventHCascades || doprocessSameEventHPions || doprocessSameEventHHadrons) {
       histos.add("hTriggerAllSelectedEtaVsPt", "hTriggerAllSelectedEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
       // QA and THn Histograms
       histos.add("hTriggerPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
       histos.add("hTriggerPrimaryEtaVsPt", "hTriggerPrimaryEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
       histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add("hAssocTrackEtaVsPtVsPhi", "hAssocTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
-      //histos.add("hTrackAttempt", "Attempt", kTH3F, {axisPtQA, axisEta, axisPhi});
+      // histos.add("hTrackAttempt", "Attempt", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
-    if (doprocessSameEventHPions||doprocessSameEventHHadrons||doprocessMixedEventHPions||doprocessMixedEventHHadrons) {
+    if (doprocessSameEventHPions || doprocessSameEventHHadrons || doprocessMixedEventHPions || doprocessMixedEventHHadrons) {
       histos.add("hNumberOfRejectedPairsHadron", "hNumberOfRejectedPairsHadron", kTH1F, {{1, 0, 1}});
       histos.add("hNumberOfRejectedPairsPion", "hNumberOfRejectedPairsPion", kTH1F, {{1, 0, 1}});
     }
-    if (doprocessSameEventHV0s||doprocessMixedEventHV0s) {
+    if (doprocessSameEventHV0s || doprocessMixedEventHV0s) {
       histos.add("hNumberOfRejectedPairsV0", "hNumberOfRejectedPairsV0", kTH1F, {{1, 0, 1}});
     }
-    if (doprocessSameEventHCascades||doprocessMixedEventHCascades) {
+    if (doprocessSameEventHCascades || doprocessMixedEventHCascades) {
       histos.add("hNumberOfRejectedPairsCascades", "hNumberOfRejectedPairsCascades", kTH1F, {{1, 0, 1}});
     }
 
@@ -2188,7 +2188,7 @@ struct HStrangeCorrelation {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (v0mothers.size() == 1) {
             for (const auto& v0mcParticleMother : v0mothers) {
-              //auto& v0mcParticleMother = v0mothers.front();        // First mother
+              // auto& v0mcParticleMother = v0mothers.front();
               if (std::abs(v0mcParticleMother.eta()) > etaSel) {
                 continue;
               }
@@ -2210,7 +2210,7 @@ struct HStrangeCorrelation {
         if (mcParticlePdg == PDG_t::kLambda0Bar && !v0mcParticle.isPhysicalPrimary()) {
           auto v0mothers = v0mcParticle.mothers_as<aod::McParticles>();
           if (v0mothers.size() == 1) {
-            for (const auto& v0mcParticleMother : v0mothers) {          // First mother
+            for (const auto& v0mcParticleMother : v0mothers) {
               if (std::abs(v0mcParticleMother.eta()) > etaSel) {
                 continue;
               }
