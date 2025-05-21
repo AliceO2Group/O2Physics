@@ -1984,8 +1984,7 @@ struct HStrangeCorrelation {
             if (std::abs(lamParticleMother.eta()) > etaSel) {
               continue;
             }
-            if (lamParticleMother.pdgCode() == PDG_t::kXiPlusBar)
-            {
+            if (lamParticleMother.pdgCode() == PDG_t::kXiPlusBar) {
               histos.fill(HIST("GeneratedWithPV/hAntiLambdaFromXiPlus"), gpt, geta);
             }
             if (lamParticleMother.pdgCode() == -o2::constants::physics::Pdg::kXi0) // Xi Zero Mother Matched
