@@ -195,7 +195,7 @@ struct Phik0shortanalysis {
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
   // Defining filters on tracks (cannot filter on dynamic columns)
-  Filter trackFilter = requireGlobalTrackInFilter() && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS);
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) && requireGlobalTrackInFilter();
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
