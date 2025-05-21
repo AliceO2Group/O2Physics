@@ -105,7 +105,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> hMCTruth1;
 
   /// Particle 2
   Configurable<bool> confIsSame{"confIsSame", false, "Pairs of the same particle"};
@@ -129,7 +128,6 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> hMCTruth2;
 
   /// Histogramming for Event
   FemtoUniverseEventHisto eventHisto;
@@ -176,9 +174,10 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry effCorrRegistry{"EfficiencyCorrection", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   EffCorConfigurableGroup effCorConfGroup;
-  EfficiencyCorrection<TH1> effCorrection{&effCorConfGroup};
+  EfficiencyCorrection effCorrection{&effCorConfGroup};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -322,18 +321,10 @@ struct FemtoUniversePairTaskTrackTrackExtended {
 
   void init(InitContext&)
   {
-    if (twotracksconfigs.confIsMC) {
-      hMCTruth1.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, trackonefilter.confPDGCodePartOne, false);
-      if (!confIsSame) {
-        hMCTruth2.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarPDGBins, false, tracktwofilter.confPDGCodePartTwo, false);
-      }
-    }
-    effCorrection.init();
-
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
+    trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true, std::nullopt); // last true = isDebug
     if (!confIsSame) {
-      trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, tracktwofilter.confPDGCodePartTwo, true); // last true = isDebug
+      trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, tracktwofilter.confPDGCodePartTwo, true, std::nullopt); // last true = isDebug
     }
 
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -351,6 +342,14 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     vPIDPartOne = trackonefilter.confPIDPartOne.value;
     vPIDPartTwo = tracktwofilter.confPIDPartTwo.value;
     kNsigma = twotracksconfigs.confTrkPIDnSigmaMax.value;
+
+    effCorrection.init(
+      &effCorrRegistry,
+      {
+        static_cast<framework::AxisSpec>(confTempFitVarpTBins),
+        {confEtaBins, -2, 2},
+        confMultBins,
+      });
   }
 
   template <typename CollisionType>
@@ -361,23 +360,12 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   }
 
   template <uint8_t N>
-    requires isOneOrTwo<N>
-  auto doMCTruth(FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, N> hist, auto parts) -> void
+    requires IsOneOrTwo<N>
+  auto doMCTruth(auto parts, int partPDG, int partCharge) -> void
   {
-    auto expectedPDG = 0;
-    auto expectedCharge = 0.0l;
-
-    if constexpr (N == ParticleNo::ONE) {
-      expectedPDG = trackonefilter.confPDGCodePartOne;
-      expectedCharge = trackonefilter.confChargePart1;
-    } else if constexpr (N == ParticleNo::TWO) {
-      expectedPDG = tracktwofilter.confPDGCodePartTwo;
-      expectedCharge = tracktwofilter.confChargePart2;
-    }
-
     for (const auto& particle : parts) {
       auto pdgCode = static_cast<int>(particle.pidCut());
-      if (pdgCode != expectedPDG) {
+      if (pdgCode != partPDG) {
         continue;
       }
 
@@ -386,9 +374,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         continue;
       }
 
-      if (sign(pdgParticle->Charge()) == sign(expectedCharge)) {
-        hist.template fillQA<false, false>(particle);
+      if (sign(pdgParticle->Charge()) != sign(partCharge)) {
+        continue;
       }
+
+      effCorrection.fillTruthHist<N>(particle);
     }
   }
 
@@ -432,6 +422,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       }
 
       trackHistoPartOne.fillQA<isMC, true>(part);
+      if constexpr (isMC) {
+        effCorrection.fillRecoHist<ParticleNo::ONE>(part, trackonefilter.confPDGCodePartOne);
+      }
     }
 
     if (!confIsSame) {
@@ -456,6 +449,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           }
         }
         trackHistoPartTwo.fillQA<isMC, true>(part);
+        if constexpr (isMC) {
+          effCorrection.fillRecoHist<ParticleNo::TWO>(part, tracktwofilter.confPDGCodePartTwo);
+        }
       }
 
       /// Now build the combinations for non-identical particle pairs
@@ -505,9 +501,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
+        float weight = effCorrection.getWeight(ParticleNo::ONE, p1);
         if (!confIsSame) {
-          weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
+          weight *= effCorrection.getWeight(ParticleNo::TWO, p2);
         }
 
         if (swpart)
@@ -566,9 +562,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
-        float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
+        float weight = effCorrection.getWeight(ParticleNo::ONE, p1);
         if (!confIsSame) {
-          weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
+          weight *= effCorrection.getWeight(ParticleNo::TWO, p2);
         }
 
         sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
@@ -602,11 +598,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     fillCollision(col);
 
     auto groupMCTruth1 = partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    doMCTruth<1>(hMCTruth1, groupMCTruth1);
+    doMCTruth<ParticleNo::ONE>(groupMCTruth1, trackonefilter.confPDGCodePartOne, trackonefilter.confChargePart1);
 
     if (!confIsSame) {
       auto groupMCTruth2 = partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-      doMCTruth<2>(hMCTruth2, groupMCTruth2);
+      doMCTruth<ParticleNo::TWO>(groupMCTruth2, tracktwofilter.confPDGCodePartTwo, tracktwofilter.confChargePart2);
     }
 
     auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -674,9 +670,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         }
       }
 
-      float weight = effCorrection.getWeight(ParticleNo::ONE, p1.pt());
+      float weight = effCorrection.getWeight(ParticleNo::ONE, p1);
       if (!confIsSame) {
-        weight *= effCorrection.getWeight(ParticleNo::TWO, p2.pt());
+        weight *= effCorrection.getWeight(ParticleNo::TWO, p2);
       }
 
       if (swpart)
