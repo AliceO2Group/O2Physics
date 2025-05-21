@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file NucleiTPCPbPb.cxx
+/// \file nucleitpcpbpb.cxx
 ///
 /// \brief This task use global tracks and used for primary selection analysis using TPC detector.
 ///        It currently contemplates 6 particle types:
@@ -95,7 +95,7 @@ std::vector<std::shared_ptr<TH2>> hNsigmaPt;
 std::vector<std::shared_ptr<TH2>> hmass;
 } // namespace
 //----------------------------------------------------------------------------------------------------------------
-struct NucleitpcPbPb {
+struct nucleitpcpbpb {
   Preslice<aod::TrackAssoc> perCollision = aod::track_association::collisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> cfgDebug{"cfgDebug", 1, "debug level"};
@@ -240,7 +240,8 @@ struct NucleitpcPbPb {
           continue;
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
           continue;
-        if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
+        double min_value = 0.8;
+        if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < min_value * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
           continue;
         if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
           continue;
