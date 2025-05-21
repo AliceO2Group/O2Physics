@@ -1256,7 +1256,7 @@ struct StrangenessBuilder {
     v0sFromCascades.clear();
     v0Map.clear();
     v0Map.resize(v0List.size(), -2); // marks not used
-    if (useV0BufferForCascades.value == false){ 
+    if (useV0BufferForCascades.value == false) {
       return; // don't attempt to mark needlessly
     }
     if (mEnabledTables[kStoredCascCores]) {
