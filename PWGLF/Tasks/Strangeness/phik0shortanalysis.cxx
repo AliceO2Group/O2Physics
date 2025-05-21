@@ -186,6 +186,11 @@ struct Phik0shortanalysis {
   double massK0S = o2::constants::physics::MassK0Short;
   double massLambda = o2::constants::physics::MassLambda0;
 
+  // Defining track flags
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionITS = TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF | TrackSelectionFlags::kITSHits;
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionTPC = TrackSelectionFlags::kTPCNCls | TrackSelectionFlags::kTPCCrossedRowsOverNCls | TrackSelectionFlags::kTPCChi2NDF;
+  static constexpr TrackSelectionFlags::flagtype TrackSelectionDCA = TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection requirements
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
@@ -194,9 +199,12 @@ struct Phik0shortanalysis {
   // Defining filters on V0s (cannot filter on dynamic columns)
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
-  // Defining filters on tracks (cannot filter on dynamic columns)
-  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) && requireGlobalTrackInFilter();
-
+  // Defining filters on tracks
+  Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA);
+  
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
