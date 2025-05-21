@@ -204,7 +204,7 @@ struct Phik0shortanalysis {
                        ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
                        ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
                        ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA);
-  
+
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
   using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
