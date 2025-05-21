@@ -45,7 +45,6 @@
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TPDGCode.h"
-#include "TF1.h"
 
 using namespace std;
 using namespace o2;
@@ -123,6 +122,7 @@ struct UccZdc {
   Configurable<std::string> paTH{"paTH", "Users/o/omvazque/TrackingEfficiency", "base path to the ccdb object"};
   Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/o/omvazque/FitMeanNch_9May2025", "base path to the ccdb object"};
   Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/o/omvazque/FitSigmaNch_9May2025", "base path to the ccdb object"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   enum EvCutLabel {
     All = 1,
@@ -278,6 +278,7 @@ struct UccZdc {
       registry.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
 
+    LOG(info) << "\tccdbNoLaterThan=" << ccdbNoLaterThan.value;
     LOG(info) << "\tapplyEff=" << applyEff.value;
     LOG(info) << "\tpaTH=" << paTH.value;
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
@@ -291,8 +292,7 @@ struct UccZdc {
     ccdb->setFatalWhenNull(false);
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    ccdb->setCreatedNotAfter(now);
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
   }
 
   template <typename CheckCol>
