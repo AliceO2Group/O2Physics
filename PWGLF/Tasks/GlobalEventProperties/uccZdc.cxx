@@ -102,7 +102,6 @@ struct UccZdc {
   Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
 
   // Configurables, binning
-  Configurable<int> nBinsAmpFV0{"nBinsAmpFV0", 100, "N bins FV0 amp"};
   Configurable<float> maxAmpFV0{"maxAmpFV0", 2000, "Max FV0 amp"};
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
@@ -156,9 +155,6 @@ struct UccZdc {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  TF1* fMeanNch = nullptr;
-  TF1* fSigmaNch = nullptr;
-
   void init(InitContext const&)
   {
     // define axes you want to use
@@ -176,7 +172,7 @@ struct UccZdc {
     registry.add("NchUncorrected", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{300, 0., 3000.}});
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
     registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-    registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., 3000.}});
+    registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0, 3000}});
     registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);#LT[#it{p}_{T}^{(1)}]#GT (GeV/#it{c})", kTProfile, {{nBinsNch, minNch, maxNch}});
@@ -257,16 +253,16 @@ struct UccZdc {
 
     if (doprocessQA) {
       registry.add("Debunch", ";t_{ZDC}-t_{ZDA};t_{ZDC}+t_{ZDA}", kTH2F, {{{nBinsTDC, minTdc, maxTdc}, {nBinsTDC, minTdc, maxTdc}}});
-      registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., 950.}, {nBinsNch, minNch, maxNch}}});
-      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFV0, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0A", ";T0A (#times 1/100, 3.5 < #eta < 4.9);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 1800.}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFT0C", ";T0C (#times 1/100, -3.3 < #eta < -2.1);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., 600.}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsFV0A", ";V0A (#times 1/100, 2.2 < #eta < 5);#it{N}_{ch} (|#eta|<0.8);", kTH2F, {{{80, 0., maxAmpFV0}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
-      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 1800.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 600.}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
       registry.add("ZNAamp", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
       registry.add("ZPAamp", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
       registry.add("ZNCamp", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
@@ -282,6 +278,12 @@ struct UccZdc {
       registry.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
 
+    LOG(info) << "\tapplyEff=" << applyEff.value;
+    LOG(info) << "\tpaTH=" << paTH.value;
+    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
+    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
+    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
     ccdb->setCaching(true);
@@ -291,21 +293,6 @@ struct UccZdc {
     // This avoids that users can replace objects **while** a train is running
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
-    fMeanNch = ccdb->getForTimeStamp<TF1>(paTHmeanNch.value, now);
-    fSigmaNch = ccdb->getForTimeStamp<TF1>(paTHsigmaNch.value, now);
-    if (!fMeanNch) {
-      LOGF(fatal, "fMeanNch object not found!");
-    }
-    if (!fSigmaNch) {
-      LOGF(fatal, "fSigmaNch object not found!");
-    }
-
-    LOG(info) << "\tnow=" << now;
-    LOG(info) << "\tapplyEff=" << applyEff.value;
-    LOG(info) << "\tpaTH=" << paTH.value;
-    LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
-    LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
-    LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
   }
 
   template <typename CheckCol>
@@ -477,17 +464,35 @@ struct UccZdc {
       glbTracks++;
     }
 
-    // Nch-based selection
+    bool skipEvent{false};
     if (useMidRapNchSel) {
-      const double meanNch{fMeanNch->Eval(normT0M)};
-      const double sigmaNch{fSigmaNch->Eval(normT0M)};
+      auto hMeanNch = ccdb->getForTimeStamp<TH1F>(paTHmeanNch.value, foundBC.timestamp());
+      auto hSigmaNch = ccdb->getForTimeStamp<TH1F>(paTHsigmaNch.value, foundBC.timestamp());
+      if (!hMeanNch) {
+        LOGF(info, "hMeanNch NOT LOADED!");
+        return;
+      }
+      if (!hSigmaNch) {
+        LOGF(info, "hSigmaNch NOT LOADED!");
+        return;
+      }
+
+      const int binT0M{hMeanNch->FindBin(normT0M)};
+      const double meanNch{hMeanNch->GetBinContent(binT0M)};
+      const double sigmaNch{hSigmaNch->GetBinContent(binT0M)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
       const double diffMeanNch{meanNch - glbTracks};
+
       if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
-        return;
+      } else {
+        skipEvent = true;
       }
+    }
+
+    if (!skipEvent) {
+      return;
     }
 
     float et = 0., meanpt = 0.;
@@ -617,21 +622,39 @@ struct UccZdc {
       glbTracks++;
     }
 
-    // Nch-based selection
+    bool skipEvent{false};
     if (useMidRapNchSel) {
-      const double meanNch{fMeanNch->Eval(normT0M)};
-      const double sigmaNch{fSigmaNch->Eval(normT0M)};
+      auto hMeanNch = ccdb->getForTimeStamp<TH1F>(paTHmeanNch.value, foundBC.timestamp());
+      auto hSigmaNch = ccdb->getForTimeStamp<TH1F>(paTHsigmaNch.value, foundBC.timestamp());
+      if (!hMeanNch) {
+        LOGF(info, "hMeanNch NOT LOADED!");
+        return;
+      }
+      if (!hSigmaNch) {
+        LOGF(info, "hSigmaNch NOT LOADED!");
+        return;
+      }
+
+      const int binT0M{hMeanNch->FindBin(normT0M)};
+      const double meanNch{hMeanNch->GetBinContent(binT0M)};
+      const double sigmaNch{hSigmaNch->GetBinContent(binT0M)};
       const double nSigmaSelection{nSigmaNchCut * sigmaNch};
       const double diffMeanNch{meanNch - glbTracks};
+
       if (!(std::abs(diffMeanNch) < nSigmaSelection)) {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
-        return;
+      } else {
+        skipEvent = true;
       }
     }
 
-    // auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
-    auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
+    if (!skipEvent) {
+      return;
+    }
+
+    auto efficiency = ccdb->getForTimeStamp<TH1F>(paTH.value, foundBC.timestamp());
+    // auto efficiency = ccdb->getForRun<TH1F>(paTH.value, foundBC.runNumber());
     if (!efficiency) {
       return;
     }
