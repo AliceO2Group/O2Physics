@@ -11,7 +11,7 @@
 
 o2physics_add_dpl_workflow(decay3bodybuilder
     SOURCES decay3bodybuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase O2Physics::EventFilteringUtils O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES KFParticle::KFParticle O2Physics::AnalysisCore O2::TOFBase O2Physics::EventFilteringUtils O2::DetectorsVertexing
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hyhefour-builder
@@ -59,11 +59,6 @@ o2physics_add_dpl_workflow(threebodymcfinder
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(threebody-reco-task
-    SOURCES threebodyRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(ebye-maker
     SOURCES ebyeMaker.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -77,11 +72,6 @@ o2physics_add_dpl_workflow(cluster-studies-tree-creator
 o2physics_add_dpl_workflow(pidtof-generic
     SOURCES pidTOFGeneric.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(threebody-kf-task
-    SOURCES threebodyKFTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypernuclei-kf-reco-task

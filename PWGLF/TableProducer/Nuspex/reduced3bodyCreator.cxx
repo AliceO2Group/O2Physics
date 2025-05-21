@@ -35,6 +35,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/RecoDecay.h"
 #include "TableHelper.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -78,7 +79,6 @@ struct reduced3bodyCreator {
   Produces<aod::RedDecay3Bodys> reducedDecay3Bodys;
   Produces<aod::Red3BodyInfo> reduced3BodyInfo;
   Produces<aod::StoredRedIUTracks> reducedFullTracksPIDIU;
-  Produces<aod::DCAFitterSVInfo> dcaFitterSVInfo;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
@@ -113,6 +113,9 @@ struct reduced3bodyCreator {
   int mRunNumber;
   float d_bz;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+
+  // tracked cluster size
+  std::vector<int> fTrackedClSizeVector;
 
   HistogramRegistry registry{"registry", {}};
 
@@ -297,7 +300,7 @@ struct reduced3bodyCreator {
     LOG(debug) << "Hypertriton vertex constructed.";
   }
 
-  void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::Tracked3Bodys const& tracked3bodys, aod::BCsWithTimestamps const&)
   {
     std::vector<bool> triggeredCollisions(collisions.size(), false);
 
@@ -340,7 +343,14 @@ struct reduced3bodyCreator {
 
     int lastCollisionID = -1; // collisionId of last analysed decay3body. Table is sorted.
 
-    // Creat reduced table
+    // get tracked cluster size info
+    fTrackedClSizeVector.clear();
+    fTrackedClSizeVector.resize(decay3bodys.size(), 0);
+    for (const auto& tvtx3body : tracked3bodys) {
+      fTrackedClSizeVector[tvtx3body.decay3BodyId()] = tvtx3body.itsClsSize();
+    }
+
+    // Create reduced table
     for (const auto& d3body : decay3bodys) {
 
       auto collision = d3body.template collision_as<ColwithEvTimesMultsCents>();
@@ -398,7 +408,7 @@ struct reduced3bodyCreator {
       const auto trackStartIndex = reducedFullTracksPIDIU.lastIndex();
       reducedDecay3Bodys(collisionIndex, trackStartIndex - 2, trackStartIndex - 1, trackStartIndex);
 
-      // -------- save reduced decay3body info table --------
+      // -------- get decay3body info with KF --------
       // get trackParCov daughters
       auto trackParCovPos = getTrackParCov(daughter0);
       auto trackParCovNeg = getTrackParCov(daughter1);
@@ -417,19 +427,19 @@ struct reduced3bodyCreator {
       KFParticle KFHt;
       fit3bodyVertex(kfpProton, kfpPion, kfpDeuteron, KFHt);
       // calculate radius and phi
-      auto radius = std::sqrt(KFHt.GetX() * KFHt.GetX() + KFHt.GetY() * KFHt.GetY());
-      float phi, sigma;
-      KFHt.GetPhi(phi, sigma);
-      // fill 3body info table
-      reduced3BodyInfo(radius, phi, KFHt.GetZ());
+      auto radius = std::hypot(KFHt.GetX(), KFHt.GetY());
+      auto phi = RecoDecay::phi(KFHt.GetPx(), KFHt.GetPy());
 
-      // -------- save dcaFitter secondary vertex info table --------
+      // -------- get decay3body info with DCA fitter --------
       auto Track0 = getTrackParCov(daughter0);
       auto Track1 = getTrackParCov(daughter1);
       auto Track2 = getTrackParCov(daughter2);
       int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+      float phiVtx, rVtx, zVtx;
       if (n3bodyVtx == 0) { // discard this pair
-        dcaFitterSVInfo(-999, -999, -999);
+        phiVtx = -999.;
+        rVtx = -999.;
+        zVtx = -999.;
       } else {
         const auto& vtxXYZ = fitter3body.getPCACandidate();
 
@@ -441,10 +451,13 @@ struct reduced3bodyCreator {
         propagatedTrack1.getPxPyPzGlo(p1);
         propagatedTrack2.getPxPyPzGlo(p2);
         std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
-        float phiVtx = std::atan2(p3B[1], p3B[0]);
-        float rVtx = std::hypot(vtxXYZ[0], vtxXYZ[1]);
-        dcaFitterSVInfo(rVtx, phiVtx, vtxXYZ[2]);
+        phiVtx = std::atan2(p3B[1], p3B[0]);
+        rVtx = std::hypot(vtxXYZ[0], vtxXYZ[1]);
+        zVtx = vtxXYZ[2];
       }
+
+      // fill 3body info table (KF and DCA fitter info)
+      reduced3BodyInfo(radius, phi, KFHt.GetZ(), rVtx, phiVtx, zVtx, fTrackedClSizeVector[d3body.globalIndex()]);
     } // end decay3body loop
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
