@@ -535,6 +535,13 @@ struct LfTaskLambdaSpinCorr {
         if (lambdaTag2 && aLambdaTag2) {
           continue;
         }
+        auto postrack1 = t1.template posTrack_as<AllTrackCandidates>();
+        auto negtrack1 = t1.template negTrack_as<AllTrackCandidates>();
+        auto postrack2 = t2.template posTrack_as<AllTrackCandidates>();
+        auto negtrack2 = t2.template negTrack_as<AllTrackCandidates>();
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
+          continue;
+        }
         for (const auto& t3 : groupV03) {
           if (pairStatus[t3.index()][t2.index()]) {
             // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
@@ -737,6 +744,13 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
         if (lambdaTag2 && aLambdaTag2) {
+          continue;
+        }
+        auto postrack1 = t1.template posTrack_as<AllTrackCandidates>();
+        auto negtrack1 = t1.template negTrack_as<AllTrackCandidates>();
+        auto postrack2 = t2.template posTrack_as<AllTrackCandidates>();
+        auto negtrack2 = t2.template negTrack_as<AllTrackCandidates>();
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
           continue;
         }
         for (const auto& t3 : groupV03) {
