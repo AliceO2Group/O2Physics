@@ -203,7 +203,7 @@ struct Phik0shortanalysis {
   Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                        ncheckbit(aod::track::trackCutFlag, TrackSelectionITS) &&
                        ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, TrackSelectionTPC), true) &&
-                       ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA) && 
+                       ncheckbit(aod::track::trackCutFlag, TrackSelectionDCA) &&
                        ncheckbit(aod::track::trackCutFlag, TrackSelectionFlags::kInAcceptanceTracks);
 
   // Defining the type of the collisions for data and MC
