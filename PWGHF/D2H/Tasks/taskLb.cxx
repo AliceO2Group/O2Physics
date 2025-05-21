@@ -255,9 +255,7 @@ struct HfTaskLb {
     } // Lambda_c candidates loop for cross checks
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) { // This should never be true as the loop is over Lb candidates
-        continue;
-      }
+
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -304,15 +302,14 @@ struct HfTaskLb {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
-        continue;
-      }
+
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
         continue;
       }
-      auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
+      auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
+      int flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
+      if (TESTBIT(flagMcMatchRecLb, hf_cand_lb::DecayType::LbToLcPi)) {
 
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<TracksWExtMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), o2::constants::physics::Pdg::kLambdaB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
