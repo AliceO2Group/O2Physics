@@ -234,7 +234,7 @@ struct FwdMuonsUPC {
   // my track type
   // 0 = MCH-MID-MFT
   // 1 = MCH-MID
-  Configurable<int> myTrackType{"myTrackType",3,"My track type"};
+  Configurable<int> myTrackType{"myTrackType", 3, "My track type"};
 
   void init(InitContext&)
   {
@@ -467,7 +467,7 @@ struct FwdMuonsUPC {
     float eta = p.Eta();
     float pt = p.Pt();
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
-    LOGF(info,"eta min = %f",kEtaMin);
+    LOGF(info, "eta min = %f", kEtaMin);
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
@@ -539,17 +539,17 @@ struct FwdMuonsUPC {
       return;
 
     // MFT-MID match selection (if MFT is requested by the trackType)
-    if(myTrackType==0){
+    if (myTrackType == 0) {
       // if MFT is requested check that the tracks is inside the MFT acceptance
       kEtaMin = -3.6;
       kEtaMax = -2.5;
 
       int nMFT = 0;
-      if(tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
         nMFT++;
-      if(tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
         nMFT++;
-      if(nMFT != 2)
+      if (nMFT != 2)
         return;
     }
 
@@ -782,17 +782,17 @@ struct FwdMuonsUPC {
       return;
 
     // MFT-MID match selection (if MFT is requested by the trackType)
-    if(myTrackType==0){
+    if (myTrackType == 0) {
       // if MFT is requested check that the tracks is inside the MFT acceptance
       kEtaMin = -3.6;
       kEtaMax = -2.5;
 
       int nMFT = 0;
-      if(tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
         nMFT++;
-      if(tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
         nMFT++;
-      if(nMFT != 2)
+      if (nMFT != 2)
         return;
     }
 
