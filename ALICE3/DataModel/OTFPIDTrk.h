@@ -29,8 +29,8 @@ namespace o2::aod
 namespace upgrade::trk
 {
 
-DECLARE_SOA_COLUMN(TimeOverThresholdBarrel, timeOverThresholdBarrel, float); //! Time over threshold for the barrel layers
-DECLARE_SOA_COLUMN(ClusterSizeBarrel, clusterSizeBarrel, float);             //! Cluster size for the barrel layers
+DECLARE_SOA_COLUMN(TimeOverThresholdBarrel, timeOverThresholdBarrel, float);   //! Time over threshold for the barrel layers
+DECLARE_SOA_COLUMN(ClusterSizeBarrel, clusterSizeBarrel, float);               //! Cluster size for the barrel layers
 DECLARE_SOA_COLUMN(TimeOverThresholdForward, timeOverThresholdForward, float); //! Time over threshold for the Forward layers
 DECLARE_SOA_COLUMN(ClusterSizeForward, clusterSizeForward, float);             //! Cluster size for the barrel layers
 
