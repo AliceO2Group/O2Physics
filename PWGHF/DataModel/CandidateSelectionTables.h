@@ -261,8 +261,9 @@ DECLARE_SOA_TABLE(HfMlBsToDsPi, "AOD", "HFMLBS", //!
 
 namespace hf_sel_candidate_bplus
 {
-DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int);     //! selection flag on B+ candidate
-DECLARE_SOA_COLUMN(MlProbBplusToD0Pi, mlProbBplusToD0Pi, float); //! ML score of B+ candidate for signal class
+DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int);       //! selection flag on B+ candidate
+DECLARE_SOA_COLUMN(MlProbBplusToD0Pi, mlProbBplusToD0Pi, float);   //! ML score of B+ candidate for signal class
+DECLARE_SOA_COLUMN(MlProbBplusToJPsiK, mlProbBplusToJPsiK, float); //! ML score of B+ candidate for signal class
 } // namespace hf_sel_candidate_bplus
 
 DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
@@ -271,6 +272,8 @@ DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
 DECLARE_SOA_TABLE(HfMlBplusToD0Pi, "AOD", "HFMLBPLUS", //!
                   hf_sel_candidate_bplus::MlProbBplusToD0Pi);
 
+DECLARE_SOA_TABLE(HfMlBplusToJPsiK, "AOD", "HFMLBPLUSTOJPSIK", //!
+                  hf_sel_candidate_bplus::MlProbBplusToJPsiK);
 namespace hf_sel_candidate_lb
 {
 DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int);     //! selection flag on Lb candidate

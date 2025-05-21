@@ -174,6 +174,12 @@ class HfHelper
   }
 
   template <typename T>
+  auto invMassBplusToJPsiK(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   auto cosThetaStarBplus(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBPlus, 1);
