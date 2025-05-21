@@ -348,7 +348,7 @@ DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
 using PhotonFilter = PhotonFilters::iterator;
 
 // heavy mesons
-DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HeavyNeutralMesonFilters", //!
+DECLARE_SOA_TABLE(HeavyNeutralMesonFilters, "AOD", "HNMesonFilters", //!
                   filtering::OmegaP, filtering::OmegaPP, filtering::Omegad,
                   filtering::EtaPrimeP, filtering::EtaPrimePP, filtering::EtaPrimed);
 
