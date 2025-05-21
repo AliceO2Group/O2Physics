@@ -53,19 +53,21 @@ using namespace o2::aod::fwdtrack;
 struct HfTaskSingleMuonMult {
 
   // enum for event selection bins
-  enum EventSelectionBinsEnum {
+  enum EventSelection {
     AllEvents = 1,
     Sel8,
-    VtxZAfterSel
+    VtxZAfterSel,
+    NEventSelection
   };
 
   // enum for muon track selection bins
-  enum MuonTrackSelectionBinsEnum {
+  enum MuonSelection {
     NoCut = 1,
     EtaCut,
     RAbsorbCut,
     PDcaCut,
-    Chi2Cut
+    Chi2Cut,
+    NMuonSelection
   };
 
   Configurable<float> zVtxMax{"zVtxMax", 10., "maxium z of primary vertex [cm]"};
@@ -96,9 +98,9 @@ struct HfTaskSingleMuonMult {
   void init(InitContext&)
   {
     AxisSpec axisCent = {101, -0.5, 100.5, "centrality"};
-    AxisSpec axisEvent{3, 0.5, 3.5, "Event Selection"};
+    AxisSpec axisEvent{NEventSelection, 0.5, NEventSelection + 0.5, "Muon Selection"};
     AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
-    AxisSpec axisMuTrk{5, 0.5, 5.5, "Muon Selection"};
+    AxisSpec axisMuon{NMuonSelection, 0.5, NMuonSelection + 0.5, "Muon Selection"};
     AxisSpec axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
     AxisSpec axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
     AxisSpec axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
@@ -121,7 +123,7 @@ struct HfTaskSingleMuonMult {
     registry.add("hVtxZBeforeSel", "Z-vertex distribution before zVtx Cut", {HistType::kTH1F, {axisVtxZ}});
     registry.add("hVtxZAfterSel", "Z-vertex distribution after zVtx Cut", {HistType::kTH1F, {axisVtxZ}});
 
-    registry.add("hMuTrkSel", "Selection of muon tracks at various kinematic cuts", {HistType::kTH1F, {axisMuTrk}});
+    registry.add("hMuonSel", "Selection of muon tracks at various kinematic cuts", {HistType::kTH1F, {axisMuon}});
     registry.add("hMuBeforeMatchMFT", "Muon information before any Kinemeatic cuts applied", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("hMuBeforeAccCuts", "Muon information before applying Acceptance cuts", {HistType::kTHnSparseF, {axisCent, axisNCh, axisPt, axisEta, axisTheta, axisRAbsorb, axisDCA, axisPDca, axisChi2MatchMCHMFT, axisTrackType}, 10});
     registry.add("h3DCABeforeAccCuts", "DCAx,DCAy,DCAz information before Acceptance cuts", {HistType::kTH3F, {axisDCAx, axisDCAx, axisTrackType}});
@@ -143,7 +145,7 @@ struct HfTaskSingleMuonMult {
     xEv->SetBinLabel(Sel8, "sel8");
     xEv->SetBinLabel(VtxZAfterSel, "VtxZAfterSel");
 
-    auto hMustat = registry.get<TH1>(HIST("hMuTrkSel"));
+    auto hMustat = registry.get<TH1>(HIST("hMuonSel"));
     auto* xMu = hMustat->GetXaxis();
     xMu->SetBinLabel(NoCut, "noCut");
     xMu->SetBinLabel(EtaCut, "etaCut");
@@ -203,7 +205,7 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       // histograms before the acceptance cuts
-      registry.fill(HIST("hMuTrkSel"), 1.);
+      registry.fill(HIST("hMuonSel"), 1.);
       registry.fill(HIST("hMuBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCABeforeAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
 
@@ -220,14 +222,14 @@ struct HfTaskSingleMuonMult {
       if ((eta >= etaMax) || (eta < etaMin)) {
         continue;
       }
-      registry.fill(HIST("hMuTrkSel"), 2.);
+      registry.fill(HIST("hMuonSel"), 2.);
       registry.fill(HIST("hMuAfterEtaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       // Rabsorb cuts
       if ((rAbsorb < rAbsorbMin) || (rAbsorb >= rAbsorbMax)) {
         continue;
       }
-      registry.fill(HIST("hMuTrkSel"), 3.);
+      registry.fill(HIST("hMuonSel"), 3.);
       registry.fill(HIST("hMuAfterRAbsorbCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       if ((rAbsorb < rAbsorbMid) && (pDca >= pDcaMin)) {
@@ -236,14 +238,14 @@ struct HfTaskSingleMuonMult {
       if ((rAbsorb >= rAbsorbMid) && (pDca >= pDcaMax)) {
         continue;
       }
-      registry.fill(HIST("hMuTrkSel"), 4.);
+      registry.fill(HIST("hMuonSel"), 4.);
       registry.fill(HIST("hMuAfterPdcaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       //  MCH-MFT matching chi2
       if (muon.chi2() >= 1e6) {
         continue;
       }
-      registry.fill(HIST("hMuTrkSel"), 5.);
+      registry.fill(HIST("hMuonSel"), 5.);
 
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
