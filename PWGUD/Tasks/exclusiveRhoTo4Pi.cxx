@@ -839,7 +839,7 @@ struct ExclusiveRhoTo4Pi {
   Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA < zdcCut) && (o2::aod::udzdc::energyCommonZNC < zdcCut);
   Filter occupCut = nabs(o2::aod::udcollision::occupancyInTime) < occupancyCut;
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras_001, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
+  using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
   using UDCollision = UDCollisions::iterator;
   //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1174,7 +1174,7 @@ struct ExclusiveRhoTo4Pi {
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
   // Begin of MC Reconstruction function-----------------------------------------------------------------------------------------------------------------------------------------------
-  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras_001, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
+  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
   using CollisionTotal = CollisionStuff::iterator;
   using TrackStuff = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
