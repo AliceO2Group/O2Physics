@@ -63,13 +63,13 @@ using Alice3DecayMap = Alice3DecayMaps::iterator;
 namespace a3D0meson
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision); //!
-DECLARE_SOA_COLUMN(PxProng0, pxProng0, float); //! positive track
-DECLARE_SOA_COLUMN(PyProng0, pyProng0, float); //!
-DECLARE_SOA_COLUMN(PzProng0, pzProng0, float); //!
-DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //! negative track
-DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
-DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
+DECLARE_SOA_COLUMN(PxProng0, pxProng0, float);  //! positive track
+DECLARE_SOA_COLUMN(PyProng0, pyProng0, float);  //!
+DECLARE_SOA_COLUMN(PzProng0, pzProng0, float);  //!
+DECLARE_SOA_COLUMN(PxProng1, pxProng1, float);  //! negative track
+DECLARE_SOA_COLUMN(PyProng1, pyProng1, float);  //!
+DECLARE_SOA_COLUMN(PzProng1, pzProng1, float);  //!
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0,  //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -80,8 +80,8 @@ DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
 DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //!
                               float, 1.f * aod::a3D0meson::pzProng0 + 1.f * aod::a3D0meson::pzProng1);
 DECLARE_SOA_COLUMN(Pt, pt, float); //!
-DECLARE_SOA_COLUMN(M, m, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
+DECLARE_SOA_COLUMN(M, m, float);   //!
+DECLARE_SOA_DYNAMIC_COLUMN(E, e,   //!
                            [](float px, float py, float pz, double m) -> float { return RecoDecay::e(px, py, pz, m); });
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
@@ -90,8 +90,8 @@ DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_TABLE(Alice3D0Meson, "AOD", "ALICE3D0MESON", //!
                   o2::soa::Index<>,
                   a3D0meson::CollisionId,
-                  a3D0meson::PxProng0, a3D0meson::PyProng0, a3D0meson::PzProng0, //positive track
-                  a3D0meson::PxProng1, a3D0meson::PyProng1, a3D0meson::PzProng1, //negative track
+                  a3D0meson::PxProng0, a3D0meson::PyProng0, a3D0meson::PzProng0, // positive track
+                  a3D0meson::PxProng1, a3D0meson::PyProng1, a3D0meson::PzProng1, // negative track
                   a3D0meson::PtProng0<a3D0meson::PxProng0, a3D0meson::PyProng0>,
                   a3D0meson::PtProng1<a3D0meson::PxProng1, a3D0meson::PyProng1>,
                   a3D0meson::Px, a3D0meson::Py, a3D0meson::Pz,
@@ -104,8 +104,8 @@ DECLARE_SOA_TABLE(Alice3D0Meson, "AOD", "ALICE3D0MESON", //!
 
 namespace a3D0Selection
 {
-DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);           //!
-DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);     //!
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);       //!
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //!
 } // namespace a3D0Selection
 DECLARE_SOA_TABLE(Alice3D0Sel, "AOD", "ALICE3D0SEL", //!
                   a3D0Selection::IsSelD0,
@@ -113,10 +113,10 @@ DECLARE_SOA_TABLE(Alice3D0Sel, "AOD", "ALICE3D0SEL", //!
 
 namespace a3D0MCTruth
 {
-DECLARE_SOA_COLUMN(McTruthInfo, mcTruthInfo, int);    //! 0 for bkg, 1 for true D0, 2 for true D0bar
+DECLARE_SOA_COLUMN(McTruthInfo, mcTruthInfo, int); //! 0 for bkg, 1 for true D0, 2 for true D0bar
 } // namespace a3D0MCTruth
 DECLARE_SOA_TABLE(Alice3D0MCTruth, "AOD", "ALICE3D0MCTRUTH", //!
-                  a3D0MCTruth::McTruthInfo);        //!
+                  a3D0MCTruth::McTruthInfo);                 //!
 
 } // namespace o2::aod
 

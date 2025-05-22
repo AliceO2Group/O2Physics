@@ -69,9 +69,9 @@ using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps
 struct alice3decayFinder {
   SliceCache cache;
 
-  Produces<aod::Alice3D0Meson> candidateD0meson; //contains D0 and D0bar selected candidates (separated, i.e. each row with a single mass hypothesis)
-  Produces<aod::Alice3D0Sel> selectionOutcome; //flags for isSelD0 and isSelD0bar
-  Produces<aod::Alice3D0MCTruth> mcTruthOutcome; //contains MC truth info (is true D0, true D0bar, or bkg)
+  Produces<aod::Alice3D0Meson> candidateD0meson; // contains D0 and D0bar selected candidates (separated, i.e. each row with a single mass hypothesis)
+  Produces<aod::Alice3D0Sel> selectionOutcome;   // flags for isSelD0 and isSelD0bar
+  Produces<aod::Alice3D0MCTruth> mcTruthOutcome; // contains MC truth info (is true D0, true D0bar, or bkg)
 
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
@@ -165,8 +165,8 @@ struct alice3decayFinder {
     float mass;
     std::array<float, 3> posSV;
     std::array<float, 3> P;
-    std::array<float, 3> Pdaug; //positive track
-    std::array<float, 3> Ndaug; //negative track
+    std::array<float, 3> Pdaug; // positive track
+    std::array<float, 3> Ndaug; // negative track
     float pt;
     float phi;
     float eta;
@@ -175,7 +175,7 @@ struct alice3decayFinder {
     float cosPAxy;
     float cosThetaStar;
     float normalizedDecayLength;
-    int mcTruth; //0 = bkg, 1 = D0, 2 = D0bar
+    int mcTruth; // 0 = bkg, 1 = D0, 2 = D0bar
   } dmeson;
 
   struct {
@@ -233,20 +233,18 @@ struct alice3decayFinder {
     parentTrack.getPxPyPzGlo(dmeson.P);
     dmeson.cosThetaStar = RecoDecay::cosThetaStar(std::array{std::array{posP[0], posP[1], posP[2]}, std::array{negP[0], negP[1], negP[2]}}, std::array{posMass, negMass}, dmeson.mass, 0);
 
-    //MC truth check
+    // MC truth check
     int indexRec = -1;
     int8_t sign = 0;
-    auto arrayDaughters = std::array{posTrackRow,negTrackRow};
+    auto arrayDaughters = std::array{posTrackRow, negTrackRow};
     indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
     if (indexRec < 0) {
-      dmeson.mcTruth = 0; //bkg
-    }
-    else {
+      dmeson.mcTruth = 0; // bkg
+    } else {
       if (sign > 0) {
-        dmeson.mcTruth = 1; //D0
-      }
-      else {
-        dmeson.mcTruth = 2; //D0bar
+        dmeson.mcTruth = 1; // D0
+      } else {
+        dmeson.mcTruth = 2; // D0bar
       }
     }
     return true;
@@ -471,7 +469,7 @@ struct alice3decayFinder {
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
 
-        //store D0 in output table
+        // store D0 in output table
         candidateD0meson(collision.globalIndex(),
                          dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2],
                          dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2],
@@ -481,7 +479,7 @@ struct alice3decayFinder {
                          dmeson.eta,
                          dmeson.phi,
                          dmeson.y);
-        selectionOutcome(1, 0); //isSelD0 true, isSelD0bar false
+        selectionOutcome(1, 0); // isSelD0 true, isSelD0bar false
         mcTruthOutcome(dmeson.mcTruth);
       }
     }
@@ -531,7 +529,7 @@ struct alice3decayFinder {
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
 
-        //store D0bar in output table
+        // store D0bar in output table
         candidateD0meson(collision.globalIndex(),
                          dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2],
                          dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2],
@@ -540,10 +538,9 @@ struct alice3decayFinder {
                          dmeson.mass,
                          dmeson.eta,
                          dmeson.phi,
-                         dmeson.y
-                         ); 
-        selectionOutcome(0, 1); //isSelD0 true, isSelD0bar false
-        mcTruthOutcome(dmeson.mcTruth);        
+                         dmeson.y);
+        selectionOutcome(0, 1); // isSelD0 true, isSelD0bar false
+        mcTruthOutcome(dmeson.mcTruth);
       }
     }
   }
