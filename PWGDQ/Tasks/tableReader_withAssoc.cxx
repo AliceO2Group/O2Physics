@@ -1500,7 +1500,7 @@ struct AnalysisSameEventPairing {
       VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
-  LOG(info) << "Finished initialization of AnalysisSameEventPairing (idstoreh)";
+    LOG(info) << "Finished initialization of AnalysisSameEventPairing (idstoreh)";
   }
 
   void initParamsFromCCDB(uint64_t timestamp, int runNumber, bool withTwoProngFitter = true)
