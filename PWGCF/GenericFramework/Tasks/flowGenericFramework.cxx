@@ -261,6 +261,7 @@ struct FlowGenericFramework {
       nchbinning.push_back(nchskip * i + o2::analysis::gfw::nchlow + 0.5);
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
+    AxisSpec bAxis = {200,0,20, "#it{b}"};
     AxisSpec t0cAxis = {70, 0, 70000, "N_{ch} (T0C)"};
     AxisSpec t0aAxis = {200, 0, 200, "N_{ch}"};
     AxisSpec multpvAxis = {4000, 0, 4000, "N_{ch} (PV)"};
@@ -281,6 +282,7 @@ struct FlowGenericFramework {
       registry.add("MCGen/before/pt_gen", "", {HistType::kTH1D, {ptAxis}});
       registry.add("MCGen/before/phi_eta_vtxZ_gen", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
       registry.addClone("MCGen/before/", "MCGen/after/");
+      registry.add("MCGen/impactParameter","",{HistType::kTH2D,{{bAxis,nchAxis}}});
     }
     if (doprocessMCReco || doprocessData || doprocessRun2) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -1101,6 +1103,7 @@ struct FlowGenericFramework {
   {
     float centrality = -1;
     int run = 0;
+    registry.fill(HIST("MCGen/impactParamter"), mcCollision.impactParameter(),mcParticles.size());
     processCollision<kGen>(mcCollision, mcParticles, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);
