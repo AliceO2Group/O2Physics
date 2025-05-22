@@ -308,6 +308,7 @@ struct StrangenessBuilder {
     Configurable<bool> mc_populateV0MCCoresAsymmetric{"mc_populateV0MCCoresAsymmetric", true, "populate V0MCCores table for derived data analysis, create V0Cores -> V0MCCores interlink. Saves only labeled V0s."};
     Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
     Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+    Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated V0s if not recoed"};
     Configurable<bool> mc_addGeneratedK0Short{"mc_addGeneratedK0Short", true, "add V0MCCore entry for generated, not-recoed K0Short"};
     Configurable<bool> mc_addGeneratedLambda{"mc_addGeneratedLambda", true, "add V0MCCore entry for generated, not-recoed Lambda"};
     Configurable<bool> mc_addGeneratedAntiLambda{"mc_addGeneratedAntiLambda", true, "add V0MCCore entry for generated, not-recoed AntiLambda"};
@@ -347,6 +348,7 @@ struct StrangenessBuilder {
     Configurable<bool> mc_addGeneratedOmegaPlus{"mc_addGeneratedOmegaPlus", true, "add CascMCCore entry for generated, not-recoed OmegaPlus"};
     Configurable<bool> mc_treatPiToMuDecays{"mc_treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
     Configurable<float> mc_rapidityWindow{"mc_rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
+    Configurable<bool> mc_keepOnlyPhysicalPrimary{"mc_keepOnlyPhysicalPrimary", false, "Keep only physical primary generated cascades if not recoed"};
     Configurable<bool> mc_findableDetachedCascade{"mc_findableDetachedCascade", false, "if true, generate findable cascades that have collisionId -1. Caution advised."};
   } cascadeBuilderOpts;
 
@@ -1612,6 +1614,9 @@ struct StrangenessBuilder {
           if (std::fabs(mcParticle.y()) > v0BuilderOpts.mc_rapidityWindow)
             continue; // skip outside midrapidity
 
+          if (v0BuilderOpts.mc_keepOnlyPhysicalPrimary && !mcParticle.isPhysicalPrimary())
+            continue; // skip secondary MC V0s
+
           if (
             (v0BuilderOpts.mc_addGeneratedK0Short && mcParticle.pdgCode() == 310) ||
             (v0BuilderOpts.mc_addGeneratedLambda && mcParticle.pdgCode() == 3122) ||
@@ -2078,6 +2083,9 @@ struct StrangenessBuilder {
 
             if (std::fabs(mcParticle.y()) > cascadeBuilderOpts.mc_rapidityWindow)
               continue; // skip outside midrapidity
+
+            if (cascadeBuilderOpts.mc_keepOnlyPhysicalPrimary && !mcParticle.isPhysicalPrimary())
+              continue; // skip secondary MC cascades
 
             if (
               (cascadeBuilderOpts.mc_addGeneratedXiMinus && mcParticle.pdgCode() == 3312) ||
