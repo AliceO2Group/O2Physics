@@ -172,6 +172,14 @@ float kEtaMin = -4.0;
 float kEtaMax = -2.5;
 const float kPtMin = 0.;
 
+const float kMaxAmpV0A = 100.;
+const int kReqMatchMIDTracks = 2;
+const int kReqMatchMFTTracks = 2;
+const int kMaxChi2MFTMatch = 30;
+const float kMaxZDCTime = 2.;
+const float kMaxZDCTimeHisto = 10.;
+const int kMuonPDG = 13;
+
 struct FwdMuonsUPC {
 
   // a pdg object
@@ -462,7 +470,7 @@ struct FwdMuonsUPC {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
     TLorentzVector p;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
@@ -482,18 +490,18 @@ struct FwdMuonsUPC {
   // function to compute phi for azimuth anisotropy
   void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float& phiAverage, float& phiCharge)
   {
-
     TLorentzVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;
+    float halfUnity = 0.5;
     if (sign1 > 0) {
       tDiffCh = p1 - p2;
-      if (gRandom->Rndm() > 0.5)
+      if (gRandom->Rndm() > halfUnity)
         tDiffAv = p1 - p2;
       else
         tDiffAv = p2 - p1;
     } else {
       tDiffCh = p2 - p1;
-      if (gRandom->Rndm() > 0.5)
+      if (gRandom->Rndm() > halfUnity)
         tDiffAv = p2 - p1;
       else
         tDiffAv = p1 - p2;
@@ -518,7 +526,7 @@ struct FwdMuonsUPC {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > 100.)
+        if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
     }
@@ -535,7 +543,7 @@ struct FwdMuonsUPC {
       nMIDs++;
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
-    if (nMIDs != 2)
+    if (nMIDs != kReqMatchMIDTracks)
       return;
 
     // MFT-MID match selection (if MFT is requested by the trackType)
@@ -545,11 +553,11 @@ struct FwdMuonsUPC {
       kEtaMax = -2.5;
 
       int nMFT = 0;
-      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
         nMFT++;
-      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
         nMFT++;
-      if (nMFT != 2)
+      if (nMFT != kReqMatchMFTTracks)
         return;
     }
 
@@ -561,7 +569,7 @@ struct FwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -589,9 +597,9 @@ struct FwdMuonsUPC {
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
     // zdc info
-    if (std::abs(zdc.timeA) < 10)
+    if (std::abs(zdc.timeA) < kMaxZDCTimeHisto)
       registry.fill(HIST("hTimeZNA"), zdc.timeA);
-    if (std::abs(zdc.timeC) < 10)
+    if (std::abs(zdc.timeC) < kMaxZDCTimeHisto)
       registry.fill(HIST("hTimeZNC"), zdc.timeC);
     registry.fill(HIST("hEnergyZN"), zdc.enA, zdc.enC);
 
@@ -600,9 +608,9 @@ struct FwdMuonsUPC {
     bool neutronC = false;
     int znClass = -1;
 
-    if (std::abs(zdc.timeA) < 2)
+    if (std::abs(zdc.timeA) < kMaxZDCTime)
       neutronA = true;
-    if (std::abs(zdc.timeC) < 2)
+    if (std::abs(zdc.timeC) < kMaxZDCTime)
       neutronC = true;
 
     if (std::isinf(zdc.timeC))
@@ -684,12 +692,12 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
     p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -753,7 +761,7 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
@@ -761,7 +769,7 @@ struct FwdMuonsUPC {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > 100.)
+        if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
     }
@@ -778,7 +786,7 @@ struct FwdMuonsUPC {
       nMIDs++;
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
-    if (nMIDs != 2)
+    if (nMIDs != kReqMatchMIDTracks)
       return;
 
     // MFT-MID match selection (if MFT is requested by the trackType)
@@ -788,11 +796,11 @@ struct FwdMuonsUPC {
       kEtaMax = -2.5;
 
       int nMFT = 0;
-      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < 30)
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
         nMFT++;
-      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < 30)
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
         nMFT++;
-      if (nMFT != 2)
+      if (nMFT != kReqMatchMFTTracks)
         return;
     }
 
@@ -804,7 +812,7 @@ struct FwdMuonsUPC {
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
