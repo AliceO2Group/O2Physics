@@ -134,6 +134,7 @@ struct spvector {
   Configurable<bool> coarse5{"coarse5", false, "RE5"};
   Configurable<bool> fine5{"fine5", false, "REfine5"};
   Configurable<bool> coarse6{"coarse6", false, "RE6"};
+  Configurable<bool> fine6{"fine6", false, "REfine6"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
@@ -164,6 +165,10 @@ struct spvector {
   Configurable<std::string> ConfRecenterevxSp5{"ConfRecenterevxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere5"};
   Configurable<std::string> ConfRecenterevySp5{"ConfRecenterevySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere5"};
   Configurable<std::string> ConfRecenterevzSp5{"ConfRecenterevzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere5"};
+  Configurable<std::string> ConfRecenterecentSp6{"ConfRecenterecentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere6"};
+  Configurable<std::string> ConfRecenterevxSp6{"ConfRecenterevxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere6"};
+  Configurable<std::string> ConfRecenterevySp6{"ConfRecenterevySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere6"};
+  Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
 
@@ -292,10 +297,10 @@ struct spvector {
   TH2F* hrecenterevySp;
   TH2F* hrecenterevzSp;*/
   std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
-  std::array<TH2F*, 5> hrecenterecentSpA; // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevxSpA;   // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevySpA;   // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevzSpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterecentSpA; // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevxSpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevySpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
 
@@ -643,6 +648,16 @@ struct spvector {
           hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, bc.timestamp());
         }
         res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
+      if (fine6) {
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp6.value, bc.timestamp());
+          hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp6.value, bc.timestamp());
+          hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp6.value, bc.timestamp());
+          hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp6.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[5], hrecenterevxSpA[5], hrecenterevySpA[5], hrecenterevzSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (res == 0 && resfine == 0 && check == 0) {
