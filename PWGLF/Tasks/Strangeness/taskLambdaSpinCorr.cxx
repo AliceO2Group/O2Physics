@@ -535,6 +535,13 @@ struct LfTaskLambdaSpinCorr {
         if (lambdaTag2 && aLambdaTag2) {
           continue;
         }
+        auto postrack1 = t1.template posTrack_as<AllTrackCandidates>();
+        auto negtrack1 = t1.template negTrack_as<AllTrackCandidates>();
+        auto postrack2 = t2.template posTrack_as<AllTrackCandidates>();
+        auto negtrack2 = t2.template negTrack_as<AllTrackCandidates>();
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
+          continue;
+        }
         for (const auto& t3 : groupV03) {
           if (pairStatus[t3.index()][t2.index()]) {
             // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
@@ -610,6 +617,7 @@ struct LfTaskLambdaSpinCorr {
   using CollisionMCRecTableCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
+
   void processMC(CollisionMCRecTableCentFT0C::iterator const& collision, TrackMCRecTable const& /*tracks*/, V0TrackCandidatesMC const& V0s)
   {
 
@@ -736,6 +744,13 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
         if (lambdaTag2 && aLambdaTag2) {
+          continue;
+        }
+        auto postrack1 = t1.template posTrack_as<AllTrackCandidates>();
+        auto negtrack1 = t1.template negTrack_as<AllTrackCandidates>();
+        auto postrack2 = t2.template posTrack_as<AllTrackCandidates>();
+        auto negtrack2 = t2.template negTrack_as<AllTrackCandidates>();
+        if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
           continue;
         }
         for (const auto& t3 : groupV03) {
