@@ -54,7 +54,7 @@ struct HfTaskSingleMuonMult {
 
   // enum for event selection bins
   enum EventSelection {
-    AllEvents = 1,
+    AllEvents = 0,
     Sel8,
     VtxZAfterSel,
     NEventSelection
@@ -62,7 +62,7 @@ struct HfTaskSingleMuonMult {
 
   // enum for muon track selection bins
   enum MuonSelection {
-    NoCut = 1,
+    NoCut = 0,
     EtaCut,
     RAbsorbCut,
     PDcaCut,
@@ -92,15 +92,17 @@ struct HfTaskSingleMuonMult {
 
   // Number the types of muon tracks
   static constexpr uint8_t NTrackTypes{ForwardTrackTypeEnum::MCHStandaloneTrack + 1};
+  static constexpr float EventSelectionMax = static_cast<float>(NEventSelection) + 0.5f;
+  static constexpr float MuonSelectionMax = static_cast<float>(NMuonSelection) + 0.5f;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
   {
     AxisSpec axisCent = {101, -0.5, 100.5, "centrality"};
-    AxisSpec axisEvent{NEventSelection, 0.5, NEventSelection + 0.5, "Muon Selection"};
+    AxisSpec axisEvent{NEventSelection, 0.5, EventSelectionMax, "Event Selection"};
     AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
-    AxisSpec axisMuon{NMuonSelection, 0.5, NMuonSelection + 0.5, "Muon Selection"};
+    AxisSpec axisMuon{NMuonSelection, 0.5, MuonSelectionMax, "Muon Selection"};
     AxisSpec axisNCh{500, 0.5, 500.5, "#it{N}_{ch}"};
     AxisSpec axisNMu{20, -0.5, 19.5, "#it{N}_{#mu}"};
     AxisSpec axisPt{1000, 0., 500., "#it{p}_{T} (GeV/#it{c})"};
@@ -141,35 +143,35 @@ struct HfTaskSingleMuonMult {
 
     auto hEvstat = registry.get<TH1>(HIST("hEventSel"));
     auto* xEv = hEvstat->GetXaxis();
-    xEv->SetBinLabel(AllEvents, "All events");
-    xEv->SetBinLabel(Sel8, "sel8");
-    xEv->SetBinLabel(VtxZAfterSel, "VtxZAfterSel");
+    xEv->SetBinLabel(AllEvents + 1, "All events");
+    xEv->SetBinLabel(Sel8 + 1, "sel8");
+    xEv->SetBinLabel(VtxZAfterSel + 1, "VtxZAfterSel");
 
     auto hMustat = registry.get<TH1>(HIST("hMuonSel"));
     auto* xMu = hMustat->GetXaxis();
-    xMu->SetBinLabel(NoCut, "noCut");
-    xMu->SetBinLabel(EtaCut, "etaCut");
-    xMu->SetBinLabel(RAbsorbCut, "RAbsorbCut");
-    xMu->SetBinLabel(PDcaCut, "pDcaCut");
-    xMu->SetBinLabel(Chi2Cut, "chi2Cut");
+    xMu->SetBinLabel(NoCut + 1, "noCut");
+    xMu->SetBinLabel(EtaCut + 1, "etaCut");
+    xMu->SetBinLabel(RAbsorbCut + 1, "RAbsorbCut");
+    xMu->SetBinLabel(PDcaCut + 1, "pDcaCut");
+    xMu->SetBinLabel(Chi2Cut + 1, "chi2Cut");
   }
 
   void process(MyCollisions::iterator const& collision,
                MyTracks const& tracks,
                MyMuons const& muons)
   {
-    registry.fill(HIST("hEventSel"), 1.);
+    registry.fill(HIST("hEventSel"), AllEvents + 1);
 
     if (!collision.sel8()) {
       return;
     }
-    registry.fill(HIST("hEventSel"), 2.);
+    registry.fill(HIST("hEventSel"), Sel8 + 1);
     registry.fill(HIST("hVtxZBeforeSel"), collision.posZ());
 
     if (std::abs(collision.posZ()) > zVtxMax) {
       return;
     }
-    registry.fill(HIST("hEventSel"), 3.);
+    registry.fill(HIST("hEventSel"), VtxZAfterSel + 1);
     registry.fill(HIST("hVtxZAfterSel"), collision.posZ());
 
     // T0M centrality
@@ -205,7 +207,7 @@ struct HfTaskSingleMuonMult {
       registry.fill(HIST("hMuBeforeMatchMFT"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       // histograms before the acceptance cuts
-      registry.fill(HIST("hMuonSel"), 1.);
+      registry.fill(HIST("hMuonSel"), NoCut + 1);
       registry.fill(HIST("hMuBeforeAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
       registry.fill(HIST("h3DCABeforeAccCuts"), muon.fwdDcaX(), muon.fwdDcaY(), muTrackType);
 
@@ -222,14 +224,14 @@ struct HfTaskSingleMuonMult {
       if ((eta >= etaMax) || (eta < etaMin)) {
         continue;
       }
-      registry.fill(HIST("hMuonSel"), 2.);
+      registry.fill(HIST("hMuonSel"), EtaCut + 1);
       registry.fill(HIST("hMuAfterEtaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       // Rabsorb cuts
       if ((rAbsorb < rAbsorbMin) || (rAbsorb >= rAbsorbMax)) {
         continue;
       }
-      registry.fill(HIST("hMuonSel"), 3.);
+      registry.fill(HIST("hMuonSel"), RAbsorbCut + 1);
       registry.fill(HIST("hMuAfterRAbsorbCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       if ((rAbsorb < rAbsorbMid) && (pDca >= pDcaMin)) {
@@ -238,14 +240,14 @@ struct HfTaskSingleMuonMult {
       if ((rAbsorb >= rAbsorbMid) && (pDca >= pDcaMax)) {
         continue;
       }
-      registry.fill(HIST("hMuonSel"), 4.);
+      registry.fill(HIST("hMuonSel"), PDcaCut + 1);
       registry.fill(HIST("hMuAfterPdcaCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
 
       //  MCH-MFT matching chi2
       if (muon.chi2() >= 1e6) {
         continue;
       }
-      registry.fill(HIST("hMuonSel"), 5.);
+      registry.fill(HIST("hMuonSel"), Chi2Cut + 1);
 
       // histograms after acceptance cuts
       registry.fill(HIST("hMuAfterAccCuts"), cent, nCh, pt, eta, theta, rAbsorb, dcaXY, pDca, chi2, muTrackType);
