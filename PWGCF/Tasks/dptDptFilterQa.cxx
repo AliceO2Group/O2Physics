@@ -91,6 +91,7 @@ struct DptDptFilterQa {
                      FilteredTracks const& tracks)
   {
     using namespace o2::analysis::dptdptfilterqa;
+    static constexpr int kNoOfIclusiveParticles = 2; /* number of inclusive charged particles, aka positive and negative */
 
     if (collision.collisionaccepted() != uint8_t(true)) {
       histos.fill(HIST(Dirname[dir]) + HIST("SelectedEvents"), 0.5);
@@ -103,7 +104,7 @@ struct DptDptFilterQa {
     int nTracksOneAndTwo = 0;
     int nTracksNone = 0;
     for (auto const& track : tracks) {
-      if (!(track.trackacceptedid() < 0) && !(track.trackacceptedid() < 2)) {
+      if (!(track.trackacceptedid() < 0) && !(track.trackacceptedid() < kNoOfIclusiveParticles)) {
         LOGF(fatal, "Task not prepared for identified particles");
       }
       if (track.trackacceptedid() != 0 && track.trackacceptedid() != 1) {
