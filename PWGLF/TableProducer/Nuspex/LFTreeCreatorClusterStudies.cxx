@@ -331,7 +331,7 @@ struct LfTreeCreatorClusterStudies {
   }
 
   template <typename T>
-  float dcaToPV(const std::array<float, 3>& PV, T& trackParCov, gpu::gpustd::array<float, 2>& dcaInfo)
+  float dcaToPV(const std::array<float, 3>& PV, T& trackParCov, std::array<float, 2>& dcaInfo)
   {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({PV[0], PV[1], PV[2]}, trackParCov, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
     return std::hypot(dcaInfo[0], dcaInfo[1]);
@@ -605,7 +605,7 @@ struct LfTreeCreatorClusterStudies {
     float qtAP = computeQtAP(momMother, momPos);
     m_hAnalysis.fill(HIST("armenteros_plot_before_selections"), alphaAP, qtAP);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     V0TrackParCov v0TrackParCov{v0.globalIndex(), m_fitter.createParentTrackParCov()};
     float dcaV0daughters = std::sqrt(std::abs(m_fitter.getChi2AtPCACandidate()));
     float radiusV0 = std::hypot(decayVtx[0], decayVtx[1]);
@@ -866,7 +866,7 @@ struct LfTreeCreatorClusterStudies {
     if (!qualitySelectionCascade(dcaV0daughters, cosPA)) {
       return;
     }
-    // gpu::gpustd::array<float, 2> dcaInfo;
+    // std::array<float, 2> dcaInfo;
     // float dcaToPVbachelor = dcaToPV(PV, bachelorTrackCovariance, dcaInfo);
 
     float massXi = computeMassMother(o2::constants::physics::MassLambda0, o2::constants::physics::MassPionCharged, momV0, momBachelor, momMother);
