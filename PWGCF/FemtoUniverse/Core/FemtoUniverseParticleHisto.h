@@ -117,8 +117,8 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxX").c_str(), "; #it{Vtx}_{x} (cm); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxY").c_str(), "; #it{Vtx}_{y} (cm)); Entries", kTH1F, {{2000, 0, 200}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hDecayVtxZ").c_str(), "; #it{Vtx}_{z} (cm); Entries", kTH1F, {{2000, 0, 200}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassCascade").c_str(), "; M_{Cascade}; Entries", kTH1F, {{2000, 1.f, 1.8f}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiCascade").c_str(), "; M_{AntiCascade}; Entries", kTH1F, {{2000, 1.f, 1.8f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassXi").c_str(), "; M_{Xi}; Entries", kTH1F, {{2000, 1.f, 1.8f}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassOmega").c_str(), "; M_{Omega}; Entries", kTH1F, {{2000, 1.f, 1.8f}});
     }
   }
 
@@ -318,8 +318,8 @@ class FemtoUniverseParticleHisto
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxX"), part.decayVtxX());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxY"), part.decayVtxY());
       mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hDecayVtxZ"), part.decayVtxZ());
-      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassCascade"), part.mLambda());
-      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassAntiCascade"), part.mAntiLambda());
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassXi"), part.mLambda());
+      mHistogramRegistry->fill(histFolder + HIST(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]) + HIST("/hInvMassOmega"), part.mAntiLambda());
     }
   }
 
