@@ -514,10 +514,16 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
 
       const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
-        const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
+        const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracksMC>();
+        if (!fwdtrack.has_mcParticle()) {
+          continue;
+        }
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
           continue;
         }
