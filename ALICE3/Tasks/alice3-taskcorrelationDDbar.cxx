@@ -150,13 +150,7 @@ struct alice3taskcorrelationddbar {
      {"hCorrel2DVsPtSidebandsMCRecRefSig", stringMCReco + "RefSig" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
      {"hCorrel2DVsPtSidebandsMCRecSigBkg", stringMCReco + "SigBkg" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
      {"hCorrel2DVsPtSidebandsMCRecSigRef", stringMCReco + "SigRef" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-     {"hCorrel2DVsPtSidebandsMCRecSigSig", stringMCReco + "SigSig" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-     {"hDeltaEtaPtIntMCGen", stringMCParticles + stringDeltaEta + "entries", {HistType::kTH1F, {{200, -10., 10.}}}},
-     {"hDeltaPhiPtIntMCGen", stringMCParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}},
-     {"hCorrel2DPtIntMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {200, -10., 10.}}}},
-     {"hCorrel2DVsPtMCGen", stringMCParticles + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}, // note: axes 3 and 4 (the pT) are updated in the init()
-     {"hDeltaPtDDbarMCGen", stringMCParticles + stringDeltaPt + "entries", {HistType::kTH1F, {{144, -36., 36.}}}},
-     {"hDeltaPtMaxMinMCGen", stringMCParticles + stringDeltaPtMaxMin + "entries", {HistType::kTH1F, {{72, 0., 36.}}}}}};
+     {"hCorrel2DVsPtSidebandsMCRecSigSig", stringMCReco + "SigSig" + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtDbar + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {120, -6., 6.}, {10, 0., 10.}, {10, 0., 10.}}}}}}; // note: axes 3 and 4 (the pT) are updated in the init()
 
   void init(InitContext&)
   {
@@ -225,8 +219,6 @@ struct alice3taskcorrelationddbar {
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigBkg"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigRef"))->Sumw2();
       registry.get<THnSparse>(HIST("hCorrel2DVsPtSidebandsMCRecSigSig"))->Sumw2();
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->GetAxis(i)->Set(nBinspTaxis, valuespTaxis);
-      registry.get<THnSparse>(HIST("hCorrel2DVsPtMCGen"))->Sumw2();
     }
   }
 
@@ -286,8 +278,6 @@ struct alice3taskcorrelationddbar {
   }
 
   PROCESS_SWITCH(alice3taskcorrelationddbar, processData, "Process data", true);
-
-/* //disabled for now, to be readapted
 
   /// D-Dbar correlation pair filling task, from pair tables - for MC reco-level analysis (candidates matched to true signal only, but also bkg sources are studied)
   /// Works on both USL and LS analyses pair tables
@@ -436,7 +426,7 @@ struct alice3taskcorrelationddbar {
   }
 
   PROCESS_SWITCH(alice3taskcorrelationddbar, processMcRec, "Process MC Reco mode", false);
-*/
+
 };
   
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

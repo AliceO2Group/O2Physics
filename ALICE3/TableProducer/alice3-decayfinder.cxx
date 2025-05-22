@@ -49,6 +49,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::constants::physics;
 using namespace o2::framework::expressions;
 using std::array;
 
@@ -69,6 +70,8 @@ struct alice3decayFinder {
   SliceCache cache;
 
   Produces<aod::Alice3D0Meson> candidateD0meson; //contains D0 and D0bar selected candidates (separated, i.e. each row with a single mass hypothesis)
+  Produces<aod::Alice3D0Sel> selectionOutcome; //flags for isSelD0 and isSelD0bar
+  Produces<aod::Alice3D0MCTruth> mcTruthOutcome; //contains MC truth info (is true D0, true D0bar, or bkg)
 
   // Operation and minimisation criteria
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
@@ -167,10 +170,12 @@ struct alice3decayFinder {
     float pt;
     float phi;
     float eta;
+    float y;
     float cosPA;
     float cosPAxy;
     float cosThetaStar;
     float normalizedDecayLength;
+    int mcTruth; //0 = bkg, 1 = D0, 2 = D0bar
   } dmeson;
 
   struct {
@@ -182,7 +187,7 @@ struct alice3decayFinder {
   } lcbaryon;
 
   template <typename TTrackType>
-  bool buildDecayCandidateTwoBody(TTrackType const& posTrackRow, TTrackType const& negTrackRow, float posMass, float negMass)
+  bool buildDecayCandidateTwoBody(TTrackType const& posTrackRow, TTrackType const& negTrackRow, float posMass, float negMass, aod::McParticles const& mcParticles)
   {
     o2::track::TrackParCov posTrack = getTrackParCov(posTrackRow);
     o2::track::TrackParCov negTrack = getTrackParCov(negTrackRow);
@@ -214,11 +219,12 @@ struct alice3decayFinder {
     dmeson.Ndaug[1] = negP[1];
     dmeson.Ndaug[2] = negP[2];
 
-    // return mass
+    // return mass and kinematic variables
     dmeson.mass = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{posMass, negMass});
     dmeson.pt = std::hypot(posP[0] + negP[0], posP[1] + negP[1]);
     dmeson.phi = RecoDecay::phi(array{posP[0] + negP[0], posP[1] + negP[1]});
     dmeson.eta = RecoDecay::eta(array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]});
+    dmeson.y = RecoDecay::y(std::array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]}, dmeson.mass);
     const auto posSV = fitter.getPCACandidate();
     dmeson.posSV[0] = posSV[0];
     dmeson.posSV[1] = posSV[1];
@@ -226,6 +232,23 @@ struct alice3decayFinder {
     o2::track::TrackParCov parentTrack = fitter.createParentTrackParCov();
     parentTrack.getPxPyPzGlo(dmeson.P);
     dmeson.cosThetaStar = RecoDecay::cosThetaStar(std::array{std::array{posP[0], posP[1], posP[2]}, std::array{negP[0], negP[1], negP[2]}}, std::array{posMass, negMass}, dmeson.mass, 0);
+
+    //MC truth check
+    int indexRec = -1;
+    int8_t sign = 0;
+    auto arrayDaughters = std::array{posTrackRow,negTrackRow};
+    indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+    if (indexRec < 0) {
+      dmeson.mcTruth = 0; //bkg
+    }
+    else {
+      if (sign > 0) {
+        dmeson.mcTruth = 1; //D0
+      }
+      else {
+        dmeson.mcTruth = 2; //D0bar
+      }
+    }
     return true;
   }
 
@@ -383,7 +406,7 @@ struct alice3decayFinder {
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-  void processFindDmesons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const&)
+  void processFindDmesons(aod::Collision const& collision, alice3tracks const&, aod::McParticles const& mcParticles)
   {
     // group with this collision
     auto tracksPiPlusFromDgrouped = tracksPiPlusFromD->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -407,7 +430,7 @@ struct alice3decayFinder {
       for (auto const& negTrackRow : tracksKaMinusFromDgrouped) {
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
-        if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged))
+        if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, mcParticles))
           continue;
 
         dmeson.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
@@ -457,8 +480,9 @@ struct alice3decayFinder {
                          dmeson.mass,
                          dmeson.eta,
                          dmeson.phi,
-                         1,  //isSelD0 - temporary arrangement for now, to be refined after adding MC truth information
-                         0); //isSelD0bar
+                         dmeson.y);
+        selectionOutcome(1, 0); //isSelD0 true, isSelD0bar false
+        mcTruthOutcome(dmeson.mcTruth);
       }
     }
     // D0bar mesons
@@ -466,7 +490,7 @@ struct alice3decayFinder {
       for (auto const& negTrackRow : tracksPiMinusFromDgrouped) {
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
-        if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged))
+        if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged, mcParticles))
           continue;
 
         dmeson.cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.P[0], dmeson.P[1], dmeson.P[2]});
@@ -516,8 +540,10 @@ struct alice3decayFinder {
                          dmeson.mass,
                          dmeson.eta,
                          dmeson.phi,
-                         0,  //isSelD0 - temporary arrangement for now, to be refined after adding MC truth information
-                         1); //isSelD0bar
+                         dmeson.y
+                         ); 
+        selectionOutcome(0, 1); //isSelD0 true, isSelD0bar false
+        mcTruthOutcome(dmeson.mcTruth);        
       }
     }
   }

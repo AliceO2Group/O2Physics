@@ -85,10 +85,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(E, e, //!
                            [](float px, float py, float pz, double m) -> float { return RecoDecay::e(px, py, pz, m); });
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
-                           [](float px, float py, float pz, double m) -> float { return RecoDecay::y(std::array{px, py, pz}, m); });
-DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int); //!
-DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //!
+DECLARE_SOA_COLUMN(Y, y, float);
 } // namespace a3D0meson
 DECLARE_SOA_TABLE(Alice3D0Meson, "AOD", "ALICE3D0MESON", //!
                   o2::soa::Index<>,
@@ -103,9 +100,24 @@ DECLARE_SOA_TABLE(Alice3D0Meson, "AOD", "ALICE3D0MESON", //!
                   a3D0meson::E<a3D0meson::Px, a3D0meson::Py, a3D0meson::Pz, a3D0meson::M>,
                   a3D0meson::Eta,
                   a3D0meson::Phi,
-                  a3D0meson::Y<a3D0meson::Px, a3D0meson::Py, a3D0meson::Pz, a3D0meson::M>,
-                  a3D0meson::IsSelD0,
-                  a3D0meson::IsSelD0bar);
+                  a3D0meson::Y);
+
+namespace a3D0Selection
+{
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int);           //!
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int);     //!
+} // namespace a3D0Selection
+DECLARE_SOA_TABLE(Alice3D0Sel, "AOD", "ALICE3D0SEL", //!
+                  a3D0Selection::IsSelD0,
+                  a3D0Selection::IsSelD0bar);
+
+namespace a3D0MCTruth
+{
+DECLARE_SOA_COLUMN(McTruthInfo, mcTruthInfo, int);    //! 0 for bkg, 1 for true D0, 2 for true D0bar
+} // namespace a3D0MCTruth
+DECLARE_SOA_TABLE(Alice3D0MCTruth, "AOD", "ALICE3D0MCTRUTH", //!
+                  a3D0MCTruth::McTruthInfo);        //!
+
 } // namespace o2::aod
 
 #endif // ALICE3_DATAMODEL_A3DECAYFINDERTABLES_H_

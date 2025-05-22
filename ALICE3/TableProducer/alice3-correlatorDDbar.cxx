@@ -79,15 +79,15 @@ struct alice3correlatorddbar {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<double> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+  Configurable<float> yCandMax{"yCandMax", 999., "max. cand. rapidity"};
+  Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
 
   //HfHelper hfHelper; //not needed for now
 
-  Partition<aod::Alice3D0Meson> selectedCandidates = aod::a3D0meson::isSelD0 >= selectionFlagD0 || aod::a3D0meson::isSelD0bar >= selectionFlagD0bar;
-  //Partition<soa::Join<aod::Alice3D0Meson, aod::HfCand2ProngMcRec>> selectedCandidatesMC = aod::a3D0meson::isSelD0 >= selectionFlagD0 || aod::a3D0meson::isSelD0bar >= selectionFlagD0bar;  //MCRec case (and related columns) to be implemented
+  Partition<soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel>> selectedCandidates = aod::a3D0meson::y > -yCandMax && aod::a3D0meson::y < yCandMax && aod::a3D0meson::pt > ptCandMin && (aod::a3D0Selection::isSelD0 >= selectionFlagD0 || aod::a3D0Selection::isSelD0bar >= selectionFlagD0bar);
+  Partition<soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel, aod::Alice3D0MCTruth>> selectedCandidatesMC = aod::a3D0meson::y > -yCandMax && aod::a3D0meson::y < yCandMax && aod::a3D0meson::pt > ptCandMin && (aod::a3D0Selection::isSelD0 >= selectionFlagD0 || aod::a3D0Selection::isSelD0bar >= selectionFlagD0bar);
 
   HistogramRegistry registry{
     "registry",
@@ -106,14 +106,7 @@ struct alice3correlatorddbar {
      {"hSelectionStatusMCRec", "D0,D0bar candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
      {"hEtaMCRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
      {"hPhiMCRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMCRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hMCEvtCount", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
-     {"hPtCandMCGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisBins, ptDAxisMin, ptDAxisMax}}}},
-     {"hEtaMCGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hPhiMCGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisBins, phiAxisMin, phiAxisMax}}}},
-     {"hYMCGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}},
-     {"hCountD0D0barPerEvent", "D0,D0bar particles - MC gen;Number per event;entries", {HistType::kTH1F, {{20, 0., 20.}}}},
-     {"hDDbarVsDaughterEtaCut", "D0,D0bar pairs vs #eta cut on D daughters;#eta_{max};candidates #it{p}_{T} threshold (GeV/#it{c});entries", {HistType::kTH2F, {{static_cast<int>(maxEtaCut / incrementEtaCut), 0., maxEtaCut}, {static_cast<int>(ptThresholdForMaxEtaCut / incrementPtThreshold), 0., ptThresholdForMaxEtaCut}}}}}};
+     {"hYMCRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisBins, yAxisMin, yAxisMax}}}}}};
 
   void init(InitContext&)
   {
@@ -127,24 +120,15 @@ struct alice3correlatorddbar {
     registry.add("hMassD0barMCRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecRefl", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassD0barMCRecBkg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCountD0triggersMCGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCountCtriggersMCGen", "c trigger particles - MC gen;;N of trigger c quark", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// D0-D0bar correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
-                   aod::Alice3D0Meson const&)
+                   soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel> const&)
   {
     auto selectedCandidatesGrouped = selectedCandidates->sliceByCached(aod::a3D0meson::collisionId, collision.globalIndex(), cache);
 
     for (const auto& candidate1 : selectedCandidatesGrouped) { //loop over reconstructed and selected D0 and D0bar (together, to fill mass plots first)
-      if (yCandMax >= 0. && std::abs(candidate1.y()) > yCandMax) { //no ambiguity on Y since each candidate is either D0 or D0bar, never both
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
-        continue;
-      }
-
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
@@ -165,7 +149,7 @@ struct alice3correlatorddbar {
       registry.fill(HIST("hEta"), candidate1.eta());
       registry.fill(HIST("hPhi"), candidate1.phi());
       registry.fill(HIST("hY"), candidate1.y());
-      registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
+      registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0() + (candidate1.isSelD0bar() * 2));
 
       // D-Dbar correlation dedicated section
 
@@ -177,19 +161,11 @@ struct alice3correlatorddbar {
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // keep only D0bar candidates passing the selection
           continue;
         }
-        // kinematic selection on D0bar candidates
-        if (yCandMax >= 0. && std::abs(candidate2.y()) > yCandMax) {
-          continue;
-        }
-        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
-          continue;
-        }
         // excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
         if (candidate1.mRowIndex == candidate2.mRowIndex) { //this by definition should never happen, since each candidate is either D0 or D0bar
           continue;
         }
-        if (candidate1.mRowIndex == candidate2.mRowIndex) { //revised, temporary condition to avoid self-correlations (the best would be check the daughterIDs, but we don't store them at the moment)
-          if((candidate1.pt() - candidate2.pt()) < 1e-5 && (candidate1.eta() - candidate2.eta()) < 1e-5 && (candidate1.phi() - candidate2.phi()) < 1e-5)
+        if((candidate1.pt() - candidate2.pt()) < 1e-5 && (candidate1.eta() - candidate2.eta()) < 1e-5 && (candidate1.phi() - candidate2.phi()) < 1e-5) { //revised, temporary condition to avoid self-correlations (the best would be check the daughterIDs, but we don't store them at the moment) 
           continue;
         }        
         entryD0D0barPair(getDeltaPhi(candidate2.phi(), candidate1.phi()),
@@ -220,63 +196,51 @@ struct alice3correlatorddbar {
   }
 
   PROCESS_SWITCH(alice3correlatorddbar, processData, "Process data", true);
-/*
+
   /// D0-D0bar correlation pair builder - for MC reco-level analysis (candidates matched to true signal only, but also the various bkg sources are studied)
   void processMcRec(aod::Collision const& collision,
-                    aod::TracksWDca const& tracks,
-                    soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const&)
+                    soa::Join<aod::Alice3D0Meson, aod::Alice3D0Sel, aod::Alice3D0MCTruth> const&)
   {
-    auto selectedD0CandidatesGroupedMC = selectedD0candidatesMC->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto selectedCandidatesGroupedMC = selectedCandidatesMC->sliceByCached(aod::a3D0meson::collisionId, collision.globalIndex(), cache);
 
     // MC reco level
     bool flagD0Signal = false;
     bool flagD0Reflection = false;
     bool flagD0barSignal = false;
     bool flagD0barReflection = false;
-    for (const auto& candidate1 : selectedD0CandidatesGroupedMC) {
-      // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
-        continue;
-      }
-
+    for (const auto& candidate1 : selectedCandidatesGroupedMC) {
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
-      if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+      if (candidate1.mcTruthInfo()) { //1 or 2, i.e. true D0 or D0bar
         // fill per-candidate distributions from D0/D0bar true candidates
         registry.fill(HIST("hPtCandMCRec"), candidate1.pt());
         registry.fill(HIST("hPtProng0MCRec"), candidate1.ptProng0());
         registry.fill(HIST("hPtProng1MCRec"), candidate1.ptProng1());
         registry.fill(HIST("hEtaMCRec"), candidate1.eta());
         registry.fill(HIST("hPhiMCRec"), candidate1.phi());
-        registry.fill(HIST("hYMCRec"), hfHelper.yD0(candidate1));
-        registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
+        registry.fill(HIST("hYMCRec"), candidate1.y());
+        registry.fill(HIST("hSelectionStatusMCRec"), candidate1.isSelD0() + (candidate1.isSelD0bar() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
-      if (candidate1.isSelD0() >= selectionFlagD0) {                                       // only reco as D0
-        if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
-          registry.fill(HIST("hMassD0MCRecSig"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          registry.fill(HIST("hMassD0MCRecRefl"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+      if (candidate1.isSelD0() >= selectionFlagD0) {  // only reco as D0
+        if (candidate1.mcTruthInfo() == 1) { // also matched as D0
+          registry.fill(HIST("hMassD0MCRecSig"), candidate1.m(), candidate1.pt(), efficiencyWeight); //here m is univoque, since a given candidate passes the selection with only a single mass option
+        } else if (candidate1.mcTruthInfo() == 2) {
+          registry.fill(HIST("hMassD0MCRecRefl"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         } else {
-          registry.fill(HIST("hMassD0MCRecBkg"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0MCRecBkg"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         }
       }
-      if (candidate1.isSelD0bar() >= selectionFlagD0bar) {                                    // only reco as D0bar
-        if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
-          registry.fill(HIST("hMassD0barMCRecSig"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
-        } else if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-          registry.fill(HIST("hMassD0barMCRecRefl"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+      if (candidate1.isSelD0bar() >= selectionFlagD0bar) { // only reco as D0bar
+        if (candidate1.mcTruthInfo() == 2) { // also matched as D0bar
+          registry.fill(HIST("hMassD0barMCRecSig"), candidate1.m(), candidate1.pt(), efficiencyWeight); //here m is univoque, since a given candidate passes the selection with only a single mass option
+        } else if (candidate1.mcTruthInfo() == 1) {
+          registry.fill(HIST("hMassD0barMCRecRefl"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         } else {
-          registry.fill(HIST("hMassD0barMCRecBkg"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
+          registry.fill(HIST("hMassD0barMCRecBkg"), candidate1.m(), candidate1.pt(), efficiencyWeight);
         }
       }
 
@@ -285,27 +249,24 @@ struct alice3correlatorddbar {
       if (candidate1.isSelD0() < selectionFlagD0) { // discard candidates not selected as D0 in outer loop
         continue;
       }
-      flagD0Signal = candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
-      flagD0Reflection = candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK); // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
-      for (const auto& candidate2 : selectedD0CandidatesGroupedMC) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check decay channel flag for candidate2
-          continue;
-        }
+
+      flagD0Signal = candidate1.mcTruthInfo() == 1;        // flagD0Signal 'true' if candidate1 matched to D0 (particle)
+      flagD0Reflection = candidate1.mcTruthInfo() == 2; // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
+
+      for (const auto& candidate2 : selectedCandidatesGroupedMC) {
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // discard candidates not selected as D0bar in inner loop
           continue;
         }
-        flagD0barSignal = candidate2.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK);  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
-        flagD0barReflection = candidate2.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
-        if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate2)) > yCandMax) {
+        flagD0barSignal = candidate2.mcTruthInfo() == 2;  // flagD0barSignal 'true' if candidate2 matched to D0bar (antiparticle)
+        flagD0barReflection = candidate2.mcTruthInfo() == 1; // flagD0barReflection 'true' if candidate2, selected as D0bar (antiparticle), is matched to D0 (particle)
+
+        // Excluding trigger self-correlations (possible in case of both mass hypotheses of the same real particle, reconstructed as candidate1 for D0 and candidate2 for D0bar)
+        if (candidate1.mRowIndex == candidate2.mRowIndex) { //this by definition should never happen, since each candidate is either D0 or D0bar
           continue;
         }
-        if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
+        if((candidate1.pt() - candidate2.pt()) < 1e-5 && (candidate1.eta() - candidate2.eta()) < 1e-5 && (candidate1.phi() - candidate2.phi()) < 1e-5) { //revised, temporary condition to avoid self-correlations (the best would be check the daughterIDs, but we don't store them at the moment) 
           continue;
-        }
-        // Excluding trigger self-correlations (possible in case of both mass hypotheses accepted)
-        if (candidate1.mRowIndex == candidate2.mRowIndex) {
-          continue;
-        }
+        }  
         // choice of options (D0/D0bar signal/bkg)
         int pairSignalStatus = 0; // 0 = bkg/bkg, 1 = bkg/ref, 2 = bkg/sig, 3 = ref/bkg, 4 = ref/ref, 5 = ref/sig, 6 = sig/bkg, 7 = sig/ref, 8 = sig/sig
         if (flagD0Signal) {
@@ -324,8 +285,8 @@ struct alice3correlatorddbar {
                          candidate2.eta() - candidate1.eta(),
                          candidate1.pt(),
                          candidate2.pt());
-        entryD0D0barRecoInfo(hfHelper.invMassD0ToPiK(candidate1),
-                             hfHelper.invMassD0barToKPi(candidate2),
+        entryD0D0barRecoInfo(candidate1.m(), //mD0
+                             candidate2.m(), //mD0bar
                              pairSignalStatus);
         double etaCut = 0.;
         double ptCut = 0.;
@@ -345,7 +306,7 @@ struct alice3correlatorddbar {
   }
 
   PROCESS_SWITCH(alice3correlatorddbar, processMcRec, "Process MC Reco mode", false);
-*/
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
