@@ -467,7 +467,7 @@ struct FwdMuonsUPC {
     float eta = p.Eta();
     float pt = p.Pt();
     float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
-    LOGF(info, "eta min = %f", kEtaMin);
+
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
