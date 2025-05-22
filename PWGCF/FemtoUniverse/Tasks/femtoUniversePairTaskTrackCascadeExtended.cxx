@@ -351,7 +351,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascades, "Enable processing cascades", false);
-  /// track - cascade
+  /// track - cascade correlations
   void processSameEvent(const FilteredFDCollision& col, const FemtoFullParticles& parts)
   {
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -362,7 +362,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     const int multCol = confUseCent ? col.multV0M() : col.multNtr();
 
     for (const auto& part : groupPartsTwo) {
-      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1))
+      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
         continue;
 
       cascQAHistos.fillQA<false, true>(part);
@@ -404,7 +404,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
 
     for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      // Cascade invariant mass cut
+      // Cascade inv mass cut (mLambda stores Xi mass, mAntiLambda stores Omega mass)
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType1))
         continue;
       // PID
@@ -427,7 +427,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEvent, "Enable processing same event for track - cascade", false);
-  /// cascade - cascade
+  /// cascade - cascade correlations
   void processSameEventCasc(const FilteredFDCollision& col, const FemtoFullParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
@@ -439,7 +439,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     const int multCol = confUseCent ? col.multV0M() : col.multNtr();
 
     for (const auto& part : groupPartsTwo) {
-      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1))
+      if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
         continue;
 
       cascQAHistos.fillQA<false, true>(part);
@@ -448,22 +448,24 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& negChild = parts.iteratorAt(part.index() - 2);
       const auto& bachelor = parts.iteratorAt(part.index() - 1);
       /// Check daughters of first cascade
-      if (isParticleTPC(posChild, CascChildTable[confCascType1][0]) && isParticleTPC(negChild, CascChildTable[confCascType1][1]) && isParticleTPC(bachelor, CascChildTable[confCascType1][2])) {
+      if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
+        continue;
+      if (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
+        continue;
 
-        posChildHistos.fillQA<false, true>(posChild);
-        negChildHistos.fillQA<false, true>(negChild);
-        bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
-      }
+      posChildHistos.fillQA<false, true>(posChild);
+      negChildHistos.fillQA<false, true>(negChild);
+      bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
       /// Check daughters of second cascade
       /*if (isParticleTPC(posChild, CascChildTable[confCascType2][0]) && isParticleTPC(negChild, CascChildTable[confCascType2][1]) && isParticleTPC(bachelor, CascChildTable[confCascType2][2])) {
       }*/
     }
 
     auto pairDuplicateCheckFunc = [&](auto& p1, auto& p2) -> void {
-      // Cascade invariant mass cut for p1
+      // Cascade inv mass cut for p1 (mLambda stores Xi mass, mAntiLambda stores Omega mass)
       if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
         return;
-      // Cascade invariant mass cut for p2
+      // Cascade inv mass cut for p2
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
         return;
       // track cleaning & checking for duplicate pairs
@@ -477,10 +479,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
       if (cascDuplicates.contains(p1.globalIndex()) || cascDuplicates.contains(p2.globalIndex()))
         return;
-      // Cascade invariant mass cut for p1
       if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
         return;
-      // Cascade invariant mass cut for p2
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
         return;
       if (confIsCPR.value) {
@@ -494,11 +494,15 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       /// Child particles must pass this condition to be selected
       if (!isParticleTPC(posChild1, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild1, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor1, CascChildTable[confCascType1][2]))
         return;
+      if (!isParticleTOF(posChild1, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild1, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor1, CascChildTable[confCascType1][2]))
+        return;
       const auto& posChild2 = parts.iteratorAt(p2.index() - 3);
       const auto& negChild2 = parts.iteratorAt(p2.index() - 2);
       const auto& bachelor2 = parts.iteratorAt(p2.index() - 1);
       /// Child particles must pass this condition to be selected
       if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
+        return;
+      if (!isParticleTOF(posChild2, CascChildTable[confCascType2][0]) || !isParticleTOF(negChild2, CascChildTable[confCascType2][1]) || !isParticleTOF(bachelor2, CascChildTable[confCascType2][2]))
         return;
 
       sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
@@ -523,7 +527,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventCasc, "Enable processing same event for cascade - cascade", false);
-  /// track - cascade
+  /// track - cascade correlations
   void processMixedEvent(const FilteredFDCollisions& cols, const FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
@@ -541,7 +545,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
       }
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        // Cascade invariant mass cut
+        // Cascade inv mass cut (mLambda stores Xi mass, mAntiLambda stores Omega mass)
         if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType1))
           continue;
         // PID
@@ -567,7 +571,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processMixedEvent, "Enable processing mixed event for track - cascade", false);
-  /// cascade - cascade
+  /// cascade - cascade correlations
   void processMixedEventCasc(const FilteredFDCollisions& cols, const FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
@@ -585,10 +589,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
       }
       for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        // Cascade invariant mass cut for p1
+        // Cascade inv mass cut for p1 (mLambda stores Xi mass, mAntiLambda stores Omega mass)
         if (!invMCascade(p1.mLambda(), p1.mAntiLambda(), confCascType1))
           continue;
-        // Cascade invariant mass cut for p2
+        // Cascade inv mass cut for p2
         if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
           continue;
 
@@ -598,11 +602,15 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         /// Child particles must pass this condition to be selected
         if (!isParticleTPC(posChild1, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild1, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor1, CascChildTable[confCascType1][2]))
           return;
+        if (!isParticleTOF(posChild1, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild1, CascChildTable[confCascType1][1]) || !isParticleTOF(bachelor1, CascChildTable[confCascType1][2]))
+          return;
         const auto& posChild2 = parts.iteratorAt(p2.index() - 3);
         const auto& negChild2 = parts.iteratorAt(p2.index() - 2);
         const auto& bachelor2 = parts.iteratorAt(p2.index() - 1);
         /// Child particles must pass this condition to be selected
         if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
+          return;
+        if (!isParticleTOF(posChild2, CascChildTable[confCascType2][0]) || !isParticleTOF(negChild2, CascChildTable[confCascType2][1]) || !isParticleTOF(bachelor2, CascChildTable[confCascType2][2]))
           return;
         // track cleaning
         if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
