@@ -32,6 +32,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -255,6 +256,12 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_phiv_ee{"cfg_max_phiv_ee", 2.0, "max phiv for ee from pi0 dalitz decay in rad."};
   } dalitzcuts;
 
+  // for RCT
+  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+  Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -263,6 +270,7 @@ struct TreeCreatorElectronMLDDA {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::DCA mDcaInfoCov;
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
@@ -276,6 +284,8 @@ struct TreeCreatorElectronMLDDA {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
 
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
@@ -582,6 +592,11 @@ struct TreeCreatorElectronMLDDA {
 
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+
+      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 2.0); // selected
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
