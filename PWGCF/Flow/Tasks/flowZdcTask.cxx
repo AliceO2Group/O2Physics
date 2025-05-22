@@ -86,7 +86,7 @@ struct FlowZdcTask {
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
-  Configurable<float> cfgCollisionEnergy{"collision energy", 2.68, "collision energy"};
+  Configurable<float> cfgCollisionEnergy{"cfgCollisionEnergy", 2.68, "cfgCollisionEnergy"};
   // event selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
@@ -308,7 +308,7 @@ struct FlowZdcTask {
       histos.add("ZNASector", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
       histos.add("ZPASector", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
       histos.add("ZNCSector", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZPCSector", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});     
+      histos.add("ZPCSector", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});  
       histos.add("ZNCcvsZNCsum", ";ZNC common;ZNC sum towers;", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
       histos.add("ZNAcvsZNAsum", ";ZNA common;ZNA sum towers;", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
       histos.add("ZPCcvsZPCsum", ";ZPC common;ZPC sum towers;", kTH2F, {{{30, -0.5, maxZp}, {30, -0.5, maxZp}}});
@@ -522,7 +522,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ZNASector"), sumZNA);
     histos.fill(HIST("ZNCSector"), sumZNC);
     histos.fill(HIST("ZPASector"), sumZPA);
-    histos.fill(HIST("ZPCSector"), sumZPC);    
+    histos.fill(HIST("ZPCSector"), sumZPC);
     histos.fill(HIST("ZN"), znA + znC);
     histos.fill(HIST("ZNAVsZNC"), znC, znA);
     histos.fill(HIST("ZNAVsZPA"), zpA, znA);
