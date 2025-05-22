@@ -1067,20 +1067,20 @@ struct DptDptEfficiencyAndQc {
     /* Self configuration: requires dptdptfilter task in the workflow */
     {
       /* the binning */
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "overallminp", overallminp, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
-      getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgOverallMinP", overallminp, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxbins", zvtxbins, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmin", zvtxlow, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mZVtxmax", zvtxup, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTbins", ptbins, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmin", ptlow, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPTmax", ptup, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtabins", etabins, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamin", etalow, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mEtamax", etaup, false);
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgBinning.mPhibins", phibins, false);
 
       /* configuring the involved species */
-      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<std::string> cfgnames = {"cfgElectronPIDSelection", "cfgMuonPIDSelection", "cfgPionPIDSelection", "cfgKaonPIDSelection", "cfgProtonPIDSelection"};
       std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
         auto includeIt = [&initContext](int spid, auto name) {
@@ -1116,7 +1116,7 @@ struct DptDptEfficiencyAndQc {
 
       /* create the data collecting engine instances according to the configured centrality/multiplicity ranges */
       std::string centspec;
-      if (useCentrality.value && getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec, false)) {
+      if (useCentrality.value && getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCentSpec", centspec, false)) {
         LOGF(info, "Got the centralities specification: %s", centspec.c_str());
         auto tokens = TString(centspec.c_str()).Tokenize(",");
         ncmranges = tokens->GetEntries();
