@@ -75,11 +75,6 @@ struct sigmaanalysis {
   Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study. Only works with MC."};
   Configurable<bool> fillpTResoQAhistos{"fillpTResoQAhistos", false, "if true, fill MC QA histograms for pT resolution study. Only works with MC."};
 
-  // Interaction rate selection:
-  Configurable<bool> fGetIR{"fGetIR", false, "Flag to retrieve the IR info."};
-  Configurable<float> minIR{"minIR", -1, "Min Interaction Rate (kHz). Leave -1 if no selection desired."};
-  Configurable<float> maxIR{"maxIR", -1, "Max Interaction Rate (kHz). Leave -1 if no selection desired."};
-
   // Analysis strategy:
   Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};
   Configurable<bool> fselLambdaTPCPID{"fselLambdaTPCPID", true, "Flag to select lambda-like candidates using TPC NSigma."};
@@ -273,10 +268,9 @@ struct sigmaanalysis {
         histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaEl", "h2dNegTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
         histos.add(histodir + "/MC/Photon/h2dPosTPCNSigmaPi", "h2dPosTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
         histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaPi", "h2dNegTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dIRVsPt", "h2dIRVsPt", kTH2F, {axisIRBinning, axisPt});
-        histos.add(histodir + "/MC/Photon/h3dPAVsIRVsPt", "h3dPAVsIRVsPt", kTH3F, {axisPA, axisIRBinning, axisPt});
-        histos.add(histodir + "/MC/Photon/h2dIRVsPt_BadCollAssig", "h2dIRVsPt_BadCollAssig", kTH2F, {axisIRBinning, axisPt});
-        histos.add(histodir + "/MC/Photon/h3dPAVsIRVsPt_BadCollAssig", "h3dPAVsIRVsPt_BadCollAssig", kTH3F, {axisPA, axisIRBinning, axisPt});
+        histos.add(histodir + "/MC/Photon/h2dPAVsPt", "h2dPAVsPt", kTH2F, {axisPA, axisPt});
+        histos.add(histodir + "/MC/Photon/hPt_BadCollAssig", "hPt_BadCollAssig", kTH1F, {axisPt});
+        histos.add(histodir + "/MC/Photon/h2dPAVsPt_BadCollAssig", "h2dPAVsPt_BadCollAssig", kTH2F, {axisPA, axisPt});
 
         histos.add(histodir + "/MC/Lambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1F, {{2, 0.0f, 2.0f}});
         histos.add(histodir + "/MC/Lambda/hPt", "hPt", kTH1F, {axisPt});
@@ -585,12 +579,11 @@ struct sigmaanalysis {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPosTPCNSigmaPi"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaPi());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dNegTPCNSigmaPi"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaPi());
 
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dIRVsPt"), sigma.sigmaIR(), sigma.photonMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h3dPAVsIRVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.sigmaIR(), sigma.photonMCPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.photonMCPt());
 
           if (!sigma.photonIsCorrectlyAssoc()) {
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dIRVsPt_BadCollAssig"), sigma.sigmaIR(), sigma.photonMCPt());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h3dPAVsIRVsPt_BadCollAssig"), TMath::ACos(sigma.photonCosPA()), sigma.sigmaIR(), sigma.photonMCPt());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt_BadCollAssig"), sigma.photonMCPt());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt_BadCollAssig"), TMath::ACos(sigma.photonCosPA()), sigma.photonMCPt());
           }
         }
 
@@ -864,10 +857,6 @@ struct sigmaanalysis {
   template <typename TV0Object>
   bool processSigmaCandidate(TV0Object const& cand)
   {
-    // Optionally Select on Interaction Rate
-    if (fGetIR && (maxIR != -1) && (minIR != -1) && ((cand.sigmaIR() <= minIR) || (cand.sigmaIR() >= maxIR))) {
-      return false;
-    }
 
     // Do ML analysis
     if (fUseMLSel) {
