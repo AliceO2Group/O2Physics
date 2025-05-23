@@ -63,8 +63,8 @@ o2physics_add_dpl_workflow(di-hadron-cor
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(gen-corr
-                           SOURCES genCorr.cxx
+o2physics_add_dpl_workflow(longrange-correlation
+                           SOURCES longrangeCorrelation.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
 
