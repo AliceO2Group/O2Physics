@@ -1049,8 +1049,6 @@ struct OccupancyTableProducer {
 
   void processOnlyBCTFinfoTable(o2::aod::BCsWithTimestamps const& BCs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 00 :: df_" << dfCount << " :: processOnlyBCTFinfoTable";
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     processStatus[kProcessOnlyBCTFinfoTable] = true;
     bool singleProcessOn = true;
@@ -1070,8 +1068,6 @@ struct OccupancyTableProducer {
   // // Process the Data
   void processOnlyOccPrimUnfm(o2::aod::BCsWithTimestamps const& BCs, aod::Collisions const& collisions)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 01 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildOnlyOccsPrim) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildOnlyOccsPrim == false";
@@ -1095,8 +1091,6 @@ struct OccupancyTableProducer {
 
   void processOnlyOccT0V0PrimUnfm(o2::aod::BCsWithTimestamps const& BCs, soa::Join<aod::Collisions, aod::Mults> const& collisions)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 02 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildOnlyOccsT0V0Prim) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildOnlyOccsT0V0Prim == false";
@@ -1120,8 +1114,6 @@ struct OccupancyTableProducer {
 
   void processOnlyOccFDDT0V0PrimUnfm(o2::aod::BCsWithTimestamps const& BCs, soa::Join<aod::Collisions, aod::Mults> const& collisions)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 03 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildOnlyOccsFDDT0V0Prim) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildOnlyOccsFDDT0V0Prim == false";
@@ -1145,8 +1137,6 @@ struct OccupancyTableProducer {
 
   void processOnlyOccNtrackDet(o2::aod::BCsWithTimestamps const& BCs, soa::Join<aod::Collisions, aod::MultsExtra> const& collisions, soa::Join<aod::Tracks, o2::aod::TracksExtra> const& tracks)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 04 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildOnlyOccsNtrackDet) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildOnlyOccsNtrackDet == false";
@@ -1170,8 +1160,6 @@ struct OccupancyTableProducer {
 
   void processOnlyOccMultExtra(o2::aod::BCsWithTimestamps const& BCs, soa::Join<aod::Collisions, aod::MultsExtra> const& collisions)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 05 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildOnlyOccsMultExtra) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildOnlyOccsMultExtra == false";
@@ -1195,8 +1183,6 @@ struct OccupancyTableProducer {
 
   void processFullOccTableProduer(o2::aod::BCsWithTimestamps const& BCs, soa::Join<aod::Collisions, aod::Mults, aod::MultsExtra> const& collisions, soa::Join<aod::Tracks, o2::aod::TracksExtra> const& tracks)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 06 :: df_" << dfCount;
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), 0.5);
     if (!buildFullOccTableProducer) {
       LOG(error) << " DEBUG :: ERROR ERROR ERROR :: buildFullOccTableProducer == false";
@@ -2354,8 +2340,6 @@ struct TrackMeanOccTableProducer {
   //_________________________________Process Functions start from here______________________________________________________________________________________
   void processNothing(aod::Collisions const&)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 00 :: df_" << dfCount << " processNothing";
     occupancyQA.fill(HIST("h_DFcount_Lvl0"), kProcessNothing);
     return;
     occupancyQA.fill(HIST("h_DFcount_Lvl1"), kProcessNothing);
@@ -2364,8 +2348,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyOccPrim(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::OccsPrim const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 01 :: df_" << dfCount;
     processStatus[kProcessOnlyOccPrim] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2391,8 +2373,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyOccT0V0(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::OccsT0V0 const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 02 :: df_" << dfCount;
     processStatus[kProcessOnlyOccT0V0] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2418,8 +2398,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyOccFDD(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::OccsFDD const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 03 :: df_" << dfCount;
     processStatus[kProcessOnlyOccFDD] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2445,8 +2423,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyOccNtrackDet(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::OccsNTrackDet const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 04 :: df_" << dfCount;
     processStatus[kProcessOnlyOccNtrackDet] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2472,8 +2448,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyOccMultExtra(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::OccsMultExtra const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 05 :: df_" << dfCount;
     processStatus[kProcessOnlyOccMultExtra] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2499,8 +2473,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyRobustT0V0Prim(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 06 :: df_" << dfCount;
     processStatus[kProcessOnlyRobustT0V0Prim] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2526,8 +2498,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyRobustFDDT0V0Prim(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::ORFDDT0V0Prim const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 07 :: df_" << dfCount;
     processStatus[kProcessOnlyRobustFDDT0V0Prim] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2553,8 +2523,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyRobustNtrackDet(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::ORNtrackDet const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 08 :: df_" << dfCount;
     processStatus[kProcessOnlyRobustNtrackDet] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2580,8 +2548,6 @@ struct TrackMeanOccTableProducer {
 
   void processOnlyRobustMultExtra(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, aod::ORMultExtra const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 09 :: df_" << dfCount;
     processStatus[kProcessOnlyRobustMultExtra] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
@@ -2608,8 +2574,6 @@ struct TrackMeanOccTableProducer {
   using JoinedOccTables = soa::Join<aod::OccsPrim, aod::OccsT0V0, aod::OccsFDD, aod::OccsNTrackDet, aod::OccsMultExtra, aod::ORT0V0Prim, aod::ORFDDT0V0Prim, aod::ORNtrackDet, aod::ORMultExtra>;
   void processFullOccTableProduer(soa::Join<aod::BCsWithTimestamps, aod::OccIndexTable> const& BCs, aod::Collisions const& collisions, aod::Tracks const& tracks, MyTracksQA const& tracksQA, aod::ORT0V0Prim const& occsRobustT0V0Prim, JoinedOccTables const& occs)
   {
-    dfCount++;
-    LOG(info) << "DEBUG 10 :: df_" << dfCount;
     processStatus[kProcessFullOccTableProducer] = true;
     bool singleProcessOn = true;
     checkAllProcessFunctionStatus(processStatus, singleProcessOn);
