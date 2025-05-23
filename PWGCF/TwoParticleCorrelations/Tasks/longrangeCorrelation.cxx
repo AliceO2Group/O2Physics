@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file genCorr.cxx
+/// \file longrangeCorrelation.cxx
 ///
-/// \brief task for correlation analysis
+/// \brief task for long range correlation analysis
 /// \author Abhi Modak (abhi.modak@cern.ch) and Debojit sarkar (debojit.sarkar@cern.ch)
 /// \since April 22, 2025
 
@@ -75,11 +75,11 @@ AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
 AxisSpec amplitudeFT0{5000, 0, 10000, "FT0 amplitude"};
 AxisSpec channelFT0Axis{96, 0.0, 96.0, "FT0 channel"};
 
-struct GenCorr {
+struct LongrangeCorrelation {
 
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   SliceCache cache;
@@ -189,11 +189,7 @@ struct GenCorr {
     o2::ft0::Geometry ft0Det;
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
-    auto phi = std::atan2(chPos.Y() + offsetY, chPos.X() + offsetX);
-    if (phi < 0) {
-      phi = TwoPI - std::abs(phi);
-    }
-    return phi;
+    return RecoDecay::phi(chPos.X() + offsetX, chPos.Y() + offsetY);
   }
 
   double getEtaFT0(int chno, double offsetX, double offsetY, double offsetZ)
@@ -293,8 +289,7 @@ struct GenCorr {
         }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phiA, -PIHalf);
         float deltaEta = triggerTrack.eta() - etaA;
-        // LOGF(info, "delta eta = %f and delta phi = %f", deltaEta, deltaPhi);
-        if (mixing)
+	if (mixing)
           histos.fill(HIST("ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         else
           histos.fill(HIST("SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
@@ -348,11 +343,11 @@ struct GenCorr {
     }
   } // mixed event
 
-  PROCESS_SWITCH(GenCorr, processSE, "process same event", false);
-  PROCESS_SWITCH(GenCorr, processME, "process mixed event", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processSE, "process same event", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processME, "process mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<GenCorr>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<LongrangeCorrelation>(cfgc)};
 }
