@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <limits>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
