@@ -521,6 +521,11 @@ struct CascadeCorrelations {
       {"MC/hGenMultNoReco", "hGenMultNoReco", {HistType::kTH1I, {{100, 0, 100, "Number of generated charged primaries"}}}},
       {"MC/hGenMultOneReco", "hGenMultOneReco", {HistType::kTH1I, {{100, 0, 100, "Number of generated charged primaries"}}}},
       {"MC/hSplitEvents", "hSplitEvents", {HistType::kTH1I, {{10, 0, 10, "Number of rec. events per gen event"}}}},
+
+      // debug
+      {"MC/hPhi", "hPhi", {HistType::kTH1F, {{180, 0, TwoPI}}}},
+      {"MC/hEta", "hEta", {HistType::kTH1F, {{100, -2, 2}}}},
+      {"MC/hRapidity", "hRapidity", {HistType::kTH1F, {{100, -2, 2}}}},
     },
   };
 
@@ -924,7 +929,8 @@ struct CascadeCorrelations {
     } // collisions
   } // process mixed events
 
-  Filter genCascadesFilter = nabs(aod::mcparticle::pdgCode) == 3312;
+  Configurable<float> etaGenCascades{"etaGenCascades", 0.8, "min/max of eta for generated cascades"};
+  Filter genCascadesFilter = (nabs(aod::mcparticle::pdgCode) == 3312 && nabs(aod::mcparticle::eta) < etaGenCascades);
 
   void processMC(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisionsMult>> const& collisions, soa::Filtered<aod::McParticles> const& genCascades, aod::McParticles const& mcParticles)
   {
@@ -947,6 +953,15 @@ struct CascadeCorrelations {
       return;
     }
 
+    // QA
+    for (auto& casc : genCascades) {
+      if (!casc.isPhysicalPrimary())
+        continue;
+      registry.fill(HIST("MC/hPhi"), casc.phi());
+      registry.fill(HIST("MC/hEta"), casc.eta());
+      registry.fill(HIST("MC/hRapidity"), casc.y());
+    }
+
     for (auto& [c0, c1] : combinations(genCascades, genCascades)) { // combinations automatically applies strictly upper in case of 2 identical tables
       // Define the trigger as the particle with the highest pT. As we can't swap the cascade tables themselves, we swap the addresses and later dereference them
       auto* triggerAddress = &c0;
@@ -958,6 +973,9 @@ struct CascadeCorrelations {
       auto assoc = *assocAddress;
 
       double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -PIHalf);
+
+      if (!trigger.isPhysicalPrimary() || !assoc.isPhysicalPrimary())
+        continue; // require the cascades to be primaries
 
       if (trigger.pdgCode() < 0) { // anti-trigg --> Plus
         if (assoc.pdgCode() < 0) { // anti-assoc --> Plus
