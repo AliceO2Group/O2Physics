@@ -557,8 +557,7 @@ struct HfTaskLcToK0sP {
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("MC/Gen/hPtCandGenPrompt"), ptCand);
-        }
-        if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+        } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("MC/Gen/hPtCandGenNonPrompt"), ptCand);
         }
       }
