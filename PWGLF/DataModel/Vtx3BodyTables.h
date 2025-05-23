@@ -26,6 +26,13 @@ namespace o2::aod
 {
 namespace vtx3body
 {
+// indices
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPr, trackPr, int, Tracks, "_pr"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackPi, trackPi, int, Tracks, "_pi"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackDe, trackDe, int, Tracks, "_de"); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //!
+DECLARE_SOA_INDEX_COLUMN(Decay3Body, decay3body);                 //!
+
 // General 3 body Vtx properties
 DECLARE_SOA_COLUMN(Mass, mass, float); //! candidate mass (with H3L or Anti-H3L mass hypothesis depending on deuteron charge)
 DECLARE_SOA_COLUMN(Sign, sign, float); //! candidate sign
@@ -177,6 +184,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(TrackDePhi, trackDePhi, //! daughter2 phi
                            [](float pxTrackDe, float pyTrackDe) -> float { return RecoDecay::phi(pxTrackDe, pyTrackDe); });
 } // namespace vtx3body
 
+// index table
+DECLARE_SOA_TABLE(Decay3BodyIndices, "AOD", "3BodyINDEX", //!
+                  o2::soa::Index<>, 
+                  vtx3body::Decay3BodyId, 
+                  vtx3body::TrackPrId, vtx3body::TrackPiId, vtx3body::TrackDeId, 
+                  vtx3body::CollisionId);
+
 // reconstructed candidate table for analysis
 DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   o2::soa::Index<>,
@@ -285,6 +299,11 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::TrackDePt<vtx3body::PxTrackDe, vtx3body::PyTrackDe>,
                   vtx3body::TrackDeEta<vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe>,
                   vtx3body::TrackDePhi<vtx3body::PxTrackDe, vtx3body::PyTrackDe>);
+
+// Define joins
+using Vtx3BodyDatasCovs = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs>;
+using Vtx3BodyDatasCovsIndexed = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs, Decay3BodyIndices>;
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_
