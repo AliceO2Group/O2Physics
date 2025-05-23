@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
