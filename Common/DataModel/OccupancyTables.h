@@ -281,22 +281,22 @@ DECLARE_SOA_COLUMN(TwmoRobustMultExtraTableUnfm80, twmoRobustMultExtraTableUnfm8
 // using Tracks = aod::Tracks;
 // DECLARE_SOA_INDEX_TABLE_USER(TrackMeanOccs0, Tracks, "TRACKMEANOCCS0", o2::aod::trackmeanocc::TrackId);
 
-DECLARE_SOA_TABLE(TmoTrackId, "AOD", "TmoTRACKID", o2::aod::trackmeanocc::TrackId);
+DECLARE_SOA_TABLE(TmoTrackId, "AOD", "TMOTRACKID", o2::aod::trackmeanocc::TrackId);
 
-DECLARE_SOA_TABLE(TmoPrim, "AOD", "TmoPRIM", o2::soa::Index<>, // TrackMeanOccDet
+DECLARE_SOA_TABLE(TmoPrim, "AOD", "TMOPRIM", o2::soa::Index<>, // TrackMeanOccDet
                   o2::aod::trackmeanocc::TmoPrimUnfm80);
 
-DECLARE_SOA_TABLE(TmoT0V0, "AOD", "TmoT0V0", o2::soa::Index<>, // TrackMeanOccDet
+DECLARE_SOA_TABLE(TmoT0V0, "AOD", "TMOT0V0", o2::soa::Index<>, // TrackMeanOccDet
                   o2::aod::trackmeanocc::TmoFV0AUnfm80,
                   o2::aod::trackmeanocc::TmoFV0CUnfm80,
                   o2::aod::trackmeanocc::TmoFT0AUnfm80,
                   o2::aod::trackmeanocc::TmoFT0CUnfm80);
 
-DECLARE_SOA_TABLE(TmoFDD, "AOD", "TmoFDD", o2::soa::Index<>, // TrackMeanOccDet
+DECLARE_SOA_TABLE(TmoFDD, "AOD", "TMOFDD", o2::soa::Index<>, // TrackMeanOccDet
                   o2::aod::trackmeanocc::TmoFDDAUnfm80,
                   o2::aod::trackmeanocc::TmoFDDCUnfm80);
 
-DECLARE_SOA_TABLE(TmoNTrackDet, "AOD", "TmoNTRACKDET", o2::soa::Index<>, // TrackMeanOccNtrackDet
+DECLARE_SOA_TABLE(TmoNTrackDet, "AOD", "TMONTRACKDET", o2::soa::Index<>, // TrackMeanOccNtrackDet
                   o2::aod::trackmeanocc::TmoNTrackITSUnfm80,
                   o2::aod::trackmeanocc::TmoNTrackTPCUnfm80,
                   o2::aod::trackmeanocc::TmoNTrackTRDUnfm80,
@@ -308,7 +308,7 @@ DECLARE_SOA_TABLE(TmoNTrackDet, "AOD", "TmoNTRACKDET", o2::soa::Index<>, // Trac
                   o2::aod::trackmeanocc::TmoNTrackITSTPCAUnfm80,
                   o2::aod::trackmeanocc::TmoNTrackITSTPCCUnfm80);
 
-DECLARE_SOA_TABLE(TmoMultExtra, "AOD", "TmoMULTEXTRA", o2::soa::Index<>, // TrackMeanOccMultExtra
+DECLARE_SOA_TABLE(TmoMultExtra, "AOD", "TMOMULTEXTRA", o2::soa::Index<>, // TrackMeanOccMultExtra
                   o2::aod::trackmeanocc::TmoMultNTracksHasITSUnfm80,
                   o2::aod::trackmeanocc::TmoMultNTracksHasTPCUnfm80,
                   o2::aod::trackmeanocc::TmoMultNTracksHasTOFUnfm80,
@@ -318,32 +318,32 @@ DECLARE_SOA_TABLE(TmoMultExtra, "AOD", "TmoMULTEXTRA", o2::soa::Index<>, // Trac
                   o2::aod::trackmeanocc::TmoMultNTracksITSTPCUnfm80,
                   o2::aod::trackmeanocc::TmoMultAllTracksTPCOnlyUnfm80);
 
-DECLARE_SOA_TABLE(TmoRT0V0Prim, "AOD", "TmoRT0V0PRIM", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TmoRT0V0Prim, "AOD", "TMORT0V0PRIM", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TmoRobustT0V0PrimUnfm80);
 
-DECLARE_SOA_TABLE(TmoRFDDT0V0Prim, "AOD", "TmoRFDDT0V0PRIM", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TmoRFDDT0V0Prim, "AOD", "TMORFDDT0V0PRIM", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TmoRobustFDDT0V0PrimUnfm80);
 
-DECLARE_SOA_TABLE(TmoRNtrackDet, "AOD", "TmoRNTRACKDET", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TmoRNtrackDet, "AOD", "TMORNTRACKDET", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TmoRobustNtrackDetUnfm80);
 
-DECLARE_SOA_TABLE(TmoRMultExtra, "AOD", "TmoRMULTEXTRA", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TmoRMultExtra, "AOD", "TMORMULTEXTRA", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TmoRobustMultExtraTableUnfm80);
 
-DECLARE_SOA_TABLE(TwmoPrim, "AOD", "TwmoPRIM", o2::soa::Index<>, // WeightTrackMeanOcc
+DECLARE_SOA_TABLE(TwmoPrim, "AOD", "TWMOPRIM", o2::soa::Index<>, // WeightTrackMeanOcc
                   o2::aod::trackmeanocc::TwmoPrimUnfm80);
 
-DECLARE_SOA_TABLE(TwmoT0V0, "AOD", "TwmoT0V0", o2::soa::Index<>, // WeightTrackMeanOccDet
+DECLARE_SOA_TABLE(TwmoT0V0, "AOD", "TWMOT0V0", o2::soa::Index<>, // WeightTrackMeanOccDet
                   o2::aod::trackmeanocc::TwmoFV0AUnfm80,
                   o2::aod::trackmeanocc::TwmoFV0CUnfm80,
                   o2::aod::trackmeanocc::TwmoFT0AUnfm80,
                   o2::aod::trackmeanocc::TwmoFT0CUnfm80);
 
-DECLARE_SOA_TABLE(TwmoFDD, "AOD", "TwmoFDD", o2::soa::Index<>, // WeightTrackMeanOccDet
+DECLARE_SOA_TABLE(TwmoFDD, "AOD", "TWMOFDD", o2::soa::Index<>, // WeightTrackMeanOccDet
                   o2::aod::trackmeanocc::TwmoFDDAUnfm80,
                   o2::aod::trackmeanocc::TwmoFDDCUnfm80);
 
-DECLARE_SOA_TABLE(TwmoNTrackDet, "AOD", "TwmoNTRACKDET", o2::soa::Index<>, // WeightTrackMeanOccTrackMult
+DECLARE_SOA_TABLE(TwmoNTrackDet, "AOD", "TWMONTRACKDET", o2::soa::Index<>, // WeightTrackMeanOccTrackMult
                   o2::aod::trackmeanocc::TwmoNTrackITSUnfm80,
                   o2::aod::trackmeanocc::TwmoNTrackTPCUnfm80,
                   o2::aod::trackmeanocc::TwmoNTrackTRDUnfm80,
@@ -355,7 +355,7 @@ DECLARE_SOA_TABLE(TwmoNTrackDet, "AOD", "TwmoNTRACKDET", o2::soa::Index<>, // We
                   o2::aod::trackmeanocc::TwmoNTrackITSTPCAUnfm80,
                   o2::aod::trackmeanocc::TwmoNTrackITSTPCCUnfm80);
 
-DECLARE_SOA_TABLE(TwmoMultExtra, "AOD", "TwmoMULTEXTRA", o2::soa::Index<>, // WeightTrackMeanOccMultExtra
+DECLARE_SOA_TABLE(TwmoMultExtra, "AOD", "TWMOMULTEXTRA", o2::soa::Index<>, // WeightTrackMeanOccMultExtra
                   o2::aod::trackmeanocc::TwmoMultNTracksHasITSUnfm80,
                   o2::aod::trackmeanocc::TwmoMultNTracksHasTPCUnfm80,
                   o2::aod::trackmeanocc::TwmoMultNTracksHasTOFUnfm80,
@@ -365,16 +365,16 @@ DECLARE_SOA_TABLE(TwmoMultExtra, "AOD", "TwmoMULTEXTRA", o2::soa::Index<>, // We
                   o2::aod::trackmeanocc::TwmoMultNTracksITSTPCUnfm80,
                   o2::aod::trackmeanocc::TwmoMultAllTracksTPCOnlyUnfm80);
 
-DECLARE_SOA_TABLE(TwmoRT0V0Prim, "AOD", "TwmoRT0V0PRIM", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TwmoRT0V0Prim, "AOD", "TWMORT0V0PRIM", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TwmoRobustT0V0PrimUnfm80);
 
-DECLARE_SOA_TABLE(TwmoRFDDT0V0Pri, "AOD", "TwmoRFDDT0V0PRI", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TwmoRFDDT0V0Pri, "AOD", "TWMORFDDT0V0PRI", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TwmoRobustFDDT0V0PrimUnfm80);
 
-DECLARE_SOA_TABLE(TwmoRNtrackDet, "AOD", "TwmoRNTRACKDET", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TwmoRNtrackDet, "AOD", "TWMORNTRACKDET", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TwmoRobustNtrackDetUnfm80);
 
-DECLARE_SOA_TABLE(TwmoRMultExtra, "AOD", "TwmoRMULTEXTRA", o2::soa::Index<>,
+DECLARE_SOA_TABLE(TwmoRMultExtra, "AOD", "TWMORMULTEXTRA", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TwmoRobustMultExtraTableUnfm80);
 
 } // namespace o2::aod
