@@ -112,15 +112,10 @@ class decay3bodyBuilderHelper
     fitterV0.setMaxChi2(1e9);
     fitterV0.setUseAbsDCA(true);
 
-    // LUT has to be loaded later
-    lut = nullptr;
-    fitter3body.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
-
     // mag field has to be set later
     fitter3body.setBz(-999.9f); // will NOT make sense if not changed
   };
 
-  o2::base::MatLayerCylSet* lut = nullptr;  // material LUT for DCA fitter
   o2::vertexing::DCAFitterN<2> fitterV0;    // 2-prong o2 dca fitter
   o2::vertexing::DCAFitterN<3> fitter3body; // 3-prong o2 dca fitter
 
@@ -590,7 +585,7 @@ class decay3bodyBuilderHelper
     // caluclate covariance matrices
     if (calculateCovariance) {
       // candidate covariance matrix
-      o2::gpu::gpustd::array<float, 21> covKF;
+      std::array<float, 21> covKF;
       for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
         covKF[i] = KFH3L.GetCovariance(i);
         decay3body.covariance[i] = covKF[i];

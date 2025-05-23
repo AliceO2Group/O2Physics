@@ -70,6 +70,7 @@ using namespace o2::framework::expressions;
 
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
+  "Decay3BodyIndices",
   "Vtx3BodyDatas",
   "Vtx3BodyCovs",
   "McVtx3BodyDatas"};
@@ -78,6 +79,7 @@ static constexpr int nTablesConst = 5;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {0}, // Decay3BodyIndices
   {0}, // Vtx3BodyDatas
   {0}, // Vtx3BodyCovs
   {0}  // McVtx3BodyDatas
@@ -95,12 +97,14 @@ struct decay3bodyBuilder {
   o2::pwglf::decay3bodyBuilderHelper helper;
 
   // table index : match order above
-  enum tableIndex { kVtx3BodyDatas = 0,
+  enum tableIndex { kDecay3BodyIndices = 0,
+                    kVtx3BodyDatas,
                     kVtx3BodyCovs,
                     kMcVtx3BodyDatas,
                     nTables };
 
   struct : ProducesGroup {
+    Produces<aod::Decay3BodyIndices> decay3bodyindices;
     Produces<aod::Vtx3BodyDatas> vtx3bodydatas;
     Produces<aod::Vtx3BodyCovs> vtx3bodycovs;
     Produces<aod::McVtx3BodyDatas> mcvtx3bodydatas;
@@ -138,7 +142,6 @@ struct decay3bodyBuilder {
   struct : ConfigurableGroup {
     std::string prefix = "decay3bodyBuilderOpts";
     // building options
-    Configurable<bool> isEventMixing{"isEventMixing", false, "Use event mixing"};
     Configurable<bool> useKFParticle{"useKFParticle", false, "Use KFParticle for decay3body building"};
     Configurable<bool> kfSetTopologicalConstraint{"kfSetTopologicalConstraint", false, "Set topological vertex constraint in case of KFParticle reconstruction"};
     Configurable<bool> useSelections{"useSelections", true, "Apply selections during decay3body building"};
@@ -242,18 +245,17 @@ struct decay3bodyBuilder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   std::unordered_map<int, float> ccdbCache;                                          // Maps runNumber -> d_bz
-  std::unordered_map<int, std::shared_ptr<o2::parameters::GRPMagField>> grpMagCache; // Maps runNumber -> grpmap
   o2::base::MatLayerCylSet* lut = nullptr;
 
   // histogram registry
   HistogramRegistry registry{"Registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // bachelor TOF PID
-  o2::aod::pidtofgeneric::TofPidNewCollision<TracksExtPIDIUwithEvTimes::iterator> bachelorTOFPID; // to be updated in Init based on the hypothesis
+  o2::aod::pidtofgeneric::TofPidNewCollision<TracksExtPIDIUwithEvTimes::iterator> bachelorTOFPID;               // to be updated in Init based on the hypothesis
+  o2::aod::pidtofgeneric::TofPidNewCollision<TracksExtPIDIUwithEvTimesLabeled::iterator> bachelorTOFPIDLabeled; // to be updated in Init based on the hypothesis
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   // 3body mixing
-  bool doUpdateGRPMagField = false; // if initialize magnetic field for each bc
   using Binning3BodyKF = ColumnBinningPolicy<aod::reduceddecay3body::RadiusKF, aod::reduceddecay3body::PhiKF>;
   using Binning3BodyDCAfitter = ColumnBinningPolicy<aod::reduceddecay3body::RadiusDCA, aod::reduceddecay3body::PhiDCA>;
 
@@ -301,6 +303,7 @@ struct decay3bodyBuilder {
 
     // set bachelor PID
     bachelorTOFPID.SetPidType(o2::track::PID::Deuteron);
+    bachelorTOFPIDLabeled.SetPidType(o2::track::PID::Deuteron);
 
     // set decay3body parameters in the helper
     helper.decay3bodyselections.maxEtaDaughters = decay3bodyBuilderOpts.maxEtaDaughters;
@@ -469,10 +472,6 @@ struct decay3bodyBuilder {
       registry.add("EM/hDecay3BodyRadiusPhi", "hDecay3BodyRadiusPhi", HistType::kTH2F, {mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi});
       registry.add("EM/hDecay3BodyPosZ", "hDecay3BodyPosZ", HistType::kTH1F, {mixingOpts.bins3BodyPosZ});
     }
-
-    if (doprocessRealDataReduced == true || doprocessRealDataReduced3bodyMixing == true) {
-      doUpdateGRPMagField = true;
-    }
   }
 
   template <typename TCollisions>
@@ -518,7 +517,6 @@ struct decay3bodyBuilder {
       LOG(info) << "Loading material look-up table for timestamp: " << timestamp;
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, timestamp));
       o2::base::Propagator::Instance()->setMatLUT(lut);
-      helper.lut = lut;
     }
 
     // mark run as configured
@@ -583,11 +581,36 @@ struct decay3bodyBuilder {
     }
 
     bachelorTOFPID.SetParams(mRespParamsV2);
+    bachelorTOFPIDLabeled.SetParams(mRespParamsV2);
 
     return true;
   }
 
-  void initCCDBfromRunNumber(int runNumber)
+  float getMagFieldFromRunNumber(int runNumber) 
+  {
+    float magField;
+    // Check if the CCDB data for this run is already cached
+    if (ccdbCache.find(runNumber) != ccdbCache.end()) {
+      LOG(debug) << "CCDB data already cached for run " << runNumber;
+      magField = ccdbCache[runNumber];
+    // if not, retrieve it from CCDB
+    } else {
+      std::shared_ptr<o2::parameters::GRPMagField> grpmag = std::make_shared<o2::parameters::GRPMagField>(*ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, runNumber));
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run number " << runNumber;
+      }
+      o2::base::Propagator::initFieldFromGRP(grpmag.get());
+      // Fetch magnetic field from ccdb for current collision
+      magField = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
+
+      // cache magnetic field info
+      ccdbCache[runNumber] = magField;
+    }
+    return magField;
+  }
+
+  void initFittersWithMagField(int runNumber, float magField) 
   {
     // set magnetic field only when run number changes
     if (mRunNumber == runNumber) {
@@ -596,57 +619,22 @@ struct decay3bodyBuilder {
     }
     mRunNumber = runNumber; // Update the last run number
 
-    // Check if the CCDB data for this run is already cached
-    if (ccdbCache.find(runNumber) != ccdbCache.end()) {
-      LOG(debug) << "CCDB data already cached for run " << runNumber;
-      d_bz = ccdbCache[runNumber];
-      if (doUpdateGRPMagField == true) {
-        o2::base::Propagator::initFieldFromGRP(grpMagCache[runNumber].get());
-      }
-    } else {
-      std::shared_ptr<o2::parameters::GRPMagField> grpmag = std::make_shared<o2::parameters::GRPMagField>(*ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, runNumber));
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run number " << runNumber;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag.get());
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for run number " << runNumber << " with magnetic field of " << d_bz << " kZG";
-
-      ccdbCache[runNumber] = d_bz;
-      grpMagCache[runNumber] = grpmag;
-    }
+    // update propagator
+    o2::base::Propagator::Instance()->setNominalBz(magField);
 
     // Set magnetic field for KF vertexing
     /// TODO: KF field has to be set in the helper class where KF is used!! --> really?
 #ifdef HomogeneousField
-    KFParticle::SetField(d_bz);
+    KFParticle::SetField(magField);
 #endif
     // Set field for DCAfitter
-    helper.fitterV0.setBz(d_bz);
-    helper.fitter3body.setBz(d_bz);
+    helper.fitterV0.setBz(magField);
+    helper.fitter3body.setBz(magField);
 
     if (useMatCorrType == 2) {
-      // setMatLUT only after magfield has been initalized
+      // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-
-    // cache magnetic field info
-    ccdbCache[runNumber] = d_bz;
-  }
-
-  // ______________________________________________________________
-  // function to calculate correct TOF nSigma for deuteron track
-  template <class TCollisionTo, typename TCollision, typename TTrack>
-  double getTOFnSigma(TCollision const& collision, TTrack const& track)
-  {
-    // TOF PID of deuteron
-    double tofNsigmaDeuteron = -999;
-    if (track.has_collision() && track.hasTOF()) {
-      auto originalcol = track.template collision_as<TCollisionTo>();
-      tofNsigmaDeuteron = bachelorTOFPID.GetTOFNSigma(track, originalcol, collision);
-    }
-    return tofNsigmaDeuteron;
   }
 
   // ______________________________________________________________
@@ -736,7 +724,7 @@ struct decay3bodyBuilder {
       // initialise CCDB from run number saved in reduced collisions table when running over reduced data
       if constexpr (!soa::is_table<TBCs>) { // only do if running over reduced data (otherwise CCDB is initialised in process function)
         if (collision.runNumber() != lastRunNumber) {
-          initCCDBfromRunNumber(collision.runNumber());
+          initFittersWithMagField(collision.runNumber(), getMagFieldFromRunNumber(collision.runNumber()));
           lastRunNumber = collision.runNumber(); // Update the last run number
           LOG(debug) << "CCDB initialized for run " << lastRunNumber;
         }
@@ -765,10 +753,14 @@ struct decay3bodyBuilder {
 
       // get deuteron TOF PID
       float tofNSigmaDeuteron;
-      if constexpr (!soa::is_table<TBCs>) {
+      if constexpr (!soa::is_table<TBCs>) { // running over derived data
         tofNSigmaDeuteron = trackDeuteron.tofNSigmaDe();
-      } else if constexpr (soa::is_table<TBCs>) {
-        tofNSigmaDeuteron = getTOFnSigma<TCollisions>(collision, trackDeuteron);
+      } else if constexpr (soa::is_table<TBCs>) { // running over AO2Ds
+        if constexpr (soa::is_table<TMCParticles>) { // running over MC (track table with labels)
+          tofNSigmaDeuteron = getTOFnSigma<true /*isMC*/, TCollisions>(collision, trackDeuteron);
+        } else { // running over real data
+          tofNSigmaDeuteron = getTOFnSigma<false /*isMC*/, TCollisions>(collision, trackDeuteron);
+        }
       }
 
       /// build Decay3body candidate
@@ -785,7 +777,7 @@ struct decay3bodyBuilder {
                                            decay3bodyBuilderOpts.useTPCforPion,
                                            decay3bodyBuilderOpts.acceptTPCOnly,
                                            decay3bodyBuilderOpts.calculateCovariance,
-                                           decay3bodyBuilderOpts.isEventMixing)) {
+                                           false /*isEventMixing*/)) {
         continue;
       }
       nDecay3Bodys++;
@@ -999,32 +991,6 @@ struct decay3bodyBuilder {
       auto trackNeg1 = decay3body1.template track1_as<TRedTracks>();
       auto trackDeuteron1 = decay3body1.template track2_as<TRedTracks>();
 
-      registry.fill(HIST("h3bodyCombinationCounter"), 0.5);
-
-      // only combine if from different event
-      if (decay3body0.collisionId() == decay3body1.collisionId()) {
-        continue;
-      }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 1.5);
-
-      // collision vertex selection
-      auto collision0 = decay3body0.template collision_as<TRedCollisions>();
-      auto collision1 = decay3body1.template collision_as<TRedCollisions>();
-      initCCDBfromRunNumber(collision0.runNumber());
-      initCCDBfromRunNumber(collision1.runNumber());
-
-      // only combine if collision similar in VtxZ
-      if (mixingOpts.selectPVPosZ3bodyMixing && std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVPosZ3bodyMixing) {
-        continue;
-      }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 2.5);
-
-      // selections
-      if ((trackDeuteron0.sign() > 0 && !(trackDeuteron1.sign() > 0)) || (trackDeuteron0.sign() < 0 && !(trackDeuteron1.sign() < 0)) || trackDeuteron0.globalIndex() == trackDeuteron1.globalIndex()) { // only combine if trackDeuteron1 has correct sign and is not same as trackDeuteron0
-        continue;
-      }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
-
       // assign tracks
       auto trackProton0 = trackPos0;
       auto trackPion0 = trackNeg0;
@@ -1039,99 +1005,82 @@ struct decay3bodyBuilder {
         trackPion1 = trackPos1;
       }
 
+      registry.fill(HIST("h3bodyCombinationCounter"), 0.5);
+
+      // only combine if from different event
+      if (decay3body0.collisionId() == decay3body1.collisionId()) {
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 1.5);
+
+      // collision vertex selection
+      auto collision0 = decay3body0.template collision_as<TRedCollisions>();
+      auto collision1 = decay3body1.template collision_as<TRedCollisions>();
+
+      // get b_z value for each collision (from CCDB or cache) and cache it for that run number
+      float magFieldCol0 = getMagFieldFromRunNumber(collision0.runNumber());
+      float magFieldCol1 = getMagFieldFromRunNumber(collision1.runNumber());
+
+      // only combine if collision similar in VtxZ
+      if (mixingOpts.selectPVPosZ3bodyMixing && std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVPosZ3bodyMixing) {
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 2.5);
+
+      // Charge selections
+      // same magnetic fields --> mix matter with matter
+      if (std::signbit(magFieldCol0) == std::signbit(magFieldCol1)) {
+        if (trackDeuteron0.sign() != trackDeuteron1.sign()) {
+            continue;
+          }
+      }
+      // opposite magnetic fields --> mix matter with anti-matter
+      if (std::signbit(magFieldCol0) != std::signbit(magFieldCol1)) {
+        if (trackDeuteron0.sign() == trackDeuteron1.sign()) {
+            continue;
+          }
+      }
+
+      // don't mix 3body with itself
+      if ((trackDeuteron0.globalIndex() == trackDeuteron1.globalIndex()) || (trackProton0.globalIndex() == trackProton1.globalIndex()) || (trackPion0.globalIndex() == trackPion1.globalIndex())) {
+        continue;
+      }
+      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
+
       // candidate analysis
       // mix deuteron
       if (mixingOpts.mixingType == 0) {
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton0, trackPion0, trackDeuteron1,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron1.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton1, trackPion1, trackDeuteron0,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron0.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
-        // mix proton
-      } else if (mixingOpts.mixingType == 1) {
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton1, trackPion0, trackDeuteron0,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron0.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton0, trackPion1, trackDeuteron1,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron1.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
-        // mix pion
-      } else if (mixingOpts.mixingType == 2) {
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton0, trackPion1, trackDeuteron0,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron0.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
-        if (helper.buildDecay3BodyCandidate(collision0, trackProton1, trackPion0, trackDeuteron1,
-                                            -1 /*decay3bodyIndex*/,
-                                            trackDeuteron1.tofNSigmaDe(),
-                                            0 /*trackedClSize*/,
-                                            decay3bodyBuilderOpts.useKFParticle,
-                                            decay3bodyBuilderOpts.kfSetTopologicalConstraint,
-                                            decay3bodyBuilderOpts.useSelections,
-                                            decay3bodyBuilderOpts.useTPCforPion,
-                                            decay3bodyBuilderOpts.acceptTPCOnly,
-                                            decay3bodyBuilderOpts.calculateCovariance,
-                                            true /*isEventMixing*/)) {
-          // fill analysis tables with built candidate
-          fillAnalysisTables();
-        }
+        doMixing(collision0, trackProton0, trackPion0, trackDeuteron1, magFieldCol0);
+        doMixing(collision1, trackProton1, trackPion1, trackDeuteron0, magFieldCol1);
+      }
+      // mix proton
+      if (mixingOpts.mixingType == 1) {
+        doMixing(collision0, trackProton1, trackPion0, trackDeuteron0, magFieldCol0);
+        doMixing(collision1, trackProton0, trackPion1, trackDeuteron1, magFieldCol1);
+      }
+      // mix pion
+      if (mixingOpts.mixingType == 2) {
+        doMixing(collision0, trackProton0, trackPion1, trackDeuteron0, magFieldCol0);
+        doMixing(collision1, trackProton1, trackPion0, trackDeuteron1, magFieldCol1);
       }
     } // end decay3body combinations loop
+  }
+
+  // ______________________________________________________________
+  // function to calculate correct TOF nSigma for deuteron track
+  template <bool isMC, class TCollisionTo, typename TCollision, typename TTrack>
+  double getTOFnSigma(TCollision const& collision, TTrack const& track)
+  {
+    // TOF PID of deuteron
+    if (track.has_collision() && track.hasTOF()) {
+      auto originalcol = track.template collision_as<TCollisionTo>();
+      if constexpr (isMC) {
+        return bachelorTOFPIDLabeled.GetTOFNSigma(track, originalcol, collision);
+      } else {
+        return bachelorTOFPID.GetTOFNSigma(track, originalcol, collision);
+      }
+    }
+    return  -999;
   }
 
   // ______________________________________________________________
@@ -1139,6 +1088,12 @@ struct decay3bodyBuilder {
   void fillAnalysisTables()
   {
     // generate analysis tables
+    if (mEnabledTables[kDecay3BodyIndices]) {
+        products.decay3bodyindices(helper.decay3body.decay3bodyID,
+                                   helper.decay3body.protonID, helper.decay3body.pionID, helper.decay3body.deuteronID,
+                                   helper.decay3body.collisionID);
+        registry.fill(HIST("hTableBuildingStatistics"), kDecay3BodyIndices);
+      }
     if (mEnabledTables[kVtx3BodyDatas]) {
       products.vtx3bodydatas(helper.decay3body.sign,
                             helper.decay3body.mass, helper.decay3body.massV0,
@@ -1203,6 +1158,32 @@ struct decay3bodyBuilder {
   }
 
   // ______________________________________________________________
+  // function to build mixed 3body candidate from selected tracks
+  template <typename TCollision, typename TTrack>
+  void doMixing(TCollision const& collision, TTrack const& trackProton, TTrack const& trackPion, TTrack const& trackDeuteron, float magField)
+  {
+    // set vertexers and propagator with correct mag field of this collision (only if run number changed compared to previous candidate build)
+    initFittersWithMagField(collision.runNumber(), magField);
+    if (helper.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
+                                        -1 /*decay3bodyIndex*/,
+                                        trackDeuteron.tofNSigmaDe(),
+                                        0 /*trackedClSize*/,
+                                        decay3bodyBuilderOpts.useKFParticle,
+                                        decay3bodyBuilderOpts.kfSetTopologicalConstraint,
+                                        decay3bodyBuilderOpts.useSelections,
+                                        decay3bodyBuilderOpts.useTPCforPion,
+                                        decay3bodyBuilderOpts.acceptTPCOnly,
+                                        decay3bodyBuilderOpts.calculateCovariance,
+                                        true /*isEventMixing*/)) {
+      // fill analysis tables with built candidate
+      fillAnalysisTables();
+      return;
+    } else {
+      return;
+    }
+  }
+
+  // ______________________________________________________________
   // function to check if a reconstructed mother is a true H3L/Anti-H3L (returns -1 if not)
   template <typename MCTrack3B>
   int checkH3LTruth(MCTrack3B const& mcParticlePr, MCTrack3B const& mcParticlePi, MCTrack3B const& mcParticleDe, bool& isMuonReco)
@@ -1262,6 +1243,7 @@ struct decay3bodyBuilder {
     mcInfo.daughterPrPdgCode = -1, mcInfo.daughterPiPdgCode = -1, mcInfo.daughterDePdgCode = -1;
     mcInfo.isDeuteronPrimary = false;
     mcInfo.survivedEventSel = false;
+    return;
   }
 
   // ______________________________________________________________
