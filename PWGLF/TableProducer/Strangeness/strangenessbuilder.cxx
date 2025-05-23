@@ -1982,10 +1982,20 @@ struct StrangenessBuilder {
             straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
             straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
+          float lV0Ptot = RecoDecay::sqrtSumOfSquares(
+            straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+            straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
+            straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
+
           float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
             straHelper.cascade.cascadePosition[0] - pvX,
             straHelper.cascade.cascadePosition[1] - pvY,
             straHelper.cascade.cascadePosition[2] - pvZ);
+
+          float lV0LengthTraveled = RecoDecay::sqrtSumOfSquares(
+            straHelper.cascade.v0Position[0] - straHelper.cascade.cascadePosition[0],
+            straHelper.cascade.v0Position[1] - straHelper.cascade.cascadePosition[1],
+            straHelper.cascade.v0Position[2] - straHelper.cascade.cascadePosition[2]);
 
           uint8_t maskCascadePreselection = 0;
 
@@ -1994,6 +2004,7 @@ struct StrangenessBuilder {
             std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
             o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
             std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selXiMinus);
@@ -2004,6 +2015,7 @@ struct StrangenessBuilder {
             std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
             o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
             std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selXiPlus);
@@ -2014,6 +2026,7 @@ struct StrangenessBuilder {
             std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
             o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
             std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selOmegaMinus);
@@ -2024,6 +2037,7 @@ struct StrangenessBuilder {
             std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
             std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
             o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
             std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selOmegaPlus);
