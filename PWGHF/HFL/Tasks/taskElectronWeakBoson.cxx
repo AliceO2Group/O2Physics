@@ -81,6 +81,10 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
+  // flag for THn
+  Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
+  Configurable<float> ptTHnThresh{"ptTHnThresh", 5.0, "Threshold for THn make"};
+
   // Skimmed dataset processing configurations
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
@@ -88,10 +92,6 @@ struct HfTaskElectronWeakBoson {
   // CCDB service object
   Configurable<std::string> cfgCCDBPath{"cfgCCDBPath", "Users/m/mpuccio/EventFiltering/OTS/", "Path to CCDB for trigger data"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  // flag for THn
-  Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
-  Configurable<float> ptTHnThresh{"ptTHnThresh", 5.0, "Threshold for THn make"};
 
   struct HfElectronCandidate {
     float pt, eta, phi, energy;
