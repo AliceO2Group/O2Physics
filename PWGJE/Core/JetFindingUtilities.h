@@ -224,7 +224,7 @@ bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const
  * @param v0s V0 candidates
  */
 template <typename T>
-bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, float v0PtMin, float v0PtMax, float v0YMin, float v0YMax, int v0Index)
+bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, float v0PtMin, float v0PtMax, float v0YMin, float v0YMax, int v0Index, bool useV0SignalFlags)
 {
   float v0Mass = 0;
   float v0Y = -10.0;
@@ -235,6 +235,9 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
       v0Mass = v0.m();
       v0Y = v0.y();
     } else {
+      if (useV0SignalFlags && v0.isRejectedCandidate()) {
+        continue;
+      }
       if (v0Index == 0) {
         v0Mass = o2::constants::physics::MassKaonNeutral;
       }
