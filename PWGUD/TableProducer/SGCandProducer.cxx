@@ -15,7 +15,7 @@
 /// \author Alexander Bylinkin <roman.lavicka@cern.ch>, Uniersity of Bergen
 /// \since  23.11.2023
 /// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
-///
+/// \since  May 2025
 
 #include <cmath>
 #include <vector>
@@ -81,6 +81,8 @@ struct SGCandProducer {
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
   Configurable<std::vector<int>> generatorIds{"generatorIds", std::vector<int>{-1}, "MC generatorIds to process"};
+  Configurable<bool> isGoodRCTCollision{"isGoodRCTCollision", true, "Check RCT flags for ITS,TPC,FT0 (and ZDC if present in run)"};
+  Configurable<bool> isGoodRCTZdc{"isGoodRCTZdc", false, "Check RCT flags for ZDC if present in run"};
 
   // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
@@ -89,6 +91,9 @@ struct SGCandProducer {
   //  SG selector
   SGSelector sgSelector;
   ctpRateFetcher mRateFetcher;
+
+  // initialize RCT flag checker
+  RCTFlagsChecker myRCTChecker{"CBT"};
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
@@ -305,6 +310,18 @@ struct SGCandProducer {
       return;
     }
     getHist(TH1, histdir + "/Stat")->Fill(6., 1.);
+    // RCT CBTfor collision check
+    if (isGoodRCTCollision && !myRCTChecker(collision)) {
+      return;
+    }
+    getHist(TH1, histdir + "/Stat")->Fill(7., 1.);
+    // RCT CBT+ZDC for collision check
+    if (isGoodRCTZdc && !myRCTChecker(collision)) {
+      return;
+    }
+    getHist(TH1, histdir + "/Stat")->Fill(8., 1.);
+
+    //
     int trs = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
     int trofs = collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
     int hmpr = collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
@@ -333,7 +350,7 @@ struct SGCandProducer {
       if (verboseInfo)
         LOGF(info, "No Newbc %i", bc.globalBC());
     }
-    getHist(TH1, histdir + "/Stat")->Fill(issgevent + 8, 1.);
+    getHist(TH1, histdir + "/Stat")->Fill(issgevent + 10, 1.);
     if (issgevent <= 2) {
       if (verboseInfo)
         LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
@@ -429,6 +446,10 @@ struct SGCandProducer {
     }
     if (context.mOptions.get<bool>("processMcData")) {
       histPointers.insert({"MCreco/Stat", registry.add("MCreco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}})});
+    }
+
+    if (isGoodRCTZdc) {
+      myRCTChecker.init("CBT", true);
     }
   }
 

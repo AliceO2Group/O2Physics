@@ -8,6 +8,15 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file UDTables.h
+/// \brief Defnes tables and colums for derived data used by UD group
+/// \author Paul Buhler <paul.buhler@cern.ch>, Wiena
+/// \since  January 2023
+/// \author Sasha Bylinkin <sasha.bylinkin@cern.ch>, Bergen
+/// \since  January 2024
+/// \author Adam Matyja <adam.tomasz.matyja@cern.ch>, INP PAN Krakow, Poland
+/// \since  May 2025
 
 #ifndef PWGUD_DATAMODEL_UDTABLES_H_
 #define PWGUD_DATAMODEL_UDTABLES_H_
