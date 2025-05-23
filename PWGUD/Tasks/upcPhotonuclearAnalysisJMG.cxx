@@ -102,7 +102,7 @@ constexpr float kThreeHalfPi = 1.5f * PI;
 
 struct UpcPhotonuclearAnalysisJMG {
 
-  //Produces<aod::TREE> tree;
+  Produces<aod::TREE> tree;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Declare configurables on events/collisions
@@ -599,7 +599,6 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
           histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
         }
-        multiplicity = nTracksCharged;
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hMultiplicity"), reconstructedTracks.size());
         histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
