@@ -36,12 +36,10 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "EventFiltering/filterTables.h"
 
-#include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/DataModel/JetSubstructure.h"
 
 using namespace o2;
@@ -122,18 +120,22 @@ struct JetHadronRecoil {
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hConstituents3D", "3D constituents histogram;p_{T};#eta;#phi", {HistType::kTH3F, {{200, 0, 200}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
                               {"hReferencePtDPhiShifts", "rho shifts;#Delta#phi;p_{T,jet};shifts", {HistType::kTH3F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}, {20, 0.0, 2.0}}}},
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
                               {"hSignalPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
                               {"hSignalTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hSignalPtHard", "jet p_{T} vs #hat{p};p_{T,jet};#frac{p_{T,trig}}{#hat{p}}", {HistType::kTH2F, {{500, -100, 400}, {20, 0, 5}}}},
                               {"hReferenceTriggers", "trigger p_{T};p_{T,trig};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hReferencePtHard", "jet p_{T} vs #hat{p};p_{T,jet};#frac{p_{T,trig}}{#hat{p}}", {HistType::kTH2F, {{500, -100, 400}, {20, 0, 5}}}},
                               {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
                               {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{500, -100, 400}}}},
                               {"hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hJet3D", "3D jet distribution;p_{T};#eta;#phi", {HistType::kTH3F, {{500, -100, 400}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hPtPart", "Particle p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaPart", "Particle #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiPart", "Particle #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
@@ -195,7 +197,9 @@ struct JetHadronRecoil {
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
+    std::vector<double> ptTTAr;
     double phiTT = 0;
+    double ptTT = 0;
     int trigNumber = 0;
     int nTT = 0;
     double leadingPT = 0;
@@ -214,11 +218,13 @@ struct JetHadronRecoil {
       }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
+        ptTTAr.push_back(track.pt());
         registry.fill(HIST("hSignalTriggers"), track.pt(), weight);
         nTT++;
       }
       if (!isSigCol && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(track.phi());
+        ptTTAr.push_back(track.pt());
         registry.fill(HIST("hReferenceTriggers"), track.pt(), weight);
         nTT++;
       }
@@ -230,6 +236,7 @@ struct JetHadronRecoil {
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
+      ptTT = ptTTAr[trigNumber];
       if (isSigCol) {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
@@ -246,13 +253,14 @@ struct JetHadronRecoil {
     }
 
     for (const auto& jet : jets) {
+      if (jet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
       for (const auto& constituent : jet.template tracks_as<U>()) {
         if (constituent.pt() > leadingPT) {
           leadingPT = constituent.pt();
         }
-      }
-      if (jet.pt() > pTHatMaxMCD * pTHat) {
-        continue;
+        registry.fill(HIST("hConstituents3D"), constituent.pt(), constituent.eta(), constituent.phi());
       }
       if (leadingPT > maxLeadingTrackPt) {
         continue;
@@ -260,6 +268,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hJetPt"), jet.pt() - (rho * jet.area()), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
+      registry.fill(HIST("hJet3D"), jet.pt() - (rho * jet.area()), jet.eta(), jet.phi(), weight);
 
       double dR = getWTAaxisDifference(jet, jetsWTA, tracks);
 
@@ -278,6 +287,7 @@ struct JetHadronRecoil {
           registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt() - (rho * jet.area()), weight);
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hSignalPt"), jet.pt() - (rho * jet.area()), weight);
+            registry.fill(HIST("hSignalPtHard"), jet.pt() - (rho * jet.area()), ptTT / pTHat, weight);
           }
         }
         if (!isSigCol) {
@@ -295,6 +305,7 @@ struct JetHadronRecoil {
           }
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
             registry.fill(HIST("hReferencePt"), jet.pt() - (rhoReference * jet.area()), weight);
+            registry.fill(HIST("hReferencePtHard"), jet.pt() - (rhoReference * jet.area()), ptTT / pTHat, weight);
           }
         }
       }
@@ -355,9 +366,13 @@ struct JetHadronRecoil {
       if (jet.pt() > pTHatMaxMCP * pTHat) {
         continue;
       }
+      for (const auto& constituent : jet.template tracks_as<U>()) {
+        registry.fill(HIST("hConstituents3D"), constituent.pt(), constituent.eta(), constituent.phi());
+      }
       registry.fill(HIST("hJetPt"), jet.pt(), weight);
       registry.fill(HIST("hJetEta"), jet.eta(), weight);
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
+      registry.fill(HIST("hJet3D"), jet.pt(), jet.eta(), jet.phi(), weight);
 
       double dR = getWTAaxisDifference(jet, jetsWTA, particles);
 
@@ -371,10 +386,10 @@ struct JetHadronRecoil {
             registry.fill(HIST("hDeltaRSignalPart"), dR, weight);
           }
           registry.fill(HIST("hDeltaRpTDPhiSignalPart"), jet.pt(), dphi, dR, weight);
-        }
-        registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt(), weight);
-        if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-          registry.fill(HIST("hSignalPt"), jet.pt(), weight);
+          registry.fill(HIST("hSignalPtDPhi"), dphi, jet.pt(), weight);
+          if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+            registry.fill(HIST("hSignalPt"), jet.pt(), weight);
+          }
         }
         if (!isSigCol) {
           if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
@@ -382,10 +397,10 @@ struct JetHadronRecoil {
             registry.fill(HIST("hDeltaRPartReference"), dR, weight);
           }
           registry.fill(HIST("hDeltaRpTDPhiReferencePart"), jet.pt(), dphi, dR, weight);
-        }
-        registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt(), weight);
-        if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
-          registry.fill(HIST("hReferencePt"), jet.pt(), weight);
+          registry.fill(HIST("hReferencePtDPhi"), dphi, jet.pt(), weight);
+          if (std::abs(dphi - o2::constants::math::PI) < 0.6) {
+            registry.fill(HIST("hReferencePt"), jet.pt(), weight);
+          }
         }
       }
     }

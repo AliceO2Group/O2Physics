@@ -34,11 +34,11 @@
 #include "ReconstructionDataFormats/TrackFwd.h"
 
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/PropagatedFwdTrackTables.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -86,6 +86,14 @@ struct matchingMFT {
   Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
   Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
 
+  // for RCT
+  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_muon_glo", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+  Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
 
@@ -100,6 +108,7 @@ struct matchingMFT {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
+    rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
 
     addHistograms();
   }
@@ -344,19 +353,6 @@ struct matchingMFT {
       dcaXYinSigma = std::sqrt(std::fabs((dcaX * dcaX * cYYatDCA + dcaY * dcaY * cXXatDCA - 2. * dcaX * dcaY * cXYatDCA) / det / 2.)); // dca xy in sigma
     }
     float sigma_dcaXY = dcaXY / dcaXYinSigma;
-
-    // o2::dataformats::GlobalFwdTrack propmuonAtPV_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToVertex);
-    // float ptMatchedMCHMID = propmuonAtPV_Matched.getPt();
-    // float etaMatchedMCHMID = propmuonAtPV_Matched.getEta();
-    // float phiMatchedMCHMID = propmuonAtPV_Matched.getPhi();
-    // o2::math_utils::bringTo02Pi(phiMatchedMCHMID);
-    // float dpt = (ptMatchedMCHMID - pt) / pt;
-    // float deta = etaMatchedMCHMID - eta;
-    // float dphi = phiMatchedMCHMID - phi;
-    // o2::math_utils::bringToPMPi(dphi);
-    // if (std::sqrt(std::pow(deta / maxDEta, 2) + std::pow(dphi / maxDPhi, 2)) > 1.f || std::fabs(dpt) > maxRelDPt) {
-    //   return;
-    // }
 
     o2::dataformats::GlobalFwdTrack propmuonAtDCA_Matched = propagateMuon(mchtrack, collision, propagationPoint::kToDCA);
     float dcaX_Matched = propmuonAtDCA_Matched.getX() - collision.posX();
@@ -609,6 +605,9 @@ struct matchingMFT {
       if (!collision.has_mcCollision()) {
         continue;
       }
+      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -635,6 +634,9 @@ struct matchingMFT {
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0);
       if (!collision.has_mcCollision()) {
+        continue;
+      }
+      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};

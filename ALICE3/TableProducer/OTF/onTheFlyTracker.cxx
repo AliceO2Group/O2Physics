@@ -61,6 +61,7 @@
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/DetLayer.h"
+#include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/DataModel/OTFStrangeness.h"
@@ -275,7 +276,7 @@ struct OnTheFlyTracker {
         mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
         mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
       }
-      for (auto e : mapPdgLut) {
+      for (const auto& e : mapPdgLut) {
         if (!mSmearer.loadTable(e.first, e.second)) {
           LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
@@ -493,59 +494,6 @@ struct OnTheFlyTracker {
     decayDaughters.push_back(*laDecay.GetDecay(1));
   }
 
-  /// Function to convert a TLorentzVector into a perfect Track
-  /// \param pdgCode particle pdg
-  /// \param particle the particle to convert (TLorentzVector)
-  /// \param productionVertex where the particle was produced
-  /// \param o2track the address of the resulting TrackParCov
-  void convertTLorentzVectorToO2Track(int pdgCode, TLorentzVector particle, std::vector<double> productionVertex, o2::track::TrackParCov& o2track)
-  {
-    auto pdgInfo = pdgDB->GetParticle(pdgCode);
-    int charge = 0;
-    if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge() / 3;
-    }
-    std::array<float, 5> params;
-    std::array<float, 15> covm = {0.};
-    float s, c, x;
-    o2::math_utils::sincos(static_cast<float>(particle.Phi()), s, c);
-    o2::math_utils::rotateZInv(static_cast<float>(productionVertex[0]), static_cast<float>(productionVertex[1]), x, params[0], s, c);
-    params[1] = static_cast<float>(productionVertex[2]);
-    params[2] = 0;
-    auto theta = 2. * std::atan(std::exp(-particle.PseudoRapidity()));
-    params[3] = 1. / std::tan(theta);
-    params[4] = charge / particle.Pt();
-
-    // Initialize TrackParCov in-place
-    new (&o2track)(o2::track::TrackParCov)(x, particle.Phi(), params, covm);
-  }
-
-  /// Function to convert a McParticle into a perfect Track
-  /// \param particle the particle to convert (mcParticle)
-  /// \param o2track the address of the resulting TrackParCov
-  template <typename McParticleType>
-  void convertMCParticleToO2Track(McParticleType& particle, o2::track::TrackParCov& o2track)
-  {
-    auto pdgInfo = pdgDB->GetParticle(particle.pdgCode());
-    int charge = 0;
-    if (pdgInfo != nullptr) {
-      charge = pdgInfo->Charge() / 3;
-    }
-    std::array<float, 5> params;
-    std::array<float, 15> covm = {0.};
-    float s, c, x;
-    o2::math_utils::sincos(particle.phi(), s, c);
-    o2::math_utils::rotateZInv(particle.vx(), particle.vy(), x, params[0], s, c);
-    params[1] = particle.vz();
-    params[2] = 0.; // since alpha = phi
-    auto theta = 2. * std::atan(std::exp(-particle.eta()));
-    params[3] = 1. / std::tan(theta);
-    params[4] = charge / particle.pt();
-
-    // Initialize TrackParCov in-place
-    new (&o2track)(o2::track::TrackParCov)(x, particle.phi(), params, covm);
-  }
-
   float dNdEta = 0.f; // Charged particle multiplicity to use in the efficiency evaluation
   void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -605,7 +553,7 @@ struct OnTheFlyTracker {
       if (cascadeDecaySettings.decayXi) {
         if (mcParticle.pdgCode() == 3312) {
           o2::track::TrackParCov xiTrackParCov;
-          convertMCParticleToO2Track(mcParticle, xiTrackParCov);
+          o2::upgrade::convertMCParticleToO2Track(mcParticle, xiTrackParCov, pdgDB);
           decayParticle(mcParticle, xiTrackParCov, decayProducts, xiDecayVertex, laDecayVertex);
           xiDecayRadius2D = sqrt(xiDecayVertex[0] * xiDecayVertex[0] + xiDecayVertex[1] * xiDecayVertex[1]);
           laDecayRadius2D = sqrt(laDecayVertex[0] * laDecayVertex[0] + laDecayVertex[1] * laDecayVertex[1]);
@@ -653,7 +601,7 @@ struct OnTheFlyTracker {
       }
 
       o2::track::TrackParCov trackParCov;
-      convertMCParticleToO2Track(mcParticle, trackParCov);
+      o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
 
       bool isDecayDaughter = false;
       if (mcParticle.getProcess() == 4)
@@ -674,9 +622,9 @@ struct OnTheFlyTracker {
           continue;
         }
 
-        convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0]);
-        convertTLorentzVectorToO2Track(-211, decayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1]);
-        convertTLorentzVectorToO2Track(2212, decayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2]);
+        o2::upgrade::convertTLorentzVectorToO2Track(-211, decayProducts[0], xiDecayVertex, xiDaughterTrackParCovsPerfect[0], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(-211, decayProducts[1], laDecayVertex, xiDaughterTrackParCovsPerfect[1], pdgDB);
+        o2::upgrade::convertTLorentzVectorToO2Track(2212, decayProducts[2], laDecayVertex, xiDaughterTrackParCovsPerfect[2], pdgDB);
 
         for (int i = 0; i < 3; i++) {
           isReco[i] = false;
