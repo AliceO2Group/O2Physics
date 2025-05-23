@@ -937,9 +937,9 @@ struct EmcalCorrectionTask {
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
       }
       // Temporary extra shift for bug in time calibraiton of apass4 Pb-Pb 2024, requires pos shift of 2*8.8 ns for low gain cells
-      if(cellType == emcal::ChannelType_t::LOW_GAIN){
-        for(const auto& range : mExtraTimeShiftRunRanges){
-          if(runNumber >= range.first && runNumber <= range.second){
+      if (cellType == emcal::ChannelType_t::LOW_GAIN) {
+        for (const auto& range : mExtraTimeShiftRunRanges) {
+          if (runNumber >= range.first && runNumber <= range.second) {
             timeshift += 2 * 8.8;
           }
         }
