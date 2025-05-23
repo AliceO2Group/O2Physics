@@ -79,7 +79,7 @@ struct GenCorr {
 
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> noLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   SliceCache cache;
@@ -87,11 +87,11 @@ struct GenCorr {
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Configurable<float> cfgVtxCut{"vtxRange", 10.0f, "Vertex Z range to consider"};
-  Configurable<float> cfgEtaCut{"etaRange", 1.0f, "Eta range to consider"};
+  Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
+  Configurable<float> cfgEtaCut{"cfgEtaCut", 1.0f, "Eta range to consider"};
   Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> cfgPtCutMin{"ptCutmin", 0.2f, "minimum accepted track pT"};
-  Configurable<float> cfgPtCutMax{"ptCutmax", 10.0f, "maximum accepted track pT"};
+  Configurable<float> cfgPtCutMin{"cfgPtCutMin", 0.2f, "minimum accepted track pT"};
+  Configurable<float> cfgPtCutMax{"cfgPtCutMax", 10.0f, "maximum accepted track pT"};
   Configurable<int> mixingParameter{"mixingParameter", 5, "how many events are mixed"};
   Configurable<int> cfgMinMult{"cfgMinMult", 0, "Minimum multiplicity for collision"};
   Configurable<int> cfgMaxMult{"cfgMaxMult", 10, "Maximum multiplicity for collision"};
@@ -112,9 +112,9 @@ struct GenCorr {
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for histograms"};
 
-  using coltable = soa::Join<aod::Collisions, aod::EvSels>;
-  using trkstable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  Preslice<trkstable> perCollision = aod::track::collisionId;
+  using CollTable = soa::Join<aod::Collisions, aod::EvSels>;
+  using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  Preslice<TrksTable> perCollision = aod::track::collisionId;
 
   OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> mixed{Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -127,9 +127,9 @@ struct GenCorr {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     LOGF(info, "Getting alignment offsets from the CCDB...");
-    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", cfgCcdbParam.nolaterthan.value);
-    printf("Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
-    printf("Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
+    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", cfgCcdbParam.noLaterThan.value);
+    LOGF(info, "Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
+    LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
 
     // QA histos
     histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
@@ -184,7 +184,7 @@ struct GenCorr {
     mixed.setObject(new CorrelationContainer(Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
   }
 
-  double GetPhiFT0(int chno, double offsetX, double offsetY)
+  double getPhiFT0(int chno, double offsetX, double offsetY)
   {
     o2::ft0::Geometry ft0Det;
     ft0Det.calculateChannelCenter();
@@ -196,7 +196,7 @@ struct GenCorr {
     return phi;
   }
 
-  double GetEtaFT0(int chno, double offsetX, double offsetY, double offsetZ)
+  double getEtaFT0(int chno, double offsetX, double offsetY, double offsetZ)
   {
     o2::ft0::Geometry ft0Det;
     ft0Det.calculateChannelCenter();
@@ -279,8 +279,8 @@ struct GenCorr {
         else
           histos.fill(HIST("SE/FT0Amp"), chanelid, ampl);
 
-        auto phiA = GetPhiFT0(chanelid, offsetFT0Ax, offsetFT0Ay);
-        auto etaA = GetEtaFT0(chanelid, offsetFT0Ax, offsetFT0Ay, offsetFT0Az);
+        auto phiA = getPhiFT0(chanelid, offsetFT0Ax, offsetFT0Ay);
+        auto etaA = getEtaFT0(chanelid, offsetFT0Ax, offsetFT0Ay, offsetFT0Az);
 
         if (mixing) {
           histos.fill(HIST("ME/FT0Aeta"), etaA);
@@ -303,7 +303,7 @@ struct GenCorr {
     } // trigger tracks
   } // fillCorrelation
 
-  void processSE(coltable::iterator const& col, aod::FT0s const&, trkstable const& tracks)
+  void processSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
   {
     if (!isEventSelected(col)) {
       return;
@@ -318,9 +318,9 @@ struct GenCorr {
     }
   } // same event
 
-  void processME(coltable const& col, aod::FT0s const&, trkstable const& tracks)
+  void processME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
   {
-    auto getTracksSize = [&tracks, this](coltable::iterator const& collision) {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       return associatedTracks.size();
     };
