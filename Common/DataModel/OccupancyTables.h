@@ -190,7 +190,7 @@ using Occ = Occs::iterator;
 
 namespace occidx
 {
-DECLARE_SOA_INDEX_COLUMN(BC, bc); // Iterator is passed here in index column
+DECLARE_SOA_INDEX_COLUMN(BC, bc); // o2-linter: disable=name/o2-column (BC is an acronym already defined in data model) // Iterator is passed here in index column
 DECLARE_SOA_INDEX_COLUMN(Occ, occ);
 DECLARE_SOA_COLUMN(TfId, tfId, int);
 DECLARE_SOA_COLUMN(BcInTF, bcInTF, int);
