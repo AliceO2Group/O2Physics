@@ -34,7 +34,7 @@ using namespace constants::physics;
 
 struct ThreeParticleCorrelations {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-
+  
   // Analysis parameters
   float centMin = 0.0, centMax = 90.0;
   float zvtxMax = 7.0;
@@ -66,7 +66,7 @@ struct ThreeParticleCorrelations {
   Filter collCent = aod::cent::centFT0C > centMin && aod::cent::centFT0C < centMax;
   Filter collZvtx = nabs(aod::collision::posZ) < zvtxMax;
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
-  Filter evSelect = aod::evsel::sel8 == true && aod::evsel::kNoSameBunchPileup == true && aod::evsel::kIsGoodZvtxFT0vsPV == true;
+  Filter evSelect = aod::evsel::sel8 == true;
 
   // V0 filters
   Filter v0Pt = aod::v0data::pt > v0PtMin && aod::v0data::pt < v0PtMax;
@@ -154,12 +154,17 @@ struct ThreeParticleCorrelations {
     const AxisSpec lambdaInvMassAxis{100, 1.08, 1.16};
 
     // QA & PID
-    rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
-    rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
-    rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
+    rQARegistry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{3, 0, 3}}});
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+    rQARegistry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+    
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{zvtxAxis}}});
+    rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
+    rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
+    rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
 
     rQARegistry.add("hPtPion", "hPtPion", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
     rQARegistry.add("hPtKaon", "hPtKaon", {HistType::kTH2D, {{trackPtAxis}, {centralityAxis}}});
@@ -227,8 +232,7 @@ struct ThreeParticleCorrelations {
     rMCRegistry.add("hPIDKaonP", "hPIDKaonP", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
     rMCRegistry.add("hPIDKaonN", "hPIDKaonN", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
     rMCRegistry.add("hPIDProtonP", "hPIDProtonP", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
-    rMCRegistry.add("hPIDProtonN", "hPIDProtonN", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
-    
+    rMCRegistry.add("hPIDProtonN", "hPIDProtonN", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});    
     rMCRegistry.add("hPIDLambdaP_SGNL", "hPIDLambdaP_SGNL", {HistType::kTH3D, {{v0PtAxis}, {v0EtaAxis}, {centralityAxis}}});
     rMCRegistry.add("hPIDLambdaP_SB", "hPIDLambdaP_SB", {HistType::kTH3D, {{v0PtAxis}, {v0EtaAxis}, {centralityAxis}}});
     rMCRegistry.add("hPIDLambdaN_SGNL", "hPIDLambdaN_SGNL", {HistType::kTH3D, {{v0PtAxis}, {v0EtaAxis}, {centralityAxis}}});
@@ -299,6 +303,10 @@ struct ThreeParticleCorrelations {
   void processSame(MyFilteredCollision const& collision, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
+    if (!acceptEvent(collision, true)) {
+      return;
+    }
+    
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
     rQARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
@@ -410,6 +418,10 @@ struct ThreeParticleCorrelations {
     // Start of the Mixed-Event correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
 
+      if (!acceptEvent(coll_1, false) || !acceptEvent(coll_2, false)) {
+	return;
+      }
+      
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
@@ -612,7 +624,7 @@ struct ThreeParticleCorrelations {
   void processMCRec(MyFilteredMCRecCollision const& collision, MyFilteredMCV0s const& v0s, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
 
-    if (!collision.has_mcCollision()) {
+    if (!acceptEvent(collision, false) || !collision.has_mcCollision()) {
       return;
     }
 
@@ -828,6 +840,31 @@ struct ThreeParticleCorrelations {
   }
 
   //==========================================================================================================================================================================================================================================================================
+
+  template <class CollCand>
+  bool acceptEvent(const CollCand& collision, bool FillHist) // Event filter
+  {
+
+    if (FillHist) {
+      rQARegistry.fill(HIST("hNEvents"), 0.5);
+    }
+
+    if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) { // kNoSameBunchPileup
+      return false;
+    }
+    if (FillHist) {
+      rQARegistry.fill(HIST("hNEvents"), 1.5);
+    }
+
+    if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // kIsGoodZvtxFT0vsPV
+      return false;
+    }
+    if (FillHist) {
+      rQARegistry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    return true;
+  }
   
   template <class V0Cand>
   bool v0Filters(const V0Cand& v0, bool MCRec) // V0 filter
