@@ -2296,35 +2296,31 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
 
-  void processdNdetaWPhiMCReco(SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMCReco(SimCollisions::iterator const& collision, FilteredMCTracks const& filteredMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
   {
-    for (const auto& collision : collisions) {
-      if (!acceptEventQA<true>(collision, true))
+    if (!acceptEventQA<true>(collision, true))
+      return;
+    if (!collision.has_mcCollision())
+      return;
+    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+
+    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+    if (!eventHasMCPhi(mcParticlesThisColl))
+      return;
+
+    float genmultiplicity = mcCollision.centFT0M();
+    mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
+
+    for (const auto& track : filteredMCTracks) {
+      if (!track.has_mcParticle())
         continue;
-      if (!collision.has_mcCollision())
-        continue;
-      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
 
-      auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-
-      if (!eventHasMCPhi(mcParticlesThisColl))
+      auto mcTrack = track.mcParticle_as<aod::McParticles>();
+      if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
         continue;
 
-      float genmultiplicity = mcCollision.centFT0M();
-      mcEventHist.fill(HIST("hRecMCGenMultiplicityPercent"), genmultiplicity);
-
-      auto mcTracksThisColl = filteredMCTracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-      for (const auto& track : mcTracksThisColl) {
-        if (!track.has_mcParticle())
-          continue;
-
-        auto mcTrack = track.mcParticle_as<aod::McParticles>();
-        if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
-          continue;
-
-        mcEventHist.fill(HIST("h2RecMCEtaDistribution"), genmultiplicity, mcTrack.eta());
-      }
+      mcEventHist.fill(HIST("h2RecMCEtaDistribution"), genmultiplicity, mcTrack.eta());
     }
   }
 
