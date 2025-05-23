@@ -1462,7 +1462,7 @@ struct StrangenessBuilder {
             o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
             std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskV0Preselection, selK0Short);
-          } 
+          }
 
           if ( // Lambda PID, mass, lifetime selection
             std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
