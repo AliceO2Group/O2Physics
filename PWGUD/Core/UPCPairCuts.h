@@ -30,17 +30,17 @@ using namespace constants::math;
 
 class UPCPairCuts
 {
-public:
-	enum Particle { Photon = 0,
+ public:
+  enum Particle { Photon = 0,
                   K0,
                   Lambda,
                   Phi,
                   Rho,
                   ParticlesLastEntry };
 
-	void SetHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
+  void SetHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
 
-	void SetPairCut(Particle particle, float cut)
+  void SetPairCut(Particle particle, float cut)
   {
     LOGF(info, "Enabled pair cut for %d with value %f", static_cast<int>(particle), cut);
     mCuts[particle] = cut;
@@ -66,11 +66,12 @@ public:
 
   template <typename T>
   bool twoTrackCut(T const& track1, T const& track2);
-protected:
+
+ protected:
   float mCuts[ParticlesLastEntry] = {-1};
   float mTwoTrackDistance = -1; // distance below which the pair is flagged as to be removed
   float mTwoTrackRadius = 0.8f; // radius at which the two track cuts are applied
-  int magField = 5; // magField: B field in kG
+  int magField = 5;             // magField: B field in kG
 
   HistogramRegistry* histogramRegistry = nullptr; // if set, control histograms are stored here
 
@@ -149,7 +150,7 @@ bool UPCPairCuts::twoTrackCut(T const& track1, T const& track2)
       }
 
       if (dphistarminabs < mTwoTrackDistance && std::fabs(deta) < mTwoTrackDistance) {
-        //LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
+        // LOGF(debug, "Removed track pair %ld %ld with %f %f %f %f %d %f %f %d %d", track1.index(), track2.index(), deta, dphistarminabs, track1.phi2(), track1.pt(), track1.sign(), track2.phi2(), track2.pt(), track2.sign(), magField);
         return true;
       }
 
@@ -165,7 +166,7 @@ bool UPCPairCuts::twoTrackCut(T const& track1, T const& track2)
 template <typename T>
 bool UPCPairCuts::conversionCut(T const& track1, T const& track2, Particle conv, double cut)
 {
-  //LOGF(info, "pt is %f %f", track1.pt(), track2.pt());
+  // LOGF(info, "pt is %f %f", track1.pt(), track2.pt());
 
   if (cut < 0) {
     return false;
@@ -306,7 +307,7 @@ double UPCPairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const&
 
   double mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2.0f * (std::sqrt(e1squ * e2squ) - (pt1 * pt2 * (cosDeltaPhi + 1.0f / tantheta1 / tantheta2)));
 
-  //LOGF(debug, "%f %f %f %f %f %f %f %f %f", pt1, eta1, phi1, pt2, eta2, phi2, m0_1, m0_2, mass2);
+  // LOGF(debug, "%f %f %f %f %f %f %f %f %f", pt1, eta1, phi1, pt2, eta2, phi2, m0_1, m0_2, mass2);
 
   return mass2;
 }
