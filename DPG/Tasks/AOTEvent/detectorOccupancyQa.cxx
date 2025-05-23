@@ -181,6 +181,15 @@ struct DetectorOccupancyQaTask {
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_pos_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
       histos.add("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange", "dE/dx", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisDeDx});
 
+      AxisSpec axisNTPCcls{160, 0, 160, "n TPC clusters"};
+      histos.add("tpcNClsFound_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsFindable_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_Aside", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_Cside", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_pos", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+      histos.add("tpcNClsShared_vs_centr_vs_occup_neg", "", kTH3F, {{20, 0, 4000, "nITStrk cls567"}, axisOccupancyForDeDxStudies, axisNTPCcls});
+
       AxisSpec axisFractionNclsFindableMinusPID{110, -1.1, 1.1, "TPC nClsFindableMinusPID / nClsFindable"};
       histos.add("fraction_tpcNClsFindableMinusPID_vs_occup", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
       histos.add("fraction_tpcNClsFindableMinusPID_vs_occup_peripheralByV0A", "", kTH2D, {axisOccupancyForDeDxStudies, axisFractionNclsFindableMinusPID});
@@ -1003,6 +1012,23 @@ struct DetectorOccupancyQaTask {
                 if (fractionTPCcls >= 0 && fractionTPCcls < 0.8)
                   histos.fill(HIST("dEdx_vs_centr_vs_occup_narrow_p_win_neg_FractionPIDclsInRange"), nPV, occupancy, track.tpcSignal());
               }
+
+              // nTPCcls vs nITStr vs occup
+              histos.fill(HIST("tpcNClsFound_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsFound());
+              histos.fill(HIST("tpcNClsFindable_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsFindable());
+              histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup"), nPV, occupancy, track.tpcNClsShared());
+
+              // nTPCsharedCls for A and C separately
+              if (track.tgl() > 0.) // A side
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_Aside"), nPV, occupancy, track.tpcNClsShared());
+              else // C side
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_Cside"), nPV, occupancy, track.tpcNClsShared());
+
+              // nTPCsharedCls for pos and neg
+              if (signedP > 0)
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_pos"), nPV, occupancy, track.tpcNClsShared());
+              else
+                histos.fill(HIST("tpcNClsShared_vs_centr_vs_occup_neg"), nPV, occupancy, track.tpcNClsShared());
             }
           }
         }
