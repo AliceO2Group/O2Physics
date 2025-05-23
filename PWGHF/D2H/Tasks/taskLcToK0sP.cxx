@@ -412,8 +412,7 @@ struct HfTaskLcToK0sP {
       if (std::abs(candidate.flagMcMatchRec()) == 1) {
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("MC/Rec/hPtCandRecSigPrompt"), ptCand);
-        }
-        if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+        } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("MC/Rec/hPtCandRecSigNonPrompt"), ptCand);
         }
         registry.fill(HIST("MC/Rec/hPtCandRecSig"), ptCand);
