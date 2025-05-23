@@ -271,6 +271,40 @@ DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC ex
 using ReducedZdc = ReducedZdcs::iterator;
 using ReducedZdcExtra = ReducedZdcsExtra::iterator;
 
+// emcal quantities
+namespace reducedemcal
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);
+DECLARE_SOA_BITMAP_COLUMN(FilteringFlags, filteringFlags, 64); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
+DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(RawEnergy, rawEnergy, float);                       //! raw cluster energy (GeV)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h 
+} // namespace reducedemcal
+
+// emcal track information
+DECLARE_SOA_TABLE(ReducedEMCals, "AOD", "REDUCEDEMCALS", //!
+                  o2::soa::Index<>, reducedemcal::ReducedEventId, reducedemcal::FilteringFlags,
+                  reducedemcal::CollisionId, /*reducedemcal::BC,*/ reducedemcal::ID,
+                  reducedemcal::Energy, reducedemcal::CoreEnergy, reducedemcal::RawEnergy,
+                  reducedemcal::Eta, reducedemcal::Phi, reducedemcal::M02, reducedemcal::M20,
+                  reducedemcal::NCells, reducedemcal::Time, reducedemcal::IsExotic,
+                  reducedemcal::DistanceToBadChannel, reducedemcal::NLM, reducedemcal::Definition);
+
+using ReducedEMCal = ReducedEMCals::iterator;
+
 namespace reducedtrack
 {
 // basic track information
@@ -561,6 +595,7 @@ namespace reducedtrack_association
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //! ReducedEvent index
 DECLARE_SOA_INDEX_COLUMN(ReducedTrack, reducedtrack); //! ReducedTrack index
+DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, reducedemcal); //! ReducedEMCal index
 DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon);   //! ReducedMuon index
 DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 } // namespace reducedtrack_association
@@ -568,6 +603,9 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 DECLARE_SOA_TABLE(ReducedTracksAssoc, "AOD", "RTASSOC", //! Table for reducedtrack-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedTrackId);
+DECLARE_SOA_TABLE(ReducedEMCalsAssoc, "AOD", "RTEMCALASSOC", //! Table for reducedemcal-to-reducedcollision association
+                  reducedtrack_association::ReducedEventId,
+                  reducedtrack_association::ReducedEMCalId);
 DECLARE_SOA_TABLE(ReducedMuonsAssoc, "AOD", "RMASSOC", //! Table for reducedmuon-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMuonId);

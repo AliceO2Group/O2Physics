@@ -169,6 +169,10 @@ class VarManager : public TObject
     kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
   };
 
+  enum EMCalTrackFilteringBits {
+    kEMcalUserCutsBits = 0 // first bit for user EMCal track cuts
+  };
+
   enum MuonTrackFilteringBits {
     kMuonUserCutsBits = 0, // first bit for user muon cuts
     kMuonIsPropagated = 7  // whether the muon was propagated already
@@ -2545,20 +2549,19 @@ void VarManager::FillTrack(T const& track, float* values)
 
   // Quantities based on the EMCal correction task
   if constexpr ((fillMap & TrackEMCal) > 0 || (fillMap & ReducedTrackBarrelEMCal) > 0) {
-    const auto& emcal = static_cast<o2::aod::EMCALCluster const&>(track);
-    values[kEMCalEnergy] = emcal.energy();
-    values[kEMCalCoreEnergy] = emcal.coreEnergy();
-    values[kEMCalRawEnergy] = emcal.rawEnergy();
-    values[kEMCalEta] = emcal.eta();
-    values[kEMCalPhi] = emcal.phi();
-    values[kEMCalM02] = emcal.m02();
-    values[kEMCalM20] = emcal.m20();
-    values[kEMCalNCells] = emcal.nCells();
-    values[kEMCalTime] = emcal.time();
-    values[kEMCalIsExotic] = emcal.isExotic();
-    values[kEMCalDistanceToBadChannel] = emcal.distanceToBadChannel();
-    values[kEMCalNLM] = emcal.nlm();
-    values[kEMCalDefinition] = emcal.definition();
+    values[kEMCalEnergy] = track.energy();
+    values[kEMCalCoreEnergy] = track.coreEnergy();
+    values[kEMCalRawEnergy] = track.rawEnergy();
+    values[kEMCalEta] = track.eta();
+    values[kEMCalPhi] = track.phi();
+    values[kEMCalM02] = track.m02();
+    values[kEMCalM20] = track.m20();
+    values[kEMCalNCells] = track.nCells();
+    values[kEMCalTime] = track.time();
+    values[kEMCalIsExotic] = track.isExotic();
+    values[kEMCalDistanceToBadChannel] = track.distanceToBadChannel();
+    values[kEMCalNLM] = track.nlm();
+    values[kEMCalDefinition] = track.definition();
   }
 
   // Quantities based on the muon extra table
