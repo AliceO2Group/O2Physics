@@ -680,13 +680,13 @@ struct Hyperhelium4sigmaQa {
         // qa for mother tracks
         recoQAHist.fill(HIST("hMotherCounter"), 0);
 
-        double svPos[3] = {-999, -999, -999};
-        double dauAlphaMom[3] = {-999, -999, -999};
-        double dauTritonMom[3] = {-999, -999, -999};
-        double dauProtonMom[3] = {-999, -999, -999};
-        double dauNeuteronMom[3] = {-999, -999, -999};
-        double dauChargedPionMom[3] = {-999, -999, -999};
-        double dauPion0Mom[3] = {-999, -999, -999};
+        float svPos[3] = {-999, -999, -999};
+        float dauAlphaMom[3] = {-999, -999, -999};
+        float dauTritonMom[3] = {-999, -999, -999};
+        float dauProtonMom[3] = {-999, -999, -999};
+        float dauNeuteronMom[3] = {-999, -999, -999};
+        float dauChargedPionMom[3] = {-999, -999, -999};
+        float dauPion0Mom[3] = {-999, -999, -999};
         for (const auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
           if (std::abs(mcparticleDaughter.pdgCode()) == o2::constants::physics::Pdg::kAlpha) {
             dauAlphaMom[0] = mcparticleDaughter.px();
@@ -761,14 +761,14 @@ struct Hyperhelium4sigmaQa {
 
         genQAHist.fill(HIST("hGenHyperHelium4SigmaP"), mcparticle.p());
         genQAHist.fill(HIST("hGenHyperHelium4SigmaPt"), mcparticle.pt());
-        double ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperHelium4Sigma / mcparticle.p();
+        float ct = RecoDecay::sqrtSumOfSquares(svPos[0] - mcparticle.vx(), svPos[1] - mcparticle.vy(), svPos[2] - mcparticle.vz()) * o2::constants::physics::MassHyperHelium4Sigma / mcparticle.p();
         genQAHist.fill(HIST("hGenHyperHelium4SigmaCt"), ct);
 
         // qa if mother track is reconstructed
         if (mcPartIndices[mcparticle.globalIndex()] != -1) {
           auto motherTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
           bool isGoodMother = motherTrackCheck(motherTrack, hMotherCounter);
-          double svR = RecoDecay::sqrtSumOfSquares(svPos[0], svPos[1]);
+          float svR = RecoDecay::sqrtSumOfSquares(svPos[0], svPos[1]);
           recoQAHist.fill(HIST("hTrueMotherRVsDiffPt"), mcparticle.pt() - 2 * motherTrack.pt(), svR);
           recoQAHist.fill(HIST("hTrueMotherRVsDiffPz"), mcparticle.pz() - 2 * motherTrack.pz(), svR);
           if (isGoodMother) {
@@ -785,15 +785,15 @@ struct Hyperhelium4sigmaQa {
         // qa for branching ratios and invariant mass
         if (dChannel == k2body) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 3.5 : 4.5);
-          double hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauAlphaMom[0], dauAlphaMom[1], dauAlphaMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauAlphaMom[0], dauAlphaMom[1], dauAlphaMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassAlpha, o2::constants::physics::MassPi0});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         } else if (dChannel == k3body_p) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 5.5 : 6.5);
-          double hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassProton, o2::constants::physics::MassPi0});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, std::array{dauPion0Mom[0], dauPion0Mom[1], dauPion0Mom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassProton, o2::constants::physics::MassPi0});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         } else if (dChannel == k3body_n) {
           genQAHist.fill(HIST("hGenHyperHelium4SigmaCounter"), isMatter ? 7.5 : 8.5);
-          double hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauNeuteronMom[0], dauNeuteronMom[1], dauNeuteronMom[2]}, std::array{dauChargedPionMom[0], dauChargedPionMom[1], dauChargedPionMom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassNeutron, o2::constants::physics::MassPionCharged});
+          float hyperHelium4SigmaMCMass = RecoDecay::m(std::array{std::array{dauTritonMom[0], dauTritonMom[1], dauTritonMom[2]}, std::array{dauNeuteronMom[0], dauNeuteronMom[1], dauNeuteronMom[2]}, std::array{dauChargedPionMom[0], dauChargedPionMom[1], dauChargedPionMom[2]}}, std::array{o2::constants::physics::MassTriton, o2::constants::physics::MassNeutron, o2::constants::physics::MassPionCharged});
           genQAHist.fill(HIST("hMcRecoInvMass"), hyperHelium4SigmaMCMass);
         }
       }
