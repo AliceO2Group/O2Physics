@@ -131,6 +131,8 @@ struct alice3multicharm {
   ConfigurableAxis axisDecayLength{"axisDecayLength", {2000, 0, 2000}, "Decay lenght (#mum)"};
   ConfigurableAxis axisTOFTrack{"axisTOFTrack", {1000, 0, 5000}, "TOF track time"};
 
+  ConfigurableAxis axisPiMass{"axisPiMass", {200, 0.089f, 0.189f}, "Pi Inv Mass (GeV/c^{2})"};
+  ConfigurableAxis axisPrMass{"axisPrMass", {200, 0.838f, 1.038f}, "Pr Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.221f, 1.421f}, "Xi Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
@@ -412,7 +414,15 @@ struct alice3multicharm {
 
     histos.add("hEtaXiCC", "hEtaXiCC", kTH1D, {axisEta});
     histos.add("hPtXiCC", "hPtXiCC", kTH1D, {axisPt});
-    histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3D, {axisPt, axisEta, axisXiCCMass});
+    histos.add("h3dXicc", "h3dXicc", kTH3D, {axisPt, axisEta, axisXiCCMass});
+    histos.add("h3dXic", "h3dXic", kTH3D, {axisPt, axisEta, axisXiCMass});
+    histos.add("h3dXi", "h3dXi", kTH3D, {axisPt, axisEta, axisXiMass});
+    histos.add("h3dPicc", "h3dPicc", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPi1c", "h3dPi1c", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPi2c", "h3dPi2c", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dBach", "h3dBach", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPos", "h3dPos", kTH3D, {axisPt, axisEta, axisPrMass});
+    histos.add("h3dNeg", "h3dNeg", kTH3D, {axisPt, axisEta, axisPiMass});
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {axisDCAXiCCDaughters});
@@ -516,6 +526,11 @@ struct alice3multicharm {
       auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
       auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
 
+      histos.fill(HIST("h3dXi"), xi.pt(), xi.eta(), xiCand.mXi());
+      histos.fill(HIST("h3dBach"), piFromXi.pt(), piFromXi.eta(), o2::constants::physics::MassPionCharged);
+      histos.fill(HIST("h3dNeg"), piFromLa.pt(), piFromLa.eta(), o2::constants::physics::MassPionCharged);
+      histos.fill(HIST("h3dPos"), prFromLa.pt(), prFromLa.eta(), o2::constants::physics::MassProton);
+
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
 
@@ -543,6 +558,7 @@ struct alice3multicharm {
         if (pi1cTOFDiffInner > piFromXiC_tofDiffInner)
           continue; // did not arrive at expected time
 
+        histos.fill(HIST("h3dPi1c"), pi1c.pt(), pi1c.eta(), o2::constants::physics::MassPionCharged);
         histos.fill(HIST("hInnerTOFTrackTimeRecoPi1c"), pi1cTOFDiffInner);
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
@@ -564,6 +580,8 @@ struct alice3multicharm {
             continue; // did not arrive at expected time
 
           histos.fill(HIST("hInnerTOFTrackTimeRecoPi2c"), pi2cTOFDiffInner);
+          histos.fill(HIST("h3dPi2c"), pi2c.pt(), pi2c.eta(), o2::constants::physics::MassPionCharged);
+
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
 
@@ -613,7 +631,7 @@ struct alice3multicharm {
           histos.fill(HIST("hDCAxyXiC"), std::fabs(xicdcaXY * 1e+4));
           histos.fill(HIST("hDCAzXiC"), std::fabs(xicdcaZ * 1e+4));
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
-
+          histos.fill(HIST("h3dXic"), thisXiCcandidate.pt, thisXiCcandidate.eta, thisXiCcandidate.mass);
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
@@ -633,6 +651,7 @@ struct alice3multicharm {
               continue; // did not arrive at expected time
 
             histos.fill(HIST("hInnerTOFTrackTimeRecoPicc"), piccTOFDiffInner);
+            histos.fill(HIST("h3dPicc"), picc.pt(), picc.eta(), o2::constants::physics::MassPionCharged);
 
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
@@ -710,7 +729,7 @@ struct alice3multicharm {
             histos.fill(HIST("hMassXiCC"), thisXiCCcandidate.mass);
             histos.fill(HIST("hPtXiCC"), thisXiCCcandidate.pt);
             histos.fill(HIST("hEtaXiCC"), thisXiCCcandidate.eta);
-            histos.fill(HIST("h3dMassXiCC"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
+            histos.fill(HIST("h3dXicc"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
 
             // produce multi-charm table for posterior analysis
             if (fillDerivedTable) {
