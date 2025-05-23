@@ -1774,7 +1774,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  if (!nameStr.compare("eFromPsi2S")) {
+  if (!nameStr.compare("eFromJpsiFromPsi2S")) {
     MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electron from Jpsi from Psi2S", {prong}, {1});
     return signal;
