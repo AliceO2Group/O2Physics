@@ -230,8 +230,8 @@ struct LongrangeCorrelation {
     return true;
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillYield(TCollision collision, TTracks tracks, bool mixing)
+  template <typename TTracks>
+  void fillYield(TTracks tracks, bool mixing)
   {
     if (mixing) {
       histos.fill(HIST("ME/hMult"), tracks.size());
@@ -304,7 +304,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFT0()) {
-      fillYield(col, tracks, false);
+      fillYield(tracks, false);
       const auto& ft0 = col.foundFT0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -333,7 +333,7 @@ struct LongrangeCorrelation {
         histos.fill(HIST("QA/hMEpvz1"), col1.posZ());
         histos.fill(HIST("QA/hMEpvz2"), col2.posZ());
         auto slicedTriggerTracks = tracks.sliceBy(perCollision, col1.globalIndex());
-        fillYield(col1, slicedTriggerTracks, true);
+        fillYield(slicedTriggerTracks, true);
         const auto& ft0 = col2.foundFT0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
           continue;
