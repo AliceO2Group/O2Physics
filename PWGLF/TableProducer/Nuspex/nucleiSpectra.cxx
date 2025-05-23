@@ -183,6 +183,7 @@ constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};
 constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};
 static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
+static const std::vector<int> hfMothCodes{511, 521, 531, 541, 5122}; // b-mesons + Lambda_b
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> flowConfigNames{"Save flow hists"};
@@ -494,7 +495,7 @@ struct nucleiSpectra {
       {cfgDCAxyBinsAlpha, "DCA_{z} (cm)"}};
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
-    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1I, {{nuclei::evSel::kNevSels + 1, -0.5f, float(nuclei::evSel::kNevSels) + 0.5f}}});
+    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::evSel::kNevSels) + 0.5f}}});
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
@@ -675,7 +676,7 @@ struct nucleiSpectra {
         }
       }
 
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       o2::base::Propagator::Instance()->propagateToDCA(collVtx, mTrackParCov, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
       float beta{o2::pid::tof::Beta::GetBeta(track)};
@@ -800,14 +801,14 @@ struct nucleiSpectra {
             computeEventPlane(collision.qvecBTotIm(), collision.qvecBTotRe()),
             computeEventPlane(collision.qvecBNegIm(), collision.qvecBNegRe()),
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
-            collision.sumAmplFT0A(),
-            collision.sumAmplFT0C(),
-            static_cast<float>(collision.nTrkBTot()),
-            static_cast<float>(collision.nTrkBNeg()),
-            static_cast<float>(collision.nTrkBPos())});
+            std::hypot(collision.qvecFT0AIm(), collision.qvecFT0ARe()),
+            std::hypot(collision.qvecFT0CIm(), collision.qvecFT0CRe()),
+            std::hypot(collision.qvecBTotIm(), collision.qvecBTotRe()),
+            std::hypot(collision.qvecBNegIm(), collision.qvecBNegRe()),
+            std::hypot(collision.qvecBPosIm(), collision.qvecBPosRe())});
         }
         if (fillTree) {
-          if (flag & BIT(2)) {
+          if (flag & kTriton) {
             if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
               continue;
           }
@@ -948,6 +949,17 @@ struct nucleiSpectra {
             if (particle.getProcess() == 4) {
               c.fromWeakDecay = true;
             }
+          } else {
+            // if the particle has a hf mother it is flagged as secondary
+            if (particle.has_mothers()) {
+              for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+                if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                  c.isSecondary = true;
+                  c.fromWeakDecay = true;
+                  break;
+                }
+              }
+            }
           }
 
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0)) {
@@ -962,6 +974,15 @@ struct nucleiSpectra {
       isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
+        if (particle.has_mothers()) {
+          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+              c.flags |= kIsSecondaryFromWeakDecay;
+              MotherpdgCode = motherparticle.pdgCode();
+              break;
+            }
+          }
+        }
       } else if (particle.has_mothers()) {
         c.flags |= kIsSecondaryFromWeakDecay;
         for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {

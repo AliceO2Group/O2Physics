@@ -20,7 +20,6 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
-#include <TDatabasePDG.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -39,7 +38,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -63,10 +61,6 @@ using namespace o2::framework::expressions;
 using std::array;
 struct kstarpbpb {
 
-  int mRunNumber;
-  int multEstimator;
-  float d_bz;
-
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
@@ -75,7 +69,7 @@ struct kstarpbpb {
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  // Service<o2::framework::O2DatabasePDG> pdg;
 
   // CCDB options
   // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -98,6 +92,7 @@ struct kstarpbpb {
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
+  Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
@@ -106,9 +101,9 @@ struct kstarpbpb {
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {180, 0.6, 1.5}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
+  ConfigurableAxis configrapAxis{"configrapAxis", {VARIABLE_WIDTH, -0.8, -0.4, 0.4, 0.8}, "Rapidity"};
   Configurable<bool> removefaketrak{"removefaketrack", true, "Remove fake track from momentum difference"};
   Configurable<float> ConfFakeKaonCut{"ConfFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
-  ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {400, -16, 16}, "V2"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
@@ -126,13 +121,15 @@ struct kstarpbpb {
   Configurable<bool> fillRotation{"fillRotation", true, "fill rotation"};
   Configurable<bool> same{"same", true, "same event"};
   Configurable<bool> like{"like", false, "like-sign"};
+  Configurable<bool> fillSA{"fillSA", true, "same event SA"};
   Configurable<bool> fillOccupancy{"fillOccupancy", false, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 500, "Occupancy cut"};
   Configurable<bool> useWeight{"useWeight", false, "use EP dep effi weight"};
   Configurable<bool> useSP{"useSP", false, "use SP"};
   Configurable<bool> genacceptancecut{"genacceptancecut", true, "use acceptance cut for generated"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
-  Configurable<std::string> ConfWeightPath{"ConfWeightPath", "Users/s/skundu/My/Object/PbPb2024/MCWeight2", "Path to gain calibration"};
+  Configurable<std::string> ConfWeightPath{"ConfWeightPath", "Users/s/skundu/My/Object/fitweight", "Path to gain calibration"};
+  ConfigurableAxis axisPtKaonWeight{"axisPtKaonWeight", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f}, "pt axis"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
@@ -166,35 +163,53 @@ struct kstarpbpb {
   void init(o2::framework::InitContext&)
   {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
-    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisPhiminusPsi{configThnAxisPhiminusPsi, "#phi - #psi"};
-    const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
-    const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
-    if (same) {
-      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    }
-    if (like) {
-      histos.add("hSparseV2SAlikeEventNN_V2", "hSparseV2SAlikeEventNN_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-      histos.add("hSparseV2SAlikeEventPP_V2", "hSparseV2SAlikeEventPP_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    if (!fillSA) {
+      if (same) {
+        histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      }
+      if (like) {
+        histos.add("hSparseV2SAlikeEventNN_V2", "hSparseV2SAlikeEventNN_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+        histos.add("hSparseV2SAlikeEventPP_V2", "hSparseV2SAlikeEventPP_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      }
     }
     if (fillRotation) {
-      histos.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
-      histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      if (!fillSA) {
+        histos.add("hRotation", "hRotation", kTH1F, {{360, 0.0, 2.0 * TMath::Pi()}});
+        histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      }
     }
-    histos.add("hSparseV2SAGen_V2", "hSparseV2SAGen_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hSparseV2SARec_V2", "hSparseV2SARec_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("hpt", "hpt", kTH1F, {thnAxisPt});
-    histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-    histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-    histos.add("h2PhiGen2", "Phi meson gen", kTH2F, {thnAxisPt, thnAxisCentrality});
-    histos.add("h2PhiRec2", "Phi meson Rec", kTH2F, {thnAxisPt, thnAxisCentrality});
 
+    if (fillSA) {
+      histos.add("hSparseSAvsrapsameunlike", "hSparseSAvsrapsameunlike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+      histos.add("hSparseSAvsrapsamelike", "hSparseSAvsrapsamelike", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+      histos.add("hSparseSAvsraprot", "hSparseSAvsraprot", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+      histos.add("hSparseSAvsrapmix", "hSparseSAvsrapmix", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configrapAxis, configThnAxisCentrality}, true);
+    }
+    if (!fillSA) {
+      histos.add("hSparseV2SAGen_V2", "hSparseV2SAGen_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      histos.add("hSparseV2SARec_V2", "hSparseV2SARec_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      histos.add("hpt", "hpt", kTH1F, {configThnAxisPt});
+      histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+      histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+      histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
+      histos.add("h2PhiGen2", "Phi meson gen", kTH2F, {configThnAxisPt, configThnAxisCentrality});
+      histos.add("h2PhiRec2", "Phi meson Rec", kTH2F, {configThnAxisPt, configThnAxisCentrality});
+      histos.add("hImpactParameter", "Impact parameter", kTH1F, {{200, 0.0f, 20.0f}});
+      histos.add("hEventPlaneAngle", "hEventPlaneAngle", kTH1F, {{200, -2.0f * TMath::Pi(), 2.0f * TMath::Pi()}});
+      histos.add("hSparseKstarMCGenWeight", "hSparseKstarMCGenWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, configThnAxisPt, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCRecWeight", "hSparseKstarMCRecWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, configThnAxisPt, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCGenKaonWeight", "hSparseKstarMCGenKaonWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCRecKaonWeight", "hSparseKstarMCRecKaonWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCRecKaonMissMatchWeight", "hSparseKstarMCRecKaonMissMatchWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCGenPionWeight", "hSparseKstarMCGenPionWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCRecPionWeight", "hSparseKstarMCRecPionWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+      histos.add("hSparseKstarMCRecPionMissMatchWeight", "hSparseKstarMCRecPionMissMatchWeight", HistType::kTHnSparseD, {configThnAxisCentrality, {36, 0.0f, TMath::Pi()}, {400, 0.0f, 1}, axisPtKaonWeight, {8, -0.8, 0.8}});
+    }
     if (additionalQAplots1) {
       histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
       histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
@@ -209,6 +224,9 @@ struct kstarpbpb {
       histos.add("ResFT0CTPCSP", "ResFT0CTPCSP", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH2F, {centAxis, resAxis});
       histos.add("ResFT0ATPCSP", "ResFT0ATPCSP", kTH2F, {centAxis, resAxis});
+      histos.add("ResTrackSPFT0CTPC", "ResTrackSPFT0CTPC", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0CFT0A", "ResTrackSPFT0CFT0A", kTH3F, {centAxis, occupancyAxis, resAxis});
+      histos.add("ResTrackSPFT0ATPC", "ResTrackSPFT0ATPC", kTH3F, {centAxis, occupancyAxis, resAxis});
     }
     if (additionalQAplots) {
       // DCA QA
@@ -322,7 +340,21 @@ struct kstarpbpb {
     }
     return false;
   }
-
+  template <typename T>
+  bool selectionPID2(const T& candidate, int PID)
+  {
+    if (PID == 0) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+        return true;
+      }
+    }
+    if (PID == 1) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
+        return true;
+      }
+    }
+    return false;
+  }
   template <typename T>
   bool selectionPID(const T& candidate, int PID)
   {
@@ -446,14 +478,18 @@ struct kstarpbpb {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
+  ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
   double v2, v2Rot;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
-  ROOT::Math::PxPyPzMVector KstarMother, daughter1, daughter2, kaonrot, kstarrot, KaonPlus, KaonMinus;
+  ROOT::Math::PxPyPzMVector KstarMother, fourVecDauCM, daughter1, daughter2, kaonrot, kstarrot, KaonPlus, PionMinus;
+  ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm;
+  ROOT::Math::PxPyPzMVector daughter2rot, fourVecDauCMrot;
+  ROOT::Math::XYZVector threeVecDauCMrot, threeVecDauCMXYrot;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH3D* hweight;
+  TH2D* hweight;
   void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -495,7 +531,7 @@ struct kstarpbpb {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     if (useWeight && (currentRunNumber != lastRunNumber)) {
-      hweight = ccdb->getForTimeStamp<TH3D>(ConfWeightPath.value, bc.timestamp());
+      hweight = ccdb->getForTimeStamp<TH2D>(ConfWeightPath.value, bc.timestamp());
     }
     lastRunNumber = currentRunNumber;
     float weight1 = 1.0;
@@ -506,13 +542,17 @@ struct kstarpbpb {
       }
       bool track1kaon = false;
       auto track1ID = track1.globalIndex();
-      if (!strategySelectionPID(track1, 0, strategyPID)) {
+      if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
+        continue;
+      }
+      if (isTOFOnly && !selectionPID2(track1, 0)) {
         continue;
       }
       track1kaon = true;
+
       if (useWeight) {
         if (track1.pt() < 10.0 && track1.pt() > 0.15) {
-          weight1 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track1.phi() - psiFT0C), track1.pt() + 0.000005));
+          weight1 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track1.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track1.phi() - psiFT0C));
         } else {
           weight1 = 1;
         }
@@ -523,7 +563,10 @@ struct kstarpbpb {
         }
         bool track2pion = false;
         auto track2ID = track2.globalIndex();
-        if (!strategySelectionPID(track2, 1, strategyPID)) {
+        if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(track2, 1)) {
           continue;
         }
         track2pion = true;
@@ -547,7 +590,7 @@ struct kstarpbpb {
         }
         if (useWeight) {
           if (track2.pt() < 10.0 && track2.pt() > 0.15) {
-            weight2 = hweight->GetBinContent(hweight->FindBin(centrality, GetPhiInRange(track2.phi() - psiFT0C), track2.pt() + 0.000005));
+            weight2 = 1 + hweight->GetBinContent(hweight->FindBin(centrality, track2.pt() + 0.000005)) * TMath::Cos(2.0 * GetPhiInRange(track2.phi() - psiFT0C));
           } else {
             weight2 = 1;
           }
@@ -558,7 +601,6 @@ struct kstarpbpb {
         if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
           continue;
         }
-
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
 
         if (useSP) {
@@ -568,23 +610,50 @@ struct kstarpbpb {
           v2 = TMath::Cos(2.0 * phiminuspsi);
         }
         auto totalweight = weight1 * weight2;
-        if (totalweight <= 0.0005) {
+        if (totalweight <= 0.0000005) {
           totalweight = 1.0;
         }
-        if (same) {
-          if (useWeight) {
-            histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, 1 / totalweight);
-          } else {
-            histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+        if (additionalQAplots1) {
+          histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, occupancy, QFT0C * QTPC * TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+          histos.fill(HIST("ResTrackSPFT0CFT0A"), centrality, occupancy, QFT0C * QFT0A * TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+          histos.fill(HIST("ResTrackSPFT0ATPC"), centrality, occupancy, QTPC * QFT0A * TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+        }
+        if (!fillSA) {
+          if (same) {
+            if (useWeight) {
+              histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality, 1 / totalweight);
+            } else {
+              histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+            }
           }
         }
+        int track1Sign = track1.sign();
+        int track2Sign = track2.sign();
+
+        if (fillSA) {
+          ROOT::Math::Boost boost{KstarMother.BoostToCM()};
+          fourVecDauCM = boost(daughter1);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+          auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
+
+          if (track1Sign * track2Sign < 0)
+            histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          else if (track1Sign * track2Sign > 0)
+            histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+        }
+
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
             auto angleend = confMaxRot;
             auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
             auto rotangle = anglestart + nrotbkg * anglestep;
-            histos.fill(HIST("hRotation"), rotangle);
+            if (!fillSA) {
+              histos.fill(HIST("hRotation"), rotangle);
+            }
             auto rotkaonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
             auto rotkaonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
             kaonrot = ROOT::Math::PxPyPzMVector(rotkaonPx, rotkaonPy, track1.pz(), massKa);
@@ -600,15 +669,29 @@ struct kstarpbpb {
             if (!useSP) {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
-            histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
+            if (!fillSA) {
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
+            }
+            if (fillSA) {
+              if (track1Sign * track2Sign < 0) {
+                ROOT::Math::Boost boost{kstarrot.BoostToCM()};
+                fourVecDauCMrot = boost(kaonrot);
+                threeVecDauCMrot = fourVecDauCMrot.Vect();
+                threeVecDauCMXYrot = ROOT::Math::XYZVector(threeVecDauCMrot.X(), threeVecDauCMrot.Y(), 0.);
+                auto cosPhistarminuspsirot = GetPhiInRange(fourVecDauCMrot.Phi() - psiFT0C);
+                auto SArot = TMath::Cos(2.0 * cosPhistarminuspsirot);
+
+                histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), SArot, kstarrot.Rapidity(), centrality);
+              }
+            }
           }
         }
       }
     }
   }
   PROCESS_SWITCH(kstarpbpb, processSE, "Process Same event latest", true);
-
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks, aod::BCs const&*/, aod::BCsWithTimestamps const&)
+  /*
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& , aod::BCsWithTimestamps const&)
   {
     if (!collision.sel8()) {
       return;
@@ -670,10 +753,13 @@ struct kstarpbpb {
 
       bool track1pion = false;
       bool track1kaon = false;
-      if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
+      if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
         continue;
       }
-      if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+      if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+        continue;
+      }
+      if (isTOFOnly && !(selectionPID2(track1, 0) || selectionPID2(track1, 1))) {
         continue;
       }
       auto track1ID = track1.globalIndex();
@@ -690,10 +776,13 @@ struct kstarpbpb {
           histos.fill(HIST("QAbefore/trkDCAxypi"), track2.dcaXY());
           histos.fill(HIST("QAbefore/trkDCAzpi"), track2.dcaZ());
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+          continue;
+        }
+        if (isTOFOnly && !(selectionPID2(track2, 0) || selectionPID2(track2, 1))) {
           continue;
         }
         auto track2ID = track2.globalIndex();
@@ -704,7 +793,7 @@ struct kstarpbpb {
           continue;
         }
 
-        if (ispTdepPID) {
+        if (ispTdepPID && !isTOFOnly) {
           if (selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -720,7 +809,7 @@ struct kstarpbpb {
             }
           }
         }
-        if (!ispTdepPID) {
+        if (!ispTdepPID && !isTOFOnly) {
           if (selectionPID(track1, 1) && selectionPID(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -729,6 +818,22 @@ struct kstarpbpb {
             }
           }
           if (selectionPID(track2, 1) && selectionPID(track1, 0)) {
+            track2pion = true;
+            track1kaon = true;
+            if (removefaketrak && isFakeKaon(track1, 0)) {
+              continue;
+            }
+          }
+        }
+        if (isTOFOnly) {
+          if (selectionPID2(track1, 1) && selectionPID2(track2, 0)) {
+            track1pion = true;
+            track2kaon = true;
+            if (removefaketrak && isFakeKaon(track2, 0)) {
+              continue;
+            }
+          }
+          if (selectionPID2(track2, 1) && selectionPID2(track1, 0)) {
             track2pion = true;
             track1kaon = true;
             if (removefaketrak && isFakeKaon(track1, 0)) {
@@ -814,6 +919,7 @@ struct kstarpbpb {
     }
   }
   PROCESS_SWITCH(kstarpbpb, processSameEvent, "Process Same event", false);
+
   void processlikeEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
@@ -852,10 +958,13 @@ struct kstarpbpb {
       }
       bool track1pion = false;
       bool track1kaon = false;
-      if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
+      if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0) || selectionPIDNew(track1, 1))) {
         continue;
       }
-      if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+      if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0) || selectionPID(track1, 1))) {
+        continue;
+      }
+      if (isTOFOnly && !(selectionPID2(track1, 0) || selectionPID2(track1, 1))) {
         continue;
       }
       for (auto track2 : tracks) {
@@ -864,17 +973,20 @@ struct kstarpbpb {
         if (!selectionTrack(track2)) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 0) || selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 0) || selectionPID(track2, 1))) {
+          continue;
+        }
+        if (isTOFOnly && !(selectionPID2(track2, 0) || selectionPID2(track2, 1))) {
           continue;
         }
         if (track1.sign() * track2.sign() < 0) {
           continue;
         }
 
-        if (ispTdepPID) {
+        if (ispTdepPID && !isTOFOnly) {
           if (selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -890,7 +1002,7 @@ struct kstarpbpb {
             }
           }
         }
-        if (!ispTdepPID) {
+        if (!ispTdepPID && !isTOFOnly) {
           if (selectionPID(track1, 1) && selectionPID(track2, 0)) {
             track1pion = true;
             track2kaon = true;
@@ -899,6 +1011,22 @@ struct kstarpbpb {
             }
           }
           if (selectionPID(track2, 1) && selectionPID(track1, 0)) {
+            track2pion = true;
+            track1kaon = true;
+            if (removefaketrak && isFakeKaon(track1, 0)) {
+              continue;
+            }
+          }
+        }
+        if (isTOFOnly) {
+          if (selectionPID2(track1, 1) && selectionPID2(track2, 0)) {
+            track1pion = true;
+            track2kaon = true;
+            if (removefaketrak && isFakeKaon(track2, 0)) {
+              continue;
+            }
+          }
+          if (selectionPID2(track2, 1) && selectionPID2(track1, 0)) {
             track2pion = true;
             track1kaon = true;
             if (removefaketrak && isFakeKaon(track1, 0)) {
@@ -951,11 +1079,13 @@ struct kstarpbpb {
   }
 
   PROCESS_SWITCH(kstarpbpb, processlikeEvent, "Process like event", false);
+  */
+
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
 
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisOccup}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -991,30 +1121,38 @@ struct kstarpbpb {
       }
 
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        // track selection
+        if (track1.sign() * track2.sign() > 0) {
+          continue;
+        }
         if (!selectionTrack(track1) || !selectionTrack(track2)) {
-          // printf("Mix = %d\n", 6);
+
           continue;
         }
-        auto track1ID = track1.globalIndex();
-        auto track2ID = track2.globalIndex();
-        if (track2ID == track1ID) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0))) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track1, 0))) {
+        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 1))) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track2, 1))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track1, 0))) {
+        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 1))) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track2, 1))) {
+        if (isTOFOnly && !selectionPID2(track1, 0)) {
           continue;
         }
+        if (isTOFOnly && !selectionPID2(track2, 1)) {
+          continue;
+        }
+        // if (track1.sign() > 0 && track2.sign() < 0) {
         daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
         daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+        /*} else if (track1.sign() < 0 && track2.sign() > 0) {
+              daughter2 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+              daughter1 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+        }*/
         KstarMother = daughter1 + daughter2;
         if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
           continue;
@@ -1022,8 +1160,21 @@ struct kstarpbpb {
         auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
 
         v2 = TMath::Cos(2.0 * phiminuspsi) * QFT0C;
+        if (!fillSA) {
+          if (track1.sign() * track2.sign() < 0)
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+        }
+        if (fillSA) {
+          ROOT::Math::Boost boost{KstarMother.BoostToCM()};
+          fourVecDauCM = boost(daughter1);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+          auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
 
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+          histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+        }
       }
     }
   }
@@ -1077,7 +1228,7 @@ struct kstarpbpb {
         auto track1ID = track1.index();
         for (auto track2 : Rectrackspart) {
           auto track2ID = track2.index();
-          if (track2ID == track1ID) {
+          if (track2ID <= track1ID) {
             continue;
           }
           if (!selectionTrack(track2)) {
@@ -1134,13 +1285,13 @@ struct kstarpbpb {
               oldindex = mothertrack1.globalIndex();
               if (track1.sign() > 0 && track2.sign() < 0) {
                 KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-                KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+                PionMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
               }
               if (track1.sign() < 0 && track2.sign() > 0) {
-                KaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+                PionMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
                 KaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
               }
-              KstarMother = KaonPlus + KaonMinus;
+              KstarMother = KaonPlus + PionMinus;
               if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
                 continue;
               }
@@ -1188,11 +1339,11 @@ struct kstarpbpb {
             if (!genacceptancecut) {
               daughtm = true;
             }
-            KaonMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
+            PionMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
           }
         }
         if (daughtp && daughtm) {
-          KstarMother = KaonPlus + KaonMinus;
+          KstarMother = KaonPlus + PionMinus;
           if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
             continue;
           }
@@ -1208,6 +1359,187 @@ struct kstarpbpb {
 
   } // process MC
   PROCESS_SWITCH(kstarpbpb, processMC, "Process MC", false);
+
+  void processMCkstarWeight(CollisionMCTrueTable::iterator const& TrueCollision, CollisionMCRecTableCentFT0C const& RecCollisions, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
+  {
+    float imp = TrueCollision.impactParameter();
+    float evPhi = TrueCollision.eventPlaneAngle() / 2.0;
+    float centclass = -999;
+    if (imp >= 0 && imp < 3.49) {
+      centclass = 2.5;
+    }
+    if (imp >= 3.49 && imp < 4.93) {
+      centclass = 7.5;
+    }
+    if (imp >= 4.93 && imp < 6.98) {
+      centclass = 15.0;
+    }
+    if (imp >= 6.98 && imp < 8.55) {
+      centclass = 25.0;
+    }
+    if (imp >= 8.55 && imp < 9.87) {
+      centclass = 35.0;
+    }
+    if (imp >= 9.87 && imp < 11) {
+      centclass = 45.0;
+    }
+    if (imp >= 11 && imp < 12.1) {
+      centclass = 55.0;
+    }
+    if (imp >= 12.1 && imp < 13.1) {
+      centclass = 65.0;
+    }
+    if (imp >= 13.1 && imp < 14) {
+      centclass = 75.0;
+    }
+    histos.fill(HIST("hImpactParameter"), imp);
+    histos.fill(HIST("hEventPlaneAngle"), evPhi);
+    if (centclass < 0.0 || centclass > 80.0) {
+      return;
+    }
+    for (auto& RecCollision : RecCollisions) {
+      auto psiFT0C = TrueCollision.eventPlaneAngle();
+      /*
+  if (!RecCollision.sel8()) {
+        continue;
+      }
+      if (!RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      continue;
+      }
+      */
+      if (TMath::Abs(RecCollision.posZ()) > cfgCutVertex) {
+        continue;
+      }
+      auto oldindex = -999;
+      auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
+      // loop over reconstructed particle
+      for (auto track1 : Rectrackspart) {
+        if (!track1.has_mcParticle()) {
+          continue;
+        }
+
+        const auto mctrack1 = track1.mcParticle();
+
+        if (selectionTrack(track1) && strategySelectionPID(track1, 0, strategyPID) && TMath::Abs(mctrack1.pdgCode()) == 321 && mctrack1.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCRecKaonWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 2.0), mctrack1.pt(), mctrack1.eta());
+        }
+        if (selectionTrack(track1) && track1.pt() > 0.5 && track1.hasTOF() && TMath::Abs(track1.tofNSigmaKa()) > nsigmaCutTOF && TMath::Abs(track1.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(mctrack1.pdgCode()) == 321 && mctrack1.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCRecKaonMissMatchWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 2.0), mctrack1.pt(), mctrack1.eta());
+        }
+        if (selectionTrack(track1) && strategySelectionPID(track1, 1, strategyPID) && TMath::Abs(mctrack1.pdgCode()) == 211 && mctrack1.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCRecPionWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 2.0), mctrack1.pt(), mctrack1.eta());
+        }
+        if (selectionTrack(track1) && track1.pt() > 0.5 && track1.hasTOF() && TMath::Abs(track1.tofNSigmaPi()) > nsigmaCutTOF && TMath::Abs(track1.tpcNSigmaPi()) < nsigmaCutTPC && TMath::Abs(mctrack1.pdgCode()) == 211 && mctrack1.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCRecPionMissMatchWeight"), centclass, GetPhiInRange(mctrack1.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mctrack1.phi() - psiFT0C)), 2.0), mctrack1.pt(), mctrack1.eta());
+        }
+        auto track1ID = track1.index();
+        for (auto track2 : Rectrackspart) {
+          if (!track2.has_mcParticle()) {
+            continue;
+          }
+          auto track2ID = track2.index();
+          if (track2ID <= track1ID) {
+            continue;
+          }
+          const auto mctrack2 = track2.mcParticle();
+          int track1PDG = TMath::Abs(mctrack1.pdgCode());
+          int track2PDG = TMath::Abs(mctrack2.pdgCode());
+          if (!mctrack1.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!mctrack2.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!(track1PDG == 321 && track2PDG == 211)) {
+            continue;
+          }
+          if (!selectionTrack(track1) || !selectionTrack(track2) || track1.sign() * track2.sign() > 0) {
+            continue;
+          }
+          // PID check
+          if (ispTdepPID && !isTOFOnly && (!strategySelectionPID(track1, 0, strategyPID) || !strategySelectionPID(track2, 1, strategyPID))) {
+            continue;
+          }
+          if (!ispTdepPID && !isTOFOnly && (!selectionPID(track1, 0) || !selectionPID(track2, 1))) {
+            continue;
+          }
+          if (isTOFOnly && (!selectionPID2(track1, 0) || !selectionPID2(track2, 1))) {
+            continue;
+          }
+          for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+            for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+              if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+                continue;
+              }
+              if (mothertrack1 != mothertrack2) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.y()) > confRapidity) {
+                continue;
+              }
+              if (TMath::Abs(mothertrack1.pdgCode()) != 313) {
+                continue;
+              }
+              // if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+              if (avoidsplitrackMC && oldindex == mothertrack1.index()) {
+                histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
+                continue;
+              }
+              // oldindex = mothertrack1.globalIndex();
+              oldindex = mothertrack1.index();
+              auto PhiMinusPsi = GetPhiInRange(mothertrack1.phi() - psiFT0C);
+              histos.fill(HIST("hSparseKstarMCRecWeight"), centclass, PhiMinusPsi, TMath::Power(TMath::Cos(2.0 * PhiMinusPsi), 2.0), mothertrack1.pt(), mothertrack1.eta());
+            }
+          }
+        }
+      }
+      // loop over generated particle
+      for (auto& mcParticle : GenParticles) {
+        if (TMath::Abs(mcParticle.eta()) > 0.8) // main acceptance
+          continue;
+        if (TMath::Abs(mcParticle.pdgCode()) == 321 && mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCGenKaonWeight"), centclass, GetPhiInRange(mcParticle.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mcParticle.phi() - psiFT0C)), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+        if (TMath::Abs(mcParticle.pdgCode()) == 211 && mcParticle.isPhysicalPrimary()) {
+          histos.fill(HIST("hSparseKstarMCGenPionWeight"), centclass, GetPhiInRange(mcParticle.phi() - psiFT0C), TMath::Power(TMath::Cos(2.0 * GetPhiInRange(mcParticle.phi() - psiFT0C)), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+        if (TMath::Abs(mcParticle.y()) > confRapidity) {
+          continue;
+        }
+        if (mcParticle.pdgCode() != 313) {
+          continue;
+        }
+        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+        if (kDaughters.size() != 2) {
+          continue;
+        }
+        auto daughtp = false;
+        auto daughtm = false;
+        for (auto kCurrentDaughter : kDaughters) {
+          if (!kCurrentDaughter.isPhysicalPrimary()) {
+            continue;
+          }
+          if (kCurrentDaughter.pdgCode() == +321) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtp = true;
+            }
+            KaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          } else if (kCurrentDaughter.pdgCode() == -211) {
+            if (kCurrentDaughter.pt() > cfgCutPT && TMath::Abs(kCurrentDaughter.eta()) < cfgCutEta) {
+              daughtm = true;
+            }
+            PionMinus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
+          }
+        }
+        if (daughtp && daughtm) {
+          auto PhiMinusPsiGen = GetPhiInRange(mcParticle.phi() - psiFT0C);
+          histos.fill(HIST("hSparseKstarMCGenWeight"), centclass, PhiMinusPsiGen, TMath::Power(TMath::Cos(2.0 * PhiMinusPsiGen), 2.0), mcParticle.pt(), mcParticle.eta());
+        }
+      }
+    } // rec collision loop
+
+  } // process MC
+  PROCESS_SWITCH(kstarpbpb, processMCkstarWeight, "Process MC kstar Weight", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

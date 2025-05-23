@@ -193,7 +193,7 @@ struct threebodyKFTask {
     // loop over collisions
     for (const auto& collision : collisions) {
       // event selection
-      if (!collision.sel8() || abs(collision.posZ()) > 10.f) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10.f) {
         continue;
       }
       // reco collision survived event selection filter --> fill value for MC collision if collision is "true" MC collision

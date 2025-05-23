@@ -241,7 +241,7 @@ struct filterDielectronEvent {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
     // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
@@ -313,7 +313,7 @@ struct filterDielectronEvent {
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::pair<int, int>{collision.globalIndex(), track.globalIndex()}) == stored_trackIds.end()) {
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
       auto track_par_cov_recalc = getTrackParCov(track);
       track_par_cov_recalc.setPID(o2::track::PID::Electron);
       // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
@@ -405,7 +405,7 @@ struct filterDielectronEvent {
   template <typename TCollision, typename TTrack>
   o2::track::TrackParCov propagateTrack(TCollision const& collision, TTrack const& track)
   {
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     track_par_cov_recalc.setPID(o2::track::PID::Electron);
     // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
@@ -1266,7 +1266,7 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     auto track_par_cov_recalc = getTrackParCov(track);
     // std::array<float, 3> pVec_recalc = {0, 0, 0}; // px, py, pz
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track_par_cov_recalc, 2.f, matCorr, &dcaInfo);
@@ -1565,7 +1565,7 @@ struct createEMEvent2VP {
 
       registry.fill(HIST("hEventCounter"), 1);
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 

@@ -35,26 +35,67 @@ class FastTracker
   virtual ~FastTracker() {}
 
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
-  DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true);
+  DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true) const;
+  int GetLayerIndex(const std::string name) const;
 
-  void AddSiliconALICE3v4();
-  void AddSiliconALICE3v1();
+  void AddSiliconALICE3v4(std::vector<float> pixelResolution);
+  void AddSiliconALICE3v2(std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
 
   void Print();
-  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack);
+  int FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, float nch);
+
+  // For efficiency calculation
+  float Dist(float z, float radius);
+  float OneEventHitDensity(float multiplicity, float radius);
+  float IntegratedHitDensity(float multiplicity, float radius);
+  float UpcHitDensity(float radius);
+  float HitDensity(float radius);
+  float ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float searchRadiusZ);
 
   // Definition of detector layers
   std::vector<DetLayer> layers;
   std::vector<std::vector<float>> hits; // bookkeep last added hits
+  void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].x0 = x0; }
+  void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].r = r; }
+  void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].resRPhi = resRPhi; }
+  void SetResolutionZ(const std::string layerName, float resZ) { layers[GetLayerIndex(layerName)].resZ = resZ; }
+  void SetResolution(const std::string layerName, float resRPhi, float resZ)
+  {
+    SetResolutionRPhi(layerName, resRPhi);
+    SetResolutionZ(layerName, resZ);
+  }
 
   // operational
-  float magneticField;       // in kiloGauss (5 = 0.5T, etc)
   bool applyZacceptance;     // check z acceptance or not
-  float covMatFactor;        // covmat off-diagonal factor to use for covmat fix (negative: no factor)
-  int verboseLevel;          // 0: not verbose, >0 more verbose
   bool applyMSCorrection;    // Apply correction for multiple scattering
   bool applyElossCorrection; // Apply correction for eloss (requires MS correction)
+  bool applyEffCorrection;   // Apply correction for hit efficiency
+  int verboseLevel;          // 0: not verbose, >0 more verbose
+  int crossSectionMinB;
+  int dNdEtaCent;
+  int dNdEtaMinB;
+  float integrationTime;
+  float magneticField; // in kiloGauss (5 = 0.5T, etc)
+  float covMatFactor;  // covmat off-diagonal factor to use for covmat fix (negative: no factor)
+  float sigmaD;
+  float luminosity;
+  float otherBackground;
+  float maxRadiusSlowDet;
+  float avgRapidity;
+  float lhcUPCScale;
+  float upcBackgroundMultiplier;
+  float fMinRadTrack = 132.;
+
+  // Setters and getters
+  void SetIntegrationTime(float t) { integrationTime = t; }
+  void SetMaxRadiusOfSlowDetectors(float r) { maxRadiusSlowDet = r; }
+  void SetAvgRapidity(float y) { avgRapidity = y; }
+  void SetdNdEtaCent(float d) { dNdEtaCent = d; }
+  void SetLhcUPCscale(float s) { lhcUPCScale = s; }
+  void SetBField(float b) { magneticField = b; }
+  void SetMinRadTrack(float r) { fMinRadTrack = r; }
+  // void SetAtLeastHits(int n) { fMinRadTrack = n; }
 
   uint64_t covMatOK;    // cov mat has negative eigenvals
   uint64_t covMatNotOK; // cov mat has negative eigenvals
@@ -63,6 +104,8 @@ class FastTracker
   int nIntercepts;    // found in first outward propagation
   int nSiliconPoints; // silicon-based space points added to track
   int nGasPoints;     // tpc-based space points added to track
+  std::vector<float> goodHitProbability;
+  float GetGoodHitProb(int layer) const { return goodHitProbability[layer]; }
 
   ClassDef(FastTracker, 1);
 };

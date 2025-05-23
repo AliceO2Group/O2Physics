@@ -62,7 +62,7 @@ struct HfCandidateSelectorLbToLcPi {
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
     if (d0Resolution > expectedResolution * 1.5)
       return false;
     else
@@ -149,7 +149,7 @@ struct HfCandidateSelectorLbToLcPi {
     float diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
     float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
     float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
-    float vertexDistance = sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
+    float vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
     if (vertexDistance > maxVertexDistanceLbLc) {
       return false;
     }
@@ -164,14 +164,6 @@ struct HfCandidateSelectorLbToLcPi {
     for (const auto& hfCandLb : hfCandLbs) { // looping over Lb candidates
 
       int statusLb = 0;
-
-      // check if flagged as Λb --> Λc+ π-
-      if (!(hfCandLb.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
-        hfSelLbToLcPiCandidate(statusLb);
-        // LOGF(debug, "Lb candidate selection failed at hfflag check");
-        continue;
-      }
-
       // Lc is always index0 and pi is index1 by default
       // auto candLc = hfCandLb.prong0();
       auto candLc = hfCandLb.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();

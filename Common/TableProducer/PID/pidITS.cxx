@@ -51,12 +51,12 @@ static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2
                                                      "ResolutionPar1_Z2", "ResolutionPar2_Z2", "ResolutionPar3_Z2"};
 
 static constexpr float defaultParameters[nCases][nParameters] = {
-  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01},
-  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01}};
+  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 0.09, -999., -999.},
+  {1.63806, 1.58847, 2.52275, 2.66505, 1.48405, 6.90453, 1.40487e-01, -4.31078e-01, 1.50052, 0.09, -999., -999.}};
 
 /// Task to produce the ITS PID information for each particle species
 /// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
-/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2)
+/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2). If p1/p2 is -999, the resolution is set to p0.
 struct itsPid {
 
   Configurable<LabeledArray<float>> itsParams{"itsParams",
@@ -80,19 +80,19 @@ struct itsPid {
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       LOG(fatal) << "Not implemented yet";
     } else {
-      const char* key = metadataInfo.isMC() ? "MC" : "Data";
-      o2::aod::ITSResponse::setParameters(itsParams->get(key, "RespITSPar1"),
-                                          itsParams->get(key, "RespITSPar2"),
-                                          itsParams->get(key, "RespITSPar3"),
-                                          itsParams->get(key, "RespITSPar1_Z2"),
-                                          itsParams->get(key, "RespITSPar2_Z2"),
-                                          itsParams->get(key, "RespITSPar3_Z2"),
-                                          itsParams->get(key, "ResolutionPar1"),
-                                          itsParams->get(key, "ResolutionPar2"),
-                                          itsParams->get(key, "ResolutionPar3"),
-                                          itsParams->get(key, "ResolutionPar1_Z2"),
-                                          itsParams->get(key, "ResolutionPar2_Z2"),
-                                          itsParams->get(key, "ResolutionPar3_Z2"));
+      const char* dataType = metadataInfo.isMC() ? "MC" : "Data";
+      o2::aod::ITSResponse::setParameters(itsParams->get(dataType, "RespITSPar1"),
+                                          itsParams->get(dataType, "RespITSPar2"),
+                                          itsParams->get(dataType, "RespITSPar3"),
+                                          itsParams->get(dataType, "RespITSPar1_Z2"),
+                                          itsParams->get(dataType, "RespITSPar2_Z2"),
+                                          itsParams->get(dataType, "RespITSPar3_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar1"),
+                                          itsParams->get(dataType, "ResolutionPar2"),
+                                          itsParams->get(dataType, "ResolutionPar3"),
+                                          itsParams->get(dataType, "ResolutionPar1_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar2_Z2"),
+                                          itsParams->get(dataType, "ResolutionPar3_Z2"));
     }
   }
 

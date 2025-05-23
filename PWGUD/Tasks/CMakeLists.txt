@@ -125,7 +125,7 @@ o2physics_add_dpl_workflow(tautau13topo
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(upc-tau-rl
-                           SOURCES upcTauCentralBarrelRL.cxx
+                           SOURCES upcTauRl.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
@@ -237,4 +237,14 @@ o2physics_add_dpl_workflow(test-mc-std-tabs-rl
 o2physics_add_dpl_workflow(decaytree-analyzer
                            SOURCES decayTreeAnalyzer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UDGoodRunSelector O2Physics::decayTree
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-cumulants-upc
+                           SOURCES flowCumulantsUpc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flow-correlations-upc
+                           SOURCES flowCorrelationsUpc.cxx
+			   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)

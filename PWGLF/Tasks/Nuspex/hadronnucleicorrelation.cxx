@@ -162,6 +162,9 @@ struct hadronnucleicorrelation {
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiRec_AntiDeAntiPr_ME;
   std::vector<std::shared_ptr<TH3>> hPIDEtaPhiGen_AntiDeAntiPr_ME;
 
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_SE;
+  std::vector<std::shared_ptr<TH3>> hEtaPhiGen_AntiPrAntiPr_ME;
+
   int nBinspT;
   TH2F* hEffpTEta_proton;
   TH2F* hEffpTEta_antiproton;
@@ -190,12 +193,12 @@ struct hadronnucleicorrelation {
 
     AxisSpec ptBinnedAxis = {pTBins, "#it{p}_{T} of #bar{p} (GeV/c)"};
     AxisSpec etaAxis = {100, -1., 1., "#eta"};
-    AxisSpec phiAxis = {157, 0., 2 * TMath::Pi(), "#phi (rad)"};
+    AxisSpec phiAxis = {157, 0., 2 * o2::constants::math::PI, "#phi (rad)"};
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
     AxisSpec pTAxis_small = {100, -5.f, 5.f, "p_{T} GeV/c"};
 
     AxisSpec DeltaEtaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec DeltaPhiAxis = {60, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi (rad)"};
+    AxisSpec DeltaPhiAxis = {60, -o2::constants::math::PI / 2, 1.5 * o2::constants::math::PI, "#Delta#phi (rad)"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{5, 0.f, 5.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "Selected");
@@ -238,6 +241,13 @@ struct hadronnucleicorrelation {
         auto htempMEGen_AntiDeAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiDeAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
                                                          Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{d} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
         hEtaPhiGen_AntiDeAntiPr_ME.push_back(std::move(htempMEGen_AntiDeAntiPr));
+
+        auto htempSEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_SE_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_AntiPrAntiPr_SE.push_back(std::move(htempSEGen_AntiPrAntiPr));
+        auto htempMEGen_AntiPrAntiPr = registry.add<TH3>(Form("hEtaPhiGen_AntiPrAntiPr_ME_pt%02.0f%02.0f", pTBins.value.at(i) * 10, pTBins.value.at(i + 1) * 10),
+                                                         Form("Gen #Delta#eta#Delta#phi (%.1f<p_{T} #bar{p} <%.1f GeV/c)", pTBins.value.at(i), pTBins.value.at(i + 1)), {HistType::kTH3F, {DeltaEtaAxis, DeltaPhiAxis, ptBinnedAxis}});
+        hEtaPhiGen_AntiPrAntiPr_ME.push_back(std::move(htempMEGen_AntiPrAntiPr));
       }
     }
 
@@ -319,12 +329,12 @@ struct hadronnucleicorrelation {
       if (doMCQA) {
         registry.add("hResEta_Proton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_Deuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Proton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_Deuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
         registry.add("hResEta_AntiProton", "; #eta(gen); #eta(reco) - #eta(gen)  ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
         registry.add("hResEta_AntiDeuteron", "; #eta(gen); #eta(reco) - #eta(gen) ", {HistType::kTH2F, {{100, -1.f, 1.f, "#eta(gen)"}, {200, -0.5f, 0.5f, "#eta(reco) - #eta(gen) "}}});
-        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
-        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * TMath::Pi(), "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiProton", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
+        registry.add("hResPhi_AntiDeuteron", "; #phi(gen); #phi(reco) - #phi(gen)", {HistType::kTH2F, {{100, 0.f, 2 * o2::constants::math::PI, "#phi(gen)"}, {200, -0.5f, 0.5f, "#phi(reco) - #phi(gen)"}}});
 
         registry.add("hNumeratorPurity_Proton_TPC", " p(#bar{p}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
         registry.add("hNumeratorPurity_Deuteron_TPC", " d(#bar{d}); p_{T} (GeV/c);S", {HistType::kTH1F, {pTAxis_small}});
@@ -363,6 +373,21 @@ struct hadronnucleicorrelation {
     if (isMCGen) {
       registry.add("Generated/hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{1, 0.f, 1.f}}});
       registry.get<TH1>(HIST("Generated/hNEventsMC"))->GetXaxis()->SetBinLabel(1, "All");
+
+      registry.add("Generated/hQAProtons", "hQAProtons", {HistType::kTH1D, {{5, 0.f, 5.f}}});
+      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(1, "All");
+      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
+      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
+      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(4, "no daughters");
+      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(5, "d daughter");
+
+      registry.add("Generated/hQADeuterons", "hQADeuterons", {HistType::kTH1D, {{3, 0.f, 3.f}}});
+      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(1, "All");
+      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
+      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
+
+      registry.add("Generated/hDeuteronsVsPt", "hDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
+      registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
     }
   }
 
@@ -487,9 +512,9 @@ struct hadronnucleicorrelation {
   {
     bool passcut = true;
     // pt-dependent selection
-    if (TMath::Abs(track.dcaXY()) > (par0 + par1 / track.pt()))
+    if (std::abs(track.dcaXY()) > (par0 + par1 / track.pt()))
       passcut = false;
-    if (TMath::Abs(track.dcaZ()) > (par0 + par1 / track.pt()))
+    if (std::abs(track.dcaZ()) > (par0 + par1 / track.pt()))
       passcut = false;
 
     return passcut;
@@ -583,12 +608,40 @@ struct hadronnucleicorrelation {
     }
   }
 
+  template <int ME, typename Type>
+  void mixMCParticlesIdentical(Type const& particles1, Type const& particles2)
+  {
+    for (auto it1 : particles1) {
+      for (auto it2 : particles2) {
+        // Calculate Delta-eta Delta-phi (gen)
+        float deltaEtaGen = it2->eta() - it1->eta();
+        float deltaPhiGen = getDeltaPhi(it2->phi() - it1->phi());
+
+        if (!ME && std::abs(deltaPhiGen) < 0.001 && std::abs(deltaEtaGen) < 0.001) {
+          continue;
+        }
+
+        // Loop over pT bins
+        for (int k = 0; k < nBinspT; k++) {
+          if (it1->pt() >= pTBins.value.at(k) && it1->pt() < pTBins.value.at(k + 1)) {
+            // Use correct histogram based on ME flag
+            if constexpr (ME) {
+              hEtaPhiGen_AntiPrAntiPr_ME[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+            } else {
+              hEtaPhiGen_AntiPrAntiPr_SE[k]->Fill(deltaEtaGen, deltaPhiGen, it2->pt());
+            }
+          }
+        }
+      }
+    }
+  }
+
   float getDeltaPhi(float deltaPhi)
   {
-    if (deltaPhi < -TMath::Pi() / 2) {
-      return deltaPhi += 2 * TMath::Pi();
-    } else if (deltaPhi >= 3 * TMath::Pi() / 2) {
-      return deltaPhi -= 2 * TMath::Pi();
+    if (deltaPhi < -o2::constants::math::PI / 2) {
+      return deltaPhi += 2 * o2::constants::math::PI;
+    } else if (deltaPhi >= 3 * o2::constants::math::PI / 2) {
+      return deltaPhi -= 2 * o2::constants::math::PI;
     }
     return deltaPhi;
   }
@@ -1289,12 +1342,38 @@ struct hadronnucleicorrelation {
   {
     for (auto particle : mcParticles) {
 
+      if (particle.pdgCode() == pdgProton) {
+        registry.fill(HIST("Generated/hQAProtons"), 0.5);
+      }
+      if (particle.pdgCode() == pdgDeuteron) {
+        registry.fill(HIST("Generated/hQADeuterons"), 0.5);
+      }
+
       if (isPrim && !particle.isPhysicalPrimary()) {
         continue;
+      }
+      if (particle.pdgCode() == pdgProton) {
+        registry.fill(HIST("Generated/hQAProtons"), 1.5);
+      }
+      if (particle.pdgCode() == pdgDeuteron) {
+        registry.fill(HIST("Generated/hQADeuterons"), 1.5);
+      }
+
+      if (particle.pdgCode() == pdgDeuteron && std::abs(particle.y()) < 0.5) {
+        registry.fill(HIST("Generated/hDeuteronsVsPt"), particle.pt());
+      }
+      if (particle.pdgCode() == -pdgDeuteron && std::abs(particle.y()) < 0.5) {
+        registry.fill(HIST("Generated/hAntiDeuteronsVsPt"), particle.pt());
       }
 
       if (std::abs(particle.eta()) > etacut) {
         continue;
+      }
+      if (particle.pdgCode() == pdgProton) {
+        registry.fill(HIST("Generated/hQAProtons"), 2.5);
+      }
+      if (particle.pdgCode() == pdgDeuteron) {
+        registry.fill(HIST("Generated/hQADeuterons"), 2.5);
       }
 
       if (particle.pdgCode() == pdgDeuteron) {
@@ -1306,35 +1385,22 @@ struct hadronnucleicorrelation {
       if (particle.pdgCode() == pdgProton) {
         if (!particle.has_daughters()) {
           selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+          registry.fill(HIST("Generated/hQAProtons"), 3.5);
         } else {
-          bool isp = false;
-
+          bool isd = false;
           for (auto& dau : particle.daughters_as<aod::McParticles>()) {
-            if (dau.pdgCode() == pdgProton) {
-              isp = true;
+            if (dau.pdgCode() == pdgDeuteron) {
+              isd = true;
             }
           }
-
-          if (isp) {
-            selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
+          if (isd) {
+            registry.fill(HIST("Generated/hQAProtons"), 4.5);
           }
         }
       }
       if (particle.pdgCode() == -pdgProton) {
         if (!particle.has_daughters()) {
           selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
-        } else {
-          bool isantip = false;
-
-          for (auto& dau : particle.daughters_as<aod::McParticles>()) {
-            if (dau.pdgCode() == -pdgProton) {
-              isantip = true;
-            }
-          }
-
-          if (isantip) {
-            selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
-          }
         }
       }
     }
@@ -1393,6 +1459,57 @@ struct hadronnucleicorrelation {
             }
 
             stop2++;
+          }
+        }
+      }
+
+      // anti-p - anti-p correlation
+      if (selectedparticlesMC_antip.find(collision1.globalIndex()) != selectedparticlesMC_antip.end()) {
+
+        mixMCParticlesIdentical<0>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision1.globalIndex()]); // mixing SE
+
+        int stop3 = 0;
+
+        for (auto collision2 : mcCollisions) { // nested loop on collisions
+
+          if (collision1.globalIndex() == collision2.globalIndex()) {
+            continue;
+          }
+
+          if (stop3 > maxmixcollsGen) {
+            break;
+          }
+
+          if (selectedparticlesMC_antip.find(collision2.globalIndex()) != selectedparticlesMC_antip.end()) {
+            mixMCParticlesIdentical<1>(selectedparticlesMC_antip[collision1.globalIndex()], selectedparticlesMC_antip[collision2.globalIndex()]); // mixing ME
+          }
+
+          stop3++;
+        }
+      }
+      // p - p correlation
+      if (domatterGen) {
+        if (selectedparticlesMC_p.find(collision1.globalIndex()) != selectedparticlesMC_p.end()) {
+
+          mixMCParticlesIdentical<0>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision1.globalIndex()]); // mixing SE
+
+          int stop4 = 0;
+
+          for (auto collision2 : mcCollisions) { // nested loop on collisions
+
+            if (collision1.globalIndex() == collision2.globalIndex()) {
+              continue;
+            }
+
+            if (stop4 > maxmixcollsGen) {
+              break;
+            }
+
+            if (selectedparticlesMC_p.find(collision2.globalIndex()) != selectedparticlesMC_p.end()) {
+              mixMCParticlesIdentical<1>(selectedparticlesMC_p[collision1.globalIndex()], selectedparticlesMC_p[collision2.globalIndex()]); // mixing ME
+            }
+
+            stop4++;
           }
         }
       }
