@@ -600,7 +600,7 @@ struct BcSelectionTask {
           }
           if (goodCBTcalo) {
             histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_calo"))->Fill(srun, 1);
-            histos.get<TH1>(HIST("hLumiTVX_afterBCcutsCBT_calo"))->Fill(srun, 1. / csTVX);  
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT_calo"))->Fill(srun, 1. / csTVX);  
           }
           if (goodCBTmuon) {
             histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_muon"))->Fill(srun, 1);
