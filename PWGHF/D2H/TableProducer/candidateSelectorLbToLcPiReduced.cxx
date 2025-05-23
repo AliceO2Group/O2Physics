@@ -182,7 +182,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       }
 
       // track-level PID selection
-      auto trackPi = hfCandLb.template prong1Track_as<TracksPion>();
+      auto trackPi = hfCandLb.template prong1_as<TracksPion>();
       if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
         if (pionPidMethod == PidMethod::TpcOrTof) {
