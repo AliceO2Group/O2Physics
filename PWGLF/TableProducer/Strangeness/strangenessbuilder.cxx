@@ -199,12 +199,12 @@ struct StrangenessBuilder {
   enum V0PreSelection : uint8_t { selGamma = 0,
                                   selK0Short,
                                   selLambda,
-                                  selAntiLambda};
+                                  selAntiLambda };
 
   enum CascPreSelection : uint8_t { selXiMinus = 0,
                                     selXiPlus,
                                     selOmegaMinus,
-                                    selOmegaPlus};
+                                    selOmegaPlus };
 
   struct : ProducesGroup {
     //__________________________________________________
@@ -1443,49 +1443,49 @@ struct StrangenessBuilder {
             straHelper.v0.positiveMomentum[2] + straHelper.v0.negativeMomentum[2]);
 
           float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.position[0] - pvX, 
-            straHelper.v0.position[1] - pvY, 
+            straHelper.v0.position[0] - pvX,
+            straHelper.v0.position[1] - pvY,
             straHelper.v0.position[2] - pvZ);
 
           uint8_t maskV0Preselection = 0;
 
           if ( // photon PID, mass, lifetime selection
-              std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
+            std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
             BITSET(maskV0Preselection, selGamma);
           }
 
           if ( // K0Short PID, mass, lifetime selection
-              std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
-              std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
+            std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskV0Preselection, selK0Short);
           } 
 
           if ( // Lambda PID, mass, lifetime selection
-              std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-              std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+            std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskV0Preselection, selLambda);
           }
 
           if ( // antiLambda PID, mass, lifetime selection
-              std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-              std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+            std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskV0Preselection, selAntiLambda);
           }
 
           histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
 
-          if ( !verifyMask(maskV0Preselection, selGamma) && 
-               !verifyMask(maskV0Preselection, selK0Short) && 
-               !verifyMask(maskV0Preselection, selLambda) && 
-               !verifyMask(maskV0Preselection, selAntiLambda)) {
+          if (!verifyMask(maskV0Preselection, selGamma) &&
+              !verifyMask(maskV0Preselection, selK0Short) &&
+              !verifyMask(maskV0Preselection, selLambda) &&
+              !verifyMask(maskV0Preselection, selAntiLambda)) {
             products.v0dataLink(-1, -1);
             continue;
           }
@@ -1983,57 +1983,57 @@ struct StrangenessBuilder {
             straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
           float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.cascadePosition[0] - pvX, 
-            straHelper.cascade.cascadePosition[1] - pvY, 
+            straHelper.cascade.cascadePosition[0] - pvX,
+            straHelper.cascade.cascadePosition[1] - pvY,
             straHelper.cascade.cascadePosition[2] - pvZ);
 
           uint8_t maskCascadePreselection = 0;
 
           if ( // XiMinus PID and mass selection
-              straHelper.cascade.charge < 0 &&
-              std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-              std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            straHelper.cascade.charge < 0 &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selXiMinus);
           }
 
           if ( // XiPlus PID and mass selection
-              straHelper.cascade.charge > 0 &&
-              std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-              std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            straHelper.cascade.charge > 0 &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selXiPlus);
           }
 
           if ( // OmegaMinus PID and mass selection
-              straHelper.cascade.charge < 0 &&
-              std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-              std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            straHelper.cascade.charge < 0 &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selOmegaMinus);
           }
 
           if ( // OmegaPlus PID and mass selection
-              straHelper.cascade.charge > 0 &&
-              std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-              std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-              o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-              std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+            straHelper.cascade.charge > 0 &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
+            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
             BITSET(maskCascadePreselection, selOmegaPlus);
           }
 
           histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
 
-          if (!verifyMask(maskCascadePreselection, selXiMinus) && 
-              !verifyMask(maskCascadePreselection, selXiPlus) && 
-              !verifyMask(maskCascadePreselection, selOmegaMinus) && 
+          if (!verifyMask(maskCascadePreselection, selXiMinus) &&
+              !verifyMask(maskCascadePreselection, selXiPlus) &&
+              !verifyMask(maskCascadePreselection, selOmegaMinus) &&
               !verifyMask(maskCascadePreselection, selOmegaPlus)) {
             products.cascdataLink(-1);
             interlinks.cascadeToCascCores.push_back(-1);
