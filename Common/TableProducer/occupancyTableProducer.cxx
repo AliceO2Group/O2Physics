@@ -153,7 +153,7 @@ struct OccupancyTableProducer {
   std::vector<std::array<int, 2>> vecRobustOccmultTableUnfm80medianPosVec;
 
   std::vector<bool> processStatus;
-  Configurable<bool> processStatusSize{"processStatusSize", 10, "processStatusSize"};
+  Configurable<uint> processStatusSize{"processStatusSize", 10, "processStatusSize"};
   void init(InitContext const&)
   {
     processStatus.resize(processStatusSize);
@@ -1221,27 +1221,27 @@ struct OccupancyTableProducer {
 struct TrackMeanOccTableProducer {
 
   // //declare production of tables
-  Produces<aod::TMOTrackId> genTMOTrackId;
+  Produces<aod::TmoTrackId> genTmoTrackId;
 
-  Produces<aod::TMOPrim> genTMOPrim;
-  Produces<aod::TMOT0V0> genTMOT0V0;
-  Produces<aod::TMOFDD> genTMOFDD;
-  Produces<aod::TMONTrackDet> genTMONTrackDet;
-  Produces<aod::TMOMultExtra> genTMOMultExtra;
-  Produces<aod::TMORT0V0Prim> genTMORT0V0Prim;
-  Produces<aod::TMORFDDT0V0Prim> genTMORFDDT0V0Prim;
-  Produces<aod::TMORNtrackDet> genTMORNtrackDet;
-  Produces<aod::TMORMultExtra> genTMORMultExtra;
+  Produces<aod::TmoPrim> genTmoPrim;
+  Produces<aod::TmoT0V0> genTmoT0V0;
+  Produces<aod::TmoFDD> genTmoFDD;
+  Produces<aod::TmoNTrackDet> genTmoNTrackDet;
+  Produces<aod::TmoMultExtra> genTmoMultExtra;
+  Produces<aod::TmoRT0V0Prim> genTmoRT0V0Prim;
+  Produces<aod::TmoRFDDT0V0Prim> genTmoRFDDT0V0Prim;
+  Produces<aod::TmoRNtrackDet> genTmoRNtrackDet;
+  Produces<aod::TmoRMultExtra> genTmoRMultExtra;
 
-  Produces<aod::TWMOPrim> genTWMOPrim;
-  Produces<aod::TWMOT0V0> genTWMOT0V0;
-  Produces<aod::TWMOFDD> genTWMOFDD;
-  Produces<aod::TWMONTrackDet> genTWMONTrackDet;
-  Produces<aod::TWMOMultExtra> genTWMOMultExtra;
-  Produces<aod::TWMORT0V0Prim> genTWMORT0V0Prim;
-  Produces<aod::TWMORFDDT0V0Pri> genTWMORFDDT0V0Pri;
-  Produces<aod::TWMORNtrackDet> genTWMORNtrackDet;
-  Produces<aod::TWMORMultExtra> genTWMORMultExtra;
+  Produces<aod::TwmoPrim> genTwmoPrim;
+  Produces<aod::TwmoT0V0> genTwmoT0V0;
+  Produces<aod::TwmoFDD> genTwmoFDD;
+  Produces<aod::TwmoNTrackDet> genTwmoNTrackDet;
+  Produces<aod::TwmoMultExtra> genTwmoMultExtra;
+  Produces<aod::TwmoRT0V0Prim> genTwmoRT0V0Prim;
+  Produces<aod::TwmoRFDDT0V0Pri> genTwmoRFDDT0V0Pri;
+  Produces<aod::TwmoRNtrackDet> genTwmoRNtrackDet;
+  Produces<aod::TwmoRMultExtra> genTwmoRMultExtra;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -2047,7 +2047,7 @@ struct TrackMeanOccTableProducer {
 
         // If multiple process are on, fill this table only once
         if (executeInThisBlock) {
-          genTMOTrackId(track.globalIndex());
+          genTmoTrackId(track.globalIndex());
         }
 
         if constexpr (qaMode == fillOccRobustT0V0dependentQA) {
@@ -2062,12 +2062,12 @@ struct TrackMeanOccTableProducer {
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyOccPrim) {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccPrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80);
-            genTMOPrim(meanOccPrimUnfm80);
+            genTmoPrim(meanOccPrimUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccPrimUnfm80>(meanOccPrimUnfm80, meanOccRobustT0V0PrimUnfm80);
           }
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccPrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occPrimUnfm80);
-            genTWMOPrim(weightMeanOccPrimUnfm80);
+            genTwmoPrim(weightMeanOccPrimUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccPrimUnfm80>(weightMeanOccPrimUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccPrimUnfm80>(weightMeanOccPrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
           }
@@ -2079,7 +2079,7 @@ struct TrackMeanOccTableProducer {
             meanOccFV0CUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80);
             meanOccFT0AUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80);
             meanOccFT0CUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80);
-            genTMOT0V0(meanOccFV0AUnfm80,
+            genTmoT0V0(meanOccFV0AUnfm80,
                        meanOccFV0CUnfm80,
                        meanOccFT0AUnfm80,
                        meanOccFT0CUnfm80);
@@ -2093,7 +2093,7 @@ struct TrackMeanOccTableProducer {
             weightMeanOccFV0CUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFV0CUnfm80);
             weightMeanOccFT0AUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0AUnfm80);
             weightMeanOccFT0CUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFT0CUnfm80);
-            genTWMOT0V0(weightMeanOccFV0AUnfm80,
+            genTwmoT0V0(weightMeanOccFV0AUnfm80,
                         weightMeanOccFV0CUnfm80,
                         weightMeanOccFT0AUnfm80,
                         weightMeanOccFT0CUnfm80);
@@ -2113,7 +2113,7 @@ struct TrackMeanOccTableProducer {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccFDDAUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80);
             meanOccFDDCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80);
-            genTMOFDD(meanOccFDDAUnfm80,
+            genTmoFDD(meanOccFDDAUnfm80,
                       meanOccFDDCUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccFDDAUnfm80>(meanOccFDDAUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccFDDCUnfm80>(meanOccFDDCUnfm80, meanOccRobustT0V0PrimUnfm80);
@@ -2121,7 +2121,7 @@ struct TrackMeanOccTableProducer {
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccFDDAUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDAUnfm80);
             weightMeanOccFDDCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occFDDCUnfm80);
-            genTWMOFDD(weightMeanOccFDDAUnfm80,
+            genTwmoFDD(weightMeanOccFDDAUnfm80,
                        weightMeanOccFDDCUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFDDAUnfm80>(weightMeanOccFDDAUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccFDDCUnfm80>(weightMeanOccFDDCUnfm80, meanOccRobustT0V0PrimUnfm80);
@@ -2143,7 +2143,7 @@ struct TrackMeanOccTableProducer {
             meanOccNTrackITSTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCUnfm80);
             meanOccNTrackITSTPCAUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80);
             meanOccNTrackITSTPCCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80);
-            genTMONTrackDet(meanOccNTrackITSUnfm80,
+            genTmoNTrackDet(meanOccNTrackITSUnfm80,
                             meanOccNTrackTPCUnfm80,
                             meanOccNTrackTRDUnfm80,
                             meanOccNTrackTOFUnfm80,
@@ -2176,7 +2176,7 @@ struct TrackMeanOccTableProducer {
             weightMeanOccNTrackITSTPCAUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCAUnfm80);
             weightMeanOccNTrackITSTPCCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occNTrackITSTPCCUnfm80);
 
-            genTWMONTrackDet(weightMeanOccNTrackITSUnfm80,
+            genTwmoNTrackDet(weightMeanOccNTrackITSUnfm80,
                              weightMeanOccNTrackTPCUnfm80,
                              weightMeanOccNTrackTRDUnfm80,
                              weightMeanOccNTrackTOFUnfm80,
@@ -2221,7 +2221,7 @@ struct TrackMeanOccTableProducer {
             meanOccMultNTracksTPCOnlyUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksTPCOnlyUnfm80);
             meanOccMultNTracksITSTPCUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80);
             meanOccMultAllTracksTPCOnlyUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80);
-            genTMOMultExtra(meanOccMultNTracksHasITSUnfm80,
+            genTmoMultExtra(meanOccMultNTracksHasITSUnfm80,
                             meanOccMultNTracksHasTPCUnfm80,
                             meanOccMultNTracksHasTOFUnfm80,
                             meanOccMultNTracksHasTRDUnfm80,
@@ -2248,7 +2248,7 @@ struct TrackMeanOccTableProducer {
             weightMeanOccMultNTracksITSTPCUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultNTracksITSTPCUnfm80);
             weightMeanOccMultAllTracksTPCOnlyUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occMultAllTracksTPCOnlyUnfm80);
 
-            genTWMOMultExtra(weightMeanOccMultNTracksHasITSUnfm80,
+            genTwmoMultExtra(weightMeanOccMultNTracksHasITSUnfm80,
                              weightMeanOccMultNTracksHasTPCUnfm80,
                              weightMeanOccMultNTracksHasTOFUnfm80,
                              weightMeanOccMultNTracksHasTRDUnfm80,
@@ -2280,12 +2280,12 @@ struct TrackMeanOccTableProducer {
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyRobustT0V0Prim) {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccRobustT0V0PrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80);
-            genTMORT0V0Prim(meanOccRobustT0V0PrimUnfm80);
+            genTmoRT0V0Prim(meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(meanOccRobustT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
           }
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccRobustT0V0PrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustT0V0PrimUnfm80);
-            genTWMORT0V0Prim(weightMeanOccRobustT0V0PrimUnfm80);
+            genTwmoRT0V0Prim(weightMeanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(weightMeanOccRobustT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustT0V0PrimUnfm80>(weightMeanOccRobustT0V0PrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
           }
@@ -2294,12 +2294,12 @@ struct TrackMeanOccTableProducer {
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyRobustFDDT0V0Prim) {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccRobustFDDT0V0PrimUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80);
-            genTMORFDDT0V0Prim(meanOccRobustFDDT0V0PrimUnfm80);
+            genTmoRFDDT0V0Prim(meanOccRobustFDDT0V0PrimUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(meanOccRobustFDDT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
           }
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccRobustFDDT0V0PrimUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustFDDT0V0PrimUnfm80);
-            genTWMORFDDT0V0Pri(weightMeanOccRobustFDDT0V0PrimUnfm80);
+            genTwmoRFDDT0V0Pri(weightMeanOccRobustFDDT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(weightMeanOccRobustFDDT0V0PrimUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustFDDT0V0PrimUnfm80>(weightMeanOccRobustFDDT0V0PrimUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
           }
@@ -2308,12 +2308,12 @@ struct TrackMeanOccTableProducer {
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyRobustNtrackDet) {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccRobustNtrackDetUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80);
-            genTMORNtrackDet(meanOccRobustNtrackDetUnfm80);
+            genTmoRNtrackDet(meanOccRobustNtrackDetUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(meanOccRobustNtrackDetUnfm80, meanOccRobustT0V0PrimUnfm80);
           }
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccRobustNtrackDetUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustNtrackDetUnfm80);
-            genTWMORNtrackDet(weightMeanOccRobustNtrackDetUnfm80);
+            genTwmoRNtrackDet(weightMeanOccRobustNtrackDetUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(weightMeanOccRobustNtrackDetUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustNtrackDetUnfm80>(weightMeanOccRobustNtrackDetUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
           }
@@ -2322,12 +2322,12 @@ struct TrackMeanOccTableProducer {
         if constexpr (processMode == kProcessFullOccTableProducer || processMode == kProcessOnlyRobustMultExtra) {
           if constexpr (meanTableMode == fillMeanOccTable) {
             meanOccRobustMultTableUnfm80 = getMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80);
-            genTMORMultExtra(meanOccRobustMultTableUnfm80);
+            genTmoRMultExtra(meanOccRobustMultTableUnfm80);
             fillQAInfo<kMean, kRobustT0V0Prim, kOccRobustMultTableUnfm80>(meanOccRobustMultTableUnfm80, meanOccRobustT0V0PrimUnfm80);
           }
           if constexpr (weightMeanTableMode == fillWeightMeanOccTable) {
             weightMeanOccRobustMultTableUnfm80 = getWeightedMeanOccupancy(binBCbegin, binBCend, occRobustMultTableUnfm80);
-            genTWMORMultExtra(weightMeanOccRobustMultTableUnfm80);
+            genTwmoRMultExtra(weightMeanOccRobustMultTableUnfm80);
             fillQAInfo<kWeightMean, kRobustT0V0Prim, kOccRobustMultTableUnfm80>(weightMeanOccRobustMultTableUnfm80, meanOccRobustT0V0PrimUnfm80);
             fillQAInfo<kWeightMean, kWeightRobustT0V0Prim, kOccRobustMultTableUnfm80>(weightMeanOccRobustMultTableUnfm80, weightMeanOccRobustT0V0PrimUnfm80);
           }
