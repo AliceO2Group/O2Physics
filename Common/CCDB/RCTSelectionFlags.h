@@ -205,6 +205,20 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   {
     return checkTable(table);
   }
+
+  template<typename T>
+  bool checkFlags(T& tableBits)
+  {
+    if (!any()) {
+      throw std::out_of_range("RCTFlagsCheckerAlt with empty RCTSelectionFlags bits mask");
+    }
+
+    // bitmask of the current table
+    uint64_t flagsBits = value();
+
+    // return true if none of the checked bits is set in the table bitmask
+    return ((tableBits & flagsBits) == 0);
+  }
 };
 
 } // namespace o2::aod::rctsel

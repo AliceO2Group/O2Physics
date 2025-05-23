@@ -25,6 +25,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
@@ -66,6 +67,8 @@ struct BcSelectionTask {
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
   Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
   Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
+  Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "Check ZDC flag for Pb-Pb from RCT for lumi histograms"};
+  Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "Reject limited acceptance from RCT for lumi histograms"};
 
   int lastRun = -1;
   int64_t lastTF = -1;
@@ -90,6 +93,13 @@ struct BcSelectionTask {
   bool isGoodITSLayer3 = true;                              // default value
   bool isGoodITSLayer0123 = true;                           // default value
   bool isGoodITSLayersAll = true;                           // default value
+  // RCT checkers for lumi histograms
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBT;
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBThadronPID;
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBTelectronPID;
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBTcalo;
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBTmuon;
+  o2::aod::rctsel::RCTFlagsChecker rctCheckerCBTmuonGlo;
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
@@ -107,22 +117,53 @@ struct BcSelectionTask {
     ccdb->setLocalObjectValidityChecking();
 
     histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT_hadronPID", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT_electronPID", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT_calo", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT_muon", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVX_CBT_muon_glo", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT_hadronPID", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT_electronPID", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT_calo", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT_muon", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts_CBT_muon_glo", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT_hadronPID", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT_electronPID", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT_calo", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT_muon", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX_CBT_muon_glo", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVXafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT_hadronPID", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT_electronPID", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT_calo", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT_muon", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts_CBT_muon_glo", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCEafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEMafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+
+    rctCheckerCBT.init("CBT", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    rctCheckerCBThadronPID.init("CBT_hadronPID", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    rctCheckerCBTelectronPID.init("CBT_electronPID", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    rctCheckerCBTcalo.init("CBT_calo", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    rctCheckerCBTmuon.init("CBT_muon", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
+    rctCheckerCBTmuonGlo.init("CBT_muon_glo", rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
   }
 
   void processRun2(
@@ -360,6 +401,7 @@ struct BcSelectionTask {
       // store rct flags
       uint32_t rct = lastRCT;
       int64_t thisTF = (bc.globalBC() - bcSOR) / nBCsPerTF;
+      bool goodCBT{false}, goodCBThadronPID{false}, goodCBTelectronPID{false}, goodCBTcalo{false}, goodCBTmuon{false}, goodCBTmuonGlo{false};
       if (mapRCT != nullptr && thisTF != lastTF) { // skip for unanchored runs; do it once per TF
         auto itrct = mapRCT->upper_bound(bc.timestamp());
         if (itrct != mapRCT->begin())
@@ -368,6 +410,13 @@ struct BcSelectionTask {
         LOGP(debug, "sor={} eor={} ts={} rct={}", sorTimestamp, eorTimestamp, bc.timestamp(), rct);
         lastRCT = rct;
         lastTF = thisTF;
+        // check flags for lumi histograms
+        goodCBT = rctCheckerCBT.checkFlags(rct);
+        goodCBThadronPID = rctCheckerCBThadronPID.checkFlags(rct);
+        goodCBTelectronPID = rctCheckerCBTelectronPID.checkFlags(rct);
+        goodCBTcalo = rctCheckerCBTcalo.checkFlags(rct);
+        goodCBTmuon = rctCheckerCBTmuon.checkFlags(rct);
+        goodCBTmuonGlo = rctCheckerCBTmuonGlo.checkFlags(rct);
       }
 
       uint32_t alias{0};
@@ -510,9 +559,57 @@ struct BcSelectionTask {
       if (TESTBIT(selection, kIsTriggerTVX)) {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
         histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, 1. / csTVX);
+        if (goodCBT) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT"))->Fill(srun, 1. / csTVX);  
+        }
+        if (goodCBThadronPID) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT_hadronPID"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT_hadronPID"))->Fill(srun, 1. / csTVX);  
+        }
+        if (goodCBTelectronPID) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT_electronPID"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT_electronPID"))->Fill(srun, 1. / csTVX);  
+        }
+        if (goodCBTcalo) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT_calo"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT_calo"))->Fill(srun, 1. / csTVX);  
+        }
+        if (goodCBTmuon) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT_muon"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT_muon"))->Fill(srun, 1. / csTVX);  
+        }
+        if (goodCBTmuonGlo) {
+          histos.get<TH1>(HIST("hCounterTVX_CBT_muon_glo"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVX_CBT_muon_glo"))->Fill(srun, 1. / csTVX);  
+        }
         if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
           histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
           histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, 1. / csTVX);
+          if (goodCBT) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT"))->Fill(srun, 1. / csTVX);  
+          }
+          if (goodCBThadronPID) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_hadronPID"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT_hadronPID"))->Fill(srun, 1. / csTVX);  
+          }
+          if (goodCBTelectronPID) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_electronPID"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT_electronPID"))->Fill(srun, 1. / csTVX);  
+          }
+          if (goodCBTcalo) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_calo"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVX_afterBCcutsCBT_calo"))->Fill(srun, 1. / csTVX);  
+          }
+          if (goodCBTmuon) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_muon"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT_muon"))->Fill(srun, 1. / csTVX);  
+          }
+          if (goodCBTmuonGlo) {
+            histos.get<TH1>(HIST("hCounterTVXafterBCcuts_CBT_muon_glo"))->Fill(srun, 1);
+            histos.get<TH1>(HIST("hLumiTVXafterBCcuts_CBT_muon_glo"))->Fill(srun, 1. / csTVX);  
+          }
         }
       }
       // Fill counters and lumi histograms for Pb-Pb lumi monitoring
