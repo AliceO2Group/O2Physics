@@ -240,6 +240,7 @@ struct CentralityTable {
     mRunNumber = 0;
     listCalib.setObject(new TList);
     if (!produceHistograms.value) {
+      LOG(info) << "Debug histograms are disabled. No histograms will be produced.";
       return;
     }
 
@@ -259,6 +260,7 @@ struct CentralityTable {
     histos.addClone("FT0C/", "sel8FT0C/");
     histos.addClone("FT0A/", "sel8FT0A/");
 
+    LOG(info) << "Debug histograms are enabled. Histograms will be produced.";
     histos.print();
   }
 
@@ -569,6 +571,7 @@ struct CentralityTable {
         mftInfo.mCalibrationStored = false;
         if (callst != nullptr) {
           if (produceHistograms) {
+            LOG(info) << "Adding calibration list to the list of calibration lists";
             listCalib->Add(callst->Clone(Form("%i", bc.runNumber())));
           }
           LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());

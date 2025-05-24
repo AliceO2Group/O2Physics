@@ -47,6 +47,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/CorrelatedBkgs.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -61,6 +62,7 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_decay::hf_cand_3prong;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
+using namespace o2::hf_corrbkg;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -941,7 +943,10 @@ struct HfCandidateCreator3ProngExpressions {
         }
       }
 
+
       // D± → π± K∓ π±
+      LOG(info) << "--------------------------------------------";
+      LOG(info) << "D+ -> Pi K Pi";
       if (flag == 0) {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
@@ -956,6 +961,17 @@ struct HfCandidateCreator3ProngExpressions {
           flag = sign * DecayChannelMain::DplusToPiKPi;
         }
       }
+      LOG(info) << "D+ matching ended";
+      
+      // if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+      //   indexRec = matchFinalStateDMeson<true, true>(mcParticles, arrayDaughters, Pdg::kDPlus, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
+      // } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+      //   indexRec = matchFinalStateDMeson<true, false>(mcParticles, arrayDaughters, Pdg::kDPlus, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
+      // } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+      //   indexRec = matchFinalStateDMeson<true, false>(mcParticles, arrayDaughters, Pdg::kDPlus, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
+      // } else {
+      //   indexRec = matchFinalStateDMeson<false, false>(mcParticles, arrayDaughters, Pdg::kDPlus, &sign, 2, &nKinkedTracks, &nInteractionsWithMaterial);
+      // }
 
       // Ds± → K± K∓ π± and D± → K± K∓ π±
       if (flag == 0) {
@@ -1028,27 +1044,6 @@ struct HfCandidateCreator3ProngExpressions {
         if (indexRec > -1) {
           flag = sign * DecayChannelMain::LcToPKPi;
 
-          // Flagging the different Λc± → p± K∓ π± decay channels
-          if (arrayDaughters[0].has_mcParticle()) {
-            swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
-          }
-          RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == NDaughtersResonant) {
-            for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-              auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
-              arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
-            }
-            if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
-              channel = 1;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
-              channel = 2;
-            } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
-              channel = 3;
-            }
-          }
-        }
-      }
-
       // Ξc± → p± K∓ π±
       if (flag == 0) {
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -1070,6 +1065,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
+        LOG(info) << "Setting origin";
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
@@ -1079,6 +1075,7 @@ struct HfCandidateCreator3ProngExpressions {
       } else {
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
+      LOG(info) << "--------------------------------------------";
     }
 
     for (const auto& mcCollision : mcCollisions) {

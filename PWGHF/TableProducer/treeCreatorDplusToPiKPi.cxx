@@ -23,6 +23,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CorrelatedBkgs.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -31,6 +32,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
+using namespace o2::hf_corrbkg;
 
 namespace o2::aod
 {
@@ -273,6 +275,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK);
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
   Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DstarToPiKPi);
+  Partition<SelectedCandidatesMcWithMl> reconstructedCandCorrBkgsMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != 0; // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
 
   void init(InitContext const&)
   {
@@ -607,6 +610,17 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
+
+  void processMcCorrBkgsSgnWCentMl(aod::Collisions const& collisions,
+                                   aod::McCollisions const& mccollisions,
+                                   SelectedCandidatesMcWithMl const&,
+                                   MatchedGenCandidatesMc const& particles,
+                                   TracksWPid const& tracks)
+  {
+    fillMcTables(collisions, mccollisions, reconstructedCandCorrBkgsMl, particles, tracks);
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcCorrBkgsSgnWCentMl, "Process MC correlated bkgs with cent and ML info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
