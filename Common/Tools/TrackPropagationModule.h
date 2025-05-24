@@ -9,8 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef COMMON_TOOLS_TRACKPROPAGATIONFUNCTIONS_H_
-#define COMMON_TOOLS_TRACKPROPAGATIONFUNCTIONS_H_
+/// \file TrackPropagationModule.h
+/// \brief track propagation module functionality to be used in tasks
+/// \author ALICE
+
+#ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
+#define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
 #include <cstdlib>
 #include <cmath>
@@ -36,7 +40,7 @@ namespace o2
 namespace common
 {
 
-struct trackPropagationProducts : o2::framework::ProducesGroup {
+struct TrackPropagationProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::StoredTracks> tracksParPropagated;
   o2::framework::Produces<aod::TracksExtension> tracksParExtensionPropagated;
   o2::framework::Produces<aod::StoredTracksCov> tracksParCovPropagated;
@@ -46,7 +50,7 @@ struct trackPropagationProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::TrackTunerTable> tunertable;
 };
 
-struct trackPropagationConfigurables : o2::framework::ConfigurableGroup {
+struct TrackPropagationConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "trackPropagation";
   o2::framework::Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
@@ -136,7 +140,7 @@ class TrackPropagationModule
       }
     }
 
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (fillTracksCov) {
         if (fillTracksDCA || fillTracksDCACov) {
           mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -250,4 +254,4 @@ class TrackPropagationModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_TRACKPROPAGATIONFUNCTIONS_H_
+#endif // COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_

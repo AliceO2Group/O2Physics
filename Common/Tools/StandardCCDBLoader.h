@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file StandardCCDBLoader.cxx
+/// \brief A simple object to handle ccdb queries
+/// \author ALICE
+
 #ifndef COMMON_TOOLS_STANDARDCCDBLOADER_H_
 #define COMMON_TOOLS_STANDARDCCDBLOADER_H_
 
@@ -28,11 +32,10 @@ namespace common
 {
 
 // ConfigurableGroup with locations
-struct standardCCDBLoaderConfigurables : o2::framework::ConfigurableGroup {
+struct StandardCCDBLoaderConfigurables : o2::framework::ConfigurableGroup {
   std::string prefix = "ccdb";
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   o2::framework::Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 };

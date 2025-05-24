@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file trackPropagationTester.cxx
+/// \brief testing ground for track propagation
+/// \author ALICE
+
 //===============================================================
 //
 // Experimental version of the track propagation task
@@ -52,9 +56,9 @@ using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
 struct TrackPropagationTester {
-  o2::common::standardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
-  o2::common::trackPropagationProducts trackPropagationProducts;
-  o2::common::trackPropagationConfigurables trackPropagationConfigurables;
+  o2::common::StandardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
+  o2::common::TrackPropagationProducts trackPropagationProducts;
+  o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
