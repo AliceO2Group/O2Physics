@@ -423,10 +423,10 @@ struct OnTheFlyTracker {
     rand.SetSeed(seed);
 
     // configure FastTracker
-    fastTracker.magneticField = magneticField;
-    fastTracker.applyZacceptance = fastTrackerSettings.applyZacceptance;
-    fastTracker.applyMSCorrection = fastTrackerSettings.applyMSCorrection;
-    fastTracker.applyElossCorrection = fastTrackerSettings.applyElossCorrection;
+    fastTracker.SetMagneticField(magneticField);
+    fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
+    fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+    fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
     if (fastTrackerSettings.alice3detector == 0) {
       fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
@@ -633,8 +633,8 @@ struct OnTheFlyTracker {
           nTPCHits[i] = 0;
           if (enableSecondarySmearing) {
             nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-            nSiliconHits[i] = fastTracker.nSiliconPoints;
-            nTPCHits[i] = fastTracker.nGasPoints;
+            nSiliconHits[i] = fastTracker.GetNSiliconPoints();
+            nTPCHits[i] = fastTracker.GetNGasPoints();
 
             if (nHits[i] < 0) { // QA
               histos.fill(HIST("hFastTrackerQA"), o2::math_utils::abs(nHits[i]));
@@ -645,8 +645,8 @@ struct OnTheFlyTracker {
             } else {
               continue; // extra sure
             }
-            for (uint32_t ih = 0; ih < fastTracker.hits.size(); ih++) {
-              histos.fill(HIST("hFastTrackerHits"), fastTracker.hits[ih][2], std::hypot(fastTracker.hits[ih][0], fastTracker.hits[ih][1]));
+            for (uint32_t ih = 0; ih < fastTracker.GetNHits(); ih++) {
+              histos.fill(HIST("hFastTrackerHits"), fastTracker.GetHitZ(ih), std::hypot(fastTracker.GetHitX(ih), fastTracker.GetHitY(ih)));
             }
           } else {
             isReco[i] = true;
@@ -1116,8 +1116,8 @@ struct OnTheFlyTracker {
     }
 
     // do bookkeeping of fastTracker tracking
-    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.covMatNotOK);
-    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.covMatOK);
+    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.GetCovMatNotOK());
+    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.GetCovMatOK());
   } // end process
 };
 

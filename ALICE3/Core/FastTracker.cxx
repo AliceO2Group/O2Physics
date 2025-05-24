@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <string>
 #include "TMath.h"
 #include "TMatrixD.h"
 #include "TRandom.h"
@@ -214,7 +215,7 @@ float FastTracker::Dist(float z, float r)
     if (i == nSteps - 1)
       index = 1;
     z0 = -4 * sigmaD + i * dz0;
-    dist += index * (dz0 / 3.) * (1 / o2::math_utils::sqrt(o2::constants::math::TwoPI) / sigmaD) * exp(-z0 * z0 / 2. / sigmaD / sigmaD) * (1 / o2::math_utils::sqrt((z - z0) * (z - z0) + r * r));
+    dist += index * (dz0 / 3.) * (1 / o2::math_utils::sqrt(o2::constants::math::TwoPI) / sigmaD) * std::exp(-z0 * z0 / 2. / sigmaD / sigmaD) * (1 / o2::math_utils::sqrt((z - z0) * (z - z0) + r * r));
     if (index != 4)
       index = 4;
     else
@@ -295,7 +296,7 @@ float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float 
 
 // function to provide a reconstructed track from a perfect input track
 // returns number of intercepts (generic for now)
-int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, float nch)
+int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch)
 {
   hits.clear();
   nIntercepts = 0;
