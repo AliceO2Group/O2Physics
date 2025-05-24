@@ -16,6 +16,7 @@
 #ifndef COMMON_TOOLS_STANDARDCCDBLOADER_H_
 #define COMMON_TOOLS_STANDARDCCDBLOADER_H_
 
+#include <string>
 #include <cstdlib>
 #include <cmath>
 #include <array>

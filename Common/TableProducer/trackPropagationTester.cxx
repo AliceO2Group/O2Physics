@@ -37,7 +37,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 #include "Common/Tools/TrackPropagationModule.h"

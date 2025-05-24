@@ -16,9 +16,11 @@
 #ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 #define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
+#include <memory>
 #include <cstdlib>
 #include <cmath>
 #include <array>
+#include <string>
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Configurable.h"
 #include "Framework/HistogramSpec.h"
@@ -67,7 +69,7 @@ class TrackPropagationModule
  public:
   TrackPropagationModule(){
     // constructor
-  };
+  }
 
   // controls behaviour
   bool fillTracksCov = false;
