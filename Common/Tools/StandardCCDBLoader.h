@@ -58,14 +58,6 @@ class StandardCCDBLoader
   o2::base::MatLayerCylSet* lut = nullptr;
   int runNumber = -1;
 
-  template <typename TConfigurableGroup, typename TCCDB>
-  void init(TConfigurableGroup const& cGroup, TCCDB& ccdb)
-  {
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setURL(cGroup.ccdburl.value);
-  }
-
   template <typename TConfigurableGroup, typename TCCDB, typename TBCs>
   void initCCDBfromBCs(TConfigurableGroup const& cGroup, TCCDB& ccdb, TBCs& bcs, bool getMeanVertex = true)
   {

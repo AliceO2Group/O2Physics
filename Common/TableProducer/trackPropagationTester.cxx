@@ -59,6 +59,8 @@ struct TrackPropagationTester {
   o2::common::TrackPropagationProducts trackPropagationProducts;
   o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
 
+  // CCDB boilerplate declarations
+  o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::common::StandardCCDBLoader ccdbLoader;
@@ -68,12 +70,18 @@ struct TrackPropagationTester {
 
   void init(o2::framework::InitContext& initContext)
   {
-    ccdbLoader.init(standardCCDBLoaderConfigurables, ccdb);
+    // CCDB boilerplate init 
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setURL(ccdburl.value);
+    
+    // task-specific
     trackPropagation.init(trackPropagationConfigurables, registry, initContext);
   }
 
   void processReal(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
   {
+    // task-specific
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
     trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, registry);
   }
