@@ -29,6 +29,7 @@ namespace track_association
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);            //! Collision index
 DECLARE_SOA_INDEX_COLUMN(Track, track);                    //! Track index
+DECLARE_SOA_INDEX_COLUMN(EMCalTrack, emcaltrack);          //! EMCalTrack index
 DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);              //! FwdTrack index
 DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack);              //! MFTTrack index
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl); //! Array of collision indices
@@ -40,6 +41,10 @@ DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collis
 
 DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLL", //! Table with vectors of collision indices stored per track
                   track_association::CollisionIds);
+
+DECLARE_SOA_TABLE(EMCalTrackAssoc, "AOD", "EMCALTRACKASSOC", //! Table for emcaltrack-to-collision association
+                  track_association::CollisionId,
+                  track_association::EMCalTrackId);
 
 DECLARE_SOA_TABLE(FwdTrackAssoc, "AOD", "FWDTRACKASSOC", //! Table for fwdtrack-to-collision association
                   track_association::CollisionId,
