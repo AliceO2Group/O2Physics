@@ -95,11 +95,13 @@ struct FlowQa {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
-  O2_DEFINE_CONFIGURABLE(cfgUseEPcorrection, bool, false, "Use event plane efficiency correction")
-  O2_DEFINE_CONFIGURABLE(cfgUseEPEffSlopeFactor, float, 1.0f, "A factor to scale the EP efficiency slope")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrUse, bool, false, "Use track density efficiency correction")
+  O2_DEFINE_CONFIGURABLE(cfgTrackDensityCorrSlopeFactor, float, 1.0f, "A factor to scale the track density efficiency slope")
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  Configurable<std::vector<double>> cfgTrackDensityP0{"cfgTrackDensityP0", std::vector<double>{0.6003720411, 0.6152630970, 0.6288860646, 0.6360694031, 0.6409494798, 0.6450540203, 0.6482117301, 0.6512592056, 0.6640008690, 0.6862631416, 0.7005738691, 0.7106567432, 0.7170728333}, "parameter 0 for track density efficiency correction"};
+  Configurable<std::vector<double>> cfgTrackDensityP1{"cfgTrackDensityP1", std::vector<double>{-1.007592e-05, -8.932635e-06, -9.114538e-06, -1.054818e-05, -1.220212e-05, -1.312304e-05, -1.376433e-05, -1.412813e-05, -1.289562e-05, -1.050065e-05, -8.635725e-06, -7.380821e-06, -6.201250e-06}, "parameter 1 for track density efficiency correction"};
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
@@ -237,6 +239,7 @@ struct FlowQa {
     // Track QA
     registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
+    registry.add("hPhiWeightedTrDen", "corrected #phi distribution, considering track density", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
     registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
@@ -364,23 +367,17 @@ struct FlowQa {
     }
     fGFW->CreateRegions();
 
-    if (cfgUseEPcorrection) {
-      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", 7, 0.2, 3.0);
-      funcEff.resize(7);
-      funcEff[0] = new TF1("funcEff0", "[0]+[1]*x", 0, 3000);
-      funcEff[0]->SetParameters(0.736274, -2.26721e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[1] = new TF1("funcEff1", "[0]+[1]*x", 0, 3000);
-      funcEff[1]->SetParameters(0.773396, -2.79496e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[2] = new TF1("funcEff2", "[0]+[1]*x", 0, 3000);
-      funcEff[2]->SetParameters(0.792831, -2.69748e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[3] = new TF1("funcEff3", "[0]+[1]*x", 0, 3000);
-      funcEff[3]->SetParameters(0.808402, -2.48438e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[4] = new TF1("funcEff4", "[0]+[1]*x", 0, 3000);
-      funcEff[4]->SetParameters(0.817907, -2.31138e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[5] = new TF1("funcEff5", "[0]+[1]*x", 0, 3000);
-      funcEff[5]->SetParameters(0.82473, -2.20517e-05 * cfgUseEPEffSlopeFactor);
-      funcEff[6] = new TF1("funcEff6", "[0]+[1]*x", 0, 3000);
-      funcEff[6]->SetParameters(0.829151, -2.0758e-05 * cfgUseEPEffSlopeFactor);
+    if (cfgTrackDensityCorrUse) {
+      std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      funcEff.resize(pTEffBins.size() - 1);
+      // LHC24g3 Eff
+      std::vector<double> f1p0 = cfgTrackDensityP0;
+      std::vector<double> f1p1 = cfgTrackDensityP1;
+      for (uint ifunc = 0; ifunc < pTEffBins.size() - 1; ifunc++) {
+        funcEff[ifunc] = new TF1(Form("funcEff%i", ifunc), "[0]+[1]*x", 0, 3000);
+        funcEff[ifunc]->SetParameters(f1p0[ifunc], f1p1[ifunc] * cfgTrackDensityCorrSlopeFactor);
+      }
       funcV2 = new TF1("funcV2", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
       funcV2->SetParameters(0.0186111, 0.00351907, -4.38264e-05, 1.35383e-07, -3.96266e-10);
       funcV3 = new TF1("funcV3", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
@@ -706,7 +703,7 @@ struct FlowQa {
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
     double v2 = 0, v3 = 0, v4 = 0;
-    if (cfgUseEPcorrection) {
+    if (cfgTrackDensityCorrUse) {
       double q2x = 0, q2y = 0;
       double q3x = 0, q3y = 0;
       double q4x = 0, q4y = 0;
@@ -744,15 +741,16 @@ struct FlowQa {
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
-      if (cfgUseEPcorrection && withinPtRef) {
+      if (cfgTrackDensityCorrUse && withinPtRef) {
         double fphi = v2 * std::cos(2 * (track.phi() - psi2Est)) + v3 * std::cos(3 * (track.phi() - psi3Est)) + v4 * std::cos(4 * (track.phi() - psi4Est));
         fphi = (1 + 2 * fphi);
         int pTBinForEff = hFindPtBin->FindBin(track.pt());
-        if (pTBinForEff >= 1 && pTBinForEff <= 7) {
+        if (pTBinForEff >= 1 && pTBinForEff <= hFindPtBin->GetNbinsX()) {
           wEPeff = funcEff[pTBinForEff - 1]->Eval(fphi * tracks.size());
           if (wEPeff > 0.) {
             wEPeff = 1. / wEPeff;
             weff *= wEPeff;
+            registry.fill(HIST("hPhiWeightedTrDen"), track.phi(), wacc * wEPeff);
           }
         }
       }

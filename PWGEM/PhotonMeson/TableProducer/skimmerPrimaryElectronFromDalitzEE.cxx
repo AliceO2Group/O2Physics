@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEventsNgPCM>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEventsNgPCM>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
@@ -58,7 +58,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // Operation and minimisation criteria
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -268,7 +267,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), std::make_pair(collision.globalIndex(), track.globalIndex())) == stored_trackIds.end()) {
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
-                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.c1Pt21Pt2(),
+                         track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                          track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
@@ -374,10 +373,10 @@ struct skimmerPrimaryElectronFromDalitzEE {
     for (const auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
+
       if (collision.ngpcm() < 1) {
         continue;
       }
@@ -409,12 +408,12 @@ struct skimmerPrimaryElectronFromDalitzEE {
       if (!collision.has_mcCollision()) {
         continue;
       }
+      if (!collision.isSelected()) {
+        continue;
+      }
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
       if (collision.ngpcm() < 1) {
         continue;
       }

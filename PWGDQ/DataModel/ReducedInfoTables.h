@@ -408,6 +408,7 @@ DECLARE_SOA_TABLE(ReducedMCTracks, "AOD", "REDUCEDMCTRACK", //!  MC track inform
                   mcparticle::FromBackgroundEvent<mcparticle::Flags>,
                   mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
+                  mcparticle::GetHepMCStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using ReducedMCTrack = ReducedMCTracks::iterator;
@@ -1010,6 +1011,14 @@ DECLARE_SOA_TABLE(V0Bits, "AOD", "V0BITS", //!
 
 // iterators
 using V0Bit = V0Bits::iterator;
+
+namespace v0mapID
+{
+DECLARE_SOA_COLUMN(V0AddID, v0addid, int8_t); //!
+} // namespace v0mapID
+
+DECLARE_SOA_TABLE(V0MapID, "AOD", "V0MAPID", //!
+                  v0mapID::V0AddID);
 
 namespace DalBits
 {
