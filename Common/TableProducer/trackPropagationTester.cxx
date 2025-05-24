@@ -52,10 +52,10 @@ using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
 struct TrackPropagationTester {
-  o2::common::standardCCDBLoaderConfigurables standardCCDBLoaderConfigurables; 
-  o2::common::trackPropagationProducts trackPropagationProducts; 
-  o2::common::trackPropagationConfigurables trackPropagationConfigurables; 
-  
+  o2::common::standardCCDBLoaderConfigurables standardCCDBLoaderConfigurables;
+  o2::common::trackPropagationProducts trackPropagationProducts;
+  o2::common::trackPropagationConfigurables trackPropagationConfigurables;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::common::StandardCCDBLoader ccdbLoader;

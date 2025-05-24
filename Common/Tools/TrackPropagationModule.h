@@ -61,8 +61,7 @@ struct trackPropagationConfigurables : o2::framework::ConfigurableGroup {
 class TrackPropagationModule
 {
  public:
-  TrackPropagationModule()
-  {
+  TrackPropagationModule(){
     // constructor
   };
 

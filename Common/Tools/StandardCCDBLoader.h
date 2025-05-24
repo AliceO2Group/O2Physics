@@ -27,14 +27,14 @@ namespace o2
 namespace common
 {
 
-// ConfigurableGroup with locations 
+// ConfigurableGroup with locations
 struct standardCCDBLoaderConfigurables : o2::framework::ConfigurableGroup {
-    std::string prefix = "ccdb";
-    o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-    o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-    o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-    o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    o2::framework::Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  std::string prefix = "ccdb";
+  o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 };
 
 class StandardCCDBLoader
@@ -54,8 +54,9 @@ class StandardCCDBLoader
   o2::base::MatLayerCylSet* lut = nullptr;
   int runNumber = -1;
 
-  template <typename TConfigurableGroup,typename TCCDB>
-  void init(TConfigurableGroup const& cGroup, TCCDB& ccdb){
+  template <typename TConfigurableGroup, typename TCCDB>
+  void init(TConfigurableGroup const& cGroup, TCCDB& ccdb)
+  {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setURL(cGroup.ccdburl.value);
@@ -103,7 +104,7 @@ class StandardCCDBLoader
   }
 };
 
-} // namespace common 
+} // namespace common
 } // namespace o2
 
 #endif // COMMON_TOOLS_STANDARDCCDBLOADER_H_
