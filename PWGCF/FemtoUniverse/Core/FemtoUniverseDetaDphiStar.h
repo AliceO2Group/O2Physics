@@ -47,7 +47,7 @@ class FemtoUniverseDetaDphiStar
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
-  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii, float lPhiMassMin = 1.014, float lPhiMassMax = 1.026)
+  void init(HistogramRegistry* registry, HistogramRegistry* registryQA, float ldeltaphistarcutmin, float ldeltaphistarcutmax, float ldeltaetacutmin, float ldeltaetacutmax, float lchosenradii, bool lplotForEveryRadii, float lPhiMassMin = 1.014, float lPhiMassMax = 1.026, bool lisSameSignCPR = false)
   {
     chosenRadii = lchosenradii;
     cutDeltaPhiStarMax = ldeltaphistarcutmax;
@@ -59,6 +59,7 @@ class FemtoUniverseDetaDphiStar
     mHistogramRegistryQA = registryQA;
     cutPhiInvMassLow = lPhiMassMin;
     cutPhiInvMassHigh = lPhiMassMax;
+    isSameSignCPR = lisSameSignCPR;
 
     if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
       std::string dirName = static_cast<std::string>(DirNames[0]);
@@ -275,6 +276,8 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughterpart2 = (ChosenEventType == femto_universe_container::EventType::mixed ? part2.globalIndex() : part2.index()) + CascChildTable[i][1];
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
+        if (isSameSignCPR && (daughterpart1.sign() != daughterpart2.sign()))
+          continue;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
         auto dphiAvg = averagePhiStar(*daughterpart1, *daughterpart2, i);
         if (ChosenEventType == femto_universe_container::EventType::same) {
@@ -462,6 +465,7 @@ class FemtoUniverseDetaDphiStar
   bool plotForEveryRadii = false;
   float cutPhiInvMassLow;
   float cutPhiInvMassHigh;
+  bool isSameSignCPR = false;
 
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpisame{};
   std::array<std::array<std::shared_ptr<TH2>, 2>, 7> histdetadpimixed{};
