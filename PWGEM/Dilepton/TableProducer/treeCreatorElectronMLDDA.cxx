@@ -629,10 +629,10 @@ struct TreeCreatorElectronMLDDA {
             registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.p(), neg.beta());
             registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.p(), pos.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.p(), pos.beta());
-            if (dist01(engine) < downscaling_pion && pos.tpcInnerParam() < max_pin_for_downscaling_pion) {
+            if (dist01(engine) < downscaling_pion || pos.tpcInnerParam() < max_pin_for_downscaling_pion) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            if (dist01(engine) < downscaling_pion && neg.tpcInnerParam() < max_pin_for_downscaling_pion) {
+            if (dist01(engine) < downscaling_pion || neg.tpcInnerParam() < max_pin_for_downscaling_pion) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
           }
@@ -640,7 +640,7 @@ struct TreeCreatorElectronMLDDA {
         if (isProton(pos) && isPionTight(neg)) {
           registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
-            if (dist01(engine) < downscaling_proton && pos.tpcInnerParam() < max_pin_for_downscaling_proton) {
+            if (dist01(engine) < downscaling_proton || pos.tpcInnerParam() < max_pin_for_downscaling_proton) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.p(), pos.tpcSignal());
@@ -650,7 +650,7 @@ struct TreeCreatorElectronMLDDA {
         if (isPionTight(pos) && isProton(neg)) {
           registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
-            if (dist01(engine) < downscaling_proton && neg.tpcInnerParam() < max_pin_for_downscaling_proton) {
+            if (dist01(engine) < downscaling_proton || neg.tpcInnerParam() < max_pin_for_downscaling_proton) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.p(), neg.tpcSignal());
@@ -662,10 +662,10 @@ struct TreeCreatorElectronMLDDA {
         registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
         if (isElectron(pos) && isElectron(neg)) {
           if ((v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon)) {
-            if (dist01(engine) < downscaling_electron && pos.tpcInnerParam() < max_pin_for_downscaling_electron) {
+            if (dist01(engine) < downscaling_electron || pos.tpcInnerParam() < max_pin_for_downscaling_electron) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            if (dist01(engine) < downscaling_electron && neg.tpcInnerParam() < max_pin_for_downscaling_electron) {
+            if (dist01(engine) < downscaling_electron || neg.tpcInnerParam() < max_pin_for_downscaling_electron) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.p(), neg.tpcSignal());
@@ -756,7 +756,7 @@ struct TreeCreatorElectronMLDDA {
           if (cascadecuts.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecuts.cfg_max_mass_Omega) { // select Omega candidates
             registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.p(), bachelor.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.p(), bachelor.beta());
-            if (dist01(engine) < downscaling_kaon && bachelor.tpcInnerParam() < max_pin_for_downscaling_kaon) {
+            if (dist01(engine) < downscaling_kaon || bachelor.tpcInnerParam() < max_pin_for_downscaling_kaon) {
               fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), false);
             }
           }
@@ -782,12 +782,12 @@ struct TreeCreatorElectronMLDDA {
 
         if ((dalitzcuts.cfg_min_mass_ee < v12.M() && v12.M() < dalitzcuts.cfg_max_mass_ee) && (dalitzcuts.cfg_min_phiv_ee < phiv && phiv < dalitzcuts.cfg_max_phiv_ee)) { // ee from pi0 dalitz decay is found.
           if (isElectronTight(pos) && isElectron(neg)) {
-            if (dist01(engine) < downscaling_electron_primary && neg.tpcInnerParam() < max_pin_for_downscaling_electron_primary) {
+            if (dist01(engine) < downscaling_electron_primary || neg.tpcInnerParam() < max_pin_for_downscaling_electron_primary) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), true); // primary electron candidates
             }
           }
           if (isElectron(pos) && isElectronTight(neg)) {
-            if (dist01(engine) < downscaling_electron_primary && pos.tpcInnerParam() < max_pin_for_downscaling_electron_primary) {
+            if (dist01(engine) < downscaling_electron_primary || pos.tpcInnerParam() < max_pin_for_downscaling_electron_primary) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), true); // primary electron candidates
             }
           }
