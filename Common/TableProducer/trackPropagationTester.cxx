@@ -70,11 +70,11 @@ struct TrackPropagationTester {
 
   void init(o2::framework::InitContext& initContext)
   {
-    // CCDB boilerplate init 
+    // CCDB boilerplate init
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setURL(ccdburl.value);
-    
+
     // task-specific
     trackPropagation.init(trackPropagationConfigurables, registry, initContext);
   }
