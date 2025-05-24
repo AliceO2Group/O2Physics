@@ -789,6 +789,8 @@ struct RecoDecay {
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
         if constexpr (!acceptIncompleteReco && !checkProcess) {
           if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+            // LOG(info) << "MC Rec: Rejected: too many direct daughters: " << particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1
+            //     << " (expected " << N << " final)";
             // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
             return -1;
           }
@@ -801,7 +803,9 @@ struct RecoDecay {
         // }
         // printf("\n");
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
+        // Printf("MC Rec: Number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != N) {
+          // LOG(info) << "MC Rec: Rejected: incorrect number of final daughters: " << arrAllDaughtersIndex.size() << " (expected " << N << ")";
           // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
