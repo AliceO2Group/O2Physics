@@ -705,15 +705,21 @@ using HfRedCandBplusToJPsiK = soa::Join<HfCandBplusExt, HfRedBplus2JPsiDaus>;
 
 namespace hf_cand_bs_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");               //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");            //! Prong1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(JPsi, jPsi, int, HfRedJPsis, "_0");                     //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Phi, prong0Phi, int, HfRedBachProng0Bases, "_0"); //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Phi, prong1Phi, int, HfRedBachProng1Bases, "_0"); //! J/Psi index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                        //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                  //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);            //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_bs_reduced
 
 DECLARE_SOA_TABLE(HfRedBsProngs, "AOD", "HFREDBSPRONG", //! Table with Bs daughter indices
                   hf_cand_bs_reduced::Prong0Id, hf_cand_bs_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedBs2JPsiDaus, "AOD", "HFREDBS2JPSIDAU",
+                  hf_cand_bs_reduced::JPsiId, hf_cand_bs_reduced::Prong0PhiId, hf_cand_bs_reduced::Prong1PhiId);
 
 DECLARE_SOA_TABLE(HfRedBsDsMls, "AOD", "HFREDBSDSML", //! Table with ML scores for the Ds daughter
                   hf_cand_bs_reduced::Prong0MlScoreBkg,
@@ -857,6 +863,15 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfMcRecRedJPsiKs, "AOD", "HFMCRECREDJPSIK", //! Table with reconstructed MC information on J/PsiK(<-B+) pairs for reduced workflow
+                  hf_cand_bplus_reduced::JPsiId,
+                  hf_cand_bplus_reduced::Prong1Id,
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::FlagWrongCollision,
+                  hf_cand_bplus::DebugMcRec,
+                  hf_bplus_mc::PtMother);
+
 // DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
 DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconstructed MC information on D0Pi(<-B0) pairs for MC checks in reduced workflow
                   hf_bplus_mc::PdgCodeBeautyMother,
@@ -908,7 +923,7 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
                   hf_cand_bplus_config::MySelectionFlagD0bar,
                   hf_cand_bplus_config::MyInvMassWindowD0Pi);
 
-DECLARE_SOA_TABLE(HfCandBpToJPsiKConfigs, "AOD", "HFCANDBPTOJPSIKCONFIG", //! Table with configurables information for reduced workflow
+DECLARE_SOA_TABLE(HfCfgBpToJPsi, "AOD", "HFCFGBPTOJPSI", //! Table with configurables information for reduced workflow
                   hf_cand_bplus_config::MyInvMassWindowJPsiK);
 
 namespace hf_bs_mc
@@ -938,6 +953,16 @@ DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code 
 DECLARE_SOA_TABLE(HfMcRecRedDsPis, "AOD", "HFMCRECREDDSPI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
                   hf_cand_bs_reduced::Prong0Id,
                   hf_cand_bs_reduced::Prong1Id,
+                  hf_cand_bs::FlagMcMatchRec,
+                  hf_cand_bs::FlagWrongCollision,
+                  hf_cand_bs::DebugMcRec,
+                  hf_bs_mc::PtMother);
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfMcRecRedJPsiPhis, "AOD", "HFMCRECREDJPSIPHI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
+                  hf_cand_bs_reduced::JPsiId,
+                  hf_cand_bs_reduced::Prong0PhiId,
+                  hf_cand_bs_reduced::Prong1PhiId,
                   hf_cand_bs::FlagMcMatchRec,
                   hf_cand_bs::FlagWrongCollision,
                   hf_cand_bs::DebugMcRec,
@@ -986,14 +1011,17 @@ DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC 
 // so we can use them in the Bs part
 namespace hf_cand_bs_config
 {
-DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t);    //! Flag to filter selected Ds mesons
-DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-width of the Bs invariant-mass window in GeV/c2
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t);            //! Flag to filter selected Ds mesons
+DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float);         //! Half-width of the Bs invariant-mass window in GeV/c2
+DECLARE_SOA_COLUMN(MyInvMassWindowJPsiPhi, myInvMassWindowJPsiPhi, float); //! Half-width of the Bs invariant-mass window in GeV/c2
 } // namespace hf_cand_bs_config
 
 DECLARE_SOA_TABLE(HfCandBsConfigs, "AOD", "HFCANDBSCONFIG", //! Table with configurables information for reduced workflow
                   hf_cand_bs_config::MySelectionFlagD,
                   hf_cand_bs_config::MyInvMassWindowDPi);
 
+DECLARE_SOA_TABLE(HfCfgBsToJPsi, "AOD", "HFCFGBSTOJPSI", //! Table with configurables information for reduced workflow
+                  hf_cand_bs_config::MyInvMassWindowJPsiPhi);
 namespace hf_lb_mc
 {
 // MC Rec
