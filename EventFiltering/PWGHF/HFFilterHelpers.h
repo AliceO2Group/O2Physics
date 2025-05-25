@@ -278,7 +278,7 @@ constexpr float massJPsi = o2::constants::physics::MassJPsi;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
-static const o2::framework::AxisSpec kstarAxis{100, 0.f, 1.f};
+static const o2::framework::AxisSpec kstarAxis{200, 0.f, 2.f};
 static const o2::framework::AxisSpec etaAxis{30, -1.5f, 1.5f};
 static const o2::framework::AxisSpec nSigmaAxis{100, -10.f, 10.f};
 static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
@@ -958,11 +958,11 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
     // Apply different PID strategy in different pt range
     // one side selection only
     if (pt <= ptThresholdPidStrategy) {
-      if (NSigmaTPC < -nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
+      if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
     } else {
-      if (NSigmaTOF < -nSigmaCuts[1] || NSigmaTPC < -nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
+      if (std::fabs(NSigmaTOF) > nSigmaCuts[1] || std::fabs(NSigmaTPC) > nSigmaCuts[0]) { // Use combined TPC and TOF above the threshold
         return false;
       }
     }
@@ -970,7 +970,7 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
 
   if (activateQA > 1) {
     hTPCPID->Fill(track.p(), NSigmaTPC);
-    if ((forceTof || track.hasTOF())) {
+    if ((!forceTof || track.hasTOF())) {
       if (trackSpecies == kProtonForFemto)
         hTOFPID->Fill(track.p(), NSigmaTOF);
       else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
