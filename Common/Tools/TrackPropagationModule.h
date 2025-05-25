@@ -172,7 +172,7 @@ class TrackPropagationModule
         if (fillTracksCov) {
           if constexpr (isMc) { // checking MC and fillCovMat block begins
             // bool hasMcParticle = track.has_mcParticle();
-            if (cGroup.useTrackTuner) {
+            if (cGroup.useTrackTuner.value) {
               trackTunedTracks->Fill(1); // all tracks
               bool hasMcParticle = track.has_mcParticle();
               if (hasMcParticle) {
