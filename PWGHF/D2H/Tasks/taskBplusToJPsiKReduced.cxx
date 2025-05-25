@@ -16,6 +16,7 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
 #include <vector>
+#include <string>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -23,26 +24,29 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseBplusToJPsiKReduced.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::pid_tpc_tof_utils;
 
 namespace o2::aod
 {
 namespace hf_cand_bplustojpsik_lite
 {
 DECLARE_SOA_COLUMN(PtJPsi, ptD, float);    //! Transverse momentum of JPsi daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(PtBach, ptBach, float); //! Transverse momentum of bachelor pion (GeV/c)
-// DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor pion
-// DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
-// DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
+DECLARE_SOA_COLUMN(PtBach, ptBach, float); //! Transverse momentum of bachelor kaon (GeV/c)
+// DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor kaon
+// DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor kaon
+// DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor kaon
 // DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of JPsi-meson daughter candidate
 // DECLARE_SOA_COLUMN(PtJPsiProngMin, ptJPsiProngMin, float);                               //! Minimum pT of prongs of JPsi daughter candidate (GeV/c)
 // DECLARE_SOA_COLUMN(AbsEtaJPsiProngMin, absEtaJPsiProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of JPsi daughter candidate
@@ -162,11 +166,43 @@ struct HfTaskBplusToJPsiKReduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_d0_pi::vecBinsPt}, "pT bin limits"};
+  // topological cuts
+  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_bplus_to_jpsi_k::vecBinsPt}, "pT bin limits"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_bplus_to_jpsi_k::Cuts[0], hf_cuts_bplus_to_jpsi_k::NBinsPt, hf_cuts_bplus_to_jpsi_k::NCutVars, hf_cuts_bplus_to_jpsi_k::labelsPt, hf_cuts_bplus_to_jpsi_k::labelsCutVar}, "B+ candidate selection per pT bin"};
+  // Enable PID
+  Configurable<int> kaonPidMethod{"kaonPidMethod", PidMethod::TpcOrTof, "PID selection method for the bachelor kaon (PidMethod::NoPid: none, PidMethod::TpcOrTof: TPC or TOF, PidMethod::TpcAndTof: TPC and TOF)"};
+  Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
+  // TPC PID
+  Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 5., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
+  // TOF PID
+  Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  // B+ ML inference
+  Configurable<bool> applyBplusMl{"applyBplusMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtBpMl{"binsPtBpMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirBpMl{"cutDirBpMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsBpMl{"cutsBpMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesBpMl{"nClassesBpMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_BPLUS/"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_BPLUSToD0Pi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
+  TrackSelectorKa selectorKaon;
+  o2::analysis::HfMlResponseBplusToJPsiKReduced<float> hfMlResponse;
+  o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
+  std::vector<float> outputMl = {};
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToJPsiPi >= selectionFlagBplus);
 
@@ -181,6 +217,19 @@ struct HfTaskBplusToJPsiKReduced {
     std::array<bool, 2> processFuncMc{doprocessMc, doprocessMcWithBplusMl};
     if ((std::accumulate(processFuncMc.begin(), processFuncMc.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
+    }
+
+    if (kaonPidMethod < 0 || kaonPidMethod >= PidMethod::NPidMethods) {
+      LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
+    }
+
+    if (kaonPidMethod != PidMethod::NoPid) {
+      selectorKaon.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+      selectorKaon.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorKaon.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorKaon.setRangePtTof(ptPidTofMin, ptPidTofMax);
+      selectorKaon.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+      selectorKaon.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
     const AxisSpec axisMassBplus{150, 4.5, 6.0};
@@ -207,6 +256,18 @@ struct HfTaskBplusToJPsiKReduced {
       registry.add("hMassRecBg", bPlusCandUnmatch + "inv. mass J/#Psi K^{+} (GeV/#it{c}^{2}); B^{+} " + stringPt, {HistType::kTH2F, {axisMassBplus, axisPtB}});
       registry.add("hMassJPsiRecBg", bPlusCandUnmatch + "nv. mass #mu^{+}#mu^{#minus} (GeV/#it{c}^{2}); J/#Psi " + stringPt, {HistType::kTH2F, {axisMassJPsi, axisPtJPsi}});
       registry.add("hd0KRecBg", bPlusCandMatch + "Kaon DCAxy to prim. vertex (cm); K^{+} " + stringPt, {HistType::kTH2F, {axisImpactPar, axisPtKa}});
+    }
+
+    if (applyBplusMl) {
+      hfMlResponse.configure(binsPtBpMl, cutsBpMl, cutDirBpMl, nClassesBpMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
     }
   }
 
@@ -236,6 +297,8 @@ struct HfTaskBplusToJPsiKReduced {
     auto candKa = candidate.template bachKa_as<aod::HfRedBachProng0Tracks>();
     auto ptJPsi = candidate.ptProng0();
     auto invMassJPsi = candJPsi.m();
+    uint8_t statusBplus = 0;
+    LOG(info) << "JPsi mass: " << invMassJPsi << " GeV/c^2";
 
     int8_t flagMcMatchRec = 0;
     int8_t flagWrongCollision = 0;
@@ -244,6 +307,41 @@ struct HfTaskBplusToJPsiKReduced {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), static_cast<int>(hf_cand_bplus::DecayTypeBToJPsiMc::BplusToJPsiKToMuMuK));
+    }
+
+    SETBIT(statusBplus, SelectionStep::RecoSkims);
+    if (hfHelper.selectionBplusToJPsiKTopol(candidate, cuts, binsPt)) {
+      SETBIT(statusBplus, SelectionStep::RecoTopol);
+    } else if (selectionFlagBplus >= BIT(SelectionStep::RecoTopol) * 2 - 1) {
+      return;
+    }
+    // track-level PID selection
+    // auto trackKa = candidate.template prong1_as<TracksPion>();
+    if (kaonPidMethod == PidMethod::TpcOrTof || kaonPidMethod == PidMethod::TpcAndTof) {
+      int pidTrackKa{TrackSelectorPID::Status::NotApplicable};
+      if (kaonPidMethod == PidMethod::TpcOrTof) {
+        pidTrackKa = selectorKaon.statusTpcOrTof(candKa);
+      } else if (kaonPidMethod == PidMethod::TpcAndTof) {
+        pidTrackKa = selectorKaon.statusTpcAndTof(candKa);
+      }
+      if (hfHelper.selectionBplusToJPsiKPid(pidTrackKa, acceptPIDNotApplicable.value)) {
+        // LOGF(info, "B+ candidate selection failed at PID selection");
+        SETBIT(statusBplus, SelectionStep::RecoPID);
+      } else if (selectionFlagBplus >= BIT(SelectionStep::RecoPID) * 2 - 1) {
+        return;
+      }
+    }
+
+    float candidateMlScoreSig = -1;
+    if constexpr (withBplusMl) {
+      // B+ ML selections
+      std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, candKa);
+      if (hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl)) {
+        SETBIT(statusBplus, SelectionStep::RecoMl);
+      } else if (selectionFlagBplus >= BIT(SelectionStep::RecoMl) * 2 - 1) {
+        return;
+      }
+      candidateMlScoreSig = outputMl[1];
     }
 
     registry.fill(HIST("hMass"), invMassBplus, ptCandBplus);
@@ -263,10 +361,6 @@ struct HfTaskBplusToJPsiKReduced {
 
     float pseudoRndm = ptJPsi * 1000. - static_cast<int64_t>(ptJPsi * 1000);
     if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
-      float candidateMlScoreSig = -1;
-      if constexpr (withBplusMl) {
-        candidateMlScoreSig = candidate.mlProbBplusToJPsiK();
-      }
       auto prong1 = candidate.template bachKa_as<aod::HfRedBachProng0Tracks>();
       float ptMother = -1.;
       if constexpr (doMc) {
@@ -299,7 +393,7 @@ struct HfTaskBplusToJPsiKReduced {
         // candJPsi.itsNClsProngMin(),
         // candJPsi.tpcNClsCrossedRowsProngMin(),
         // candJPsi.tpcChi2NClProngMax(),
-        // pion features
+        // kaon features
         candidate.ptProng1(),
         // std::abs(RecoDecay::eta(prong1.pVector())),
         // prong1.itsNCls(),
@@ -350,7 +444,7 @@ struct HfTaskBplusToJPsiKReduced {
       fillCand<false, false>(candidate, candidatesJPsi, kaonTracks);
     } // candidate loop
   } // processData
-  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processData, "Process data without ML scores for JPsi daughter", true);
+  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processData, "Process data without ML for B+", true);
 
   void processDataWithBplusMl(soa::Join<aod::HfRedCandBplusToJPsiK, aod::HfMlBplusToJPsiK> const& candidates,
                               aod::HfRedJPsis const& candidatesJPsi,
@@ -363,7 +457,7 @@ struct HfTaskBplusToJPsiKReduced {
       fillCand<false, true>(candidate, candidatesJPsi, kaonTracks);
     } // candidate loop
   } // processDataWithBplusMl
-  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processDataWithBplusMl, "Process data with(out) ML scores for B+ (JPsi daughter)", false);
+  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processDataWithBplusMl, "Process data with ML for B+", false);
 
   void processMc(soa::Join<aod::HfRedCandBplusToJPsiK, aod::HfMcRecRedBps> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
@@ -383,7 +477,7 @@ struct HfTaskBplusToJPsiKReduced {
       fillCandMcGen(particle);
     } // gen
   } // processMc
-  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processMc, "Process MC without ML scores for B+ and JPsi daughter", false);
+  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processMc, "Process MC without ML for B+", false);
 
   void processMcWithBplusMl(soa::Join<aod::HfRedCandBplusToJPsiK, aod::HfMlBplusToJPsiK, aod::HfMcRecRedBps> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
@@ -403,7 +497,7 @@ struct HfTaskBplusToJPsiKReduced {
       fillCandMcGen(particle);
     } // gen
   } // processMcWithBplusMl
-  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processMcWithBplusMl, "Process MC with(out) ML scores for B+ (JPsi daughter)", false);
+  PROCESS_SWITCH(HfTaskBplusToJPsiKReduced, processMcWithBplusMl, "Process MC with ML for B+", false);
 
 }; // struct
 
