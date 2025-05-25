@@ -550,7 +550,8 @@ struct TrHeAnalysis {
                         getRigidity(track) * (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        track.p() * (1.f * track.sign()), track.beta());
+                        track.p() * (1.f * track.sign()),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
