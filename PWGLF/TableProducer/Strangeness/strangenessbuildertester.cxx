@@ -40,6 +40,7 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 #include "PWGLF/Utils/strangenessBuilderModule.h"
+#include "Common/Tools/TrackPropagationModule.h"
 #include "Common/Tools/StandardCCDBLoader.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
@@ -85,6 +86,11 @@ struct StrangenessBuilderTester {
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
+  // track propagation
+  o2::common::TrackPropagationProducts trackPropagationProducts;
+  o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
+  o2::common::TrackPropagationModule trackPropagation;
+
   // registry
   HistogramRegistry histos{"histos"};
 
@@ -96,30 +102,35 @@ struct StrangenessBuilderTester {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
+    trackPropagation.init(trackPropagationConfigurables, histos, initContext);
     strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
   }
 
   void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, histos);
     strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
   }
 
   void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, histos);
     strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
   void processRealDataWithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, histos);
     strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
   }
 
   void processMonteCarloWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, histos);
     strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
   }
 
