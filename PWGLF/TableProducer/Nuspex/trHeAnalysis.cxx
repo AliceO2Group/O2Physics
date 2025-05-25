@@ -150,7 +150,7 @@ class Particle
       bethe.get(name, "resolution"); // Access the "resolution" parameter
 
     betheParams.clear();
-    for (int i = 0; i < nNumBetheParams; ++i) {
+    for (int i = 0; i < NNumBetheParams; ++i) {
       betheParams.push_back(bethe.get(name, i));
     }
   }
