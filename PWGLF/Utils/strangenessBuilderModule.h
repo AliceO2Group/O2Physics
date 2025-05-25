@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file strangenessBuilderModule.h
-/// \brief strangeness builder module 
+/// \brief strangeness builder module
 /// \author ALICE
 
 // simple checkers, but ensure 8 bit integers
@@ -184,80 +184,80 @@ static constexpr float defaultOmMassWindowParameters[1][4] = {{1.43210e-03, 2.03
 static constexpr float defaultLifetimeCuts[1][4] = {{20, 60, 40, 20}};
 
 struct products : o2::framework::ProducesGroup {
-    //__________________________________________________
-    // V0 tables
-    o2::framework::Produces<aod::V0Indices> v0indices; // standard part of V0Datas
-    o2::framework::Produces<aod::V0CoresBase> v0cores; // standard part of V0Datas
-    o2::framework::Produces<aod::V0Covs> v0covs;       // for decay chain reco
+  //__________________________________________________
+  // V0 tables
+  o2::framework::Produces<aod::V0Indices> v0indices; // standard part of V0Datas
+  o2::framework::Produces<aod::V0CoresBase> v0cores; // standard part of V0Datas
+  o2::framework::Produces<aod::V0Covs> v0covs;       // for decay chain reco
 
-    //__________________________________________________
-    // cascade tables
-    o2::framework::Produces<aod::CascIndices> cascidx;            // standard part of CascDatas
-    o2::framework::Produces<aod::KFCascIndices> kfcascidx;        // standard part of KFCascDatas
-    o2::framework::Produces<aod::TraCascIndices> tracascidx;      // standard part of TraCascDatas
-    o2::framework::Produces<aod::StoredCascCores> cascdata;       // standard part of CascDatas
-    o2::framework::Produces<aod::StoredKFCascCores> kfcascdata;   // standard part of KFCascDatas
-    o2::framework::Produces<aod::StoredTraCascCores> tracascdata; // standard part of TraCascDatas
-    o2::framework::Produces<aod::CascCovs> casccovs;              // for decay chain reco
-    o2::framework::Produces<aod::KFCascCovs> kfcasccovs;          // for decay chain reco
-    o2::framework::Produces<aod::TraCascCovs> tracasccovs;        // for decay chain reco
+  //__________________________________________________
+  // cascade tables
+  o2::framework::Produces<aod::CascIndices> cascidx;            // standard part of CascDatas
+  o2::framework::Produces<aod::KFCascIndices> kfcascidx;        // standard part of KFCascDatas
+  o2::framework::Produces<aod::TraCascIndices> tracascidx;      // standard part of TraCascDatas
+  o2::framework::Produces<aod::StoredCascCores> cascdata;       // standard part of CascDatas
+  o2::framework::Produces<aod::StoredKFCascCores> kfcascdata;   // standard part of KFCascDatas
+  o2::framework::Produces<aod::StoredTraCascCores> tracascdata; // standard part of TraCascDatas
+  o2::framework::Produces<aod::CascCovs> casccovs;              // for decay chain reco
+  o2::framework::Produces<aod::KFCascCovs> kfcasccovs;          // for decay chain reco
+  o2::framework::Produces<aod::TraCascCovs> tracasccovs;        // for decay chain reco
 
-    //__________________________________________________
-    // interlink tables
-    o2::framework::Produces<aod::V0DataLink> v0dataLink;           // de-refs V0s -> V0Data
-    o2::framework::Produces<aod::CascDataLink> cascdataLink;       // de-refs Cascades -> CascData
-    o2::framework::Produces<aod::KFCascDataLink> kfcascdataLink;   // de-refs Cascades -> KFCascData
-    o2::framework::Produces<aod::TraCascDataLink> tracascdataLink; // de-refs Cascades -> TraCascData
+  //__________________________________________________
+  // interlink tables
+  o2::framework::Produces<aod::V0DataLink> v0dataLink;           // de-refs V0s -> V0Data
+  o2::framework::Produces<aod::CascDataLink> cascdataLink;       // de-refs Cascades -> CascData
+  o2::framework::Produces<aod::KFCascDataLink> kfcascdataLink;   // de-refs Cascades -> KFCascData
+  o2::framework::Produces<aod::TraCascDataLink> tracascdataLink; // de-refs Cascades -> TraCascData
 
-    //__________________________________________________
-    // secondary auxiliary tables
-    o2::framework::Produces<aod::V0TrackXs> v0trackXs;     // for decay chain reco
-    o2::framework::Produces<aod::CascTrackXs> cascTrackXs; // for decay chain reco
+  //__________________________________________________
+  // secondary auxiliary tables
+  o2::framework::Produces<aod::V0TrackXs> v0trackXs;     // for decay chain reco
+  o2::framework::Produces<aod::CascTrackXs> cascTrackXs; // for decay chain reco
 
-    //__________________________________________________
-    // further auxiliary / optional if desired
-    o2::framework::Produces<aod::CascBBs> cascbb;
-    o2::framework::Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
-    o2::framework::Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
-    o2::framework::Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
-    o2::framework::Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
-    o2::framework::Produces<aod::V0Ivanovs> v0ivanovs;            // information for Marian's tests
+  //__________________________________________________
+  // further auxiliary / optional if desired
+  o2::framework::Produces<aod::CascBBs> cascbb;
+  o2::framework::Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
+  o2::framework::Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
+  o2::framework::Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
+  o2::framework::Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
+  o2::framework::Produces<aod::V0Ivanovs> v0ivanovs;            // information for Marian's tests
 
-    //__________________________________________________
-    // MC information: V0
-    o2::framework::Produces<aod::McV0Labels> v0labels;           // MC labels for V0s
-    o2::framework::Produces<aod::V0MCCores> v0mccores;           // mc info storage
-    o2::framework::Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores
-    o2::framework::Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
+  //__________________________________________________
+  // MC information: V0
+  o2::framework::Produces<aod::McV0Labels> v0labels;           // MC labels for V0s
+  o2::framework::Produces<aod::V0MCCores> v0mccores;           // mc info storage
+  o2::framework::Produces<aod::V0CoreMCLabels> v0CoreMCLabels; // interlink V0Cores -> V0MCCores
+  o2::framework::Produces<aod::V0MCCollRefs> v0mccollref;      // references collisions from V0MCCores
 
-    // MC information: Cascades
-    o2::framework::Produces<aod::McCascLabels> casclabels;           // MC labels for cascades
-    o2::framework::Produces<aod::McKFCascLabels> kfcasclabels;       // MC labels for KF cascades
-    o2::framework::Produces<aod::McTraCascLabels> tracasclabels;     // MC labels for tracked cascades
-    o2::framework::Produces<aod::McCascBBTags> bbtags;               // bb tags (inv structure tagging in mc)
-    o2::framework::Produces<aod::CascMCCores> cascmccores;           // mc info storage
-    o2::framework::Produces<aod::CascCoreMCLabels> cascCoreMClabels; // interlink CascCores -> CascMCCores
-    o2::framework::Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
+  // MC information: Cascades
+  o2::framework::Produces<aod::McCascLabels> casclabels;           // MC labels for cascades
+  o2::framework::Produces<aod::McKFCascLabels> kfcasclabels;       // MC labels for KF cascades
+  o2::framework::Produces<aod::McTraCascLabels> tracasclabels;     // MC labels for tracked cascades
+  o2::framework::Produces<aod::McCascBBTags> bbtags;               // bb tags (inv structure tagging in mc)
+  o2::framework::Produces<aod::CascMCCores> cascmccores;           // mc info storage
+  o2::framework::Produces<aod::CascCoreMCLabels> cascCoreMClabels; // interlink CascCores -> CascMCCores
+  o2::framework::Produces<aod::CascMCCollRefs> cascmccollrefs;     // references MC collisions from MC cascades
 
-    //__________________________________________________
-    // cascade interlinks
-    // FIXME: commented out until strangederivedbuilder adjusted accordingly
-    // o2::framework::Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
-    // o2::framework::Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
-    // o2::framework::Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
-    // o2::framework::Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
+  //__________________________________________________
+  // cascade interlinks
+  // FIXME: commented out until strangederivedbuilder adjusted accordingly
+  // o2::framework::Produces<aod::CascToTraRefs> cascToTraRefs; // cascades -> tracked
+  // o2::framework::Produces<aod::CascToKFRefs> cascToKFRefs;   // cascades -> KF
+  // o2::framework::Produces<aod::TraToCascRefs> traToCascRefs; // tracked -> cascades
+  // o2::framework::Produces<aod::KFToCascRefs> kfToCascRefs;   // KF -> cascades
 
-    //__________________________________________________
-    // Findable tags
-    o2::framework::Produces<aod::V0FoundTags> v0FoundTag;
-    o2::framework::Produces<aod::CascFoundTags> cascFoundTag;
+  //__________________________________________________
+  // Findable tags
+  o2::framework::Produces<aod::V0FoundTags> v0FoundTag;
+  o2::framework::Produces<aod::CascFoundTags> cascFoundTag;
 };
 
 // strangenessBuilder: 1st-order configurables
 struct coreConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<o2::framework::LabeledArray<int>> enabledTables{"enabledTables",
-                                                {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
-                                                "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
+                                                                              {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
+                                                                              "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
   std::vector<int> mEnabledTables; // Vector of enabled tables
 
   // first order deduplication implementation
@@ -371,7 +371,7 @@ class BuilderModule
     // constructor
   }
 
-  // mass windows 
+  // mass windows
   float getMassSigmaK0Short(float pt)
   {
     return preSelectOpts.massCutK0->get("constant") + pt * preSelectOpts.massCutK0->get("linear") + preSelectOpts.massCutK0->get("expoConstant") * TMath::Exp(-pt / preSelectOpts.massCutK0->get("expoRelax"));
@@ -494,7 +494,7 @@ class BuilderModule
   std::vector<int> ao2dV0toV0List;                     // index to relate v0s -> v0List
   std::vector<int> v0Map;                              // index to relate v0List -> v0sFromCascades
 
-  // declaration of structs here 
+  // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
   o2::pwglf::strangenessbuilder::coreConfigurables baseOpts;
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
@@ -504,11 +504,11 @@ class BuilderModule
   template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename THistoRegistry, typename TInitContext>
   void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, THistoRegistry& histos, TInitContext& context)
   {
-    // read in configurations from the task where it's used 
+    // read in configurations from the task where it's used
     // could be grouped even further, but should work
     baseOpts = inputBaseOpts;
-    v0BuilderOpts = inputV0BuilderOpts; 
-    cascadeBuilderOpts = inputCascadeBuilderOpts; 
+    v0BuilderOpts = inputV0BuilderOpts;
+    cascadeBuilderOpts = inputCascadeBuilderOpts;
     preSelectOpts = inputPreSelectOpts;
 
     // setup bookkeeping histogram
@@ -772,7 +772,6 @@ class BuilderModule
     //   }
     // }
   }
-
 
   //__________________________________________________
   template <class TBCs, typename THistoRegistry, typename TCollisions, typename TMCCollisions, typename TV0s, typename TCascades, typename TTracks, typename TMCParticles>
