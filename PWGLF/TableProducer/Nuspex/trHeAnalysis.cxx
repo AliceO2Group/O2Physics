@@ -136,7 +136,7 @@ class Particle
   int charge;
   float resolution;
   std::vector<float> betheParams;
-  static constexpr int nNumBetheParams = 5;
+  static constexpr int NNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
            LabeledArray<float> bethe)
@@ -648,9 +648,9 @@ struct TrHeAnalysis {
   template <class T>
   float getMeanItsClsSize(T const& track)
   {
-    constexpr int nNumLayers = 8;
-    constexpr int nBitsPerLayer = 4;
-    constexpr int nBitMask = (1 << nBitsPerLayer) - 1;
+    constexpr int NNumLayers = 8;
+    constexpr int NBitsPerLayer = 4;
+    constexpr int NBitMask = (1 << nBitsPerLayer) - 1;
     int sum = 0, n = 0;
     for (int i = 0; i < nNumLayers; i++) {
       int clsSize = (track.itsClusterSizes() >> (nBitsPerLayer * i)) & nBitMask;
