@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file NucleiTPCPbPb.cxx
+/// \file nucleitpcpbpb.cxx
 ///
 /// \brief This task use global tracks and used for primary selection analysis using TPC detector.
 ///        It currently contemplates 6 particle types:
@@ -174,7 +174,7 @@ struct NucleitpcPbPb {
     const AxisSpec axisdEdx{2000, 0, 2000, "d#it{E}/d#it{x}"};
     const AxisSpec axisCent{100, 0, 100, "centrality"};
     const AxisSpec axisVtxZ{100, -20, 20, "z"};
-    const AxisSpec ptAxis{1000, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptAxis{200, 0, 20, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axiseta{100, -1, 1, "eta"};
     const AxisSpec axisrapidity{100, -2, 2, "rapidity"};
     const AxisSpec axismass{100, 0, 20, "mass^{2}"};
@@ -240,7 +240,8 @@ struct NucleitpcPbPb {
           continue;
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
           continue;
-        if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
+        double min_value = 0.8;
+        if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < min_value * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
           continue;
         if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
           continue;
@@ -360,7 +361,6 @@ struct NucleitpcPbPb {
       //  histos.fill(HIST("histCentFT0A"), collision.centFT0A());
       histos.fill(HIST("histCentFT0C"), collision.centFT0C());
       histos.fill(HIST("histCentFT0M"), collision.centFT0M());
-      histos.fill(HIST("histEvents"), collision.centFT0C(), occupancy);
     }
     primVtx.assign({collision.posX(), collision.posY(), collision.posZ()});
     cents.assign({collision.centFT0A(), collision.centFT0C(), collision.centFT0M()});

@@ -453,16 +453,17 @@ struct HeavyNeutralMesonFilter {
     mHistManager.fill(HIST("Event/fZvtxBefore"), collision.posZ());
 
     // Ensure evts are consistent with Sel8 and Vtx-z selection
-    if (!isSelectedEvent(collision))
+    bool keepFemtoEvent[hnmtrigger::kNFemtoTriggers] = {false, false, false, false, false, false}; // Set based on number of found pairs (see above) - used to flag femto events
+    if (!isSelectedEvent(collision)) {
+      tags(keepFemtoEvent[hnmtrigger::kOmegaP], keepFemtoEvent[hnmtrigger::kPPOmega], keepFemtoEvent[hnmtrigger::kOmegaD], keepFemtoEvent[hnmtrigger::kEtaPrimeP], keepFemtoEvent[hnmtrigger::kPPEtaPrime], keepFemtoEvent[hnmtrigger::kEtaPrimeD]);
       return;
-
+    }
     // QA accepted evts
     mHistManager.fill(HIST("Event/fMultiplicityAfter"), collision.multNTracksPV());
     mHistManager.fill(HIST("Event/fZvtxAfter"), collision.posZ());
 
     colContainsPCMOmega = colContainsEMCOmega = colContainsPCMEtaPrime = colContainsEMCEtaPrime = false; // Used by spectrum trigger to flag events with high-pT omega/eta' candidates
     int lowMomentumMultiplets[hnmtrigger::kNFemtoTriggers] = {0, 0, 0, 0, 0, 0};                         // Number of found femto pairs/triplets for each femto trigger
-    bool keepFemtoEvent[hnmtrigger::kNFemtoTriggers] = {false, false, false, false, false, false};       // Set based on number of found pairs (see above) - used to flag femto events
 
     // clean vecs
     // HNM candidates

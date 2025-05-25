@@ -69,7 +69,8 @@ struct MatchRecoGen {
   typedef enum { kBEFORE = 0,
                  kAFTER } beforeafterselection;
   typedef enum { kPOSITIVE = 0,
-                 kNEGATIVE } colllabelsign;
+                 kNEGATIVE,
+                 kNOOFCOLLSIGNS } colllabelsign;
   enum { kMATCH = 0,
          kDONTMATCH };
 
@@ -292,7 +293,7 @@ struct MatchRecoGen {
     using namespace o2::analysis::recogenmap;
     using namespace o2::analysis::dptdptfilter;
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < kNOOFCOLLSIGNS; ++i) {
       mclabelpos[i].clear();
       mclabelneg[i].clear();
       mclabelpos[i].resize(mcParticles.size());
@@ -346,7 +347,7 @@ struct MatchRecoGen {
     using namespace o2::analysis::recogenmap;
     using namespace o2::analysis::dptdptfilter;
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < kNOOFCOLLSIGNS; ++i) {
       mclabelpos[i].clear();
       mclabelneg[i].clear();
       mclabelpos[i].resize(mcParticles.size());
