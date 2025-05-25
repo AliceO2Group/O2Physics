@@ -126,8 +126,8 @@ class TrackPropagationModule
     registry.template add<TH2>("hDCAzVsPtMC", "hDCAzVsPtMC", o2::framework::kTH2F, {axisBinsDCA, cGroup.axisPtQA});
   }
 
-  template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TTracks, typename TOutputGroup, typename THistoRegistry>
-  void fillTrackTables(TConfigurableGroup const& cGroup, TCCDBLoader const& ccdbLoader, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
+  template <bool isMc, typename TConfigurableGroup, typename TCCDBLoader, typename TCollisions, typename TTracks, typename TOutputGroup, typename THistoRegistry>
+  void fillTrackTables(TConfigurableGroup const& cGroup, TCCDBLoader const& ccdbLoader, TCollisions const& collisions, TTracks const& tracks, TOutputGroup& cursors, THistoRegistry& registry)
   {
     if (fillTracksCov) {
       cursors.tracksParCovPropagated.reserve(tracks.size());
@@ -186,7 +186,7 @@ class TrackPropagationModule
         bool isPropagationOK = true;
 
         if (track.has_collision()) {
-          auto const& collision = track.collision();
+          auto const& collision = collisions.rawIteratorAt(track.collisionId());
           if (fillTracksCov) {
             mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
             mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
