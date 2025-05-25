@@ -650,10 +650,10 @@ struct TrHeAnalysis {
   {
     constexpr int NNumLayers = 8;
     constexpr int NBitsPerLayer = 4;
-    constexpr int NBitMask = (1 << nBitsPerLayer) - 1;
+    constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
     int sum = 0, n = 0;
     for (int i = 0; i < nNumLayers; i++) {
-      int clsSize = (track.itsClusterSizes() >> (nBitsPerLayer * i)) & nBitMask;
+      int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
       sum += clsSize;
       if (clsSize)
         n++;
