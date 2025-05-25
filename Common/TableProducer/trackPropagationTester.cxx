@@ -79,19 +79,19 @@ struct TrackPropagationTester {
     trackPropagation.init(trackPropagationConfigurables, registry, initContext);
   }
 
-  void processReal(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
+  void processReal(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
   {
     // task-specific
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processReal, "Process Real Data", true);
 
   // -----------------------
-  void processMc(soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::McParticles const&, aod::Collisions const&, aod::BCs const& bcs)
+  void processMc(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::McParticles const&, aod::Collisions const&, aod::BCs const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, tracks, trackPropagationProducts, registry);
+    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, registry);
   }
   PROCESS_SWITCH(TrackPropagationTester, processMc, "Process Monte Carlo", false);
 };
