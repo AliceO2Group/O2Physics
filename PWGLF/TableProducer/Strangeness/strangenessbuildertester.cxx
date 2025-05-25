@@ -124,13 +124,9 @@ struct StrangenessBuilderTester {
   }
 
   PROCESS_SWITCH(StrangenessBuilderTester, processRealData, "process real data", true);
-  PROCESS_SWITCH(StrangenessBuilderTester, processRealDataRun2, "process real data (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilderTester, processMonteCarlo, "process monte carlo", false);
-  PROCESS_SWITCH(StrangenessBuilderTester, processMonteCarloRun2, "process monte carlo (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilderTester, processRealDataWithPID, "process real data", false);
-  PROCESS_SWITCH(StrangenessBuilderTester, processRealDataRun2WithPID, "process real data (Run 2)", false);
   PROCESS_SWITCH(StrangenessBuilderTester, processMonteCarloWithPID, "process monte carlo", false);
-  PROCESS_SWITCH(StrangenessBuilderTester, processMonteCarloRun2WithPID, "process monte carlo (Run 2)", false);
 };
 
 //****************************************************************************************
