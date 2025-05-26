@@ -225,8 +225,9 @@ class FemtoPair
     if (_first != NULL && _second != NULL) {
       float dphi = _first->phiStar(_magfield1, radius) - _second->phiStar(_magfield2, radius);
       return std::fabs(dphi) > o2::constants::math::PI ? (1.0 - 2.0 * o2::constants::math::PI / std::fabs(dphi)) * dphi : dphi;
-    } else
+    } else {
       return 1000;
+    }
   }
   float GetAvgPhiStarDiff() const;
 
