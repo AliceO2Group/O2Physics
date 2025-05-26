@@ -27,6 +27,7 @@
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 // #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 // #include "PWGHF/DataModel/CandidateSelectionTables.h"
