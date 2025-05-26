@@ -73,6 +73,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<float> confCPRdeltaEtaCutMin{"confCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
   Configurable<bool> confCPRPlotPerRadii{"confCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> confCPRChosenRadii{"confCPRChosenRadii", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<bool> confIsSameSignCPR{"confIsSameSignCPR", false, "Close Pair Rejection for same sign children of cascades"};
   Configurable<int> confChargePart1{"confChargePart1", 1, "sign of particle 1"};
   Configurable<float> confHPtPart1{"confHPtPart1", 4.0f, "higher limit for pt of particle 1"};
   Configurable<float> confLPtPart1{"confLPtPart1", 0.5f, "lower limit for pt of particle 1"};
@@ -285,7 +286,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
     }
   }
 
