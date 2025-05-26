@@ -19,6 +19,7 @@
 #include "Framework/StepTHn.h"
 #include <TTree.h>
 #include <vector>
+#include "CommonConstants/MathConstants.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -36,35 +37,36 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::math;
 namespace o2::aod
 {
 namespace tree
 {
-DECLARE_SOA_COLUMN(PTsideA, PtsideA, std::vector<float>);
-DECLARE_SOA_COLUMN(RAPsideA, RapsideA, std::vector<float>);
-DECLARE_SOA_COLUMN(PHIsideA, PhisideA, std::vector<float>);
-DECLARE_SOA_COLUMN(PTsideC, PtsideC, std::vector<float>);
-DECLARE_SOA_COLUMN(RAPsideC, RapsideC, std::vector<float>);
-DECLARE_SOA_COLUMN(PHIsideC, PhisideC, std::vector<float>);
-DECLARE_SOA_COLUMN(NCHsideA, NchsideA, int);
-DECLARE_SOA_COLUMN(MULTIPLICITYsideA, MultiplicitysideA, int);
-DECLARE_SOA_COLUMN(NCHsideC, NchsideC, int);
-DECLARE_SOA_COLUMN(MULTIPLICITYsideC, MultiplicitysideC, int);
+DECLARE_SOA_COLUMN(PtSideA, ptSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(RapSideA, rapSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(PhiSideA, phiSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(PtSideC, ptSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(RapSideC, rapSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(PhiSideC, phiSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(NchSideA, nchSideA, int);
+DECLARE_SOA_COLUMN(MultiplicitySideA, multiplicitySideA, int);
+DECLARE_SOA_COLUMN(NchSideC, nchSideC, int);
+DECLARE_SOA_COLUMN(MultiplicitySideC, multiplicitySideC, int);
 } // namespace tree
 DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
-                  tree::PTsideA,
-                  tree::RAPsideA,
-                  tree::PHIsideA,
-                  tree::PTsideC,
-                  tree::RAPsideC,
-                  tree::PHIsideC,
-                  tree::NCHsideA,
-                  tree::MULTIPLICITYsideA,
-                  tree::NCHsideC,
-                  tree::MULTIPLICITYsideC);
+                  tree::PtSideA,
+                  tree::RapSideA,
+                  tree::PhiSideA,
+                  tree::PtSideC,
+                  tree::RapSideC,
+                  tree::PhiSideC,
+                  tree::NchSideA,
+                  tree::MultiplicitySideA,
+                  tree::NchSideC,
+                  tree::MultiplicitySideC);
 } // namespace o2::aod
 
-static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+static constexpr float CFGPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct upcPhotonuclearAnalysisJMG {
 
@@ -104,7 +106,7 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCNClsOverFindableNClsMin{"cutMyTPCNClsOverFindableNClsMin", 0.5f, {"My Track cut"}};
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut",
-                                               {cfgPairCutDefaults[0],
+                                               {CFGPairCutDefaults[0],
                                                 5,
                                                 {"Photon", "K0", "Lambda", "Phi", "Rho"}},
                                                "Pair cuts on various particles"};
@@ -139,7 +141,7 @@ struct upcPhotonuclearAnalysisJMG {
     const AxisSpec axisPt{402, -0.05, 20.05};
     const AxisSpec axisP{402, -10.05, 10.05};
     const AxisSpec axisTPCSignal{802, -0.05, 400.05};
-    const AxisSpec axisPhi{64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI};
+    const AxisSpec axisPhi{64, -2 * PI, 2 * PI};
     const AxisSpec axisEta{50, -1.2, 1.2};
     const AxisSpec axisNch{201, -0.5, 200.5};
     const AxisSpec axisZNEnergy{1002, -0.5, 500.5};
@@ -150,7 +152,7 @@ struct upcPhotonuclearAnalysisJMG {
     const AxisSpec axisTPCNClsCrossedRowsMin{100, -0.05, 2.05};
 
     histos.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+    histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * PI, "#varphi"}}});
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     histos.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
@@ -339,7 +341,7 @@ struct upcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTracks>
-  void fillQAUD(TTracks tracks)
+  void fillQAUD(const TTracks tracks)
   {
     for (auto& track : tracks) {
       histos.fill(HIST("yields"), tracks.size(), track.pt(), eta(track.px(), track.py(), track.pz()));
@@ -356,7 +358,7 @@ struct upcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTarget, typename TTracks>
-  void fillCorrelationsUD(TTarget target, TTracks tracks1, TTracks tracks2, float multiplicity, float posZ)
+  void fillCorrelationsUD(TTarget target, const TTracks tracks1, const TTracks tracks2, float multiplicity, float posZ)
   {
     multiplicity = tracks1.size();
     for (auto& track1 : tracks1) {
@@ -389,7 +391,7 @@ struct upcPhotonuclearAnalysisJMG {
   void processSG(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
     histos.fill(HIST("Events/hCountCollisions"), 0);
-    int SGside = reconstructedCollision.gapSide();
+    int sgSide = reconstructedCollision.gapSide();
     int nTracksCharged = 0;
     float sumPt = 0;
     std::vector<float> vTrackPtSideA, vTrackEtaSideA, vTrackPhiSideA;
@@ -397,7 +399,7 @@ struct upcPhotonuclearAnalysisJMG {
     int nTracksChargedSideA(-222), nTracksChargedSideC(-222);
     int multiplicitySideA(-222), multiplicitySideC(-222);
 
-    switch (SGside) {
+    switch (sgSide) {
       case 0: // gap for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
@@ -507,10 +509,10 @@ struct upcPhotonuclearAnalysisJMG {
 
   void processSame(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
-    int SGside = reconstructedCollision.gapSide();
+    int sgSide = reconstructedCollision.gapSide();
 
     float multiplicity = reconstructedTracks.size();
-    switch (SGside) {
+    switch (sgSide) {
       case 0: // gap for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
@@ -538,8 +540,8 @@ struct upcPhotonuclearAnalysisJMG {
 
   void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
   {
-    int SGside = reconstructedCollision.gapSide();
-    // int SGside = 0;
+    int sgSide = reconstructedCollision.gapSide();
+    // int sgSide = 0;
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (collision1.size() == 0 || collision2.size() == 0) {
@@ -548,7 +550,7 @@ struct upcPhotonuclearAnalysisJMG {
       }
       float multiplicity = tracks1.size();
       LOGF(info, "Filling mixed events");
-      switch (SGside) {
+      switch (sgSide) {
         case 0: // gap for side A
           if (isCollisionCutSG(reconstructedCollision, 0) == false) {
             return;
