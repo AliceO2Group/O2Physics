@@ -21,8 +21,6 @@
 #include <TPDGCode.h>
 #include <TString.h>
 
-#include "TableHelper.h"
-
 #include "CommonConstants/MathConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -41,8 +39,6 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGLF/DataModel/LFResonanceTables.h"
 
 using namespace o2;
 using namespace o2::aod;
