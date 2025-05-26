@@ -1296,26 +1296,9 @@ struct FlowSP {
 
       fillEventQA<kAfter>(collision, tracks, centWeight);
 
-      int pionCount = 0;
-      int protonCount = 0;
-      int kaonCount = 0;
-      int unidentifiedCount = 0;
-
       for (const auto& track : tracks) {
 
         int trackPID = (cfgFillPID || cfgFillPIDQA) ? getTrackPID(track) : kUnidentified;
-        // fillPIDQA<kBefore>(track);
-
-        // if (trackPID == kUnidentified)
-        //   unidentifiedCount++;
-        // else if (trackPID == kPion)
-        //   pionCount++;
-        // else if (trackPID == kKaon)
-        //   kaonCount++;
-        // else if (trackPID == kProton)
-        //   protonCount++;
-        // else
-        //   LOGF(info, "Track PID: %i", trackPID);
 
         if (cfgFillPIDQA)
           registry.fill(HIST("hPIDcounts"), trackPID, track.pt());
