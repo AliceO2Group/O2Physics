@@ -313,6 +313,11 @@ constexpr float cutsNsigma[4][8] = {
 static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "PrForFemto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC", "DeForFemto", "KaPrFromBeautyToJPsi"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb", "ITS"};
 
+// track cut
+constexpr float cutsTrackQuality[2][7] = {{0., 0., 0., 999., 999., 0., 0.},
+                                          {90, 80, 0.83, 160., 1., 5., 0.}};
+static const std::vector<std::string> labelsColumnsTrackQuality = {"minTpcCluster", "minTpcRow", "minTpcCrossedOverFound", "maxTpcShared", "maxTpcFracShared", "minItsCluster", "minItsIbCluster"};
+
 // high pt
 constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
 static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs", "3Prongs"};
@@ -489,6 +494,18 @@ class HfFilterHelper
 
   void setNsigmaProtonCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaPrCutsForFemto = nSigmaCuts; }
   void setNsigmaDeuteronCutsForFemto(std::array<float, 4> nSigmaCuts) { mNSigmaDeCutsForFemto = nSigmaCuts; }
+
+  void setDeuteronTrackSelectionForFemto(float minTpcCluster, float minTpcRow, float minTpcCrossedOverFound, float maxTpcShared, float maxTpcFracShared, float minItsCluster, float minItsIbCluster)
+  {
+    mMinTpcCluster = minTpcCluster;
+    mMinTpcRow = minTpcRow;
+    mMinTpcCrossedOverFound = minTpcCrossedOverFound;
+    mMaxTpcShared = maxTpcShared;
+    mMaxTpcFracShared = maxTpcFracShared;
+    mMinItsCluster = minItsCluster;
+    mMinItsIbCluster = minItsIbCluster;
+  }
+
   void setNsigmaProtonCutsForCharmBaryons(float nSigmaTpc, float nSigmaTof)
   {
     mNSigmaTpcPrCutForCharmBaryons = nSigmaTpc;
@@ -754,7 +771,13 @@ class HfFilterHelper
   std::array<float, 2> mCosPaMinXiBach{-2.f, -2.f};                               // minimum cosine of pointing angle for XiBachelor candidates
   std::array<o2::framework::LabeledArray<double>, kNBeautyParticles> mCutsBhad{}; // selections for B-hadron candidates (DeltaMass, CPA, DecayLength, ImpactParameterProduct)
   o2::framework::LabeledArray<double> mCutsBhadToJPsi{};                          // selections for B->JPsi candidates (PtMinMu, DeltaMass, CPA, DecayLength)
-
+  float mMinTpcCluster{90.};                                                      // Minimum number of TPC clusters required on a track
+  float mMinTpcRow{80.};                                                          // Minimum number of TPC rows (pad rows) traversed by the track
+  float mMinTpcCrossedOverFound{0.83};                                            // Minimum ratio of crossed TPC rows over findable clusters
+  float mMaxTpcShared{160.};                                                      // Maximum allowed number of shared TPC clusters between tracks
+  float mMaxTpcFracShared{1.};                                                    // Maximum allowed fraction of shared TPC clusters relative to total clusters
+  float mMinItsCluster{1.};                                                       // Minimum required number of ITS clusters
+  float mMinItsIbCluster{1.};                                                     // Minimum required number of ITS clusters for IB
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                          // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
   std::array<TH3F*, 8> mHistMapPiPrKaDe{};                  // Map for TPC PID postcalibrations for pions, kaon, protons and deuterons
@@ -941,9 +964,9 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
 
   float NSigma = std::sqrt(NSigmaTPC * NSigmaTPC + NSigmaTOF * NSigmaTOF);
-
+  float momentum = track.p();
   if (trackSpecies == kProtonForFemto) {
-    if (pt <= ptThresholdPidStrategy) {
+    if (momentum <= ptThresholdPidStrategy) {
       if (NSigma > nSigmaCuts[2]) {
         return false;
       }
@@ -955,9 +978,32 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
   }
   // For deuterons: Determine whether to apply TOF based on pt threshold
   if (trackSpecies == kDeuteronForFemto) {
+
+    if (track.tpcNClsFound() < mMinTpcCluster) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < mMinTpcRow) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < mMinTpcCrossedOverFound) {
+      return false;
+    }
+    if (track.tpcNClsShared() > mMaxTpcShared) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > mMaxTpcFracShared) {
+      return false;
+    }
+    if (track.itsNCls() < mMinItsCluster) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < mMinItsIbCluster) {
+      return false;
+    }
+
     // Apply different PID strategy in different pt range
     // one side selection only
-    if (pt <= ptThresholdPidStrategy) {
+    if (momentum <= ptThresholdPidStrategy) {
       if (std::fabs(NSigmaTPC) > nSigmaCuts[0] || NSigmaITS < -nSigmaCuts[3]) { // Use TPC and ITS below the threshold, NSigmaITS for deuteron with a lower limit
         return false;
       }
@@ -972,9 +1018,9 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
     hTPCPID->Fill(track.p(), NSigmaTPC);
     if ((!forceTof || track.hasTOF())) {
       if (trackSpecies == kProtonForFemto)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
-      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
+        hTOFPID->Fill(momentum, NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && momentum > ptThresholdPidStrategy)
+        hTOFPID->Fill(momentum, NSigmaTOF);
     }
   }
 
