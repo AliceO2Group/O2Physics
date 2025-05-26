@@ -21,6 +21,7 @@
 #include <numeric>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
