@@ -16,6 +16,7 @@
 
 #include <fairlogger/Logger.h>
 #include <tuple>
+#include <string>
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
@@ -45,11 +46,20 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
 
 struct LfTaskLambdaSpinCorr {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
   // mixing
+  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
   ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
   Configurable<int> nMix{"nMix", 5, "number of event mixing"};
@@ -59,6 +69,8 @@ struct LfTaskLambdaSpinCorr {
   // fill output
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
+  Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+  Configurable<bool> additionalEvSel5{"additionalEvSel5", false, "additionalEvSel5"};
   Configurable<bool> fillGEN{"fillGEN", false, "filling generated histograms"};
   Configurable<bool> fillQA{"fillQA", false, "filling QA histograms"};
 
@@ -103,14 +115,14 @@ struct LfTaskLambdaSpinCorr {
   ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  RCTFlagsChecker rctChecker;
   void init(o2::framework::InitContext&)
   {
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     AxisSpec thnAxisInvMass{iMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
     AxisSpec thnAxisInvMasspair{iMNbinspair, lbinIMpair, hbinIMpair, "#it{M} (GeV/#it{c}^{2})"};
-
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
-
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
@@ -237,8 +249,10 @@ struct LfTaskLambdaSpinCorr {
                       double centrality, int datatype)
   {
 
-    auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
-    auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
+    // auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
+    // auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
+    auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), particle1.M());
+    auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), particle2.M());
     auto pairDummy = particle1Dummy + particle2Dummy;
 
     // auto pairParticle = particle1 + particle2;
@@ -395,17 +409,37 @@ struct LfTaskLambdaSpinCorr {
 
   void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/, ResoV0s const& V0s)
   {
+    histos.fill(HIST("hEvtSelInfo"), 0.5);
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 1.5);
     if (!collision.sel8()) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
     auto centrality = collision.centFT0C();
+    int occupancy = collision.trackOccupancyInTimeRange();
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
-
+    histos.fill(HIST("hEvtSelInfo"), 3.5);
     if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 4.5);
+    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 5.5);
+    if (additionalEvSel5 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 6.5);
+    if (occupancy > cfgCutOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 7.5);
     histos.fill(HIST("hCentrality"), centrality);
     for (const auto& v0 : V0s) {
       auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
@@ -482,6 +516,14 @@ struct LfTaskLambdaSpinCorr {
   {
     for (auto& [collision1, collision2] : selfCombinations(colBinning, nMix, -1, collisions, collisions)) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
 
       if (collision1.index() == collision2.index()) {
         continue;
@@ -492,15 +534,36 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (occupancy1 > cfgCutOccupancy) {
         continue;
       }
       if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (occupancy2 > cfgCutOccupancy) {
+        continue;
+      }
+
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       auto centrality = collision1.centFT0C();
       auto groupV01 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       auto groupV02 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
