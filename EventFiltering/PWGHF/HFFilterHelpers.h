@@ -1018,9 +1018,9 @@ inline bool HfFilterHelper::isSelectedTrack4Femto(const T1& track, const T2& tra
     hTPCPID->Fill(track.p(), NSigmaTPC);
     if ((!forceTof || track.hasTOF())) {
       if (trackSpecies == kProtonForFemto)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
-      else if (trackSpecies == kDeuteronForFemto && pt > ptThresholdPidStrategy)
-        hTOFPID->Fill(track.p(), NSigmaTOF);
+        hTOFPID->Fill(momentum, NSigmaTOF);
+      else if (trackSpecies == kDeuteronForFemto && momentum > ptThresholdPidStrategy)
+        hTOFPID->Fill(momentum, NSigmaTOF);
     }
   }
 
