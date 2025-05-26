@@ -43,7 +43,7 @@ namespace o2::aod
 {
 namespace hf_cand_bstojpsiphi_lite
 {
-DECLARE_SOA_COLUMN(PtJPsi, ptD, float);      //! Transverse momentum of JPsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJPsi, ptJPsi, float);   //! Transverse momentum of JPsi daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach0, ptBach0, float); //! Transverse momentum of bachelor kaon(<- phi) (GeV/c)
 DECLARE_SOA_COLUMN(PtBach1, ptBach1, float); //! Transverse momentum of bachelor kaon(<- phi) (GeV/c)
 // DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor kaon

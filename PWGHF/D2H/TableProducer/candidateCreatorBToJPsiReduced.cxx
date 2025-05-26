@@ -1,4 +1,3 @@
-
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -362,17 +361,11 @@ struct HfCandidateCreatorBToJPsiReduced {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
     }
 
-    static int ncol = 0;
-
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsJPsiThisColl = candsJPsi.sliceBy(candsJPsiPerCollision, thisCollId);
       auto tracksKaonThisCollision = tracksKaon.sliceBy(tracksLf0PerCollision, thisCollId);
       runCandidateCreation<DecayChannel::BplusToJPsiK>(collision, candsJPsiThisColl, tracksKaonThisCollision, tracksKaonThisCollision, invMass2JPsiKMin, invMass2JPsiKMax);
-      if (ncol % 10000 == 0) {
-        LOG(debug) << ncol << " collisions parsed";
-      }
-      ncol++;
     }
   } // processDataBplus
   PROCESS_SWITCH(HfCandidateCreatorBToJPsiReduced, processDataBplus, "Process data for B+", true);
@@ -397,18 +390,12 @@ struct HfCandidateCreatorBToJPsiReduced {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
     }
 
-    static int ncol = 0;
-
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candsJPsiThisColl = candsJPsi.sliceBy(candsJPsiPerCollision, thisCollId);
       auto tracksLf0ThisCollision = tracksLfDau0.sliceBy(tracksLf0PerCollision, thisCollId);
       auto tracksLf1ThisCollision = tracksLfDau1.sliceBy(tracksLf1PerCollision, thisCollId);
       runCandidateCreation<DecayChannel::BsToJPsiPhi>(collision, candsJPsiThisColl, tracksLf0ThisCollision, tracksLf1ThisCollision, invMass2JPsiKMin, invMass2JPsiKMax);
-      if (ncol % 10000 == 0) {
-        LOG(debug) << ncol << " collisions parsed";
-      }
-      ncol++;
     }
   } // processDataBs
   PROCESS_SWITCH(HfCandidateCreatorBToJPsiReduced, processDataBs, "Process data for Bs", false);

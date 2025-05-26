@@ -42,7 +42,7 @@ namespace o2::aod
 {
 namespace hf_cand_bplustojpsik_lite
 {
-DECLARE_SOA_COLUMN(PtJPsi, ptD, float);    //! Transverse momentum of JPsi daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(PtJPsi, ptJPsi, float); //! Transverse momentum of JPsi daughter candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtBach, ptBach, float); //! Transverse momentum of bachelor kaon (GeV/c)
 // DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor kaon
 // DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor kaon
