@@ -121,6 +121,13 @@ struct HfDataCreatorJPsiHadReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  HfHelper hfHelper;
+
+  // CCDB service
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // O2DatabasePDG service
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   using TracksPid = soa::Join<aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
   using TracksPidWithSel = soa::Join<aod::TracksWCovDcaExtra, TracksPid, aod::TrackSelection>;
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
@@ -131,23 +138,16 @@ struct HfDataCreatorJPsiHadReduced {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
-  HistogramRegistry registry{"registry"};
-
-  // CCDB service
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
   double bz{0.};
-
-  // O2DatabasePDG service
-  Service<o2::framework::O2DatabasePDG> pdg;
-
   double invMass2JPsiHadMin, invMass2JPsiHadMax;
-  HfHelper hfHelper;
+  bool isHfCandBhadConfigFilled = false;
+
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::vertexing::DCAFitterN<2> df2;
 
-  bool isHfCandBhadConfigFilled = false;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
