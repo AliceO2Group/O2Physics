@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_PAIRCUTS_H
-#define O2_ANALYSIS_PAIRCUTS_H
+#ifndef PWGUD_CORE_UPCPAIRCUTS_H_
+#define PWGUD_CORE_UPCPAIRCUTS_H_
 
 #include <cmath>
 
@@ -342,4 +342,4 @@ float UPCPairCuts::getDPhiStar(T const& track1, T const& track2, float radius, i
   return dphistar;
 }
 
-#endif
+#endif // PWGUD_CORE_UPCPAIRCUTS_H_

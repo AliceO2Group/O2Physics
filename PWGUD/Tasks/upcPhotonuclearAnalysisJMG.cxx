@@ -17,7 +17,8 @@
 #include "Framework/runDataProcessing.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
-// #include <TTree.h>
+#include <TTree.h>
+#include <vector>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -337,8 +338,8 @@ struct upcPhotonuclearAnalysisJMG {
     return true;
   }
 
-  template <typename TCollision, typename TTracks>
-  void fillQAUD(TCollision collision, float multiplicity, TTracks tracks)
+  template <typename TTracks>
+  void fillQAUD(TTracks tracks)
   {
     for (auto& track : tracks) {
       histos.fill(HIST("yields"), tracks.size(), track.pt(), eta(track.px(), track.py(), track.pz()));
@@ -346,13 +347,10 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
 
-  template <typename TTarget, typename TCollision>
-  bool fillCollisionUD(TTarget target, TCollision collision, float multiplicity)
+  template <typename TTarget>
+  bool fillCollisionUD(TTarget target, float multiplicity)
   {
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
-    /*if (!collision.alias_bit(kINT7) || !collision.sel7()) {
-      return false;
-    }*/
     target->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     return true;
   }
@@ -373,9 +371,9 @@ struct upcPhotonuclearAnalysisJMG {
         if (isTrackCut(track2) == false) {
           continue;
         }
-        /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+        if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
           continue;
-        }*/
+        }
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
         if (deltaPhi > 1.5f * PI) {
           deltaPhi -= TwoPI;
@@ -517,12 +515,12 @@ struct upcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
-        if (fillCollisionUD(same, reconstructedCollision, multiplicity) == false) {
+        if (fillCollisionUD(same, multiplicity) == false) {
           return;
         }
         LOGF(info, "Filling same events");
         histos.fill(HIST("eventcount"), -2);
-        fillQAUD(reconstructedCollision, multiplicity, reconstructedTracks);
+        fillQAUD(reconstructedTracks);
         fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
         break;
       case 1: // gap for side C
@@ -538,7 +536,7 @@ struct upcPhotonuclearAnalysisJMG {
 
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 
-  void processMixed(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
   {
     int SGside = reconstructedCollision.gapSide();
     // int SGside = 0;
@@ -555,7 +553,7 @@ struct upcPhotonuclearAnalysisJMG {
           if (isCollisionCutSG(reconstructedCollision, 0) == false) {
             return;
           }
-          if (fillCollisionUD(mixed, collision1, multiplicity) == false) {
+          if (fillCollisionUD(mixed, multiplicity) == false) {
             return;
           }
           // LOGF(info, ">>> Bin of collision: ", bindingOnVtx.getBin({collision1.posZ()}));
