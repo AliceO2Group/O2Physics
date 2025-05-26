@@ -1175,6 +1175,7 @@ struct LumiTask {
   std::vector<double> mPileupCorrectionTCE;
   std::vector<double> mPileupCorrectionZEM;
   std::vector<double> mPileupCorrectionZNC;
+
   int64_t minOrbitInRange = std::numeric_limits<int64_t>::max();
   int64_t maxOrbitInRange = 0;
   uint32_t currentOrbitIndex = 0;
@@ -1183,6 +1184,13 @@ struct LumiTask {
 
   void init(InitContext&)
   {
+    if (metadataInfo.isFullyDefined() && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+      if (metadataInfo.isRun3()) {
+        doprocessRun3.value = true;
+      }
+    }
+
     histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
@@ -1232,14 +1240,14 @@ struct LumiTask {
     }
   }
 
-  void process(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
+  void processRun3(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
     if (bcs.size() == 0)
       return;
     int run = bcs.iteratorAt(0).runNumber();
     if (run < 500000) // o2-linter: disable=magic-number (skip for unanchored MCs)
       return;
-    if (run != lastRun) {
+    if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
       int64_t ts = bcs.iteratorAt(0).timestamp();
 
@@ -1293,25 +1301,26 @@ struct LumiTask {
       auto classes = config->getCTPClasses();
       TString lumiClassNameZNC = "C1ZNC-B-NOPF-CRU";
       TString lumiClassNameTCE = "CMTVXTCE-B-NOPF-CRU";
-      TString lumiClassNameTVX = run < 534202 ? "MINBIAS_TVX_L0" : "CMTVX-NONE-NOPF-CRU"; // o2-linter: disable=magic-number (change in class name)
+      TString lumiClassNameTVX1 = "MINBIAS_TVX";         // run >= 534467
+      TString lumiClassNameTVX2 = "MINBIAS_TVX_NOMASK";  // run >= 534468
+      TString lumiClassNameTVX3 = "CMTVX-NONE-NOPF-CRU"; // run >= 534996
+      TString lumiClassNameTVX4 = "CMTVX-B-NOPF-CRU";    // run >= 543437
 
       // find class indices
       int classIdZNC = -1;
       int classIdTCE = -1;
       int classIdTVX = -1;
-      // shift in scaler record needed for some runs in 2022-2023 (bug in CTP config?)
-      int shift = 0;
-      if (run >= 544116 && run <= 544122) // o2-linter: disable=magic-number (bug in CTP config for this run range)
-        shift = -9;
-      for (const auto& cl : classes) {
-        TString clname = cl.name;
+      for (unsigned int i = 0; i < classes.size(); i++) {
+        TString clname = classes[i].name;
         clname.ToUpper();
+        // using position (i) in the vector of classes instead of classes[i].getIndex()
+        // due to bug or inconsistencies in scaler record and class indices
         if (clname == lumiClassNameZNC)
-          classIdZNC = cl.getIndex() + shift;
+          classIdZNC = i;
         if (clname == lumiClassNameTCE)
-          classIdTCE = cl.getIndex() + shift;
-        if (clname == lumiClassNameTVX)
-          classIdTVX = cl.getIndex() + shift;
+          classIdTCE = i;
+        if (clname == lumiClassNameTVX4 || clname == lumiClassNameTVX3 || clname == lumiClassNameTVX2 || clname == lumiClassNameTVX1)
+          classIdTVX = i;
       }
 
       // extract trigger counts from CTP scalers
@@ -1379,8 +1388,9 @@ struct LumiTask {
       bool isTriggerZNC = TESTBIT(selection, kIsBBZNC);
       bool isTriggerZEM = isTriggerZNA || isTriggerZNC;
 
+      // determine pileup correction
       int64_t orbit = bc.globalBC() / nBCsPerOrbit;
-      if (orbit < minOrbitInRange || orbit > maxOrbitInRange) {
+      if ((orbit < minOrbitInRange || orbit > maxOrbitInRange) && mOrbits.size() > 1) {
         auto it = std::lower_bound(mOrbits.begin(), mOrbits.end(), orbit);
         uint32_t nextOrbitIndex = std::distance(mOrbits.begin(), it);
         if (nextOrbitIndex == 0) // if orbit is below stored scaler orbits
@@ -1391,10 +1401,15 @@ struct LumiTask {
         minOrbitInRange = mOrbits[currentOrbitIndex];
         maxOrbitInRange = mOrbits[nextOrbitIndex];
       }
-      float lumiTVX = 1. / csTVX * mPileupCorrectionTVX[currentOrbitIndex];
-      float lumiTCE = 1. / csTCE * mPileupCorrectionTCE[currentOrbitIndex];
-      float lumiZNC = 1. / csZNC * mPileupCorrectionZNC[currentOrbitIndex];
-      float lumiZEM = 1. / csZEM * mPileupCorrectionZEM[currentOrbitIndex];
+      double pileupCorrectionTVX = currentOrbitIndex < mPileupCorrectionTVX.size() ? mPileupCorrectionTVX[currentOrbitIndex] : 1.;
+      double pileupCorrectionTCE = currentOrbitIndex < mPileupCorrectionTCE.size() ? mPileupCorrectionTCE[currentOrbitIndex] : 1.;
+      double pileupCorrectionZNC = currentOrbitIndex < mPileupCorrectionZNC.size() ? mPileupCorrectionZNC[currentOrbitIndex] : 1.;
+      double pileupCorrectionZEM = currentOrbitIndex < mPileupCorrectionZEM.size() ? mPileupCorrectionZEM[currentOrbitIndex] : 1.;
+
+      double lumiTVX = 1. / csTVX * pileupCorrectionTVX;
+      double lumiTCE = 1. / csTCE * pileupCorrectionTCE;
+      double lumiZNC = 1. / csZNC * pileupCorrectionZNC;
+      double lumiZEM = 1. / csZEM * pileupCorrectionZEM;
 
       if (isTriggerTVX) {
         histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
@@ -1450,6 +1465,7 @@ struct LumiTask {
 
     } // bcs
   } // process
+  PROCESS_SWITCH(LumiTask, processRun3, "Process Run3 lumi task", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
