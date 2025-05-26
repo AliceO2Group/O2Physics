@@ -99,7 +99,7 @@ struct BcSelectionTask {
       if (metadataInfo.isRun3()) {
         doprocessRun3.value = true;
       } else {
-        doprocessRun2.value = false;
+        doprocessRun2.value = true;
       }
     }
 
@@ -583,7 +583,7 @@ struct EventSelectionTask {
         if (metadataInfo.isRun3()) {
           doprocessRun3.value = true;
         } else {
-          doprocessRun2.value = false;
+          doprocessRun2.value = true;
         }
       }
       if (isMC == -1) {
@@ -1184,10 +1184,12 @@ struct LumiTask {
 
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+    if (metadataInfo.isFullyDefined() && !doprocessRun3 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
       LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
       if (metadataInfo.isRun3()) {
         doprocessRun3.value = true;
+      } else {
+        doprocessRun2.value = true;
       }
     }
 
@@ -1239,6 +1241,13 @@ struct LumiTask {
       histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 4, (rctListName + "_zdc" + "_fullacc").Data());
     }
   }
+
+  void processRun2(aod::BCs const&)
+  {
+    LOGP(debug, "Dummy process function for Run 2");
+  }
+
+  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", false);
 
   void processRun3(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
