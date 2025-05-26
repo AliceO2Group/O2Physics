@@ -16,6 +16,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include "TRandom3.h"
+#include "TF1.h"
 #include <vector>
 #include <string>
 
@@ -99,9 +100,6 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 2000, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptanceList, std::string, "", "CCDB path to acceptance lsit object")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptanceListEnabled, bool, false, "switch of acceptance list")
 
   SliceCache cache;
   SliceCache cacheNch;
@@ -152,6 +150,15 @@ struct DiHadronCor {
     MixedEvent = 3
   };
 
+  // Additional Event selection cuts - Copy from flowGenericFramework.cxx
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+  TF1* fT0AV0AMean = nullptr;
+  TF1* fT0AV0ASigma = nullptr;
+
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>; // aod::CentFT0Cs
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
 
@@ -193,6 +200,23 @@ struct DiHadronCor {
       registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(8, "occupancy");
       registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(9, "MultCorrelation");
       registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
+    }
+
+    if (cfgUseAdditionalEventCut) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+
+      fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+      fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
+      fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
     // Make histograms to check the distributions after cuts
@@ -279,26 +303,6 @@ struct DiHadronCor {
   {
     if (correctionsLoaded)
       return;
-    if (!cfgAcceptanceListEnabled && cfgAcceptance.value.empty() == false) {
-      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
-      if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
-      else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
-    }
-    if (cfgAcceptanceListEnabled && cfgAcceptanceList.value.empty() == false) {
-      mAcceptanceList = ccdb->getForTimeStamp<TObjArray>(cfgAcceptanceList, timestamp);
-      if (mAcceptanceList == nullptr) {
-        LOGF(fatal, "Could not load acceptance weights list from %s", cfgAcceptanceList.value.c_str());
-      }
-      LOGF(info, "Loaded acceptance weights list from %s (%p)", cfgAcceptanceList.value.c_str(), (void*)mAcceptanceList);
-
-      mAcceptance = static_cast<GFWWeights*>(mAcceptanceList->FindObject(Form("%d", runNumber)));
-      if (mAcceptance == nullptr) {
-        LOGF(fatal, "Could not find acceptance weights for run %d in acceptance list", runNumber);
-      }
-      LOGF(info, "Loaded acceptance weights (%p) for run %d from list (%p)", (void*)mAcceptance, runNumber, (void*)mAcceptanceList);
-    }
     if (cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
       if (mEfficiency == nullptr) {
@@ -309,7 +313,7 @@ struct DiHadronCor {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
+  bool setCurrentParticleWeights(float& weight_nue, float pt)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -319,11 +323,6 @@ struct DiHadronCor {
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-
-    if (mAcceptance)
-      weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    else
-      weight_nua = 1;
     return true;
   }
 
@@ -341,7 +340,7 @@ struct DiHadronCor {
     for (auto const& track1 : tracks) {
       if (!trackSelected(track1))
         continue;
-      if (!setCurrentParticleWeights(weff1, wacc1, track1.phi(), track1.eta(), track1.pt(), collision.posZ()))
+      if (!setCurrentParticleWeights(weff1, track1.pt()))
         continue;
       registry.fill(HIST("Phi"), RecoDecay::constrainAngle(track1.phi(), 0.0));
       registry.fill(HIST("PhiCorrected"), RecoDecay::constrainAngle(track1.phi(), 0.0), wacc1);
@@ -394,7 +393,7 @@ struct DiHadronCor {
 
       if (!trackSelected(track1))
         continue;
-      if (!setCurrentParticleWeights(weff1, wacc1, track1.phi(), track1.eta(), track1.pt(), posZ))
+      if (!setCurrentParticleWeights(weff1, track1.pt()))
         continue;
       if (system == SameEvent) {
         registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
@@ -404,7 +403,7 @@ struct DiHadronCor {
 
         if (!trackSelected(track2))
           continue;
-        if (!setCurrentParticleWeights(weff2, wacc2, track2.phi(), track2.eta(), track2.pt(), posZ))
+        if (!setCurrentParticleWeights(weff2, track2.pt()))
           continue;
 
         if (track1.pt() <= track2.pt())
@@ -450,7 +449,7 @@ struct DiHadronCor {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const bool fillCounter)
+  bool eventSelected(TCollision collision, const int multTrk, const float centrality, const bool fillCounter)
   {
     registry.fill(HIST("hEventCountSpecific"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -498,6 +497,26 @@ struct DiHadronCor {
     if (fillCounter && cfgEvSelOccupancy)
       registry.fill(HIST("hEventCountSpecific"), 7.5);
 
+    auto multNTracksPV = collision.multNTracksPV();
+    if (cfgEvSelMultCorrelation) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return 0;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return 0;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return 0;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return 0;
+    }
+    if (fillCounter && cfgEvSelMultCorrelation)
+      registry.fill(HIST("hEventCountSpecific"), 8.5);
+
+    // V0A T0A 5 sigma cut
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
+      return 0;
+    if (fillCounter && cfgEvSelV0AT0ACut)
+      registry.fill(HIST("hEventCountSpecific"), 9.5);
+
     return 1;
   }
 
@@ -506,7 +525,7 @@ struct DiHadronCor {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float cent = getCentrality(collision);
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, true))
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, true))
       return;
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
@@ -556,9 +575,9 @@ struct DiHadronCor {
 
       float cent1 = getCentrality(collision1);
       float cent2 = getCentrality(collision2);
-      if (cfgUseAdditionalEventCut && !eventSelected(collision1, false))
+      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), cent1, false))
         continue;
-      if (cfgUseAdditionalEventCut && !eventSelected(collision2, false))
+      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
       if (!cfgSelCollByNch && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
