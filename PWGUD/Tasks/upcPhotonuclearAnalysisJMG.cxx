@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-<<<<<<< HEAD
 /// \file   upcPhotonuclearAnalysisJMG.cxx
 /// \brief  Task for photonuclear UPC analysis for azimuthal correlation: selection, histograms and observables.
 /// \author Josué Martínez García <josuem@cern.ch>
@@ -18,15 +17,6 @@
 #include "PWGUD/Core/UPCPairCuts.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 #include "PWGUD/DataModel/UDTables.h"
-=======
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/StepTHn.h"
-#include <TTree.h>
-#include <vector>
->>>>>>> aea10e21a (resolving issues)
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
@@ -429,11 +419,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTracks>
-<<<<<<< HEAD
   void fillQAUD(const TTracks tracks, float multiplicity)
-=======
-  void fillQAUD(TTracks tracks)
->>>>>>> aea10e21a (resolving issues)
   {
     for (const auto& track : tracks) {
       if (isTrackCut(track) == false) {
@@ -900,22 +886,14 @@ struct UpcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
-<<<<<<< HEAD
         multiplicity = reconstructedTracks.size();
         if (fillCollisionUD(sameGapSideA, multiplicity) == false) {
-=======
-        if (fillCollisionUD(same, multiplicity) == false) {
->>>>>>> aea10e21a (resolving issues)
           return;
         }
         // LOGF(debug, "Filling sameGapSideA events");
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedTracks);
-<<<<<<< HEAD
         fillCorrelationsUD(sameGapSideA, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
-=======
-        fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
->>>>>>> aea10e21a (resolving issues)
         break;
       case 1: // gap for side C
         if (isCollisionCutSG(reconstructedCollision, 1) == false) {
@@ -935,50 +913,7 @@ struct UpcPhotonuclearAnalysisJMG {
     }*/
   }
 
-<<<<<<< HEAD
   PROCESS_SWITCH(UpcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
-=======
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
-
-  void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
-  {
-    int SGside = reconstructedCollision.gapSide();
-    // int SGside = 0;
-
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      if (collision1.size() == 0 || collision2.size() == 0) {
-        LOGF(info, "One or both collisions are empty.");
-        continue;
-      }
-      float multiplicity = tracks1.size();
-      LOGF(info, "Filling mixed events");
-      switch (SGside) {
-        case 0: // gap for side A
-          if (isCollisionCutSG(reconstructedCollision, 0) == false) {
-            return;
-          }
-          if (fillCollisionUD(mixed, multiplicity) == false) {
-            return;
-          }
-          // LOGF(info, ">>> Bin of collision: ", bindingOnVtx.getBin({collision1.posZ()}));
-          // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.totalFT0AmplitudeC()}));
-          histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
-          fillCorrelationsUD(mixed, tracks1, tracks2, multiplicity, collision1.posZ());
-          break;
-        case 1: // gap for side C
-          // if (isCollisionCutSG(reconstructedCollision, 1) == false) {
-          //   return;
-          // }
-          break;
-        default:
-          return;
-          break;
-      }
-    }
-  }
-
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
->>>>>>> aea10e21a (resolving issues)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
