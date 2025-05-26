@@ -136,7 +136,7 @@ class Particle
   int charge;
   float resolution;
   std::vector<float> betheParams;
-  static constexpr int kNumBetheParams = 5;
+  static constexpr int NNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
            LabeledArray<float> bethe)
@@ -150,7 +150,7 @@ class Particle
       bethe.get(name, "resolution"); // Access the "resolution" parameter
 
     betheParams.clear();
-    for (int i = 0; i < kNumBetheParams; ++i) {
+    for (int i = 0; i < NNumBetheParams; ++i) {
       betheParams.push_back(bethe.get(name, i));
     }
   }
@@ -366,10 +366,11 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    getRigidity(track),
+                    getRigidity(track) * track.sign(),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
-                    getRigidity(track), track.beta());
+                    getRigidity(track) * track.sign(),
+                    track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
@@ -391,10 +392,11 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        getRigidity(track),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        getRigidity(track), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -437,10 +439,11 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        getRigidity(track),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        getRigidity(track), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -520,10 +523,10 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    getRigidity(track) / (1.f * track.sign()),
+                    getRigidity(track) * (1.f * track.sign()),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
-                    track.p() / (1.f * track.sign()), track.beta());
+                    track.p() * (1.f * track.sign()), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr) {
             if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
@@ -544,10 +547,11 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        getRigidity(track) / (1.f * track.sign()),
+                        getRigidity(track) * (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        track.p() / (1.f * track.sign()), track.beta());
+                        track.p() * (1.f * track.sign()),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -589,10 +593,11 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        getRigidity(track),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        getRigidity(track), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
@@ -643,12 +648,12 @@ struct TrHeAnalysis {
   template <class T>
   float getMeanItsClsSize(T const& track)
   {
-    constexpr int kNumLayers = 8;
-    constexpr int kBitsPerLayer = 4;
-    constexpr int kBitMask = (1 << kBitsPerLayer) - 1;
+    constexpr int NNumLayers = 8;
+    constexpr int NBitsPerLayer = 4;
+    constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
     int sum = 0, n = 0;
-    for (int i = 0; i < kNumLayers; i++) {
-      int clsSize = (track.itsClusterSizes() >> (kBitsPerLayer * i)) & kBitMask;
+    for (int i = 0; i < NNumLayers; i++) {
+      int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
       sum += clsSize;
       if (clsSize)
         n++;
