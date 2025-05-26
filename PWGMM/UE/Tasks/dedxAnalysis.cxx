@@ -50,6 +50,7 @@ struct DedxAnalysis {
     true,
     true};
   // Constant values
+<<<<<<< HEAD
   const int etaIntervals = 8;
   const int particlesType = 4;
   const float tpcCut = 0.6;
@@ -61,6 +62,19 @@ struct DedxAnalysis {
   const float pionTofCut = 1.0;
   const float invMassCut = 0.01;
   const float invMassCutGamma = 0.0015;
+=======
+  static constexpr int kEtaIntervals = 8;
+  static constexpr int kParticlesType = 4;
+  float tpcCut = 0.6;
+  float centMin = 0.0;
+  float centMax = 100.0;
+  float pionMin = 0.35;
+  float pionMax = 0.45;
+  float elTofCut = 0.1;
+  float pionTofCut = 1.0;
+  float invMassCut = 0.01;
+  float invMassCutGamma = 0.0015;
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
 
   // Configurable Parameters
   // Tracks cuts
@@ -96,9 +110,15 @@ struct DedxAnalysis {
                                    "Maximum Mass Gamma"};
   Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
   // Histograms names
+<<<<<<< HEAD
   static constexpr std::string_view kDedxvsMomentumPos[ParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[ParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
   static constexpr double EtaCut[EtaIntervals + 1] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+=======
+  static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
+  static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
+  static constexpr double EtaCut[kEtaIntervals + 1] = {-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
   Configurable<std::vector<float>> calibrationFactorNeg{"calibrationFactorNeg", {50.4011, 50.4764, 50.186, 49.2955, 48.8222, 49.4273, 49.9292, 50.0556}, "negative calibration factors"};
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
@@ -189,7 +209,11 @@ struct DedxAnalysis {
         {{ptAxis}, {pAxis}});
 
       // De/Dx for ch and v0 particles
+<<<<<<< HEAD
       for (int i = 0; i < ParticlesType; ++i) {
+=======
+      for (int i = 0; i < kParticlesType; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
         registryDeDx.add(kDedxvsMomentumPos[i].data(), "dE/dx", HistType::kTH3F,
                          {{pAxis}, {dedxAxis}, {etaAxis}});
         registryDeDx.add(kDedxvsMomentumNeg[i].data(), "dE/dx", HistType::kTH3F,
@@ -412,7 +436,11 @@ struct DedxAnalysis {
           }
 
         } else {
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
               if (signedP < 0) {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_Neg_calibrated_Pi"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i));
@@ -438,7 +466,11 @@ struct DedxAnalysis {
             registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_El"), trk.eta(), trk.tpcSignal(), signedP);
           }
         } else {
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
               if (signedP < 0) {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_El"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
@@ -458,7 +490,11 @@ struct DedxAnalysis {
             registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Pos_TOF"), trk.eta(), trk.tpcSignal(), signedP);
           }
         } else {
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
               if (signedP < 0) {
                 registryDeDx.fill(HIST("hdEdx_vs_eta_vs_p_Neg_calibrated_TOF"), trk.eta(), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), std::abs(signedP));
@@ -473,7 +509,11 @@ struct DedxAnalysis {
       registryDeDx.fill(HIST("hdEdx_vs_phi"), trk.phi(), trk.tpcSignal());
 
       if (!calibrationMode) {
+<<<<<<< HEAD
         for (int i = 0; i < EtaIntervals; ++i) {
+=======
+        for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
           if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
             if (signedP > 0) {
               registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
@@ -533,7 +573,11 @@ struct DedxAnalysis {
             continue;
           }
 
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
@@ -555,7 +599,11 @@ struct DedxAnalysis {
             continue;
           }
 
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(kDedxvsMomentumNeg[1]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
@@ -577,7 +625,11 @@ struct DedxAnalysis {
             continue;
           }
 
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(kDedxvsMomentumNeg[2]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
@@ -599,7 +651,11 @@ struct DedxAnalysis {
             continue;
           }
 
+<<<<<<< HEAD
           for (int i = 0; i < EtaIntervals; ++i) {
+=======
+          for (int i = 0; i < kEtaIntervals; ++i) {
+>>>>>>> 0b143aa2d (A new histogram p vs pT was added)
             if (negTrack.eta() > EtaCut[i] && negTrack.eta() < EtaCut[i + 1]) {
               registryDeDx.fill(HIST(kDedxvsMomentumNeg[3]), std::abs(signedPneg), negTrack.tpcSignal() * 50 / calibrationFactorNeg->at(i), negTrack.eta());
             }
