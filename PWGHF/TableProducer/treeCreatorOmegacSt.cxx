@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskOmegacSt.cxx
+/// \file treeCreatorOmegacSt.cxx
 /// \brief Task to reconstruct Ωc from strangeness-tracked Ω and pion/kaon
 ///
 /// \author Jochen Klein
@@ -118,7 +118,7 @@ DECLARE_SOA_COLUMN(PxPionOrKaon, pxPionOrKaon, float);
 DECLARE_SOA_COLUMN(PyPionOrKaon, pyPionOrKaon, float);
 DECLARE_SOA_COLUMN(PzPionOrKaon, pzPionOrKaon, float);
 DECLARE_SOA_COLUMN(IsPositivePionOrKaon, isPositivePionOrKaon, bool);
-DECLARE_SOA_COLUMN(ITSClusterMapPionOrKaon, itsClusterMapPionOrKaon, uint8_t);
+DECLARE_SOA_COLUMN(ItsClusterMapPionOrKaon, itsClusterMapPionOrKaon, uint8_t);
 DECLARE_SOA_COLUMN(CpaCharmedBaryon, cpaCharmedBaryon, float);
 DECLARE_SOA_COLUMN(CpaXYCharmedBaryon, cpaXYCharmedBaryon, float);
 DECLARE_SOA_COLUMN(CpaCasc, cpaCasc, float);
@@ -174,7 +174,7 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::PyPionOrKaon,
                   hf_st_charmed_baryon::PzPionOrKaon,
                   hf_st_charmed_baryon::IsPositivePionOrKaon,
-                  hf_st_charmed_baryon::ITSClusterMapPionOrKaon,
+                  hf_st_charmed_baryon::ItsClusterMapPionOrKaon,
                   hf_st_charmed_baryon::CpaCharmedBaryon,
                   hf_st_charmed_baryon::CpaXYCharmedBaryon,
                   hf_st_charmed_baryon::CpaCasc,
@@ -210,9 +210,6 @@ struct HfTreeCreatorOmegacSt {
   Produces<aod::HfStChBars> outputTable;
   Produces<aod::HfStChBarGens> outputTableGen;
 
-  Zorro zorro;
-  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -227,7 +224,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
   Configurable<int> minNoClsTrackedCascade{"minNoClsTrackedCascade", 70, "Minimum number of clusters required for daughters of tracked cascades"};
   Configurable<int> minNoClsTrackedPionOrKaon{"minNoClsTrackedPionOrKaon", 70, "Minimum number of clusters required for associated pions/kaons"};
-  Configurable<int> filterCollisions{"filterCollisions", 8, "0: no filtering; 8: sel8"};
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "filter collisions on sel 8 trigger"};
   Configurable<float> massWindowTrackedOmega{"massWindowTrackedOmega", 0.05, "Inv. mass window for tracked Omega"};
   Configurable<float> massWindowXiExclTrackedOmega{"massWindowXiExclTrackedOmega", 0.005, "Inv. mass window for exclusion of Xi for tracked Omega-"};
   Configurable<float> massWindowTrackedXi{"massWindowTrackedXi", 0., "Inv. mass window for tracked Xi"};
@@ -243,6 +240,11 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", 5., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
+  const int minItsNCls = 4;
+  const float fractionTpcNclsFindable = 0.8;
+  const float maxTpcChi2Ncl = 4.;
+  const float maxItsChi2Ncl = 36.;
+
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
@@ -255,8 +257,7 @@ struct HfTreeCreatorOmegacSt {
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
 
-  Filter collisionFilter = (filterCollisions.node() == 0) ||
-                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
+  Filter collisionFilter = (!useSel8Trigger.node()) || (o2::aod::evsel::sel8 == true);
 
   // Preslice<aod::Tracks> perCol = aod::track::collisionId;
   PresliceUnsorted<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -290,6 +291,9 @@ struct HfTreeCreatorOmegacSt {
       {"hPtVsMassOmega", "#Omega mass;p_{T} (GeV/#it{c});m (GeV/#it{c}^3)", {HistType::kTH2D, {{200, 0., 10.}, {1000, 1., 3.}}}},
       {"hDeltaPtVsPt", "Delta pt;p_{T} (GeV/#it{c});#Delta p_{T} / p_{T}", {HistType::kTH2D, {{200, 0., 10.}, {200, -1., 1.}}}},
     }};
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   void init(InitContext const&)
   {
@@ -332,6 +336,7 @@ struct HfTreeCreatorOmegacSt {
   int8_t nKaToPiCasc{0}, nKaToPiOmegac0{0};
   std::vector<int> idxBhadMothers{};
   int decayChannel = -1; // flag for different decay channels
+  const int nProngs = 2;
 
   void processMc(aod::McCollisions const&,
                  aod::McParticles const& mcParticles)
@@ -342,7 +347,7 @@ struct HfTreeCreatorOmegacSt {
       const bool isXiC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kXiC0;
       if (isOmegaC || isXiC) {
         const auto daughters = mcParticle.daughters_as<aod::McParticles>();
-        if (daughters.size() == 2) {
+        if (daughters.size() == nProngs) {
           int idxPionDaughter = -1;
           int idxCascDaughter = -1;
           int idxKaonDaughter = -1;
@@ -573,19 +578,19 @@ struct HfTreeCreatorOmegacSt {
               o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPi, 2.f, matCorr, &impactParameterPi);
             }
 
-            for (auto trackId : groupedTrackIds) {
+            for (const auto& trackId : groupedTrackIds) {
               const auto track = trackId.template track_as<TracksType>();
               if (track.globalIndex() == v0TrackPr.globalIndex() ||
                   track.globalIndex() == v0TrackPi.globalIndex() ||
                   track.globalIndex() == bachelor.globalIndex()) {
                 continue;
               }
-              if ((track.itsNCls() >= 4) &&
+              if ((track.itsNCls() >= minItsNCls) &&
                   (track.tpcNClsFound() >= minNoClsTrackedPionOrKaon) &&
                   (track.tpcNClsCrossedRows() >= minNoClsTrackedPionOrKaon) &&
-                  (track.tpcNClsCrossedRows() >= 0.8 * track.tpcNClsFindable()) &&
-                  (track.tpcChi2NCl() <= 4.f) &&
-                  (track.itsChi2NCl() <= 36.f) &&
+                  (track.tpcNClsCrossedRows() >= fractionTpcNclsFindable * track.tpcNClsFindable()) &&
+                  (track.tpcChi2NCl() <= maxTpcChi2Ncl) &&
+                  (track.itsChi2NCl() <= maxItsChi2Ncl) &&
                   (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion || std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon)) {
                 LOGF(debug, "  .. combining with pion/kaon candidate %d", track.globalIndex());
                 int trackMotherId = -1;
