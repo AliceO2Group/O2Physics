@@ -728,6 +728,7 @@ DECLARE_SOA_TABLE(HfRedBsDsMls, "AOD", "HFREDBSDSML", //! Table with ML scores f
                   o2::soa::Marker<1>);
 
 using HfRedCandBs = soa::Join<HfCandBsExt, HfRedBsProngs>;
+using HfRedCandBsToJPsiPhi = soa::Join<HfCandBsExt, HfRedBs2JPsiDaus>;
 
 namespace hf_cand_lb_reduced
 {
