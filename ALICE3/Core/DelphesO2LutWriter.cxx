@@ -37,7 +37,8 @@
 #include "fwdRes.C"
 #endif
 
-using namespace o2::fastsim;
+namespace o2::fastsim
+{
 
 void DelphesO2LutWriter::printLutWriterConfiguration()
 {
@@ -427,3 +428,6 @@ TGraph* DelphesO2LutWriter::lutRead(const char* filename, int pdg, int what, int
 
   return g;
 }
+} // namespace o2::fastsim
+
+ClassImp(o2::fastsim::DelphesO2LutWriter);
