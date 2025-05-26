@@ -75,7 +75,7 @@ static const std::vector<std::string> tableNames{
   "Vtx3BodyCovs",
   "McVtx3BodyDatas"};
 
-static constexpr int nTablesConst = 5;
+static constexpr int nTablesConst = 4;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
@@ -373,7 +373,7 @@ struct decay3bodyBuilder {
 
     // print base cuts
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
-    LOGF(info, "-~> max daughter eta ..............: %i", decay3bodyBuilderOpts.maxEtaDaughters.value);
+    LOGF(info, "-~> max daughter eta ..............: %f", decay3bodyBuilderOpts.maxEtaDaughters.value);
     LOGF(info, "-~> min TPC ncls proton ...........: %i", decay3bodyBuilderOpts.minTPCNClProton.value);
     LOGF(info, "-~> min TPC ncls pion .............: %i", decay3bodyBuilderOpts.minTPCNClPion.value);
     LOGF(info, "-~> min TPC ncls bach .............: %i", decay3bodyBuilderOpts.minTPCNClDeuteron.value);
@@ -403,20 +403,20 @@ struct decay3bodyBuilder {
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
 
     // bookkeeping histograms
-    auto h = registry.add<TH1>("hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
-    auto h2 = registry.add<TH1>("hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h = registry.add<TH1>("Counters/hTableBuildingStatistics", "hTableBuildingStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
+    auto h2 = registry.add<TH1>("Counters/hInputStatistics", "hInputStatistics", kTH1D, {{nTablesConst, -0.5f, static_cast<float>(nTablesConst)}});
     h2->SetTitle("Input table sizes");
 
     // configure tables to generate
     for (int i = 0; i < nTables; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
       h2->GetXaxis()->SetBinLabel(i + 1, tableNames[i].c_str());
-      h->SetBinContent(i + 1, -1); // mark all as disabled to start
+      h->SetBinContent(i + 1, 0); // mark all as disabled to start
 
       int f = enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
         mEnabledTables[i] = 1;
-        h->SetBinContent(i + 1, 0); // mark enabled
+        h->SetBinContent(i + 1, 1); // mark enabled
       }
     }
 
@@ -441,6 +441,7 @@ struct decay3bodyBuilder {
         registry.add("QA/Tracks/hTrackProtonHasTPC", "hTrackProtonHasTPC", HistType::kTH1F, {{2, -0.5, 1.5, "has TPC"}});
         registry.add("QA/Tracks/hTrackPionHasTPC", "hTrackPionHasTPC", HistType::kTH1F, {{2, -0.5, 1.5, "has TPC"}});
         registry.add("QA/Tracks/hTrackDeuteronHasTPC", "hTrackDeuteronHasTPC", HistType::kTH1F, {{2, -0.5, 1.5, "has TPC"}});
+        registry.add("QA/Tracks/hTrackDeuteronITSClusSizes", "hTrackDeuteronITSClusSizes", HistType::kTH1F, {{10, 0., 10., "ITS cluster sizes"}});
         registry.add("QA/Tracks/hTrackProtonTPCPID", "hTrackProtonTPCPID", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {100, -10.0f, 10.0f, "TPC n#sigma"}});
         registry.add("QA/Tracks/hTrackPionTPCPID", "hTrackPionTPCPID", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {100, -10.0f, 10.0f, "TPC n#sigma"}});
         registry.add("QA/Tracks/hTrackDeuteronTPCPID", "hTrackDeuteronTPCPID", HistType::kTH2F, {{100, -10.0f, 10.0f, "p/z (GeV/c)"}, {100, -10.0f, 10.0f, "TPC n#sigma"}});
@@ -647,6 +648,7 @@ struct decay3bodyBuilder {
                        TMCCollisions const& mcCollisions)
   {
     if (!(mEnabledTables[kVtx3BodyDatas] || mEnabledTables[kMcVtx3BodyDatas])) {
+      LOG(info) << "No request for candidate analysis table in place, skipping candidate building." << std::endl;
       return; // don't do if no request for decay3bodys in place
     }
 
@@ -704,12 +706,12 @@ struct decay3bodyBuilder {
           isGoodCollision[collision.mcCollisionId()] = true;
         }
       }
-    }
+    } // loop over collisions
 
     int nDecay3Bodys = 0;
 
     // Loop over all decay3bodys in same time frame
-    registry.fill(HIST("hInputStatistics"), kVtx3BodyDatas, decay3bodys.size());
+    registry.fill(HIST("Counters/hInputStatistics"), kVtx3BodyDatas, decay3bodys.size());
     int lastRunNumber = -1;
     for (const auto& decay3body : decay3bodys) {
       // skip decay3body without assigned collision
@@ -1092,7 +1094,7 @@ struct decay3bodyBuilder {
         products.decay3bodyindices(helper.decay3body.decay3bodyID,
                                    helper.decay3body.protonID, helper.decay3body.pionID, helper.decay3body.deuteronID,
                                    helper.decay3body.collisionID);
-        registry.fill(HIST("hTableBuildingStatistics"), kDecay3BodyIndices);
+        registry.fill(HIST("Counters/hTableBuildingStatistics"), kDecay3BodyIndices);
       }
     if (mEnabledTables[kVtx3BodyDatas]) {
       products.vtx3bodydatas(helper.decay3body.sign,
@@ -1113,14 +1115,14 @@ struct decay3bodyBuilder {
                             helper.decay3body.averageITSClSize[0], helper.decay3body.averageITSClSize[1], helper.decay3body.averageITSClSize[2], // 0 - proton, 1 - pion, 2 - deuteron
                             helper.decay3body.tpcNCl[0], helper.decay3body.tpcNCl[1], helper.decay3body.tpcNCl[2], // 0 - proton, 1 - pion, 2 - deuteron
                             helper.decay3body.pidForTrackingDeuteron);
-      registry.fill(HIST("hTableBuildingStatistics"), kVtx3BodyDatas);
+      registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyDatas);
     }
     if (mEnabledTables[kVtx3BodyCovs]) {
       products.vtx3bodycovs(helper.decay3body.covProton,
                             helper.decay3body.covPion,
                             helper.decay3body.covDeuteron,
                             helper.decay3body.covariance);
-      registry.fill(HIST("hTableBuildingStatistics"), kVtx3BodyCovs);
+      registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyCovs);
     }
     if (mEnabledTables[kMcVtx3BodyDatas]) {
       products.mcvtx3bodydatas(helper.decay3body.sign,
@@ -1153,7 +1155,7 @@ struct decay3bodyBuilder {
                               this3BodyMCInfo.daughterPrPdgCode, this3BodyMCInfo.daughterPiPdgCode, this3BodyMCInfo.daughterDePdgCode,
                               this3BodyMCInfo.isDeuteronPrimary,
                               this3BodyMCInfo.survivedEventSel);
-      registry.fill(HIST("hTableBuildingStatistics"), kMcVtx3BodyDatas);
+      registry.fill(HIST("Counters/hTableBuildingStatistics"), kMcVtx3BodyDatas);
     }
   }
 
@@ -1256,6 +1258,7 @@ struct decay3bodyBuilder {
   {
     // initialise CCDB from BCs
     if (!initCCDB(bcs, collisions)) {
+      LOG(info) << "CCDB initialisation failed, skipping candidate building." << std::endl;
       return;
     }
 
@@ -1333,6 +1336,7 @@ struct decay3bodyBuilder {
   {
     // initialise CCDB from BCs
     if (!initCCDB(bcs, collisions)) {
+      LOG(info) << "CCDB initialisation failed, skipping candidate building." << std::endl;
       return;
     }
 
