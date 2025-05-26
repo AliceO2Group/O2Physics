@@ -2081,6 +2081,11 @@ enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓
                              OtherDecay,
                              NDecayTypeMc }; // counter of differentiated MC decay types
 
+enum class DecayTypeBToJPsiMc : uint8_t { BsToJPsiPhiToMuMuKK = 0, // Bs(bar) → J/Psi Phi → (µ+ µ-) (K- K+)
+                                          PartlyRecoDecay,         // 4 final state particles have another common b-hadron ancestor
+                                          OtherDecay,
+                                          NDecayTypeMc }; // counter of differentiated MC decay types
+
 } // namespace hf_cand_bs
 
 // declare dedicated Bs decay candidate table

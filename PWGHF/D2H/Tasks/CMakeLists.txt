@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(task-bs-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-bs-to-j-psi-phi-reduced
+                    SOURCES taskBsToJPsiPhiReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-bs
                     SOURCES taskBs.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
