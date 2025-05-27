@@ -84,6 +84,11 @@ o2physics_add_dpl_workflow(task-lb
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-lb-reduced
+                    SOURCES taskLbReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-lc
                     SOURCES taskLc.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -91,6 +96,11 @@ o2physics_add_dpl_workflow(task-lc
 
 o2physics_add_dpl_workflow(task-lc-to-k0s-p
                     SOURCES taskLcToK0sP.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-omegac0-to-omega-pi
+                    SOURCES taskOmegac0ToOmegapi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

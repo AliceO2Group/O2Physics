@@ -12,7 +12,7 @@
 /// \file rho770analysis.cxx
 /// \brief rho(770)0 analysis in pp 13 & 13.6 TeV
 /// \author Hyunji Lim (hyunji.lim@cern.ch)
-/// \since 12/04/2024
+/// \since 03/12/2025
 
 #include <Framework/Configurable.h>
 #include <TLorentzVector.h>
@@ -38,12 +38,14 @@ struct rho770analysis {
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
+
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.15, "Maximum transverse DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 2.0, "Maximum longitudinal DCA"};
   Configurable<float> cfgMaxTPC{"cfgMaxTPC", 5.0, "Maximum TPC PID with TOF"};
-  Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
+  Configurable<float> cfgMaxTOF{"cfgMaxTOF", 5.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
 
@@ -59,20 +61,15 @@ struct rho770analysis {
                                                                                                              // kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
-  Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
-  Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
-  Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
   Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
-  Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
-  Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
   Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
 
   // PID
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
+  Configurable<double> cMaxTPCnSigmaPionnoTOF{"cMaxTPCnSigmaPionnoTOF", 2.0, "TPC nSigma cut for Pion in no TOF case"}; // TPC
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", 3.0, "Combined nSigma cut for Pion"};
   Configurable<int> selectType{"selectType", 0, "PID selection type"};
 
@@ -87,6 +84,7 @@ struct rho770analysis {
   {
     AxisSpec pidqaAxis = {120, -6, 6};
     AxisSpec pTqaAxis = {200, 0, 20};
+    AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     histos.add("hInvMass_rho770_US", "unlike invariant mass", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis}});
     histos.add("hInvMass_rho770_LSpp", "++ invariant mass", {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis}});
@@ -100,12 +98,16 @@ struct rho770analysis {
     histos.add("hInvMass_Kstar_LSpp", "Kstar ++ invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
     histos.add("hInvMass_Kstar_LSmm", "Kstar -- invariant mass", {HistType::kTHnSparseF, {massKstarAxis, ptAxis, centAxis}});
 
+    histos.add("QA/Nsigma_TPC_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
+    histos.add("QA/Nsigma_TOF_BF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
+    histos.add("QA/TPC_TOF_BF", "", {HistType::kTH2F, {pidqaAxis, pidqaAxis}});
+
     histos.add("QA/Nsigma_TPC", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
     histos.add("QA/Nsigma_TOF", "", {HistType::kTH2F, {pTqaAxis, pidqaAxis}});
     histos.add("QA/TPC_TOF", "", {HistType::kTH2F, {pidqaAxis, pidqaAxis}});
 
     if (doprocessMCLight) {
-      histos.add("MCL/hpT_rho770_GEN", "generated rho770 signals", HistType::kTH1F, {ptAxis});
+      histos.add("MCL/hpT_rho770_GEN", "generated rho770 signals", HistType::kTHnSparseF, {mcLabelAxis, massAxis, ptAxis, centAxis});
       histos.add("MCL/hpT_rho770_REC", "reconstructed rho770 signals", HistType::kTHnSparseF, {massAxis, ptAxis, centAxis});
       histos.add("MCL/hpT_omega_REC", "reconstructed omega signals", HistType::kTHnSparseF, {massAxis, ptAxis, centAxis});
       histos.add("MCL/hpT_K0s_REC", "reconstructed K0s signals", HistType::kTHnSparseF, {massAxis, ptAxis, centAxis});
@@ -131,19 +133,7 @@ struct rho770analysis {
       return false;
     if (std::abs(track.dcaZ()) > cfgMaxDCAzToPVcut)
       return false;
-    if (track.itsNCls() < cfgITScluster)
-      return false;
     if (track.tpcNClsFound() < cfgTPCcluster)
-      return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cfgRatioTPCRowsOverFindableCls)
-      return false;
-    if (track.itsChi2NCl() >= cfgITSChi2NCl)
-      return false;
-    if (track.tpcChi2NCl() >= cfgTPCChi2NCl)
-      return false;
-    if (cfgHasITS && !track.hasITS())
-      return false;
-    if (cfgHasTPC && !track.hasTPC())
       return false;
     if (cfgHasTOF && !track.hasTOF())
       return false;
@@ -178,6 +168,15 @@ struct rho770analysis {
       if (track.tpcNSigmaPi() * track.tpcNSigmaPi() + track.tofNSigmaPi() * track.tofNSigmaPi() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
+    if (selectType == 3) {
+      if (track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaPi()) >= cMaxTOFnSigmaPion)
+          return false;
+      } else if (!track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaPi()) >= cMaxTPCnSigmaPionnoTOF)
+          return false;
+      }
+    }
     return true;
   }
 
@@ -196,6 +195,15 @@ struct rho770analysis {
       if (track.tpcNSigmaKa() * track.tpcNSigmaKa() + track.tofNSigmaKa() * track.tofNSigmaKa() >= nsigmaCutCombinedPion * nsigmaCutCombinedPion)
         return false;
     }
+    if (selectType == 3) {
+      if (track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPion || std::fabs(track.tofNSigmaKa()) >= cMaxTOFnSigmaPion)
+          return false;
+      } else if (!track.hasTOF()) {
+        if (std::fabs(track.tpcNSigmaKa()) >= cMaxTPCnSigmaPionnoTOF)
+          return false;
+      }
+    }
     return true;
   }
 
@@ -204,7 +212,12 @@ struct rho770analysis {
   {
     TLorentzVector part1, part2, reco;
     for (const auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
+
       if (trk1.index() == trk2.index()) {
+        histos.fill(HIST("QA/Nsigma_TPC_BF"), trk1.pt(), trk1.tpcNSigmaPi());
+        histos.fill(HIST("QA/Nsigma_TOF_BF"), trk1.pt(), trk1.tofNSigmaPi());
+        histos.fill(HIST("QA/TPC_TOF_BF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
+
         if (!selTrack(trk1))
           continue;
 
@@ -242,84 +255,8 @@ struct rho770analysis {
                 histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
               }
             } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-              if (std::abs(trk1.motherPDG()) == 313)
+              if (std::abs(trk1.motherPDG()) == 313) {
                 histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
-              histos.fill(HIST("QA/Nsigma_TPC"), trk1.pt(), trk1.tpcNSigmaPi());
-              histos.fill(HIST("QA/Nsigma_TOF"), trk1.pt(), trk1.tofNSigmaPi());
-              histos.fill(HIST("QA/TPC_TOF"), trk1.tpcNSigmaPi(), trk1.tofNSigmaPi());
-              continue;
-            }
-
-            if (!selTrack(trk1) || !selTrack(trk2))
-              continue;
-
-            if (selPion(trk1) && selPion(trk2)) {
-              part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-              part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-              reco = part1 + part2;
-
-              if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
-                continue;
-
-              if (trk1.sign() * trk2.sign() < 0) {
-                histos.fill(HIST("hInvMass_rho770_US"), reco.M(), reco.Pt(), collision.cent());
-                histos.fill(HIST("hInvMass_K0s_US"), reco.M(), reco.Pt(), collision.cent());
-
-                if constexpr (IsMC) {
-                  if (trk1.motherId() != trk2.motherId())
-                    continue;
-                  if (std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 211) {
-                    if (std::abs(trk1.motherPDG()) == 113) {
-                      histos.fill(HIST("MCL/hpT_rho770_REC"), reco.M(), reco.Pt(), collision.cent());
-                    } else if (std::abs(trk1.motherPDG()) == 223) {
-                      histos.fill(HIST("MCL/hpT_omega_REC"), reco.M(), reco.Pt(), collision.cent());
-                    } else if (std::abs(trk1.motherPDG()) == 310) {
-                      histos.fill(HIST("MCL/hpT_K0s_REC"), reco.M(), reco.Pt(), collision.cent());
-                      histos.fill(HIST("MCL/hpT_K0s_pipi_REC"), reco.M(), reco.Pt(), collision.cent());
-                    }
-                  } else if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-                    if (std::abs(trk1.motherPDG()) == 313)
-                      histos.fill(HIST("MCL/hpT_Kstar_REC"), reco.M(), reco.Pt(), collision.cent());
-                  }
-                }
-              } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-                histos.fill(HIST("hInvMass_rho770_LSpp"), reco.M(), reco.Pt(), collision.cent());
-                histos.fill(HIST("hInvMass_K0s_LSpp"), reco.M(), reco.Pt(), collision.cent());
-              } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-                histos.fill(HIST("hInvMass_rho770_LSmm"), reco.M(), reco.Pt(), collision.cent());
-                histos.fill(HIST("hInvMass_K0s_LSmm"), reco.M(), reco.Pt(), collision.cent());
-              }
-            }
-
-            if ((selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2))) {
-              if (selPion(trk1)) {
-                part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
-                part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-              } else if (selPion(trk2)) {
-                part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
-                part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
-              }
-              reco = part1 + part2;
-
-              if (reco.Rapidity() > cfgMaxRap || reco.Rapidity() < cfgMinRap)
-                continue;
-
-              if (trk1.sign() * trk2.sign() < 0) {
-                histos.fill(HIST("hInvMass_Kstar_US"), reco.M(), reco.Pt(), collision.cent());
-
-                if constexpr (IsMC) {
-                  if (trk1.motherId() != trk2.motherId())
-                    continue;
-
-                  if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-                    if (std::abs(trk1.motherPDG()) == 313)
-                      histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
-                  }
-                }
-              } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-                histos.fill(HIST("hInvMass_Kstar_LSpp"), reco.M(), reco.Pt(), collision.cent());
-              } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-                histos.fill(HIST("hInvMass_Kstar_LSmm"), reco.M(), reco.Pt(), collision.cent());
               }
             }
           }
@@ -333,10 +270,10 @@ struct rho770analysis {
       }
 
       if ((selPion(trk1) && selKaon(trk2)) || (selKaon(trk1) && selPion(trk2))) {
-        if (selPion(trk1)) {
+        if (selPion(trk1) && selKaon(trk2)) {
           part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPi);
           part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
-        } else if (selPion(trk2)) {
+        } else if (selKaon(trk1) && selPion(trk2)) {
           part1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
           part2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
         }
@@ -351,10 +288,10 @@ struct rho770analysis {
           if constexpr (IsMC) {
             if (trk1.motherId() != trk2.motherId())
               continue;
-
             if ((std::abs(trk1.pdgCode()) == 211 && std::abs(trk2.pdgCode()) == 321) || (std::abs(trk1.pdgCode()) == 321 && std::abs(trk2.pdgCode()) == 211)) {
-              if (std::abs(trk1.motherPDG()) == 313)
+              if (std::abs(trk1.motherPDG()) == 313) {
                 histos.fill(HIST("MCL/hpT_Kstar_Kpi_REC"), reco.M(), reco.Pt(), collision.cent());
+              }
             }
           }
         } else if (trk1.sign() > 0 && trk2.sign() > 0) {
@@ -378,8 +315,10 @@ struct rho770analysis {
   }
   PROCESS_SWITCH(rho770analysis, processMCLight, "Process Event for MC", false);
 
-  void processMCTrue(aod::ResoMCParents const& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
+    auto multiplicity = collision.cent();
+
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != 113)
         continue;
@@ -387,13 +326,27 @@ struct rho770analysis {
         continue;
       if (part.y() < cfgMinRap || part.y() > cfgMaxRap)
         continue;
-      bool pass = false;
-      if ((std::abs(part.daughterPDG1()) == 211 && std::abs(part.daughterPDG2()) == 211))
-        pass = true;
-      if (!pass) // If we have both decay products
+      if (!(std::abs(part.daughterPDG1()) == 211 && std::abs(part.daughterPDG2()) == 211))
         continue;
 
-      histos.fill(HIST("MCL/hpT_rho770_GEN"), part.pt());
+      TLorentzVector truthpar;
+      truthpar.SetPxPyPzE(part.px(), part.py(), part.pz(), part.e());
+      auto mass = truthpar.M();
+
+      histos.fill(HIST("MCL/hpT_rho770_GEN"), 0, mass, part.pt(), multiplicity);
+
+      if (collision.isVtxIn10()) {
+        histos.fill(HIST("MCL/hpT_rho770_GEN"), 1, mass, part.pt(), multiplicity);
+      }
+      if (collision.isVtxIn10() && collision.isInSel8()) {
+        histos.fill(HIST("MCL/hpT_rho770_GEN"), 2, mass, part.pt(), multiplicity);
+      }
+      if (collision.isVtxIn10() && collision.isTriggerTVX()) {
+        histos.fill(HIST("MCL/hpT_rho770_GEN"), 3, mass, part.pt(), multiplicity);
+      }
+      if (collision.isInAfterAllCuts()) {
+        histos.fill(HIST("MCL/hpT_rho770_GEN"), 4, mass, part.pt(), multiplicity);
+      }
     }
   };
   PROCESS_SWITCH(rho770analysis, processMCTrue, "Process Event for MC", false);
@@ -401,6 +354,5 @@ struct rho770analysis {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<rho770analysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<rho770analysis>(cfgc)};
 }

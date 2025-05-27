@@ -65,6 +65,7 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
   Produces<o2::aod::EMCALMCClusters> mcclusters;
   Produces<o2::aod::EMCALAmbiguousClusters> clustersAmbiguous;
+  Produces<o2::aod::EMCALAmbiguousMCClusters> mcclustersAmbiguous;
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
@@ -82,7 +83,7 @@ struct EmcalCorrectionTask {
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
   Configurable<std::string> clusterDefinitions{"clusterDefinitions", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
-  Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
+  Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal_NoScale", "Nonlinearity correction at cluster level. Default for data should be DATA_TestbeamFinal_NoScale. Default for MC should be MC_TestbeamFinal."};
   Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
   Configurable<int> applyCellAbsScale{"applyCellAbsScale", 0, "Enable absolute cell energy scale to correct for energy loss in material in front of EMCal"};
@@ -94,7 +95,8 @@ struct EmcalCorrectionTask {
   Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
-  Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better"};
+  Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
+  Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -222,6 +224,11 @@ struct EmcalCorrectionTask {
     hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
     hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
     hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
+    mHistManager.add("hBCMatchErrors", "hBCMatchErrors;;#it{N}_{BC}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
+    auto hBCMatchErrors = mHistManager.get<TH1>(HIST("hBCMatchErrors"));
+    hBCMatchErrors->GetXaxis()->SetBinLabel(1, "Normal");
+    hBCMatchErrors->GetXaxis()->SetBinLabel(2, "Wrong collisionID order");
+    hBCMatchErrors->GetXaxis()->SetBinLabel(3, "foundBCId != globalIndex");
     mHistManager.add("hClusterType", "hClusterType;;#it{count}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hClusterType = mHistManager.get<TH1>(HIST("hClusterType"));
     hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
@@ -254,6 +261,7 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
 
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
@@ -314,7 +322,13 @@ struct EmcalCorrectionTask {
         if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
               mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
@@ -329,6 +343,8 @@ struct EmcalCorrectionTask {
               // Store the clusters in the table where a matching collision could
               // be identified.
               fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+            } else {
+              mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
           }
         } else { // ambiguous
@@ -370,6 +386,7 @@ struct EmcalCorrectionTask {
   {
     LOG(debug) << "Starting process full.";
 
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
@@ -434,7 +451,13 @@ struct EmcalCorrectionTask {
         if (collisionsInFoundBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
@@ -448,6 +471,8 @@ struct EmcalCorrectionTask {
               // Store the clusters in the table where a matching collision could
               // be identified.
               fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+            } else {
+              mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
           }
         } else { // ambiguous
@@ -486,6 +511,7 @@ struct EmcalCorrectionTask {
   void processStandalone(aod::BCs const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
+    int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
     for (const auto& bc : bcs) {
@@ -536,6 +562,12 @@ struct EmcalCorrectionTask {
         if (collisionsInBC.size() == 1) {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInBC) {
+            if (previousCollisionId > col.globalIndex()) {
+              mHistManager.fill(HIST("hBCMatchErrors"), 1);
+              continue;
+            }
+            previousCollisionId = col.globalIndex();
+            mHistManager.fill(HIST("hBCMatchErrors"), 0); // CollisionID ordered and foundBC matches -> Fill as healthy
             mHistManager.fill(HIST("hCollPerBC"), 1);
             mHistManager.fill(HIST("hCollisionType"), 1);
             math_utils::Point3D<float> vertexPos = {col.posX(), col.posY(), col.posZ()};
@@ -671,6 +703,10 @@ struct EmcalCorrectionTask {
   {
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
+    if (mClusterLabels.size() > 0) {
+      mcclustersAmbiguous.reserve(mClusterLabels.size());
+    }
+    unsigned int iCluster = 0;
     for (const auto& cluster : mAnalysisClusters) {
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{0., 0., 0.};
@@ -699,12 +735,16 @@ struct EmcalCorrectionTask {
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
         cluster.getNExMax(), static_cast<int>(mClusterDefinitions.at(iClusterizer)));
+      if (mClusterLabels.size() > 0) {
+        mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
+      }
       clustercellsambiguous.reserve(cluster.getNCells());
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         clustercellsambiguous(clustersAmbiguous.lastIndex(),
                               cellIndicesBC[cellindex]);
       } // end of cells of cluster loop
+      iCluster++;
     } // end of cluster loop
   }
 
@@ -752,6 +792,14 @@ struct EmcalCorrectionTask {
     for (const auto& track : tracks) {
       // TODO only consider tracks in current emcal/dcal acceptanc
       if (!track.isGlobalTrack()) { // only global tracks
+        continue;
+      }
+      // Tracks that do not point to the EMCal/DCal/PHOS get default values of -999
+      // This way we can cut out tracks that do not point to the EMCal+DCal
+      if (track.trackEtaEmcal() < -900 || track.trackPhiEmcal() < -900) {
+        continue;
+      }
+      if (trackMinPt > 0 && track.pt() < trackMinPt) {
         continue;
       }
       nTrack++;

@@ -66,8 +66,6 @@ struct phianalysis {
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for PID selection
   /// TPC nCluster cut
   Configurable<int> cMinTPCNclsFound{"cMinTPCNclsFound", 70, "Minimum TPC cluster found"};
-  /// ITS nCluster cut
-  Configurable<int> cMinITSNcls{"cMinITSNcls", 0, "Minimum ITS nCluster"};
   // Kaon
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
@@ -141,8 +139,6 @@ struct phianalysis {
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (track.tpcNClsFound() < cMinTPCNclsFound)
-      return false;
-    if (track.itsNCls() < cMinITSNcls)
       return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;

@@ -23,9 +23,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_LCTOPKPI(FEATURE)                                   \
-  {                                                                  \
-#FEATURE, static_cast < uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
+#define FILL_MAP_LCTOPKPI(FEATURE)                                 \
+  {                                                                \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -67,6 +67,18 @@
     break;                                                                           \
   }
 
+// Variation of CHECK_AND_FILL_VEC_LCTOPKPI_HFHELPER_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2)
+// where GETTER1 and GETTER2 are methods of the OBJECT
+#define CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
+  case static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE): {                \
+    if (caseLcToPKPi) {                                                       \
+      inputFeatures.emplace_back(OBJECT.GETTER1());                           \
+    } else {                                                                  \
+      inputFeatures.emplace_back(OBJECT.GETTER2());                           \
+    }                                                                         \
+    break;                                                                    \
+  }
+
 namespace o2::analysis
 {
 enum class InputFeaturesLcToPKPi : uint8_t {
@@ -85,22 +97,22 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   cpa,
   cpaXY,
   chi2PCA,
-  tpcNSigmaP0,  // 0
+  tpcNSigmaPr0, // 0
   tpcNSigmaKa0, // 0
   tpcNSigmaPi0, // 0
-  tpcNSigmaP1,  // 1
+  tpcNSigmaPr1, // 1
   tpcNSigmaKa1, // 1
   tpcNSigmaPi1, // 1
-  tpcNSigmaP2,  // 2
+  tpcNSigmaPr2, // 2
   tpcNSigmaKa2, // 2
   tpcNSigmaPi2, // 2
-  tofNSigmaP0,  //
+  tofNSigmaPr0, //
   tofNSigmaKa0, //
   tofNSigmaPi0, //
-  tofNSigmaP1,
+  tofNSigmaPr1,
   tofNSigmaKa1,
   tofNSigmaPi1,
-  tofNSigmaP2,
+  tofNSigmaPr2,
   tofNSigmaKa2,
   tofNSigmaPi2,
   tpcTofNSigmaPi0,
@@ -135,9 +147,8 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
   /// \param prong1 is the candidate's prong1
   /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
-  template <typename T1, typename T2>
-  std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong0, T2 const& prong1, T2 const& prong2, bool const& caseLcToPKPi)
+  template <typename T1>
+  std::vector<float> getInputFeatures(T1 const& candidate, bool const caseLcToPKPi)
   {
     std::vector<float> inputFeatures;
 
@@ -159,41 +170,47 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI(cpaXY);
         CHECK_AND_FILL_VEC_LCTOPKPI(chi2PCA);
         // TPC PID variables
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcNSigmaP0, tpcNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcNSigmaP1, tpcNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcNSigmaP2, tpcNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcNSigmaPrExpPr0, tpcNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcNSigmaPiExpPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPr0, nSigTpcPr0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaKa0, nSigTpcKa0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPi0, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPr1, nSigTpcPr1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaKa1, nSigTpcKa1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPi1, nSigTpcPi1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPr2, nSigTpcPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcNSigmaPrExpPr0, tpcNSigmaPr);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcNSigmaPiExpPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPrExpPr0, nSigTpcPr0, nSigTpcPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcNSigmaPiExpPi2, nSigTpcPi2, nSigTpcPi0);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tofNSigmaP0, tofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tofNSigmaPi0, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tofNSigmaP1, tofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tofNSigmaKa1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tofNSigmaP2, tofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tofNSigmaPiExpPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr0, nSigTofPr0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi0, nSigTofPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr1, nSigTofPr1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa1, nSigTofKa1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi1, nSigTofPi1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPr2, nSigTofPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tofNSigmaPiExpPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPrExpPr0, nSigTofPr0, nSigTofPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tofNSigmaPiExpPi2, nSigTofPi2, nSigTofPi0);
         // Combined PID variables
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcTofNSigmaPr0, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong1, tpcTofNSigmaPr1, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong2, tpcTofNSigmaPr2, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPi0, tpcTofNSigmaPi0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPi1, tpcTofNSigmaPi1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPi2, tpcTofNSigmaPi2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaKa0, tpcTofNSigmaKa0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaKa1, tpcTofNSigmaKa1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaKa2, tpcTofNSigmaKa2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr0, tpcTofNSigmaPr0);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr1, tpcTofNSigmaPr1);
+        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, tpcTofNSigmaPr2, tpcTofNSigmaPr2);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong0, prong2, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr);
+        // CHECK_AND_FILL_VEC_LCTOPKPI_OBJECT_SIGNED(prong2, prong0, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
+        CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
       }
     }
 
@@ -221,25 +238,25 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(cpaXY),
       FILL_MAP_LCTOPKPI(chi2PCA),
       // TPC PID variables
-      FILL_MAP_LCTOPKPI(tpcNSigmaP0),
+      FILL_MAP_LCTOPKPI(tpcNSigmaPr0),
       FILL_MAP_LCTOPKPI(tpcNSigmaKa0),
       FILL_MAP_LCTOPKPI(tpcNSigmaPi0),
-      FILL_MAP_LCTOPKPI(tpcNSigmaP1),
+      FILL_MAP_LCTOPKPI(tpcNSigmaPr1),
       FILL_MAP_LCTOPKPI(tpcNSigmaKa1),
       FILL_MAP_LCTOPKPI(tpcNSigmaPi1),
-      FILL_MAP_LCTOPKPI(tpcNSigmaP2),
+      FILL_MAP_LCTOPKPI(tpcNSigmaPr2),
       FILL_MAP_LCTOPKPI(tpcNSigmaKa2),
       FILL_MAP_LCTOPKPI(tpcNSigmaPi2),
       FILL_MAP_LCTOPKPI(tpcNSigmaPrExpPr0),
       FILL_MAP_LCTOPKPI(tpcNSigmaPiExpPi2),
       // TOF PID variables
-      FILL_MAP_LCTOPKPI(tofNSigmaP0),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr0),
       FILL_MAP_LCTOPKPI(tofNSigmaKa0),
       FILL_MAP_LCTOPKPI(tofNSigmaPi0),
-      FILL_MAP_LCTOPKPI(tofNSigmaP1),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr1),
       FILL_MAP_LCTOPKPI(tofNSigmaKa1),
       FILL_MAP_LCTOPKPI(tofNSigmaPi1),
-      FILL_MAP_LCTOPKPI(tofNSigmaP2),
+      FILL_MAP_LCTOPKPI(tofNSigmaPr2),
       FILL_MAP_LCTOPKPI(tofNSigmaKa2),
       FILL_MAP_LCTOPKPI(tofNSigmaPi2),
       FILL_MAP_LCTOPKPI(tofNSigmaPrExpPr0),

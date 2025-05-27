@@ -17,6 +17,8 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 
+#include <cstdio>
+
 #include <TFile.h>
 #include <TH1F.h>
 #include <TCanvas.h>

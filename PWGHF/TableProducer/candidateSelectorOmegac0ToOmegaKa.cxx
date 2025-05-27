@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorToOmegaKa.cxx
+/// \file candidateSelectorOmegac0ToOmegaKa.cxx
 /// \brief Omegac0 → Omega Ka selection task
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
@@ -29,11 +29,11 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis;
 
-enum pidInfoStored {
-  kPiFromLam = 0,
-  kPrFromLam,
-  kKaFromCasc,
-  kKaFromCharm
+enum PidInfoStored {
+  PiFromLam = 0,
+  PrFromLam,
+  KaFromCasc,
+  KaFromCharm
 };
 
 /// Struct for applying Omegac0 -> Omega pi selection cuts
@@ -423,28 +423,28 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       if (trackPiFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPiFromLam);
+        SETBIT(infoTpcStored, PiFromLam);
       }
       if (trackPrFromLam.hasTPC()) {
-        SETBIT(infoTpcStored, kPrFromLam);
+        SETBIT(infoTpcStored, PrFromLam);
       }
       if (trackKaFromCasc.hasTPC()) {
-        SETBIT(infoTpcStored, kKaFromCasc);
+        SETBIT(infoTpcStored, KaFromCasc);
       }
       if (trackKaFromCharm.hasTPC()) {
-        SETBIT(infoTpcStored, kKaFromCharm);
+        SETBIT(infoTpcStored, KaFromCharm);
       }
       if (trackPiFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPiFromLam);
+        SETBIT(infoTofStored, PiFromLam);
       }
       if (trackPrFromLam.hasTOF()) {
-        SETBIT(infoTofStored, kPrFromLam);
+        SETBIT(infoTofStored, PrFromLam);
       }
       if (trackKaFromCasc.hasTOF()) {
-        SETBIT(infoTofStored, kKaFromCasc);
+        SETBIT(infoTofStored, KaFromCasc);
       }
       if (trackKaFromCharm.hasTOF()) {
-        SETBIT(infoTofStored, kKaFromCharm);
+        SETBIT(infoTofStored, KaFromCharm);
       }
 
       if (usePidTpcOnly) {
@@ -567,7 +567,7 @@ struct HfCandidateSelectorToOmegaKa {
       }
     }
   } // end process
-};  // end struct
+}; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

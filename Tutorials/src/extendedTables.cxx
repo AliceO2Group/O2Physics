@@ -21,6 +21,7 @@ namespace o2::aod
 namespace extension
 {
 DECLARE_SOA_EXPRESSION_COLUMN(P2exp, p2exp, float, track::p* track::p);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(Cfg, cfg, float, "cfg");
 
 DECLARE_SOA_COLUMN(mX, mx, float);
 DECLARE_SOA_COLUMN(mY, my, float);
@@ -36,6 +37,8 @@ DECLARE_SOA_TABLE(DynTable, "AOD", "DYNTABLE",
 
 DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
                                 extension::P2exp);
+DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(CExTable, Tracks, "CTRK",
+                                        extension::Cfg);
 } // namespace o2::aod
 
 using namespace o2;
@@ -107,6 +110,14 @@ struct ExtendAndAttach {
 struct SpawnDynamicColumns {
   Produces<aod::DynTable> dyntable;
   Spawns<aod::ExTable> extable;
+  Defines<aod::CExTable> cextable;
+
+  Configurable<float> factor{"factor", 1.0f, "scale factor"};
+
+  void init(InitContext&)
+  {
+    cextable.projectors[0] = (float)factor * aod::track::p * aod::track::p;
+  }
 
   void process(aod::Tracks const& tracks)
   {
@@ -119,7 +130,7 @@ struct SpawnDynamicColumns {
 // loop over the joined table <ExTable, DynTable>
 struct ProcessExtendedTables {
   // join the table ExTable and DynTable
-  using allinfo = soa::Join<aod::ExTable, aod::DynTable>;
+  using allinfo = soa::Join<aod::Tracks, aod::ExTableExtension, aod::CExTableCfgExtension, aod::DynTable>;
 
   void process(aod::Collision const&, allinfo const& tracks)
   {
@@ -128,6 +139,7 @@ struct ProcessExtendedTables {
       if (row.trackType() != 3) {
         if (row.index() % 10000 == 0) {
           LOGF(info, "E: EXPRESSION P^2 = %.3f, DYNAMIC P^2 = %.3f R^2 = %.3f", row.p2exp(), row.p2dyn(), row.r2dyn());
+          LOGF(info, "C: CONF EXPRESSION f * P^2 = %.3f", row.cfg());
         }
       }
     }

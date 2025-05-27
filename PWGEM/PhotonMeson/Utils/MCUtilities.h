@@ -224,7 +224,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
 template <typename TMCPhoton, typename TMCParticles>
 bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_gen, const float max_eta_gen, const float margin_z_mc, TMCParticles const& mcparticles)
 {
-  if (abs(mcphoton.pdgCode()) != 22) {
+  if (std::abs(mcphoton.pdgCode()) != 22) {
     return false;
   }
 
@@ -238,7 +238,7 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
       return false;
     }
     auto daughter = mcparticles.iteratorAt(daughterId);
-    if (abs(daughter.pdgCode()) != 11) {
+    if (std::abs(daughter.pdgCode()) != 11) {
       return false;
     }
 
@@ -246,13 +246,26 @@ bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_
       return false;
     }
 
-    float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+    float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
     // LOGF(info, "daughterId = %d , pdg = %d , vx = %f , vy = %f , vz = %f, rxy = %f", daughterId, daughter.pdgCode(), daughter.vx(), daughter.vy(), daughter.vz(), rxy_gen_e);
     if (rxy_gen_e > max_r_gen || rxy_gen_e < abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
       return false;
     }
   } // end of daughter loop
 
+  return true;
+}
+//_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles>
+bool isGammaGammaDecay(TMCParticle mcParticle, TMCParticles mcParticles)
+{
+  auto daughtersIds = mcParticle.daughtersIds();
+  if (daughtersIds.size() != 2)
+    return false;
+  for (auto& daughterId : daughtersIds) {
+    if (mcParticles.iteratorAt(daughterId).pdgCode() != 22)
+      return false;
+  }
   return true;
 }
 //_______________________________________________________________________

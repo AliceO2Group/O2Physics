@@ -48,6 +48,8 @@ static constexpr const char* pN[Np] = {"el", "mu", "pi", "ka", "pr", "de", "tr",
 static constexpr const char* cN[NCharges] = {"pos", "neg"};
 static constexpr const char* pTCharge[NpCharge] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "d", "t", "{}^{3}He", "#alpha",
                                                    "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}", "#bar{d}", "#bar{t}", "{}^{3}#bar{He}", "#bar{#alpha}"};
+static constexpr const char* pNCharge[NpCharge] = {"pos/el", "pos/mu", "pos/pi", "pos/ka", "pos/pr", "pos/de", "pos/tr", "pos/he", "pos/al",
+                                                   "neg/el", "neg/mu", "neg/pi", "neg/ka", "neg/pr", "neg/de", "neg/tr", "neg/he", "neg/al"};
 static constexpr int PDGs[NpCharge] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
                                        -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
 

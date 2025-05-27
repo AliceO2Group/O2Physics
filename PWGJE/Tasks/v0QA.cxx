@@ -9,10 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file v0QA.cxx
 /// \brief QA task for V0s in the jets framework, based on the LF v0cascadesqa task
-//
+///
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
-//
+
+#include <string>
+#include <vector>
 
 #include "TH1F.h"
 #include "TTree.h"
@@ -44,13 +47,15 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
+using CandidatesV0MCDWithFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
+
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
 using MatchedMCPV0Jets = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
 using MatchedMCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents, aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets>;
 
 struct V0QA {
-  HistogramRegistry registry{"registry"}; // CallSumw2 = false?
+  HistogramRegistry registry{"registry"};
 
   Configurable<std::string> evSel{"evSel", "sel8WithoutTimeFrameBorderCut", "choose event selection"};
   Configurable<float> v0cospaMin{"v0cospaMin", 0.995, "Minimum V0 cosine of pointing angle"};
@@ -70,7 +75,7 @@ struct V0QA {
   ConfigurableAxis binPtJet{"ptJet", {100., 0.0f, 50.0f}, ""};
   ConfigurableAxis binPtV0{"ptV0", {100., 0.0f, 50.0f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {static_cast<int>(TMath::Pi()) * 10 / 2, 0.0f, 2. * static_cast<int>(TMath::Pi())}, ""};
+  ConfigurableAxis binPhi{"binPhi", {constants::math::PI * 10 / 2, 0.0f, constants::math::TwoPI}, ""};
 
   ConfigurableAxis binInvMassK0S{"binInvMassK0S", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis binInvMassLambda{"binInvMassLambda", {200, 1.07f, 1.17f}, ""};
@@ -80,6 +85,7 @@ struct V0QA {
   ConfigurableAxis binsDcaXY{"binsDcaXY", {100, -0.5f, 0.5f}, ""};
   ConfigurableAxis binsDcaZ{"binsDcaZ", {100, -5.f, 5.f}, ""};
   ConfigurableAxis binPtDiff{"ptdiff", {200., -49.5f, 50.5f}, ""};
+  ConfigurableAxis binPtRelDiff{"ptreldiff", {100., -1.0f, 1.0f}, ""};
   ConfigurableAxis binITSNCl{"ITSNCl", {8, -0.5, 7.5}, ""};
   ConfigurableAxis binITSChi2NCl{"ITSChi2NCl", {100, 0, 40}, ""};
 
@@ -88,11 +94,11 @@ struct V0QA {
   ConfigurableAxis binTPCNClSharedFraction{"sharedFraction", {100, 0., 1.}, ""};
   ConfigurableAxis binTPCCrossedRowsOverFindableCl{"crossedOverFindable", {120, 0.0, 1.2}, ""};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
 
     const AxisSpec axisJetPt{binPtJet, "Jet Pt (GeV/c)"};
     const AxisSpec axisV0Pt{binPtV0, "V0 Pt (GeV/c)"};
@@ -105,6 +111,7 @@ struct V0QA {
     const AxisSpec axisAntiLambdaM{binInvMassLambda, "M(#bar{p} #pi^{+}) (GeV/c^{2})"};
 
     const AxisSpec axisPtDiff{binPtDiff, "Pt difference (GeV/c)"};
+    const AxisSpec axisPtRelDiff{binPtRelDiff, "Pt relative difference"};
     const AxisSpec axisDcaXY{binsDcaXY, "DCA_{xy} (cm)"};
     const AxisSpec axisDcaZ{binsDcaZ, "DCA_{z} (cm)"};
     const AxisSpec axisITSNCl{binITSNCl, "# clusters ITS"};
@@ -119,7 +126,7 @@ struct V0QA {
     const AxisSpec axisCrossedRowsOverFindable{binTPCCrossedRowsOverFindableCl, "Crossed rows / findable clusters TPC"};
 
     if (doprocessFlags) {
-      registry.add("inclusive/V0Flags", "V0Flags", HistType::kTH2D, {{4, -0.5, 3.5}, {4, -0.5, 3.5}});
+      registry.add("inclusive/V0Flags", "V0Flags", HistType::kTH2D, {{5, -0.5, 4.5}, {5, -0.5, 4.5}});
     }
     if (doprocessMcD) {
       registry.add("inclusive/hEvents", "Events", {HistType::kTH1D, {{2, 0.0f, 2.0f}}});
@@ -220,7 +227,7 @@ struct V0QA {
     if (doprocessV0TrackQA) {
       registry.add("tracks/Pos", "pos", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisEta, axisPhi});
       registry.add("tracks/Neg", "neg", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisEta, axisPhi});
-      registry.add("tracks/Pt", "pt", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/Pt", "pt", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff, axisPtRelDiff});
       registry.add("tracks/PtMass", "pt mass", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM, axisLambdaM, axisAntiLambdaM});
       registry.add("tracks/PtDiffMass", "ptdiff mass", HistType::kTHnSparseD, {axisV0Pt, axisPtDiff, axisK0SM, axisLambdaM, axisAntiLambdaM});
 
@@ -393,72 +400,24 @@ struct V0QA {
   } // init
 
   template <typename T, typename U>
-  bool isCollisionReconstructed(T const& collision, U const& eventSelection)
+  bool isCollisionReconstructed(T const& collision, U const& eventSelectionBits)
   {
     if (!collision.has_mcCollision()) {
       return false;
     }
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return false;
     }
     return true;
   }
   template <typename T, typename U, typename V>
-  bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
+  bool v0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
   {
     // This is necessary, because the V0Labels table points to aod::McParticles, not to aod::CandidatesV0MCP
     auto negId = v0.template negTrack_as<V>().mcParticleId();
     auto posId = v0.template posTrack_as<V>().mcParticleId();
     auto daughters = particle.daughtersIds();
     return ((negId == daughters[0] && posId == daughters[1]) || (posId == daughters[0] && negId == daughters[1]));
-  }
-  template <typename T, typename U>
-  bool isV0Reconstructed(T collision, U const& v0, int pdg)
-  {
-    // TODO: This should use the JE V0 selector once it it ready!
-    if (v0.v0cosPA() < v0cospaMin)
-      return false;
-    if (v0.v0radius() < v0radiusMin)
-      return false;
-    if (v0.dcaV0daughters() > dcav0dauMax)
-      return false;
-
-    // K0S
-    if (TMath::Abs(pdg) == 310) {
-      if (TMath::Abs(v0.dcapostopv()) < dcapiMin)
-        return false;
-      if (TMath::Abs(v0.dcanegtopv()) < dcapiMin)
-        return false;
-      if (TMath::Abs(v0.yK0Short()) > yK0SMax)
-        return false;
-      float ctauK0S = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-      if (ctauK0S > lifetimeK0SMax)
-        return false;
-    }
-    // Lambda
-    if (pdg == 3122) {
-      if (TMath::Abs(v0.dcapostopv()) < dcaprMin)
-        return false;
-      if (TMath::Abs(v0.dcanegtopv()) < dcapiMin)
-        return false;
-      if (TMath::Abs(v0.yLambda()) > yLambdaMax)
-        return false;
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-      if (ctauLambda > lifetimeLambdaMax)
-        return false;
-    }
-    if (pdg == -3122) {
-      if (TMath::Abs(v0.dcapostopv()) < dcapiMin)
-        return false;
-      if (TMath::Abs(v0.dcanegtopv()) < dcaprMin)
-        return false;
-      if (TMath::Abs(v0.yLambda()) > yLambdaMax)
-        return false;
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
-      if (ctauAntiLambda > lifetimeLambdaMax)
-        return false;
-    }
-    return true;
   }
 
   template <typename T>
@@ -485,7 +444,7 @@ struct V0QA {
 
     registry.fill(HIST("tracks/Pos"), vPt, pPt, posTrack.eta(), posTrack.phi());
     registry.fill(HIST("tracks/Neg"), vPt, nPt, negTrack.eta(), negTrack.phi());
-    registry.fill(HIST("tracks/Pt"), vPt, pPt, nPt, dPt);
+    registry.fill(HIST("tracks/Pt"), vPt, pPt, nPt, dPt, dPt / vPt);
     registry.fill(HIST("tracks/PtMass"), vPt, pPt, nPt, mK, mL, mAL);
     registry.fill(HIST("tracks/PtDiffMass"), vPt, dPt, mK, mL, mAL);
 
@@ -682,8 +641,6 @@ struct V0QA {
     registry.fill(HIST("tracks/TPC/negNClsCrossedRowsOverFindableCls"), vPt, pPt, nPt, negTrack.tpcCrossedRowsOverFindableCls());
   }
 
-  using CandidatesV0MCDWithFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
-
   void processDummy(aod::CandidatesV0MCD const&) {}
   PROCESS_SWITCH(V0QA, processDummy, "Dummy process function turned on by default", true);
 
@@ -694,49 +651,58 @@ struct V0QA {
     int isAntiLambda = static_cast<int>(v0.isAntiLambdaCandidate());
     int isRejected = static_cast<int>(v0.isRejectedCandidate());
 
-    registry.fill(HIST("inclusive/V0Flags"), 0, 0, isK0S);
-    registry.fill(HIST("inclusive/V0Flags"), 1, 1, isLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 2, 2, isAntiLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 3, 3, isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 0, isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 1, isK0S);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 2, isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 3, isAntiLambda);
 
-    registry.fill(HIST("inclusive/V0Flags"), 0, 1, isK0S * isLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 1, 0, isK0S * isLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 0, 2, isK0S * isAntiLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 2, 0, isK0S * isAntiLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 0, 3, isK0S * isRejected);
-    registry.fill(HIST("inclusive/V0Flags"), 3, 0, isK0S * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 1, isRejected * isK0S);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 0, isRejected * isK0S);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 2, isRejected * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 0, isRejected * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 3, isRejected * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 0, isRejected * isAntiLambda);
 
-    registry.fill(HIST("inclusive/V0Flags"), 1, 2, isLambda * isAntiLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 2, 1, isLambda * isAntiLambda);
-    registry.fill(HIST("inclusive/V0Flags"), 1, 3, isLambda * isRejected);
-    registry.fill(HIST("inclusive/V0Flags"), 3, 1, isLambda * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 2, isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 1, isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 3, isK0S * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 1, isK0S * isAntiLambda);
 
-    registry.fill(HIST("inclusive/V0Flags"), 2, 3, isAntiLambda * isRejected);
-    registry.fill(HIST("inclusive/V0Flags"), 3, 2, isAntiLambda * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 3, isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 2, isLambda * isAntiLambda);
+
+    // V0 satisfies 3+ classes
+    registry.fill(HIST("inclusive/V0Flags"), 0, 4, isRejected * isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 4, 0, isRejected * isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 4, isRejected * isK0S * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 4, 1, isRejected * isK0S * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 4, isRejected * isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 4, 2, isRejected * isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 4, isRejected * isK0S * isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 4, 3, isRejected * isK0S * isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 4, 4, isK0S * isLambda * isAntiLambda);
   }
   PROCESS_SWITCH(V0QA, processFlags, "V0 flags", false);
 
   void processMcD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, CandidatesV0MCDWithFlags const& v0s, aod::McParticles const&)
   {
     registry.fill(HIST("inclusive/hEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("inclusive/hEvents"), 1.5);
     double weight = jcoll.mcCollision().weight();
 
     for (const auto& v0 : v0s) {
-      if (!v0.has_mcParticle()) {
+      if (!v0.has_mcParticle())
         continue;
-      }
-      int pdg = v0.mcParticle().pdgCode();
 
-      // Check V0 decay kinematics
       if (v0.isRejectedCandidate())
         continue;
 
+      int pdg = v0.mcParticle().pdgCode();
       // K0S
-      if (TMath::Abs(pdg) == 310) {
+      if (std::abs(pdg) == 310) {
         registry.fill(HIST("inclusive/K0SPtEtaMass"), v0.pt(), v0.eta(), v0.mK0Short(), weight);
         registry.fill(HIST("inclusive/InvMassK0STrue"), v0.pt(), v0.v0radius(), v0.mK0Short(), weight);
       }
@@ -758,42 +724,41 @@ struct V0QA {
     registry.fill(HIST("inclusive/hMcEvents"), 0.5);
     bool isReconstructed = false;
 
-    for (auto collision : collisions) {
-      if (!isCollisionReconstructed(collision, eventSelection)) {
+    for (const auto& collision : collisions) {
+      if (!isCollisionReconstructed(collision, eventSelectionBits))
         continue;
-      }
-      if (collision.mcCollision().globalIndex() != mccoll.globalIndex()) {
+
+      if (collision.mcCollision().globalIndex() != mccoll.globalIndex())
         continue;
-      }
+
       isReconstructed = true;
       break;
     }
-    if (!isReconstructed) {
+    if (!isReconstructed)
       return;
-    }
 
     registry.fill(HIST("inclusive/hMcEvents"), 1.5);
     double weight = mccoll.weight();
 
-    for (auto& pv0 : pv0s) {
+    for (const auto& pv0 : pv0s) {
       if (!pv0.has_daughters())
         continue;
       if (!pv0.isPhysicalPrimary())
         continue;
-      if (TMath::Abs(pv0.y() > yPartMax))
+      if (std::abs(pv0.y()) > yPartMax)
         continue;
 
       // Can calculate this from aod::CandidatesV0MCD (contains decay vertex)
-      double R_Decay = 1.0;
+      double r_Decay = 1.0;
 
       if (pv0.pdgCode() == 310) {
-        registry.fill(HIST("inclusive/GeneratedK0S"), pv0.pt(), pv0.eta(), R_Decay, weight);
+        registry.fill(HIST("inclusive/GeneratedK0S"), pv0.pt(), pv0.eta(), r_Decay, weight);
       }
       if (pv0.pdgCode() == 3122) {
-        registry.fill(HIST("inclusive/GeneratedLambda"), pv0.pt(), pv0.eta(), R_Decay, weight);
+        registry.fill(HIST("inclusive/GeneratedLambda"), pv0.pt(), pv0.eta(), r_Decay, weight);
       }
       if (pv0.pdgCode() == -3122) {
-        registry.fill(HIST("inclusive/GeneratedAntiLambda"), pv0.pt(), pv0.eta(), R_Decay, weight);
+        registry.fill(HIST("inclusive/GeneratedAntiLambda"), pv0.pt(), pv0.eta(), r_Decay, weight);
       }
     }
   }
@@ -802,18 +767,18 @@ struct V0QA {
   void processMcDJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MCDV0JetsWithConstituents const& mcdjets, CandidatesV0MCDWithFlags const&, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hJetEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits))
       return;
-    }
+
     registry.fill(HIST("jets/hJetEvents"), 1.5);
     double weight = jcoll.mcCollision().weight();
 
     for (const auto& mcdjet : mcdjets) {
       // if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
       for (const auto& v0 : mcdjet.template candidates_as<CandidatesV0MCDWithFlags>()) {
-        if (!v0.has_mcParticle()) {
+        if (!v0.has_mcParticle())
           continue;
-        }
+
         int pdg = v0.mcParticle().pdgCode();
 
         // Check V0 decay kinematics
@@ -821,7 +786,7 @@ struct V0QA {
           continue;
 
         // K0S
-        if (TMath::Abs(pdg) == 310) {
+        if (std::abs(pdg) == 310) {
           registry.fill(HIST("jets/JetPtEtaK0SPt"), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
           registry.fill(HIST("jets/InvMassJetK0STrue"), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
         }
@@ -842,9 +807,9 @@ struct V0QA {
   void processMcDMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, CandidatesV0MCDWithFlags const&, aod::CandidatesV0MCP const&, aod::JetTracksMCD const& jTracks, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hMatchedJetEvents"), 0.5);
-    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+    if (!isCollisionReconstructed(jcoll, eventSelectionBits))
       return;
-    }
+
     registry.fill(HIST("jets/hMatchedJetEvents"), 1.5);
     double weight = jcoll.mcCollision().weight();
 
@@ -856,7 +821,7 @@ struct V0QA {
             continue;
 
           for (const auto& pv0 : mcpjet.template candidates_as<aod::CandidatesV0MCP>()) {
-            if (!V0sAreMatched(v0, pv0, jTracks))
+            if (!v0sAreMatched(v0, pv0, jTracks))
               continue;
             int pdg = pv0.pdgCode();
 
@@ -865,7 +830,7 @@ struct V0QA {
               continue;
 
             // K0S
-            if (TMath::Abs(pdg) == 310) {
+            if (std::abs(pdg) == 310) {
               registry.fill(HIST("jets/JetsPtEtaK0SPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
               registry.fill(HIST("jets/InvMassJetsK0STrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
             }
@@ -890,32 +855,31 @@ struct V0QA {
     registry.fill(HIST("jets/hMcJetEvents"), 0.5);
     bool isReconstructed = false;
 
-    for (auto collision : collisions) {
-      if (!isCollisionReconstructed(collision, eventSelection)) {
+    for (const auto& collision : collisions) {
+      if (!isCollisionReconstructed(collision, eventSelectionBits))
         continue;
-      }
-      if (collision.mcCollision().globalIndex() != mccoll.globalIndex()) {
+
+      if (collision.mcCollision().globalIndex() != mccoll.globalIndex())
         continue;
-      }
+
       isReconstructed = true;
       break;
     }
-    if (!isReconstructed) {
+    if (!isReconstructed)
       return;
-    }
 
     registry.fill(HIST("jets/hMcJetEvents"), 1.5);
     double weight = mccoll.weight();
 
-    for (auto& jet : jets) {
-      // if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
+    for (const auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., -1. * yPartMax, yPartMax))
+        continue;
+
       for (const auto& pv0 : jet.template candidates_as<aod::CandidatesV0MCP>()) {
         if (!pv0.has_daughters())
           continue;
         if (!pv0.isPhysicalPrimary())
           continue;
-        if (TMath::Abs(pv0.y() > yPartMax))
-          continue; // TODO: Should actually check the jets
 
         if (pv0.pdgCode() == 310) {
           registry.fill(HIST("jets/GeneratedJetK0S"), jet.pt(), jet.eta(), pv0.pt(), weight);
@@ -934,16 +898,15 @@ struct V0QA {
   void processCollisionAssociation(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, CandidatesV0MCDWithFlags const& v0s, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& v0 : v0s) {
-      if (!v0.has_mcParticle()) {
+      if (!v0.has_mcParticle())
         continue;
-      }
 
       auto pv0 = v0.mcParticle();
       bool correctCollision = (mcColl.mcCollisionId() == v0.mcParticle().mcCollisionId());
@@ -957,7 +920,7 @@ struct V0QA {
       if (!correctCollision) {
         registry.fill(HIST("collisions/V0PtEtaWrongColl"), pv0.pt(), pv0.eta(), weight);
       }
-      if (TMath::Abs(pdg) == 310) {
+      if (std::abs(pdg) == 310) {
         registry.fill(HIST("collisions/K0SPtEtaMass"), pv0.pt(), pv0.eta(), v0.mK0Short(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/K0SPtEtaMassWrongColl"), pv0.pt(), pv0.eta(), v0.mK0Short(), weight);
@@ -976,9 +939,9 @@ struct V0QA {
         }
       }
       // Feed-down from Xi
-      if (!v0.has_mcMotherParticle()) {
+      if (!v0.has_mcMotherParticle())
         continue;
-      }
+
       auto mother = v0.mcMotherParticle();
       pdg = mother.pdgCode();
       correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
@@ -999,34 +962,33 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processCollisionAssociation, "V0 collision association", false);
 
-  void processCollisionAssociationJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  void processCollisionAssociationJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, CandidatesV0MCDWithFlags const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& mcdjet : mcdjets) {
       // Eta cut?
-      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
-        if (!v0.has_mcParticle()) {
+      for (const auto& v0 : mcdjet.template candidates_as<CandidatesV0MCDWithFlags>()) {
+        if (!v0.has_mcParticle())
           continue;
-        }
 
         auto pv0 = v0.mcParticle();
         bool correctCollision = (mcColl.mcCollisionId() == pv0.mcCollisionId());
         int pdg = pv0.pdgCode();
 
         // Check V0 decay kinematics
-        if (!isV0Reconstructed(jcoll, v0, pdg))
+        if (v0.isRejectedCandidate())
           continue;
 
         registry.fill(HIST("collisions/JetPtEtaV0Pt"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
         if (!correctCollision) {
           registry.fill(HIST("collisions/JetPtEtaV0PtWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
         }
-        if (TMath::Abs(pdg) == 310) {
+        if (std::abs(pdg) == 310) {
           registry.fill(HIST("collisions/JetPtEtaK0SPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
           if (!correctCollision) {
             registry.fill(HIST("collisions/JetPtEtaK0SPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
@@ -1045,9 +1007,9 @@ struct V0QA {
           }
         }
 
-        if (!v0.has_mcMotherParticle()) {
+        if (!v0.has_mcMotherParticle())
           continue;
-        }
+
         auto mother = v0.mcMotherParticle();
         pdg = mother.pdgCode();
         correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
@@ -1068,35 +1030,36 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processCollisionAssociationJets, "V0 in jets collision association", false);
 
-  void processCollisionAssociationMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&, aod::JetTracksMCD const& jTracks)
+  void processCollisionAssociationMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, CandidatesV0MCDWithFlags const&, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&, aod::JetTracksMCD const& jTracks)
   {
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& mcdjet : mcdjets) {
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
-        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& v0 : mcdjet.template candidates_as<CandidatesV0MCDWithFlags>()) {
           if (!v0.has_mcParticle())
             continue;
 
           for (const auto& pv0 : mcpjet.template candidates_as<aod::CandidatesV0MCP>()) {
-            if (!V0sAreMatched(v0, pv0, jTracks))
+            if (!v0sAreMatched(v0, pv0, jTracks))
               continue;
+
             int pdg = pv0.pdgCode();
             bool correctCollision = (mcColl.mcCollisionId() == pv0.mcCollisionId());
 
             // Check V0 decay kinematics
-            if (!isV0Reconstructed(jcoll, v0, pdg))
+            if (v0.isRejectedCandidate())
               continue;
 
             registry.fill(HIST("collisions/JetsPtEtaV0Pt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
             if (!correctCollision) {
               registry.fill(HIST("collisions/JetsPtEtaV0PtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
             }
-            if (TMath::Abs(pdg) == 310) {
+            if (std::abs(pdg) == 310) {
               registry.fill(HIST("collisions/JetsPtEtaK0SPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
               if (!correctCollision) {
                 registry.fill(HIST("collisions/JetsPtEtaK0SPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
@@ -1115,9 +1078,9 @@ struct V0QA {
               }
             }
 
-            if (!v0.has_mcMotherParticle()) {
+            if (!v0.has_mcMotherParticle())
               continue;
-            }
+
             auto mother = v0.mcMotherParticle();
             pdg = mother.pdgCode();
             correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
@@ -1143,16 +1106,16 @@ struct V0QA {
   void processFeeddown(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, CandidatesV0MCDWithFlags const& v0s, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& v0 : v0s) {
-      if (!v0.has_mcParticle()) {
+      if (!v0.has_mcParticle())
         continue;
-      }
+
       int pdg = v0.mcParticle().pdgCode();
 
       // Check V0 decay kinematics
@@ -1179,17 +1142,17 @@ struct V0QA {
   void processFeeddownJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, CandidatesV0MCDWithFlags const&, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& mcdjet : mcdjets) {
       for (const auto& v0 : mcdjet.template candidates_as<CandidatesV0MCDWithFlags>()) {
-        if (!v0.has_mcParticle()) {
+        if (!v0.has_mcParticle())
           continue;
-        }
+
         int pdg = v0.mcParticle().pdgCode();
 
         // Check V0 decay kinematics
@@ -1217,9 +1180,9 @@ struct V0QA {
   void processFeeddownMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, aod::JetTracksMCD const& jTracks, MatchedMCPV0JetsWithConstituents const&, CandidatesV0MCDWithFlags const&, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
-    if (!jcoll.has_mcCollision()) {
+    if (!jcoll.has_mcCollision())
       return;
-    }
+
     auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
@@ -1232,7 +1195,7 @@ struct V0QA {
             continue;
 
           for (const auto& pv0 : mcpjet.template candidates_as<aod::CandidatesV0MCP>()) {
-            if (!V0sAreMatched(v0, pv0, jTracks))
+            if (!v0sAreMatched(v0, pv0, jTracks))
               continue;
 
             int pdg = v0.mcParticle().pdgCode();
@@ -1260,13 +1223,13 @@ struct V0QA {
   using DaughterTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
   void processV0TrackQA(aod::JetCollision const& /*jcoll*/, soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags> const& v0s, DaughterJTracks const&, DaughterTracks const&)
   {
-    //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
     //     return;
     //   }
     for (const auto& v0 : v0s) {
-      if (v0.isRejectedCandidate()) {
+      if (v0.isRejectedCandidate())
         continue;
-      }
+
       fillTrackQa<DaughterJTracks, DaughterTracks>(v0);
     }
   }

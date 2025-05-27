@@ -16,6 +16,8 @@
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
+#include <string>
+#include <vector>
 
 #include "ReconstructionDataFormats/Track.h"
 
@@ -44,33 +46,33 @@ struct QAHistTask {
   // Data
   HistogramRegistry QA_reg{"data_all_species", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species{"data_species", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry QA_species_pos{"data_positive", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  HistogramRegistry QA_species_neg{"data_negative", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry particle_reg{"data_positive", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry aparticle_reg{"data_negative", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MC_recon_reg{"MC_particles_reco", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> histPDG{TH1D("PDG", "PDG;PDG code", 20, 0.0, 20.0)};
+  OutputObj<TH1I> histPDG_reco{TH1I("PDG reconstructed", "PDG;PDG code", 18, 0.0, 18)};
 
   void init(o2::framework::InitContext&)
   {
 
-    if ((process_pion == true && (process_kaon == true || process_proton == true || process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_kaon == true && (process_proton == true || process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_proton == true && (process_deuteron == true || process_triton == true || process_He3 == true || process_He4 == true)) || (process_deuteron == true && (process_triton == true || process_He3 == true || process_He4 == true)) || (process_triton == true && (process_He3 == true || process_He4 == true)) || (process_He3 == true && process_He4 == true)) {
+    if ((do_pion == true && (do_kaon == true || do_proton == true || do_deuteron == true || do_triton == true || do_He3 == true || do_He4 == true)) || (do_kaon == true && (do_proton == true || do_deuteron == true || do_triton == true || do_He3 == true || do_He4 == true)) || (do_proton == true && (do_deuteron == true || do_triton == true || do_He3 == true || do_He4 == true)) || (do_deuteron == true && (do_triton == true || do_He3 == true || do_He4 == true)) || (do_triton == true && (do_He3 == true || do_He4 == true)) || (do_He3 == true && do_He4 == true)) {
       LOG(fatal) << "++++++++ Can't enable more than one species at a time, use subwagons for that purpose. ++++++++";
     }
 
     std::string species;
 
-    if (process_pion)
+    if (do_pion)
       species = "pi";
-    if (process_kaon)
+    if (do_kaon)
       species = "ka";
-    if (process_proton)
+    if (do_proton)
       species = "p";
-    if (process_deuteron)
+    if (do_deuteron)
       species = "d";
-    if (process_triton)
+    if (do_triton)
       species = "t";
-    if (process_He3)
+    if (do_He3)
       species = "He3";
-    if (process_He4)
+    if (do_He4)
       species = "He4";
 
     std::vector<double> ptBinning = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5., 6., 8., 10., 12., 14.};
@@ -129,60 +131,60 @@ struct QAHistTask {
     QA_species.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // QA choosen species (positive)
-    QA_species_pos.add("histTpcSignalData", Form("Specific energy loss (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    QA_species_pos.add("histTofSignalData", Form("TOF signal (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    QA_species_pos.add("histDcaVsPtData", Form("dcaXY vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
-    QA_species_pos.add("histDcaZVsPtData", Form("dcaZ vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    QA_species_pos.add("histTOFm2", Form("TOF m^2 vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    QA_species_pos.add("histNClusterTPC", Form("Number of Clusters in TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {80, 0.0, 160.0, "nCluster"}});
-    QA_species_pos.add("histNClusterITS", Form("Number of Clusters in ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_pos.add("histNClusterITSib", Form("Number of Clusters in ib of ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}});
-    QA_species_pos.add("histTPCnClsFindable", Form("Findable TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {200, 0.0, 200.0, "nCluster"}});
-    QA_species_pos.add("histTPCnClsFindableMinusFound", Form("TPC Clusters: Findable - Found (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
-    QA_species_pos.add("histTPCnClsFindableMinusCrossedRows", Form("TPC Clusters: Findable - crossed rows (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
-    QA_species_pos.add("histTPCnClsShared", Form("Number of shared TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {70, 0.0, 70.0, "nCluster"}});
-    QA_species_pos.add("histTPCCrossedRowsOverFindableCls", Form("Ratio crossed rows over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Crossed Rows / Findable Cls"}});
-    QA_species_pos.add("histTPCFoundOverFindable", Form("Ratio of found over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Found Cls / Findable Cls"}});
-    QA_species_pos.add("histTPCFractionSharedCls", Form("Fraction of shared TPC clusters (%s)", species.c_str()), HistType::kTH1F, {{100, -2.0, 2.0, "Shared Cls"}});
-    QA_species_pos.add("histChi2TPC", Form("chi^2 TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
-    QA_species_pos.add("histChi2ITS", Form("chi^2 ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {125, 0.0, 50.0, "chi^2"}});
-    QA_species_pos.add("histChi2ITSvsITSnCls", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_pos.add("histChi2ITSvsITSibnCls", "chi^2 ITS vs ITS ib nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS ib nCls"}});
-    QA_species_pos.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_pos.add("histChi2TOF", Form("chi^2 TOF vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {75, 0.0, 15.0, "chi^2"}});
-    QA_species_pos.add("histEtaWithOverFlow", Form("Pseudorapidity 0 - 105%% centrality (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
-    QA_species_pos.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
-    QA_species_pos.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
-    QA_species_pos.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-    QA_species_pos.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    particle_reg.add("histTpcSignalData", Form("Specific energy loss (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    particle_reg.add("histTofSignalData", Form("TOF signal (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    particle_reg.add("histDcaVsPtData", Form("dcaXY vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    particle_reg.add("histDcaZVsPtData", Form("dcaZ vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    particle_reg.add("histTOFm2", Form("TOF m^2 vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    particle_reg.add("histNClusterTPC", Form("Number of Clusters in TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {80, 0.0, 160.0, "nCluster"}});
+    particle_reg.add("histNClusterITS", Form("Number of Clusters in ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}});
+    particle_reg.add("histNClusterITSib", Form("Number of Clusters in ib of ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}});
+    particle_reg.add("histTPCnClsFindable", Form("Findable TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {200, 0.0, 200.0, "nCluster"}});
+    particle_reg.add("histTPCnClsFindableMinusFound", Form("TPC Clusters: Findable - Found (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
+    particle_reg.add("histTPCnClsFindableMinusCrossedRows", Form("TPC Clusters: Findable - crossed rows (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
+    particle_reg.add("histTPCnClsShared", Form("Number of shared TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {70, 0.0, 70.0, "nCluster"}});
+    particle_reg.add("histTPCCrossedRowsOverFindableCls", Form("Ratio crossed rows over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Crossed Rows / Findable Cls"}});
+    particle_reg.add("histTPCFoundOverFindable", Form("Ratio of found over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Found Cls / Findable Cls"}});
+    particle_reg.add("histTPCFractionSharedCls", Form("Fraction of shared TPC clusters (%s)", species.c_str()), HistType::kTH1F, {{100, -2.0, 2.0, "Shared Cls"}});
+    particle_reg.add("histChi2TPC", Form("chi^2 TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
+    particle_reg.add("histChi2ITS", Form("chi^2 ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {125, 0.0, 50.0, "chi^2"}});
+    particle_reg.add("histChi2ITSvsITSnCls", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
+    particle_reg.add("histChi2ITSvsITSibnCls", "chi^2 ITS vs ITS ib nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS ib nCls"}});
+    particle_reg.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
+    particle_reg.add("histChi2TOF", Form("chi^2 TOF vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {75, 0.0, 15.0, "chi^2"}});
+    particle_reg.add("histEtaWithOverFlow", Form("Pseudorapidity 0 - 105%% centrality (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
+    particle_reg.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
+    particle_reg.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
+    particle_reg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
+    particle_reg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // QA choosen species (negative)
-    QA_species_neg.add("histTpcSignalData", Form("Specific energy loss (anti-%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    QA_species_neg.add("histTofSignalData", Form("TOF signal (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    QA_species_neg.add("histDcaVsPtData", Form("dcaXY vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
-    QA_species_neg.add("histDcaZVsPtData", Form("dcaZ vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    QA_species_neg.add("histTOFm2", Form("TOF m^2 vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
-    QA_species_neg.add("histNClusterTPC", Form("Number of Clusters in TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {80, 0.0, 160.0, "nCluster"}});
-    QA_species_neg.add("histNClusterITS", Form("Number of Clusters in ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_neg.add("histNClusterITSib", Form("Number of Clusters in ib of ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}});
-    QA_species_neg.add("histTPCnClsFindable", Form("Findable TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {200, 0.0, 200.0, "nCluster"}});
-    QA_species_neg.add("histTPCnClsFindableMinusFound", Form("TPC Clusters: Findable - Found (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
-    QA_species_neg.add("histTPCnClsFindableMinusCrossedRows", Form("TPC Clusters: Findable - crossed rows (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
-    QA_species_neg.add("histTPCnClsShared", Form("Number of shared TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {70, 0.0, 70.0, "nCluster"}});
-    QA_species_neg.add("histTPCCrossedRowsOverFindableCls", Form("Ratio crossed rows over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Crossed Rows / Findable Cls"}});
-    QA_species_neg.add("histTPCFoundOverFindable", Form("Ratio of found over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Found Cls / Findable Cls"}});
-    QA_species_neg.add("histTPCFractionSharedCls", Form("Fraction of shared TPC clusters (%s)", species.c_str()), HistType::kTH1F, {{100, -2.0, 2.0, "Shared Cls"}});
-    QA_species_neg.add("histChi2TPC", Form("chi^2 TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
-    QA_species_neg.add("histChi2ITS", Form("chi^2 ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {125, 0.0, 50.0, "chi^2"}});
-    QA_species_neg.add("histChi2ITSvsITSnCls", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_neg.add("histChi2ITSvsITSibnCls", "chi^2 ITS vs ITS ib nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS ib nCls"}});
-    QA_species_neg.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
-    QA_species_neg.add("histChi2TOF", Form("chi^2 TOF vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {75, 0.0, 15.0, "chi^2"}});
-    QA_species_neg.add("histEtaWithOverFlow", Form("Pseudorapidity 0 - 105%% centrality (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
-    QA_species_neg.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
-    QA_species_neg.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
-    QA_species_neg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-    QA_species_neg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    aparticle_reg.add("histTpcSignalData", Form("Specific energy loss (anti-%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
+    aparticle_reg.add("histTofSignalData", Form("TOF signal (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
+    aparticle_reg.add("histDcaVsPtData", Form("dcaXY vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aparticle_reg.add("histDcaZVsPtData", Form("dcaZ vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aparticle_reg.add("histTOFm2", Form("TOF m^2 vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {400, 0.0, 10.0, "m^2"}});
+    aparticle_reg.add("histNClusterTPC", Form("Number of Clusters in TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {80, 0.0, 160.0, "nCluster"}});
+    aparticle_reg.add("histNClusterITS", Form("Number of Clusters in ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS nCls"}});
+    aparticle_reg.add("histNClusterITSib", Form("Number of Clusters in ib of ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "ITS ib nCls"}});
+    aparticle_reg.add("histTPCnClsFindable", Form("Findable TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {200, 0.0, 200.0, "nCluster"}});
+    aparticle_reg.add("histTPCnClsFindableMinusFound", Form("TPC Clusters: Findable - Found (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
+    aparticle_reg.add("histTPCnClsFindableMinusCrossedRows", Form("TPC Clusters: Findable - crossed rows (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {60, 0.0, 60.0, "nCluster"}});
+    aparticle_reg.add("histTPCnClsShared", Form("Number of shared TPC clusters (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {70, 0.0, 70.0, "nCluster"}});
+    aparticle_reg.add("histTPCCrossedRowsOverFindableCls", Form("Ratio crossed rows over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Crossed Rows / Findable Cls"}});
+    aparticle_reg.add("histTPCFoundOverFindable", Form("Ratio of found over findable clusters (%s)", species.c_str()), HistType::kTH1F, {{100, 0., 2.0, "Found Cls / Findable Cls"}});
+    aparticle_reg.add("histTPCFractionSharedCls", Form("Fraction of shared TPC clusters (%s)", species.c_str()), HistType::kTH1F, {{100, -2.0, 2.0, "Shared Cls"}});
+    aparticle_reg.add("histChi2TPC", Form("chi^2 TPC vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {100, 0.0, 5.0, "chi^2"}});
+    aparticle_reg.add("histChi2ITS", Form("chi^2 ITS vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {125, 0.0, 50.0, "chi^2"}});
+    aparticle_reg.add("histChi2ITSvsITSnCls", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
+    aparticle_reg.add("histChi2ITSvsITSibnCls", "chi^2 ITS vs ITS ib nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS ib nCls"}});
+    aparticle_reg.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
+    aparticle_reg.add("histChi2TOF", Form("chi^2 TOF vs Pt (%s)", species.c_str()), HistType::kTH2F, {ptAxis, {75, 0.0, 15.0, "chi^2"}});
+    aparticle_reg.add("histEtaWithOverFlow", Form("Pseudorapidity 0 - 105%% centrality (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
+    aparticle_reg.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
+    aparticle_reg.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
+    aparticle_reg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
+    aparticle_reg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // +++++++++++++++++++++ MC ++++++++++++++++++++++++++
 
@@ -223,13 +225,13 @@ struct QAHistTask {
   }
 
   // Configurables
-  Configurable<bool> process_pion{"process_pion", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_kaon{"process_kaon", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_proton{"process_proton", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_deuteron{"process_deuteron", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_triton{"process_triton", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_He3{"process_He3", false, "0: disabled, 1: enabled"};
-  Configurable<bool> process_He4{"process_He4", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_pion{"do_pion", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_kaon{"do_kaon", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_proton{"do_proton", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_deuteron{"do_deuteron", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_triton{"do_triton", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_He3{"do_He3", false, "0: disabled, 1: enabled"};
+  Configurable<bool> do_He4{"do_He4", false, "0: disabled, 1: enabled"};
 
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "0: disabled, 1: enabled"};
   Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
@@ -266,9 +268,34 @@ struct QAHistTask {
   Configurable<float> maxChi2TOF{"maxChi2TOF", 100.0f, "max chi2 for the TOF track segment"};
   Configurable<float> minTPCFoundOverFindable{"minTPCFoundOverFindable", 0.0f, "min ratio of found over findable clusters TPC"};
   Configurable<float> maxTPCFoundOverFindable{"maxTPCFoundOverFindable", 2.0f, "max ratio of found over findable clusters TPC"};
+  Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
+  Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
+  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
+  Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+
+  //***********************************************************************************
+
+  template <typename CollisionType>
+  bool isEventSelected(CollisionType const& collision)
+  {
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return false;
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return false;
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      return false;
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+      return false;
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return false;
+    return true;
+  }
+
+  //***********************************************************************************
 
   template <typename CollisionType, typename TracksType>
-  void fillDataHistograms(const CollisionType& event, const TracksType& tracks)
+  void fillDataHistograms(const CollisionType& event, const TracksType& tracks, const int Partilce_type)
   {
 
     if (event_selection_sel8 && event.sel8()) {
@@ -279,28 +306,63 @@ struct QAHistTask {
       QA_reg.fill(HIST("histRecVtxZData"), event.posZ());
     }
 
-    for (auto track : tracks) {
+    if (!isEventSelected(event))
+      return;
+
+    for (auto track : tracks) { // start loop over all tracks
+
+      if (event_selection_sel8 && !event.sel8())
+        continue;
 
       QA_reg.fill(HIST("histDcaVsPID"), track.dcaXY(), track.pidForTracking());
       QA_reg.fill(HIST("histDcaZVsPID"), track.dcaZ(), track.pidForTracking());
       QA_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
 
-      float nSigmaSpecies = 999.0;
+      float TPCnSigma_particle = -100;
 
-      if (process_pion)
-        nSigmaSpecies = track.tpcNSigmaPi();
-      if (process_kaon)
-        nSigmaSpecies = track.tpcNSigmaKa();
-      if (process_proton)
-        nSigmaSpecies = track.tpcNSigmaPr();
-      if (process_deuteron)
-        nSigmaSpecies = track.tpcNSigmaDe();
-      if (process_triton)
-        nSigmaSpecies = track.tpcNSigmaTr();
-      if (process_He3)
-        nSigmaSpecies = track.tpcNSigmaHe();
-      if (process_He4)
-        nSigmaSpecies = track.tpcNSigmaAl();
+      float momentum;
+      TLorentzVector lorentzVector{};
+
+      switch (Partilce_type) {
+        case 0: // pi plus/minus
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+          TPCnSigma_particle = track.tpcNSigmaPi();
+          momentum = track.pt();
+          break;
+        case 1: // (anti)kaon
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+          TPCnSigma_particle = track.tpcNSigmaKa();
+          momentum = track.pt();
+          break;
+        case 2: // (anti)proton
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          TPCnSigma_particle = track.tpcNSigmaPr();
+          momentum = track.pt();
+          break;
+        case 3: // (anti)deuteron
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+          TPCnSigma_particle = track.tpcNSigmaDe();
+          momentum = track.pt();
+          break;
+        case 4: // (anti)triton
+          lorentzVector.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+          TPCnSigma_particle = track.tpcNSigmaTr();
+          momentum = track.pt();
+          break;
+        case 5: // (anti)Helium-3
+          lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          TPCnSigma_particle = track.tpcNSigmaHe();
+          momentum = track.pt() * 2.0;
+          break;
+        case 6: // (anti)Helium-4
+          lorentzVector.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+          TPCnSigma_particle = track.tpcNSigmaAl();
+          momentum = track.pt() * 2.0;
+          break;
+        default:
+          continue;
+          break;
+      }
 
       if (event_selection_sel8 && !event.sel8()) {
         continue;
@@ -315,17 +377,16 @@ struct QAHistTask {
       float Chi2perClusterITS = track.itsChi2NCl();
 
       if (track.sign() > 0) {
-        QA_reg.fill(HIST("histDcaVsPtData_particle"), track.pt(), track.dcaXY());
-        QA_reg.fill(HIST("histDcaZVsPtData_particle"), track.pt(), track.dcaZ());
+        QA_reg.fill(HIST("histDcaVsPtData_particle"), momentum, track.dcaXY());
+        QA_reg.fill(HIST("histDcaZVsPtData_particle"), momentum, track.dcaZ());
       }
 
       if (track.sign() < 0) {
-        QA_reg.fill(HIST("histDcaVsPtData_antiparticle"), track.pt(), track.dcaXY());
-        QA_reg.fill(HIST("histDcaZVsPtData_antiparticle"), track.pt(), track.dcaZ());
+        QA_reg.fill(HIST("histDcaVsPtData_antiparticle"), momentum, track.dcaXY());
+        QA_reg.fill(HIST("histDcaZVsPtData_antiparticle"), momentum, track.dcaZ());
       }
 
       if (custom_Track_selection && (TMath::Abs(track.dcaXY()) > maxDCA_XY || TMath::Abs(track.dcaZ()) > maxDCA_Z || TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC || RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC || Chi2perClusterTPC > maxChi2TPC || Chi2perClusterITS > maxChi2ITS || !(track.passedTPCRefit()) || !(track.passedITSRefit()) || (track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS || track.length() < minTrackLength || track.length() > maxTrackLength || track.tpcNClsFindable() < minTPCNClsFindable || track.tpcNClsShared() > maxTPCNClsShared || track.tpcFoundOverFindableCls() < minTPCFoundOverFindable || track.tpcFoundOverFindableCls() > maxTPCFoundOverFindable)) {
-
         if (track.hasTOF() && track.tofChi2() > maxChi2TOF)
           continue;
         continue;
@@ -335,44 +396,28 @@ struct QAHistTask {
         continue;
       }
 
-      TLorentzVector lorentzVector_proton{};
-      TLorentzVector lorentzVector_deuteron{};
-      TLorentzVector lorentzVector_triton{};
-      TLorentzVector lorentzVector_He3{};
-      TLorentzVector lorentzVector_He4{};
-
-      lorentzVector_proton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-      lorentzVector_deuteron.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-      lorentzVector_triton.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-      lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-      lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-
-      if (lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
-          lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
-          lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
-          lorentzVector_He3.Rapidity() < yMin || lorentzVector_He3.Rapidity() > yMax ||
-          lorentzVector_He4.Rapidity() < yMin || lorentzVector_He4.Rapidity() > yMax) {
+      if (lorentzVector.Rapidity() < yMin || lorentzVector.Rapidity() > yMax) {
         continue;
       }
 
-      if (track.pt() < pTmin || track.pt() > pTmax)
+      if (momentum < pTmin || momentum > pTmax)
         continue;
 
-      QA_reg.fill(HIST("histTpcSignalData"), track.pt() * track.sign(), track.tpcSignal());
-      QA_reg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-      QA_reg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-      QA_reg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-      QA_reg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-      QA_reg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
+      QA_reg.fill(HIST("histTpcSignalData"), momentum * track.sign(), track.tpcSignal());
+      QA_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+      QA_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+      QA_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+      QA_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+      QA_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
       QA_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
       QA_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
       QA_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
       QA_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-      QA_reg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-      QA_reg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-      QA_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-      QA_reg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-      QA_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
+      QA_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+      QA_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+      QA_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+      QA_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+      QA_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
       QA_reg.fill(HIST("histTrackLength"), track.length());
       QA_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
       QA_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
@@ -395,37 +440,37 @@ struct QAHistTask {
 
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-        QA_reg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-        QA_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+        QA_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+        QA_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
       }
 
-      if (TMath::Abs(nSigmaSpecies) < nsigmacut) {
+      if (TMath::Abs(TPCnSigma_particle) < nsigmacut) {
 
-        QA_species.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+        QA_species.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
         if (track.sign() > 0) {
-          QA_species_pos.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
-          QA_species_pos.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          QA_species_pos.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
-          QA_species_pos.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-          QA_species_pos.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-          QA_species_pos.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-          QA_species_pos.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-          QA_species_pos.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
-          QA_species_pos.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
-          QA_species_pos.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          QA_species_pos.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
-          QA_species_pos.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          QA_species_pos.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-          QA_species_pos.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-          QA_species_pos.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-          QA_species_pos.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-          QA_species_pos.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
-          QA_species_pos.fill(HIST("histTrackLength"), track.length());
-          QA_species_pos.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-          QA_species_pos.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
-          QA_species_pos.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          QA_species_pos.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          particle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
+          particle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+          particle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+          particle_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+          particle_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+          particle_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
+          particle_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
+          particle_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+          particle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
+          particle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+          particle_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+          particle_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+          particle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+          particle_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+          particle_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
+          particle_reg.fill(HIST("histTrackLength"), track.length());
+          particle_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+          particle_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
+          particle_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
+          particle_reg.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
           if (track.hasTOF()) {
 
@@ -444,33 +489,33 @@ struct QAHistTask {
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-            QA_species_pos.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            QA_species_pos.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+            particle_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+            particle_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
           }
         }
         if (track.sign() < 0) {
-          QA_species_neg.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
-          QA_species_neg.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
-          QA_species_neg.fill(HIST("histTpcSignalData"), track.pt(), track.tpcSignal());
-          QA_species_neg.fill(HIST("histNClusterTPC"), track.pt(), track.tpcNClsCrossedRows());
-          QA_species_neg.fill(HIST("histNClusterITS"), track.pt(), track.itsNCls());
-          QA_species_neg.fill(HIST("histNClusterITSib"), track.pt(), track.itsNClsInnerBarrel());
-          QA_species_neg.fill(HIST("histChi2TPC"), track.pt(), track.tpcChi2NCl());
-          QA_species_neg.fill(HIST("histChi2ITS"), track.pt(), track.itsChi2NCl());
-          QA_species_neg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
-          QA_species_neg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          QA_species_neg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
-          QA_species_neg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
-          QA_species_neg.fill(HIST("histTPCnClsFindable"), track.pt(), track.tpcNClsFindable());
-          QA_species_neg.fill(HIST("histTPCnClsFindableMinusFound"), track.pt(), track.tpcNClsFindableMinusFound());
-          QA_species_neg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), track.pt(), track.tpcNClsFindableMinusCrossedRows());
-          QA_species_neg.fill(HIST("histTPCnClsShared"), track.pt(), track.tpcNClsShared());
-          QA_species_neg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2());
-          QA_species_neg.fill(HIST("histTrackLength"), track.length());
-          QA_species_neg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
-          QA_species_neg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
-          QA_species_neg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          QA_species_neg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          aparticle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
+          aparticle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsCrossedRows());
+          aparticle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
+          aparticle_reg.fill(HIST("histNClusterITSib"), momentum, track.itsNClsInnerBarrel());
+          aparticle_reg.fill(HIST("histChi2TPC"), momentum, track.tpcChi2NCl());
+          aparticle_reg.fill(HIST("histChi2ITS"), momentum, track.itsChi2NCl());
+          aparticle_reg.fill(HIST("histChi2ITSvsITSnCls"), track.itsChi2NCl(), track.itsNCls());
+          aparticle_reg.fill(HIST("histChi2ITSvsITSibnCls"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+          aparticle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNCls());
+          aparticle_reg.fill(HIST("histChi2ITSvsITSnClsAll"), track.itsChi2NCl(), track.itsNClsInnerBarrel());
+          aparticle_reg.fill(HIST("histTPCnClsFindable"), momentum, track.tpcNClsFindable());
+          aparticle_reg.fill(HIST("histTPCnClsFindableMinusFound"), momentum, track.tpcNClsFindableMinusFound());
+          aparticle_reg.fill(HIST("histTPCnClsFindableMinusCrossedRows"), momentum, track.tpcNClsFindableMinusCrossedRows());
+          aparticle_reg.fill(HIST("histTPCnClsShared"), momentum, track.tpcNClsShared());
+          aparticle_reg.fill(HIST("histChi2TOF"), momentum, track.tofChi2());
+          aparticle_reg.fill(HIST("histTrackLength"), track.length());
+          aparticle_reg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+          aparticle_reg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
+          aparticle_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
+          aparticle_reg.fill(HIST("histpTCorralation"), track.sign() * momentum, track.tpcInnerParam() - momentum);
 
           if (track.hasTOF()) {
 
@@ -489,8 +534,8 @@ struct QAHistTask {
 
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
 
-            QA_species_neg.fill(HIST("histTOFm2"), track.pt(), TOFmass2);
-            QA_species_neg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
+            aparticle_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
+            aparticle_reg.fill(HIST("histTofSignalData"), momentum * track.sign(), track.beta());
           }
         }
       }
@@ -511,6 +556,9 @@ struct QAHistTask {
       QA_reg.fill(HIST("histCentrality"), event.centFT0C());
     }
 
+    if (!isEventSelected(event))
+      return;
+
     for (auto track : tracks) {
 
       if (event_selection_sel8 && !event.sel8()) {
@@ -530,33 +578,61 @@ struct QAHistTask {
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta && requireGlobalTrackWoDCAInFilter());
 
-  using EventCandidatesData = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
 
-  using EventCandidatesDataCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using EventCandidatesCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
 
-  using TrackCandidatesData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>>;
 
-  void processData(EventCandidatesData::iterator const& event, TrackCandidatesData const& tracks)
+  void processData(EventCandidates::iterator const& event, TrackCandidates const& tracks)
   {
-    fillDataHistograms(event, tracks);
+    if (do_pion)
+      fillDataHistograms(event, tracks, 0); // pion
+    if (do_kaon)
+      fillDataHistograms(event, tracks, 1); // kaon
+    if (do_proton)
+      fillDataHistograms(event, tracks, 2); // proton
+    if (do_deuteron)
+      fillDataHistograms(event, tracks, 3); // deuteron
+    if (do_triton)
+      fillDataHistograms(event, tracks, 4); // triton
+    if (do_He3)
+      fillDataHistograms(event, tracks, 5); // He3
+    if (do_He4)
+      fillDataHistograms(event, tracks, 6); // He4
   }
   PROCESS_SWITCH(QAHistTask, processData, "process data", true);
 
-  void processDataCent(EventCandidatesDataCent::iterator const& event, TrackCandidatesData const& tracks)
+  void processDataCent(EventCandidatesCent::iterator const& event, TrackCandidates const& tracks)
   {
-    fillDataHistograms(event, tracks);
+    if (do_pion)
+      fillDataHistograms(event, tracks, 0); // pion
+    if (do_kaon)
+      fillDataHistograms(event, tracks, 1); // kaon
+    if (do_proton)
+      fillDataHistograms(event, tracks, 2); // proton
+    if (do_deuteron)
+      fillDataHistograms(event, tracks, 3); // deuteron
+    if (do_triton)
+      fillDataHistograms(event, tracks, 4); // triton
+    if (do_He3)
+      fillDataHistograms(event, tracks, 5); // He3
+    if (do_He4)
+      fillDataHistograms(event, tracks, 6); // He4
     fillDataCentHistorgrams(event, tracks);
   }
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                 aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+                     aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
     if (event_selection_MC_sel8 && !collisions.sel8())
       return;
     MC_recon_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
     MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
+    if (!isEventSelected(collisions))
+      return;
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -582,66 +658,83 @@ struct QAHistTask {
         }
       }
 
-      int pdgbin = 0;
+      int pdgbin = -10;
+      TLorentzVector lorentzVector_particle_MC{};
       switch (particle.pdgCode()) {
         case +211:
-          histPDG->AddBinContent(1);
+          histPDG_reco->AddBinContent(1);
           pdgbin = 0;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case -211:
-          histPDG->AddBinContent(2);
+          histPDG_reco->AddBinContent(2);
           pdgbin = 1;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case +321:
-          histPDG->AddBinContent(3);
+          histPDG_reco->AddBinContent(3);
           pdgbin = 2;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case -321:
-          histPDG->AddBinContent(4);
+          histPDG_reco->AddBinContent(4);
           pdgbin = 3;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case +2212:
-          histPDG->AddBinContent(5);
+          histPDG_reco->AddBinContent(5);
           pdgbin = 4;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case -2212:
-          histPDG->AddBinContent(6);
+          histPDG_reco->AddBinContent(6);
           pdgbin = 5;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case +1000010020:
-          histPDG->AddBinContent(7);
+          histPDG_reco->AddBinContent(7);
           pdgbin = 6;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case -1000010020:
-          histPDG->AddBinContent(8);
+          histPDG_reco->AddBinContent(8);
           pdgbin = 7;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case +1000010030:
-          histPDG->AddBinContent(9);
+          histPDG_reco->AddBinContent(9);
           pdgbin = 8;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case -1000010030:
-          histPDG->AddBinContent(10);
+          histPDG_reco->AddBinContent(10);
           pdgbin = 9;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case +1000020030:
-          histPDG->AddBinContent(11);
+          histPDG_reco->AddBinContent(11);
           pdgbin = 10;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case -1000020030:
-          histPDG->AddBinContent(12);
+          histPDG_reco->AddBinContent(12);
           pdgbin = 11;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case +1000020040:
-          histPDG->AddBinContent(13);
+          histPDG_reco->AddBinContent(13);
           pdgbin = 12;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         case -1000020040:
-          histPDG->AddBinContent(14);
+          histPDG_reco->AddBinContent(14);
           pdgbin = 13;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         default:
+          pdgbin = -10;
           continue;
+          break;
       }
 
       MC_recon_reg.fill(HIST("histPhi"), track.phi(), pdgbin);
@@ -697,7 +790,7 @@ struct QAHistTask {
       }
     }
   }
-  PROCESS_SWITCH(QAHistTask, processMC, "process MC", false);
+  PROCESS_SWITCH(QAHistTask, processMCreco, "process MC", false);
 };
 
 //****************************************************************************************************

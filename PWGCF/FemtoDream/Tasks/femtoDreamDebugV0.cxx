@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -16,6 +16,9 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+
+#include "TVector3.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -55,6 +58,7 @@ struct femtoDreamDebugV0 {
   ConfigurableAxis ConfV0ChildNsigmaTPCBins{"ConfV0ChildNsigmaTPCBins", {1600, -8, 8}, "binning of Nsigma TPC plot"};
   ConfigurableAxis ConfV0ChildNsigmaTOFBins{"ConfV0ChildNsigmaTOFBins", {3000, -15, 15}, "binning of the Nsigma TOF plot"};
   ConfigurableAxis ConfV0ChildNsigmaTPCTOFBins{"ConfV0ChildNsigmaTPCTOFBins", {1000, 0, 10}, "binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis ConfV0ChildNsigmaITSBins{"ConfV0ChildNsigmaITSBins", {600, -3, 3}, "binning of the Nsigma ITS plot"};
 
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_CutBit{"ConfV01_ChildPos_CutBit", 150, "Positive Child of V0 - Selection bit from cutCulator"};
   Configurable<aod::femtodreamparticle::cutContainerType> ConfV01_ChildPos_TPCBit{"ConfV01_ChildPos_TPCBit", 4, "Positive Child of V0 - PID bit from cutCulator"};
@@ -80,9 +84,10 @@ struct femtoDreamDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry, false);
-    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildPos_PDGCode.value, true);
-    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_ChildNeg_PDGCode, true);
-    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfDummy, ConfV0InvMassBins, false, ConfV01_PDGCode.value, true);
+    posChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildPos_PDGCode.value, true);
+    negChildHistos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0ChildTempFitVarMomentumBins, ConfDummy, ConfDummy, ConfChildTempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_ChildNeg_PDGCode, true);
+    V0Histos.init(&V0Registry, ConfBinmult, ConfDummy, ConfV0TempFitVarMomentumBins, ConfDummy, ConfDummy, ConfV0TempFitVarBins, ConfV0ChildNsigmaTPCBins, ConfV0ChildNsigmaTOFBins, ConfV0ChildNsigmaTPCTOFBins, ConfV0ChildNsigmaITSBins, ConfV0InvMassBins, ConfDummy, false, ConfV01_PDGCode.value, true);
+    V0Registry.add("hArmenterosPodolanski/hArmenterosPodolanskiPlot", "; #alpha; p_{T} (MeV/#it{c})", kTH2F, {{100, -1, 1}, {500, -0.3, 2}});
   }
 
   /// Porduce QA plots for V0 selection in FemtoDream framework
@@ -111,6 +116,20 @@ struct femtoDreamDebugV0 {
           negChild.partType() == uint8_t(aod::femtodreamparticle::ParticleType::kV0Child) &&
           (negChild.cut() & ConfV01_ChildNeg_CutBit) == ConfV01_ChildNeg_CutBit &&
           (negChild.pidcut() & ConfV01_ChildNeg_TPCBit) == ConfV01_ChildNeg_TPCBit) {
+
+        TVector3 p_parent(part.px(), part.py(), part.pz());            // Parent momentum (px, py, pz)
+        TVector3 p_plus(posChild.px(), posChild.py(), posChild.pz());  // Daughter 1 momentum (px, py, pz)
+        TVector3 p_minus(negChild.px(), negChild.py(), negChild.pz()); // Daughter 2 momentum (px, py, pz)
+
+        double pL_plus = p_plus.Dot(p_parent) / p_parent.Mag();
+        double pL_minus = p_minus.Dot(p_parent) / p_parent.Mag();
+        float alpha = (pL_plus - pL_minus) / (pL_plus + pL_minus);
+
+        TVector3 p_perp = p_plus - (p_parent * (pL_plus / p_parent.Mag()));
+        double qtarm = p_perp.Mag();
+
+        V0Registry.fill(HIST("hArmenterosPodolanski/hArmenterosPodolanskiPlot"), alpha, qtarm);
+
         V0Histos.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
         posChildHistos.fillQA<false, true>(posChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());
         negChildHistos.fillQA<false, true>(negChild, static_cast<aod::femtodreamparticle::MomentumType>(ConfV0TempFitVarMomentum.value), col.multNtr(), col.multV0M());

@@ -52,7 +52,7 @@ DECLARE_SOA_COLUMN(Time, time, float);                                 //! clust
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
 DECLARE_SOA_COLUMN(NLM, nlm, ushort);                                  //! number of local maxima
-DECLARE_SOA_COLUMN(IsoRaw, isoraw, ushort);                            //! isolation in cone not corrected for Rho
+DECLARE_SOA_COLUMN(IsoRaw, isoraw, float);                             //! isolation in cone not corrected for Rho
 DECLARE_SOA_COLUMN(PerpConeRho, perpconerho, float);                   //! rho in perpendicular cone
 DECLARE_SOA_COLUMN(TMdeltaPhi, tmdeltaphi, float);                     //! delta phi between cluster and closest match
 DECLARE_SOA_COLUMN(TMdeltaEta, tmdeltaeta, float);                     //! delta eta between cluster and closest match

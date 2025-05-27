@@ -13,6 +13,7 @@ o2physics_add_library(AnalysisCore
         SOURCES TrackSelection.cxx
         OrbitRange.cxx
         PID/ParamBase.cxx
+        PID/PIDTOF.cxx
         CollisionAssociation.cxx
         TrackSelectionDefaults.cxx
         EventPlaneHelper.cxx

@@ -20,6 +20,11 @@ o2physics_add_dpl_workflow(pid-tof-qa-beta
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tof-qa-beta-imp
+    SOURCES qaPIDTOFBetaImp.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tof-qa-mc
     SOURCES qaPIDTOFMC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

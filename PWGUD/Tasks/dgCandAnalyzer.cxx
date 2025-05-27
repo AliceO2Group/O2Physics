@@ -14,6 +14,8 @@
 // \since  06.06.2022
 
 #include <set>
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
@@ -277,8 +279,6 @@ struct DGCandAnalyzer {
     registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
     // skip events with too few/many tracks
-    // Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
-    // PVContributors.bindTable(dgtracks);
     if (dgcand.numContrib() != PVContributors.size()) {
       LOGF(info, "Missmatch of PVContributors %d != %d", dgcand.numContrib(), PVContributors.size());
     }

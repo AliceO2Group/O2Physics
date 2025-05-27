@@ -20,26 +20,20 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
-#include <iostream> // std::cout
-#include <string>   // std::string
+#include <cstdio>
 
+#include <RooPlot.h>
+#include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <TCanvas.h>
 #include <TCanvas.h>
 #include <TDatabasePDG.h>
 #include <TF1.h>
 #include <TFitResult.h>
 #include <TH1.h>
-#include <TH1F.h>
 #include <TNamed.h>
 #include <TPaveText.h>
 #include <TStyle.h>
 #include <TVirtualFitter.h>
-
-using namespace RooFit;
-
-class TF1;
-class TH1F;
 
 class HFInvMassFitter : public TNamed
 {
@@ -66,22 +60,22 @@ class HFInvMassFitter : public TNamed
     Poly6Refl = 3
   };
   HFInvMassFitter();
-  HFInvMassFitter(const TH1F* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
+  HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
   ~HFInvMassFitter();
-  void setHistogramForFit(const TH1F* histoToFit)
+  void setHistogramForFit(const TH1* histoToFit)
   {
     if (mHistoInvMass) {
       delete mHistoInvMass;
     }
-    mHistoInvMass = reinterpret_cast<TH1F*>(histoToFit->Clone("mHistoInvMass"));
+    mHistoInvMass = static_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
     mHistoInvMass->SetDirectory(0);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
   void setFitOption(TString opt) { mFitOption = opt.Data(); }
-  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1);
+  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
   RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
-  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1);
+  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
 
   void setFitRange(Double_t minValue, Double_t maxValue)
   {
@@ -122,7 +116,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limmit!" << std::endl;
+      printf("Invalid Gaussian mean limit!\n");
     }
     setInitialGaussianMean(mean);
     mMassLowLimit = meanLowLimit;
@@ -133,7 +127,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limmit for reflection!" << std::endl;
+      printf("Invalid Gaussian mean limit for reflection!\n");
     }
     setInitialGaussianMean(mean);
     mMassReflLowLimit = meanLowLimit;
@@ -154,7 +148,7 @@ class HFInvMassFitter : public TNamed
   void setFixSecondGaussianSigma(Double_t sigma)
   {
     if (mTypeOfSgnPdf != DoubleGaus) {
-      std::cout << "Fit type should be 2Gaus!" << std::endl;
+      printf("Fit type should be 2Gaus!\n");
     }
     setInitialSecondGaussianSigma(sigma);
     mFixedSigmaDoubleGaus = kTRUE;
@@ -163,7 +157,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mTypeOfSgnPdf != DoubleGaus &&
         mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      std::cout << "Fit type should be 2Gaus or 2GausSigmaRatio!" << std::endl;
+      printf("Fit type should be 2Gaus or 2GausSigmaRatio!\n");
     }
     setInitialFracDoubleGaus(frac);
     mFixedFracDoubleGaus = kTRUE;
@@ -171,17 +165,17 @@ class HFInvMassFitter : public TNamed
   void setFixRatioToGausSigma(Double_t sigmaFrac)
   {
     if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      std::cout << "Fit type should be set to k2GausSigmaRatioPar!" << std::endl;
+      printf("Fit type should be set to k2GausSigmaRatioPar!\n");
     }
     setInitialRatioDoubleGausSigma(sigmaFrac);
     mFixedRatioDoubleGausSigma = kTRUE;
   }
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
-  void plotBkg(RooAbsPdf* mFunc);
+  void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
-  void doFit(Bool_t draw = kTRUE);
+  void doFit();
   void setInitialReflOverSgn(Double_t reflOverSgn) { mReflOverSgn = reflOverSgn; }
   void setFixReflOverSgn(Double_t reflOverSgn)
   {
@@ -193,11 +187,15 @@ class HFInvMassFitter : public TNamed
     if (!histoRefl) {
       mEnableReflections = kFALSE;
     }
-    mHistoTemplateRefl = reinterpret_cast<TH1F*>(histoRefl->Clone("mHistoTemplateRefl"));
+    mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
+  void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
+  void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
   Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
+  Double_t getRawYieldCounted() const { return mRawYieldCounted; }
+  Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
   Double_t getBkgYield() const { return mBkgYield; }
   Double_t getBkgYieldError() const { return mBkgYieldErr; }
   Double_t getSignificance() const { return mSignificance; }
@@ -215,6 +213,7 @@ class HFInvMassFitter : public TNamed
     }
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
+  void countSignal(Double_t& signal, Double_t& signalErr) const;
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
@@ -225,9 +224,10 @@ class HFInvMassFitter : public TNamed
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
-  void fillWorkspace(RooWorkspace& w);
+  void fillWorkspace(RooWorkspace& w) const;
+  void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
 
-  TH1F* mHistoInvMass; // histogram to fit
+  TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
   Double_t mMinMass;                 // lower mass limit
   Double_t mMaxMass;                 // upper mass limit
@@ -241,14 +241,13 @@ class HFInvMassFitter : public TNamed
   Double_t mMassReflLowLimit;        /// lower limit of the allowed mass range for reflection
   Double_t mMassReflUpLimit;         /// upper limit of the allowed mass range for reflection
   Double_t mSecMass;                 /// Second peak mean value
-  Double_t mMassErr;                 /// uncertainty on signal gaussian mean value
   Double_t mSigmaSgn;                /// signal gaussian sigma
   Double_t mSecSigma;                /// Second peak gaussian sigma
   Int_t mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
   Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
   Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
-  Double_t mFixedMean;               /// switch for fix mean of gaussian
+  Bool_t mFixedMean;                 /// switch for fix mean of gaussian
   Bool_t mBoundMean;                 /// switch for bound mean of guassian
   Bool_t mBoundReflMean;             /// switch for bound mean of guassian for reflection
   Bool_t mFixedSigma;                /// fix sigma or not
@@ -265,6 +264,8 @@ class HFInvMassFitter : public TNamed
   Bool_t mEnableReflections;         /// flag use/not use reflections
   Double_t mRawYield;                /// signal gaussian integral
   Double_t mRawYieldErr;             /// err on signal gaussian integral
+  Double_t mRawYieldCounted;         /// signal gaussian integral evaluated via bin counting
+  Double_t mRawYieldCountedErr;      /// err on signal gaussian integral evaluated via bin counting
   Double_t mBkgYield;                /// background
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
@@ -284,13 +285,14 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
-  RooPlot* mResidualFrameForCalulation;
-  RooRealVar* mass;         /// mass
-  RooWorkspace* mWorkspace; /// workspace
-  Double_t mIntegralHisto;  /// integral of histogram to fit
-  Double_t mIntegralBkg;    /// integral of background fit function
-  Double_t mIntegralSgn;    /// integral of signal fit function
-  TH1F* mHistoTemplateRefl; /// reflection histogram
+  RooPlot* mResidualFrameForCalculation;
+  RooWorkspace* mWorkspace;    /// workspace
+  Double_t mIntegralHisto;     /// integral of histogram to fit
+  Double_t mIntegralBkg;       /// integral of background fit function
+  Double_t mIntegralSgn;       /// integral of signal fit function
+  TH1* mHistoTemplateRefl;     /// reflection histogram
+  Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
+  Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
 
   ClassDef(HFInvMassFitter, 1);
 };

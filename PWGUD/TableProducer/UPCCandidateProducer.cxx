@@ -98,6 +98,9 @@ struct UpcCandProducer {
   Configurable<float> fMinEtaMFT{"minEtaMFT", -3.6, "Minimum eta for MFT tracks"};
   Configurable<float> fMaxEtaMFT{"maxEtaMFT", -2.5, "Maximum eta for MFT tracks"};
 
+  Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
+  Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -124,6 +127,9 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(2, "ZNA");
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(3, "ZNC");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(4, "TCE_ROF");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(5, "TCE_TF");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(6, "TCE_ROF_TF");
 
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
@@ -680,6 +686,46 @@ struct UpcCandProducer {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
+      } else {
+        trackBC = ambIter->second;
+      }
+      int64_t tint = TMath::FloorNint(trk.trackTime() / o2::constants::lhc::LHCBunchSpacingNS + static_cast<float>(fMuonTrackTShift));
+      uint64_t bc = trackBC + tint;
+      if (nContrib > upcCuts.getMaxNContrib())
+        continue;
+      addTrack(bcsMatchedTrIds, bc, trkId);
+    }
+  }
+
+  template <typename TBCs>
+  void collectForwardGlobalTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
+                                  int typeFilter,
+                                  TBCs const& /*bcs*/,
+                                  o2::aod::Collisions const& /*collisions*/,
+                                  ForwardTracks const& fwdTracks,
+                                  o2::aod::AmbiguousFwdTracks const& /*ambFwdTracks*/,
+                                  std::unordered_map<int64_t, uint64_t>& ambFwdTrBCs)
+  {
+    for (const auto& trk : fwdTracks) {
+      if (trk.trackType() != typeFilter)
+        continue;
+      if (!applyFwdCuts(trk))
+        continue;
+      int64_t trkId = trk.globalIndex();
+      int32_t nContrib = -1;
+      uint64_t trackBC = 0;
+      auto ambIter = ambFwdTrBCs.find(trkId);
+      if (ambIter == ambFwdTrBCs.end()) {
+        const auto& col = trk.collision();
+        nContrib = col.numContrib();
+        trackBC = col.bc_as<TBCs>().globalBC();
+        const auto& bc = col.bc_as<TBCs>();
+        if (fRequireNoTimeFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue; // skip this track if the kNoTimeFrameBorder bit is required but not set
+        }
+        if (fRequireNoITSROFrameBorder && !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue; // skip this track if the kNoITSROFrameBorder bit is required but not set
+        }
       } else {
         trackBC = ambIter->second;
       }
@@ -1466,7 +1512,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,
@@ -1519,10 +1565,10 @@ struct UpcCandProducer {
                          bcs, collisions,
                          fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
-    collectForwardTracks(bcsMatchedTrIdsGlobal,
-                         o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
-                         bcs, collisions,
-                         fwdTracks, ambFwdTracks, ambFwdTrBCs);
+    collectForwardGlobalTracks(bcsMatchedTrIdsGlobal,
+                               o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack,
+                               bcs, collisions,
+                               fwdTracks, ambFwdTracks, ambFwdTrBCs);
 
     std::sort(bcsMatchedTrIdsMID.begin(), bcsMatchedTrIdsMID.end(),
               [](const auto& left, const auto& right) { return left.first < right.first; });
@@ -1539,6 +1585,16 @@ struct UpcCandProducer {
         continue;
       if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) { // TVX & TCE
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE", 1);
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // TVX & TCE without ROF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_ROF", 1);
+        }
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) { // TVX & TCE without TF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_TF", 1);
+        }
+        if (ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder) &&
+            ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) { // TVX & TCE without ROF and TF borders
+          histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE_ROF_TF", 1);
+        }
       }
       if (std::abs(ft0.timeA()) > 2.f)
         continue;
@@ -1667,6 +1723,14 @@ struct UpcCandProducer {
       std::vector<int8_t> relBCsV0A{};
       uint8_t chFT0A = 0;
       uint8_t chFT0C = 0;
+      int trs = 0;
+      int trofs = 0;
+      int hmpr = 0;
+      int tfb = 0;
+      int itsROFb = 0;
+      int sbp = 0;
+      int zVtxFT0vPv = 0;
+      int vtxITSTPC = 0;
       if (nFT0s > 0) {
         uint64_t closestBcT0A = findClosestBC(globalBC, mapGlobalBcWithT0A);
         int64_t distClosestBcT0A = globalBC - static_cast<int64_t>(closestBcT0A);
@@ -1683,6 +1747,15 @@ struct UpcCandProducer {
         fitInfo.ampFT0C = std::accumulate(t0AmpsC.begin(), t0AmpsC.end(), 0.f);
         chFT0A = ft0.amplitudeA().size();
         chFT0C = ft0.amplitudeC().size();
+        // get selection flags per BC
+        trs = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
+        trofs = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
+        hmpr = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
+        tfb = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
+        itsROFb = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
+        sbp = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
+        zVtxFT0vPv = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
+        vtxITSTPC = ft0.bc_as<TBCs>().selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
         fillAmplitudes(ft0s, mapGlobalBcWithT0A, amplitudesT0A, relBCsT0A, globalBC);
       }
       uint8_t chFV0A = 0;
@@ -1755,7 +1828,7 @@ struct UpcCandProducer {
                           fitInfo.BBFT0Apf, fitInfo.BBFT0Cpf, fitInfo.BGFT0Apf, fitInfo.BGFT0Cpf,
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
-      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, 0, 0, 0);
+      eventCandidatesSelExtras(chFT0A, chFT0C, chFDDA, chFDDC, chFV0A, 0, 0, trs, trofs, hmpr, tfb, itsROFb, sbp, zVtxFT0vPv, vtxITSTPC);
       eventCandidatesSelsFwd(fitInfo.distClosestBcV0A,
                              fitInfo.distClosestBcT0A,
                              amplitudesT0A,

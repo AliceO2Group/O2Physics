@@ -81,6 +81,18 @@
     break;                                                                     \
   }
 
+// Variation of CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2)
+// where GETTER1 and GETTER2 are methods of the OBJECT
+#define CHECK_AND_FILL_VEC_DS_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
+  case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {          \
+    if (caseDsToKKPi) {                                                 \
+      inputFeatures.emplace_back(OBJECT.GETTER1());                     \
+    } else {                                                            \
+      inputFeatures.emplace_back(OBJECT.GETTER2());                     \
+    }                                                                   \
+    break;                                                              \
+  }
+
 namespace o2::analysis
 {
 enum class InputFeaturesDsToKKPi : uint8_t {
@@ -148,9 +160,8 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
   /// \param prong2 is the candidate's prong2
   /// \param caseDsToKKPi used to divide the case DsToKKPi from DsToPiKK
   /// \return inputFeatures vector
-  template <typename T1, typename T2>
-  std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong0, T2 const& prong1, T2 const& prong2, bool const& caseDsToKKPi)
+  template <typename T1>
+  std::vector<float> getInputFeatures(T1 const& candidate, bool const caseDsToKKPi)
   {
     std::vector<float> inputFeatures;
 
@@ -174,33 +185,33 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS(impactParameterZ0);
         CHECK_AND_FILL_VEC_DS(impactParameterZ1);
         CHECK_AND_FILL_VEC_DS(impactParameterZ2);
-        // TPC PID variables
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcKa1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcKa2, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTofPi0, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTofPi1, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTofPi2, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTofKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTofKa1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTofKa2, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTpcKaExpKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTpcPiExpPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTofKaExpKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTofPiExpPi2, tofNSigmaPi);
+        // TPC and TOF PID variables
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcPi0, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcPi1, nSigTpcPi1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcPi2, nSigTpcPi2);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcKa0, nSigTpcKa0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcKa1, nSigTpcKa1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcKa2, nSigTpcKa2);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofPi0, nSigTofPi0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofPi1, nSigTofPi1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofPi2, nSigTofPi2);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofKa0, nSigTofKa0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofKa1, nSigTofKa1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTofKa2, nSigTofKa2);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTpcKaExpKa0, nSigTpcKa0, nSigTpcKa2);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTpcPiExpPi2, nSigTpcPi2, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTofKaExpKa0, nSigTofKa0, nSigTofKa2);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTofPiExpPi2, nSigTofPi2, nSigTofPi0);
 
         // Combined PID variables
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofPi1, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofPi2, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofKa1, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofKa2, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTpcTofKaExpKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTpcTofPiExpPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofPi0, tpcTofNSigmaPi0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofPi1, tpcTofNSigmaPi1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofPi2, tpcTofNSigmaPi2);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofKa0, tpcTofNSigmaKa0);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofKa1, tpcTofNSigmaKa1);
+        CHECK_AND_FILL_VEC_DS_FULL(candidate, nSigTpcTofKa2, tpcTofNSigmaKa2);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTpcTofKaExpKa0, tpcTofNSigmaKa0, tpcTofNSigmaKa2);
+        CHECK_AND_FILL_VEC_DS_SIGNED(candidate, nSigTpcTofPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
 
         // Ds specific variables
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, absCos3PiK, absCos3PiKDsToKKPi, absCos3PiKDsToPiKK);

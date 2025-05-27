@@ -8,6 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file rofOccupancyQa.cxx
+/// \brief ROF occupancy QA task
+///
+/// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
+
 #include <vector>
 
 #include "Framework/ConfigParamSpec.h"
@@ -33,18 +39,16 @@ const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 
 struct RofOccupancyQaTask {
   // configurables for occupancy-based event selection
-  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
-  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
-  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};
-  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};
-  Configurable<int> confNtracksCutVetoOnCollInTimeRange{"NtracksCutVetoOnCollInTimeRange", 800, "Max allowed N tracks (PV contributors) for each nearby collision in +/- time range"};
-  Configurable<float> confEpsilonDistanceForVzDependentVetoTPC{"EpsilonDistanceForVzDependentVetoTPC", 2.5, "Epsilon for vZ-dependent veto on drifting TPC tracks from nearby collisions, cm"};
-  // Configurable<int> confNtracksCutVetoOnCollInROF{"NtracksCutVetoOnCollInROF", 500, "Max allowed N tracks (PV contributors) for each nearby collision inside this ITS ROF"};
-  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};
-  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};
-  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};
-
-  Configurable<float> confFactorForHistRange{"kFactorForHistRange", 1.0, "To change axes b/n pp and Pb-Pb"};
+  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
+  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};                      // o2-linter: disable=name/configurable
+  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                            // o2-linter: disable=name/configurable
+  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 2.0, "Exclusion of a collision if there are other collisions nearby, +/- us"};                                 // o2-linter: disable=name/configurable
+  Configurable<int> confNtracksCutVetoOnCollInTimeRange{"NtracksCutVetoOnCollInTimeRange", 800, "Max allowed N tracks (PV contributors) for each nearby collision in +/- time range"};          // o2-linter: disable=name/configurable
+  Configurable<float> confEpsilonDistanceForVzDependentVetoTPC{"EpsilonDistanceForVzDependentVetoTPC", 2.5, "Epsilon for vZ-dependent veto on drifting TPC tracks from nearby collisions, cm"}; // o2-linter: disable=name/configurable
+  Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};                    // o2-linter: disable=name/configurable
+  Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                                       // o2-linter: disable=name/configurable
+  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                                 // o2-linter: disable=name/configurable
+  Configurable<float> confFactorForHistRange{"kFactorForHistRange", 1.0, "To change axes b/n pp and Pb-Pb"};                                                                                    // o2-linter: disable=name/configurable
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -108,7 +112,6 @@ struct RofOccupancyQaTask {
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
     histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
@@ -346,7 +349,6 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
-    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
     histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 25000 * k}});
@@ -359,7 +361,6 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
-    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStrict", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard", "", kTH2D, {{125, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
@@ -419,7 +420,7 @@ struct RofOccupancyQaTask {
     std::vector<int> vCollRofSubIdPerOrbit(cols.size(), 0); // rof sub-Id for each collision, per orbit
 
     // first loop over collisions - collecting info
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       // auto bc = col.bc_as<BCsWithBcSelsRun3>();
       const auto& bc = col.foundBC_as<BCsWithBcSelsRun3>();
@@ -434,9 +435,9 @@ struct RofOccupancyQaTask {
 
       vCollVz[colIndex] = col.posZ();
       vIsSel8[colIndex] = col.sel8();
-      vCombCond[colIndex] = vIsSel8[colIndex] && (fabs(vCollVz[colIndex]) < 8) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
+      vCombCond[colIndex] = vIsSel8[colIndex] && (std::fabs(vCollVz[colIndex]) < 8) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
 
-      int bcInTF = col.bcInTF(); //(bc.globalBC() - bcSOR) % nBCsPerTF;
+      int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false;
 
       // int64_t rofId = (globalBC + 3564 - rofOffset) / rofLength;
@@ -454,14 +455,14 @@ struct RofOccupancyQaTask {
 
       auto colPvTracks = pvTracks.sliceBy(perCollision, col.globalIndex());
 
-      for (auto& track : colPvTracks) {
+      for (const auto& track : colPvTracks) {
         if (track.itsNCls() >= 5) {
           vTracksITS567perColl[colIndex]++;
-          if (fabs(track.eta()) < 0.8)
+          if (std::fabs(track.eta()) < 0.8)
             vTracksITS567eta08perColl[colIndex]++;
           if (track.tpcNClsFound() > 70)
             vTracksITSTPCperColl[colIndex]++;
-          if (fabs(col.posZ()) < 1)
+          if (std::fabs(col.posZ()) < 1)
             histos.fill(HIST("hEtaVz02"), track.eta());
           else if (col.posZ() > 9.5 && col.posZ() < 10.5)
             histos.fill(HIST("hEtaVzPlus10"), track.eta());
@@ -491,7 +492,7 @@ struct RofOccupancyQaTask {
 
     // ROF-by-ROF study:
     int nColls = vCombCond.size();
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t k = col.globalIndex();
 
       if (k - 2 < 0 || k + 2 > nColls - 1)
@@ -619,13 +620,13 @@ struct RofOccupancyQaTask {
     std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<int>> vCollsInSameITSROF;
     std::vector<std::vector<float>> vTimeDeltaForColls; // delta time wrt a given collision
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
 
       // int bcInTF = (foundGlobalBC - bcSOR) % nBCsPerTF;
       // int bcInITSROF = (foundGlobalBC + 3564 - rofOffset) % rofLength;
-      int64_t TFid = (foundGlobalBC - bcSOR) / nBCsPerTF;
+      int64_t tfId = (foundGlobalBC - bcSOR) / nBCsPerTF;
       int64_t rofId = (foundGlobalBC + 3564 - rofOffset) / rofLength;
       // int rofIdInTF = (bcInTF - rofOffset) / rofLength;
 
@@ -637,7 +638,7 @@ struct RofOccupancyQaTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
         int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
@@ -653,7 +654,7 @@ struct RofOccupancyQaTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
         int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
@@ -679,7 +680,7 @@ struct RofOccupancyQaTask {
         int64_t thisBC = vFoundGlobalBC[minColIndex];
         // check if this is still the same TF
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         // check if we are within the chosen time range
@@ -694,7 +695,7 @@ struct RofOccupancyQaTask {
       while (maxColIndex < cols.size()) {
         int64_t thisBC = vFoundGlobalBC[maxColIndex];
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
-        if (thisTFid != TFid)
+        if (thisTFid != tfId)
           break;
         float dt = (thisBC - foundGlobalBC) * bcNS; // ns
         if (dt > timeWinOccupancyCalcMaxNS)
@@ -727,7 +728,7 @@ struct RofOccupancyQaTask {
     std::vector<bool> vNoCollInSameRofWithCloseVz(cols.size(), 0); // to veto events with nearby collisions with close vZ
     std::vector<std::vector<bool>> vArrNoCollInSameRofWithCloseVz; //(cols.size(), 0); // to veto events with nearby collisions with close vZ
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       float vZ = col.posZ();
 
@@ -757,7 +758,7 @@ struct RofOccupancyQaTask {
       vInROFcollIndex[colIndex] = 0;
       vROFidThisColl[colIndex] = rofIdInTF;
 
-      if (fabs(vZ) < 10)
+      if (std::fabs(vZ) < 10)
         vNumCollinROFinVz10[colIndex] = 1;
       for (uint32_t iCol = 0; iCol < vAssocToSameROF.size(); iCol++) {
         int thisColIndex = vAssocToSameROF[iCol];
@@ -769,11 +770,11 @@ struct RofOccupancyQaTask {
         // LOGP(info, ">> assoc: bc={} bcInTF={} bcInITSROF={} rofId={} noROFborder={}", vFoundGlobalBC[thisColIndex], thisBcInTF, thisBcInITSROF, thisRofId, bcAssoc.selection_bit(kNoITSROFrameBorder));
         // LOGP(info, ">> assoc: bcInTF={} bcInITSROF={} rofIdInTF={} noROFborder={} vZ={} mult={}", thisBcInTF, thisBcInITSROF, thisRofIdInTF, bcAssoc.selection_bit(kNoITSROFrameBorder), vCollVz[thisColIndex], vTracksITS567perColl[thisColIndex]);
 
-        // if (fabs(vTracksITS567perColl[thisColIndex]) > confNtracksCutVetoOnCollInROF)
+        // if (std::fabs(vTracksITS567perColl[thisColIndex]) > confNtracksCutVetoOnCollInROF)
         nITS567tracksForRofVetoStrict += vTracksITS567perColl[thisColIndex];
         nSumAmplFT0CforRofVetoStrict += vAmpFT0CperColl[thisColIndex];
         vNumCollinROF[colIndex]++;
-        if (fabs(vCollVz[thisColIndex]) < 10)
+        if (std::fabs(vCollVz[thisColIndex]) < 10)
           vNumCollinROFinVz10[colIndex]++;
         vInROFcollIndex[colIndex] = thisBcInITSROF > bcInITSROF ? 0 : 1; // if colIndex is for the first coll in ROF => inROFindex=0, otherwise =1
 
@@ -783,18 +784,18 @@ struct RofOccupancyQaTask {
         if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInROF)
           nCollsInRofWithFT0CAboveVetoStandard++;
 
-        if (fabs(vCollVz[thisColIndex] - vZ) < confEpsilonVzDiffVetoInROF)
+        if (std::fabs(vCollVz[thisColIndex] - vZ) < confEpsilonVzDiffVetoInROF)
           nITS567tracksForRofVetoOnCloseVz += vTracksITS567perColl[thisColIndex];
         for (int i = 0; i < 200; i++) {
-          // if (fabs(vCollVz[thisColIndex] - vZ) < 0.05 * i && vTracksITS567perColl[thisColIndex] > 50)
+          // if (std::fabs(vCollVz[thisColIndex] - vZ) < 0.05 * i && vTracksITS567perColl[thisColIndex] > 50)
           // if (vTracksITS567perColl[colIndex]>100 && vTracksITS567perColl[colIndex]<1000 &&
           if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex] < 15000 &&
-              (vCollVz[thisColIndex] - vZ) > 0.05 * i && fabs(vCollVz[thisColIndex] - vZ) < (0.1 + 0.05) * i && vTracksITS567perColl[thisColIndex] > 20) // 0.05 * (i + 1))
-            // fabs(vCollVz[thisColIndex] - vZ) < 0.05 * i && vTracksITS567perColl[thisColIndex] > 30) // 0.05 * (i + 1))
+              (vCollVz[thisColIndex] - vZ) > 0.05 * i && std::fabs(vCollVz[thisColIndex] - vZ) < (0.1 + 0.05) * i && vTracksITS567perColl[thisColIndex] > 20) // 0.05 * (i + 1))
+            // std::fabs(vCollVz[thisColIndex] - vZ) < 0.05 * i && vTracksITS567perColl[thisColIndex] > 30) // 0.05 * (i + 1))
             nArrITS567tracksForRofVetoOnCloseVz[i]++;
         }
 
-        if (fabs(vZ) < 10) {
+        if (std::fabs(vZ) < 10) {
           histos.fill(HIST("hDeltaVz"), vCollVz[thisColIndex] - vZ);
           if (vTracksITS567perColl[colIndex] >= 100 && vTracksITS567perColl[thisColIndex] < 100)
             histos.fill(HIST("hDeltaVzGivenCollAbove100NearbyBelow100"), vCollVz[thisColIndex] - vZ);
@@ -843,13 +844,13 @@ struct RofOccupancyQaTask {
         if (vTracksITS567perColl[colIndex] > 50 && vTracksITS567perColl[thisColIndex] > 50)
           histos.fill(HIST("hDeltaTimeAboveNtracksCut"), dt);
 
-        if (fabs(vCollVz[colIndex]) < 10 && fabs(vCollVz[thisColIndex]) < 10)
+        if (std::fabs(vCollVz[colIndex]) < 10 && std::fabs(vCollVz[thisColIndex]) < 10)
           histos.fill(HIST("hDeltaTime_vZ10cm"), dt);
 
         if (vIsSel8[colIndex] && vIsSel8[thisColIndex])
           histos.fill(HIST("hDeltaTime_sel8"), dt);
 
-        if (fabs(vCollVz[colIndex]) < 10 && vIsSel8[colIndex] && fabs(vCollVz[thisColIndex]) < 10 && vIsSel8[thisColIndex]) {
+        if (std::fabs(vCollVz[colIndex]) < 10 && vIsSel8[colIndex] && std::fabs(vCollVz[thisColIndex]) < 10 && vIsSel8[thisColIndex]) {
           histos.fill(HIST("hDeltaTime_sel8_vZ10cm"), dt);
           if (vTracksITS567perColl[colIndex] > 50 && vTracksITS567perColl[thisColIndex] > 50)
             histos.fill(HIST("hDeltaTimeAboveNtracksCut_sel8_vZ10cm"), dt);
@@ -876,48 +877,48 @@ struct RofOccupancyQaTask {
         sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
 
         // counting tracks from other collisions in fixed time windows
-        if (fabs(dt) < confTimeRangeVetoOnCollNarrow)
+        if (std::fabs(dt) < confTimeRangeVetoOnCollNarrow)
           nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
-        if (fabs(dt) < confTimeRangeVetoOnCollStandard)
+        if (std::fabs(dt) < confTimeRangeVetoOnCollStandard)
           nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
 
-        // if (fabs(dt) < confTimeRangeVetoOnCollStandard + 0.5) { // add 0.5 us safety margin
+        // if (std::fabs(dt) < confTimeRangeVetoOnCollStandard + 0.5) { // add 0.5 us safety margin
         // standard cut on other collisions vs delta-times
-        const float driftV = 2.5; // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
-        if (fabs(dt) < 2.0) {     // us, complete veto on other collisions
+        const float driftV = 2.5;  // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
+        if (std::fabs(dt) < 2.0) { // us, complete veto on other collisions
           nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange / 5)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
-        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with mult above threshold
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         }
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
+        if (std::fabs(dt) < 8 + std::fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
-            if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (fabs(vCollVz[thisColIndex] + fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC))
+            if ((std::fabs(vCollVz[thisColIndex] - std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
+                (std::fabs(vCollVz[thisColIndex] + std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC))
               nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
 
             // FOR QA:
-            if (fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.fill(HIST("hDeltaVzVsDeltaTime1"), vCollVz[thisColIndex] - fabs(dt) * driftV - vZ, dt);
-            if (fabs(vCollVz[thisColIndex] + fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.fill(HIST("hDeltaVzVsDeltaTime2"), vCollVz[thisColIndex] + fabs(dt) * driftV - vZ, dt);
+            if (std::fabs(vCollVz[thisColIndex] - std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
+              histos.fill(HIST("hDeltaVzVsDeltaTime1"), vCollVz[thisColIndex] - std::fabs(dt) * driftV - vZ, dt);
+            if (std::fabs(vCollVz[thisColIndex] + std::fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
+              histos.fill(HIST("hDeltaVzVsDeltaTime2"), vCollVz[thisColIndex] + std::fabs(dt) * driftV - vZ, dt);
 
           } else { // dt>0
             // check distance between drifted vZ of given collision (in two directions) and vZ of future collisions
-            if ((fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC) ||
-                (fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC))
+            if ((std::fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC) ||
+                (std::fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC))
               nITS567tracksForVetoVzDependent += vTracksITS567perColl[thisColIndex];
 
             // FOR QA:
-            if (fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
+            if (std::fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
               histos.fill(HIST("hDeltaVzVsDeltaTime3"), vZ - dt * driftV - vCollVz[thisColIndex], dt);
-            if (fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
+            if (std::fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
               histos.fill(HIST("hDeltaVzVsDeltaTime4"), vZ + dt * driftV - vCollVz[thisColIndex], dt);
           }
         }
@@ -935,7 +936,7 @@ struct RofOccupancyQaTask {
       vArrNoCollInSameRofWithCloseVz.push_back(vVzCutThisColl);
     }
 
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       bool sel8 = col.sel8(); // bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder);
 
@@ -954,7 +955,7 @@ struct RofOccupancyQaTask {
         float ft0C = vAmpFT0CperColl[colIndex];
 
         // ROF-by-ROF
-        if (fabs(vZ) < 8) {
+        if (std::fabs(vZ) < 8) {
           histos.fill(HIST("ROFbyROF/nPV_vs_ROFid"), nPV, vCollRofIdPerOrbit[colIndex]);
           histos.fill(HIST("ROFbyROF/nPV_vs_subROFid"), nPV, vCollRofSubIdPerOrbit[colIndex]);
 
@@ -962,7 +963,7 @@ struct RofOccupancyQaTask {
           histos.fill(HIST("ROFbyROF/FT0C_vs_subROFid"), ft0C, vCollRofSubIdPerOrbit[colIndex]);
         }
         // vs occupancy
-        if (occTracks >= 0 && fabs(vZ) < 8) {
+        if (occTracks >= 0 && std::fabs(vZ) < 8) {
           histos.fill(HIST("nPV_vs_occupancyByTracks/sel8"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeNarrow))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow"), nPV, occTracks);
@@ -970,8 +971,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard"), nPV, occTracks);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent"), nPV, occTracks);
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInRofStrict"), nPV, occTracks);
           if (col.selection_bit(kNoCollInRofStandard))
@@ -980,14 +979,14 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict"), nPV, occTracks);
-          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && std::fabs(vZ) < 5)
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occTracks);
           if (col.selection_bit(kNoHighMultCollInPrevRof))
             histos.fill(HIST("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRof"), nPV, occTracks);
           if (col.selection_bit(kNoHighMultCollInPrevRof) && col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByTracks/kNoHighMultCollInPrevRofAndRofStrict"), nPV, occTracks);
         }
-        if (occFT0C >= 0 && fabs(vZ) < 8) {
+        if (occFT0C >= 0 && std::fabs(vZ) < 8) {
           histos.fill(HIST("nPV_vs_occupancyByFT0C/sel8"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeNarrow))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow"), nPV, occFT0C);
@@ -995,8 +994,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard"), nPV, occFT0C);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInRofStrict"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInRofStandard))
@@ -1005,7 +1002,7 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict"), nPV, occFT0C);
-          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && std::fabs(vZ) < 5)
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occFT0C);
           if (col.selection_bit(kNoHighMultCollInPrevRof))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/kNoHighMultCollInPrevRof"), nPV, occFT0C);
@@ -1028,7 +1025,7 @@ struct RofOccupancyQaTask {
         histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/all"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
         histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/all"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
-        if (sel8 && fabs(col.posZ()) < 8) {
+        if (sel8 && std::fabs(col.posZ()) < 8) {
           histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_vZ_TF_ROF_border_cuts"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
 
           // if (vAmpFT0CperColl[colIndex] > 5000 && vAmpFT0CperColl[colIndex] < 10000) {
@@ -1157,8 +1154,6 @@ struct RofOccupancyQaTask {
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (col.selection_bit(kNoCollInTimeRangeStandard))
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
-            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           if (col.selection_bit(kNoCollInRofStrict))
             histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
@@ -1216,7 +1211,7 @@ struct RofOccupancyQaTask {
           if (vNoCollInTimeRangeNarrow[colIndex]) {
 
             for (int i = 0; i < 200; i++) {
-              if (fabs(col.posZ()) < 8 && !vArrNoCollInSameRofWithCloseVz[colIndex][i]) {
+              if (std::fabs(col.posZ()) < 8 && !vArrNoCollInSameRofWithCloseVz[colIndex][i]) {
                 histos.fill(HIST("hThisEvITStr_vs_vZcut"), 0.025 + 0.05 * i, vTracksITS567perColl[colIndex]);
                 histos.fill(HIST("hThisEvITSTPCtr_vs_vZcut"), 0.025 + 0.05 * i, vTracksITSTPCperColl[colIndex]);
               }

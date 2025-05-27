@@ -50,7 +50,7 @@ struct filterEoI {
   template <uint8_t system, typename TCollisions, typename TElectrons, typename TMuons>
   void selectEoI(TCollisions const& collisions, TElectrons const& electrons, TMuons const& muons)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       bool does_electron_exist = false;
       bool does_fwdmuon_exist = false;
       fRegistry.fill(HIST("hEventCounter"), 1);

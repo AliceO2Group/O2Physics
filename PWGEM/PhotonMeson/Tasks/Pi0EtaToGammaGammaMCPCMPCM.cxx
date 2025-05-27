@@ -26,11 +26,11 @@
 using namespace o2;
 using namespace o2::aod;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
-using MyV0Photon = MyV0Photons::iterator;
+// using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
+// using MyV0Photon = MyV0Photons::iterator;
 
-using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
-using MyMCV0Leg = MyMCV0Legs::iterator;
+// using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
+// using MyMCV0Leg = MyMCV0Legs::iterator;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

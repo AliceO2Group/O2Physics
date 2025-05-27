@@ -47,6 +47,7 @@ using ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::ChargedMCParticleLev
 using NeutralMCJetsEventWeight = JetEventWeightMCPTask<aod::NeutralMCParticleLevelJet, aod::NeutralMCParticleLevelJetEventWeights>;
 using FullMCJetsEventWeight = JetEventWeightMCPTask<aod::FullMCParticleLevelJet, aod::FullMCParticleLevelJetEventWeights>;
 using D0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::D0ChargedMCParticleLevelJet, aod::D0ChargedMCParticleLevelJetEventWeights>;
+using DplusChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::DplusChargedMCParticleLevelJet, aod::DplusChargedMCParticleLevelJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::LcChargedMCParticleLevelJet, aod::LcChargedMCParticleLevelJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::BplusChargedMCParticleLevelJet, aod::BplusChargedMCParticleLevelJetEventWeights>;
 using V0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::V0ChargedMCParticleLevelJet, aod::V0ChargedMCParticleLevelJetEventWeights>;
@@ -71,6 +72,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(
     adaptAnalysisTask<D0ChargedMCJetsEventWeight>(cfgc,
                                                   SetDefaultProcesses{}, TaskName{"jet-d0-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<DplusChargedMCJetsEventWeight>(cfgc,
+                                                     SetDefaultProcesses{}, TaskName{"jet-dplus-eventweight-mcp-charged"}));
 
   tasks.emplace_back(
     adaptAnalysisTask<LcChargedMCJetsEventWeight>(cfgc,

@@ -126,8 +126,8 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   void init(InitContext const&)
   {
-    std::array<bool, 16> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterSig, doprocessMcWithDCAFitterBkg, doprocessMcWithDCAFitterAll, doprocessMcWithKFParticleSig, doprocessMcWithKFParticleBkg, doprocessMcWithKFParticleAll,
-                                   doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterMlSig, doprocessMcWithDCAFitterMlBkg, doprocessMcWithDCAFitterMlAll, doprocessMcWithKFParticleMlSig, doprocessMcWithKFParticleMlBkg, doprocessMcWithKFParticleMlAll};
+    std::array<bool, 17> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterSig, doprocessMcWithDCAFitterBkg, doprocessMcWithDCAFitterAll, doprocessMcWithKFParticleSig, doprocessMcWithKFParticleBkg, doprocessMcWithKFParticleAll,
+                                   doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterMlSig, doprocessMcWithDCAFitterMlBkg, doprocessMcWithDCAFitterMlAll, doprocessMcWithKFParticleMlSig, doprocessMcWithKFParticleMlBkg, doprocessMcWithKFParticleMlAll, doprocessMcGenOnly};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
@@ -516,6 +516,13 @@ struct HfDerivedDataCreatorD0ToKPi {
     rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleMlAll, "Process MC with KFParticle and ML", false);
+
+  void processMcGenOnly(TypeMcCollisions const& mcCollisions,
+                        MatchedGenCandidatesMc const& mcParticles)
+  {
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+  }
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcGenOnly, "Process MC gen. only", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

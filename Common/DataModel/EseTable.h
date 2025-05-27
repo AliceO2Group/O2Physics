@@ -29,20 +29,23 @@ namespace q_vector
 DECLARE_SOA_COLUMN(QPERCFT0C, qPERCFT0C, std::vector<float>);
 DECLARE_SOA_COLUMN(QPERCFT0A, qPERCFT0A, std::vector<float>);
 DECLARE_SOA_COLUMN(QPERCFV0A, qPERCFV0A, std::vector<float>);
-DECLARE_SOA_COLUMN(QPERCTPC, qPERCTPC, std::vector<float>);
-DECLARE_SOA_COLUMN(FESECOL, fESECOL, std::vector<int>);
+DECLARE_SOA_COLUMN(QPERCTPCall, qPERCTPCall, std::vector<float>);
+DECLARE_SOA_COLUMN(QPERCTPCneg, qPERCTPCneg, std::vector<float>);
+DECLARE_SOA_COLUMN(QPERCTPCpos, qPERCTPCpos, std::vector<float>);
 } // namespace q_vector
 DECLARE_SOA_TABLE(QPercentileFT0Cs, "AOD", "QPERCENTILEFT0C", q_vector::QPERCFT0C);
 DECLARE_SOA_TABLE(QPercentileFT0As, "AOD", "QPERCENTILEFT0A", q_vector::QPERCFT0A);
 DECLARE_SOA_TABLE(QPercentileFV0As, "AOD", "QPERCENTILEFV0A", q_vector::QPERCFV0A);
-DECLARE_SOA_TABLE(QPercentileTPCs, "AOD", "QPERCENTILETPC", q_vector::QPERCTPC);
-DECLARE_SOA_TABLE(FEseCols, "AOD", "FEVENTSHAPE", q_vector::FESECOL);
+DECLARE_SOA_TABLE(QPercentileTPCalls, "AOD", "QPERCENTILETPCall", q_vector::QPERCTPCall);
+DECLARE_SOA_TABLE(QPercentileTPCnegs, "AOD", "QPERCENTILETPCneg", q_vector::QPERCTPCneg);
+DECLARE_SOA_TABLE(QPercentileTPCposs, "AOD", "QPERCENTILETPCpos", q_vector::QPERCTPCpos);
 
 using QPercentileFT0C = QPercentileFT0Cs::iterator;
 using QPercentileFT0A = QPercentileFT0As::iterator;
 using QPercentileFV0A = QPercentileFV0As::iterator;
-using QPercentileTPC = QPercentileTPCs::iterator;
-using FEseCol = FEseCols::iterator;
+using QPercentileTPCall = QPercentileTPCalls::iterator;
+using QPercentileTPCneg = QPercentileTPCnegs::iterator;
+using QPercentileTPCpos = QPercentileTPCposs::iterator;
 
 } // namespace o2::aod
 

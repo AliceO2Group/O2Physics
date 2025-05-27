@@ -395,7 +395,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (auto const& trk : tracks) {
       const float& sig = o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
@@ -514,7 +514,7 @@ struct tofEventTime {
   Preslice<TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksWtof::iterator, pid>;
-  void process(TrksWtof& tracks,
+  void process(TrksWtof const& tracks,
                aod::FT0s const&,
                EvTimeCollisionsFT0 const&,
                aod::BCsWithTimestamps const& bcs)
@@ -593,7 +593,7 @@ struct tofEventTime {
           if constexpr (removeTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
             weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -621,7 +621,7 @@ struct tofEventTime {
           } else {
             tableFlags(flags);
           }
-          tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+          tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
             tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
@@ -657,7 +657,7 @@ struct tofEventTime {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
-          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
           } else {
             et = 0.f;

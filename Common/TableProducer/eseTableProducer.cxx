@@ -21,6 +21,8 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
+#include <tuple>
+#include <unordered_map>
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,33 +42,50 @@
 using namespace o2;
 using namespace o2::framework;
 
-using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs>;
+using CollWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::Qvectors>;
 
 struct EseTableProducer {
   Produces<o2::aod::QPercentileFT0Cs> qPercsFT0C;
   Produces<o2::aod::QPercentileFT0As> qPercsFT0A;
   Produces<o2::aod::QPercentileFV0As> qPercsFV0A;
-  Produces<o2::aod::QPercentileTPCs> qPercsTPC;
-  Produces<o2::aod::FEseCols> fEseCol;
+  Produces<o2::aod::QPercentileTPCalls> qPercsTPCall;
+  Produces<o2::aod::QPercentileTPCnegs> qPercsTPCneg;
+  Produces<o2::aod::QPercentileTPCposs> qPercsTPCpos;
 
   OutputObj<FFitWeights> FFitObj{FFitWeights("weights")};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  Configurable<bool> cfgESE{"cfgESE", 1, "ese activation step: false = no ese, true = evaluate splines and fill table"};
+  Configurable<bool> cfgESE{"cfgESE", 1, "ese activation step: false = no ese, true = evaluate qSelection and fill table"};
   Configurable<std::string> cfgEsePath{"cfgEsePath", "Users/j/joachiha/ESE/local/ffitsplines", "CCDB path for ese splines"};
-  Configurable<bool> cfgFT0C{"cfgFT0C", 1, "FT0C flag"};
-  Configurable<bool> cfgFT0A{"cfgFT0A", 0, "FT0A flag"};
-  Configurable<bool> cfgFV0A{"cfgFV0A", 0, "FV0A flag"};
-  Configurable<bool> cfgTPC{"cfgTPC", 0, "TPC flag"};
-  Configurable<std::vector<int>> cfgLoopHarmonics{"cfgLoopHarmonics", {2, 3}, "Harmonics to loop over when filling and evaluating splines"};
-  Configurable<std::string> cfgCentEst{"cfgCentEst", "FT0C", "centrality estimator"};
+  Configurable<std::vector<std::string>> cfgDetectors{"cfgDetectors", {"FT0C"}, "detectors to loop over: ['FT0C', 'FT0A', 'FV0A', 'TPCall', 'TPCneg', 'TPCpos']"};
+  Configurable<std::vector<int>> cfgLoopHarmonics{"cfgLoopHarmonics", {2, 3}, "Harmonics to loop over when filling and evaluating q-Selection"};
 
   Configurable<std::vector<float>> cfgaxisqn{"cfgaxisqn", {500, 0, 25}, "q_n amplitude range"};
-  Configurable<int> cfgnResolution{"cfgnResolution", 3000, "resolution of splines"};
+  Configurable<int> cfgnResolution{"cfgnResolution", 3000, "resolution of q-Selection"};
+
+  Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
+  Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
 
   int runNumber{-1};
 
-  FFitWeights* splines{nullptr};
+  enum class DetID { FT0C,
+                     FT0A,
+                     FT0M,
+                     FV0A,
+                     TPCpos,
+                     TPCneg,
+                     TPCall };
+
+  std::unordered_map<std::string, DetID> detMap = {
+    {"FT0C", DetID::FT0C},
+    {"FT0A", DetID::FT0A},
+    {"FT0M", DetID::FT0M},
+    {"FV0A", DetID::FV0A},
+    {"TPCpos", DetID::TPCpos},
+    {"TPCneg", DetID::TPCneg},
+    {"TPCall", DetID::TPCall}};
+
+  FFitWeights* qSelection{nullptr};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -85,26 +104,16 @@ struct EseTableProducer {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    std::vector<std::string> vecStr{};
-    if (cfgFT0C)
-      vecStr.push_back("FT0C");
-    if (cfgFT0A)
-      vecStr.push_back("FT0A");
-    if (cfgFV0A)
-      vecStr.push_back("FV0A");
-    if (cfgTPC)
-      vecStr.push_back("TPC");
-
     std::vector<std::pair<int, std::string>> veccfg;
     for (std::size_t i{0}; i < cfgLoopHarmonics->size(); i++) {
-      for (const auto& j : vecStr) {
-        veccfg.push_back({cfgLoopHarmonics->at(i), j});
+      for (std::size_t j{0}; j < cfgDetectors->size(); j++) {
+        veccfg.push_back({cfgLoopHarmonics->at(i), cfgDetectors->at(j)});
       }
     }
-    FFitObj->SetBinAxis(cfgaxisqn->at(0), cfgaxisqn->at(1), cfgaxisqn->at(2));
-    FFitObj->SetResolution(cfgnResolution);
-    FFitObj->SetQnType(veccfg);
-    FFitObj->Init();
+    FFitObj->setBinAxis(cfgaxisqn->at(0), cfgaxisqn->at(1), cfgaxisqn->at(2));
+    FFitObj->setResolution(cfgnResolution);
+    FFitObj->setQnType(veccfg);
+    FFitObj->init();
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -113,10 +122,10 @@ struct EseTableProducer {
     auto timestamp = bc.timestamp();
 
     if (cfgESE) {
-      splines = ccdb->getForTimeStamp<FFitWeights>(cfgEsePath, timestamp);
-      if (!splines)
-        LOGF(fatal, "failed loading splines with ese flag");
-      LOGF(info, "successfully loaded splines");
+      qSelection = ccdb->getForTimeStamp<FFitWeights>(cfgEsePath, timestamp);
+      if (!qSelection)
+        LOGF(fatal, "failed loading qSelection with ese flag");
+      LOGF(info, "successfully loaded qSelection");
     }
   }
 
@@ -130,25 +139,47 @@ struct EseTableProducer {
     return qn;
   }
 
-  bool validQvec(const float& qVec)
+  constexpr int detIDN(const DetID id)
   {
-    if (qVec == 999. || qVec == -999) {
-      return false;
-    } else {
-      return true;
+    switch (id) {
+      case DetID::FT0C:
+        return 0;
+      case DetID::FT0A:
+        return 1;
+      case DetID::FT0M:
+        return 2;
+      case DetID::FV0A:
+        return 3;
+      case DetID::TPCpos:
+        return 4;
+      case DetID::TPCneg:
+        return 5;
+      case DetID::TPCall:
+        return 6;
     }
-  };
+    return -1;
+  }
 
-  void doSpline(float& splineVal, int& eseval, const float& centr, const float& nHarm, const char* pf, const auto& QX, const auto& QY, const auto& Ampl)
+  void doSpline(float& splineVal, const float& centr, const float& nHarm, const char* pf, const auto& QX, const auto& QY, const auto& sumAmpl)
   {
-    if (validQvec(QX[nHarm - 2]) && validQvec(QY[nHarm - 2]) && Ampl > 1e-8) {
-      float qnval = Calcqn(QX[nHarm - 2] * Ampl, QY[nHarm - 2] * Ampl, Ampl);
-      FFitObj->Fill(centr, qnval, nHarm, pf);
+    if (sumAmpl > 1e-8) {
+      float qnval = Calcqn(QX * sumAmpl, QY * sumAmpl, sumAmpl);
+      FFitObj->fillWeights(centr, qnval, nHarm, pf);
       if (cfgESE) {
-        splineVal = splines->EvalSplines(centr, qnval, nHarm, pf);
-        eseval = cfgFT0C ? 1 : 0;
+        splineVal = qSelection->eval(centr, qnval, nHarm, pf);
       }
     }
+  }
+
+  template <typename C>
+  std::tuple<const float, const float, const float> getVectors(const C& col, const int& nHarm, const DetID& id)
+  {
+    const int detId = detIDN(id);
+    const int detInd{detId * 4 + cfgnTotalSystem * 4 * (nHarm - 2)};
+    const auto Qx{col.qvecRe()[detInd + cfgnCorrLevel]};
+    const auto Qy{col.qvecIm()[detInd + cfgnCorrLevel]};
+    const auto sumAmpl{col.qvecAmp()[detId]};
+    return {Qx, Qy, sumAmpl};
   }
 
   template <typename T>
@@ -156,50 +187,40 @@ struct EseTableProducer {
                     std::vector<float>& qnpFT0C,
                     std::vector<float>& qnpFT0A,
                     std::vector<float>& qnpFV0A,
-                    std::vector<float>& qnpTPC,
-                    std::vector<int>& fIsEseAvailable)
+                    std::vector<float>& qnpTPCall,
+                    std::vector<float>& qnpTPCneg,
+                    std::vector<float>& qnpTPCpos)
   {
-
     const float centrality = collision.centFT0C();
-    registry.fill(HIST("hESEstat"), 0.5);
-    for (std::size_t i{0}; i < cfgLoopHarmonics->size(); i++) {
-      float splineValFT0C{-1.0};
-      float splineValFT0A{-1.0};
-      float splineValFV0A{-1.0};
-      qnpTPC.push_back(-1.0); /* not implemented yet */
-      int eseAvailable{0};
+    float counter{0.5};
+    registry.fill(HIST("hESEstat"), counter++);
 
-      int nHarm = cfgLoopHarmonics->at(i);
-      if (cfgFT0C) {
-        const auto QxFT0C_Qvec = collision.qvecFT0CReVec();
-        const auto QyFT0C_Qvec = collision.qvecFT0CImVec();
-        const auto SumAmplFT0C = collision.sumAmplFT0C();
-        doSpline(splineValFT0C, eseAvailable, centrality, nHarm, "FT0C", QxFT0C_Qvec, QyFT0C_Qvec, SumAmplFT0C);
-        if (i == 0)
-          registry.fill(HIST("hESEstat"), 1.5);
-      }
-      qnpFT0C.push_back(splineValFT0C);
-      fIsEseAvailable.push_back(eseAvailable);
+    std::unordered_map<std::string, std::vector<float>*> vMap{
+      {"FT0C", &qnpFT0C},
+      {"FT0A", &qnpFT0A},
+      {"FV0A", &qnpFV0A},
+      {"TPCall", &qnpTPCall},
+      {"TPCneg", &qnpTPCneg},
+      {"TPCpos", &qnpTPCpos}};
 
-      if (cfgFT0A) {
-        const auto QxFT0A_Qvec = collision.qvecFT0AReVec();
-        const auto QyFT0A_Qvec = collision.qvecFT0AImVec();
-        const auto SumAmplFT0A = collision.sumAmplFT0A();
-        doSpline(splineValFT0A, eseAvailable, centrality, nHarm, "FT0A", QxFT0A_Qvec, QyFT0A_Qvec, SumAmplFT0A);
-        if (i == 0)
-          registry.fill(HIST("hESEstat"), 2.5);
-      }
-      qnpFT0A.push_back(splineValFT0A);
+    for (std::size_t j{0}; j < cfgDetectors->size(); j++) {
+      const auto det{cfgDetectors->at(j)};
+      const auto iter{detMap.find(det)};
+      float splineVal{-1.0};
 
-      if (cfgFV0A) {
-        const auto QxFV0A_Qvec = collision.qvecFV0AReVec();
-        const auto QyFV0A_Qvec = collision.qvecFV0AImVec();
-        const auto SumAmplFV0A = collision.sumAmplFV0A();
-        doSpline(splineValFV0A, eseAvailable, centrality, nHarm, "FV0A", QxFV0A_Qvec, QyFV0A_Qvec, SumAmplFV0A);
-        if (i == 0)
-          registry.fill(HIST("hESEstat"), 3.5);
+      if (iter != detMap.end()) {
+        for (std::size_t i{0}; i < cfgLoopHarmonics->size(); i++) {
+          const int nHarm{cfgLoopHarmonics->at(i)};
+          const auto [qxt, qyt, st] = getVectors(collision, nHarm, iter->second);
+          doSpline(splineVal, centrality, nHarm, det.c_str(), qxt, qyt, st);
+          if (i == 0)
+            registry.fill(HIST("hESEstat"), counter++);
+
+          if (vMap.find(det) != vMap.end()) {
+            vMap[det]->push_back(splineVal);
+          }
+        }
       }
-      qnpFV0A.push_back(splineValFV0A);
     }
   };
 
@@ -211,24 +232,25 @@ struct EseTableProducer {
     std::vector<float> qnpFT0C{};
     std::vector<float> qnpFT0A{};
     std::vector<float> qnpFV0A{};
-    std::vector<float> qnpTPC{};
+    std::vector<float> qnpTPCall{};
+    std::vector<float> qnpTPCneg{};
+    std::vector<float> qnpTPCpos{};
 
-    std::vector<int> fIsEseAvailable{};
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    int currentRun = bc.runNumber();
+    auto bc{collision.bc_as<aod::BCsWithTimestamps>()};
+    int currentRun{bc.runNumber()};
     if (runNumber != currentRun) {
       runNumber = currentRun;
       initCCDB(bc);
     }
     registry.fill(HIST("hEventCounter"), counter++);
-    calculateESE(collision, qnpFT0C, qnpFT0A, qnpFV0A, qnpTPC, fIsEseAvailable);
+    calculateESE(collision, qnpFT0C, qnpFT0A, qnpFV0A, qnpTPCall, qnpTPCneg, qnpTPCpos);
 
     qPercsFT0C(qnpFT0C);
     qPercsFT0A(qnpFT0A);
     qPercsFV0A(qnpFV0A);
-    qPercsTPC(qnpTPC);
-    fEseCol(fIsEseAvailable);
+    qPercsTPCall(qnpTPCall);
+    qPercsTPCneg(qnpTPCneg);
+    qPercsTPCpos(qnpTPCpos);
     registry.fill(HIST("hEventCounter"), counter++);
   }
   PROCESS_SWITCH(EseTableProducer, processESE, "proccess q vectors to calculate reduced q-vector", true);

@@ -21,7 +21,10 @@
         "ccdb-url": "http://alice-ccdb.cern.ch",
         "isRun2MC": "-1"
     },
-    "tracks-extra-converter": "",
+    "tracks-extra-v002-converter": {
+        "processV000ToV002": "true",
+        "processV001ToV002": "false"
+    },
     "bc-selection-task": {
         "triggerBcShift": "0",
         "ITSROFrameStartBorderMargin": "-1",
@@ -42,7 +45,7 @@
         "minPropagationDistance": "5",
         "useTrackTuner": "true",
         "fillTrackTunerTable": "false",
-        "trackTunerParams": "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=1|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=1|qOverPtData=2",
+        "trackTunerParams": "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=1|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/pp2023/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=1|qOverPtData=2|nPhiBins=0",
         "axisPtQA": {
             "values": [
                 "0",

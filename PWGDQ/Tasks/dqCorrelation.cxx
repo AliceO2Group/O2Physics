@@ -303,7 +303,7 @@ struct DqCumulantFlow {
         }
         weff = 1. / weff;
         if (cfg.mAcceptance) {
-          wacc = cfg.mAcceptance->GetNUA(track.phi(), track.eta(), event.posZ());
+          wacc = cfg.mAcceptance->getNUA(track.phi(), track.eta(), event.posZ());
         } else {
           wacc = 1.0;
         }

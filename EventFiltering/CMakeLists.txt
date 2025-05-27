@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(selected-bc-range-task
 
 o2physics_add_dpl_workflow(nuclei-filter
     SOURCES PWGLF/nucleiFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(diffraction-filter
@@ -54,7 +54,7 @@ o2physics_add_dpl_workflow(hf-filter-prepare-ml-samples
 
 o2physics_add_dpl_workflow(cf-filter
     SOURCES PWGCF/CFFilterAll.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::ReconstructionDataFormats O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(cf-filter-qa
@@ -84,7 +84,7 @@ o2physics_add_dpl_workflow(fje-filter
 
 o2physics_add_dpl_workflow(lf-strangeness-filter
     SOURCES PWGLF/strangenessFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore KFParticle::KFParticle O2::ReconstructionDataFormats O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mult-filter
@@ -102,8 +102,18 @@ o2physics_add_dpl_workflow(em-photon-filter-qc
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGEMPhotonMesonCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(heavy-neutral-meson-filter
+    SOURCES PWGEM/HeavyNeutralMesonFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterf1proton.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+ o2physics_add_dpl_workflow(lf-doublephi-filter
+    SOURCES PWGLF/filterdoublephi.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 

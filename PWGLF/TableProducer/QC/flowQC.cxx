@@ -67,9 +67,10 @@ enum qVecDetectors {
   kFT0A,
   kTPCl,
   kTPCr,
+  kTPC,
   kNqVecDetectors
 };
-static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "TPCl", "TPCr"};
+static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "TPCl", "TPCr", "TPC"};
 
 enum methods {
   kEP = 0,
@@ -112,7 +113,7 @@ struct flowQC {
 
   // Flow analysis
   using CollWithEPandQvec = soa::Join<aod::Collisions,
-                                      aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
+                                      aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBTots, aod::QvectorBPoss, aod::QvectorBNegs>::iterator;
 
   HistogramRegistry general{"general", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry flow_ep{"flow_ep", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -258,25 +259,30 @@ struct flowQC {
     float centrality = getCentrality(collision);
 
     // EP method
+    float QmodFT0A_EP = collision.qFT0A();
     float psiFT0A_EP = collision.psiFT0A();
-    float QxFT0A_EP = std::cos(2 * psiFT0A_EP);
-    float QyFT0A_EP = std::sin(2 * psiFT0A_EP);
-    float QmodFT0A_EP = std::hypot(QxFT0A_EP, QyFT0A_EP);
+    float QxFT0A_EP = QmodFT0A_EP * std::cos(2 * psiFT0A_EP);
+    float QyFT0A_EP = QmodFT0A_EP * std::sin(2 * psiFT0A_EP);
 
+    float QmodFT0C_EP = collision.qFT0C();
     float psiFT0C_EP = collision.psiFT0C();
-    float QxFT0C_EP = std::cos(2 * psiFT0C_EP);
-    float QyFT0C_EP = std::sin(2 * psiFT0C_EP);
-    float QmodFT0C_EP = std::hypot(QxFT0C_EP, QyFT0C_EP);
+    float QxFT0C_EP = QmodFT0C_EP * std::cos(2 * psiFT0C_EP);
+    float QyFT0C_EP = QmodFT0C_EP * std::sin(2 * psiFT0C_EP);
 
+    float QmodTPCl_EP = collision.qTPCL();
     float psiTPCl_EP = collision.psiTPCL();
-    float QxTPCl_EP = std::cos(2 * psiTPCl_EP);
-    float QyTPCl_EP = std::sin(2 * psiTPCl_EP);
-    float QmodTPCl_EP = std::hypot(QxTPCl_EP, QyTPCl_EP);
+    float QxTPCl_EP = QmodTPCl_EP * std::cos(2 * psiTPCl_EP);
+    float QyTPCl_EP = QmodTPCl_EP * std::sin(2 * psiTPCl_EP);
 
+    float QmodTPCr_EP = collision.qTPCR();
     float psiTPCr_EP = collision.psiTPCR();
-    float QxTPCr_EP = std::cos(2 * psiTPCr_EP);
-    float QyTPCr_EP = std::sin(2 * psiTPCr_EP);
-    float QmodTPCr_EP = std::hypot(QxTPCr_EP, QyTPCr_EP);
+    float QxTPCr_EP = QmodTPCr_EP * std::cos(2 * psiTPCr_EP);
+    float QyTPCr_EP = QmodTPCr_EP * std::sin(2 * psiTPCr_EP);
+
+    float QmodTPC_EP = collision.qTPC();
+    float psiTPC_EP = collision.psiTPC();
+    float QxTPC_EP = QmodTPC_EP * std::cos(2 * psiTPC_EP);
+    float QyTPC_EP = QmodTPC_EP * std::sin(2 * psiTPC_EP);
 
     // Qvec method
     float QxFT0A_Qvec = collision.qvecFT0ARe();
@@ -287,7 +293,7 @@ struct flowQC {
     float QxFT0C_Qvec = collision.qvecFT0CRe();
     float QyFT0C_Qvec = collision.qvecFT0CIm();
     float QmodFT0C_Qvec = std::hypot(QxFT0C_Qvec, QyFT0C_Qvec);
-    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0A_Qvec);
+    float psiFT0C_Qvec = computeEventPlane(QyFT0C_Qvec, QxFT0C_Qvec);
 
     float QxTPCl_Qvec = collision.qvecBNegRe();
     float QyTPCl_Qvec = collision.qvecBNegIm();
@@ -299,10 +305,15 @@ struct flowQC {
     float QmodTPCr_Qvec = std::hypot(QxTPCr_Qvec, QyTPCr_Qvec);
     float psiTPCr_Qvec = computeEventPlane(QyTPCr_Qvec, QxTPCr_Qvec);
 
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx[2] = {{QxFT0C_EP, QxFT0A_EP, QxTPCl_EP, QxTPCr_EP}, {QxFT0C_Qvec, QxFT0A_Qvec, QxTPCl_Qvec, QxTPCr_Qvec}};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy[2] = {{QyFT0C_EP, QyFT0A_EP, QyTPCl_EP, QyTPCr_EP}, {QyFT0C_Qvec, QyFT0A_Qvec, QyTPCl_Qvec, QyTPCr_Qvec}};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qmod[2] = {{QmodFT0C_EP, QmodFT0A_EP, QmodTPCl_EP, QmodTPCr_EP}, {QmodFT0C_Qvec, QmodFT0A_Qvec, QmodTPCl_Qvec, QmodTPCr_Qvec}};
-    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qpsi[2] = {{psiFT0C_EP, psiFT0A_EP, psiTPCl_EP, psiTPCr_EP}, {psiFT0C_Qvec, psiFT0A_Qvec, psiTPCl_Qvec, psiTPCr_Qvec}};
+    float QxTPC_Qvec = collision.qvecBTotRe();
+    float QyTPC_Qvec = collision.qvecBTotIm();
+    float QmodTPC_Qvec = std::hypot(QxTPC_Qvec, QyTPC_Qvec);
+    float psiTPC_Qvec = computeEventPlane(QyTPC_Qvec, QxTPC_Qvec);
+
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx[2] = {{QxFT0C_EP, QxFT0A_EP, QxTPCl_EP, QxTPCr_EP, QxTPC_EP}, {QxFT0C_Qvec, QxFT0A_Qvec, QxTPCl_Qvec, QxTPCr_Qvec, QxTPC_Qvec}};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy[2] = {{QyFT0C_EP, QyFT0A_EP, QyTPCl_EP, QyTPCr_EP, QyTPC_EP}, {QyFT0C_Qvec, QyFT0A_Qvec, QyTPCl_Qvec, QyTPCr_Qvec, QyTPC_Qvec}};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qmod[2] = {{QmodFT0C_EP, QmodFT0A_EP, QmodTPCl_EP, QmodTPCr_EP, QmodTPC_EP}, {QmodFT0C_Qvec, QmodFT0A_Qvec, QmodTPCl_Qvec, QmodTPCr_Qvec, QmodTPC_Qvec}};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qpsi[2] = {{psiFT0C_EP, psiFT0A_EP, psiTPCl_EP, psiTPCr_EP, psiTPC_EP}, {psiFT0C_Qvec, psiFT0A_Qvec, psiTPCl_Qvec, psiTPCr_Qvec, psiTPC_Qvec}};
 
     for (int iMethod = 0; iMethod < methods::kNmethods; iMethod++) {
       for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {

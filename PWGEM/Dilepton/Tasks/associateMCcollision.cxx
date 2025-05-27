@@ -17,7 +17,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
@@ -33,6 +32,9 @@ struct associateMCcollision {
 
   void init(InitContext&)
   {
+    if (doprocessNcontrib && doprocessNcontrib_Derived) {
+      LOGF(fatal, "Please select only 1 process function.");
+    }
     addhistograms();
   }
 
@@ -40,17 +42,15 @@ struct associateMCcollision {
 
   void addhistograms()
   {
-    fRegistry.add("hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1F, {{21, -0.5, 20.5}}, false);
+    fRegistry.add("hReccollsPerMCcoll", "Rec. colls per MC coll;Rec. colls per MC coll;Number of MC collisions", kTH1D, {{21, -0.5, 20.5}}, false);
   }
 
-  using MyCollisions = soa::Join<aod::EMEvents, aod::EMMCEventLabels>;
-  using MyCollision = MyCollisions::iterator;
-  PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
-
-  void processNcontrib(aod::EMMCEvents const& mccollisions, MyCollisions const& collisions)
+  template <typename TMCCollisions, typename TCollisions, typename TPreslice>
+  void runMC(TMCCollisions const& mcCollisions, TCollisions const& collisions, TPreslice const& perMCCollision)
   {
-    for (auto& mccollision : mccollisions) {
-      auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+
+    for (auto& mcCollision : mcCollisions) {
+      auto rec_colls_per_mccoll = collisions.sliceBy(perMCCollision, mcCollision.globalIndex());
       fRegistry.fill(HIST("hReccollsPerMCcoll"), rec_colls_per_mccoll.size());
       uint32_t maxNumContrib = 0;
       int rec_col_globalIndex = -999;
@@ -63,8 +63,28 @@ struct associateMCcollision {
       // LOGF(info, "rec_col_globalIndex = %d", rec_col_globalIndex);
       mpemeventIds(rec_col_globalIndex);
     } // end of mc collision
-  } // end of process
-  PROCESS_SWITCH(associateMCcollision, processNcontrib, "produce most probable emeventId based on Ncontrib to PV", true);
+
+  } // end of runMC
+
+  using MyCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels>;
+  using MyCollision = MyCollisions::iterator;
+  PresliceUnsorted<aod::McCollisionLabels> recColperMcCollision = aod::mccollisionlabel::mcCollisionId;
+
+  using MyEMCollisions = soa::Join<aod::EMEvents, aod::EMMCEventLabels>;
+  using MyEMCollision = MyEMCollisions::iterator;
+  PresliceUnsorted<aod::EMMCEventLabels> recColperMcCollision_derived = aod::emmceventlabel::emmceventId;
+
+  void processNcontrib_Derived(aod::EMMCEvents const& mcCollisions, MyEMCollisions const& collisions)
+  {
+    runMC(mcCollisions, collisions, recColperMcCollision_derived);
+  }
+  PROCESS_SWITCH(associateMCcollision, processNcontrib_Derived, "produce most probable emeventId based on Ncontrib to PV for derived AOD", true);
+
+  void processNcontrib(aod::McCollisions const& mcCollisions, MyCollisions const& collisions)
+  {
+    runMC(mcCollisions, collisions, recColperMcCollision);
+  }
+  PROCESS_SWITCH(associateMCcollision, processNcontrib, "produce most probable emeventId based on Ncontrib to PV for original AOD", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

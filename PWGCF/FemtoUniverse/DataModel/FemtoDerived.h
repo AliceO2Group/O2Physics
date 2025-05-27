@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -105,11 +105,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! Compute the theta of the track
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Compute the momentum in x in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::sin(phi);
+                             return pt * std::cos(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Compute the momentum in y in GeV/c
                            [](float pt, float phi) -> float {
-                             return pt * std::cos(phi);
+                             return pt * std::sin(phi);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Compute the momentum in z in GeV/c
                            [](float pt, float eta) -> float {
@@ -123,6 +123,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! Compute the overall momentum in GeV/c
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                  //! Sign of the track charge
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                                 //! Number of TPC clusters
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);                     //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TpcFractionSharedCls, tpcFractionSharedCls, float);                   //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(ItsNCls, itsNCls, uint8_t);                                           //! Number of ITS clusters
 DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);                     //! Number of ITS clusters in the inner barrel                             //! TPC signal
 DECLARE_SOA_DYNAMIC_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, //! Compute the number of crossed rows over findable TPC clusters
@@ -181,6 +182,7 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   track::TPCNClsFindable,
                   femtouniverseparticle::TpcNClsCrossedRows,
                   track::TPCNClsShared,
+                  femtouniverseparticle::TpcFractionSharedCls,
                   track::TPCInnerParam,
                   femtouniverseparticle::ItsNCls,
                   femtouniverseparticle::ItsNClsInnerBarrel,
@@ -255,10 +257,14 @@ enum ParticleOriginMCTruth {
   kDaughter,          //! Particle from a decay
   kMaterial,          //! Particle from a material
   kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
+  kFake,              //! Particle, that has NOT the PDG code of the current analysed particle
   kDaughterLambda,    //! Daughter from a Lambda decay
   kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
-  kNOriginMCTruthTypes
+  kPrompt,            //! Origin for D0/D0bar mesons
+  kNonPrompt,         //! Origin for D0/D0bar mesons
+  kNOriginMCTruthTypes,
+  kElse,
+  kWrongCollision //! Origin for the wrong collision
 };
 
 //! Naming of the different OriginMCTruth types
@@ -269,7 +275,9 @@ static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes
   "_NotPrimary",
   "_Fake",
   "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "DaughterSigmaPlus",
+  "_Prompt",
+  "_NonPrompt"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {

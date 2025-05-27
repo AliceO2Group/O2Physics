@@ -30,6 +30,7 @@ DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
+DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                   // Amplitude with FT0C estimator
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
 DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
@@ -100,7 +101,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::PsiFT0A, hyperrec::MultFT0A,
-                  hyperrec::PsiFT0C, hyperrec::MultFT0C,
+                  hyperrec::PsiFT0C, hyperrec::MultFT0C, hyperrec::QFT0C,
                   hyperrec::PsiTPC, hyperrec::MultTPC,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
