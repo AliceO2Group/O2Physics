@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file pidSeparationPower.cxx
+/// \file alice3SeparationPower.cxx
 ///
 /// \brief This task produces the separation power of the ALICE3 detector
 ///
@@ -38,7 +38,7 @@ using namespace o2::framework;
 std::array<TProfile2D*, 5> separationInnerTOF;
 std::array<TProfile2D*, 5> separationOuterTOF;
 std::array<TProfile2D*, 5> separationRICH;
-struct pidSeparationPower {
+struct alice3SeparationPower {
 
   ConfigurableAxis etaAxis{"etaAxis", {100, -1.f, 1.f}, "Binning in eta"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -103,4 +103,4 @@ struct pidSeparationPower {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidSeparationPower>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<alice3SeparationPower>(cfgc)}; }

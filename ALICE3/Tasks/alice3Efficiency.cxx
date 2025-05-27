@@ -30,6 +30,7 @@
 using namespace o2;
 using namespace o2::framework;
 std::map<int, TEfficiency*> effVsPt;
+std::map<int, TEfficiency*> effVsEta;
 
 struct alice3Efficiency {
   Configurable<std::vector<int>> pdgCodes{"pdgCodes", {211}, "List of PDG codes to consider for efficiency calculation"};
@@ -37,11 +38,16 @@ struct alice3Efficiency {
   void init(o2::framework::InitContext&)
   {
     outList.setObject(new THashList);
+    auto createEff = [&](const char* baseName, const char* axisTitle, int pdg, int nBins, double min, double max) {
+      auto eff = new TEfficiency(Form("%s_pdg%d", baseName, pdg),
+                                 Form("Efficiency for PDG %d; %s; Efficiency", pdg, axisTitle),
+                                 nBins, min, max);
+      outList->Add(eff);
+      return eff;
+    };
     for (auto pdg : pdgCodes.value) {
-      effVsPt[pdg] = new TEfficiency(Form("efficiency_pdg%d", pdg),
-                                     Form("Efficiency for PDG %d; p_{T} (GeV/c); Efficiency", pdg),
-                                     100, 0, 10);
-      outList->Add(effVsPt[pdg]);
+      effVsPt[pdg] = createEff("efficiency", "p_{T} (GeV/c)", pdg, 100, 0, 10);
+      effVsEta[pdg] = createEff("efficiency_eta", "#eta", pdg, 100, -5, 5);
     }
   }
 
@@ -67,9 +73,9 @@ struct alice3Efficiency {
 
       std::vector<int64_t>& indices = pdgIndices[mcParticle.pdgCode()];
       // Fill efficiency histogram
-      auto& eff = effVsPt[mcParticle.pdgCode()];
       const bool found = std::find(indices.begin(), indices.end(), track.globalIndex()) != indices.end();
-      eff->Fill(track.pt(), found);
+      effVsPt[mcParticle.pdgCode()]->Fill(found, track.pt());
+      effVsEta[mcParticle.pdgCode()]->Fill(found, track.eta());
     }
   }
 };
