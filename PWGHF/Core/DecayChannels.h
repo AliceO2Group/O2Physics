@@ -134,7 +134,6 @@ enum DecayChannel : int8_t {
   // Λb0
   LbToLcPi = 1, // Λc+ π−
   LbToLcK,      // Λc+ K−
-  LbToScK,      // Σc+ K−
   //
   Last
 };
