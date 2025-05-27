@@ -264,6 +264,7 @@ struct FlowGenericFramework {
         break;
       case kCentNTPV:
         sCentralityEstimator = "NTPV";
+        break;
       default:
         sCentralityEstimator = "FT0C";
     }
@@ -1081,6 +1082,7 @@ struct FlowGenericFramework {
         break;
       case kCentNTPV:
         centrality = collision.centNTPV();
+        break;
       default:
         centrality = collision.centFT0C();
     }
