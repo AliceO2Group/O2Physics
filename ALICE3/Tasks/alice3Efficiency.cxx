@@ -35,6 +35,7 @@ std::map<int, TEfficiency*> effVsEta;
 struct alice3Efficiency {
   Configurable<std::vector<int>> pdgCodes{"pdgCodes", {211}, "List of PDG codes to consider for efficiency calculation"};
   OutputObj<THashList> outList{"output"};
+  Configurable<std::pair<float, float>> etaRange{"etaRange", {-5.f, 5.f}, "Eta range for efficiency calculation"};
   void init(o2::framework::InitContext&)
   {
     outList.setObject(new THashList);
@@ -55,27 +56,43 @@ struct alice3Efficiency {
                aod::McParticles const& mcParticles)
   {
     std::map<int, std::vector<int64_t>> pdgIndices;
-    for (auto& mc : mcParticles) {
-      if (effVsPt.find(mc.pdgCode()) == effVsPt.end()) {
-        continue;
+
+    // Lambda function to select particles after all cuts
+    auto isParticleSelected = [&](const o2::aod::McParticle& p) {
+      if (!p.isPhysicalPrimary()) {
+        return false;
       }
-      pdgIndices[mc.pdgCode()].push_back(mc.globalIndex());
-    }
+      if (p.eta() < etaRange.value.first) {
+        return false;
+      }
+      if (p.eta() > etaRange.value.second) {
+        return false;
+      }
+      return true;
+    };
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
         continue;
       }
       const auto& mcParticle = track.mcParticle();
-      // Check that the PDG is in the list of PDGs
-      if (pdgIndices.find(mcParticle.pdgCode()) == pdgIndices.end()) {
+      if (!isParticleSelected(mcParticle)) {
         continue;
       }
+      pdgIndices[mcParticle.pdgCode()].push_back(mcParticle.globalIndex());
+    }
 
-      std::vector<int64_t>& indices = pdgIndices[mcParticle.pdgCode()];
+    for (auto& mc : mcParticles) {
+      if (effVsPt.find(mc.pdgCode()) == effVsPt.end()) {
+        continue;
+      }
+      if (!isParticleSelected(mc)) {
+        continue;
+      }
+      std::vector<int64_t>& indices = pdgIndices[mc.pdgCode()];
       // Fill efficiency histogram
-      const bool found = std::find(indices.begin(), indices.end(), track.globalIndex()) != indices.end();
-      effVsPt[mcParticle.pdgCode()]->Fill(found, track.pt());
-      effVsEta[mcParticle.pdgCode()]->Fill(found, track.eta());
+      const bool found = std::find(indices.begin(), indices.end(), mc.globalIndex()) != indices.end();
+      effVsPt[mc.pdgCode()]->Fill(found, mc.pt());
+      effVsEta[mc.pdgCode()]->Fill(found, mc.eta());
     }
   }
 };
