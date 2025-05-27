@@ -223,7 +223,6 @@ struct DiHadronCor {
     registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
-    registry.add("PhiCorrected", "PhiCorrected", {HistType::kTH1D, {axisPhi}});
     registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
@@ -299,7 +298,7 @@ struct DiHadronCor {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
   }
 
-  void loadCorrections(uint64_t timestamp, int runNumber)
+  void loadCorrections(uint64_t timestamp)
   {
     if (correctionsLoaded)
       return;
@@ -336,14 +335,13 @@ struct DiHadronCor {
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
-    float weff1 = 1, wacc1 = 1;
+    float weff1 = 1;
     for (auto const& track1 : tracks) {
       if (!trackSelected(track1))
         continue;
       if (!setCurrentParticleWeights(weff1, track1.pt()))
         continue;
       registry.fill(HIST("Phi"), RecoDecay::constrainAngle(track1.phi(), 0.0));
-      registry.fill(HIST("PhiCorrected"), RecoDecay::constrainAngle(track1.phi(), 0.0), wacc1);
       registry.fill(HIST("Eta"), track1.eta());
       registry.fill(HIST("pT"), track1.pt());
       registry.fill(HIST("pTCorrected"), track1.pt(), weff1);
@@ -386,8 +384,8 @@ struct DiHadronCor {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
-    float weff1 = 1, wacc1 = 1;
-    float weff2 = 1, wacc2 = 1;
+    float weff1 = 1;
+    float weff2 = 1;
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
@@ -530,8 +528,7 @@ struct DiHadronCor {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    int currentRunNumber = bc.runNumber();
-    loadCorrections(bc.timestamp(), currentRunNumber);
+    loadCorrections(bc.timestamp());
     fillYield(collision, tracks);
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
@@ -564,8 +561,7 @@ struct DiHadronCor {
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      int currentRunNumber = bc.runNumber();
-      loadCorrections(bc.timestamp(), currentRunNumber);
+      loadCorrections(bc.timestamp());
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
         continue;
