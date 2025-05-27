@@ -647,14 +647,13 @@ struct TrHeAnalysis {
   template <class T>
   float betheBlochAleph(Particle const& particle, T const& rigidity)
   {
-    double bg = particle.charge * rigidity / particle.mass;
-    double beta = bg / std::Sqrt(1. + bg * bg);
-    double aa = std::Power(beta, particle.betheParams[3]);
-    double bb = std::Power(1. / bg, particle.betheParams[4]);
-    if ((particle.betheParams[2] + bb) <= 0)
-      return 0;
-    bb = std::Log(particle.betheParams[2] + bb);
-    return std::pow(particle.charge, particle.chargeFactor) * 50 * (particle.betheParams[1] - aa - bb) * particle.betheParams[0] / aa;
+    double bg = particle.charge*rigidity / particle.mass;
+    double beta = bg / std::sqrt(1. + bg*bg);
+    double aa = std::pow(beta, particle.betheParams[3]);
+    double bb = std::pow(1. / bg, particle.betheParams[4]);
+    if ((particle.betheParams[2] + bb) <= 0) return 0;
+    bb = std::log(particle.betheParams[2] + bb);
+    return std::pow(particle.charge, particle.chargeFactor) * 50 * (particle.betheParams[1] - aa - bb)*particle.betheParams[0] / aa; 
   }
 
   template <class T>
@@ -685,8 +684,8 @@ struct TrHeAnalysis {
   {
     const float beta = track.beta();
     const float rigidity = getRigidity(track);
-    float gamma = 1 / std::Sqrt(1 - beta * beta);
-    float mass = (rigidity / std::Sqrt(gamma * gamma - 1));
+    float gamma = 1 / std::sqrt(1-beta*beta);
+    float mass = (rigidity / std::sqrt(gamma * gamma - 1));
     return mass;
   }
 };
