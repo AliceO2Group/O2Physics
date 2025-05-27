@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorLcHadrons.cxx
+/// \file correlatorLcScHadrons.cxx
 /// \brief Lc-Hadrons correlator task - data-like, Mc-Reco and Mc-Gen analyses
 ///
 /// \author Marianna Mazzilli <marianna.mazzilli@cern.ch>
@@ -348,10 +348,11 @@ struct HfCorrelatorLcScHadrons {
   double estimateY(candtype& cand)
   {
     double y = -999.;
+    const int chargeScZero = 0;
     if constexpr (isCandSc) {
       int8_t chargeCand = cand.charge();
 
-      if (chargeCand == 0) {
+      if (chargeCand == chargeScZero) {
         y = hfHelper.ySc0(cand);
       } else {
         y = hfHelper.yScPlusPlus(cand);
@@ -459,6 +460,8 @@ struct HfCorrelatorLcScHadrons {
 
     int nTracks = 0;
     int64_t timeStamp = 0;
+    const int chargeScPlusPlus = 2;
+    const int chargeScZero = 0;
     bool skipMixedEventTableFilling = false;
     float multiplicityFT0M = collision.multFT0M();
     int gCollisionId = collision.globalIndex();
@@ -558,8 +561,8 @@ struct HfCorrelatorLcScHadrons {
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
           isSignal =
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
+            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == chargeScZero) ||
+            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == chargeScPlusPlus);
 
           auto trackPos1 = candidateLc.template prong0_as<aod::TracksWMc>();
           auto trackPos2 = candidateLc.template prong2_as<aod::TracksWMc>();
@@ -735,6 +738,8 @@ struct HfCorrelatorLcScHadrons {
     double massCandPiKP = -999.0;
     bool selLcPKPi = false;
     bool selLcPiKP = false;
+    const int chargeScPlusPlus = 2;
+    const int chargeScZero = 0;
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<CollisionType, CandType, TrackType, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
@@ -772,8 +777,8 @@ struct HfCorrelatorLcScHadrons {
           }
           if constexpr (isMcRec) {
             isSignal =
-              (TESTBIT(abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
-              (TESTBIT(abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
+              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == chargeScZero) ||
+              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == chargeScPlusPlus);
           }
         } else {
           selLcPKPi = candidate.isSelLcToPKPi() >= selectionFlagLc;
