@@ -17,6 +17,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <limits>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -37,6 +38,8 @@
 #include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
 #include "DataFormatsITSMFT/TimeDeadMap.h"
 #include "ITSMFTReconstruction/ChipMappingITS.h"
+#include "DataFormatsCTP/Configuration.h"
+#include "DataFormatsCTP/Scalers.h"
 
 #include "TH1D.h"
 
@@ -80,7 +83,6 @@ struct BcSelectionTask {
   int mITSROFrameEndBorderMargin = 20;   // default value
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
-  bool isPP = 1;                         // default value
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
   std::map<uint64_t, uint32_t>* mapRCT = nullptr;
@@ -97,7 +99,7 @@ struct BcSelectionTask {
       if (metadataInfo.isRun3()) {
         doprocessRun3.value = true;
       } else {
-        doprocessRun2.value = false;
+        doprocessRun2.value = true;
       }
     }
 
@@ -105,24 +107,7 @@ struct BcSelectionTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-
-    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiTVXafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiTCEafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiZEMafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
-    histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
   }
 
   void processRun2(
@@ -303,11 +288,7 @@ struct BcSelectionTask {
       rofLength = alppar->roFrameLengthInBC;
       // Trigger aliases
       aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
-      // Collision system info
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-      int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);
-      int beamZ2 = grplhcif->getBeamZ(o2::constants::lhc::BeamC);
-      isPP = beamZ1 == 1 && beamZ2 == 1;
+
       // prepare map of inactive chips
       auto itsDeadMap = ccdb->getForTimeStamp<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", ts);
       auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
@@ -335,12 +316,13 @@ struct BcSelectionTask {
       std::map<std::string, std::string> metadata;
       metadata["run"] = Form("%d", run);
       ccdb->setFatalWhenNull(0);
-      mapRCT = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("Users/j/jian/RCT", ts, metadata);
+      mapRCT = ccdb->getSpecific<std::map<uint64_t, uint32_t>>("RCT/Flags/RunFlags", ts, metadata);
       ccdb->setFatalWhenNull(1);
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
         mapRCT = new std::map<uint64_t, uint32_t>;
-        mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, 0));
+        uint32_t dummyValue = 1 << 31; // setting bit 31 to indicate that rct object is missing
+        mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, dummyValue));
       }
     }
 
@@ -490,58 +472,7 @@ struct BcSelectionTask {
       int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
       LOGP(debug, "foundFT0={}", foundFT0);
 
-      // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
       const char* srun = Form("%d", run);
-
-      bool injectionEnergy = (run >= 500000 && run <= 520099) || (run >= 534133 && run <= 534468); // o2-linter: disable=magic-number (TODO extract from ccdb)
-      // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
-      float csTVX = isPP ? (injectionEnergy ? 0.0355e6 : 0.0594e6) : -1.;
-      float csTCE = isPP ? -1. : 10.36e6;
-      float csZEM = isPP ? -1. : 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-      float csZNC = isPP ? -1. : 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-      if (run > 543437 && run < 543514) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
-        csTCE = 8.3e6;
-      }
-      if (run >= 543514) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
-        csTCE = 4.10e6;    // see AN: https://alice-notes.web.cern.ch/node/1515
-      }
-
-      // Fill TVX (T0 vertex) counters
-      if (TESTBIT(selection, kIsTriggerTVX)) {
-        histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
-        histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, 1. / csTVX);
-        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
-          histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
-          histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, 1. / csTVX);
-        }
-      }
-      // Fill counters and lumi histograms for Pb-Pb lumi monitoring
-      // TODO: introduce pileup correction
-      if (bc.has_ft0() ? (TESTBIT(selection, kIsTriggerTVX) && TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) : 0) {
-        histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
-        histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, 1. / csTCE);
-        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
-          histos.get<TH1>(HIST("hCounterTCEafterBCcuts"))->Fill(srun, 1);
-          histos.get<TH1>(HIST("hLumiTCEafterBCcuts"))->Fill(srun, 1. / csTCE);
-        }
-      }
-      if (TESTBIT(selection, kIsBBZNA) || TESTBIT(selection, kIsBBZNC)) {
-        histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
-        histos.get<TH1>(HIST("hLumiZEM"))->Fill(srun, 1. / csZEM);
-        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
-          histos.get<TH1>(HIST("hCounterZEMafterBCcuts"))->Fill(srun, 1);
-          histos.get<TH1>(HIST("hLumiZEMafterBCcuts"))->Fill(srun, 1. / csZEM);
-        }
-      }
-      if (TESTBIT(selection, kIsBBZNC)) {
-        histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
-        histos.get<TH1>(HIST("hLumiZNC"))->Fill(srun, 1. / csZNC);
-        if (TESTBIT(selection, kNoITSROFrameBorder) && TESTBIT(selection, kNoTimeFrameBorder)) {
-          histos.get<TH1>(HIST("hCounterZNCafterBCcuts"))->Fill(srun, 1);
-          histos.get<TH1>(HIST("hLumiZNCafterBCcuts"))->Fill(srun, 1. / csZNC);
-        }
-      }
-
       if (bc.timestamp() < sorTimestamp || bc.timestamp() > eorTimestamp) {
         histos.get<TH1>(HIST("hCounterInvalidBCTimestamp"))->Fill(srun, 1);
         if (confCheckRunDurationLimits.value) {
@@ -652,7 +583,7 @@ struct EventSelectionTask {
         if (metadataInfo.isRun3()) {
           doprocessRun3.value = true;
         } else {
-          doprocessRun2.value = false;
+          doprocessRun2.value = true;
         }
       }
       if (isMC == -1) {
@@ -1229,6 +1160,323 @@ struct EventSelectionTask {
   PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
 };
 
+struct LumiTask {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  int lastRun = -1; // last run number (needed to access ccdb only if run!=lastRun)
+  float csTVX = -1; // dummy -1 for the visible TVX cross section (in ub) used in lumi accounting
+  float csTCE = -1; // dummy -1 for the visible TCE cross section (in ub) used in lumi accounting
+  float csZEM = -1; // dummy -1 for the visible ZEM cross section (in ub) used in lumi accounting
+  float csZNC = -1; // dummy -1 for the visible ZNC cross section (in ub) used in lumi accounting
+
+  std::vector<int64_t> mOrbits;
+  std::vector<double> mPileupCorrectionTVX;
+  std::vector<double> mPileupCorrectionTCE;
+  std::vector<double> mPileupCorrectionZEM;
+  std::vector<double> mPileupCorrectionZNC;
+
+  int64_t minOrbitInRange = std::numeric_limits<int64_t>::max();
+  int64_t maxOrbitInRange = 0;
+  uint32_t currentOrbitIndex = 0;
+  std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
+  std::vector<o2::aod::rctsel::RCTFlagsChecker> mRCTFlagsCheckers;
+
+  void init(InitContext&)
+  {
+    if (metadataInfo.isFullyDefined() && !doprocessRun3 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+      if (metadataInfo.isRun3()) {
+        doprocessRun3.value = true;
+      } else {
+        doprocessRun2.value = true;
+      }
+    }
+
+    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCEafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEMafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+
+    const int nLists = 6;
+    TString rctListNames[] = {"CBT", "CBT_hadronPID", "CBT_electronPID", "CBT_calo", "CBT_muon", "CBT_muon_glo"};
+    histos.add("hLumiTVXafterBCcutsRCT", ";;Luminosity, 1/#mub", kTH2D, {{1, 0., 1.}, {4 * nLists, -0.5, 4. * nLists - 0.5}});
+    histos.add("hLumiTCEafterBCcutsRCT", ";;Luminosity, 1/#mub", kTH2D, {{1, 0., 1.}, {4 * nLists, -0.5, 4. * nLists - 0.5}});
+    histos.add("hLumiZEMafterBCcutsRCT", ";;Luminosity, 1/#mub", kTH2D, {{1, 0., 1.}, {4 * nLists, -0.5, 4. * nLists - 0.5}});
+    histos.add("hLumiZNCafterBCcutsRCT", ";;Luminosity, 1/#mub", kTH2D, {{1, 0., 1.}, {4 * nLists, -0.5, 4. * nLists - 0.5}});
+
+    for (int i = 0; i < nLists; i++) {
+      const auto& rctListName = rctListNames[i];
+      mRCTFlagsCheckers.emplace_back(rctListName.Data(), false, false); // disable zdc check, disable lim. acc. check
+      mRCTFlagsCheckers.emplace_back(rctListName.Data(), false, true);  // disable zdc check, enable lim. acc. check
+      mRCTFlagsCheckers.emplace_back(rctListName.Data(), true, false);  // enable zdc check, disable lim. acc. check
+      mRCTFlagsCheckers.emplace_back(rctListName.Data(), true, true);   // enable zdc check, enable lim. acc. check
+      histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 1, rctListName.Data());
+      histos.get<TH2>(HIST("hLumiTCEafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 1, rctListName.Data());
+      histos.get<TH2>(HIST("hLumiZEMafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 1, rctListName.Data());
+      histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 1, rctListName.Data());
+      histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 2, (rctListName + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiTCEafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 2, (rctListName + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiZEMafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 2, (rctListName + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 2, (rctListName + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 3, (rctListName + "_zdc").Data());
+      histos.get<TH2>(HIST("hLumiTCEafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 3, (rctListName + "_zdc").Data());
+      histos.get<TH2>(HIST("hLumiZEMafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 3, (rctListName + "_zdc").Data());
+      histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 3, (rctListName + "_zdc").Data());
+      histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 4, (rctListName + "_zdc" + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiTCEafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 4, (rctListName + "_zdc" + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiZEMafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 4, (rctListName + "_zdc" + "_fullacc").Data());
+      histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->GetYaxis()->SetBinLabel(4 * i + 4, (rctListName + "_zdc" + "_fullacc").Data());
+    }
+  }
+
+  void processRun2(aod::BCs const&)
+  {
+    LOGP(debug, "Dummy process function for Run 2");
+  }
+
+  PROCESS_SWITCH(LumiTask, processRun2, "Process Run2 lumi task", false);
+
+  void processRun3(BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
+  {
+    if (bcs.size() == 0)
+      return;
+    int run = bcs.iteratorAt(0).runNumber();
+    if (run < 500000) // o2-linter: disable=magic-number (skip for unanchored MCs)
+      return;
+    if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
+      lastRun = run;
+      int64_t ts = bcs.iteratorAt(0).timestamp();
+
+      // getting GRP LHCIF object to extract colliding system, energy and colliding bc pattern
+      auto grplhcif = ccdb->getForTimeStamp<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      int beamZ1 = grplhcif->getBeamZ(constants::lhc::BeamA);
+      int beamZ2 = grplhcif->getBeamZ(constants::lhc::BeamC);
+      float sqrts = grplhcif->getSqrtS();
+      int nCollidingBCs = grplhcif->getBunchFilling().getNBunches();
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+
+      // visible cross sections in ub. Using dummy -1 if lumi estimator is not reliable for this colliding system
+      csTVX = -1;
+      csTCE = -1;
+      csZEM = -1;
+      csZNC = -1;
+      // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
+      if (beamZ1 == 1 && beamZ2 == 1) {
+        if (std::fabs(sqrts - 900.) < 20.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0357e6;                           // ub
+        } else if (std::fabs(sqrts - 5360.) < 20.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0503e6;                           // ub
+        } else if (std::fabs(sqrts - 13600.) < 20.) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0594e6;                           // ub
+        } else {
+          LOGP(warn, "Cross section for pp @ {} GeV is not defined", sqrts);
+        }
+      } else if (beamZ1 == 82 && beamZ2 == 82) { // o2-linter: disable=magic-number (PbPb colliding system)
+        // see AN: https://alice-notes.web.cern.ch/node/1515
+        if (std::fabs(sqrts - 5360) < 20) {           // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csZNC = 214.5e6;                            // ub
+          csZEM = 415.2e6;                            // ub
+          csTCE = 10.36e6;                            // ub
+          if (run > 543437 && run < 543514) {         // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+            csTCE = 8.3e6;                            // ub
+          } else if (run >= 543514 && run < 545367) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+            csTCE = 4.10e6;                           // ub
+          } else if (run >= 559544) {                 // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+            csTCE = 3.86e6;                           // ub
+          }
+        } else {
+          LOGP(warn, "Cross section for PbPb @ {} GeV is not defined", sqrts);
+        }
+      } else {
+        LOGP(warn, "Cross section for z={} + z={} @ {} GeV is not defined", beamZ1, beamZ2, sqrts);
+      }
+      // getting CTP config to extract lumi class indices (used for rate fetching and pileup correction)
+      std::map<string, string> metadata;
+      metadata["runNumber"] = std::to_string(run);
+      auto config = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata);
+      auto classes = config->getCTPClasses();
+      TString lumiClassNameZNC = "C1ZNC-B-NOPF-CRU";
+      TString lumiClassNameTCE = "CMTVXTCE-B-NOPF-CRU";
+      TString lumiClassNameTVX1 = "MINBIAS_TVX";         // run >= 534467
+      TString lumiClassNameTVX2 = "MINBIAS_TVX_NOMASK";  // run >= 534468
+      TString lumiClassNameTVX3 = "CMTVX-NONE-NOPF-CRU"; // run >= 534996
+      TString lumiClassNameTVX4 = "CMTVX-B-NOPF-CRU";    // run >= 543437
+
+      // find class indices
+      int classIdZNC = -1;
+      int classIdTCE = -1;
+      int classIdTVX = -1;
+      for (unsigned int i = 0; i < classes.size(); i++) {
+        TString clname = classes[i].name;
+        clname.ToUpper();
+        // using position (i) in the vector of classes instead of classes[i].getIndex()
+        // due to bug or inconsistencies in scaler record and class indices
+        if (clname == lumiClassNameZNC)
+          classIdZNC = i;
+        if (clname == lumiClassNameTCE)
+          classIdTCE = i;
+        if (clname == lumiClassNameTVX4 || clname == lumiClassNameTVX3 || clname == lumiClassNameTVX2 || clname == lumiClassNameTVX1)
+          classIdTVX = i;
+      }
+
+      // extract trigger counts from CTP scalers
+      auto scalers = ccdb->getSpecific<ctp::CTPRunScalers>("CTP/Calib/Scalers", ts, metadata);
+      scalers->convertRawToO2();
+      std::vector<int64_t> mCounterTVX;
+      std::vector<int64_t> mCounterTCE;
+      std::vector<int64_t> mCounterZNC;
+      std::vector<int64_t> mCounterZEM;
+      mOrbits.clear();
+      for (const auto& record : scalers->getScalerRecordO2()) {
+        mOrbits.push_back(record.intRecord.orbit);
+        mCounterTVX.push_back(classIdTVX >= 0 ? record.scalers[classIdTVX].lmBefore : 0);
+        mCounterTCE.push_back(classIdTCE >= 0 ? record.scalers[classIdTCE].lmBefore : 0);
+        if (run >= 543437 && run < 544448) {             // o2-linter: disable=magic-number (ZNC class not defined for this run range)
+          mCounterZNC.push_back(record.scalersInps[25]); // see ZNC=1ZNC input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        } else {
+          mCounterZNC.push_back(classIdZNC >= 0 ? record.scalers[classIdZNC].l1Before : 0);
+        }
+        // ZEM class not defined, using inputs instead
+        mCounterZEM.push_back(record.scalersInps[24]); // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+      }
+
+      // calculate pileup corrections
+      mPileupCorrectionTVX.clear();
+      mPileupCorrectionTCE.clear();
+      mPileupCorrectionZEM.clear();
+      mPileupCorrectionZNC.clear();
+      for (uint32_t i = 0; i < mOrbits.size() - 1; i++) {
+        int64_t nOrbits = mOrbits[i + 1] - mOrbits[i];
+        if (nOrbits <= 0 || nCollidingBCs == 0)
+          continue;
+        double perBcRateTVX = static_cast<double>(mCounterTVX[i + 1] - mCounterTVX[i]) / nOrbits / nCollidingBCs;
+        double perBcRateTCE = static_cast<double>(mCounterTCE[i + 1] - mCounterTCE[i]) / nOrbits / nCollidingBCs;
+        double perBcRateZNC = static_cast<double>(mCounterZNC[i + 1] - mCounterZNC[i]) / nOrbits / nCollidingBCs;
+        double perBcRateZEM = static_cast<double>(mCounterZEM[i + 1] - mCounterZEM[i]) / nOrbits / nCollidingBCs;
+        double muTVX = (perBcRateTVX < 1 && perBcRateTVX > 1e-10) ? -std::log(1 - perBcRateTVX) : 0;
+        double muTCE = (perBcRateTCE < 1 && perBcRateTCE > 1e-10) ? -std::log(1 - perBcRateTCE) : 0;
+        double muZNC = (perBcRateZNC < 1 && perBcRateZNC > 1e-10) ? -std::log(1 - perBcRateZNC) : 0;
+        double muZEM = (perBcRateZEM < 1 && perBcRateZEM > 1e-10) ? -std::log(1 - perBcRateZEM) : 0;
+        LOGP(debug, "orbit={} muTVX={} muTCE={} muZNC={} muZEM={}", mOrbits[i], muTVX, muTCE, muZNC, muZEM);
+        mPileupCorrectionTVX.push_back(muTVX > 1e-10 ? muTVX / (1 - std::exp(-muTVX)) : 1);
+        mPileupCorrectionTCE.push_back(muTCE > 1e-10 ? muTCE / (1 - std::exp(-muTCE)) : 1);
+        mPileupCorrectionZNC.push_back(muZNC > 1e-10 ? muZNC / (1 - std::exp(-muZNC)) : 1);
+        mPileupCorrectionZEM.push_back(muZEM > 1e-10 ? muZEM / (1 - std::exp(-muZEM)) : 1);
+      }
+      // filling last orbit range using previous orbit range
+      mPileupCorrectionTVX.push_back(mPileupCorrectionTVX.back());
+      mPileupCorrectionTCE.push_back(mPileupCorrectionTCE.back());
+      mPileupCorrectionZNC.push_back(mPileupCorrectionZNC.back());
+      mPileupCorrectionZEM.push_back(mPileupCorrectionZEM.back());
+    } // access ccdb once per run
+
+    const char* srun = Form("%d", run);
+
+    for (const auto& bc : bcs) {
+      auto& selection = bc.selection_raw();
+      if (bcPatternB[bc.globalBC() % nBCsPerOrbit] == 0) // skip non-colliding bcs
+        continue;
+
+      bool noBorder = TESTBIT(selection, kNoTimeFrameBorder) && TESTBIT(selection, kNoITSROFrameBorder);
+      bool isTriggerTVX = TESTBIT(selection, kIsTriggerTVX);
+      bool isTriggerTCE = bc.has_ft0() ? (TESTBIT(selection, kIsTriggerTVX) && TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) : 0;
+      bool isTriggerZNA = TESTBIT(selection, kIsBBZNA);
+      bool isTriggerZNC = TESTBIT(selection, kIsBBZNC);
+      bool isTriggerZEM = isTriggerZNA || isTriggerZNC;
+
+      // determine pileup correction
+      int64_t orbit = bc.globalBC() / nBCsPerOrbit;
+      if ((orbit < minOrbitInRange || orbit > maxOrbitInRange) && mOrbits.size() > 1) {
+        auto it = std::lower_bound(mOrbits.begin(), mOrbits.end(), orbit);
+        uint32_t nextOrbitIndex = std::distance(mOrbits.begin(), it);
+        if (nextOrbitIndex == 0) // if orbit is below stored scaler orbits
+          nextOrbitIndex = 1;
+        else if (nextOrbitIndex == mOrbits.size()) // if orbit is above stored scaler orbits
+          nextOrbitIndex = mOrbits.size() - 1;
+        currentOrbitIndex = nextOrbitIndex - 1;
+        minOrbitInRange = mOrbits[currentOrbitIndex];
+        maxOrbitInRange = mOrbits[nextOrbitIndex];
+      }
+      double pileupCorrectionTVX = currentOrbitIndex < mPileupCorrectionTVX.size() ? mPileupCorrectionTVX[currentOrbitIndex] : 1.;
+      double pileupCorrectionTCE = currentOrbitIndex < mPileupCorrectionTCE.size() ? mPileupCorrectionTCE[currentOrbitIndex] : 1.;
+      double pileupCorrectionZNC = currentOrbitIndex < mPileupCorrectionZNC.size() ? mPileupCorrectionZNC[currentOrbitIndex] : 1.;
+      double pileupCorrectionZEM = currentOrbitIndex < mPileupCorrectionZEM.size() ? mPileupCorrectionZEM[currentOrbitIndex] : 1.;
+
+      double lumiTVX = 1. / csTVX * pileupCorrectionTVX;
+      double lumiTCE = 1. / csTCE * pileupCorrectionTCE;
+      double lumiZNC = 1. / csZNC * pileupCorrectionZNC;
+      double lumiZEM = 1. / csZEM * pileupCorrectionZEM;
+
+      if (isTriggerTVX) {
+        histos.get<TH1>(HIST("hCounterTVX"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiTVX"))->Fill(srun, lumiTVX);
+        if (noBorder) {
+          histos.get<TH1>(HIST("hCounterTVXafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTVXafterBCcuts"))->Fill(srun, lumiTVX);
+          for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
+            if (mRCTFlagsCheckers[i](bc))
+              histos.get<TH2>(HIST("hLumiTVXafterBCcutsRCT"))->Fill(srun, i, lumiTVX);
+          }
+        }
+      }
+
+      if (isTriggerTCE) {
+        histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiTCE"))->Fill(srun, lumiTCE);
+        if (noBorder) {
+          histos.get<TH1>(HIST("hCounterTCEafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiTCEafterBCcuts"))->Fill(srun, lumiTCE);
+          for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
+            if (mRCTFlagsCheckers[i](bc))
+              histos.get<TH2>(HIST("hLumiTCEafterBCcutsRCT"))->Fill(srun, i, lumiTCE);
+          }
+        }
+      }
+
+      if (isTriggerZEM) {
+        histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiZEM"))->Fill(srun, lumiZEM);
+        if (noBorder) {
+          histos.get<TH1>(HIST("hCounterZEMafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiZEMafterBCcuts"))->Fill(srun, lumiZEM);
+          for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
+            if (mRCTFlagsCheckers[i](bc))
+              histos.get<TH2>(HIST("hLumiZEMafterBCcutsRCT"))->Fill(srun, i, lumiZEM);
+          }
+        }
+      }
+
+      if (isTriggerZNC) {
+        histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
+        histos.get<TH1>(HIST("hLumiZNC"))->Fill(srun, lumiZNC);
+        if (noBorder) {
+          histos.get<TH1>(HIST("hCounterZNCafterBCcuts"))->Fill(srun, 1);
+          histos.get<TH1>(HIST("hLumiZNCafterBCcuts"))->Fill(srun, lumiZNC);
+          for (size_t i = 0; i < mRCTFlagsCheckers.size(); i++) {
+            if (mRCTFlagsCheckers[i](bc))
+              histos.get<TH2>(HIST("hLumiZNCafterBCcutsRCT"))->Fill(srun, i, lumiZNC);
+          }
+        }
+      }
+
+    } // bcs
+  } // process
+  PROCESS_SWITCH(LumiTask, processRun3, "Process Run3 lumi task", false);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Parse the metadata
@@ -1236,5 +1484,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   return WorkflowSpec{
     adaptAnalysisTask<BcSelectionTask>(cfgc),
-    adaptAnalysisTask<EventSelectionTask>(cfgc)};
+    adaptAnalysisTask<EventSelectionTask>(cfgc),
+    adaptAnalysisTask<LumiTask>(cfgc)};
 }
