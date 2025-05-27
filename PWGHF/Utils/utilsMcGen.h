@@ -86,6 +86,7 @@ template <typename T, typename U, typename V>
 void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
+  constexpr std::size_t NDaughtersResonant{2u};
 
   // Match generated particles.
   for (const auto& particle : mcParticlesPerMcColl) {
@@ -95,12 +96,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     int8_t sign = 0;
     std::vector<int> arrDaughIndex;
     std::vector<int> idxBhadMothers{};
-    std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};      // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};      // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {102134, kPiPlus};   // Λc± → Λ(1520) π±
-    std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus}; // Ds± → Phi π± and D± → Phi π±
-    std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+    std::array<int, NDaughtersResonant> arrPDGDaugh;
+    std::array<int, NDaughtersResonant> arrPDGResonant1 = {kProton, Pdg::kK0Star892};      // Λc± → p± K*
+    std::array<int, NDaughtersResonant> arrPDGResonant2 = {2224, kKPlus};                  // Λc± → Δ(1232)±± K∓
+    std::array<int, NDaughtersResonant> arrPDGResonant3 = {102134, kPiPlus};               // Λc± → Λ(1520) π±
+    std::array<int, NDaughtersResonant> arrPDGResonantDPhiPi = {Pdg::kPhi, kPiPlus};       // Ds± → Phi π± and D± → Phi π±
+    std::array<int, NDaughtersResonant> arrPDGResonantDKstarK = {Pdg::kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
       rowMcMatchGen(flag, origin, channel, -1);
@@ -129,7 +130,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       }
       if (flag != 0) {
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-        if (arrDaughIndex.size() == 2) {
+        if (arrDaughIndex.size() == NDaughtersResonant) {
           for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
             auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
@@ -157,7 +158,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 
         // Flagging the different Λc± → p± K∓ π± decay channels
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-        if (arrDaughIndex.size() == 2) {
+        if (arrDaughIndex.size() == NDaughtersResonant) {
           for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
             auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
