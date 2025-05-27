@@ -14,29 +14,18 @@
 /// \author Md Samsul Islam <md.samsul.islam@cern.ch>, IITB
 
 #include <cmath>
-#include <string>
-#include <vector>
-#include <array>
-
-#include <TPDGCode.h>
-#include <TString.h>
 
 #include "CommonConstants/MathConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-#include "Framework/StaticFor.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
