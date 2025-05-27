@@ -132,6 +132,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> max_pin_for_downscaling_pion{"max_pin_for_downscaling_pion", 2.0, "max pin to apply down scaling factor to store pion"};
   Configurable<float> max_pin_for_downscaling_kaon{"max_pin_for_downscaling_kaon", 0.0, "max pin to apply down scaling factor to store kaon"};
   Configurable<float> max_pin_for_downscaling_proton{"max_pin_for_downscaling_proton", 2.0, "max pin to apply down scaling factor to store proton"};
+  Configurable<bool> store_ele_band_only{"store_ele_band_only", false, "flag to store tracks around electron band only to reduce output size"};
 
   struct : ConfigurableGroup {
     std::string prefix = "trackcut_group";
@@ -228,7 +229,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_mass_ee{"cfg_min_mass_ee", 0.000, "min mass for ee from pi0 dalitz decay in GeV/c2"};
     Configurable<float> cfg_max_mass_ee{"cfg_max_mass_ee", 0.005, "max mass for ee from pi0 dalitz decay in GeV/c2"};
     Configurable<float> cfg_min_phiv_ee{"cfg_min_phiv_ee", 0.0, "min phiv for ee from pi0 dalitz decay in rad."};
-    Configurable<float> cfg_max_phiv_ee{"cfg_max_phiv_ee", 2.0, "max phiv for ee from pi0 dalitz decay in rad."};
+    Configurable<float> cfg_max_phiv_ee{"cfg_max_phiv_ee", M_PI / 2, "max phiv for ee from pi0 dalitz decay in rad."};
   } dalitzcuts;
 
   // for RCT
@@ -519,6 +520,10 @@ struct TreeCreatorElectronMLDDA {
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track, const int pidlabel, const int tracktype, const bool isForValidation)
   {
+    if (store_ele_band_only && !isElectron(track)) {
+      return;
+    }
+
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto track_par_cov_recalc = getTrackParCov(track);
