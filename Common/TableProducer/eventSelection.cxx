@@ -69,6 +69,7 @@ struct BcSelectionTask {
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};       // o2-linter: disable=name/configurable (temporary fix)
   Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};                           // o2-linter: disable=name/configurable (temporary fix)
   Configurable<std::vector<int>> maxInactiveChipsPerLayer{"maxInactiveChipsPerLayer", {8, 8, 8, 111, 111, 195, 195}, "Maximum allowed number of inactive ITS chips per layer"};
+  Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"}; // o2-linter: disable=name/configurable (temporary fix)
 
   int lastRun = -1;
   int64_t lastTF = -1;
@@ -271,7 +272,7 @@ struct BcSelectionTask {
         // first bc of the first orbit
         bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
         // duration of TF in bcs
-        nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
+        nBCsPerTF = confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : confNumberOfOrbitsPerTF * nBCsPerOrbit;
       }
 
       // timestamp of the middle of the run used to access run-wise CCDB entries
@@ -506,6 +507,7 @@ struct EventSelectionTask {
   Configurable<float> confFT0CamplCutVetoOnCollInROF{"FT0CamplPerCollCutVetoOnCollInROF", 5000, "Max allowed FT0C amplitude for each nearby collision inside this ITS ROF"};         // o2-linter: disable=name/configurable (temporary fix)
   Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                            // o2-linter: disable=name/configurable (temporary fix)
   Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                      // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                     // o2-linter: disable=name/configurable (temporary fix)
 
   Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -697,7 +699,7 @@ struct EventSelectionTask {
       // first bc of the first orbit
       bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
-      nBCsPerTF = runInfo.orbitsPerTF * nBCsPerOrbit;
+      nBCsPerTF = confNumberOfOrbitsPerTF < 0 ? runInfo.orbitsPerTF * nBCsPerOrbit : confNumberOfOrbitsPerTF * nBCsPerOrbit;
       // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
