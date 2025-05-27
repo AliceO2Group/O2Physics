@@ -85,7 +85,6 @@ void convertMCParticleToO2Track(McParticleType& particle,
 {
   static TLorentzVector tlv;
   tlv.SetPxPyPzE(particle.px(), particle.py(), particle.pz(), particle.e());
-  tlv.SetXYZT(particle.vx(), particle.vy(), particle.vz(), particle.vt());
   convertTLorentzVectorToO2Track(particle.pdgCode(), tlv, {particle.vx(), particle.vy(), particle.vz()}, o2track, pdg);
 }
 
