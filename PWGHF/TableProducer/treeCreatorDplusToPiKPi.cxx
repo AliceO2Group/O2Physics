@@ -265,6 +265,7 @@ struct HfTreeCreatorDplusToPiKPi {
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using SelectedCandidatesMcCorrBkgsWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -613,7 +614,7 @@ struct HfTreeCreatorDplusToPiKPi {
 
   void processMcCorrBkgsSgnWCentMl(aod::Collisions const& collisions,
                                    aod::McCollisions const& mccollisions,
-                                   SelectedCandidatesMcWithMl const&,
+                                   SelectedCandidatesMcCorrBkgsWithMl const&,
                                    MatchedGenCandidatesMc const& particles,
                                    TracksWPid const& tracks)
   {
