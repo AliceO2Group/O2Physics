@@ -1104,7 +1104,7 @@ struct FlowGenericFramework {
   {
     float centrality = -1;
     int run = 0;
-    registry.fill(HIST("MCGen/impactParamter"), mcCollision.impactParameter(), mcParticles.size());
+    registry.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
     processCollision<kGen>(mcCollision, mcParticles, centrality, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);

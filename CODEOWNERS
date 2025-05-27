@@ -51,10 +51,10 @@
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 
 # PWG-MM
-/PWGMM      @alibuild @sustripathy @skundu692 @aalkin
-/PWGMM/Mult @alibuild @sustripathy @skundu692 @aalkin @aortizve @ddobrigk @gbencedi
-/PWGMM/Lumi @alibuild @aalkin
-/PWGMM/UE   @alibuild @aalkin @aortizve
+/PWGMM      @alibuild @sustripathy @skundu692 @aalkin @jgcn
+/PWGMM/Mult @alibuild @sustripathy @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
+/PWGMM/Lumi @alibuild @aalkin @jgcn
+/PWGMM/UE   @alibuild @aalkin @aortizve @jgcn
 
 /PWGUD @alibuild @pbuehler @abylinkin @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
