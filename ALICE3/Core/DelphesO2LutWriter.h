@@ -32,7 +32,7 @@ class DelphesO2LutWriter
 {
  public:
   DelphesO2LutWriter() = default;
-  virtual ~DelphesO2LutWriter();
+  virtual ~DelphesO2LutWriter() = default;
 
   o2::fastsim::FastTracker fat;
   void diagonalise(lutEntry_t& lutEntry);
