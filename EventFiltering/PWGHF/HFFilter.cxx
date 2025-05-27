@@ -45,13 +45,15 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseITS.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 #include "EventFiltering/filterTables.h"
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
-#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
 using namespace o2::soa;
