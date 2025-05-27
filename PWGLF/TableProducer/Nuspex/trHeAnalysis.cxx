@@ -115,8 +115,8 @@ static const std::vector<std::string> betheBlochParNames{
   "p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr float betheBlochDefault[nParticles][nBetheParams]{
   {0.248753, 3.58634, 0.0167065, 2.29194, 0.774344,
-   0.07},                                                     // triton
-  {0.0274556,18.3054, 3.99987e-05, 3.17219, 11.1775,
+   0.07}, // triton
+  {0.0274556, 18.3054, 3.99987e-05, 3.17219, 11.1775,
    0.07}}; // Helion
 } // namespace
 using namespace o2;
@@ -647,13 +647,14 @@ struct TrHeAnalysis {
   template <class T>
   float betheBlochAleph(Particle const& particle, T const& rigidity)
   {
-    double bg = particle.charge*rigidity / particle.mass;
-    double beta = bg / std::Sqrt(1. + bg*bg);
+    double bg = particle.charge * rigidity / particle.mass;
+    double beta = bg / std::Sqrt(1. + bg * bg);
     double aa = std::Power(beta, particle.betheParams[3]);
     double bb = std::Power(1. / bg, particle.betheParams[4]);
-    if ((particle.betheParams[2] + bb) <= 0) return 0;
+    if ((particle.betheParams[2] + bb) <= 0)
+      return 0;
     bb = std::Log(particle.betheParams[2] + bb);
-    return std::pow(particle.charge, particle.chargeFactor) * 50 * (particle.betheParams[1] - aa - bb)*particle.betheParams[0] / aa; 
+    return std::pow(particle.charge, particle.chargeFactor) * 50 * (particle.betheParams[1] - aa - bb) * particle.betheParams[0] / aa;
   }
 
   template <class T>
@@ -684,7 +685,7 @@ struct TrHeAnalysis {
   {
     const float beta = track.beta();
     const float rigidity = getRigidity(track);
-    float gamma = 1 / std::Sqrt(1-beta*beta);
+    float gamma = 1 / std::Sqrt(1 - beta * beta);
     float mass = (rigidity / std::Sqrt(gamma * gamma - 1));
     return mass;
   }
