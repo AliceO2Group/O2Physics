@@ -60,7 +60,6 @@ void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho,
   // Check that efficient layers are not inert layers
   if (newLayer.getEfficiency() > 0.0f && newLayer.isInert()) {
     LOG(error) << "Layer " << name << " with efficiency > 0.0 should not be inert";
-    return;
   }
   layers.push_back(newLayer);
 }
