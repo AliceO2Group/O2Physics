@@ -488,12 +488,12 @@ struct HfCandidateCreatorCharmResoReduced {
         switch (channel) {
           case DecayChannel::Ds1ToDstarK0s:
             invMassV0 = bachV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short}) - invMassD;
             registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
             break;
           case DecayChannel::Ds2StarToDplusK0s:
             invMassV0 = bachV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short}) - invMassD;
             registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
             break;
           case DecayChannel::XcToDplusLambda:
@@ -502,7 +502,7 @@ struct HfCandidateCreatorCharmResoReduced {
             } else {
               invMassV0 = bachV0Tr.invMassAntiLambda();
             }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda}) - invMassD;
             registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
             break;
           case DecayChannel::LambdaDminus:
@@ -511,7 +511,7 @@ struct HfCandidateCreatorCharmResoReduced {
             } else {
               invMassV0 = bachV0Tr.invMassAntiLambda();
             }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda}) - invMassD;
             registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
             break;
           default:
@@ -647,6 +647,22 @@ struct HfCandidateCreatorCharmResoReduced {
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambdaWithMl, "Process Xc candidates with Ml info", false);
+
+  void processXcToDplusLambdaMixedEvent(aod::HfRedCollisions const& collisions,
+    aod::HfRed3PrNoTrks const& candsD,
+    aod::HfRedVzeros const& candsV0)
+{
+runCandidateCreationMixedEvent<false, DecayChannel::XcToDplusLambda>(collisions, candsD, candsV0);
+}
+PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambdaMixedEvent, "Process Xc candidates in mixed events without Ml info", false);
+
+void processXcToDplusLambdaMixedEventWithMl(aod::HfRedCollisions const& collisions,
+          HfRed3PrNoTrksWithMl const& candsD,
+          aod::HfRedVzeros const& candsV0)
+{
+runCandidateCreationMixedEvent<true, DecayChannel::XcToDplusLambda>(collisions, candsD, candsV0);
+}
+PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambdaMixedEventWithMl, "Process Xc candidates in mixed events with Ml info", false);
 
   void processLambdaDminus(aod::HfRedCollisions const& collisions,
                            aod::HfRed3PrNoTrks const& candsD,
