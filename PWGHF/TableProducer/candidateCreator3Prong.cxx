@@ -955,7 +955,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::DplusToPiKPi);
+          flag = sign * DecayChannel::DplusToPiKPi;
         }
       }
 
@@ -986,7 +986,7 @@ struct HfCandidateCreator3ProngExpressions {
         if (indexRec > -1) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
           // TODO: move to different and explicit flags
-          flag = sign * (1 << DecayType::DsToKKPi);
+          flag = sign * (isDplus ? DecayChannel::DplusToPiKK : DecayChannel::DsToPiKK);
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -997,9 +997,9 @@ struct HfCandidateCreator3ProngExpressions {
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
+              channel = isDplus ? DecayChannel::DplusToPhiPi : DecayChannel::DsToPhiPi;
             } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
+              channel = isDplus ? DecayChannel::DplusToK0starK : DecayChannel::DsToK0starK;
             }
           }
         }
@@ -1013,7 +1013,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DstarToPiKPiBkg);
+          flag = sign * DecayChannel::DstarToPiKPi;
           channel = 1;
         }
       }
@@ -1030,7 +1030,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::LcToPKPi);
+          flag = sign * DecayChannel::LcToPKPi;
 
           // Flagging the different Λc± → p± K∓ π± decay channels
           if (arrayDaughters[0].has_mcParticle()) {
@@ -1065,7 +1065,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::XicToPKPi);
+          flag = sign * DecayChannel::XicToPKPi;
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }

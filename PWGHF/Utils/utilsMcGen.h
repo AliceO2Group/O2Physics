@@ -28,6 +28,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace hf_mc_gen
@@ -109,7 +110,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // D± → π± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToPiKPi;
       }
     }
 
@@ -119,11 +120,11 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
         // TODO: move to different and explicit flags
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::DsToPiKK;
       } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
         // TODO: move to different and explicit flags
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToPiKK;
         isDplus = true;
       }
       if (flag != 0) {
@@ -134,9 +135,9 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
           }
           if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-            channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannel::DsToPhiPi;
           } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-            channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToK0starK : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToK0starK : o2::hf_decay::hf_cand_3prong::DecayChannel::DsToK0starK;
           }
         }
       }
@@ -145,14 +146,14 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // D*± → D0(bar) π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DstarToPiKPiBkg);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::DstarToPiKPi;
       }
     }
 
     // Λc± → p± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::LcToPKPi;
 
         // Flagging the different Λc± → p± K∓ π± decay channels
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
@@ -175,7 +176,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // Ξc± → p± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannel::XicToPKPi;
       }
     }
 
