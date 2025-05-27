@@ -59,6 +59,8 @@ enum DecayChannel : int8_t {
   DsToPiPiPiPi0, // π+ π− π+ π0
   DsToPhiPi,     // φ π+
   DsToK0starK,   // K0* K+
+  // D*+
+  DstarToPiKPi, // π+ K− π+ (from [(D0 → π+ K−) π+])
   // Λc+
   LcToPKPi,    // p K− π+
   LcToPKPiPi0, // p K− π+ π0
@@ -78,7 +80,8 @@ namespace hf_cand_dstar
 /// @brief D*+ candidates
 enum DecayChannel : int8_t {
   // D*+
-  DstarToPiKPiPi0 = 1, // π+ K− π+ π0 (from [(D0 → π+ K− π0) π+] or [(D+ → π+ K− π+) π0])
+  DstarToPiKPi = 1, // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPiPi0,  // π+ K− π+ π0 (from [(D0 → π+ K− π0) π+] or [(D+ → π+ K− π+) π0])
   //
   Last
 };
