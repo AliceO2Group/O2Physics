@@ -342,7 +342,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -470,7 +470,7 @@ struct EmcalCorrectionTask {
 
               // Store the clusters in the table where a matching collision could
               // be identified.
-              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, indexMapPair, trackGlobalIndex);
+              fillClusterTable<CollEventSels::filtered_iterator>(col, vertexPos, iClusterizer, cellIndicesBC, &indexMapPair, &trackGlobalIndex);
             } else {
               mHistManager.fill(HIST("hBCMatchErrors"), 2);
             }
@@ -598,7 +598,7 @@ struct EmcalCorrectionTask {
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processStandalone, "run stand alone analysis", false);
 
-  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC, std::optional<const gsl::span<o2::emcal::CellLabel>> cellLabels = std::nullopt)
+  void cellsToCluster(size_t iClusterizer, const gsl::span<o2::emcal::Cell> cellsBC, gsl::span<const o2::emcal::CellLabel> cellLabels = {})
   {
     mClusterizers.at(iClusterizer)->findClusters(cellsBC);
 
@@ -614,10 +614,10 @@ struct EmcalCorrectionTask {
     mClusterFactories.reset();
     // in preparation for future O2 changes
     // mClusterFactories.setClusterizerSettings(mClusterDefinitions.at(iClusterizer).minCellEnergy, mClusterDefinitions.at(iClusterizer).timeMin, mClusterDefinitions.at(iClusterizer).timeMax, mClusterDefinitions.at(iClusterizer).recalcShowerShape5x5);
-    if (cellLabels) {
-      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
-    } else {
+    if (cellLabels.empty()) {
       mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices);
+    } else {
+      mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
     }
 
     LOG(debug) << "Cluster factory set up.";
@@ -634,24 +634,33 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, std::optional<std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>> const& indexMapPair = std::nullopt, std::optional<std::vector<int64_t>> const& trackGlobalIndex = std::nullopt)
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
   {
+    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
+    const size_t NAvgNcells = 3;
     // we found a collision, put the clusters into the none ambiguous table
     clusters.reserve(mAnalysisClusters.size());
-    if (mClusterLabels.size() > 0) {
+    if (!mClusterLabels.empty()) {
       mcclusters.reserve(mClusterLabels.size());
     }
+    clustercells.reserve(mAnalysisClusters.size() * NAvgNcells);
+
+    // get the clusterType once
+    const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
+
     int cellindex = -1;
     unsigned int iCluster = 0;
+    float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
+      energy = cluster.E();
       // Determine the cluster eta, phi, correcting for the vertex position.
       auto pos = cluster.getGlobalPosition();
       pos = pos - vertexPos;
       // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (energy / std::sqrt(pos.Mag2()));
 
       // Correct for nonlinear behaviour
-      float nonlinCorrEnergy = cluster.E();
+      float nonlinCorrEnergy = energy;
       if (!disableNonLin) {
         try {
           nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
@@ -662,19 +671,18 @@ struct EmcalCorrectionTask {
 
       // save to table
       LOG(debug) << "Writing cluster definition "
-                 << static_cast<int>(mClusterDefinitions.at(iClusterizer))
+                 << clusterType
                  << " to table.";
       mHistManager.fill(HIST("hClusterType"), 1);
-      clusters(col, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
+      clusters(col, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), energy,
                pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
                cluster.getM20(), cluster.getNCells(),
                cluster.getClusterTime(), cluster.getIsExotic(),
                cluster.getDistanceToBadChannel(), cluster.getNExMax(),
-               static_cast<int>(mClusterDefinitions.at(iClusterizer)));
-      if (mClusterLabels.size() > 0) {
+               clusterType);
+      if (!mClusterLabels.empty()) {
         mcclusters(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
-      clustercells.reserve(cluster.getNCells());
       // loop over cells in cluster and save to table
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
@@ -682,7 +690,7 @@ struct EmcalCorrectionTask {
         clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
       } // end of cells of cluser loop
       // fill histograms
-      mHistManager.fill(HIST("hClusterE"), cluster.E());
+      mHistManager.fill(HIST("hClusterE"), energy);
       mHistManager.fill(HIST("hClusterNLM"), cluster.getNExMax());
       mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
@@ -701,20 +709,25 @@ struct EmcalCorrectionTask {
   template <typename BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
+    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
+    const size_t NAvgNcells = 3;
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
     if (mClusterLabels.size() > 0) {
       mcclustersAmbiguous.reserve(mClusterLabels.size());
     }
+    clustercellsambiguous.reserve(mAnalysisClusters.size() * NAvgNcells);
     unsigned int iCluster = 0;
+    float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
+      energy = cluster.E();
       auto pos = cluster.getGlobalPosition();
       pos = pos - math_utils::Point3D<float>{0., 0., 0.};
       // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
+      pos *= (energy / std::sqrt(pos.Mag2()));
 
       // Correct for nonlinear behaviour
-      float nonlinCorrEnergy = cluster.E();
+      float nonlinCorrEnergy = energy;
       try {
         nonlinCorrEnergy = mNonlinearityHandler.getCorrectedClusterEnergy(cluster);
       } catch (o2::emcal::NonlinearityHandler::UninitException& e) {
@@ -723,14 +736,14 @@ struct EmcalCorrectionTask {
 
       // We have our necessary properties. Now we store outputs
 
-      // LOG(debug) << "Cluster E: " << cluster.E();
+      // LOG(debug) << "Cluster E: " << energy;
       if (!hasCollision) {
         mHistManager.fill(HIST("hClusterType"), 0);
       } else {
         mHistManager.fill(HIST("hClusterType"), 2);
       }
       clustersAmbiguous(
-        bc, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), cluster.E(),
+        bc, cluster.getID(), nonlinCorrEnergy, cluster.getCoreEnergy(), energy,
         pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()), cluster.getM02(),
         cluster.getM20(), cluster.getNCells(), cluster.getClusterTime(),
         cluster.getIsExotic(), cluster.getDistanceToBadChannel(),
@@ -738,7 +751,6 @@ struct EmcalCorrectionTask {
       if (mClusterLabels.size() > 0) {
         mcclustersAmbiguous(mClusterLabels[iCluster].getLabels(), mClusterLabels[iCluster].getEnergyFractions());
       }
-      clustercellsambiguous.reserve(cluster.getNCells());
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         clustercellsambiguous(clustersAmbiguous.lastIndex(),
