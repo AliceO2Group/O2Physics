@@ -2825,8 +2825,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   // polarization parameters
   bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
-  bool usePP = fgUsedVars[kCosThetaPP]; // production plane frame
-  bool useRM = fgUsedVars[kCosThetaRM]; // Random frame
+  bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
+  bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
   if (useHE || useCS || usePP || useRM) {
     // TO DO: get the correct values from CCDB
@@ -2847,7 +2847,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
       ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
-      if (fgUsedVars[kCosThetaHE]) values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kCosThetaHE])
+        values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
       if (fgUsedVars[kPhiHE]) {
         values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kPhiHE] < 0) {
@@ -2877,7 +2878,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
       ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
-      if (fgUsedVars[kCosThetaCS]) values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kCosThetaCS])
+        values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
       if (fgUsedVars[kPhiCS]) {
         values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kPhiCS] < 0) {
@@ -2939,7 +2941,8 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       double randomCostheta = gRandom->Uniform(-1., 1.);
       double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
-      if (fgUsedVars[kCosThetaRM]) values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
+      if (fgUsedVars[kCosThetaRM])
+        values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
     }
   }
 
@@ -3334,11 +3337,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   values[kMCPhi] = v12.Phi();
   values[kMCY] = -v12.Rapidity();
 
-   // polarization parameters
+  // polarization parameters
   bool useHE = fgUsedVars[kMCCosThetaHE] || fgUsedVars[kMCPhiHE]; // helicity frame
   bool useCS = fgUsedVars[kMCCosThetaCS] || fgUsedVars[kMCPhiCS]; // Collins-Soper frame
-  bool usePP = fgUsedVars[kMCCosThetaPP]; // production plane frame
-  bool useRM = fgUsedVars[kMCCosThetaRM]; // Random frame
+  bool usePP = fgUsedVars[kMCCosThetaPP];                         // production plane frame
+  bool useRM = fgUsedVars[kMCCosThetaRM];                         // Random frame
 
   if (useHE || useCS || usePP || useRM) {
     // TO DO: get the correct values from CCDB
@@ -3359,7 +3362,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
       ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
-      if (fgUsedVars[kMCCosThetaHE]) values[kMCCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kMCCosThetaHE])
+        values[kMCCosThetaHE] = zaxis_HE.Dot(v_CM);
       if (fgUsedVars[kMCPhiHE]) {
         values[kMCPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kMCPhiHE] < 0) {
@@ -3389,7 +3393,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
       ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
-      if (fgUsedVars[kMCCosThetaCS]) values[kMCCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kMCCosThetaCS])
+        values[kMCCosThetaCS] = zaxis_CS.Dot(v_CM);
       if (fgUsedVars[kMCPhiCS]) {
         values[kMCPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kMCPhiCS] < 0) {
@@ -3451,7 +3456,8 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       double randomCostheta = gRandom->Uniform(-1., 1.);
       double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
-      if (fgUsedVars[kMCCosThetaRM]) values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
+      if (fgUsedVars[kMCCosThetaRM])
+        values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
     }
   }
 }
