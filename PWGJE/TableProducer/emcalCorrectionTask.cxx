@@ -126,6 +126,11 @@ struct EmcalCorrectionTask {
   // EMCal geometry
   o2::emcal::Geometry* geometry;
 
+  std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
+
+  // Current run number
+  int runNumber{0};
+
   void init(InitContext const&)
   {
     LOG(debug) << "Start init!";
@@ -250,6 +255,16 @@ struct EmcalCorrectionTask {
       mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", O2HistType::kTH1I, {{20, 0, 20}});
       mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", O2HistType::kTH1F, {energyAxis});
     }
+
+    // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
+    // Affected run ranges (inclusive) are initialised here (min,max)
+    mExtraTimeShiftRunRanges.emplace_back(535365, 535645); // LHC23g-LHC23h
+    mExtraTimeShiftRunRanges.emplace_back(535725, 536126); // LHC23h-LHC23l
+    mExtraTimeShiftRunRanges.emplace_back(536199, 536202); // LHC23l-LHC23m
+    mExtraTimeShiftRunRanges.emplace_back(536239, 536346); // LHC23m-LHC23n
+    mExtraTimeShiftRunRanges.emplace_back(536565, 536590); // Commisioning-LHC23r
+    mExtraTimeShiftRunRanges.emplace_back(542280, 543854); // LHC23zv-LHC23zy
+    mExtraTimeShiftRunRanges.emplace_back(559544, 559856); // PbPb 2024
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<aod::Tracks> const& fullTracks, aod::Calos const& cells)
@@ -268,6 +283,10 @@ struct EmcalCorrectionTask {
     std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
+
+      // get run number
+      runNumber = bc.runNumber();
+
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
@@ -297,7 +316,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -396,6 +415,9 @@ struct EmcalCorrectionTask {
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
       // In particular, we need to filter only EMCAL cells.
 
+      // get run number
+      runNumber = bc.runNumber();
+
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
@@ -425,7 +447,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
@@ -514,6 +536,7 @@ struct EmcalCorrectionTask {
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+
     for (const auto& bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -521,6 +544,10 @@ struct EmcalCorrectionTask {
 
       // Get the collisions matched to the BC using global bc index of the collision
       // since we do not have event selection available here!
+
+      // get run number
+      runNumber = bc.runNumber();
+
       auto collisionsInBC = collisions.sliceBy(collisionsPerBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
 
@@ -536,7 +563,7 @@ struct EmcalCorrectionTask {
       for (const auto& cell : cellsInBC) {
         cellsBC.emplace_back(cell.cellNumber(),
                              cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType())),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude(), o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -885,7 +912,7 @@ struct EmcalCorrectionTask {
   // Apply shift of the cell time in data and MC
   // In MC this has to be done to shift the cell time, which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns)
   // In data this is done to correct for the time walk effect
-  float getCellTimeShift(const int16_t cellID, const float cellEnergy, const emcal::ChannelType_t cellType)
+  float getCellTimeShift(const int16_t cellID, const float cellEnergy, const emcal::ChannelType_t cellType, const int runNumber)
   {
     if (!applyCellTimeCorrection) {
       return 0.f;
@@ -920,6 +947,14 @@ struct EmcalCorrectionTask {
           timeshift = 1.9 * std::log(0.09 * cellEnergy);        // Parameters extracted from LHC24aj (pp), but also usable for other periods
         else                                                    // Very high energy regime
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods
+      }
+      // Temporary extra shift for bug in time calibraiton of apass4 Pb-Pb 2024, requires pos shift of 2*8.8 ns for low gain cells
+      if (cellType == emcal::ChannelType_t::LOW_GAIN) {
+        for (const auto& range : mExtraTimeShiftRunRanges) {
+          if (runNumber >= range.first && runNumber <= range.second) {
+            timeshift += 2 * 8.8;
+          }
+        }
       }
       LOG(debug) << "Shift the cell time by " << timeshift << " + " << timesmear << " ns";
     }
