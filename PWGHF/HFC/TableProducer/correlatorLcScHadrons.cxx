@@ -713,7 +713,7 @@ struct HfCorrelatorLcScHadrons {
             registry.fill(HIST("hTracksBin"), poolBin);
           }
         }
-      } // Hadron Tracks loop
+      } // end Hadron Tracks loop
       countCand++;
     } // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
