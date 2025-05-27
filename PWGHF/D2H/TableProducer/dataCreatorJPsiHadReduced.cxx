@@ -667,7 +667,7 @@ struct HfDataCreatorJPsiHadReduced {
       trackParCovJPsi.setAbsCharge(0); // to be sure
 
       // TODO: add single track information (min eta, min ITS/TPC clusters, etc.)
-      double invMass2JPsiHad{0.f};
+      double invMass2JPsiHad{0.};
       for (const auto& trackId : trackIndices) {
         auto trackBach = trackId.template track_as<TTracks>();
 
@@ -851,16 +851,16 @@ struct HfDataCreatorJPsiHadReduced {
         }
       } // kaon loop
       if (fillHfCandJPsi) { // fill JPsi table only once per JPsi candidate
-        double jPsiMass{0.f};
+        double invMassJpsi{0.};
         if (runJPsiToee) {
-          jPsiMass = hfHelper.invMassJpsiToEE(candidate);
+          invMassJpsi = hfHelper.invMassJpsiToEE(candidate);
         } else {
-          jPsiMass = hfHelper.invMassJpsiToMuMu(candidate);
+          invMassJpsi = hfHelper.invMassJpsiToMuMu(candidate);
         }
         hfJPsi(trackPos.globalIndex(), trackNeg.globalIndex(),
                indexHfReducedCollision,
                candidate.xSecondaryVertex(), candidate.ySecondaryVertex(), candidate.zSecondaryVertex(),
-               jPsiMass,
+               invMassJpsi,
                trackPosParCov.getX(), trackNegParCov.getX(),
                trackPosParCov.getY(), trackNegParCov.getY(),
                trackPosParCov.getZ(), trackNegParCov.getZ(),
