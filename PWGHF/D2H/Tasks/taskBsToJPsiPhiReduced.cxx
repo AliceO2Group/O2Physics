@@ -27,7 +27,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseBsToJPsiPhiReduced.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsPid.h"
