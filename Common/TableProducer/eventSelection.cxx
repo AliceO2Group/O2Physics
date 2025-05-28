@@ -1326,7 +1326,7 @@ struct LumiTask {
           mCounterZNC.push_back(classIdZNC >= 0 ? record.scalers[classIdZNC].l1Before : 0);
         }
         // ZEM class not defined, using inputs instead
-        int indexZEM = 24; // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        uint32_t indexZEM = 24; // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
         mCounterZEM.push_back(record.scalersInps.size() >= indexZEM + 1 ? record.scalersInps[indexZEM] : 0);
       }
 
