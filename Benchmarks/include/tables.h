@@ -60,11 +60,11 @@ DECLARE_SOA_TABLE(TracksTemporaryExtra, "AOD", "TRKTEMPEX",
 using TracksQAEx = soa::Join<TracksQAVersion, TracksTemporaryExtra>;
 
 // final table
-DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksQACorrectedE, TracksQAEx, "TRKWTPCE", extensions::RealTPCSignalN);
+DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksQACorrectedE, TracksQAEx, "TRKQACORE", extensions::RealTPCSignalN);
 using MoreTracksFinal = soa::Join<TracksQAVersion, TracksQACorrectedECfgExtension>;
 
 // final table for direct calculation
-DECLARE_SOA_TABLE(TracksQACorrected, "AOD", "TPCEXT", extensions::RealTPCSignalNC);
+DECLARE_SOA_TABLE(TracksQACorrected, "AOD", "TRKQACOR", extensions::RealTPCSignalNC);
 
 using TracksD = soa::Join<TracksIU, ExtTracksD>;
 using TracksID = soa::Join<TracksIU, ExtTracksID>;
