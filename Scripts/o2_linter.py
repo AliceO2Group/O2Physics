@@ -1779,7 +1779,7 @@ def main():
             print("Skipping writing in GITHUB_OUTPUT.")
 
     # Print tips.
-    print("\nTip: You can run the O2 linter locally with: python3 Scripts/o2_linter.py <files>")
+    print("\nTip: You can run the O2 linter locally from the O2Physics directory with: python3 Scripts/o2_linter.py <files>")
 
     if not passed:
         sys.exit(1)
