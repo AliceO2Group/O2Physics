@@ -432,7 +432,6 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     }
   } // fillKfCandidateLite end
 
-
   void processDataLite(Colls const& collisions, Tracks const&,
                        soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>> const& candidates)
   {
