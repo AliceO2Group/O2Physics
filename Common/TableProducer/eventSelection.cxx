@@ -1251,9 +1251,9 @@ struct LumiTask {
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
       if (beamZ1 == 1 && beamZ2 == 1) {
-        if (std::fabs(sqrts - 900.) < 20.) {           // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+        if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0357e6;                            // ub
-        } else if (std::fabs(sqrts - 5360.) < 20.) {   // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+        } else if (std::fabs(sqrts - 5360.) < 100.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0503e6;                            // ub
         } else if (std::fabs(sqrts - 13600.) < 300.) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
           csTVX = 0.0594e6;                            // ub
@@ -1326,7 +1326,8 @@ struct LumiTask {
           mCounterZNC.push_back(classIdZNC >= 0 ? record.scalers[classIdZNC].l1Before : 0);
         }
         // ZEM class not defined, using inputs instead
-        mCounterZEM.push_back(record.scalersInps.size() >= 25 ? record.scalersInps[24] : 0); // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        int indexZEM = 24; // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        mCounterZEM.push_back(record.scalersInps.size() >= indexZEM + 1 ? record.scalersInps[indexZEM] : 0);
       }
 
       // calculate pileup corrections
