@@ -152,7 +152,6 @@ DECLARE_SOA_COLUMN(OmegacChi2OverNdf, omegacChi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 DECLARE_SOA_COLUMN(CascRejectInvmass, cascRejectInvmass, float);
-DECLARE_SOA_COLUMN(OutputMlOmegac, outputMlOmegac, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToOmegaPiEvs, "AOD", "HFTOOMEPIEV",
