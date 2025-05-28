@@ -17,6 +17,8 @@
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
 #include <CCDB/BasicCCDBManager.h>
+#include <TPDGCode.h>
+#include <TMCProcess.h>
 #include <TF1.h>
 #include <TList.h>
 #include <vector>
@@ -208,6 +210,7 @@ bool onlyInOneSide = false;         ///< select only tracks that don't cross the
 extern TpcExcludeTrack tpcExcluder; ///< the TPC excluder object instance
 
 /* selection criteria from PWGMM */
+static constexpr int kTrackTypePWGMM = 4;
 // default quality criteria for tracks with ITS contribution
 static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionITS =
   o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
@@ -888,6 +891,8 @@ inline bool triggerSelection<aod::McCollision>(aod::McCollision const&)
 //////////////////////////////////////////////////////////////////////////////////
 /// Multiplicity extraction
 //////////////////////////////////////////////////////////////////////////////////
+static constexpr float kValidPercentileLowLimit = 0.0f;
+static constexpr float kValidPercentileUpLimit = 100.0f;
 
 /// \brief Extract the collision multiplicity from the event selection information
 template <typename CollisionObject>
@@ -974,7 +979,7 @@ template <typename CollisionObject>
 inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 {
   float mult = getCentMultPercentile(collision);
-  if (mult < 100 && 0 < mult) {
+  if (mult < kValidPercentileUpLimit && kValidPercentileLowLimit < mult) {
     centmult = mult;
     collisionFlags.set(kCENTRALITYBIT);
     return true;
@@ -1053,7 +1058,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McC
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < 100 && 0 < centmult) {
+  if (centmult < kValidPercentileUpLimit && kValidPercentileLowLimit < centmult) {
     return true;
   } else {
     return false;
@@ -1291,12 +1296,14 @@ struct TpcExcludeTrack {
   }
   explicit TpcExcludeTrack(TpcExclusionMethod m)
   {
+    static constexpr float kDefaultPhiBinShift = 0.5f;
+    static constexpr int kDefaultNoOfPhiBins = 72;
     switch (m) {
       case kNOEXCLUSION:
         method = m;
         break;
       case kSTATIC:
-        if (phibinshift == 0.5f && phibins == 72) {
+        if (phibinshift == kDefaultPhiBinShift && phibins == kDefaultNoOfPhiBins) {
           method = m;
         } else {
           LOGF(fatal, "Static TPC exclusion method with bin shift: %.2f and number of bins %d. Please fix it", phibinshift, phibins);
@@ -1376,7 +1383,7 @@ inline bool matchTrackType(TrackObject const& track)
 {
   using namespace o2::aod::track;
 
-  if (tracktype == 4) {
+  if (tracktype == kTrackTypePWGMM) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
     // it should be equivalent to this
@@ -1468,7 +1475,8 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 inline float getCharge(float pdgCharge)
 {
-  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
+  static constexpr int kNoOfBasicChargesPerUnitCharge = 3;
+  float charge = (pdgCharge / kNoOfBasicChargesPerUnitCharge >= 1) ? 1.0 : ((pdgCharge / kNoOfBasicChargesPerUnitCharge <= -1) ? -1.0 : 0);
   return charge;
 }
 
@@ -1504,7 +1512,7 @@ inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
 //////////////////////////////////////////////////////////////////////////////////
 
 struct PIDSpeciesSelection {
-  const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
+  const std::vector<int> pdgcodes = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton};
   const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p"};
   const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
   const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
@@ -1614,8 +1622,8 @@ struct PIDSpeciesSelection {
         return false;
       }
     };
-    auto awayFrom = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
-      for (int ix = 0; ix < 5; ix++) {
+    auto awayFrom = [&](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
+      for (size_t ix = 0; ix < pdgcodes.size(); ix++) {
         if (ix != sp) {
           if (mindet[ix] <= values[ix] && values[ix] < maxdet[ix]) {
             return false;
@@ -1649,7 +1657,7 @@ struct PIDSpeciesSelection {
       }
     };
     auto awayFromTPCTOF = [&](auto& config, uint8_t sp) {
-      for (uint8_t ix = 0; ix < 5; ++ix) {
+      for (uint8_t ix = 0; ix < pdgcodes.size(); ++ix) {
         if (ix != sp) {
           if (closeToTPCTOF(config, ix)) {
             return false;
@@ -1827,7 +1835,7 @@ struct PIDSpeciesSelection {
   template <typename ParticleObject>
   int8_t whichTruthSecFromDecaySpecies(ParticleObject part)
   {
-    if (!(part.isPhysicalPrimary()) && (part.getProcess() == 4)) {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() == TMCProcess::kPDecay)) {
       return whichTruthSpecies(part);
     } else {
       return -127;
@@ -1837,7 +1845,7 @@ struct PIDSpeciesSelection {
   template <typename ParticleObject>
   int8_t whichTruthSecFromMaterialSpecies(ParticleObject part)
   {
-    if (!(part.isPhysicalPrimary()) && (part.getProcess() != 4)) {
+    if (!(part.isPhysicalPrimary()) && (part.getProcess() != TMCProcess::kPDecay)) {
       return whichTruthSpecies(part);
     } else {
       return -127;

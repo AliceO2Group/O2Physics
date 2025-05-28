@@ -37,13 +37,15 @@ struct HfTaskLcToK0sP {
   Configurable<int> selectionFlagLcToK0sP{"selectionFlagLcToK0sP", 1, "Selection Flag for Lc"};
   Configurable<int> selectionFlagLcbarToK0sP{"selectionFlagLcbarToK0sP", 1, "Selection Flag for Lcbar"};
   Configurable<double> etaCandMax{"etaCandMax", -1., "max. cand. pseudorapidity"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_k0s_p::vecBinsPt}, "pT bin limits"};
 
   HfHelper hfHelper;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
-
   using TracksWPid = soa::Join<aod::TracksWExtra, aod::TracksPidPr>;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcToK0sP || aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= selectionFlagLcbarToK0sP);
 
   HistogramRegistry registry{"registry"};
 
@@ -129,6 +131,8 @@ struct HfTaskLcToK0sP {
     // add MC histograms
     if (context.mOptions.get<bool>("processMc")) {
       registry.add("MC/Rec/hPtCandRecSig", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
+      registry.add("MC/Rec/hPtCandRecSigPrompt", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
+      registry.add("MC/Rec/hPtCandRecSigNonPrompt", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
       registry.add("MC/Rec/hPtCandRecBg", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
       registry.add("MC/Rec/hEtaCandRecSig", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}});
       registry.add("MC/Rec/hEtaCandVsPtCandRecSig", "cascade candidates;candidate #it{#eta};p_{T}", {HistType::kTH2F, {axisEta, axisBinsPt}});
@@ -139,6 +143,8 @@ struct HfTaskLcToK0sP {
       registry.add("MC/Rec/hPhiCandRecBg", "cascade candidates;candidate #it{#phi};entries", {HistType::kTH1F, {axisPhi}});
       registry.add("MC/Rec/hPhiCandVsPtCandRecBg", "cascade candidates;candidate #it{#phi};p_{T}", {HistType::kTH2F, {axisPhi, axisBinsPt}});
       registry.add("MC/Gen/hPtCandGen", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
+      registry.add("MC/Gen/hPtCandGenPrompt", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
+      registry.add("MC/Gen/hPtCandGenNonPrompt", "cascade candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPt}});
       registry.add("MC/Gen/hEtaCandGen", "cascade candidates;candidate #it{#eta};entries", {HistType::kTH1F, {axisEta}});
       registry.add("MC/Gen/hEtaCandVsPtCandGen", "cascade candidates;candidate #it{#eta};p_{T}", {HistType::kTH2F, {axisEta, axisBinsPt}});
       registry.add("MC/Gen/hPhiCandGen", "cascade candidates;candidate #it{#phi};entries", {HistType::kTH1F, {axisPhi}});
@@ -261,6 +267,10 @@ struct HfTaskLcToK0sP {
         continue;
       }
 
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+        continue;
+      }
+
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
@@ -364,6 +374,10 @@ struct HfTaskLcToK0sP {
         continue;
       }
 
+      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+        continue;
+      }
+
       auto ptCand = candidate.pt();
       auto eta = candidate.eta();
       auto phi = candidate.phi();
@@ -396,6 +410,11 @@ struct HfTaskLcToK0sP {
       auto pBach = bach.p();
 
       if (std::abs(candidate.flagMcMatchRec()) == 1) {
+        if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("MC/Rec/hPtCandRecSigPrompt"), ptCand);
+        } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+          registry.fill(HIST("MC/Rec/hPtCandRecSigNonPrompt"), ptCand);
+        }
         registry.fill(HIST("MC/Rec/hPtCandRecSig"), ptCand);
         registry.fill(HIST("MC/Rec/hEtaCandRecSig"), eta);
         registry.fill(HIST("MC/Rec/hEtaCandVsPtCandRecSig"), eta, ptCand);
@@ -522,6 +541,11 @@ struct HfTaskLcToK0sP {
       }
 
       if (std::abs(particle.flagMcMatchGen()) == 1) {
+
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus);
+        if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
+          continue;
+        }
         auto ptCand = particle.pt();
         auto eta = particle.eta();
         auto phi = particle.phi();
@@ -530,6 +554,12 @@ struct HfTaskLcToK0sP {
         registry.fill(HIST("MC/Gen/hEtaCandVsPtCandGen"), eta, ptCand);
         registry.fill(HIST("MC/Gen/hPhiCandGen"), phi);
         registry.fill(HIST("MC/Gen/hPhiCandVsPtCandGen"), phi, ptCand);
+
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("MC/Gen/hPtCandGenPrompt"), ptCand);
+        } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          registry.fill(HIST("MC/Gen/hPtCandGenNonPrompt"), ptCand);
+        }
       }
     }
   }
