@@ -92,7 +92,16 @@ struct alice3decayFinder {
   Configurable<float> DCosThetaStarLowPt{"DCosThetaStarLowPt", 0.8, "Cos theta; low pt"};
   Configurable<float> DCosThetaStarHighPt{"DCosThetaStarHighPt", 0.9, "Cos theta; high pt"};
   Configurable<float> DCosThetaStarVHighPt{"DCosThetaStarVHighPt", 1.0, "Cos theta; very high pt"};
-  Configurable<float> DDauDecayLength{"DDauDecayLength", 3, "|Normalized dau decay length| > [0]"};
+  Configurable<float> DMinDecayLength{"DMinDecayLength", 0., "Minimum D decay length (3D)"};
+  Configurable<float> DMaxDecayLength{"DMaxDecayLength", 10., "Maximum D decay length (3D)"};
+  Configurable<float> DMinDecayLengthXY{"DMinDecayLengthXY", 0., "Minimum D decay length (xy)"};
+  Configurable<float> DMaxDecayLengthXY{"DMaxDecayLengthXY", 10., "Maximum D decay length (xy)"};
+  Configurable<float> DNormDecayLength{"DNormDecayLength", 3, "Minimum normalized decay length"};
+  Configurable<float> minPtPi{"minPtPi", 0., "Minimum pT of daughter pion track"};
+  Configurable<float> minPtK{"minPtK", 0., "Minimum pT of daughter kaon track"};
+  Configurable<float> maxImpParPi{"maxImpParPi", 1., "Maximum impact paramter of daughter pion track"};
+  Configurable<float> maxImpParK{"maxImpParK", 1., "Maximum impact paramter of daughter kaon track"};
+  Configurable<float> maxImpParProduct{"maxImpParProduct", 0., "Maximum daughter impact paramter product"};
 
   Configurable<float> piFromLc_dcaXYconstant{"piFromLc_dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromLc_dcaXYpTdep{"piFromLc_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -172,6 +181,8 @@ struct alice3decayFinder {
     std::array<float, 3> Pdaug; // positive track
     std::array<float, 3> Ndaug; // negative track
     float pt;
+    float ptdaugPos;
+    float ptdaugNeg;
     float phi;
     float eta;
     float y;
@@ -226,6 +237,8 @@ struct alice3decayFinder {
     // return mass and kinematic variables
     dmeson.mass = RecoDecay::m(array{array{posP[0], posP[1], posP[2]}, array{negP[0], negP[1], negP[2]}}, array{posMass, negMass});
     dmeson.pt = std::hypot(posP[0] + negP[0], posP[1] + negP[1]);
+    dmeson.ptdaugPos = std::hypot(posP[0], posP[1]);
+    dmeson.ptdaugNeg = std::hypot(negP[0], negP[1]);
     dmeson.phi = RecoDecay::phi(array{posP[0] + negP[0], posP[1] + negP[1]});
     dmeson.eta = RecoDecay::eta(array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]});
     dmeson.y = RecoDecay::y(std::array{posP[0] + negP[0], posP[1] + negP[1], posP[2] + negP[2]}, dmeson.mass);
@@ -368,14 +381,31 @@ struct alice3decayFinder {
       histos.add("hMassDbarRefl", "hMassDbarRefl", kTH1F, {axisDMass});
       histos.add("hMassDbarBkg", "hMassDbarBkg", kTH1F, {axisDMass});
 
-      histos.add("hDCosPA", "hDCosPA", kTH1F, {{200, 0, 1}});
-      histos.add("hDCosPAxy", "hDCosPAxy", kTH1F, {{200, 0, 1}});
+      histos.add("hDCosPA", "hDCosPA", kTH1F, {{800, -1, 1}});
+      histos.add("hDCosPAxy", "hDCosPAxy", kTH1F, {{800, -1, 1}});
       histos.add("hDCosThetaStar", "hDCosThetaStar", kTH1F, {{200, -1, 1}});
-      histos.add("hDDauDecayLength", "hDDauDecayLength", kTH1F, {{100, 0, 10}});
+      histos.add("hDDecayLength", "hDDecayLength", kTH1F, {{100, 0, 0.5}});
+      histos.add("hDDecayLengthXY", "hDDecayLengthXY", kTH1F, {{100, 0, 0.5}});
+      histos.add("hDNormDecayLength", "hDNormDecayLength", kTH1F, {{100, 0, 10}});
+      histos.add("hImpParPi", "hImpParPi", kTH1F, {{200, -0.4, 0.4}});
+      histos.add("hImpParK", "hImpParK", kTH1F, {{200, -0.4, 0.4}});
+      histos.add("hImpParProduct", "hImpParProduct", kTH1F, {{200, -0.04, 0.04}});
+
+      histos.add("hDCosPA_Selected", "hDCosPA_Selected", kTH1F, {{800, -1, 1}});
+      histos.add("hDCosPAxy_Selected", "hDCosPAxy_Selected", kTH1F, {{800, -1, 1}});
+      histos.add("hDCosThetaStar_Selected", "hDCosThetaStar_Selected", kTH1F, {{200, -1, 1}});
+      histos.add("hDDecayLength_Selected", "hDDecayLength_Selected", kTH1F, {{100, 0, 0.5}});
+      histos.add("hDDecayLengthXY_Selected", "hDDecayLengthXY_Selected", kTH1F, {{100, 0, 0.5}});
+      histos.add("hDNormDecayLength_Selected", "hDNormDecayLength_Selected", kTH1F, {{100, 0, 10}});
+      histos.add("hImpParPi_Selected", "hImpParPi_Selected", kTH1F, {{200, -0.4, 0.4}});
+      histos.add("hImpParK_Selected", "hImpParK_Selected", kTH1F, {{200, -0.4, 0.4}});
+      histos.add("hImpParProduct_Selected", "hImpParProduct_Selected", kTH1F, {{200, -0.04, 0.04}});
 
       if (doDCAplotsD) {
         histos.add("hDCADDaughters", "hDCADDaughters", kTH1D, {axisDCADaughters});
-        histos.add("hDCADbarDaughters", "hDCADbarDaughters", kTH1D, {axisDCA});
+        histos.add("hDCADbarDaughters", "hDCADbarDaughters", kTH1D, {axisDCADaughters});
+        histos.add("hDCADDaughters_Selected", "hDCADDaughters", kTH1D, {axisDCADaughters});
+        histos.add("hDCADbarDaughters_Selected", "hDCADbarDaughters", kTH1D, {axisDCADaughters});
         histos.add("h2dDCAxyVsPtPiPlusFromD", "h2dDCAxyVsPtPiPlusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtPiMinusFromD", "h2dDCAxyVsPtPiMinusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaPlusFromD", "h2dDCAxyVsPtKaPlusFromD", kTH2F, {axisPt, axisDCA});
@@ -460,10 +490,22 @@ struct alice3decayFinder {
         const float dmesonCtau = 0.012301;
         dmeson.normalizedDecayLength = ((dmeson.mass * std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]))) / std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2])) / dmesonCtau;
 
+        auto impParXY_daugPos = RecoDecay::impParXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2]});
+        auto impParXY_daugNeg = RecoDecay::impParXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2]});
+        auto decayLength = std::hypot(collision.posX() - dmeson.posSV[0], collision.posY() - dmeson.posSV[1], collision.posZ() - dmeson.posSV[2]);
+        auto decayLengthXY = std::hypot(collision.posX() - dmeson.posSV[0], collision.posY() - dmeson.posSV[1]);
+
+        // fill plots of topological variables before topological selection
         histos.fill(HIST("hDCosPA"), dmeson.cosPA);
         histos.fill(HIST("hDCosPAxy"), dmeson.cosPAxy);
         histos.fill(HIST("hDCosThetaStar"), dmeson.cosThetaStar);
-        histos.fill(HIST("hDDauDecayLength"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hDDecayLength"), decayLength);
+        histos.fill(HIST("hDDecayLengthXY"), decayLengthXY);
+        histos.fill(HIST("hDNormDecayLength"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
+        histos.fill(HIST("hImpParPi"), impParXY_daugPos);
+        histos.fill(HIST("hImpParK"), impParXY_daugNeg);
+        histos.fill(HIST("hImpParProduct"), impParXY_daugPos * impParXY_daugNeg);
 
         if (dmeson.dcaDau > dcaDaughtersSelection)
           continue;
@@ -485,10 +527,39 @@ struct alice3decayFinder {
         else if (dmeson.pt > highPtDLimit && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
           continue;
 
-        if (dmeson.normalizedDecayLength > DDauDecayLength)
+        if (dmeson.normalizedDecayLength > DNormDecayLength)
           continue;
 
-        histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
+        if (dmeson.ptdaugPos < minPtPi) // track1 (positive) is the pion
+          continue;
+        if (dmeson.ptdaugNeg < minPtK) // track2 (negative) is the kaon
+          continue;
+
+        if (impParXY_daugPos > maxImpParPi)
+          continue;
+        if (impParXY_daugNeg > maxImpParK)
+          continue;
+        if (impParXY_daugPos * impParXY_daugNeg > maxImpParProduct)
+          continue;
+
+        if (decayLength < DMinDecayLength || decayLength > DMaxDecayLength)
+          continue;
+        if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
+          continue;
+
+        // fill plots of topological variables after topological selection
+        histos.fill(HIST("hDCosPA_Selected"), dmeson.cosPA);
+        histos.fill(HIST("hDCosPAxy_Selected"), dmeson.cosPAxy);
+        histos.fill(HIST("hDCosThetaStar_Selected"), dmeson.cosThetaStar);
+        histos.fill(HIST("hDDecayLength_Selected"), decayLength);
+        histos.fill(HIST("hDDecayLengthXY_Selected"), decayLengthXY);
+        histos.fill(HIST("hDNormDecayLength_Selected"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hDCADDaughters_Selected"), dmeson.dcaDau * 1e+4);
+        histos.fill(HIST("hImpParPi_Selected"), impParXY_daugPos);
+        histos.fill(HIST("hImpParK_Selected"), impParXY_daugNeg);
+        histos.fill(HIST("hImpParProduct_Selected"), impParXY_daugPos * impParXY_daugNeg);
+
+        // filling of mass plots for selected candidates
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
         if (dmeson.mcTruth == 1) { // true D0 meson, reco as D0 (= correct matching)
@@ -531,10 +602,23 @@ struct alice3decayFinder {
         const float dmesonCtau = 0.012301;
         dmeson.normalizedDecayLength = ((dmeson.mass * std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]))) / std::hypot(dmeson.P[0], dmeson.P[1], dmeson.P[2])) / dmesonCtau;
 
+        auto impParXY_daugPos = RecoDecay::impParXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.Pdaug[0], dmeson.Pdaug[1], dmeson.Pdaug[2]});
+        auto impParXY_daugNeg = RecoDecay::impParXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, std::array{dmeson.posSV[0], dmeson.posSV[1], dmeson.posSV[2]}, std::array{dmeson.Ndaug[0], dmeson.Ndaug[1], dmeson.Ndaug[2]});
+        auto decayLength = std::hypot(collision.posX() - dmeson.posSV[0], collision.posY() - dmeson.posSV[1], collision.posZ() - dmeson.posSV[2]);
+        auto decayLengthXY = std::hypot(collision.posX() - dmeson.posSV[0], collision.posY() - dmeson.posSV[1]);
+
+        // fill plots of topological variables before topological selection
         histos.fill(HIST("hDCosPA"), dmeson.cosPA);
         histos.fill(HIST("hDCosPAxy"), dmeson.cosPAxy);
         histos.fill(HIST("hDCosThetaStar"), dmeson.cosThetaStar);
-        histos.fill(HIST("hDDauDecayLength"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hDDecayLength"), decayLength);
+        histos.fill(HIST("hDDecayLengthXY"), decayLengthXY);
+        histos.fill(HIST("hDNormDecayLength"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hImpParPi"), impParXY_daugNeg);
+        histos.fill(HIST("hImpParK"), impParXY_daugPos);
+        histos.fill(HIST("hImpParProduct"), impParXY_daugPos * impParXY_daugNeg);
+        if (doDCAplotsD)
+          histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
 
         if (dmeson.dcaDau > dcaDaughtersSelection)
           continue;
@@ -556,10 +640,40 @@ struct alice3decayFinder {
         else if (dmeson.pt > highPtDLimit && std::fabs(dmeson.cosThetaStar) > DCosThetaStarVHighPt)
           continue;
 
-        if (dmeson.normalizedDecayLength > DDauDecayLength)
+        if (dmeson.normalizedDecayLength > DNormDecayLength)
           continue;
 
-        histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
+        if (dmeson.ptdaugPos < minPtK) // track1 is the kaon
+          continue;
+        if (dmeson.ptdaugNeg < minPtPi) // track2 is the pion
+          continue;
+
+        if (impParXY_daugPos > maxImpParK)
+          continue;
+        if (impParXY_daugNeg > maxImpParPi)
+          continue;
+        if (impParXY_daugPos * impParXY_daugNeg > maxImpParProduct)
+          continue;
+
+        if (decayLength < DMinDecayLength || decayLength > DMaxDecayLength)
+          continue;
+        if (decayLengthXY < DMinDecayLengthXY || decayLengthXY > DMaxDecayLengthXY)
+          continue;
+
+        // fill plots of topological variables after topological selection
+        histos.fill(HIST("hDCosPA_Selected"), dmeson.cosPA);
+        histos.fill(HIST("hDCosPAxy_Selected"), dmeson.cosPAxy);
+        histos.fill(HIST("hDCosThetaStar_Selected"), dmeson.cosThetaStar);
+        histos.fill(HIST("hDDecayLength_Selected"), decayLength);
+        histos.fill(HIST("hDDecayLengthXY_Selected"), decayLengthXY);
+        histos.fill(HIST("hDNormDecayLength_Selected"), dmeson.normalizedDecayLength);
+        histos.fill(HIST("hImpParK_Selected"), impParXY_daugPos);
+        histos.fill(HIST("hImpParPi_Selected"), impParXY_daugNeg);
+        histos.fill(HIST("hImpParProduct_Selected"), impParXY_daugPos * impParXY_daugNeg);
+        if (doDCAplotsD)
+          histos.fill(HIST("hDCADbarDaughters_Selected"), dmeson.dcaDau * 1e+4);
+
+        // filling of mass plots for selected candidates
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
         if (dmeson.mcTruth == 2) { // true D0bar meson, reco as D0bar (= correct matching)
