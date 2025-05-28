@@ -356,8 +356,8 @@ struct alice3decayFinder {
       histos.add("h3dRecDbarRefl", "h3dRecDbarRefl", kTH3F, {axisPt, axisEta, axisDMass});
       histos.add("h3dRecDbarBkg", "h3dRecDbarBkg", kTH3F, {axisPt, axisEta, axisDMass});
 
-      histos.add("hDGenForEfficiency", "hDGenForEfficiency", kTH2F, {axisPt, axisY}); //2D vs pT, Y, filling generated D0 and D0bar
-      histos.add("hDRecForEfficiency", "hDRecForEfficiency", kTH2F, {axisPt, axisY}); //2D vs pT, Y, filling reconstructed D0 and D0bar with correct MC matching
+      histos.add("hDGenForEfficiency", "hDGenForEfficiency", kTH2F, {axisPt, axisY}); // 2D vs pT, Y, filling generated D0 and D0bar
+      histos.add("hDRecForEfficiency", "hDRecForEfficiency", kTH2F, {axisPt, axisY}); // 2D vs pT, Y, filling reconstructed D0 and D0bar with correct MC matching
 
       histos.add("hMassD", "hMassD", kTH1F, {axisDMass});
       histos.add("hMassDSig", "hMassDSig", kTH1F, {axisDMass});
@@ -411,11 +411,11 @@ struct alice3decayFinder {
     if (doprocessFindDmesons) {
       for (auto const& mcParticle : trueD) {
         histos.fill(HIST("h2dGenD"), mcParticle.pt(), mcParticle.eta());
-        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); //in common for D and Dbar
+        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
       }
       for (auto const& mcParticle : trueDbar) {
         histos.fill(HIST("h2dGenDbar"), mcParticle.pt(), mcParticle.eta());
-        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); //in common for D and Dbar
+        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
       }
     }
     if (doprocessFindLcBaryons) {
@@ -491,14 +491,14 @@ struct alice3decayFinder {
         histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassD"), dmeson.mass);
         histos.fill(HIST("h3dRecD"), dmeson.pt, dmeson.eta, dmeson.mass);
-        if (dmeson.mcTruth == 1) { //true D0 meson, reco as D0 (= correct matching)
+        if (dmeson.mcTruth == 1) { // true D0 meson, reco as D0 (= correct matching)
           histos.fill(HIST("h3dRecDSig"), dmeson.pt, dmeson.eta, dmeson.mass);
           histos.fill(HIST("hMassDSig"), dmeson.mass);
-          histos.fill(HIST("hDRecForEfficiency"), dmeson.pt, dmeson.y); //for efficiency
-        } else if (dmeson.mcTruth == 2) { //true D0bar meson, reco as D0 (= reflection)
+          histos.fill(HIST("hDRecForEfficiency"), dmeson.pt, dmeson.y); // for efficiency
+        } else if (dmeson.mcTruth == 2) {                               // true D0bar meson, reco as D0 (= reflection)
           histos.fill(HIST("hMassDRefl"), dmeson.mass);
           histos.fill(HIST("h3dRecDRefl"), dmeson.pt, dmeson.eta, dmeson.mass);
-        } else {  //background, reco as D0
+        } else { // background, reco as D0
           histos.fill(HIST("hMassDBkg"), dmeson.mass);
           histos.fill(HIST("h3dRecDBkg"), dmeson.pt, dmeson.eta, dmeson.mass);
         }
@@ -562,14 +562,14 @@ struct alice3decayFinder {
         histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
         histos.fill(HIST("hMassDbar"), dmeson.mass);
         histos.fill(HIST("h3dRecDbar"), dmeson.pt, dmeson.eta, dmeson.mass);
-        if (dmeson.mcTruth == 2) { //true D0bar meson, reco as D0bar (= correct matching)
+        if (dmeson.mcTruth == 2) { // true D0bar meson, reco as D0bar (= correct matching)
           histos.fill(HIST("h3dRecDbarSig"), dmeson.pt, dmeson.eta, dmeson.mass);
           histos.fill(HIST("hMassDbarSig"), dmeson.mass);
-          histos.fill(HIST("hDRecForEfficiency"), dmeson.pt, dmeson.y); //for efficiency
-        } else if (dmeson.mcTruth == 1) { //true D0 meson, reco as D0bar (= reflection)
+          histos.fill(HIST("hDRecForEfficiency"), dmeson.pt, dmeson.y); // for efficiency
+        } else if (dmeson.mcTruth == 1) {                               // true D0 meson, reco as D0bar (= reflection)
           histos.fill(HIST("hMassDbarRefl"), dmeson.mass);
           histos.fill(HIST("h3dRecDbarRefl"), dmeson.pt, dmeson.eta, dmeson.mass);
-        } else { //background, reco as D0
+        } else { // background, reco as D0
           histos.fill(HIST("hMassDbarBkg"), dmeson.mass);
           histos.fill(HIST("h3dRecDbarBkg"), dmeson.pt, dmeson.eta, dmeson.mass);
         }
