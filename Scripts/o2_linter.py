@@ -779,7 +779,7 @@ class TestMagicNumber(TestSpec):
         iterators = re.finditer(
             rf" {self.pattern_compare} {self.pattern_number}|\W{self.pattern_number} {self.pattern_compare} ", line
         )
-        matches = [(it.start(), it.group(2), it.group(3)) for it in iterators]
+        matches = [(it.start(), it.group(2), it.group(4)) for it in iterators]
         if not matches:
             return True
         # Ignore matches inside strings.
