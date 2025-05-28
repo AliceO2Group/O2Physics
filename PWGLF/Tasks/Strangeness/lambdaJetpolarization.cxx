@@ -133,7 +133,7 @@ struct LfMyV0s {
     const AxisSpec ptAxis{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
 
-    ConfigurableAxis TProfile2DaxisPt{"#it{p}_{T} (GeV/#it{c})", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9,1.0,1.1,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6,2.8,3.2,3.7,4.2,5,6,8,10,12}, "pt axis for histograms"};
+    ConfigurableAxis TProfile2DaxisPt{"#it{p}_{T} (GeV/#it{c})", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
 
     registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
     registry.add("V0pTInLab", "V0pTInLab", kTH1F, {axisPT});
