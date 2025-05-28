@@ -86,7 +86,7 @@ struct TrackEfficiency {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
-  enum acceptSplitCollisionsOptions {
+  enum AcceptSplitCollisionsOptions {
     nonSplitOnly = 0,
     splitOkCheckAnyAssocColl,      // 1
     splitOkCheckFirstAssocCollOnly // 2
