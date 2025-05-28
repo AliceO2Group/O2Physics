@@ -128,7 +128,7 @@ struct NPCascCandidate {
 };
 namespace TrigDecision
 {
-  std::vector<bool> trigDecision;
+std::vector<bool> trigDecision;
 };
 std::array<bool, 2> isFromHF(auto& particle)
 {
@@ -233,7 +233,7 @@ struct NonPromptCascadeTask {
   void init(InitContext const&)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
-    mZorroSummary->setupTOIs(1,"HighMultOmega");
+    mZorroSummary->setupTOIs(1, "HighMultOmega");
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
     mCCDB->setCaching(true);
@@ -302,10 +302,10 @@ struct NonPromptCascadeTask {
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
-        //bool issel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
-        //if(issel) {
-        //  TrigDecision::trigDecision.push_back(issel);
-        //}
+        // bool issel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+        // if(issel) {
+        //   TrigDecision::trigDecision.push_back(issel);
+        // }
       }
     }
   }
@@ -525,7 +525,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(),collision.multFT0M(),collision.centFT0C(), collision.centFT0A(),collision.centFT0M() });
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M()});
     }
   }
 
