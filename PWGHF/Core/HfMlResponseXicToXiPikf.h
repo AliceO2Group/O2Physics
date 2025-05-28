@@ -80,7 +80,7 @@ class HfMlResponseXicToXiPikf : public HfMlResponse<TypeOutputScore>
   /// \param candidate is the Xic candidate
   /// \return inputFeatures vector
   template <typename T1, typename T2, typename T3>
-  //std::vector<float> getInputFeatures(T1 const& candidate)
+  // std::vector<float> getInputFeatures(T1 const& candidate)
   std::vector<float> getInputFeatures(T1 const& candidate, T2 const& lamProngPi, T2 const& cascProngPi, T3 const& charmBaryonProngPi)
   {
     std::vector<float> inputFeatures;
