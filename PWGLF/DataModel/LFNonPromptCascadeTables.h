@@ -101,9 +101,6 @@ DECLARE_SOA_COLUMN(BachPionTOFNSigma, bachPionTOFNSigma, float);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
-DECLARE_SOA_COLUMN(gVx, genVx, float);
-DECLARE_SOA_COLUMN(gVy, genVy, float);
-DECLARE_SOA_COLUMN(gVz, genVz, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
 DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
@@ -115,6 +112,10 @@ DECLARE_SOA_COLUMN(MotherDecayDaughters, motherDecayDaughters, int8_t);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -175,7 +176,11 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::BachPionTOFNSigma,
                   NPCascadeTable::Sel8,
                   NPCascadeTable::MultFT0C,
-                  NPCascadeTable::MultFT0A)
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M)
 
 DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::MatchingChi2,
@@ -235,7 +240,11 @@ DECLARE_SOA_TABLE(NPCascTableNT, "AOD", "NPCASCTABLENT",
                   NPCascadeTable::BachPionTOFNSigma,
                   NPCascadeTable::Sel8,
                   NPCascadeTable::MultFT0C,
-                  NPCascadeTable::MultFT0A)
+                  NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::MatchingChi2,
@@ -302,12 +311,13 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::Sel8,
                   NPCascadeTable::MultFT0C,
                   NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
-                  NPCascadeTable::gVx,
-                  NPCascadeTable::gVy,
-                  NPCascadeTable::gVz,
                   NPCascadeTable::PDGcode,
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
@@ -381,12 +391,13 @@ DECLARE_SOA_TABLE(NPCascTableMCNT, "AOD", "NPCASCTABLEMCNT",
                   NPCascadeTable::Sel8,
                   NPCascadeTable::MultFT0C,
                   NPCascadeTable::MultFT0A,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0C,
+                  NPCascadeTable::CentFT0A,
+                  NPCascadeTable::CentFT0M,
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
-                  NPCascadeTable::gVx,
-                  NPCascadeTable::gVy,
-                  NPCascadeTable::gVz,
                   NPCascadeTable::PDGcode,
                   NPCascadeTable::DCAxMC,
                   NPCascadeTable::DCAyMC,
