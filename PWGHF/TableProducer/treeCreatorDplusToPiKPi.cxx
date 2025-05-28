@@ -238,7 +238,8 @@ DECLARE_SOA_TABLE(HfCandDpFullPs, "AOD", "HFCANDDPFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_3prong::FlagMcMatchGen,
+                  hf_cand_3prong::FlagMcDecayChanGen,
                   hf_cand_3prong::OriginMcGen);
 } // namespace o2::aod
 
@@ -543,6 +544,7 @@ struct HfTreeCreatorDplusToPiKPi {
     }
 
     // Filling particle properties
+    LOG(info) << "Filling tree generated " << particles.size() << " particles";
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
       rowCandidateFullParticles(
@@ -552,6 +554,7 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.phi(),
         RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus),
         particle.flagMcMatchGen(),
+        particle.flagMcDecayChanGen(),
         particle.originMcGen());
     }
   }

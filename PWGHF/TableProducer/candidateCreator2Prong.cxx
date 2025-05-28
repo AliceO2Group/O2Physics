@@ -864,7 +864,7 @@ struct HfCandidateCreator2ProngExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(0, 0, -1);
+          rowMcMatchGen(0, 0, 0, -1);
         }
         continue;
       }

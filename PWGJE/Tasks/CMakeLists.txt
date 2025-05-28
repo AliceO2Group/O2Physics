@@ -68,10 +68,10 @@ if(FastJet_FOUND)
                         SOURCES jetSubstructureD0.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-substructure-dplus
-                        SOURCES jetSubstructureDplus.cxx
-                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                        COMPONENT_NAME Analysis)
+    # o2physics_add_dpl_workflow(jet-substructure-dplus
+    #                     SOURCES jetSubstructureDplus.cxx
+    #                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+    #                     COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-substructure-lc
                         SOURCES jetSubstructureLc.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore

@@ -33,10 +33,12 @@
 
 #include "PWGHF/Core/CorrelatedBkgs.h"
 
+using namespace o2::hf_corrbkg;
+
 namespace hf_mc_gen
 {
 
-template <typename T, typename U, typename V>
+template <bool matchCorrBkgs = false, typename T, typename U, typename V>
 void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
@@ -45,41 +47,45 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   for (const auto& particle : mcParticlesPerMcColl) {
     int8_t flag = 0;
     int8_t origin = 0;
+    int8_t channel = 0; // Not used in 2-prong decays
     int8_t sign = 0;
     std::vector<int> idxBhadMothers{};
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
-      rowMcMatchGen(flag, origin, -1);
+      rowMcMatchGen(flag, origin, channel, -1);
       continue;
     }
-
-    // D0(bar) → π± K∓
-    if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
-      flag = sign * (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
-    }
-
-    // J/ψ → e+ e−
-    if (flag == 0) {
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
-        flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToEE;
-      }
-    }
-
-    // J/ψ → μ+ μ−
-    if (flag == 0) {
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
-        flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToMuMu;
-      }
-    }
-
-    // Check whether the particle is non-prompt (from a b quark).
-    if (flag != 0) {
-      origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
-    }
-    if (origin == RecoDecay::OriginType::NonPrompt) {
-      rowMcMatchGen(flag, origin, idxBhadMothers[0]);
+    if (matchCorrBkgs) {
+      LOG(info) << "Matching gen correlated bkgs of 2prongs";
     } else {
-      rowMcMatchGen(flag, origin, -1);
+      // D0(bar) → π± K∓
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        flag = sign * (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
+      }
+
+      // J/ψ → e+ e−
+      if (flag == 0) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+          flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToEE;
+        }
+      }
+
+      // J/ψ → μ+ μ−
+      if (flag == 0) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+          flag = 1 << o2::aod::hf_cand_2prong::DecayType::JpsiToMuMu;
+        }
+      }
+
+      // Check whether the particle is non-prompt (from a b quark).
+      if (flag != 0) {
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+      }
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
+      } else {
+        rowMcMatchGen(flag, origin, channel, -1);
+      }
     }
   }
 }
@@ -112,7 +118,19 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 
     if (matchCorrBkgs) {
       LOG(info) << "--------------------------------------------";
-      LOG(info) << "Matching correlated bkgs of 3prongs";
+      LOG(info) << "Matching gen correlated bkgs of 3prongs";
+      std::array<int, 5> mothersPdgCodes = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus};
+      for (const auto& motherPdgCode : mothersPdgCodes) {
+        int maxDepth = 2;
+        if (motherPdgCode == Pdg::kDStar) {
+          maxDepth = 3; // to catch the D0 resonances
+        }
+        matchFinalStateCorrBkgsGen(motherPdgCode, mcParticles, particle, &sign, maxDepth, &flag, &channel);
+        if (flag != 0) {
+          LOG(info) << "Matched!";
+          break;
+        }
+      }
     } else {
 
       // D± → π± K∓ π±
@@ -190,12 +208,16 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     }
 
     // Check whether the particle is non-prompt (from a b quark).
+    LOG(info) << "Flag: " << int(flag);
     if (flag != 0) {
+      LOG(info) << "Setting origin gen";
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
     if (origin == RecoDecay::OriginType::NonPrompt) {
+      LOG(info) << "Origin is non-prompt";
       rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
     } else {
+      LOG(info) << "Origin is prompt";
       rowMcMatchGen(flag, origin, channel, -1);
     }
   }

@@ -1099,6 +1099,8 @@ struct HfCandidateCreator3ProngExpressions {
       LOG(info) << "--------------------------------------------";
     }
 
+    LOG(info) << "Filling MC match gen for 3 prong candidates";
+    LOG(info) << "Number of MC collisions: " << mcCollisions.size();
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision
@@ -1107,17 +1109,21 @@ struct HfCandidateCreator3ProngExpressions {
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       int nSplitColl = 0;
-      if constexpr (centEstimator == CentralityEstimator::FT0C) {
-        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
-        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
-        nSplitColl = collSlice.size();
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == CentralityEstimator::None) {
-        const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      }
+      // if constexpr (centEstimator == CentralityEstimator::FT0C) {
+      //   LOG(info) << "FT0C centrality estimator";
+      //   const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      // } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+      //   LOG(info) << "FT0M centrality estimator";
+      //   const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+      //   nSplitColl = collSlice.size();
+      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      // } else if constexpr (centEstimator == CentralityEstimator::None) {
+      //   LOG(info) << "No centrality estimator";
+      //   const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      // }
+      // LOG(info) << "CIAO3";
       hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all gen particles from this collision
@@ -1126,9 +1132,12 @@ struct HfCandidateCreator3ProngExpressions {
         }
         continue;
       }
+      // LOG(info) << "CIAO4";
       if (matchCorrBkgs) {
+        // LOG(info) << "Filling MC match gen for correlated bkgs";
         hf_mc_gen::fillMcMatchGen3Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
       } else {
+        // LOG(info) << "Filling MC match gen";
         hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
       }
     }
