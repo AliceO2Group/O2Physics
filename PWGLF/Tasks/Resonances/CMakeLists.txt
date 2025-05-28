@@ -169,10 +169,10 @@ o2physics_add_dpl_workflow(highmasslambdasvx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(chk892flow
-    SOURCES chk892Flow.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
+# o2physics_add_dpl_workflow(chk892flow
+#     SOURCES chk892Flow.cxx
+#     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+#     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(chk892pp
     SOURCES chk892pp.cxx
