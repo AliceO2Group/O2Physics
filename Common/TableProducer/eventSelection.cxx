@@ -95,15 +95,6 @@ struct BcSelectionTask {
   bool isGoodITSLayersAll = true;                           // default value
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = true;
-      }
-    }
-
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -580,14 +571,6 @@ struct EventSelectionTask {
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (!doprocessRun2 && !doprocessRun3) {
-        LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-        if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-        } else {
-          doprocessRun2.value = true;
-        }
-      }
       if (isMC == -1) {
         LOG(info) << "Autosetting the MC mode based on metadata";
         if (metadataInfo.isMC()) {
@@ -1186,15 +1169,6 @@ struct LumiTask {
 
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun3 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = true;
-      }
-    }
-
     histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
@@ -1277,12 +1251,12 @@ struct LumiTask {
       csZNC = -1;
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
       if (beamZ1 == 1 && beamZ2 == 1) {
-        if (std::fabs(sqrts - 900.) < 20.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
-          csTVX = 0.0357e6;                           // ub
-        } else if (std::fabs(sqrts - 5360.) < 20.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
-          csTVX = 0.0503e6;                           // ub
-        } else if (std::fabs(sqrts - 13600.) < 20.) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
-          csTVX = 0.0594e6;                           // ub
+        if (std::fabs(sqrts - 900.) < 100.) {          // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0357e6;                            // ub
+        } else if (std::fabs(sqrts - 5360.) < 100.) {  // pp-ref     // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0503e6;                            // ub
+        } else if (std::fabs(sqrts - 13600.) < 300.) { // o2-linter: disable=magic-number (TODO store and extract cross sections from ccdb)
+          csTVX = 0.0594e6;                            // ub
         } else {
           LOGP(warn, "Cross section for pp @ {} GeV is not defined", sqrts);
         }
@@ -1346,13 +1320,14 @@ struct LumiTask {
         mOrbits.push_back(record.intRecord.orbit);
         mCounterTVX.push_back(classIdTVX >= 0 ? record.scalers[classIdTVX].lmBefore : 0);
         mCounterTCE.push_back(classIdTCE >= 0 ? record.scalers[classIdTCE].lmBefore : 0);
-        if (run >= 543437 && run < 544448) {             // o2-linter: disable=magic-number (ZNC class not defined for this run range)
-          mCounterZNC.push_back(record.scalersInps[25]); // see ZNC=1ZNC input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        if (run >= 543437 && run < 544448 && record.scalersInps.size() >= 26) { // o2-linter: disable=magic-number (ZNC class not defined for this run range)
+          mCounterZNC.push_back(record.scalersInps[25]);                        // see ZNC=1ZNC input index in https://indico.cern.ch/event/1153630/contributions/4844362/
         } else {
           mCounterZNC.push_back(classIdZNC >= 0 ? record.scalers[classIdZNC].l1Before : 0);
         }
         // ZEM class not defined, using inputs instead
-        mCounterZEM.push_back(record.scalersInps[24]); // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        uint32_t indexZEM = 24; // see ZEM=1ZED input index in https://indico.cern.ch/event/1153630/contributions/4844362/
+        mCounterZEM.push_back(record.scalersInps.size() >= indexZEM + 1 ? record.scalersInps[indexZEM] : 0);
       }
 
       // calculate pileup corrections
