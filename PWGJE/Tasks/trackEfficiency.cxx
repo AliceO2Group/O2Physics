@@ -301,6 +301,7 @@ struct TrackEfficiency {
           centralityCheck = true;
         }
       }
+    }
     if (!hasSel8Coll) {
       return;
     }
@@ -417,7 +418,7 @@ struct TrackEfficiency {
         }
       }
     }
-    }
+  }
   PROCESS_SWITCH(TrackEfficiency, processEFficiencyPurity, "Histograms for efficiency and purity quantities", true);
 
   void processEFficiencyPurityWeighted(aod::JetMcCollision const& mcCollision,
