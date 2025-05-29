@@ -246,7 +246,7 @@ DECLARE_SOA_TABLE(HfCandDpFullPs, "AOD", "HFCANDDPFULLP",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDplusToPiKPi {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents; 
   Produces<o2::aod::HfCandDpFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDpLites> rowCandidateLite;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
@@ -527,6 +527,7 @@ struct HfTreeCreatorDplusToPiKPi {
       fillEvent(collision, 0, 1);
     }
 
+    LOG(info) << "Filling reconstructed " << candidates.size() << " candidates";
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
@@ -544,9 +545,12 @@ struct HfTreeCreatorDplusToPiKPi {
     }
 
     // Filling particle properties
-    LOG(info) << "Filling tree generated " << particles.size() << " particles";
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
+      // LOG(info) << "Filling particle with pt: " << particle.pt() << ", eta: " << particle.eta() << ", phi: " << particle.phi();
+      // LOG(info) << "Flag MC match gen: " << static_cast<int>(particle.flagMcMatchGen());
+      // LOG(info) << "Flag MC decay chan gen: " << static_cast<int>(particle.flagMcDecayChanGen());
+      // LOG(info) << "Origin MC gen: " << static_cast<int>(particle.originMcGen());
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
@@ -594,33 +598,34 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
 
   void processMcSgnWMl(aod::Collisions const& collisions,
-                       aod::McCollisions const& mccollisions,
-                       SelectedCandidatesMcWithMl const&,
-                       MatchedGenCandidatesMc const& particles,
-                       TracksWPid const& tracks)
-  {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
-  }
+    aod::McCollisions const& mccollisions,
+    SelectedCandidatesMcWithMl const&,
+    MatchedGenCandidatesMc const& particles,
+    TracksWPid const& tracks)
+    {
+      fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+    }
 
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
+    PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
 
   void processMcSgnWCentMl(CollisionsCent const& collisions,
-                           aod::McCollisions const& mccollisions,
-                           SelectedCandidatesMcWithMl const&,
-                           MatchedGenCandidatesMc const& particles,
-                           TracksWPid const& tracks)
-  {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
-  }
-
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
+      aod::McCollisions const& mccollisions,
+      SelectedCandidatesMcWithMl const&,
+      MatchedGenCandidatesMc const& particles,
+      TracksWPid const& tracks)
+      {
+        fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+      }
+      
+      PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
 
   void processMcCorrBkgsSgnWCentMl(aod::Collisions const& collisions,
-                                   aod::McCollisions const& mccollisions,
-                                   SelectedCandidatesMcCorrBkgsWithMl const&,
-                                   MatchedGenCandidatesMc const& particles,
-                                   TracksWPid const& tracks)
-  {
+        aod::McCollisions const& mccollisions,
+        SelectedCandidatesMcCorrBkgsWithMl const&,
+        MatchedGenCandidatesMc const& particles,
+        TracksWPid const& tracks)
+        {
+    LOG(info) << "processMcCorrBkgsSgnWCentMl with " << particles.size() << " particles";
     fillMcTables(collisions, mccollisions, reconstructedCandCorrBkgsMl, particles, tracks);
   }
 

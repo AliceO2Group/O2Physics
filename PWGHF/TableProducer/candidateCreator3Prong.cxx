@@ -955,7 +955,6 @@ struct HfCandidateCreator3ProngExpressions {
             maxDepth = 3; // to catch the D0 resonances
           }
           if (indexRec <= -1) {
-            LOG(info) << "Matching " << motherPdgCode;
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
               indexRec = matchFinalStateCorrBkgs<true, true>(motherPdgCode, mcParticles, arrayDaughters, &flag, &sign, &channel, maxDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -965,9 +964,6 @@ struct HfCandidateCreator3ProngExpressions {
             } else {
               indexRec = matchFinalStateCorrBkgs<false, false>(motherPdgCode, mcParticles, arrayDaughters, &flag, &sign, &channel, maxDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             }
-          }
-          if (indexRec > -1) {
-            LOG(info) << "Matched!";
           }
         }
         LOG(info) << "D+ matching ended with flag " << static_cast<int>(flag) << " and indexRec " << indexRec << ", sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
@@ -1092,8 +1088,10 @@ struct HfCandidateCreator3ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        LOG(info) << "Filling with flag: " << flag << ", origin: " << origin << ", channel: " << channel;
         rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
+        LOG(info) << "Filling with flag: " << flag << ", origin: " << origin << ", channel: " << channel;
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
       LOG(info) << "--------------------------------------------";
@@ -1109,20 +1107,20 @@ struct HfCandidateCreator3ProngExpressions {
       float centrality{-1.f};
       uint16_t rejectionMask{0};
       int nSplitColl = 0;
-      // if constexpr (centEstimator == CentralityEstimator::FT0C) {
-      //   LOG(info) << "FT0C centrality estimator";
-      //   const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
-      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      // } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
-      //   LOG(info) << "FT0M centrality estimator";
-      //   const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
-      //   nSplitColl = collSlice.size();
-      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      // } else if constexpr (centEstimator == CentralityEstimator::None) {
-      //   LOG(info) << "No centrality estimator";
-      //   const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-      //   rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      // }
+      if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        // LOG(info) << "FT0C centrality estimator";
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+        // LOG(info) << "FT0M centrality estimator";
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        nSplitColl = collSlice.size();
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::None) {
+        // LOG(info) << "No centrality estimator";
+        const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      }
       // LOG(info) << "CIAO3";
       hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
