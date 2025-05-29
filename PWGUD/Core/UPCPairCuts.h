@@ -9,13 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+<<<<<<< HEAD
 /// \brief Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
 /// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
 /// Author:
+=======
+// Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
+// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
+// Author:
+>>>>>>> bf3358191 (resolving o2 linter issues)
 
 #ifndef PWGUD_CORE_UPCPAIRCUTS_H_
 #define PWGUD_CORE_UPCPAIRCUTS_H_
 
+<<<<<<< HEAD
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
 #include "CommonConstants/MathConstants.h"
@@ -24,6 +31,20 @@
 #include "Framework/Logger.h"
 
 #include <cmath>
+=======
+#include <cmath>
+
+#include "Framework/Logger.h"
+#include "Framework/HistogramRegistry.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace constants::math;
+>>>>>>> bf3358191 (resolving o2 linter issues)
 
 class UPCPairCuts
 {
@@ -35,7 +56,11 @@ class UPCPairCuts
                   Rho,
                   ParticlesLastEntry };
 
+<<<<<<< HEAD
   void setHistogramRegistry(o2::framework::HistogramRegistry* registry) { histogramRegistry = registry; }
+=======
+  void setHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
+>>>>>>> bf3358191 (resolving o2 linter issues)
 
   void setPairCut(Particle particle, float cut)
   {
