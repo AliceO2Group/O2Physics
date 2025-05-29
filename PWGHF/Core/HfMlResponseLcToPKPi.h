@@ -222,10 +222,7 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr0, tpcTofNSigmaPr2);
         CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi2, tpcTofNSigmaPi0);
       }
-    }
-    // KFParticle variables
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-      for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
+      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         switch (idx) {
           CHECK_AND_FILL_VEC_LCTOPKPI_SIGNED(candidate, kfChi2PrimProton, kfChi2PrimProng0, kfChi2PrimProng2);
           CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, kfChi2PrimKaon, kfChi2PrimProng1);
