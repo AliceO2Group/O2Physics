@@ -24,7 +24,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfMlResponseXicToXiPikf.h"
+#include "PWGHF/Core/HfMlResponseXic0ToXiPikf.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
