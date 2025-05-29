@@ -13,14 +13,15 @@
 /// \author Josué Martínez García, josuem@cern.ch
 /// \file   upcPhotonuclearAnalysisJMG.cxx
 
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
-#include <TTree.h>
-#include <vector>
 #include "CommonConstants/MathConstants.h"
+#include <TTree.h>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
