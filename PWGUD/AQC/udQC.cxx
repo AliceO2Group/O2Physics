@@ -14,6 +14,7 @@
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
 /// \since  04.05.2023
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
