@@ -2655,7 +2655,15 @@ struct strangenessbuilderInitializer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  LOGF(info, "Strangeness builder pre-initializing now...");
+
+  auto strangenessBuilderTask = adaptAnalysisTask<StrangenessBuilder>(cfgc);
+  
+  for(auto const& option : strangenessBuilderTask.options){ 
+    LOGF(info, "option identified: %s", option.name);
+  }
+
   return WorkflowSpec{
-    adaptAnalysisTask<StrangenessBuilder>(cfgc),
+    strangenessBuilderTask,
     adaptAnalysisTask<strangenessbuilderInitializer>(cfgc)};
 }
