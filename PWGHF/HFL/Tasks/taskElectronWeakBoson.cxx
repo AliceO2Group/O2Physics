@@ -81,6 +81,10 @@ struct HfTaskElectronWeakBoson {
   Configurable<float> energyIsolationMax{"energyIsolationMax", 0.1, "isolation cut on energy"};
   Configurable<int> trackIsolationMax{"trackIsolationMax", 3, "Maximum number of tracks in isolation cone"};
 
+  // flag for THn
+  Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
+  Configurable<float> ptTHnThresh{"ptTHnThresh", 5.0, "Threshold for THn make"};
+
   // Skimmed dataset processing configurations
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Enables processing of skimmed datasets"};
   Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGammaHighPtEMCAL", "Trigger of interest (comma separated for multiple)"};
@@ -193,18 +197,19 @@ struct HfTaskElectronWeakBoson {
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
+    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisM02, axisEop, axisIsoEnergy});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
 
-  bool isIsolatedCluster(const o2::aod::EMCALCluster& cluster,
-                         const SelectedClusters& clusters)
+  double calIsolatedCluster(const o2::aod::EMCALCluster& cluster,
+                            const SelectedClusters& clusters)
   {
-    float energySum = 0.0;
-    float isoEnergy = 10.0;
-    float etaAssCluster = cluster.eta();
-    float phiAssCluster = cluster.phi();
+    double energySum = 0.0;
+    double isoEnergy = 10.0;
+    double etaAssCluster = cluster.eta();
+    double phiAssCluster = cluster.phi();
 
     for (const auto& associateCluster : clusters) {
       // Calculate angular distances
@@ -229,9 +234,9 @@ struct HfTaskElectronWeakBoson {
 
     registry.fill(HIST("hIsolationEnergy"), cluster.energy(), isoEnergy);
 
-    return (isoEnergy < energyIsolationMax);
+    return (isoEnergy);
   }
-  bool isIsolatedTrack(double etaEle,
+  int calIsolatedTrack(double etaEle,
                        double phiEle,
                        float ptEle,
                        TrackEle const& tracks)
@@ -256,7 +261,7 @@ struct HfTaskElectronWeakBoson {
 
     registry.fill(HIST("hIsolationTrack"), ptEle, trackCount);
 
-    return (trackCount <= trackIsolationMax);
+    return (trackCount);
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
@@ -375,8 +380,6 @@ struct HfTaskElectronWeakBoson {
         for (const auto& match : tracksofcluster) {
           if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax)
             continue;
-          if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max)
-            continue;
 
           float m20Emc = match.emcalcluster_as<SelectedClusters>().m20();
           float m02Emc = match.emcalcluster_as<SelectedClusters>().m02();
@@ -413,17 +416,26 @@ struct HfTaskElectronWeakBoson {
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
 
+            double isoEnergy = calIsolatedCluster(cluster, emcClusters);
+
+            int trackCount = calIsolatedTrack(track.phi(), track.eta(), track.pt(), tracks);
+
+            if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
+              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, m20Emc, eop, isoEnergy);
+            }
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
             registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc);
             registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), m20Emc);
+            if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max)
+              continue;
+
             if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
-
-              if (eop > eopMin && eop < eopMax) {
-                isIsolated = isIsolatedCluster(cluster, emcClusters);
-                isIsolatedTr = isIsolatedTrack(track.phi(), track.eta(), track.pt(), tracks);
-              }
+              if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax)
+                isIsolated = true;
+              if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax)
+                isIsolatedTr = true;
 
               if (isIsolated) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
