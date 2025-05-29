@@ -548,11 +548,9 @@ struct HfCandidateSelectorXic0ToXiPiKf {
         bool isSelectedMlXic0 = false;
         std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
         isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPi);
-        
         if (!isSelectedMlXic0) {
           continue;
         }
-        
         hfMlToXiPi(outputMlXic0ToXiPi);
       }
 
