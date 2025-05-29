@@ -556,7 +556,7 @@ struct HypKfTreeCreator {
     cand.isPrimaryCandidate = hypNuc.primary();
     cand.isMatter = hypNuc.isMatter();
     cand.mcTrue = hypNuc.mcTrue();
-    cand.isCascade = std::abs(cand.species) > 10; // o2-linter: disable=magic-number (To be checked)
+    cand.isCascade = cand.species > 10; // o2-linter: disable=magic-number (To be checked)
     cand.cent = coll.centFT0C();
     cand.occu = coll.occupancy();
     cand.runNumber = coll.runNumber();
@@ -646,7 +646,7 @@ struct HypKfTreeCreator {
       auto hypNucsByMc = hypNucs.sliceBy(perMcParticle, mcParticleIdx);
       HyperNucleus candidate, hypNucDaughter;
       candidate.speciesMC = mcHypNuc.species();
-      candidate.isCascadeMC = std::abs(candidate.speciesMC) > 10; // o2-linter: disable=magic-number (To be checked)
+      candidate.isCascadeMC = candidate.speciesMC > 10; // o2-linter: disable=magic-number (To be checked)
       candidate.pdgCode = mcHypNuc.pdgCode();
       candidate.isMatterMC = mcHypNuc.isMatter();
       candidate.isPhysicalPrimary = mcHypNuc.isPhysicalPrimary();
