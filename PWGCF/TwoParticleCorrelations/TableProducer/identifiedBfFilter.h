@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file identifiedBfFilter.h
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author bghanley1995@gmail.com
+
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 
@@ -19,6 +23,8 @@
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
@@ -27,9 +33,9 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "MathUtils/Utils.h"
-#include <TDatabasePDG.h>
 
 namespace o2
+
 {
 namespace aod
 {
@@ -59,11 +65,6 @@ enum MatchRecoGenSpecies {
   kIdBfCharged = 4,
   kWrongSpecies = -1
 };
-
-constexpr int pdgcodeEl = 11;
-constexpr int pdgcodePi = 211;
-constexpr int pdgcodeKa = 321;
-constexpr int pdgcodePr = 2212;
 
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
@@ -159,6 +160,13 @@ int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
+std::vector<std::vector<float>> acceptRange;
+std::vector<std::vector<float>> rejectRange;
+
+std::vector<int> doPID;
+std::vector<float> tofCut;
+std::vector<float> tpcCut;
+
 int tracktype = 1;
 
 std::vector<TrackSelection*> trackFilters = {};
@@ -236,8 +244,6 @@ bool useOwnParticleSelection = false;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
-
-TDatabasePDG* fPDG = nullptr;
 
 inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
@@ -591,7 +597,9 @@ template <typename CollisionObject>
 inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
 {
   float mult = getCentMultPercentile(collision);
-  if (mult < 100 && 0 < mult) {
+  int maxMult = 100;
+  int minMult = 0;
+  if (mult < maxMult && minMult < mult) {
     centmult = mult;
     return true;
   }
@@ -673,7 +681,9 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McC
 template <>
 inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float& centmult)
 {
-  if (centmult < 100 && 0 < centmult) {
+  int maxMult = 100;
+  int minMult = 0;
+  if (centmult < maxMult && minMult < centmult) {
     return true;
   } else {
     return false;
@@ -685,7 +695,7 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename CollisionObject>
-inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
+inline bool isEvtSelected(CollisionObject const& collision, float& centormult)
 {
   bool trigsel = triggerSelection(collision);
 
@@ -710,7 +720,7 @@ inline bool matchTrackType(TrackObject const& track)
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else {
-    for (auto filter : trackFilters) {
+    for (const auto& filter : trackFilters) {
       if (filter->IsSelected(track)) {
         if (dca2Dcut) {
           if (track.dcaXY() * track.dcaXY() / maxDCAxy / maxDCAxy + track.dcaZ() * track.dcaZ() / maxDCAz / maxDCAz > 1) {
@@ -738,7 +748,7 @@ inline bool matchTrackType(TrackObject const& track)
 template <typename ParticleObject, typename MCCollisionObject>
 void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+  for (const auto& m : particle.template mothers_as<aod::McParticles>()) {
     LOGF(info, "   mother index: %d", m.globalIndex());
     LOGF(info, "   Tracking back mother");
     LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
@@ -751,7 +761,10 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 inline float getCharge(float pdgCharge)
 {
-  float charge = (pdgCharge / 3 >= 1) ? 1.0 : ((pdgCharge / 3 <= -1) ? -1.0 : 0);
+  int posCharge = 1;
+  int negCharge = -1;
+  int denom = 3;
+  float charge = (pdgCharge / denom >= posCharge) ? 1.0 : ((pdgCharge / denom <= negCharge) ? -1.0 : 0);
   return charge;
 }
 

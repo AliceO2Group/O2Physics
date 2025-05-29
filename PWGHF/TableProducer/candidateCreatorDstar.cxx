@@ -35,6 +35,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
@@ -43,6 +44,7 @@ using namespace o2::hf_trkcandsel;
 using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
+using namespace o2::aod::pid_tpc_tof_utils;
 
 namespace o2::aod
 {
@@ -53,6 +55,12 @@ using HfDstarsWithPvRefitInfo = soa::Join<aod::HfDstars, aod::HfPvRefitDstar>;
 struct HfCandidateCreatorDstar {
   Produces<aod::HfD0FromDstarBase> rowCandD0Base;
   Produces<aod::HfCandDstarBase> rowCandDstarBase;
+  Produces<aod::HfProng0PidPi> rowProng0PidPi;
+  Produces<aod::HfProng0PidKa> rowProng0PidKa;
+  Produces<aod::HfProng1PidPi> rowProng1PidPi;
+  Produces<aod::HfProng1PidKa> rowProng1PidKa;
+  Produces<aod::HfProng2PidPi> rowProngSoftPiPidPi;
+  Produces<aod::HfProng2PidKa> rowProngSoftPiPidKa;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
@@ -81,6 +89,8 @@ struct HfCandidateCreatorDstar {
   double bz;
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
   double massPi, massK, massD0;
+
+  using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
@@ -136,7 +146,9 @@ struct HfCandidateCreatorDstar {
     }
 
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
@@ -174,7 +186,7 @@ struct HfCandidateCreatorDstar {
   void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
                        aod::Hf2Prongs const&,
-                       aod::TracksWCov const&,
+                       TracksWCovExtraPidPiKa const&,
                        aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     // LOG(info) << "runCreatorDstar function called";
@@ -191,10 +203,10 @@ struct HfCandidateCreatorDstar {
         continue;
       }
 
-      auto trackPi = rowTrackIndexDstar.template prong0_as<aod::TracksWCov>();
+      auto trackPi = rowTrackIndexDstar.template prong0_as<TracksWCovExtraPidPiKa>();
       auto prongD0 = rowTrackIndexDstar.template prongD0_as<aod::Hf2Prongs>();
-      auto trackD0Prong0 = prongD0.template prong0_as<aod::TracksWCov>();
-      auto trackD0Prong1 = prongD0.template prong1_as<aod::TracksWCov>();
+      auto trackD0Prong0 = prongD0.template prong0_as<TracksWCovExtraPidPiKa>();
+      auto trackD0Prong1 = prongD0.template prong1_as<TracksWCovExtraPidPiKa>();
 
       // Extracts primary vertex position and covariance matrix from a collision
       auto primaryVertex = getPrimaryVertex(collision);
@@ -344,6 +356,14 @@ struct HfCandidateCreatorDstar {
                     std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
+      // fill candidate D0 prong PID rows
+      fillProngPid<HfProngSpecies::Pion>(trackD0Prong0, rowProng0PidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackD0Prong0, rowProng0PidKa);
+      fillProngPid<HfProngSpecies::Pion>(trackD0Prong1, rowProng1PidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackD0Prong1, rowProng1PidKa);
+      // fill soft-pion PID rows
+      fillProngPid<HfProngSpecies::Pion>(trackPi, rowProngSoftPiPidPi);
+      fillProngPid<HfProngSpecies::Kaon>(trackPi, rowProngSoftPiPidKa);
 
       if (fillHistograms) {
         registry.fill(HIST("QA/hPtD0"), ptD0);
@@ -366,7 +386,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                      aod::TracksWCov const& tracks,
+                      TracksWCovExtraPidPiKa const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -377,7 +397,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
-                        aod::TracksWCov const& tracks,
+                        TracksWCovExtraPidPiKa const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -394,7 +414,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                              aod::TracksWCov const& tracks,
+                              TracksWCovExtraPidPiKa const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -405,7 +425,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-                                aod::TracksWCov const& tracks,
+                                TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -422,7 +442,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                              aod::TracksWCov const& tracks,
+                              TracksWCovExtraPidPiKa const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -433,7 +453,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-                                aod::TracksWCov const& tracks,
+                                TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -501,8 +521,6 @@ struct HfCandidateCreatorDstar {
 struct HfCandidateCreatorDstarExpressions {
   Spawns<aod::HfD0FromDstarExt> rowsCandidateD0;
   Spawns<aod::HfCandDstarExt> rowsCandidateDstar;
-  Produces<aod::HfCand2ProngMcRec> rowsMcMatchRecD0;
-  Produces<aod::HfCand2ProngMcGen> rowsMcMatchGenD0;
   Produces<aod::HfCandDstarMcRec> rowsMcMatchRecDstar;
   Produces<aod::HfCandDstarMcGen> rowsMcMatchGenDstar;
 
@@ -536,11 +554,11 @@ struct HfCandidateCreatorDstarExpressions {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-dstar") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   /// Perform MC Matching.
@@ -557,7 +575,7 @@ struct HfCandidateCreatorDstarExpressions {
     int indexRecDstar = -1, indexRecD0 = -1;
     int8_t signDstar = 0, signD0 = 0;
     int8_t flagDstar = 0, flagD0 = 0;
-    int8_t originDstar = 0, originD0 = 0;
+    int8_t originDstar = 0;
     int8_t nKinkedTracksDstar = 0, nKinkedTracksD0 = 0;
     int8_t nInteractionsWithMaterialDstar = 0, nInteractionsWithMaterialD0 = 0;
 
@@ -566,7 +584,6 @@ struct HfCandidateCreatorDstarExpressions {
       flagDstar = 0;
       flagD0 = 0;
       originDstar = 0;
-      originD0 = 0;
       std::vector<int> idxBhadMothers{};
 
       auto indexDstar = rowCandidateDstar.globalIndex();
@@ -589,7 +606,7 @@ struct HfCandidateCreatorDstarExpressions {
           }
         }
         if (fromBkg) {
-          rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0, 0, 0);
+          rowsMcMatchRecDstar(flagDstar, flagD0, originDstar, -1.f, 0, 0, 0);
           continue;
         }
       }
@@ -623,22 +640,69 @@ struct HfCandidateCreatorDstarExpressions {
         flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
       }
 
+      // check partly reconstructed decays, namely D0->Kpipi0
+      if (indexRecDstar < 0 && indexRecD0) {
+        if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar, &nInteractionsWithMaterialDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0, &nInteractionsWithMaterialD0);
+        } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nKinkedTracksD0);
+        } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, nullptr, &nInteractionsWithMaterialDstar);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, nullptr, &nInteractionsWithMaterialD0);
+        } else {
+          // D*± → D0(bar) π±
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
+          // D0(bar) → π± K∓
+          indexRecD0 = RecoDecay::getMatchedMCRec<false, false, true>(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
+        }
+
+        if (indexRecDstar > -1) {
+          // D*± → D0(bar) π± π0
+          auto motherParticleDstar = mcParticles.rawIteratorAt(indexRecDstar);
+          if (signDstar > 0) {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus, +kPi0}, false, &signDstar, 2)) {
+              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+            }
+          } else {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, -Pdg::kDStar, std::array{-kPiPlus, -kPiPlus, +kKPlus, +kPi0}, false, &signDstar, 2)) {
+              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+            }
+          }
+        }
+        if (indexRecD0 > -1) {
+          // D0(bar) → π± K∓ π0
+          auto motherParticleD0 = mcParticles.rawIteratorAt(indexRecD0);
+          if (signD0 > 0) {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0)) {
+              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            }
+          } else {
+            if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
+              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            }
+          }
+        }
+      }
+
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
         originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
-      if (flagD0 != 0) {
-        auto particleD0 = mcParticles.iteratorAt(indexRecD0);
-        originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particleD0);
-      }
       if (originDstar == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracksDstar, nInteractionsWithMaterialDstar);
+        rowsMcMatchRecDstar(flagDstar, flagD0, originDstar, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracksDstar, nInteractionsWithMaterialDstar);
       } else {
-        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0, nKinkedTracksDstar, nInteractionsWithMaterialDstar);
+        rowsMcMatchRecDstar(flagDstar, flagD0, originDstar, -1.f, 0, nKinkedTracksDstar, nInteractionsWithMaterialDstar);
       }
-      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0, nKinkedTracksD0, nInteractionsWithMaterialD0);
     }
 
     for (const auto& mcCollision : mcCollisions) {
@@ -663,8 +727,7 @@ struct HfCandidateCreatorDstarExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowsMcMatchGenDstar(0, 0, -1);
-          rowsMcMatchGenD0(0, 0, -1);
+          rowsMcMatchGenDstar(0, 0, 0, -1);
         }
         continue;
       }
@@ -674,38 +737,47 @@ struct HfCandidateCreatorDstarExpressions {
         flagDstar = 0;
         flagD0 = 0;
         originDstar = 0;
-        originD0 = 0;
         std::vector<int> idxBhadMothers{};
         // Reject particles from background events
         if (particle.fromBackgroundEvent() && rejectBackground) {
-          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
-          rowsMcMatchGenD0(flagD0, originD0, -1);
+          rowsMcMatchGenDstar(flagDstar, flagD0, originDstar, -1);
           continue;
         }
 
         // D*± → D0(bar) π±
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
-          flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-        }
+        std::vector<int> listIndexDaughters{};
+        bool isDstarToDzeroPi = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+Pdg::kD0, +kPiPlus}, true, &signDstar, 1, &listIndexDaughters);
+
         // D0(bar) → π± K∓
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
-          flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+        if (isDstarToDzeroPi) {
+          aod::McParticles::iterator particleD0;
+          for (const auto& dauIdx : listIndexDaughters) {
+            if (dauIdx >= 0) {
+              particleD0 = mcParticles.rawIteratorAt(dauIdx);
+              if (std::abs(particleD0.pdgCode()) == Pdg::kD0) {
+                break;
+              }
+            }
+          }
+          if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
+            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+          } else if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0) || RecoDecay::isMatchedMCGen(mcParticles, particleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
+            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+          }
         }
 
-        // check wether the particle is non-promt (from a B0 hadron)
+        // check wether the particle is non-prompt (from a B0 hadron)
         if (flagDstar != 0) {
           originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (flagD0 != 0) {
-          originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
-        }
 
         if (originDstar == RecoDecay::OriginType::NonPrompt) {
-          rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+          rowsMcMatchGenDstar(flagDstar, flagD0, originDstar, idxBhadMothers[0]);
         } else {
-          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+          rowsMcMatchGenDstar(flagDstar, flagD0, originDstar, -1);
         }
-        rowsMcMatchGenD0(flagD0, originD0, -1.);
       }
     }
   }

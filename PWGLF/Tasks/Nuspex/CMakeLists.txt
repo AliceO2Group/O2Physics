@@ -84,6 +84,11 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(nuclei-tpcspectra
+    SOURCES nucleitpcpbpb.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
     SOURCES spectraTPCtinyPiKaPr.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -146,7 +151,7 @@ o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
 
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(angular-correlations-in-jets
-    SOURCES AngularCorrelationsInJets.cxx
+    SOURCES angularCorrelationsInJets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 

@@ -1566,7 +1566,7 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", true);
+  PROCESS_SWITCH(tofSpectra, processMCclosure, "MC closure test", false);
 
   void processOccupancy(CollisionCandidates::iterator const& collision,
                         soa::Join<TrackCandidates,
@@ -1889,7 +1889,7 @@ struct tofSpectra {
     }
 
     const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
-    const float multiplicity = getMultiplicityMC(mcCollision);
+    const float multiplicity = getMultiplicity(collision);
     const int occupancy = collision.trackOccupancyInTimeRange();
     //************************************RD**************************************************
     const float impParam = mcCollision.impactParameter();
