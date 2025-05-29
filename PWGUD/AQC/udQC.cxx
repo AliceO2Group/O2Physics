@@ -191,13 +191,14 @@ struct UDQC {
                    aod::Zdcs& zdcs, aod::Calos& calos,
                    aod::V0s const& v0s, aod::Cascades const& cascades)
   {
-    //LOGF(debug, "<UDQC. Collision %d", collision.globalIndex());
-    //LOGF(debug, "<UDQC> Start %i", abcrs.size());
+    // LOGF(debug, "<UDQC. Collision %d", collision.globalIndex());
+    // LOGF(debug, "<UDQC> Start %i", abcrs.size());
 
-   
-      if (!tracks.size()) return;
-      if (collision.numContrib() < 1) return;
-      
+    if (!tracks.size())
+      return;
+    if (collision.numContrib() < 1)
+      return;
+
     bool isDGcandidate = true;
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(0., isDGcandidate * 1.);
 
@@ -252,7 +253,7 @@ struct UDQC {
 
         if (track.tpcSignal() > maxdEdxTPC) {
           maxdEdxTPC = track.tpcSignal();
-         // LOGF(debug, "<UDQC> New maxdEdx TPC %f", maxdEdxTPC);
+          // LOGF(debug, "<UDQC> New maxdEdx TPC %f", maxdEdxTPC);
         }
 
         // TOF hit?
@@ -260,7 +261,7 @@ struct UDQC {
           registry.get<TH2>(HIST("tracks/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
           if (track.tofSignal() > maxdEdxTOF) {
             maxdEdxTOF = track.tofSignal();
-            //LOGF(debug, "<UDQC> New maxdEdx TOF %f", maxdEdxTOF);
+            // LOGF(debug, "<UDQC> New maxdEdx TOF %f", maxdEdxTOF);
           }
 
           // No vertex track with TOF hit?
@@ -285,7 +286,7 @@ struct UDQC {
     if (collision.numContrib() > 0) {
       rgtrwTOF /= collision.numContrib();
     }
-    //LOGF(debug, "<UDQC> PV tracks with TOF: %f [1]", rgtrwTOF);
+    // LOGF(debug, "<UDQC> PV tracks with TOF: %f [1]", rgtrwTOF);
     registry.get<TH2>(HIST("collisions/tResvsrTOFTracks"))->Fill(collision.collisionTimeRes(), rgtrwTOF);
     registry.get<TH2>(HIST("collisions/tResvsTOFTrkNoPV"))->Fill(collision.collisionTimeRes(), norgtrwTOF);
 
@@ -433,7 +434,7 @@ struct UDQC {
         }
         // define Lorentz vector to create invariant mass
         lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
-        //LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
+        // LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
         if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
           goodpts = false;
         }
@@ -525,7 +526,7 @@ struct UDQC {
             registry.get<TH2>(HIST("DG/etaminus"))->Fill(track.eta(), track.phi());
           }
 
-         // LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
+          // LOGF(debug, "dEdx TPC %f TOF %i %f", track.tpcSignal(), track.hasTOF(), track.hasTOF() ? track.tofSignal() : 0.);
           if (collision.numContrib() == 2) {
             registry.get<TH2>(HIST("DG/dEdxTPC"))->Fill(track.tpcInnerParam() / track.sign(), track.tpcSignal());
             registry.get<TH1>(HIST("DG/trkDCAxy"))->Fill(track.dcaXY());
@@ -566,7 +567,7 @@ struct UDQC {
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
-    //LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
+    // LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
 
     // test influence of BCrange width using a series of NDtcoll
     float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
@@ -622,7 +623,7 @@ struct UDQC {
   void processCleanFIT2(CC const& collision, BCs const& bct0s,
                         aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
-    //LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
+    // LOGF(debug, "<CleanFit. Collision %d", collision.globalIndex());
     uint64_t bcnum = 0;
     if (collision.has_foundBC()) {
       auto collbc = collision.foundBC_as<BCs>();
@@ -681,7 +682,7 @@ struct UDQC {
   // ...............................................................................................................
   void processFV0(aod::FV0As const& fv0s, BCs const&)
   {
-    //LOGF(info, "<FV0Signals> %d", fv0s.size());
+    // LOGF(info, "<FV0Signals> %d", fv0s.size());
     if (fv0s.size() <= 0) {
       return;
     }
@@ -699,7 +700,7 @@ struct UDQC {
   // ...............................................................................................................
   void processFT0(aod::FT0s const& ft0s, aod::FT0sCorrected const& ft0scorr, BCs const&)
   {
-    //LOGF(debug, "<processFT0> %d", ft0s.size());
+    // LOGF(debug, "<processFT0> %d", ft0s.size());
     for (auto const& collision : ft0scorr) {
 
       if (collision.t0ACorrectedValid()) {
@@ -733,7 +734,7 @@ struct UDQC {
   // ...............................................................................................................
   void processFDD(aod::FDDs const& fdds, BCs const&)
   {
-    //LOGF(debug, "<FDDSignals> %d", fdds.size());
+    // LOGF(debug, "<FDDSignals> %d", fdds.size());
 
     for (auto fdd : fdds) {
 
@@ -755,7 +756,7 @@ struct UDQC {
   // ...............................................................................................................
   void processZDC(aod::Zdc const& zdc)
   {
-    //LOGF(debug, "<ZDCSignals> %d", zdc.size());
+    // LOGF(debug, "<ZDCSignals> %d", zdc.size());
 
     // Zdc energies
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(0., zdc.energyZEM1());
