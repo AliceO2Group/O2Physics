@@ -24,7 +24,6 @@
 #include <cstdio>
 #include <utility> // std::move
 #include <vector>  // std::vector
-#include <iostream> // std::ostream
 
 // ROOT includes
 #include <TMCProcess.h> // for VMC Particle Production Process
@@ -553,10 +552,8 @@ struct RecoDecay {
     while (!motherFound && arrayIds[-stage].size() > 0 && (depthMax < 0 || -stage < depthMax)) {
       // vector of mother indices for the current stage
       std::vector<int64_t> arrayIdsStage{};
-      // std::cout << "[getMother] number of mothers at stage " << stage << ": " << arrayIds[-stage].size() << std::endl;
       for (auto iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage, o2-linter: disable=const-ref-in-for-loop (int elements)
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
-        // std::cout << "[getMother] particleMother.pdgCode(): " << particleMother.pdgCode() << std::endl;
         if (particleMother.has_mothers()) {
           for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
             if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
@@ -565,9 +562,10 @@ struct RecoDecay {
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check mother's PDG code.
             auto pdgParticleIMother = mother.pdgCode(); // PDG code of the mother
-            for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-              std::cout << "  ";
-            // std::cout << "[getMother] Stage: " << stage << " Mother PDG: " << pdgParticleIMother << ", Index: " << iMother << std::endl;
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, pdgParticleIMother, iMother);
             if (pdgParticleIMother == pdgMother) { // exact PDG match
               sgn = 1;
               indexMother = iMother;
@@ -628,7 +626,6 @@ struct RecoDecay {
     }
 
     bool isFinal = false;                     // Flag to indicate the end of recursion
-    // std::cout << "[getDaughters] Stage: " << static_cast<int>(stage) << ", Particle PDG: " << particle.pdgCode() << ", Index: " << particle.globalIndex() << ", depthMax: " << static_cast<int>(depthMax) << std::endl;
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
     }
@@ -636,7 +633,6 @@ struct RecoDecay {
     if (!isFinal && !particle.has_daughters()) {
       // If the original particle has no daughters, we do nothing and exit.
       if (stage == 0) {
-        // std::cout << "[getDaughters] No daughters of the original particle " << particle.globalIndex() << std::endl;
         // Printf("getDaughters: No daughters of %d", index);
         return;
       }
@@ -648,10 +644,8 @@ struct RecoDecay {
     if (!isFinal && stage > 0) {
       // If the particle has daughters but is considered to be final, we label it as final.
       for (auto pdgI : arrPdgFinal) {        // o2-linter: disable=const-ref-in-for-loop (int elements)
-        // std::cout << "[getDaughters] Checking PDG code: " << pdgI << " with " << pdgParticle << std::endl;
         if (pdgParticle == std::abs(pdgI)) { // Accept antiparticles.
           isFinal = true;
-          // std::cout << "[getDaughters] Particle " << particle.globalIndex() << " is final with PDG code " << pdgParticle << std::endl;
           break;
         }
       }
@@ -660,17 +654,14 @@ struct RecoDecay {
     if (isFinal) {
       // printf("getDaughters: ");
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
-      //   std::cout << " ";
-        // printf(" ");
+      //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, pdgParticle);
-      // std::cout << "[getDaughters] Adding particle " << particle.globalIndex() << " as final daughter with PDG code " << pdgParticle << std::endl;
       list->push_back(particle.globalIndex());
       return;
     }
     // If we are here, we have to follow the daughter tree.
     // printf("getDaughters: ");
-    for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
-      std::cout << " ";
+    // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
     //  printf(" ");
     // printf("Stage %d: %d (PDG %d) -> %d-%d\n", stage, index, pdgParticle, indexDaughterFirst, indexDaughterLast);
     // Call itself to get daughters of daughters recursively.
@@ -697,11 +688,11 @@ struct RecoDecay {
   /// \param nKaToPi  number of kaon prongs decayed to a pion
   /// \param nInteractionsWithMaterial  number of daughter particles that interacted with material
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, bool acceptTrackIntWithMaterial = false, bool forceIncompleteReco = false, std::size_t NDaug, std::size_t NFinPartSpecies, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, bool acceptTrackIntWithMaterial = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
-                             const std::array<U, NDaug>& arrDaughters,
+                             const std::array<U, N>& arrDaughters,
                              int pdgMother,
-                             std::array<int, NFinPartSpecies> arrPdgDaughters,
+                             std::array<int, N> arrPdgDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1,
@@ -717,13 +708,13 @@ struct RecoDecay {
     int8_t nInteractionsWithMaterialLocal = 0; // number of interactions with material
     int indexMother = -1;                      // index of the mother particle
     std::vector<int> arrAllDaughtersIndex;     // vector of indices of all daughters of the mother of the first provided daughter
-    std::array<int, NFinPartSpecies> arrDaughtersIndex;      // array of indices of provided daughters
+    std::array<int, N> arrDaughtersIndex;      // array of indices of provided daughters
     if (sign) {
       *sign = sgn;
     }
     if constexpr (acceptFlavourOscillation) {
       // Loop over decay candidate prongs to spot possible oscillation decay product
-      for (std::size_t iProng = 0; iProng < NDaug; ++iProng) {
+      for (std::size_t iProng = 0; iProng < N; ++iProng) {
         if (!arrDaughters[iProng].has_mcParticle()) {
           return -1;
         }
@@ -735,7 +726,7 @@ struct RecoDecay {
       }
     }
     // Loop over decay candidate prongs
-    for (std::size_t iProng = 0; iProng < NDaug; ++iProng) {
+    for (std::size_t iProng = 0; iProng < N; ++iProng) {
       if (!arrDaughters[iProng].has_mcParticle()) {
         return -1;
       }
@@ -785,43 +776,33 @@ struct RecoDecay {
         indexMother = getMother(particlesMC, particleI, pdgMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
-          // std::cout << "MC Rec: Rejected: bad mother index or PDG" << std::endl;
+          // Printf("MC Rec: Rejected: bad mother index or PDG");
           return -1;
         }
-        std::cout << "MC Rec: Good mother: " << indexMother << std::endl;
+        // Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
-          // std::cout << "MC Rec: Rejected: bad daughter index range: " << particleMother.daughtersIds().front() << "-" << particleMother.daughtersIds().back() << std::endl;
+          // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
         if constexpr (!acceptIncompleteReco && !checkProcess) {
-          if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(NDaug)) {
-            std::cout << "MC Rec: Rejected: too many direct daughters: " << particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1
-                << " (expected " << NDaug << " final)" << std::endl;
-            // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, NDaug);
+          if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+            // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
             return -1;
           }
         }
         // Get the list of actual final daughters.
         getDaughters<checkProcess>(particleMother, &arrAllDaughtersIndex, arrPdgDaughters, depthMax);
-        std::cout << "MC Rec: Mother " << indexMother << " has " << arrAllDaughtersIndex.size() << " final states" << std::endl;
-        for (auto i : arrAllDaughtersIndex) {
-          std::cout << " (" << i << " , pdg: " << particlesMC.rawIteratorAt(i - particlesMC.offset()).pdgCode() << ") , ";
-        }
-        // std::cout << " " << std::endl;
+        // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
+        // for (auto i : arrAllDaughtersIndex) {
+        //   printf(" %d", i);
+        // }
+        // printf("\n");
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
-        if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != NDaug) {
-          std::cout << "MC Rec: Number of final states " << arrAllDaughtersIndex.size() << " (expected " << NDaug << ")" << std::endl;
-          // LOG(info) << "MC Rec: Rejected: incorrect number of final states " << arrAllDaughtersIndex.size() << " (expected " << NDaug << ")";
-          // Printf("MC Rec: Rejected: incorrect number of final states %ld (expected %ld)", arrAllDaughtersIndex.size(), NDaug);
-          return -1;
-        }
-        if (forceIncompleteReco && arrAllDaughtersIndex.size() == NDaug) {
-          std::cout << "MC Rec: Number of final states " << arrAllDaughtersIndex.size() << "vs Number of daughters " << NDaug << ", expected incomplete reco" << std::endl;
-          // LOG(info) << "MC Rec: Rejected: incorrect number of final states " << arrAllDaughtersIndex.size() << " (expected " << NDaug << ")";
-          // Printf("MC Rec: Rejected: incorrect number of final states %ld (expected %ld)", arrAllDaughtersIndex.size(), NDaug);
+        if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != N) {
+          // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
       }
@@ -829,7 +810,6 @@ struct RecoDecay {
       // (Check that the daughter is not a stepdaughter, i.e. particle pointing to the mother while not being its daughter.)
       bool isDaughterFound = false; // Is the index of this prong among the remaining expected indices of daughters?
       for (std::size_t iD = 0; iD < arrAllDaughtersIndex.size(); ++iD) {
-        // std::cout << "MC Rec: Checking daughter " << iProng << " index: " << arrDaughtersIndex[iProng] << " against expected index: " << arrAllDaughtersIndex[iD] << std::endl;
         if (arrDaughtersIndex[iProng] == arrAllDaughtersIndex[iD]) {
           arrAllDaughtersIndex[iD] = -1; // Remove this index from the array of expected daughters. (Rejects twin daughters, i.e. particle considered twice as a daughter.)
           isDaughterFound = true;
@@ -837,14 +817,14 @@ struct RecoDecay {
         }
       }
       if (!isDaughterFound) {
-        // std::cout << "MC Rec: Rejected: bad daughter index: " << arrDaughtersIndex[iProng] << " not in the list of final daughters" << std::endl;
+        // Printf("MC Rec: Rejected: bad daughter index: %d not in the list of final daughters", arrDaughtersIndex[iProng]);
         return -1;
       }
       // Check daughter's PDG code.
       auto pdgParticleI = particleI.pdgCode(); // PDG code of the ith daughter
-      // std::cout << "MC Rec: Daughter " << iProng << " PDG: " << pdgParticleI << std::endl;
+      // Printf("MC Rec: Daughter %d PDG: %d", iProng, pdgParticleI);
       bool isPdgFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
-      for (std::size_t iProngCp = 0; iProngCp < NDaug; ++iProngCp) {
+      for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (pdgParticleI == coefFlavourOscillation * sgn * arrPdgDaughters[iProngCp]) {
           arrPdgDaughters[iProngCp] = 0; // Remove this PDG code from the array of expected ones.
           isPdgFound = true;
@@ -852,11 +832,11 @@ struct RecoDecay {
         }
       }
       if (!isPdgFound) {
-        // std::cout << "MC Rec: Rejected: bad daughter PDG: " << pdgParticleI << std::endl;
+        // Printf("MC Rec: Rejected: bad daughter PDG: %d", pdgParticleI);
         return -1;
       }
     }
-    std::cout << "MC Rec: Accepted: m: " << indexMother << std::endl;
+    // Printf("MC Rec: Accepted: m: %d", indexMother);
     if (sign) {
       *sign = sgn;
     }
@@ -925,13 +905,11 @@ struct RecoDecay {
     // Check the PDG code of the particle.
     auto pdgCandidate = candidate.pdgCode();
     // Printf("MC Gen: Candidate PDG: %d", pdgCandidate);
-    // std::cout << "MC Gen: Candidate PDG: " << pdgCandidate << std::endl;
     if (pdgCandidate == pdgParticle) { // exact PDG match
       sgn = 1;
     } else if (acceptAntiParticles && pdgCandidate == -pdgParticle) { // antiparticle PDG match
       sgn = -1;
     } else {
-      // std::cout << "MC Gen: Rejected: bad particle PDG: " << (acceptAntiParticles ? "abs " : "") << pdgCandidate << " != " << pdgParticle << std::endl;
       // Printf("MC Gen: Rejected: bad particle PDG: %s%d != %d", acceptAntiParticles ? "abs " : "", pdgCandidate, std::abs(pdgParticle));
       return false;
     }
@@ -953,18 +931,14 @@ struct RecoDecay {
       }
       // Get the list of actual final daughters.
       getDaughters<checkProcess>(candidate, &arrAllDaughtersIndex, arrPdgDaughters, depthMax);
-
-      // printf("MC Gen: Mother %ld has %ld final states", candidate.globalIndex(), arrAllDaughtersIndex.size());
-      // std::cout << "MC Gen: Mother " << candidate.globalIndex() << " has " << arrAllDaughtersIndex.size() << " final states" << std::endl;
+      // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
-        // std::cout << " (" << i << " , pdg: " << particlesMC.rawIteratorAt(i - particlesMC.offset()).pdgCode() << ") , ";
+      //   printf(" %d", i);
       // }
-      // std::cout << " " << std::endl;
       // printf("\n");
       //  Check whether the number of final daughters is equal to the required number.
       if (arrAllDaughtersIndex.size() != N) {
-        // std::cout << "MC Gen: Rejected: incorrect number of final states " << arrAllDaughtersIndex.size() << " (expected " << N << ")" << std::endl;
-        // Printf("MC Gen: Rejected: incorrect number of final states %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+        // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         return false;
       }
       if constexpr (acceptFlavourOscillation) {
@@ -981,7 +955,6 @@ struct RecoDecay {
       for (auto indexDaughterI : arrAllDaughtersIndex) {                                            // o2-linter: disable=const-ref-in-for-loop (int elements)
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto pdgCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
-        // std::cout << "MC Gen: Daughter " << indexDaughterI << " PDG: " << pdgCandidateDaughterI << std::endl;
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, pdgCandidateDaughterI);
         bool isPdgFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
@@ -992,7 +965,6 @@ struct RecoDecay {
           }
         }
         if (!isPdgFound) {
-          // std::cout << "MC Gen: Rejected: bad daughter PDG: " << pdgCandidateDaughterI << std::endl;
           // Printf("MC Gen: Rejected: bad daughter PDG: %d", pdgCandidateDaughterI);
           return false;
         }
@@ -1001,7 +973,6 @@ struct RecoDecay {
         *listIndexDaughters = arrAllDaughtersIndex;
       }
     }
-    std::cout << "MC Gen: Accepted: m: " << candidate.globalIndex() << std::endl;
     // Printf("MC Gen: Accepted: m: %d", candidate.globalIndex());
     if (sign) {
       *sign = sgn;
