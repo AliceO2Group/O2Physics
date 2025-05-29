@@ -470,15 +470,9 @@ struct ItsImpactParStudies {
     /// loop over tracks
     float pt = -999.f;
     float p = -999.f;
-    float eta = -999.f;
-    float phi = -999.f;
-    int8_t sign = -1;
     bool isPvContributor = false;
-    int nContributors = -1;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
-    float impParRPhiSigma = 999.f;
-    float impParZSigma = 999.f;
     float tpcNSigmaPion = -999.f;
     float tpcNSigmaKaon = -999.f;
     float tpcNSigmaProton = -999.f;
@@ -641,8 +635,6 @@ struct ItsImpactParStudies {
       // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
-      impParRPhiSigma = toMicrometers * std::sqrt(track.sigmaDcaXY2());
-      impParZSigma = toMicrometers * std::sqrt(track.sigmaDcaZ2());
       // updated value after PV recalculation
       if (recalc_imppar) {
         if (fEnablePulls) {
@@ -651,12 +643,10 @@ struct ItsImpactParStudies {
           if (o2::base::Propagator::Instance()->propagateToDCABxByBz(PVbase_recalculated, trackParCov, 2.f, matCorr, &dcaInfoCov)) {
             impParRPhi = dcaInfoCov.getY() * toMicrometers;
             impParZ = dcaInfoCov.getZ() * toMicrometers;
-            impParRPhiSigma = std::sqrt(dcaInfoCov.getSigmaY2()) * toMicrometers;
-            impParZSigma = std::sqrt(dcaInfoCov.getSigmaZ2()) * toMicrometers;
           }
         } else {
           auto trackPar = getTrackPar(track);
-          o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+          std::array<float, 2> dcaInfo{-999., -999.};
           if (o2::base::Propagator::Instance()->propagateToDCABxByBz({PVbase_recalculated.getX(), PVbase_recalculated.getY(), PVbase_recalculated.getZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
             impParRPhi = dcaInfo[0] * toMicrometers;
             impParZ = dcaInfo[1] * toMicrometers;
@@ -683,10 +673,6 @@ struct ItsImpactParStudies {
         // downsampling - do not consider the current track
         continue;
       }
-      eta = track.eta();
-      phi = track.phi();
-      sign = track.sign();
-      nContributors = collision.numContrib();
 
       if (addTrackIUinfo) {
         histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
