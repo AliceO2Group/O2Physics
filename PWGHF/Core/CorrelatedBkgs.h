@@ -29,8 +29,8 @@ namespace o2::hf_corrbkg
 {
 
     enum FinalStates2Prongs {
-        PiK = 1,
-        KPi,
+        KPi = 1,
+        KK,
         KPiPi0,
         PiPi,
         PiPiPi0,
@@ -39,11 +39,11 @@ namespace o2::hf_corrbkg
 
     std::unordered_map<FinalStates2Prongs, std::vector<int> > finalStates2Prongs = 
     {
-        {FinalStates2Prongs::PiK,      std::vector<int>{+kPiPlus, -kKPlus}},
-        {FinalStates2Prongs::KPi,      std::vector<int>{-kKPlus, +kPiPlus}},
-        {FinalStates2Prongs::KPiPi0,   std::vector<int>{-kKPlus, +kPiPlus, +kPi0}},
-        {FinalStates2Prongs::PiPi,     std::vector<int>{+kPiMinus, +kPiPlus}},
-        {FinalStates2Prongs::PiPiPi0,  std::vector<int>{+kPiMinus, +kPiPlus, +kPi0}}
+        {FinalStates2Prongs::KPi,      std::vector<int>{+kKMinus,   +kPiPlus}},
+        {FinalStates2Prongs::KK,       std::vector<int>{+kKMinus,   +kKPlus}},
+        {FinalStates2Prongs::KPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus, +kPi0}},
+        {FinalStates2Prongs::PiPi,     std::vector<int>{+kPiMinus,  +kPiPlus}},
+        {FinalStates2Prongs::PiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus, +kPi0}}
     };
 
     enum FinalStates3Prongs {
@@ -60,50 +60,51 @@ namespace o2::hf_corrbkg
 
     std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStates3Prongs = 
     {
-        {FinalStates3Prongs::KKPi,       std::vector<int>{-kKPlus,   +kKPlus,  +kPiPlus}},
-        {FinalStates3Prongs::KKPiPi0,    std::vector<int>{-kKPlus,   +kKPlus,  +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::KPiPi,      std::vector<int>{+kPiPlus,  -kKPlus,  +kPiPlus}},
-        {FinalStates3Prongs::KPiPiPi0,   std::vector<int>{+kPiPlus,  -kKPlus,  +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::PiPiPi,     std::vector<int>{+kPiMinus, +kPiPlus, +kPiPlus}},
-        {FinalStates3Prongs::PiPiPiPi0,  std::vector<int>{+kPiMinus, +kPiPlus, +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::ProtonKPi,  std::vector<int>{kProton,   -kKPlus,  +kPiPlus}}
+        {FinalStates3Prongs::KKPi,       std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
+        {FinalStates3Prongs::KKPiPi0,    std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::KPiPi,      std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::KPiPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::PiPiPi,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::PiPiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::ProtonPiPi, std::vector<int>{+kProton,   +kPiMinus, +kPiPlus}},
+        {FinalStates3Prongs::ProtonKPi,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}}
     };
 
     // Dstar → K± K∓ π±
     namespace D0 {
       enum DecayChannelResoD0 {
-        RhoK = 1,
+        RhoPi = 1,
+        RhoK,
         K0starPi0,
         K0starPiPlus,
-        RhoPi,
       };
 
       std::unordered_map<DecayChannelResoD0, std::array<int, 2> > resoStatesD0 = 
       {
-        {DecayChannelResoD0::RhoK,          std::array<int, 2>{213,         -kKPlus}},
-        {DecayChannelResoD0::K0starPi0,     std::array<int, 2>{-kK0Star892, -kKPlus}},
-        {DecayChannelResoD0::K0starPiPlus,  std::array<int, 2>{-323,        +kKPlus}},
-        {DecayChannelResoD0::RhoPi,         std::array<int, 2>{213,         -kPiPlus}},
+        {DecayChannelResoD0::RhoPi,         std::array<int, 2>{213,            +kPiMinus}},
+        {DecayChannelResoD0::RhoK,          std::array<int, 2>{213,            +kKMinus}},
+        {DecayChannelResoD0::K0starPi0,     std::array<int, 2>{-kK0Star892,    +kPi0}},
+        {DecayChannelResoD0::K0starPiPlus,  std::array<int, 2>{-kKPlusStar892, +kPiPlus}},
       };
     }
 
     // D± → K± K∓ π±
     namespace DPlus {
       enum DecayChannelResoDplus {
-        K0starK = 1,
+        PhiPi = 1,
+        K0starK,
         K_1430K,
-        PhiPi,
         RhoPi,
         f2_1270Pi,
       };
 
       std::unordered_map<DecayChannelResoDplus, std::array<int, 2> > resoStatesDPlus = 
       {
-        {DecayChannelResoDplus::K0starK,    std::array<int, 2>{-kK0Star892, -kKPlus}},
-        {DecayChannelResoDplus::K_1430K,    std::array<int, 2>{-10321,      -kKPlus}},
         {DecayChannelResoDplus::PhiPi,      std::array<int, 2>{+kPhi,       +kPiPlus}},
+        {DecayChannelResoDplus::K0starK,    std::array<int, 2>{-kK0Star892, +kKPlus}},
+        {DecayChannelResoDplus::K_1430K,    std::array<int, 2>{-10321,      +kKPlus}},
         {DecayChannelResoDplus::RhoPi,      std::array<int, 2>{+113,        +kPiPlus}},
-        {DecayChannelResoDplus::f2_1270Pi,  std::array<int, 2>{225,         +kPiPlus}},
+        {DecayChannelResoDplus::f2_1270Pi,  std::array<int, 2>{+225,        +kPiPlus}},
       };
     }
     
@@ -111,41 +112,45 @@ namespace o2::hf_corrbkg
     namespace DS {
       enum DecayChannelResoDs {
           PhiPi = 1,
-          K0starK,
           PhiRho,
-          f2_1270Pi,
+          K0starK,
           K0starPi,
+          RhoPi,
           RhoK,
           EtaPi,
+          f2_1270Pi,
+          f2_1370K,
       };
         
       std::unordered_map<DecayChannelResoDs, std::array<int, 2> > resoStatesDs = 
       {
-        {DecayChannelResoDs::PhiPi,       std::array<int, 2>{+kPhi, +kPiPlus}},
-        {DecayChannelResoDs::K0starK,     std::array<int, 2>{-kK0Star892, -kKPlus}},
-        {DecayChannelResoDs::PhiRho,      std::array<int, 2>{-kPhi, -113}},
-        {DecayChannelResoDs::f2_1270Pi,   std::array<int, 2>{225, +kPiPlus}},
-        {DecayChannelResoDs::K0starPi,    std::array<int, 2>{-kK0Star892, -kPiPlus}},
-        {DecayChannelResoDs::RhoK,        std::array<int, 2>{-113, -kKPlus}},
-        {DecayChannelResoDs::EtaPi,       std::array<int, 2>{-221, -kPiPlus}},
+        {DecayChannelResoDs::PhiPi,       std::array<int, 2>{+kPhi,        +kPiPlus}},
+        {DecayChannelResoDs::PhiRho,      std::array<int, 2>{+kPhi,        +213}},
+        {DecayChannelResoDs::K0starK,     std::array<int, 2>{-kK0Star892,  +kKPlus}},
+        {DecayChannelResoDs::K0starPi,    std::array<int, 2>{+kK0Star892,  +kPiPlus}},
+        {DecayChannelResoDs::RhoK,        std::array<int, 2>{113,          +kKPlus}},
+        {DecayChannelResoDs::RhoPi,       std::array<int, 2>{113,          +kPiPlus}},
+        {DecayChannelResoDs::EtaPi,       std::array<int, 2>{221,          +kPiPlus}},
+        {DecayChannelResoDs::f2_1270Pi,   std::array<int, 2>{225,          +kPiPlus}},
+        {DecayChannelResoDs::f2_1370K,    std::array<int, 2>{10221,        +kKPlus}},
       };
     }
 
     // Dstar → K± K∓ π±
     namespace DStar {
       enum DecayChannelResoDStarD0 {
-        RhoK = 1,
+        RhoPi = 1,
+        RhoK,
         K0starPi0,
         K0starPiPlus,
-        RhoPi,
       };
 
       std::unordered_map<DecayChannelResoDStarD0, std::array<int, 2> > resoStatesDStarD0 = 
       {
-        {DecayChannelResoDStarD0::RhoK,         std::array<int, 2>{213, -kKPlus}},
-        {DecayChannelResoDStarD0::K0starPi0,    std::array<int, 2>{-kK0Star892, -kKPlus}},
-        {DecayChannelResoDStarD0::K0starPiPlus, std::array<int, 2>{-323, kKPlus}},
-        {DecayChannelResoDStarD0::RhoPi,        std::array<int, 2>{213, -kPiPlus}},
+        {DecayChannelResoDStarD0::RhoPi,         std::array<int, 2>{213,            +kPiMinus}},
+        {DecayChannelResoDStarD0::RhoK,          std::array<int, 2>{213,            +kKMinus}},
+        {DecayChannelResoDStarD0::K0starPi0,     std::array<int, 2>{-kK0Star892,    +kPi0}},
+        {DecayChannelResoDStarD0::K0starPiPlus,  std::array<int, 2>{-kKPlusStar892, +kPiPlus}},
       };
     }
 
@@ -153,17 +158,17 @@ namespace o2::hf_corrbkg
     namespace LambdaC {
       enum DecayChannelResoLambdaC {
         K0starP = 1,
+        ProtonPhi,
         DeltaK,
         Lambda1520Pi,
-        ProtonPhi,
       }; 
 
       std::unordered_map<DecayChannelResoLambdaC, std::array<int, 2> > resoStatesLambdaC = 
       {
-        {DecayChannelResoLambdaC::K0starP,        std::array<int, 2>{-kK0Star892, -kProton}},
-        {DecayChannelResoLambdaC::DeltaK,         std::array<int, 2>{+2224, -kKPlus}},
-        {DecayChannelResoLambdaC::Lambda1520Pi,   std::array<int, 2>{+102134, -kPiPlus}},
-        {DecayChannelResoLambdaC::ProtonPhi,      std::array<int, 2>{+kProton, -kPhi}},
+        {DecayChannelResoLambdaC::K0starP,        std::array<int, 2>{-kK0Star892, +kProton}},
+        {DecayChannelResoLambdaC::ProtonPhi,      std::array<int, 2>{+kProton,    +kPhi}},
+        {DecayChannelResoLambdaC::DeltaK,         std::array<int, 2>{+2224,       +kKMinus}},
+        {DecayChannelResoLambdaC::Lambda1520Pi,   std::array<int, 2>{+102134,     +kPiPlus}},
       };
     }
     
@@ -177,9 +182,9 @@ namespace o2::hf_corrbkg
       
       std::unordered_map<DecayChannelResoXiC, std::array<int, 2> > resoStatesXiC = 
       {
-        {DecayChannelResoXiC::K0starP,    std::array<int, 2>{-kK0Star892, -kProton}},
-        {DecayChannelResoXiC::ProtonPhi,  std::array<int, 2>{+kProton, -kPhi}},
-        {DecayChannelResoXiC::SigmaPiPi,  std::array<int, 2>{-kSigmaPlus, +kPiPlus}},
+        {DecayChannelResoXiC::K0starP,    std::array<int, 2>{-kK0Star892, +kProton}},
+        {DecayChannelResoXiC::ProtonPhi,  std::array<int, 2>{+kProton,    +kPhi}},
+        {DecayChannelResoXiC::SigmaPiPi,  std::array<int, 2>{+kSigmaPlus, +kPiPlus}},
       };
     }
 
@@ -277,47 +282,85 @@ namespace o2::hf_corrbkg
       const std::unordered_map<int, std::vector<int>>* finalStates = nullptr;
       switch (pdgMother) {
         case Pdg::kD0:
-          finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates2Prongs);
-          break;
+        finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates2Prongs);
+        break;
         default:
-          finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates3Prongs);
-          break;
+        finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates3Prongs);
+        break;
       }
-
+      
       for (const auto& [chn, finalState] : *finalStates) {
-        std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
-        if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
-          if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
-          } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nKinkedTracks);
-          } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nullptr, nInteractionsWithMaterial);
-          } else {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth);
-          }
-          
-          if (indexRec != -1) {
-            auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-            std::array<int, 4> finalStatePartsAll = std::array{finalState[0], finalState[1], finalState[2], finalState[4]};
-            if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdgMother, finalStatePartsAll, false, sign, depth)) {
-              indexRec = -1; // Reset indexRec if the generated decay
+        switch (pdgMother) {
+          // case Pdg::kD0:
+          //   std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
+          //   if (finalState.size() == 3) {                     // Partly Reco 2-prong decays
+          //     if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          //       indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
+          //     } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+          //       indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nKinkedTracks);
+          //     } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          //       indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nullptr, nInteractionsWithMaterial);
+          //     } else {
+          //       indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth);
+          //     }
+              
+          //     if (indexRec != -1) {
+          //       auto motherParticle = mcParticles.rawIteratorAt(indexRec);
+          //       std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+          //       if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdgMother, finalStateParts2ProngAll, false, sign, depth)) {
+          //         indexRec = -1; // Reset indexRec if the generated decay
+          //       }
+          //     }
+          //   } else if (finalState.size() == 2) {            // Fully Reco 2-prong decays
+          //     if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          //         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
+          //     } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+          //         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nKinkedTracks);
+          //     } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+          //         indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth, nullptr, nInteractionsWithMaterial);
+          //     } else {
+          //         indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts2Prong, true, sign, depth);
+          //     }
+          //   } else {
+          //     LOG(info) << "Final state size not supported: " << finalState.size();
+          //     continue; // Skip unsupported final states
+          //   }
+          //   break;
+          default:
+            std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
+            if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
+              if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
+              } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nKinkedTracks);
+              } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nullptr, nInteractionsWithMaterial);
+              } else {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth);
+              }
+              
+              if (indexRec != -1) {
+                auto motherParticle = mcParticles.rawIteratorAt(indexRec);
+                std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[4]};
+                if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdgMother, finalStateParts3ProngAll, false, sign, depth)) {
+                  indexRec = -1; // Reset indexRec if the generated decay
+                }
+              }
+            } else if (finalState.size() == 3) {            // Fully Reco 3-prong decays
+              if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
+              } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nKinkedTracks);
+              } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth, nullptr, nInteractionsWithMaterial);
+              } else {
+                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts3Prong, true, sign, depth);
+              }
+            } else {
+              LOG(info) << "Final state size not supported: " << finalState.size();
+              continue; // Skip unsupported final states
             }
-          }
-          
-        } else if (finalState.size() == 3) {            // Fully Reco 3-prong decays
-          if constexpr (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nKinkedTracks, nInteractionsWithMaterial);
-          } else if constexpr (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nKinkedTracks);
-          } else if constexpr (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth, nullptr, nInteractionsWithMaterial);
-          } else {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdgMother, finalStateParts, true, sign, depth);
-          }
-        } else {
-          LOG(info) << "Final state size not supported: " << finalState.size();
-          continue; // Skip unsupported final states
+            break;
         }
         if (indexRec > -1) {
           // std::cout << "Matched final state: " << chn << " with PDG code: " << pdgMother << std::endl;
@@ -356,8 +399,10 @@ namespace o2::hf_corrbkg
           if (arrResoDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-              if ( (std::abs(pdgMother) == Pdg::kDStar || std::abs(pdgMother) == Pdg::kXiCPlus) 
-                    && std::abs(daughI.pdgCode() == kPiPlus && arrPDGDaugh.size() >= 2)) {
+              if ( (std::abs(pdgMother) == Pdg::kDStar) || 
+                   ( (std::abs(pdgMother) == Pdg::kXiCPlus)  && 
+                     (std::abs(daughI.pdgCode()) == kPiPlus) && 
+                     (arrPDGDaugh.size() >= 2) ) ) {
                 continue; // Skip the pion from D* decay and the second pion from XiC --> Sigma Pi Pi
               }
               arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
@@ -439,8 +484,10 @@ namespace o2::hf_corrbkg
           if (arrResoDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-              if ( (std::abs(pdgParticle) == Pdg::kDStar || std::abs(pdgParticle) == Pdg::kXiCPlus) 
-              && std::abs(daughI.pdgCode() == kPiPlus && arrPDGDaugh.size() >= 2)) {
+              if ( (std::abs(pdgParticle) == Pdg::kDStar) || 
+                   ( (std::abs(pdgParticle) == Pdg::kXiCPlus)  && 
+                     (std::abs(daughI.pdgCode()) == kPiPlus) && 
+                     (arrPDGDaugh.size() >= 2) ) ) {
                 continue; // Skip the pion from D* decay and the second pion from XiC --> Sigma Pi Pi
               }
               // std::cout << "Adding daughter PDG: " << daughI.pdgCode() << std::endl;
