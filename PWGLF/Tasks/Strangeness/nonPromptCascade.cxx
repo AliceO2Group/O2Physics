@@ -302,11 +302,8 @@ struct NonPromptCascadeTask {
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
-        // bool issel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
-        // if(issel) {
-        //   TrigDecision::trigDecision.push_back(issel);
+        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting        //   TrigDecision::trigDecision.push_back(issel);
         // }
-      }
     }
   }
 
