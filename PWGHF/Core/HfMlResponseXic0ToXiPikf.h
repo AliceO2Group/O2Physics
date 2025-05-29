@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponseXicToXiPikf.h
+/// \file HfMlResponseXic0ToXiPikf.h
 /// \brief Class to compute the ML response for Ξc^0 → Ξ∓ π± analysis selections
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
