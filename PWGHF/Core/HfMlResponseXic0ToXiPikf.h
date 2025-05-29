@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for Ξc^0 → Ξ∓ π± analysis selections
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
-#ifndef PWGHF_CORE_HFMLRESPONSEXICTOXIPIKF_H_
-#define PWGHF_CORE_HFMLRESPONSEXICTOXIPIKF_H_
+#ifndef PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
+#define PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
 
 #include <map>
 #include <string>
@@ -25,7 +25,7 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XICTOXIPI(FEATURE)                                 \
+#define FILL_MAP_XIC0TOXIPI(FEATURE)                                 \
   {                                                                 \
     #FEATURE, static_cast<uint8_t>(InputFeaturesXicToXiPi::FEATURE) \
   }
@@ -34,14 +34,14 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_XICTOXIPI_FULL(OBJECT, FEATURE, GETTER) \
+#define CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesXicToXiPi::FEATURE): {    \
     inputFeatures.emplace_back(OBJECT.GETTER());                   \
     break;                                                         \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_XICTOXIPI(GETTER)                   \
+#define CHECK_AND_FILL_VEC_XIC0TOXIPI(GETTER)                   \
   case static_cast<uint8_t>(InputFeaturesXicToXiPi::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());            \
     break;                                                     \
@@ -88,26 +88,26 @@ class HfMlResponseXicToXiPikf : public HfMlResponse<TypeOutputScore>
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
         // PID variables
-        CHECK_AND_FILL_VEC_XICTOXIPI_FULL(lamProngPi, tpcNSigmaPiFromLambda, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_XICTOXIPI_FULL(cascProngPi, tpcNSigmaPiFromCasc, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_XICTOXIPI_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(lamProngPi, tpcNSigmaPiFromLambda, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(cascProngPi, tpcNSigmaPiFromCasc, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
         // DCA
-        CHECK_AND_FILL_VEC_XICTOXIPI(dcaCascDau)
-        CHECK_AND_FILL_VEC_XICTOXIPI(dcaCharmBaryonDau);
-        CHECK_AND_FILL_VEC_XICTOXIPI(kfDcaXYPiFromXic);
-        CHECK_AND_FILL_VEC_XICTOXIPI(kfDcaXYCascToPv);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCascDau)
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCharmBaryonDau);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYPiFromXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYCascToPv);
         // Chi2Geo
-        CHECK_AND_FILL_VEC_XICTOXIPI(cascChi2OverNdf);
-        CHECK_AND_FILL_VEC_XICTOXIPI(xicChi2OverNdf);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(cascChi2OverNdf);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(xicChi2OverNdf);
         // ldl
-        CHECK_AND_FILL_VEC_XICTOXIPI(cascldl);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(cascldl);
         // Chi2Topo
-        CHECK_AND_FILL_VEC_XICTOXIPI(chi2TopoCascToPv);
-        CHECK_AND_FILL_VEC_XICTOXIPI(chi2TopoCascToXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(chi2TopoCascToPv);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(chi2TopoCascToXic);
         // CosPa
-        CHECK_AND_FILL_VEC_XICTOXIPI(cosPaCascToXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(cosPaCascToXic);
         // Decay length
-        CHECK_AND_FILL_VEC_XICTOXIPI(decayLenXYCasc);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(decayLenXYCasc);
       }
     }
 
@@ -119,28 +119,28 @@ class HfMlResponseXicToXiPikf : public HfMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_XICTOXIPI(tpcNSigmaPiFromLambda),
-      FILL_MAP_XICTOXIPI(tpcNSigmaPiFromCasc),
-      FILL_MAP_XICTOXIPI(tpcNSigmaPiFromCharmBaryon),
-      FILL_MAP_XICTOXIPI(dcaCascDau),
-      FILL_MAP_XICTOXIPI(dcaCharmBaryonDau),
-      FILL_MAP_XICTOXIPI(kfDcaXYPiFromXic),
-      FILL_MAP_XICTOXIPI(kfDcaXYCascToPv),
-      FILL_MAP_XICTOXIPI(cascChi2OverNdf),
-      FILL_MAP_XICTOXIPI(xicChi2OverNdf),
-      FILL_MAP_XICTOXIPI(cascldl),
-      FILL_MAP_XICTOXIPI(chi2TopoCascToPv),
-      FILL_MAP_XICTOXIPI(chi2TopoCascToXic),
-      FILL_MAP_XICTOXIPI(cosPaCascToXic),
-      FILL_MAP_XICTOXIPI(decayLenXYCasc),
+      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromLambda),
+      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromCasc),
+      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromCharmBaryon),
+      FILL_MAP_XIC0TOXIPI(dcaCascDau),
+      FILL_MAP_XIC0TOXIPI(dcaCharmBaryonDau),
+      FILL_MAP_XIC0TOXIPI(kfDcaXYPiFromXic),
+      FILL_MAP_XIC0TOXIPI(kfDcaXYCascToPv),
+      FILL_MAP_XIC0TOXIPI(cascChi2OverNdf),
+      FILL_MAP_XIC0TOXIPI(xicChi2OverNdf),
+      FILL_MAP_XIC0TOXIPI(cascldl),
+      FILL_MAP_XIC0TOXIPI(chi2TopoCascToPv),
+      FILL_MAP_XIC0TOXIPI(chi2TopoCascToXic),
+      FILL_MAP_XIC0TOXIPI(cosPaCascToXic),
+      FILL_MAP_XIC0TOXIPI(decayLenXYCasc),
     };
   }
 };
 
 } // namespace o2::analysis
 
-#undef FILL_MAP_XICTOXIPI
-#undef CHECK_AND_FILL_VEC_XICTOXIPI_FULL
-#undef CHECK_AND_FILL_VEC_XICTOXIPI
+#undef FILL_MAP_XIC0TOXIPI
+#undef CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL
+#undef CHECK_AND_FILL_VEC_XIC0TOXIPI
 
-#endif // PWGHF_CORE_HFMLRESPONSEXICTOXIPIKF_H_
+#endif // PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
