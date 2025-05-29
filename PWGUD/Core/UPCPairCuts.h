@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
-// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
-// Author:
+/// \brief Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
+/// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
+/// Author:
 
 #ifndef PWGUD_CORE_UPCPAIRCUTS_H_
 #define PWGUD_CORE_UPCPAIRCUTS_H_
