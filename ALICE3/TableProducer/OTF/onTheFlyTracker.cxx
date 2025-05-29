@@ -811,11 +811,11 @@ struct OnTheFlyTracker {
                     float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::its::constants::math::Pi};
                     o2::fastsim::DetLayer currentTrackingLayer = fastTracker.GetLayer(i);
 
-                    if (currentTrackingLayer.resRPhi > 1e-8 && currentTrackingLayer.resZ > 1e-8) { // catch zero (though should not really happen...)
-                      phi = gRandom->Gaus(phi, std::asin(currentTrackingLayer.resRPhi / r));
+                    if (currentTrackingLayer.getResolutionRPhi() > 1e-8 && currentTrackingLayer.getResolutionZ() > 1e-8) { // catch zero (though should not really happen...)
+                      phi = gRandom->Gaus(phi, std::asin(currentTrackingLayer.getResolutionRPhi() / r));
                       posClusterCandidate[0] = r * std::cos(phi);
                       posClusterCandidate[1] = r * std::sin(phi);
-                      posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.resZ);
+                      posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.getResolutionZ());
                     }
 
                     if (std::isnan(phi))
@@ -833,7 +833,7 @@ struct OnTheFlyTracker {
                     const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
                       static_cast<float>(xyz1[1]),
                       static_cast<float>(xyz1[2])};
-                    const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.resRPhi * currentTrackingLayer.resRPhi, 0.f, currentTrackingLayer.resZ * currentTrackingLayer.resZ};
+                    const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.getResolutionRPhi() * currentTrackingLayer.getResolutionRPhi(), 0.f, currentTrackingLayer.getResolutionZ() * currentTrackingLayer.getResolutionZ()};
                     cascadeTrack.update(hitpoint, hitpointcov);
                     thisCascade.foundClusters++; // add to findable
                   }
