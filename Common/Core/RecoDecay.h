@@ -659,8 +659,8 @@ struct RecoDecay {
     // If the particle is labelled as final, we add this particle in the list of final daughters and exit.
     if (isFinal) {
       // printf("getDaughters: ");
-      for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
-        std::cout << " ";
+      // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
+      //   std::cout << " ";
         // printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, pdgParticle);
       // std::cout << "[getDaughters] Adding particle " << particle.globalIndex() << " as final daughter with PDG code " << pdgParticle << std::endl;
@@ -810,7 +810,7 @@ struct RecoDecay {
         for (auto i : arrAllDaughtersIndex) {
           std::cout << " (" << i << " , pdg: " << particlesMC.rawIteratorAt(i - particlesMC.offset()).pdgCode() << ") , ";
         }
-        std::cout << " " << std::endl;
+        // std::cout << " " << std::endl;
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
         if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != NDaug) {
           std::cout << "MC Rec: Number of final states " << arrAllDaughtersIndex.size() << " (expected " << NDaug << ")" << std::endl;
@@ -956,10 +956,10 @@ struct RecoDecay {
 
       // printf("MC Gen: Mother %ld has %ld final states", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // std::cout << "MC Gen: Mother " << candidate.globalIndex() << " has " << arrAllDaughtersIndex.size() << " final states" << std::endl;
-      for (auto i : arrAllDaughtersIndex) {
+      // for (auto i : arrAllDaughtersIndex) {
         // std::cout << " (" << i << " , pdg: " << particlesMC.rawIteratorAt(i - particlesMC.offset()).pdgCode() << ") , ";
-      }
-      std::cout << " " << std::endl;
+      // }
+      // std::cout << " " << std::endl;
       // printf("\n");
       //  Check whether the number of final daughters is equal to the required number.
       if (arrAllDaughtersIndex.size() != N) {
