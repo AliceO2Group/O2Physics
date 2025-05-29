@@ -16,6 +16,7 @@
 #include <limits>
 #include <vector>
 #include <string>
+#include <map>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -934,7 +935,7 @@ struct HypKfRecoTask {
     std::vector<std::vector<HyperNucleus>*> hypNucVectors = {&singleHyperNuclei, &cascadeHyperNuclei};
     std::vector<std::vector<std::vector<HyperNucCandidate>>*> candidateVectors = {&singleHyperNucCandidates, &cascadeHyperNucCandidates};
 
-    for (int vec = 0; vec < candidateVectors.size(); vec++) {
+    for (unsigned int vec = 0; vec < candidateVectors.size(); vec++) {
       auto candidateVector = candidateVectors.at(vec);
       for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
         HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
@@ -1017,7 +1018,7 @@ struct HypKfRecoTask {
     for (const auto& mcPart : particlesMC) {
       if (!mcCollInfos.at(mcPart.mcCollisionId()).passedEvSel)
         continue;
-      for (int vec = 0; vec < hypNucVectors.size(); vec++) {
+      for (unsigned int vec = 0; vec < hypNucVectors.size(); vec++) {
         for (size_t hyperNucIter = 0; hyperNucIter < hypNucVectors.at(vec)->size(); hyperNucIter++) {
           HyperNucleus* hyperNuc = &(hypNucVectors.at(vec)->at(hyperNucIter));
           if (!hyperNuc->active)
