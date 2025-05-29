@@ -110,8 +110,6 @@ class EfficiencyCorrection
               LOGF(fatal, notify("Unknown configuration for efficiency variables"));
               break;
           }
-        } else {
-          hLoaded[idx] = nullptr;
         }
       }
     }
@@ -201,17 +199,18 @@ class EfficiencyCorrection
 
       auto bin = -1;
       if (config->confEffCorVariables.value == "pt") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt());
+        bin = hWeights->FindBin(particle.pt());
       } else if (config->confEffCorVariables.value == "pt,eta") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta());
+        bin = hWeights->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == "pt,mult") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.fdCollision().multV0M());
       } else if (config->confEffCorVariables.value == "pt,eta,mult") {
-        bin = hLoaded[partNo - 1]->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
       } else {
         LOGF(fatal, notify("Unknown configuration for efficiency variables"));
         return weight;
       }
+
       weight = hWeights->GetBinContent(bin);
     }
 
@@ -229,11 +228,21 @@ class EfficiencyCorrection
     if (!hist) {
       return true;
     }
-    for (auto idx = 0; idx <= hist->GetNbinsX() + 1; idx++) {
-      if (hist->GetBinContent(idx) > 0) {
-        return false;
+
+    const int nBinsX = hist->GetNbinsX() + 2;
+    const int nBinsY = hist->GetNbinsY() + 2;
+    const int nBinsZ = hist->GetNbinsZ() + 2;
+
+    for (int x = 0; x < nBinsX; ++x) {
+      for (int y = 0; y < nBinsY; ++y) {
+        for (int z = 0; z < nBinsZ; ++z) {
+          if (hist->GetBinContent(x, y, z) != 0) {
+            return false;
+          }
+        }
       }
     }
+
     return true;
   }
 
@@ -247,11 +256,14 @@ class EfficiencyCorrection
     }
 
     if (isHistEmpty(hWeights)) {
-      LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confEffCorCCDBUrl.value, timestamp);
+      LOGF(warn, notify("Histogram \"%s/%ld\" has been loaded, but it is empty"), config->confEffCorCCDBPath.value, timestamp);
     }
 
+    auto clonedHist = static_cast<H*>(hWeights->Clone());
+    clonedHist->SetDirectory(nullptr);
+
     LOGF(info, notify("Successfully loaded %ld"), timestamp);
-    return hWeights;
+    return clonedHist;
   }
 
   auto getDimensionFromVariables() -> size_t
@@ -266,7 +278,7 @@ class EfficiencyCorrection
   bool shouldFillHistograms{false};
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
-  std::array<TH1*, 2> hLoaded{};
+  std::array<TH1*, 2> hLoaded{nullptr, nullptr};
 
   framework::HistogramRegistry* histRegistry{};
   static constexpr std::string_view histDirectory{"EfficiencyCorrection"};

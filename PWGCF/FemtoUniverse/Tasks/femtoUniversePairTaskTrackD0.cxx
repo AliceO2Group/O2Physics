@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <string>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -27,6 +28,7 @@
 #include "Framework/StepTHn.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/PID.h"
+
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/RecoDecay.h"
 
@@ -43,6 +45,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEfficiencyCalculator.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
