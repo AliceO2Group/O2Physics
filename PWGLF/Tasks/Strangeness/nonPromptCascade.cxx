@@ -195,7 +195,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
-  Configurable<std::string> cfgHMOmegaTrigger{"cfgHMOmegaTrigger","HighMultOmega","OTS high multiplicity Omega trigger"};
+  Configurable<std::string> cfgHMOmegaTrigger{"cfgHMOmegaTrigger", "HighMultOmega", "OTS high multiplicity Omega trigger"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -299,7 +299,7 @@ struct NonPromptCascadeTask {
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
-        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting 
+        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
       }
     }
   }
