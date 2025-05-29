@@ -126,10 +126,6 @@ struct NPCascCandidate {
   float centFT0A;
   float centFT0M;
 };
-namespace TrigDecision
-{
-std::vector<bool> trigDecision;
-};
 std::array<bool, 2> isFromHF(auto& particle)
 {
   bool fromBeauty = false;
@@ -199,6 +195,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
+  Configurable<std::string> cfgHMOmegaTrigger{"cfgHMOmegaTrigger","HighMultOmega","OTS high multiplicity Omega trigger"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -233,7 +230,7 @@ struct NonPromptCascadeTask {
   void init(InitContext const&)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
-    mZorroSummary->setupTOIs(1, "HighMultOmega");
+    mZorroSummary->setupTOIs(1, cfgHMOmegaTrigger);
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
     mCCDB->setCaching(true);
@@ -302,11 +299,10 @@ struct NonPromptCascadeTask {
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
-        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting        //   TrigDecision::trigDecision.push_back(issel);
-        // }
+        mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting 
+      }
     }
   }
-
   template <typename TrackType, typename CollisionType>
   void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
   {
@@ -578,7 +574,6 @@ struct NonPromptCascadeTask {
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-<<<<<<< HEAD
                                 c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
