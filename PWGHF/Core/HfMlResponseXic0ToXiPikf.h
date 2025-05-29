@@ -27,7 +27,7 @@
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_XIC0TOXIPI(FEATURE)                                 \
   {                                                                 \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesXicToXiPi::FEATURE) \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -35,14 +35,14 @@
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(OBJECT, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesXicToXiPi::FEATURE): {    \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE): {    \
     inputFeatures.emplace_back(OBJECT.GETTER());                   \
     break;                                                         \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_XIC0TOXIPI(GETTER)                   \
-  case static_cast<uint8_t>(InputFeaturesXicToXiPi::GETTER): { \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());            \
     break;                                                     \
   }
@@ -50,7 +50,7 @@
 namespace o2::analysis
 {
 
-enum class InputFeaturesXicToXiPi : uint8_t {
+enum class InputFeaturesXic0ToXiPi : uint8_t {
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -68,16 +68,16 @@ enum class InputFeaturesXicToXiPi : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class HfMlResponseXicToXiPikf : public HfMlResponse<TypeOutputScore>
+class HfMlResponseXic0ToXiPikf : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseXicToXiPikf() = default;
+  HfMlResponseXic0ToXiPikf() = default;
   /// Default destructor
-  virtual ~HfMlResponseXicToXiPikf() = default;
+  virtual ~HfMlResponseXic0ToXiPikf() = default;
 
   /// Method to get the input features vector needed for ML inference
-  /// \param candidate is the Xic candidate
+  /// \param candidate is the Xic0 candidate
   /// \return inputFeatures vector
   template <typename T1, typename T2, typename T3>
   // std::vector<float> getInputFeatures(T1 const& candidate)
@@ -92,7 +92,7 @@ class HfMlResponseXicToXiPikf : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(cascProngPi, tpcNSigmaPiFromCasc, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
         // DCA
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCascDau)
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCascDau);
         CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCharmBaryonDau);
         CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYPiFromXic);
         CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYCascToPv);
