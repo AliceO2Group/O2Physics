@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
+// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
+// Author:
+
 #ifndef PWGUD_CORE_UPCPAIRCUTS_H_
 #define PWGUD_CORE_UPCPAIRCUTS_H_
 
@@ -17,12 +21,9 @@
 #include "Framework/Logger.h"
 #include "Framework/HistogramRegistry.h"
 #include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-
-// Functions which cut on particle pairs (decays, conversions, two-track cuts) adapted for data from UD tables
-// Based on the code "PWGCF/Core/PairCuts.h" made by Jan Fiete Grosse-Oetringhaus
-// Author:
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,9 +39,9 @@ class UPCPairCuts
                   Rho,
                   ParticlesLastEntry };
 
-  void SetHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
+  void setHistogramRegistry(HistogramRegistry* registry) { histogramRegistry = registry; }
 
-  void SetPairCut(Particle particle, float cut)
+  void setPairCut(Particle particle, float cut)
   {
     LOGF(info, "Enabled pair cut for %d with value %f", static_cast<int>(particle), cut);
     mCuts[particle] = cut;
@@ -49,7 +50,7 @@ class UPCPairCuts
     }
   }
 
-  void SetTwoTrackCuts(float distance = 0.02f, float radius = 0.8f)
+  void setTwoTrackCuts(float distance = 0.02f, float radius = 0.8f)
   {
     LOGF(info, "Enabled two-track cut with distance %f and radius %f", distance, radius);
     mTwoTrackDistance = distance;
@@ -176,28 +177,28 @@ bool UPCPairCuts::conversionCut(T const& track1, T const& track2, Particle conv,
 
   switch (conv) {
     case Photon:
-      massD1 = 0.51e-3;
-      massD2 = 0.51e-3;
+      massD1 = o2::constants::physics::MassElectron;
+      massD2 = o2::constants::physics::MassElectron;
       massM = 0;
       break;
     case K0:
-      massD1 = 0.1396;
-      massD2 = 0.1396;
-      massM = 0.4976;
+      massD1 = o2::constants::physics::MassPiPlus;
+      massD2 = o2::constants::physics::MassPiPlus;
+      massM = o2::constants::physics::MassK0;
       break;
     case Lambda:
-      massD1 = 0.9383;
-      massD2 = 0.1396;
-      massM = 1.115;
+      massD1 = o2::constants::physics::MassProton;
+      massD2 = o2::constants::physics::MassPiPlus;
+      massM = o2::constants::physics::MassLambda0;
       break;
     case Phi:
-      massD1 = 0.4937;
-      massD2 = 0.4937;
-      massM = 1.019;
+      massD1 = o2::constants::physics::MassKPlus;
+      massD2 = o2::constants::physics::MassKPlus;
+      massM = o2::constants::physics::MassPhi;
       break;
     case Rho:
-      massD1 = 0.1396;
-      massD2 = 0.1396;
+      massD1 = o2::constants::physics::MassPiPlus;
+      massD2 = o2::constants::physics::MassPiPlus;
       massM = 0.770;
       break;
     default:

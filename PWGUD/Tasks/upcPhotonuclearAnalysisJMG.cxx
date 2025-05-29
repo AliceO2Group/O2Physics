@@ -11,6 +11,7 @@
 ///
 /// \brief
 /// \author Josué Martínez García, josuem@cern.ch
+/// \file   upcPhotonuclearAnalysisJMG.cxx
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -156,14 +157,14 @@ struct upcPhotonuclearAnalysisJMG {
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     histos.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
-    mPairCuts.SetHistogramRegistry(&histos);
+    mPairCuts.setHistogramRegistry(&histos);
     if (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 ||
         cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0) {
-      mPairCuts.SetPairCut(UPCPairCuts::Photon, cfgPairCut->get("Photon"));
-      mPairCuts.SetPairCut(UPCPairCuts::K0, cfgPairCut->get("K0"));
-      mPairCuts.SetPairCut(UPCPairCuts::Lambda, cfgPairCut->get("Lambda"));
-      mPairCuts.SetPairCut(UPCPairCuts::Phi, cfgPairCut->get("Phi"));
-      mPairCuts.SetPairCut(UPCPairCuts::Rho, cfgPairCut->get("Rho"));
+      mPairCuts.setPairCut(UPCPairCuts::Photon, cfgPairCut->get("Photon"));
+      mPairCuts.setPairCut(UPCPairCuts::K0, cfgPairCut->get("K0"));
+      mPairCuts.setPairCut(UPCPairCuts::Lambda, cfgPairCut->get("Lambda"));
+      mPairCuts.setPairCut(UPCPairCuts::Phi, cfgPairCut->get("Phi"));
+      mPairCuts.setPairCut(UPCPairCuts::Rho, cfgPairCut->get("Rho"));
       doPairCuts = true;
     }
     histos.add("Events/hCountCollisions", "0 total - 1 side A - 2 side C - 3 both side; Number of analysed collision; counts", kTH1F, {axisCollision});
