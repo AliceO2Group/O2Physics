@@ -775,7 +775,79 @@ struct HfCandidateCreator2ProngExpressions {
 
       if (matchCorrBkgs) {
         LOG(info) << "--------------------------------------------";
-        LOG(info) << "Matching correlated bkgs of " << Pdg::kD0;
+        LOG(info) << "Matching correlated bkgs";
+        indexRec = -1; // Index of the matched reconstructed candidate
+        std::vector<int> arrResoDaughIndex = {};
+        // const std::unordered_map<int, std::vector<int>>* finalStates = nullptr;
+        // switch (pdgMother) {
+          //   case Pdg::kD0:
+          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates2Prongs);
+          //   break;
+          //   default:
+          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates3Prongs);
+          //   break;
+          // }
+          
+        int depth = 2;
+        for (const auto& [chn, finalState] : finalStates2Prongs) {
+          std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
+          if (finalState.size() == 3) {                     // Partly Reco 2-prong decays
+            if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+             indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+            } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks);
+            } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
+            } else {
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
+            }
+            
+            if (indexRec != -1) {
+              auto motherParticle = mcParticles.rawIteratorAt(indexRec);
+              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, false, &sign, depth)) {
+                indexRec = -1; // Reset indexRec if the generated decay
+              }
+            }
+          } else if (finalState.size() == 2) {            // Fully Reco 2-prong decays
+            if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+            } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks);
+            } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
+            } else {
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
+            }
+          } else {
+            LOG(info) << "Final state size not supported: " << finalStateParts2Prong.size();
+            continue; // Skip unsupported final states
+          }
+          if (indexRec > -1) {
+            // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
+            flag = sign * (chn + 10);   // Only D0 decay channels are considered here
+            
+            // Flag the resonant decay channel
+            int resoMaxDepth = 1;
+            int NDaughtersResonant = 2;
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, resoMaxDepth);
+            std::vector<int> arrPDGDaugh = {};
+            if (arrResoDaughIndex.size() == NDaughtersResonant) {
+              for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
+                auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
+                arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
+              }
+              flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
+              // LOG(info) << "[matchFinalStateCorrBkgs] Matched D0 final state: " << chn << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
+              // LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
+            }
+            break; // Exit loop if a match is found
+          }
+        }
+        LOG(info) << "D0 matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
+
+        // LOG(info) << "--------------------------------------------";
+        // LOG(info) << "Matching correlated bkgs of " << Pdg::kD0;
         // if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
         //   indexRec = matchFinalStateCorrBkgs<true, true>(Pdg::kD0, mcParticles, arrayDaughters, &flag, &sign, &channel, 1, &nKinkedTracks, &nInteractionsWithMaterial);
         // } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -835,8 +907,10 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
+        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }

@@ -961,7 +961,7 @@ struct HfCandidateCreator3ProngExpressions {
           //   break;
           // }
           
-          for (const auto& pdg : mothersPdgCodes) {
+        for (const auto& pdg : mothersPdgCodes) {
           int depth = 2;
           if (pdg == Pdg::kDStar) {
             depth = 3; // D0 resonant decays are active
@@ -970,9 +970,7 @@ struct HfCandidateCreator3ProngExpressions {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
             if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-             // indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, pdg,         finalStateParts3Prong,                   true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
-                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign,     2, &nKinkedTracks, &nInteractionsWithMaterial);
-
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks);
               } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -983,7 +981,7 @@ struct HfCandidateCreator3ProngExpressions {
               
               if (indexRec != -1) {
                 auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-                std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[4]};
+                std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
                 if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
                   indexRec = -1; // Reset indexRec if the generated decay
                 }
@@ -1048,15 +1046,14 @@ struct HfCandidateCreator3ProngExpressions {
                   arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
                 }
                 flagResonantDecay(pdg, &channel, arrPDGDaugh);
-                LOG(info) << "[matchFinalStateCorrBkgs] Matched final state: " << chn << " with PDG code: " << pdg << ", flag: " << flag << ", &sign: " << sign;
-                LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << flag << " sign: " << sign << " for channel: " <<  channel;
-                break;
+                // LOG(info) << "[matchFinalStateCorrBkgs] Matched final state: " << chn << " with PDG code: " << static_cast<int>(pdg) << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
+                // LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
               }
               break; // Exit loop if a match is found
             }
           }
         }
-        LOG(info) << "D+ matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
+        LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D± → π± K∓ π±
         LOG(info) << "--------------------------------------------";
@@ -1178,16 +1175,16 @@ struct HfCandidateCreator3ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        LOG(info) << "Filling with flag: " << flag << ", origin: " << origin << ", channel: " << channel;
+        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        LOG(info) << "Filling with flag: " << flag << ", origin: " << origin << ", channel: " << channel;
+        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
 
-    LOG(info) << "Filling MC match gen for 3 prong candidates";
-    LOG(info) << "Number of MC collisions: " << mcCollisions.size();
+    // LOG(info) << "Filling MC match gen for 3 prong candidates";
+    // LOG(info) << "Number of MC collisions: " << mcCollisions.size();
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision

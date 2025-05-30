@@ -767,7 +767,7 @@ DECLARE_SOA_TABLE(HfCand2ProngMcRec, "AOD", "HFCAND2PMCREC", //!
 DECLARE_SOA_TABLE(HfCand2ProngMcGen, "AOD", "HFCAND2PMCGEN", //!
                   hf_cand_2prong::FlagMcMatchGen,
                   hf_cand_2prong::OriginMcGen,
-                  hf_cand_2prong::FlagMcDecayChanRec,
+                  hf_cand_2prong::FlagMcDecayChanGen,
                   hf_cand::IdxBhadMotherPart);
 
 // cascade decay candidate table

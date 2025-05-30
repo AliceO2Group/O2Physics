@@ -58,7 +58,53 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       continue;
     }
     if (matchCorrBkgs) {
-      matched = matchFinalStateCorrBkgsGen(Pdg::kD0, mcParticles, particle, &sign, maxDepth, &flag, &channel);
+      int maxDepth = 2;
+      bool matched = false;
+
+      std::vector<int> arrResoDaughIndex = {};
+      for (const auto& [chn, finalState] : finalStates2Prongs) {
+        if (finalState.size() == 3) {                     // Partly Reco 3-prong decays
+          std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
+          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
+        } else if (finalState.size() == 2) {              // Fully Reco 3-prong decays
+          std::array<int, 2> finalStateParts = std::array{finalState[0], finalState[1]};
+          matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
+        } else {
+          LOG(info) << "Final state size not supported: " << finalState.size();
+          continue; // Skip unsupported final states
+        }
+        if (matched) {
+          // std::cout << "Matched final state: " << chn << " with PDG code: " << Pdg::kD0 << std::endl;
+          switch (Pdg::kD0) {
+            case Pdg::kD0:
+              flag = sign * (chn + 10);
+              break;
+            default:
+              LOG(info) << "Unknown mother PDG code: " << Pdg::kD0 << ", skipping.";
+              continue; // Skip unknown mother PDG codes
+          }
+          
+          // Flag the resonant decay channel
+          int resoMaxDepth = 1;
+          int NDaughtersResonant = 2;
+
+          RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, resoMaxDepth);
+          std::vector<int> arrPDGDaugh = {};
+          if (arrResoDaughIndex.size() == NDaughtersResonant) {
+            for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
+              auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
+              // std::cout << "Adding daughter PDG: " << daughI.pdgCode() << std::endl;
+              LOG(info) << "[matchFinalStateCorrBkgsGen] Adding daughter PDG: " << daughI.pdgCode();
+              arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
+            }
+            flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
+            LOG(info) << "[matchFinalStateCorrBkgsGen] Matched final state: " << chn << " with PDG code: " << Pdg::kD0 << ", flag: " << static_cast<int>(flag) << ", sign: " << static_cast<int>(sign);
+            LOG(info) << "[matchFinalStateCorrBkgsGen] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " <<  static_cast<int>(channel);
+          }
+          break; // Exit loop if a match is found
+        }
+      }
+      // matched = matchFinalStateCorrBkgsGen(Pdg::kD0, mcParticles, particle, &sign, maxDepth, &flag, &channel);
     } else {
       // D0(bar) → π± K∓
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
@@ -85,8 +131,10 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
     if (origin == RecoDecay::OriginType::NonPrompt) {
+      LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
     } else {
+      LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, -1);
     }
   }
@@ -188,16 +236,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
                 arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
               }
               flagResonantDecay(motherPdgCode, &channel, arrPDGDaugh);
-              // LOG(info) << "[matchFinalStateCorrBkgsGen] Matched final state: " << chn << " with PDG code: " << motherPdgCode << ", flag: " << static_cast<int>(*flag) << ", sign: " << static_cast<int>(*sign);
-              // LOG(info) << "[matchFinalStateCorrBkgsGen] Flag set to: " << static_cast<int>(*flag) << " sign: " << static_cast<int>(*sign) << " for channel: " <<  static_cast<int>(*channel);
-              break;
+              // LOG(info) << "[matchFinalStateCorrBkgsGen] Matched final state: " << chn << " with PDG code: " << motherPdgCode << ", flag: " << static_cast<int>(flag) << ", sign: " << static_cast<int>(sign);
+              // LOG(info) << "[matchFinalStateCorrBkgsGen] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " <<  static_cast<int>(channel);
             }
             break; // Exit loop if a match is found
           }
         }
-        // if (flag == 0) {
-        //   matched = matchFinalStateCorrBkgsGen(motherPdgCode, mcParticles, particle, &sign, maxDepth, &flag, &channel);
-        // }
       }
     } else {
 
@@ -281,11 +325,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       // LOG(info) << "[Gen] Setting origin gen";
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
-    // LOG(info) << "[Gen] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
     if (origin == RecoDecay::OriginType::NonPrompt) {
       // LOG(info) << "Origin is non-prompt";
+      LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
     } else {
+      LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, -1);
     }
   }

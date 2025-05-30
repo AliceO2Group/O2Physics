@@ -72,6 +72,8 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);
 DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
+DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t);
+DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t); // is prompt or non-prompt, reco level
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t); // is prompt or non-prompt, Gen level
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand2Prong, "_0");
@@ -123,6 +125,7 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
+                  full::FlagMcDecayChanRec,
                   full::OriginMcRec)
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
@@ -185,6 +188,7 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::Y,
                   full::E,
                   full::FlagMc,
+                  full::FlagMcDecayChanRec,
                   full::OriginMcRec,
                   full::CandidateId);
 
@@ -204,6 +208,7 @@ DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
                   full::Phi,
                   full::Y,
                   full::FlagMc,
+                  full::FlagMcDecayChanGen,
                   full::OriginMcGen,
                   full::McParticleId);
 
@@ -236,10 +241,12 @@ struct HfTreeCreatorD0ToKPi {
   using SelectedCandidatesMcKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= -1 || aod::hf_sel_candidate_d0::isSelD0bar >= -1;
+  // Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0;
 
-  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  // Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0;
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
@@ -275,7 +282,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool applyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t origin)
+                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
@@ -313,6 +320,7 @@ struct HfTreeCreatorD0ToKPi {
         candidate.phi(),
         y,
         flagMc,
+        flagMcDecay,
         origin);
     } else {
       double cosThetaStar = candFlag == 0 ? hfHelper.cosThetaStarD0(candidate) : hfHelper.cosThetaStarD0bar(candidate);
@@ -376,6 +384,7 @@ struct HfTreeCreatorD0ToKPi {
         y,
         e,
         flagMc,
+        flagMcDecay,
         origin,
         candidate.globalIndex());
     }
@@ -435,10 +444,10 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0);
+        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
       }
       if (candidate.isSelD0bar()) {
-        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0);
+        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, 0, 0, 0);
       }
     }
   }
@@ -502,6 +511,7 @@ struct HfTreeCreatorD0ToKPi {
     if constexpr (applyMl) {
       rowCandidateMl.reserve(candidates.size());
     }
+    LOG(info) << "Processing " << candidates.size() << " candidates";
     for (const auto& candidate : candidates) {
       if constexpr (onlyBkg) {
         if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -533,10 +543,12 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        LOG(info) << "Filling D0 candidate with mass: " << massD0 << ", pt: " << candidate.pt() << ", y: " << yD;
+        fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
       if (candidate.isSelD0bar()) {
-        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.originMcRec());
+        LOG(info) << "Filling D0 candidate with mass: " << massD0 << ", pt: " << candidate.pt() << ", y: " << yD;
+        fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
     }
 
@@ -551,6 +563,7 @@ struct HfTreeCreatorD0ToKPi {
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0),
           particle.flagMcMatchGen(),
+          particle.flagMcDecayChanGen(),
           particle.originMcGen(),
           particle.globalIndex());
       }
@@ -608,6 +621,10 @@ struct HfTreeCreatorD0ToKPi {
                                  aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
+    LOG(info) << "Processing MC with DCAFitterN for all candidates";
+    LOG(info) << "Number of candidates: " << candidates.size();
+    LOG(info) << "Number of MC particles: " << mcParticles.size();
+    LOG(info) << "Number of collisions: " << collisions.size();
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
