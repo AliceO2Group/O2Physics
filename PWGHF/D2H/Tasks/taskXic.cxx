@@ -67,12 +67,8 @@ struct HfTaskXic {
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-  using TracksWPid = soa::Join<aod::TracksWDca,
-                               aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
-
-  Partition<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>> selectedMCXicCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
@@ -257,7 +253,7 @@ struct HfTaskXic {
   template <bool useMl, typename Cands>
   void analysisData(aod::Collision const& collision,
                     Cands const& candidates,
-                    TracksWPid const& tracks)
+                    aod::TracksWDca const& tracks)
   {
     int nTracks = 0;
 
@@ -317,9 +313,9 @@ struct HfTaskXic {
       registry.fill(HIST("Data/hChi2PCA"), candidate.chi2PCA(), ptCandidate);
 
       // PID histos
-      auto trackProng0 = candidate.template prong0_as<TracksWPid>();
-      auto trackProng1 = candidate.template prong1_as<TracksWPid>();
-      auto trackProng2 = candidate.template prong2_as<TracksWPid>();
+      auto trackProng0 = candidate.template prong0_as<aod::TracksWDca>();
+      auto trackProng1 = candidate.template prong1_as<aod::TracksWDca>();
+      auto trackProng2 = candidate.template prong2_as<aod::TracksWDca>();
 
       auto momentumProng0 = trackProng0.p();
       auto momentumProng1 = trackProng1.p();
@@ -389,14 +385,14 @@ struct HfTaskXic {
 
   void processDataStd(aod::Collision const& collision,
                       soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi>> const& candidates,
-                      TracksWPid const& tracks)
+                      aod::TracksWDca const& tracks)
   {
     analysisData<false>(collision, candidates, tracks);
   }
   PROCESS_SWITCH(HfTaskXic, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(aod::Collision const& collision,
-                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, TracksWPid const& tracks)
+                         soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelXicToPKPi, aod::HfMlXicToPKPi>> const& candidatesMl, aod::TracksWDca const& tracks)
   {
     analysisData<true>(collision, candidatesMl, tracks);
   }
