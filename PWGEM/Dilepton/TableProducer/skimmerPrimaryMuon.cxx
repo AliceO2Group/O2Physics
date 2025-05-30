@@ -393,6 +393,10 @@ struct skimmerPrimaryMuon {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
+      if (!collision.isSelected()) {
+        continue;
+      }
+
       const auto& fwdtracks_per_coll = fwdtracks.sliceBy(perCollision, collision.globalIndex());
       for (const auto& fwdtrack : fwdtracks_per_coll) {
         if (fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack && fwdtrack.trackType() != o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
@@ -417,6 +421,10 @@ struct skimmerPrimaryMuon {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
+      if (!collision.isSelected()) {
+        continue;
+      }
+
       const auto& fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
       for (const auto& fwdtrackId : fwdtrackIdsThisCollision) {
         const auto& fwdtrack = fwdtrackId.template fwdtrack_as<MyFwdTracks>();
@@ -435,6 +443,11 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+
+      if (!collision.isSelected()) {
+        continue;
+      }
+
       if (collision.swtaliastmp_raw() == 0) {
         continue;
       }
@@ -462,6 +475,9 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      if (!collision.isSelected()) {
+        continue;
+      }
       if (collision.swtaliastmp_raw() == 0) {
         continue;
       }
@@ -484,6 +500,9 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      if (!collision.isSelected()) {
+        continue;
+      }
       if (!collision.has_mcCollision()) {
         continue;
       }
@@ -514,6 +533,9 @@ struct skimmerPrimaryMuon {
     for (const auto& collision : collisions) {
       const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+      if (!collision.isSelected()) {
+        continue;
+      }
       if (!collision.has_mcCollision()) {
         continue;
       }

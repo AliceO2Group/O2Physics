@@ -89,35 +89,39 @@ struct spvector {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Centrality cut Max"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
+  Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
 
-  Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
-  Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
-  Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
-  Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
-  Configurable<int> VxNbins{"VxNbins", 25, "Number of bins in Vx histograms"};
-  Configurable<float> lbinVx{"lbinVx", -0.05, "lower bin value in Vx histograms"};
-  Configurable<float> hbinVx{"hbinVx", 0.0, "higher bin value in Vx histograms"};
-  Configurable<int> VyNbins{"VyNbins", 25, "Number of bins in Vy histograms"};
-  Configurable<float> lbinVy{"lbinVy", -0.02, "lower bin value in Vy histograms"};
-  Configurable<float> hbinVy{"hbinVy", 0.02, "higher bin value in Vy histograms"};
-  Configurable<int> VzNbins{"VzNbins", 20, "Number of bins in Vz histograms"};
-  Configurable<float> lbinVz{"lbinVz", -10.0, "lower bin value in Vz histograms"};
-  Configurable<float> hbinVz{"hbinVz", 10.0, "higher bin value in Vz histograms"};
-  Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
-  Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
-  Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
-  Configurable<int> VxfineNbins{"VxfineNbins", 25, "Number of bins in Vx fine histograms"};
-  Configurable<float> lfinebinVx{"lfinebinVx", -0.05, "lower bin value in Vx fine histograms"};
-  Configurable<float> hfinebinVx{"hfinebinVx", 0.0, "higher bin value in Vx fine histograms"};
-  Configurable<int> VyfineNbins{"VyfineNbins", 25, "Number of bins in Vy fine histograms"};
-  Configurable<float> lfinebinVy{"lfinebinVy", -0.02, "lower bin value in Vy fine histograms"};
-  Configurable<float> hfinebinVy{"hfinebinVy", 0.02, "higher bin value in Vy fine histograms"};
-  Configurable<int> VzfineNbins{"VzfineNbins", 20, "Number of bins in Vz fine histograms"};
-  Configurable<float> lfinebinVz{"lfinebinVz", -10.0, "lower bin value in Vz fine histograms"};
-  Configurable<float> hfinebinVz{"hfinebinVz", 10.0, "higher bin value in Vz fine histograms"};
-  Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
-  Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
-  Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
+  struct : ConfigurableGroup {
+    Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+    Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
+    Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
+    Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+    Configurable<int> VxNbins{"VxNbins", 25, "Number of bins in Vx histograms"};
+    Configurable<float> lbinVx{"lbinVx", -0.05, "lower bin value in Vx histograms"};
+    Configurable<float> hbinVx{"hbinVx", 0.0, "higher bin value in Vx histograms"};
+    Configurable<int> VyNbins{"VyNbins", 25, "Number of bins in Vy histograms"};
+    Configurable<float> lbinVy{"lbinVy", -0.02, "lower bin value in Vy histograms"};
+    Configurable<float> hbinVy{"hbinVy", 0.02, "higher bin value in Vy histograms"};
+    Configurable<int> VzNbins{"VzNbins", 20, "Number of bins in Vz histograms"};
+    Configurable<float> lbinVz{"lbinVz", -10.0, "lower bin value in Vz histograms"};
+    Configurable<float> hbinVz{"hbinVz", 10.0, "higher bin value in Vz histograms"};
+    Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
+    Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
+    Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
+    Configurable<int> VxfineNbins{"VxfineNbins", 25, "Number of bins in Vx fine histograms"};
+    Configurable<float> lfinebinVx{"lfinebinVx", -0.05, "lower bin value in Vx fine histograms"};
+    Configurable<float> hfinebinVx{"hfinebinVx", 0.0, "higher bin value in Vx fine histograms"};
+    Configurable<int> VyfineNbins{"VyfineNbins", 25, "Number of bins in Vy fine histograms"};
+    Configurable<float> lfinebinVy{"lfinebinVy", -0.02, "lower bin value in Vy fine histograms"};
+    Configurable<float> hfinebinVy{"hfinebinVy", 0.02, "higher bin value in Vy fine histograms"};
+    Configurable<int> VzfineNbins{"VzfineNbins", 20, "Number of bins in Vz fine histograms"};
+    Configurable<float> lfinebinVz{"lfinebinVz", -10.0, "lower bin value in Vz fine histograms"};
+    Configurable<float> hfinebinVz{"hfinebinVz", 10.0, "higher bin value in Vz fine histograms"};
+    Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
+    Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
+    Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
+  } configbins;
+
   Configurable<bool> useShift{"useShift", false, "shift histograms"};
   Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
@@ -134,6 +138,7 @@ struct spvector {
   Configurable<bool> coarse5{"coarse5", false, "RE5"};
   Configurable<bool> fine5{"fine5", false, "REfine5"};
   Configurable<bool> coarse6{"coarse6", false, "RE6"};
+  Configurable<bool> fine6{"fine6", false, "REfine6"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
@@ -164,6 +169,10 @@ struct spvector {
   Configurable<std::string> ConfRecenterevxSp5{"ConfRecenterevxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere5"};
   Configurable<std::string> ConfRecenterevySp5{"ConfRecenterevySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere5"};
   Configurable<std::string> ConfRecenterevzSp5{"ConfRecenterevzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere5"};
+  Configurable<std::string> ConfRecenterecentSp6{"ConfRecenterecentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere6"};
+  Configurable<std::string> ConfRecenterevxSp6{"ConfRecenterevxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere6"};
+  Configurable<std::string> ConfRecenterevySp6{"ConfRecenterevySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere6"};
+  Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
 
@@ -204,16 +213,16 @@ struct spvector {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
-    AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec phiAxis = {PhiNbins, -6.28, 6.28, "phi"};
-    AxisSpec vzAxis = {VzNbins, lbinVz, hbinVz, "vz"};
-    AxisSpec vxAxis = {VxNbins, lbinVx, hbinVx, "vx"};
-    AxisSpec vyAxis = {VyNbins, lbinVy, hbinVy, "vy"};
-    AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
-    AxisSpec vzfineAxis = {VzfineNbins, lfinebinVz, hfinebinVz, "vzfine"};
-    AxisSpec vxfineAxis = {VxfineNbins, lfinebinVx, hfinebinVx, "vxfine"};
-    AxisSpec vyfineAxis = {VyfineNbins, lfinebinVy, hfinebinVy, "vyfine"};
-    AxisSpec centfineAxis = {CentfineNbins, lfinebinCent, hfinebinCent, "V0M (%) fine"};
+    AxisSpec qxZDCAxis = {configbins.QxyNbins, configbins.lbinQxy, configbins.hbinQxy, "Qx"};
+    AxisSpec phiAxis = {configbins.PhiNbins, -6.28, 6.28, "phi"};
+    AxisSpec vzAxis = {configbins.VzNbins, configbins.lbinVz, configbins.hbinVz, "vz"};
+    AxisSpec vxAxis = {configbins.VxNbins, configbins.lbinVx, configbins.hbinVx, "vx"};
+    AxisSpec vyAxis = {configbins.VyNbins, configbins.lbinVy, configbins.hbinVy, "vy"};
+    AxisSpec centAxis = {configbins.CentNbins, configbins.lbinCent, configbins.hbinCent, "V0M (%)"};
+    AxisSpec vzfineAxis = {configbins.VzfineNbins, configbins.lfinebinVz, configbins.hfinebinVz, "vzfine"};
+    AxisSpec vxfineAxis = {configbins.VxfineNbins, configbins.lfinebinVx, configbins.hfinebinVx, "vxfine"};
+    AxisSpec vyfineAxis = {configbins.VyfineNbins, configbins.lfinebinVy, configbins.hfinebinVy, "vyfine"};
+    AxisSpec centfineAxis = {configbins.CentfineNbins, configbins.lfinebinCent, configbins.hfinebinCent, "V0M (%) fine"};
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {2, 0, 2, "basis"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
@@ -292,10 +301,10 @@ struct spvector {
   TH2F* hrecenterevySp;
   TH2F* hrecenterevzSp;*/
   std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
-  std::array<TH2F*, 5> hrecenterecentSpA; // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevxSpA;   // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevySpA;   // Array of 5 histograms
-  std::array<TH2F*, 5> hrecenterevzSpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterecentSpA; // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevxSpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevySpA;   // Array of 5 histograms
+  std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
   TProfile3D* shiftprofileA;
   TProfile3D* shiftprofileC;
 
@@ -459,8 +468,13 @@ struct spvector {
       return;
     }
 
-    // if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && eventSelected(collision, centrality) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      triggerevent = false;
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      return;
+    }
+
+    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, bc.timestamp());
@@ -643,6 +657,16 @@ struct spvector {
           hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, bc.timestamp());
         }
         res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+      }
+
+      if (fine6) {
+        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+          hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp6.value, bc.timestamp());
+          hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp6.value, bc.timestamp());
+          hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp6.value, bc.timestamp());
+          hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp6.value, bc.timestamp());
+        }
+        resfine = Correctfine(hrecenterecentSpA[5], hrecenterevxSpA[5], hrecenterevySpA[5], hrecenterevzSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
       }
 
       if (res == 0 && resfine == 0 && check == 0) {
