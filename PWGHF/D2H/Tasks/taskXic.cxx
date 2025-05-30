@@ -67,7 +67,6 @@ struct HfTaskXic {
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
 
-
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
