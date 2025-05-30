@@ -82,18 +82,18 @@ struct HfDataCreatorJPsiHadReduced {
   Produces<aod::HfRedJPsis> hfJPsi;
   Produces<aod::HfRedJPsiCov> hfRedJPsiCov;
   // Ka bachelor related tables
-  Produces<aod::HfRedBachProng0Bases> hfTrackLfDau0;
-  Produces<aod::HfRedBachProng0Cov> hfTrackCovLfDau0;
-  Produces<aod::HfRedBachProng1Bases> hfTrackLfDau1;
-  Produces<aod::HfRedBachProng1Cov> hfTrackCovLfDau1;
+  Produces<aod::HfRedBach0Bases> hfTrackLfDau0;
+  Produces<aod::HfRedBach0Cov> hfTrackCovLfDau0;
+  Produces<aod::HfRedBach1Bases> hfTrackLfDau1;
+  Produces<aod::HfRedBach1Cov> hfTrackCovLfDau1;
   // MC related tables
-  Produces<aod::HfMcRecRedJPsiKs> rowHfJPsiKMcRecReduced;
-  Produces<aod::HfMcRecRedJPsiPhis> rowHfJPsiPhiMcRecReduced;
+  Produces<aod::HfMcRecRedJPKs> rowHfJPsiKMcRecReduced;
+  Produces<aod::HfMcRecRedJPPhis> rowHfJPsiPhiMcRecReduced;
   Produces<aod::HfMcGenRedBps> rowHfBpMcGenReduced;
   Produces<aod::HfMcGenRedBss> rowHfBsMcGenReduced;
 
   Produces<aod::HfCfgBpToJPsi> rowCandidateConfigBplus;
-  Produces<aod::HfCfgBsToJPsi> rowCandidateConfigBs;
+  Produces<aod::HfCfgBsToJPsis> rowCandidateConfigBs;
 
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
@@ -111,12 +111,14 @@ struct HfDataCreatorJPsiHadReduced {
   Configurable<double> absEtaTrackMax{"absEtaTrackMax", 0.8, "maximum bachelor track absolute eta threshold"};
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for bachelor track DCA XY pT-dependent cut"};
   Configurable<LabeledArray<double>> cutsTrackDCA{"cutsTrackDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for bachelor track"};
-  // topological cuts
+  // topological/kinematic cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_mu_mu::vecBinsPt}, "J/Psi pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_mu_mu::Cuts[0], hf_cuts_jpsi_to_mu_mu::NBinsPt, hf_cuts_jpsi_to_mu_mu::NCutVars, hf_cuts_jpsi_to_mu_mu::labelsPt, hf_cuts_jpsi_to_mu_mu::labelsCutVar}, "J/Psi candidate selection per pT bin"};
-
   Configurable<double> invMassWindowJPsiHad{"invMassWindowJPsiHad", 0.3, "invariant-mass window for JPsi-Had pair preselections (GeV/c2)"};
   Configurable<double> deltaMPhiMax{"deltaMPhiMax", 0.02, "invariant-mass window for phi preselections (GeV/c2) (only for Bs->J/PsiPhi)"};
+  Configurable<double> cpaMin{"cpaMin", 0., "Minimum cosine of pointing angle for B candidates"};
+  Configurable<double> decLenMin{"decLenMin", 0., "Minimum decay length for B candidates"};
+
   // magnetic field setting from CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
@@ -146,12 +148,14 @@ struct HfDataCreatorJPsiHadReduced {
 
   o2::hf_evsel::HfEventSelection hfEvSel;
   o2::vertexing::DCAFitterN<2> df2;
+  o2::vertexing::DCAFitterN<3> df3;
+  o2::vertexing::DCAFitterN<4> df4;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
-    std::array<int, 4> doProcess = {doprocessJPsiKData, doprocessJPsiKMc, doprocessJPsiPhiData, doprocessJPsiPhiMc}; // TODO: check completeness
+    std::array<int, 4> doProcess = {doprocessJPsiKData, doprocessJPsiKMc, doprocessJPsiPhiData, doprocessJPsiPhiMc};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function can be enabled at a time, please fix your configuration!");
     }
@@ -183,7 +187,11 @@ struct HfDataCreatorJPsiHadReduced {
     registry.add("hPtJPsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCpaJPsi", "J/Psi cos#theta_{p};J/Psi cos#theta_{p};Counts", {HistType::kTH1F, {{200, -1., 1, "J/Psi cos#theta_{p}"}}});
     std::shared_ptr<TH1> hFitCandidatesJPsi = registry.add<TH1>("hFitCandidatesJPsi", "JPsi candidate counter", {HistType::kTH1D, {axisCands}});
+    std::shared_ptr<TH1> hFitCandidatesBPlus = registry.add<TH1>("hFitCandidatesBPlus", "hFitCandidatesBPlus candidate counter", {HistType::kTH1D, {axisCands}});
+    std::shared_ptr<TH1> hFitCandidatesBS = registry.add<TH1>("hFitCandidatesBS", "hFitCandidatesBS candidate counter", {HistType::kTH1D, {axisCands}});
     setLabelHistoCands(hFitCandidatesJPsi);
+    setLabelHistoCands(hFitCandidatesBPlus);
+    setLabelHistoCands(hFitCandidatesBS);
     if (doprocessJPsiKData || doprocessJPsiKMc) {
       registry.add("hPtKaon", "Kaon #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{100, 0., 10.}}});
       registry.add("hMassJPsiKaon", "J/Psi Kaon mass;#it{M}_{J/#PsiK} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{800, 4.9, 5.7}}});
@@ -204,6 +212,24 @@ struct HfDataCreatorJPsiHadReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
 
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCA);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+    df3.setMatCorrType(noMatCorr);
+
+    df4.setPropagateToPCA(propagateToPCA);
+    df4.setMaxR(maxR);
+    df4.setMaxDZIni(maxDZIni);
+    df4.setMinParamChange(minParamChange);
+    df4.setMinRelChi2Change(minRelChi2Change);
+    df4.setUseAbsDCA(useAbsDCA);
+    df4.setWeightedFinalPCA(useWeightedFinalPCA);
+    df4.setMatCorrType(noMatCorr);
+
     // Configure CCDB access
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -211,11 +237,11 @@ struct HfDataCreatorJPsiHadReduced {
     runNumber = 0;
 
     if (doprocessJPsiKData || doprocessJPsiKMc) {
-      invMass2JPsiHadMin = (MassBPlus - invMassWindowJPsiHad) * (MassBPlus - invMassWindowJPsiHad); // TODO: change mass bplus for other species
-      invMass2JPsiHadMax = (MassBPlus + invMassWindowJPsiHad) * (MassBPlus + invMassWindowJPsiHad); // TODO: change mass bplus for other species
+      invMass2JPsiHadMin = (MassBPlus - invMassWindowJPsiHad) * (MassBPlus - invMassWindowJPsiHad);
+      invMass2JPsiHadMax = (MassBPlus + invMassWindowJPsiHad) * (MassBPlus + invMassWindowJPsiHad);
     } else if (doprocessJPsiPhiData || doprocessJPsiPhiMc) {
-      invMass2JPsiHadMin = (MassBS - invMassWindowJPsiHad) * (MassBS - invMassWindowJPsiHad); // TODO: change mass bplus for other species
-      invMass2JPsiHadMax = (MassBS + invMassWindowJPsiHad) * (MassBS + invMassWindowJPsiHad); // TODO: change mass bplus for other species
+      invMass2JPsiHadMin = (MassBS - invMassWindowJPsiHad) * (MassBS - invMassWindowJPsiHad);
+      invMass2JPsiHadMax = (MassBS + invMassWindowJPsiHad) * (MassBS + invMassWindowJPsiHad);
     }
   }
 
@@ -326,6 +352,26 @@ struct HfDataCreatorJPsiHadReduced {
       if (track.globalIndex() == trackJPsi.globalIndex()) {
         return false;
       }
+    }
+
+    return true;
+  }
+
+  /// B meson preselections
+  /// \param momentum is the B meson momentum
+  /// \param secondaryVertex is the reconstructed secondary vertex
+  /// \param collision is the reconstructed collision
+  template <typename T1, typename T2, typename T3>
+  bool isBSelected(const T1& momentum, const T2& secondaryVertex, const T3& collision)
+  {
+    // B candidate CPA
+    if (RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex, momentum) < cpaMin) {
+      return false;
+    }
+
+    // B candidate decay length
+    if (RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, secondaryVertex) < decLenMin) {
+      return false;
     }
 
     return true;
@@ -474,18 +520,18 @@ struct HfDataCreatorJPsiHadReduced {
           // Printf("Checking J/Psi -> µ+µ-");
           if (!runJPsiToee) {
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_bplus::DecayType::BplusToJPsiK);
+              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BplusToJPsiK);
             }
           } else { // debug
             // Printf("Checking J/Psi -> e+e-");
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_bplus::DecayType::BplusToJPsiK);
+              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BplusToJPsiK);
             }
           }
         }
 
         // save information for B+ task
-        if (!TESTBIT(std::abs(flag), hf_cand_bplus::DecayType::BplusToJPsiK)) {
+        if (!TESTBIT(std::abs(flag), hf_cand_b_to_jpsi::DecayType::BplusToJPsiK)) {
           continue;
         }
 
@@ -516,19 +562,19 @@ struct HfDataCreatorJPsiHadReduced {
           if (!runJPsiToee) {
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2) &&
                 RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_bs::DecayType::BsToJPsiPhi);
+              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi);
             }
           } else { // debug
             // Printf("Checking J/Psi -> e+e- and phi -> K+K-");
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2) &&
                 RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_bs::DecayType::BsToJPsiPhi);
+              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi);
             }
           }
         }
 
         // save information for Bs task
-        if (!TESTBIT(std::abs(flag), hf_cand_bs::DecayType::BsToJPsiPhi)) {
+        if (!TESTBIT(std::abs(flag), hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi)) {
           continue;
         }
 
@@ -591,6 +637,8 @@ struct HfDataCreatorJPsiHadReduced {
       runNumber = bc.runNumber();
     }
     df2.setBz(bz);
+    df3.setBz(bz);
+    df4.setBz(bz);
 
     auto thisCollId = collision.globalIndex();
     // looping over 2-prong candidates
@@ -610,29 +658,7 @@ struct HfDataCreatorJPsiHadReduced {
       auto trackPosParCov = getTrackParCov(trackPos);
       auto trackNegParCov = getTrackParCov(trackNeg);
 
-      // topological selection
-      if (!selectionTopol(candidate, trackPos, trackNeg)) {
-        continue;
-      }
-      registry.fill(HIST("hSelectionsJPsi"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
-
-      int indexHfCandJPsi = hfJPsi.lastIndex() + 1;
-      float invMassJPsi{0.f};
-      if (runJPsiToee) {
-        invMassJPsi = hfHelper.invMassJpsiToEE(candidate);
-      } else {
-        invMassJPsi = hfHelper.invMassJpsiToMuMu(candidate);
-      }
-      registry.fill(HIST("hMassJPsi"), invMassJPsi);
-      registry.fill(HIST("hPtJPsi"), candidate.pt());
-      registry.fill(HIST("hCpaJPsi"), candidate.cpa());
-
-      bool fillHfCandJPsi = false;
-
       std::vector<typename TTracks::iterator> jPsiDauTracks{trackPos, trackNeg};
-
-      std::array<float, 3> pVec0 = jPsiDauTracks[0].pVector();
-      std::array<float, 3> pVec1 = jPsiDauTracks[1].pVector();
 
       auto dca0 = o2::dataformats::DCA(jPsiDauTracks[0].dcaXY(), jPsiDauTracks[0].dcaZ(), jPsiDauTracks[0].cYY(), jPsiDauTracks[0].cZY(), jPsiDauTracks[0].cZZ());
       auto dca1 = o2::dataformats::DCA(jPsiDauTracks[1].dcaXY(), jPsiDauTracks[1].dcaZ(), jPsiDauTracks[1].cYY(), jPsiDauTracks[1].cZY(), jPsiDauTracks[1].cZZ());
@@ -662,14 +688,24 @@ struct HfDataCreatorJPsiHadReduced {
       }
       registry.fill(HIST("hFitCandidatesJPsi"), SVFitting::FitOk);
 
-      auto secondaryVertexJPsi = df2.getPCACandidate();
-      trackPosParCov.propagateTo(secondaryVertexJPsi[0], bz);
-      trackNegParCov.propagateTo(secondaryVertexJPsi[0], bz);
-      df2.getTrack(0).getPxPyPzGlo(pVec0);
-      df2.getTrack(1).getPxPyPzGlo(pVec1);
-      pVecJPsi = RecoDecay::pVec(pVec0, pVec1);
-      trackParCovJPsi = df2.createParentTrackParCov();
-      trackParCovJPsi.setAbsCharge(0); // to be sure
+      // topological selection
+      if (!selectionTopol(candidate, trackPos, trackNeg)) {
+        continue;
+      }
+      registry.fill(HIST("hSelectionsJPsi"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
+
+      int indexHfCandJPsi = hfJPsi.lastIndex() + 1;
+      float invMassJPsi{0.f};
+      if (runJPsiToee) {
+        invMassJPsi = hfHelper.invMassJpsiToEE(candidate);
+      } else {
+        invMassJPsi = hfHelper.invMassJpsiToMuMu(candidate);
+      }
+      registry.fill(HIST("hMassJPsi"), invMassJPsi);
+      registry.fill(HIST("hPtJPsi"), candidate.pt());
+      registry.fill(HIST("hCpaJPsi"), candidate.cpa());
+
+      bool fillHfCandJPsi = false;
 
       // TODO: add single track information (min eta, min ITS/TPC clusters, etc.)
       double invMass2JPsiHad{0.};
@@ -698,6 +734,34 @@ struct HfDataCreatorJPsiHadReduced {
             continue;
           }
           registry.fill(HIST("hMassJPsiKaon"), std::sqrt(invMass2JPsiHad));
+
+          registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::BeforeFit);
+          try {
+            if (df3.process(trackPosParCov, trackNegParCov, trackParCovBach) == 0) {
+              continue;
+            }
+          } catch (const std::runtime_error& error) {
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+            registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::Fail);
+            continue;
+          }
+          registry.fill(HIST("hFitCandidatesBPlus"), SVFitting::FitOk);
+
+          o2::track::TrackParCov trackParCovBPlus{};
+          std::array<float, 3> pVecBPlus{}, pVec0{}, pVec1{}, pVec2{};
+
+          auto secondaryVertexBPlus = df3.getPCACandidate();
+          df3.propagateTracksToVertex();
+          df3.getTrack(0).getPxPyPzGlo(pVec0);
+          df3.getTrack(1).getPxPyPzGlo(pVec1);
+          df3.getTrack(2).getPxPyPzGlo(pVec2);
+          pVecBPlus = RecoDecay::pVec(pVec0, pVec1, pVec2);
+          trackParCovBPlus = df3.createParentTrackParCov();
+          trackParCovBPlus.setAbsCharge(0); // to be sure
+
+          if (!isBSelected(pVecBPlus, secondaryVertexBPlus, collision)) {
+            continue;
+          }
 
           // fill Kaon tracks table
           // if information on track already stored, go to next track
@@ -748,42 +812,43 @@ struct HfDataCreatorJPsiHadReduced {
             if (!isTrackSelected(trackBach2, trackBach2ParCov, dcaBach2, jPsiDauTracks)) {
               continue;
             }
+            std::array<float, 3> pVec2{trackBach.pVector()}, pVec3{trackBach2.pVector()};
+            auto invMassPhi = RecoDecay::m(std::array{pVec2, pVec3}, std::array{MassKPlus, MassKPlus});
 
-            auto dcaBach0 = o2::dataformats::DCA(trackBach.dcaXY(), trackBach.dcaZ(), trackBach.cYY(), trackBach.cZY(), trackBach.cZZ());
-            auto dcaBach1 = o2::dataformats::DCA(trackBach2.dcaXY(), trackBach2.dcaZ(), trackBach2.cYY(), trackBach2.cZY(), trackBach2.cZZ());
-
-            // repropagate tracks to this collision if needed
-            if (trackBach2.collisionId() != thisCollId) {
-              trackBach2ParCov.propagateToDCA(primaryVertex, bz, &dcaBach1);
+            if (std::abs(invMassPhi - MassPhi) > deltaMPhiMax) {
+              continue;
             }
 
             // ---------------------------------
-            // reconstruct phi candidate secondary vertex
-            o2::track::TrackParCov trackParCovPhi{};
-            std::array<float, 3> pVecPhi{};
-            registry.fill(HIST("hFitCandidatesPhi"), SVFitting::BeforeFit);
+            // reconstruct Bs candidate secondary vertex
+
+            registry.fill(HIST("hFitCandidatesBS"), SVFitting::BeforeFit);
             try {
-              if (df2.process(trackParCovBach, trackBach2ParCov) == 0) {
+              if (df4.process(trackPosParCov, trackNegParCov, trackParCovBach, trackBach2ParCov) == 0) {
                 continue;
               }
             } catch (const std::runtime_error& error) {
               LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
-              registry.fill(HIST("hFitCandidatesPhi"), SVFitting::Fail);
+              registry.fill(HIST("hFitCandidatesBS"), SVFitting::Fail);
               continue;
             }
-            registry.fill(HIST("hFitCandidatesPhi"), SVFitting::FitOk);
+            registry.fill(HIST("hFitCandidatesBS"), SVFitting::FitOk);
 
-            auto secondaryVertexPhi = df2.getPCACandidate();
-            trackParCovBach.propagateTo(secondaryVertexPhi[0], bz);
-            trackBach2ParCov.propagateTo(secondaryVertexPhi[0], bz);
-            df2.getTrack(0).getPxPyPzGlo(pVecBach);
-            df2.getTrack(1).getPxPyPzGlo(pVecBach2);
-            pVecPhi = RecoDecay::pVec(pVecBach, pVecBach2);
-            trackParCovPhi = df2.createParentTrackParCov();
-            trackParCovPhi.setAbsCharge(0); // to be sure
-            auto invMassPhi = RecoDecay::m(std::array{pVecBach, pVecBach2}, std::array{MassKPlus, MassKPlus});
+            o2::track::TrackParCov trackParCovBS{};
+            std::array<float, 3> pVecBS{}, pVec0{}, pVec1{}, pVecPhi{};
 
-            if (std::abs(invMassPhi - MassPhi) > deltaMPhiMax) {
+            auto secondaryVertexBS = df4.getPCACandidate();
+            df4.propagateTracksToVertex();
+            df4.getTrack(0).getPxPyPzGlo(pVec0);
+            df4.getTrack(1).getPxPyPzGlo(pVec1);
+            df4.getTrack(2).getPxPyPzGlo(pVec2);
+            df4.getTrack(3).getPxPyPzGlo(pVec3);
+            pVecBS = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
+            pVecPhi = RecoDecay::pVec(pVec2, pVec3);
+            trackParCovBS = df4.createParentTrackParCov();
+            trackParCovBS.setAbsCharge(0); // to be sure
+
+            if (!isBSelected(pVecBS, secondaryVertexBS, collision)) {
               continue;
             }
 

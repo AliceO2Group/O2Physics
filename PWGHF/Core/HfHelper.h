@@ -174,7 +174,7 @@ class HfHelper
   template <typename T>
   auto invMassBplusToJPsiK(const T& candidate)
   {
-    return candidate.m(std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus});
+    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>
@@ -666,7 +666,7 @@ class HfHelper
   template <typename T>
   auto invMassBsToJPsiPhi(const T& candidate)
   {
-    return candidate.m(std::array{o2::constants::physics::MassJPsi, o2::constants::physics::MassKPlus});
+    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
   }
 
   template <typename T>

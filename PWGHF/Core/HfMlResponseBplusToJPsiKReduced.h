@@ -59,6 +59,14 @@
     break;                                                               \
   }
 
+// Specific case of CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)
+// where OBJECT is named candidate, FEATURE = GETTER, and args are needed
+#define CHECK_AND_FILL_VEC_BPLUS_WITH_ARGS(GETTER, ARGS...)              \
+  case static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER(ARGS));                  \
+    break;                                                               \
+  }
+
 namespace o2::analysis
 {
 
@@ -67,7 +75,9 @@ enum class InputFeaturesBplusToJPsiKReduced : uint8_t {
   ptProng1,
   impactParameter0,
   impactParameter1,
+  impactParameter2,
   impactParameterProduct,
+  impactParameterProductJPsi,
   chi2PCA,
   decayLength,
   decayLengthXY,
@@ -76,6 +86,7 @@ enum class InputFeaturesBplusToJPsiKReduced : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
+  pseudoPropDL,
   tpcNSigmaKa1,
   tofNSigmaKa1,
   tpcTofNSigmaKa1
@@ -106,7 +117,9 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BPLUS(ptProng1);
         CHECK_AND_FILL_VEC_BPLUS(impactParameter0);
         CHECK_AND_FILL_VEC_BPLUS(impactParameter1);
+        CHECK_AND_FILL_VEC_BPLUS(impactParameter2);
         CHECK_AND_FILL_VEC_BPLUS(impactParameterProduct);
+        CHECK_AND_FILL_VEC_BPLUS(impactParameterProductJPsi);
         CHECK_AND_FILL_VEC_BPLUS(chi2PCA);
         CHECK_AND_FILL_VEC_BPLUS(decayLength);
         CHECK_AND_FILL_VEC_BPLUS(decayLengthXY);
@@ -115,6 +128,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BPLUS(cpa);
         CHECK_AND_FILL_VEC_BPLUS(cpaXY);
         CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
+        CHECK_AND_FILL_VEC_BPLUS_WITH_ARGS(pseudoPropDL, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
         // TPC PID variable
         CHECK_AND_FILL_VEC_BPLUS_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
         // TOF PID variable
@@ -136,7 +150,9 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(ptProng1),
       FILL_MAP_BPLUS(impactParameter0),
       FILL_MAP_BPLUS(impactParameter1),
+      FILL_MAP_BPLUS(impactParameter2),
       FILL_MAP_BPLUS(impactParameterProduct),
+      FILL_MAP_BPLUS(impactParameterProductJPsi),
       FILL_MAP_BPLUS(chi2PCA),
       FILL_MAP_BPLUS(decayLength),
       FILL_MAP_BPLUS(decayLengthXY),
@@ -145,6 +161,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(cpa),
       FILL_MAP_BPLUS(cpaXY),
       FILL_MAP_BPLUS(maxNormalisedDeltaIP),
+      FILL_MAP_BPLUS(pseudoPropDL),
       // TPC PID variable
       FILL_MAP_BPLUS(tpcNSigmaKa1),
       // TOF PID variable

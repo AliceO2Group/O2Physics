@@ -59,6 +59,14 @@
     break;                                                              \
   }
 
+// Specific case of CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)
+// where OBJECT is named candidate and FEATURE = GETTER and args are needed
+#define CHECK_AND_FILL_VEC_BS_WITH_ARGS(GETTER, ARGS...)                \
+  case static_cast<uint8_t>(InputFeaturesBsToJPsiPhiReduced::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER(ARGS));                 \
+    break;                                                              \
+  }
+
 namespace o2::analysis
 {
 
@@ -67,7 +75,11 @@ enum class InputFeaturesBsToJPsiPhiReduced : uint8_t {
   ptProng1,
   impactParameter0,
   impactParameter1,
+  impactParameter2,
+  impactParameter3,
   impactParameterProduct,
+  impactParameterProductJPsi,
+  impactParameterProductPhi,
   chi2PCA,
   decayLength,
   decayLengthXY,
@@ -76,6 +88,7 @@ enum class InputFeaturesBsToJPsiPhiReduced : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
+  pseudoPropDL,
   tpcNSigmaKa0,
   tofNSigmaKa0,
   tpcTofNSigmaKa0,
@@ -110,7 +123,11 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BS(ptProng1);
         CHECK_AND_FILL_VEC_BS(impactParameter0);
         CHECK_AND_FILL_VEC_BS(impactParameter1);
+        CHECK_AND_FILL_VEC_BS(impactParameter2);
+        CHECK_AND_FILL_VEC_BS(impactParameter3);
         CHECK_AND_FILL_VEC_BS(impactParameterProduct);
+        CHECK_AND_FILL_VEC_BS(impactParameterProductJPsi);
+        CHECK_AND_FILL_VEC_BS(impactParameterProductPhi);
         CHECK_AND_FILL_VEC_BS(chi2PCA);
         CHECK_AND_FILL_VEC_BS(decayLength);
         CHECK_AND_FILL_VEC_BS(decayLengthXY);
@@ -119,6 +136,7 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BS(cpa);
         CHECK_AND_FILL_VEC_BS(cpaXY);
         CHECK_AND_FILL_VEC_BS(maxNormalisedDeltaIP);
+        CHECK_AND_FILL_VEC_BS_WITH_ARGS(pseudoPropDL, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
         // TPC PID variable
         CHECK_AND_FILL_VEC_BS_FULL(prong1, tpcNSigmaKa0, tpcNSigmaKa);
         // TOF PID variable
@@ -146,7 +164,11 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BS(ptProng1),
       FILL_MAP_BS(impactParameter0),
       FILL_MAP_BS(impactParameter1),
+      FILL_MAP_BS(impactParameter2),
+      FILL_MAP_BS(impactParameter3),
       FILL_MAP_BS(impactParameterProduct),
+      FILL_MAP_BS(impactParameterProductJPsi),
+      FILL_MAP_BS(impactParameterProductPhi),
       FILL_MAP_BS(chi2PCA),
       FILL_MAP_BS(decayLength),
       FILL_MAP_BS(decayLengthXY),
@@ -155,6 +177,7 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BS(cpa),
       FILL_MAP_BS(cpaXY),
       FILL_MAP_BS(maxNormalisedDeltaIP),
+      FILL_MAP_BS(pseudoPropDL),
       // TPC PID variable
       FILL_MAP_BS(tpcNSigmaKa0),
       // TOF PID variable
