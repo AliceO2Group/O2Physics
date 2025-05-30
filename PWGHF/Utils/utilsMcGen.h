@@ -75,15 +75,8 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         }
         if (matched) {
           // std::cout << "Matched final state: " << chn << " with PDG code: " << Pdg::kD0 << std::endl;
-          switch (Pdg::kD0) {
-            case Pdg::kD0:
-              flag = sign * (chn + 10);
-              break;
-            default:
-              LOG(info) << "Unknown mother PDG code: " << Pdg::kD0 << ", skipping.";
-              continue; // Skip unknown mother PDG codes
-          }
-          
+          flag = sign * (chn + 10);
+
           // Flag the resonant decay channel
           int resoMaxDepth = 1;
           int NDaughtersResonant = 2;
@@ -176,14 +169,29 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         if (motherPdgCode == Pdg::kDStar) {
           maxDepth = 3; // to catch the D0 resonances
         }
-
+        
         std::vector<int> arrResoDaughIndex = {};
         for (const auto& [chn, finalState] : finalStates3Prongs) {
           if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
             std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, maxDepth);
+            std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
+            for (int iDaug = 0; iDaug<arrAllDaughtersIndex.size(); iDaug++) {
+              std::cout << "[maxDepth] Daughter index: " << arrAllDaughtersIndex[iDaug] << std::endl;
+            }
+            std::vector<int> arrAllDaughtersIndex2; // vector of indices of all daughters
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex2, finalStateParts, maxDepth-1);
+            for (int iDaug = 0; iDaug<arrAllDaughtersIndex2.size(); iDaug++) {
+              std::cout << "[maxDepth-1] Daughter index: " << arrAllDaughtersIndex2[iDaug] << std::endl;
+            }
+            matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
           } else if (finalState.size() == 3) {              // Fully Reco 3-prong decays
             std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
+            std::vector<int> arrAllDaughtersIndex3; // vector of indices of all daughters
+            RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex3, finalStateParts, maxDepth);
+            for (int iDaug = 0; iDaug<arrAllDaughtersIndex3.size(); iDaug++) {
+              std::cout << "[maxDepth] Daughter index: " << arrAllDaughtersIndex3[iDaug] << std::endl;
+            }
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, maxDepth);
           } else {
             LOG(info) << "Final state size not supported: " << finalState.size();
