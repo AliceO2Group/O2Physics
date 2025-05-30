@@ -336,9 +336,8 @@ struct HfTreeCreatorOmegacSt {
   int8_t nKaToPiCasc{0}, nKaToPiOmegac0{0};
   std::vector<int> idxBhadMothers{};
   int decayChannel = -1; // flag for different decay channels
-  const int nProngs = 2;
   bool isMatched = false;
-  static constexpr int NDaughters = 2;
+  static constexpr std::size_t NDaughters{2u};
 
   void processMc(aod::McCollisions const&,
                  aod::McParticles const& mcParticles)
@@ -349,7 +348,7 @@ struct HfTreeCreatorOmegacSt {
       const bool isXiC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kXiC0;
       if (isOmegaC || isXiC) {
         const auto daughters = mcParticle.daughters_as<aod::McParticles>();
-        if (daughters.size() == nProngs) {
+        if (daughters.size() == NDaughters) {
           int idxPionDaughter = -1;
           int idxCascDaughter = -1;
           int idxKaonDaughter = -1;
@@ -563,7 +562,7 @@ struct HfTreeCreatorOmegacSt {
             std::array<double, NDaughters> massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<double, NDaughters> massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
             std::array<double, NDaughters> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
-            std::array<std::array<float, 3>, 2> momenta;
+            std::array<std::array<float, 3>, NDaughters> momenta;
 
             auto trackParCovPr = getTrackParCov(v0TrackPr);
             auto trackParCovKa = getTrackParCov(v0TrackPi);
@@ -859,7 +858,7 @@ struct HfTreeCreatorOmegacSt {
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
             std::array<double, NDaughters> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-            std::array<std::array<float, 3>, 2> momenta;
+            std::array<std::array<float, 3>, NDaughters> momenta;
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
             std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
