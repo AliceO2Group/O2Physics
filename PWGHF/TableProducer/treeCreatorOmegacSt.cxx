@@ -239,10 +239,10 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", 5., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
-  const int minItsNCls = 4;
-  const float fractionTpcNclsFindable = 0.8;
-  const float maxTpcChi2Ncl = 4.;
-  const float maxItsChi2Ncl = 36.;
+  const int itsNClsMin = 4;
+  const float tpcNclsFindableFraction = 0.8;
+  const float tpcChi2NclMax = 4.;
+  const float itsChi2NclMax = 36.;
 
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -417,7 +417,7 @@ struct HfTreeCreatorOmegacSt {
   void fillTable(Collisions const& collisions,
                  aod::AssignedTrackedCascades const& trackedCascades,
                  aod::TrackAssoc const& trackIndices,
-                 std::optional<aod::McParticles> mcParticles = std::nullopt)
+                 std::optional<std::reference_wrapper<aod::McParticles const>> mcParticles = std::nullopt)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
 
@@ -586,12 +586,12 @@ struct HfTreeCreatorOmegacSt {
                   track.globalIndex() == bachelor.globalIndex()) {
                 continue;
               }
-              if ((track.itsNCls() >= minItsNCls) &&
+              if ((track.itsNCls() >= itsNClsMin) &&
                   (track.tpcNClsFound() >= minNoClsTrackedPionOrKaon) &&
                   (track.tpcNClsCrossedRows() >= minNoClsTrackedPionOrKaon) &&
-                  (track.tpcNClsCrossedRows() >= fractionTpcNclsFindable * track.tpcNClsFindable()) &&
-                  (track.tpcChi2NCl() <= maxTpcChi2Ncl) &&
-                  (track.itsChi2NCl() <= maxItsChi2Ncl) &&
+                  (track.tpcNClsCrossedRows() >= tpcNclsFindableFraction * track.tpcNClsFindable()) &&
+                  (track.tpcChi2NCl() <= tpcChi2NclMax) &&
+                  (track.itsChi2NCl() <= itsChi2NclMax) &&
                   (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion || std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon)) {
                 LOGF(debug, "  .. combining with pion/kaon candidate %d", track.globalIndex());
                 int trackMotherId = -1;
@@ -658,20 +658,20 @@ struct HfTreeCreatorOmegacSt {
 
                       if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
                         // Match Omegac0 → Omega- + Pi+
-                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles.value(), arrayDaughters, o2::constants::physics::kOmegaC0,
+                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
                                                                                                std::array{+kPiPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
                       } else if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK) {
                         // Match Omegac0 → Omega- + K+
-                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles.value(), arrayDaughters, o2::constants::physics::kOmegaC0,
+                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, false>(mcParticles->get(), arrayDaughters, o2::constants::physics::kOmegaC0,
                                                                                                std::array{+kKPlus, +kKMinus, +kProton, +kPiMinus}, true, &sign, 3, &nPiToMuOmegac0, &nKaToPiOmegac0);
                       }
                       indexRecCharmBaryon = indexRec;
                       if (indexRec > -1) {
                         // Omega- → K pi p (Cascade match)
-                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles.value(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
+                        indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersCasc, +kOmegaMinus, std::array{+kKMinus, +kProton, +kPiMinus}, true, &signCasc, 2, &nPiToMuCasc, &nKaToPiCasc);
                         if (indexRec > -1) {
                           // Lambda → p pi (Lambda match)
-                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles.value(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
+                          indexRec = RecoDecay::getMatchedMCRec<false, true, false, true, true>(mcParticles->get(), arrayDaughtersV0, +kLambda0, std::array{+kProton, +kPiMinus}, true, &signV0, 1, &nPiToMuV0);
                           if (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) {
                             if (nPiToMuOmegac0 >= 1 && nKaToPiOmegac0 == 0) {
                               isMatched = true;
@@ -686,8 +686,8 @@ struct HfTreeCreatorOmegacSt {
                         }
                       }
                       if (isMatched) {
-                        auto particle = mcParticles.value().rawIteratorAt(indexRecCharmBaryon);
-                        origin = RecoDecay::getCharmHadronOrigin(mcParticles.value(), particle, false, &idxBhadMothers);
+                        auto particle = mcParticles->get().rawIteratorAt(indexRecCharmBaryon);
+                        origin = RecoDecay::getCharmHadronOrigin(mcParticles->get(), particle, false, &idxBhadMothers);
                       }
                     }
 
