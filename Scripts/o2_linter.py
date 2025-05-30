@@ -1730,7 +1730,7 @@ def main():
         ref_names = []
         for test in tests:
             if any(n > 0 for n in (test.n_issues, test.n_disabled, test.n_tolerated, n_files_bad[test.name])):
-                ref_ids = [ref.value for ref in test.references]
+                ref_ids = sorted(ref.value for ref in test.references)
                 ref_names += test.references
                 print(
                     f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{test.n_tolerated}"
