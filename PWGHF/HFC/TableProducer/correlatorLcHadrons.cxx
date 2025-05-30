@@ -32,6 +32,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
@@ -530,7 +531,7 @@ struct HfCorrelatorLcHadrons {
       }
       auto trackPos1 = candidate.template prong0_as<TracksWithMc>(); // positive daughter (negative for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWithMc>();
-      int8_t chargeLc = trackPos1.sign();                            // charge of 1st prong will be the charge of Lc candidate
+      int8_t chargeLc = trackPos1.sign(); // charge of 1st prong will be the charge of Lc candidate
       isLcSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
       isLcPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       isLcNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;

@@ -23,6 +23,7 @@
 #include "Framework/HistogramRegistry.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -275,8 +276,8 @@ struct HfTaskXiccMc {
         registry.fill(HIST("hPtvsEtavsYGen"), particle.pt(), particle.eta(), RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCCPlusPlus));
       }
     } // end of loop of MC particles
-  }   // end of process function
-};    // end of struct
+  } // end of process function
+}; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

@@ -47,13 +47,13 @@
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::hf_evsel;
