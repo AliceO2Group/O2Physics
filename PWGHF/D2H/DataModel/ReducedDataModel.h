@@ -23,13 +23,19 @@
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 
+#include <array>
+#include <cstdint>
+
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
@@ -506,15 +512,15 @@ using HfRedCandBs = soa::Join<HfCandBsExt, HfRedBsProngs>;
 
 namespace hf_cand_lb_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Lc, prong0Lc, int, HfRed3Prongs, "_0");          //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Track, prong1Track, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                       //! Bkg ML score of the Lc daughter
-DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                 //! Prompt ML score of the Lc daughter
-DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);           //! Nonprompt ML score of the Lc daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the Lc daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the Lc daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the Lc daughter
 } // namespace hf_cand_lb_reduced
 
 DECLARE_SOA_TABLE(HfRedLbProngs, "AOD", "HFREDLBPRONG", //! Table with Lb daughter indices
-                  hf_cand_lb_reduced::Prong0LcId, hf_cand_lb_reduced::Prong1TrackId);
+                  hf_cand_lb_reduced::Prong0Id, hf_cand_lb_reduced::Prong1Id);
 
 DECLARE_SOA_TABLE(HfRedLbLcMls, "AOD", "HFREDLBLCML", //! Table with ML scores for the Lc daughter
                   hf_cand_lb_reduced::Prong0MlScoreBkg,
@@ -796,8 +802,8 @@ DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code 
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfMcRecRedLcPis, "AOD", "HFMCRECREDLCPI", //! Table with reconstructed MC information on LcPi(<-Lb) pairs for reduced workflow
-                  hf_cand_lb_reduced::Prong0LcId,
-                  hf_cand_lb_reduced::Prong1TrackId,
+                  hf_cand_lb_reduced::Prong0Id,
+                  hf_cand_lb_reduced::Prong1Id,
                   hf_cand_lb::FlagMcMatchRec,
                   hf_cand_lb::FlagWrongCollision,
                   hf_cand_lb::DebugMcRec,

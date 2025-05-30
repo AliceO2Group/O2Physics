@@ -33,16 +33,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
-using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
-using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
-
 struct AssociateMCInfoDilepton {
   enum SubSystem {
     kElectron = 0x1,
     kFwdMuon = 0x2,
     kPCM = 0x4,
   };
+
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
+  using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
+  using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
 
   Produces<o2::aod::EMMCEvents> mcevents;
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
@@ -51,7 +51,9 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
+  Produces<o2::aod::EMDummyDatas> emdummydata;
 
+  Configurable<int> n_dummy_loop{"n_dummy_loop", 0, "for loop runs over n times"};
   Configurable<float> down_scaling_omega{"down_scaling_omega", 1.1, "down scaling factor to store omega"};
   Configurable<float> down_scaling_phi{"down_scaling_phi", 1.1, "down scaling factor to store phi"};
   Configurable<float> min_eta_gen_primary{"min_eta_gen_primary", -1.5, "min rapidity Y to store generated information"};  // smearing is applied at analysis stage. set wider value.
@@ -642,6 +644,19 @@ struct AssociateMCInfoDilepton {
     skimmingMC<kPCM>(collisions, bcs, mccollisions, mcTracks, o2tracks, nullptr, v0photons, v0legs, nullptr, nullptr);
   }
 
+  void processGenDummy(MyCollisionsMC const&)
+  {
+    for (int i = 0; i < n_dummy_loop; i++) {
+      emdummydata(
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f, 0.f, 0.f, 0.f, 0.f,
+        0.f);
+    }
+  }
+
   void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron, "create em mc event table for Electron", false);
@@ -650,6 +665,7 @@ struct AssociateMCInfoDilepton {
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_FwdMuon_PCM, "create em mc event table for PCM, Electron, FwdMuon", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_PCM, "create em mc event table for PCM, Electron", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_PCM, "create em mc event table for PCM", false);
+  PROCESS_SWITCH(AssociateMCInfoDilepton, processGenDummy, "produce dummy data", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processDummy, "processDummy", true);
 };
 

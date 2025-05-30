@@ -32,6 +32,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
@@ -53,20 +54,12 @@ using namespace o2::constants::physics;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
+using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 
 struct TreeCreatorElectronMLDDA {
-  enum class EM_V0_Label : int { // Reconstructed V0
-    kUndef = -1,
-    kGamma = 0,
-    kK0S = 1,
-    kLambda = 2,
-    kAntiLambda = 3,
-  };
-
   SliceCache cache;
   Produces<o2::aod::EMPrimaryTracks> emprimarytracks; // flat table containing collision + track information
 
@@ -82,8 +75,8 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hPCA", "V0 distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
       {"V0/hMassGamma", "V0 mass gamma", {HistType::kTH1F, {{100, 0, 0.1}}}},
       {"V0/hMassK0Short", "V0 mass K0S", {HistType::kTH1F, {{200, 0.4, 0.6}}}},
-      {"V0/hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
-      {"V0/hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
+      {"V0/hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
+      {"V0/hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
       {"hMvsPhiV", "mee vs. phiv", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
 
       {"V0/hTPCdEdx_P_El", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
@@ -98,26 +91,6 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hTOFbeta_P_Ka", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
       {"V0/hTOFbeta_P_Pr", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
 
-      {"V0/hITSClusterSize_P_El", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSClusterSize_P_Mu", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSClusterSize_P_Pi", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSClusterSize_P_Ka", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"V0/hITSClusterSize_P_Pr", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-
-      // {"PrimaryTrack/hTPCdEdx_P", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      // {"PrimaryTrack/hTOFbeta_P", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      // {"PrimaryTrack/hITSClusterSize_P", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      // {"PrimaryTrack/hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTPCNsigmaMu_P", "TPC n#sigma_{#mu} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#mu}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTPCNsigmaKa_P", "TPC n#sigma_{K} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{K}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTPCNsigmaPr_P", "TPC n#sigma_{p} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{p}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTOFNsigmaEl_P", "TOF n#sigma_{e} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTOFNsigmaMu_P", "TOF n#sigma_{#mu} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#mu}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTOFNsigmaPi_P", "TOF n#sigma_{#pi} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTOFNsigmaKa_P", "TOF n#sigma_{K} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{K}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      // {"PrimaryTrack/hTOFNsigmaPr_P", "TOF n#sigma_{p} vs. p;p^{ITS-TOF} (GeV/c);n #sigma_{p}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-
       {"Cascade/hRxy_Xi", "R_{xy} of cascade vs. mass;m_{#Lambda#pi};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
       {"Cascade/hRxy_Omega", "R_{xy} of cascade vs. mass;m_{#LambdaK};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
       {"Cascade/hCTau_Xi", "c#tau vs. mass;m_{#Lambda#pi};c#tau (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
@@ -126,8 +99,7 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hV0PCA", "V0 distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
       {"Cascade/hCosPA", "cascade cosine of pointing angle", {HistType::kTH1F, {{100, 0.99, 1.f}}}},
       {"Cascade/hPCA", "cascade distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
-      {"Cascade/hMassLambda", "V0 mass Lambda in cascade", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
-      {"Cascade/hMassAntiLambda", "V0 mass AntiLambda in cascade", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
+      {"Cascade/hMassLambda", "V0 mass Lambda in cascade", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
       {"Cascade/hMassXi", "cascade mass #Xi", {HistType::kTH1F, {{200, 1.2, 1.4}}}},
       {"Cascade/hMassOmega", "cascade mass #Omega", {HistType::kTH1F, {{200, 1.6, 1.8}}}},
       {"Cascade/hMassPt_Xi", "cascade mass #Xi^{#pm};m_{#Lambda#pi} (GeV/c^{2});p_{T,#Lambda#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
@@ -136,8 +108,6 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hMassPt_Omega_bachelor", "cascade mass #Omega^{#pm};m_{#LambdaK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
     },
   };
-
-  // Configurables
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -151,13 +121,18 @@ struct TreeCreatorElectronMLDDA {
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
+  Configurable<float> downscaling_electron_primary{"downscaling_electron_primary", 1.1, "down scaling factor to store primary electron for validation"};
   Configurable<float> downscaling_electron{"downscaling_electron", 0.005, "down scaling factor to store electron"};
   Configurable<float> downscaling_pion{"downscaling_pion", 0.001, "down scaling factor to store pion"};
   Configurable<float> downscaling_kaon{"downscaling_kaon", 1.1, "down scaling factor to store kaon"};
-  Configurable<float> downscaling_proton{"downscaling_proton", 0.01, "down scaling factor to store proton"};
-  Configurable<bool> store_v0photons{"store_v0photons", true, "create training data from v0 photons"};
-  Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
-  Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
+  Configurable<float> downscaling_proton{"downscaling_proton", 0.005, "down scaling factor to store proton"};
+
+  Configurable<float> max_pin_for_downscaling_electron_primary{"max_pin_for_downscaling_electron_primary", 0.0, "max pin to apply down scaling factor to store primary electron for validation"};
+  Configurable<float> max_pin_for_downscaling_electron{"max_pin_for_downscaling_electron", 2.0, "max pin to apply down scaling factor to store electron"};
+  Configurable<float> max_pin_for_downscaling_pion{"max_pin_for_downscaling_pion", 2.0, "max pin to apply down scaling factor to store pion"};
+  Configurable<float> max_pin_for_downscaling_kaon{"max_pin_for_downscaling_kaon", 0.0, "max pin to apply down scaling factor to store kaon"};
+  Configurable<float> max_pin_for_downscaling_proton{"max_pin_for_downscaling_proton", 2.0, "max pin to apply down scaling factor to store proton"};
+  Configurable<bool> store_ele_band_only{"store_ele_band_only", false, "flag to store tracks around electron band only to reduce output size"};
 
   struct : ConfigurableGroup {
     std::string prefix = "trackcut_group";
@@ -167,12 +142,12 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 6.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.3, "max dca XY in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.3, "max dca Z in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z in cm"};
   } trackcuts;
 
   struct : ConfigurableGroup {
@@ -215,6 +190,11 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -4, "min n sigma pr in TOF"};
     Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +4, "max n sigma pr in TOF"};
 
+    Configurable<float> cfg_min_TPCNsigmaEl_tight{"cfg_min_TPCNsigmaEl_tight", -2, "min n sigma e in TPC for pi0->eeg"};
+    Configurable<float> cfg_max_TPCNsigmaEl_tight{"cfg_max_TPCNsigmaEl_tight", +2, "max n sigma e in TPC for pi0->eeg"};
+    Configurable<float> cfg_min_TOFNsigmaEl_tight{"cfg_min_TOFNsigmaEl_tight", -2, "min n sigma e in TOF for pi0->eeg"};
+    Configurable<float> cfg_max_TOFNsigmaEl_tight{"cfg_max_TOFNsigmaEl_tight", +2, "max n sigma e in TOF for pi0->eeg"};
+
     Configurable<float> cfg_min_TPCNsigmaPi_tight{"cfg_min_TPCNsigmaPi_tight", -2, "min n sigma pi in TPC for Lambda and cascade"};
     Configurable<float> cfg_max_TPCNsigmaPi_tight{"cfg_max_TPCNsigmaPi_tight", +2, "max n sigma pi in TPC for Lambda and cascade"};
     Configurable<float> cfg_min_TPCNsigmaPr_tight{"cfg_min_TPCNsigmaPr_tight", -2, "min n sigma pr in TPC for cascade"};
@@ -244,6 +224,20 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.1, "min dca XY for bachelor in cm"};
   } cascadecuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "dalitzcut_group";
+    Configurable<float> cfg_min_mass_ee{"cfg_min_mass_ee", 0.000, "min mass for ee from pi0 dalitz decay in GeV/c2"};
+    Configurable<float> cfg_max_mass_ee{"cfg_max_mass_ee", 0.005, "max mass for ee from pi0 dalitz decay in GeV/c2"};
+    Configurable<float> cfg_min_phiv_ee{"cfg_min_phiv_ee", 0.0, "min phiv for ee from pi0 dalitz decay in rad."};
+    Configurable<float> cfg_max_phiv_ee{"cfg_max_phiv_ee", M_PI / 2, "max phiv for ee from pi0 dalitz decay in rad."};
+  } dalitzcuts;
+
+  // for RCT
+  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+  Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
   int mRunNumber;
   float d_bz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -252,6 +246,7 @@ struct TreeCreatorElectronMLDDA {
   const o2::dataformats::MeanVertexObject* mMeanVtx = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::DCA mDcaInfoCov;
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
@@ -265,6 +260,8 @@ struct TreeCreatorElectronMLDDA {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
 
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
@@ -497,6 +494,14 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TTrack>
+  bool isElectronTight(TTrack const& track)
+  {
+    bool is_El_TPC = v0cuts.cfg_min_TPCNsigmaEl_tight < track.tpcNSigmaEl() && track.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl_tight;
+    bool is_El_TOF = track.hasTOF() && (v0cuts.cfg_min_TOFNsigmaEl_tight < track.tofNSigmaEl() && track.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl_tight); // TOFreq
+    return is_El_TPC && is_El_TOF;
+  }
+
+  template <typename TTrack>
   bool isPionTight(TTrack const& track)
   {
     bool is_Pi_TPC = v0cuts.cfg_min_TPCNsigmaPi_tight < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi_tight;
@@ -513,8 +518,12 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TCollision, typename TTrack>
-  void fillTrackTable(TCollision const& collision, TTrack const& track, const int pidlabel, const int tracktype)
+  void fillTrackTable(TCollision const& collision, TTrack const& track, const int pidlabel, const int tracktype, const bool isForValidation)
   {
+    if (store_ele_band_only && !isElectron(track)) {
+      return;
+    }
+
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       mDcaInfoCov.set(999, 999, 999, 999, 999);
       auto track_par_cov_recalc = getTrackParCov(track);
@@ -525,14 +534,14 @@ struct TreeCreatorElectronMLDDA {
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
-      emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(),
+      emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                       track.pt(), track.eta(), track.phi(), track.tgl(), track.signed1Pt(),
                       dcaXY, dcaZ, track_par_cov_recalc.getSigmaY2(), track_par_cov_recalc.getSigmaZ2(), track_par_cov_recalc.getSigmaZY(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, tracktype);
+                      track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel, tracktype, isForValidation);
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -564,6 +573,11 @@ struct TreeCreatorElectronMLDDA {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
+      if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 2.0); // selected
+
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
         auto pos = v0.template posTrack_as<MyTracks>();
@@ -574,6 +588,8 @@ struct TreeCreatorElectronMLDDA {
         if (pos.sign() * neg.sign() > 0) {
           continue;
         }
+
+        // LOGF(info, "v0.globalIndex() = %d, v0.collisionId() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", v0.globalIndex(), v0.collisionId(), v0.posTrackId(), v0.negTrackId());
 
         registry.fill(HIST("V0/hPCA"), v0.dcaV0daughters());
         registry.fill(HIST("V0/hCosPA"), v0.v0cosPA());
@@ -593,19 +609,19 @@ struct TreeCreatorElectronMLDDA {
             registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.p(), neg.beta());
             registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.p(), pos.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.p(), pos.beta());
-            if (dist01(engine) < downscaling_pion) {
-              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_pion || pos.tpcInnerParam() > max_pin_for_downscaling_pion) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            if (dist01(engine) < downscaling_pion) {
-              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_pion || neg.tpcInnerParam() > max_pin_for_downscaling_pion) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
           }
         }
         if (isProton(pos) && isPionTight(neg)) {
           registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
-            if (dist01(engine) < downscaling_proton) {
-              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_proton || pos.tpcInnerParam() > max_pin_for_downscaling_proton) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.p(), pos.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.p(), pos.beta());
@@ -614,23 +630,23 @@ struct TreeCreatorElectronMLDDA {
         if (isPionTight(pos) && isProton(neg)) {
           registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
           if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
-            if (dist01(engine) < downscaling_proton) {
-              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_proton || neg.tpcInnerParam() > max_pin_for_downscaling_proton) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.p(), neg.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.p(), neg.beta());
           }
         }
-        if (isElectron(pos) && isElectron(neg) && store_v0photons) {
-          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-          registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+        registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+        registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+        registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+        if (isElectron(pos) && isElectron(neg)) {
           if ((v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon)) {
-            if (dist01(engine) < downscaling_electron) {
-              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_electron || pos.tpcInnerParam() > max_pin_for_downscaling_electron) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            if (dist01(engine) < downscaling_electron) {
-              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_electron || neg.tpcInnerParam() > max_pin_for_downscaling_electron) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
             registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.p(), neg.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_El"), neg.p(), neg.beta());
@@ -639,40 +655,6 @@ struct TreeCreatorElectronMLDDA {
           }
         }
       } // end of v0 loop
-
-      if (!store_v0photons) {
-        auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-        auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-        for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
-          if (!isSelectedTrack(collision, pos) || !isSelectedTrack(collision, neg)) {
-            continue;
-          }
-
-          if (!isElectron(pos) || !isElectron(neg)) {
-            continue;
-          }
-
-          ROOT::Math::PtEtaPhiMVector v1(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassElectron);
-          ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
-          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), neg.px(), neg.py(), neg.pz(), pos.sign(), neg.sign(), d_bz);
-          registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
-
-          if (v12.M() < slope * phiv + intercept) { // photon conversion is found.
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.p(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), neg.p(), neg.beta());
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.p(), pos.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), pos.p(), pos.beta());
-
-            if (dist01(engine) < downscaling_electron) {
-              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
-            }
-            if (dist01(engine) < downscaling_electron) {
-              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
-            }
-          }
-        } // end of ULS pair loop
-      }
 
       auto cascades_coll = cascades.sliceBy(perCollision_cascade, collision.globalIndex());
       for (const auto& cascade : cascades_coll) {
@@ -754,34 +736,45 @@ struct TreeCreatorElectronMLDDA {
           if (cascadecuts.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecuts.cfg_max_mass_Omega) { // select Omega candidates
             registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.p(), bachelor.tpcSignal());
             registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.p(), bachelor.beta());
-            if (dist01(engine) < downscaling_kaon) {
-              fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+            if (dist01(engine) < downscaling_kaon || bachelor.tpcInnerParam() > max_pin_for_downscaling_kaon) {
+              fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), false);
             }
           }
         }
       } // end of cascade loop
 
-      // auto tracks_coll = tracks.sliceBy(perCollision_track, collision.globalIndex());
-      // for (const auto& track : tracks_coll) {
-      //   if (!isSelectedTrack(collision, track)) {
-      //     continue;
-      //   }
-      //   registry.fill(HIST("PrimaryTrack/hTPCdEdx_P"), track.p(), track.tpcSignal());
-      //   registry.fill(HIST("PrimaryTrack/hTOFbeta_P"), track.p(), track.beta());
-      //   registry.fill(HIST("PrimaryTrack/hITSClusterSize_P"), track.p(), meanClusterSizeITS<0, 7>(track) * std::cos(std::atan(track.tgl())));
-      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
-      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
-      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaMu_P"), track.p(), track.tpcNSigmaMu());
-      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaMu_P"), track.p(), track.tofNSigmaMu());
-      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaPi_P"), track.p(), track.tpcNSigmaPi());
-      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaPi_P"), track.p(), track.tofNSigmaPi());
-      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaKa_P"), track.p(), track.tpcNSigmaKa());
-      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaKa_P"), track.p(), track.tofNSigmaKa());
-      //   registry.fill(HIST("PrimaryTrack/hTPCNsigmaPr_P"), track.p(), track.tpcNSigmaPr());
-      //   registry.fill(HIST("PrimaryTrack/hTOFNsigmaPr_P"), track.p(), track.tofNSigmaPr());
-      // } // end of track loop
+      // for electron sample for validation
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
+        if (!isSelectedTrack(collision, pos) || !isSelectedTrack(collision, neg)) {
+          continue;
+        }
+        if (!isElectron(pos) || !isElectron(neg)) {
+          continue;
+        }
 
+        ROOT::Math::PtEtaPhiMVector v1(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), neg.px(), neg.py(), neg.pz(), pos.sign(), neg.sign(), d_bz);
+        registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
+
+        if ((dalitzcuts.cfg_min_mass_ee < v12.M() && v12.M() < dalitzcuts.cfg_max_mass_ee) && (dalitzcuts.cfg_min_phiv_ee < phiv && phiv < dalitzcuts.cfg_max_phiv_ee)) { // ee from pi0 dalitz decay is found.
+          if (isElectronTight(pos) && isElectron(neg)) {
+            if (dist01(engine) < downscaling_electron_primary || neg.tpcInnerParam() > max_pin_for_downscaling_electron_primary) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), true); // primary electron candidates
+            }
+          }
+          if (isElectron(pos) && isElectronTight(neg)) {
+            if (dist01(engine) < downscaling_electron_primary || pos.tpcInnerParam() > max_pin_for_downscaling_electron_primary) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), true); // primary electron candidates
+            }
+          }
+        }
+      } // end of ULS pair loop
     } // end of collision loop
+
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
   } // end of process

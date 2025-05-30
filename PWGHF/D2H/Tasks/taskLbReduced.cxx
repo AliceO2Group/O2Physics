@@ -306,7 +306,8 @@ struct HfTaskLbReduced {
           constexpr uint8_t kNBinsDecayTypeMc = hf_cand_lb::DecayTypeMc::NDecayTypeMc;
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi] = "#Lambda_{b}^{0} #rightarrow (#Lambda_{c}^{#plus} #rightarrow p K^{#minus} #pi^{#plus}) #pi^{#minus}";
-          labels[hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiK] = "#Lambda_{b}^{0} #rightarrow (#Lambda_{c}^{#plus} #rightarrow p K^{#minus} #pi^{#plus}) K^{#minus}";
+          labels[hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK] = "#Lambda_{b}^{0} #rightarrow (#Lambda_{c}^{#plus} #rightarrow p K^{#minus} #pi^{#plus}) K^{#minus}";
           labels[hf_cand_lb::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_lb::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -378,7 +379,7 @@ struct HfTaskLbReduced {
   {
     auto ptCandLb = candidate.pt();
     auto invMassLb = hfHelper.invMassLbToLcPi(candidate);
-    auto candLc = candidate.template prong0Lc_as<CandsLc>();
+    auto candLc = candidate.template prong0_as<CandsLc>();
     auto ptLc = candidate.ptProng0();
     auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
     // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
@@ -459,8 +460,10 @@ struct HfTaskLbReduced {
             registry.fill(HIST("hMlScoreSigLbRecBg"), ptCandLb, candidate.mlProbLbToLcPi());
           }
         } else if constexpr (withDecayTypeCheck) {
-          if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi)) { // Lb → Lc+ π- → (pK-π+) π-
-            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiK, invMassLb, ptCandLb);
+          if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK)) { // Lb → Lc+ K- → (pK-π+) K-
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK, invMassLb, ptCandLb);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi)) { // // B0 → D- π+ → (π- K+ π-) π+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi, invMassLb, ptCandLb);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::PartlyRecoDecay, invMassLb, ptCandLb);
           } else {
@@ -535,7 +538,7 @@ struct HfTaskLbReduced {
         if constexpr (withLbMl) {
           candidateMlScoreSig = candidate.mlProbLbToLcPi();
         }
-        auto prong1 = candidate.template prong1Track_as<TracksPion>();
+        auto prong1 = candidate.template prong1_as<TracksPion>();
 
         float ptMother = -1.;
         if constexpr (doMc) {

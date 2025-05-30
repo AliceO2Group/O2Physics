@@ -24,6 +24,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "ReconstructionDataFormats/Vertex.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
@@ -171,8 +173,12 @@ struct NonPromptCascadeTask {
   using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
   using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults>;
 
+  Preslice<TracksExtData> perCollision = aod::track::collisionId;
+  Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
+
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgPropToPCA{"cfgPropToPCA", true, "create tracks version propagated to PCA"};
+  Configurable<bool> cfgRedoPV{"cfgRedoPV", true, "redo PV"};
   Configurable<bool> cfgUseAbsDCA{"cfgUseAbsDCA", true, "Minimise abs. distance rather than chi2"};
   Configurable<double> cfgMaxR{"cfgMaxR", 200., "reject PCA's above this radius"};
   Configurable<double> cfgMaxDZIni{"cfgMaxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -189,6 +195,7 @@ struct NonPromptCascadeTask {
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
+  SliceCache cache;
 
   Service<o2::ccdb::BasicCCDBManager> mCCDB;
   int mRunNumber = 0;
@@ -212,7 +219,7 @@ struct NonPromptCascadeTask {
 
     if (static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(mCCDB->getForRun<o2::base::MatLayerCylSet>("GLO/Param/MatLUT", mRunNumber));
-      o2::base::Propagator::Instance(true)->setMatLUT(lut);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
 
@@ -244,6 +251,38 @@ struct NonPromptCascadeTask {
     }
   }
 
+  template <typename CollisionType, typename TrackType>
+  bool recalculatePV(CollisionType const& collision, TrackType const& tracks, int idToRemove, o2::dataformats::VertexBase& primaryVertex)
+  {
+    // slice tracks by collision
+    o2::vertexing::PVertexer vertexer;
+    std::vector<o2::track::TrackParCov> pvContributors = {};
+    std::vector<bool> pvContributorsMask = {};
+
+    auto tracksInCollision = doprocessTrackedCascadesMC ? tracks.sliceBy(perCollisionMC, collision.globalIndex()) : tracks.sliceBy(perCollision, collision.globalIndex());
+    // loop over tracks
+    for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
+      if (trkInColl.isPVContributor()) {
+        pvContributors.push_back(getTrackParCov(trkInColl));
+        idToRemove == trkInColl.globalIndex() ? pvContributorsMask.push_back(false) : pvContributorsMask.push_back(true);
+      }
+    }
+    LOG(debug) << "Tracks pushed to the vector: " << pvContributors.size();
+    vertexer.init();
+    bool canRefit = vertexer.prepareVertexRefit(pvContributors, primaryVertex);
+    if (!canRefit) {
+      return false;
+    }
+    // refit the vertex
+    auto newPV = vertexer.refitVertex(pvContributorsMask, primaryVertex);
+    // set the new vertex to primaryVertex
+    primaryVertex.setX(newPV.getX());
+    primaryVertex.setY(newPV.getY());
+    primaryVertex.setZ(newPV.getZ());
+    primaryVertex.setCov(newPV.getCov());
+    return true;
+  }
+
   void zorroAccounting(const auto& collisions)
   {
     if (cfgSkimmedProcessing) {
@@ -261,7 +300,7 @@ struct NonPromptCascadeTask {
   }
 
   template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const&, auto const& cascades, auto& candidates)
+  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
   {
 
     const auto& getCascade = [](auto const& candidate) {
@@ -279,7 +318,7 @@ struct NonPromptCascadeTask {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      const auto primaryVertex = getPrimaryVertex(collision);
+      auto primaryVertex = getPrimaryVertex(collision);
 
       const auto& casc = getCascade(candidate);
       const auto& bachelor = casc.template bachelor_as<TrackType>();
@@ -435,6 +474,11 @@ struct NonPromptCascadeTask {
       if constexpr (requires { candidate.track(); }) {
         const auto& track = candidate.template track_as<TrackType>();
         const auto& ITStrack = candidate.template itsTrack_as<TrackType>();
+        if (cfgRedoPV && ITStrack.isPVContributor()) {
+          if (!recalculatePV(collision, tracks, ITStrack.globalIndex(), primaryVertex)) {
+            continue;
+          }
+        }
         cascPVContribs |= ITStrack.isPVContributor() << 0;
         auto trackTrkParCov = getTrackParCov(track);
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackTrkParCov, mBz, 2.f, matCorr, &motherDCA);
@@ -555,19 +599,19 @@ struct NonPromptCascadeTask {
 
   void processTrackedCascadesMC(CollisionCandidatesRun3MC const& collisions,
                                 aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
-                                aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
+                                aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                                 aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
-    fillCandidatesVector<TracksExtMC>(collisions, trackedCascades, gCandidates);
+    fillCandidatesVector<TracksExtMC>(collisions, tracks, trackedCascades, gCandidates);
     fillMCtable<aod::AssignedTrackedCascades>(mcParticles, collisions, gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
 
   void processCascadesMC(CollisionCandidatesRun3MC const& collisions, aod::Cascades const& cascades,
-                         aod::V0s const& /*v0s*/, TracksExtMC const& /*tracks*/,
+                         aod::V0s const& /*v0s*/, TracksExtMC const& tracks,
                          aod::McParticles const& mcParticles, aod::McCollisions const&, aod::BCsWithTimestamps const&)
   {
-    fillCandidatesVector<TracksExtMC>(collisions, cascades, gCandidatesNT);
+    fillCandidatesVector<TracksExtMC>(collisions, tracks, cascades, gCandidatesNT);
     fillMCtable<aod::Cascades>(mcParticles, collisions, gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesMC, "process cascades: MC analysis", false);
@@ -603,21 +647,21 @@ struct NonPromptCascadeTask {
 
   void processTrackedCascadesData(CollisionCandidatesRun3 const& collisions,
                                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
-                                  aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
+                                  aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
     zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, trackedCascades, gCandidates);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
     fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
 
   void processCascadesData(CollisionCandidatesRun3 const& collisions, aod::Cascades const& cascades,
-                           aod::V0s const& /*v0s*/, TracksExtData const& /*tracks*/,
+                           aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
     zorroAccounting(collisions);
-    fillCandidatesVector<TracksExtData>(collisions, cascades, gCandidatesNT);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);

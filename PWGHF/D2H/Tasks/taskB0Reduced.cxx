@@ -42,8 +42,8 @@ DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                              
 DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
 DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
-DECLARE_SOA_COLUMN(PtDmesProngMin, ptProngDmesMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaProngDmesMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(PtDmesProngMin, ptDmesProngMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
+DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaDmesProngMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
@@ -176,12 +176,12 @@ struct HfTaskB0Reduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using CandsDplus = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_b0::isSelB0ToDPi >= selectionFlagB0);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
-  using CandsDplus = soa::Join<HfRed3Prongs, HfRedPidDau0s, HfRedPidDau1s, HfRedPidDau2s>;
 
   void init(InitContext&)
   {
@@ -310,6 +310,8 @@ struct HfTaskB0Reduced {
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi] = "B_{s}^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) K^{#plus}";
           labels[hf_cand_b0::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_b0::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -463,6 +465,10 @@ struct HfTaskB0Reduced {
         } else if constexpr (withDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassB0, ptCandB0);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi)) { // B0s → Ds- π+ → (K- K+ π-) π+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi, invMassB0, ptCandB0);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK)) { // B0 → D- K+ → (π- K+ π-) K+
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDplusKToPiKPiK, invMassB0, ptCandB0);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::PartlyRecoDecay, invMassB0, ptCandB0);
           } else {

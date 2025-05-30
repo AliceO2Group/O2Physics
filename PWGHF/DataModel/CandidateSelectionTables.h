@@ -17,13 +17,9 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
+#include <Framework/ASoA.h>
+
 #include <vector>
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelectorPID.h"
-
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace o2::aod
 {
@@ -393,7 +389,6 @@ DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 // Machine learning column for omegac0 to omega pi
 DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, std::vector<float>);
-DECLARE_SOA_COLUMN(MlProbOmegacBar, mlProbOmegacBar, std::vector<float>);
 } // namespace hf_sel_toomegapi
 
 DECLARE_SOA_TABLE(HfSelToOmegaPi, "AOD", "HFSELTOOMEPI",
