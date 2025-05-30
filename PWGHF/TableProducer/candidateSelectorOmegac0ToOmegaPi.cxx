@@ -354,7 +354,7 @@ struct HfCandidateSelectorToOmegaPi {
       // pt-dependent selection
       if (!selectionTopol(candidate)) {
         resultSelections = false;
-        hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored, outputMlOmegac[0],
+        hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                        trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                        trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
         if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
@@ -746,14 +746,12 @@ struct HfCandidateSelectorToOmegaPi {
           isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCand, outputMlOmegac);
           if (isSelectedMlOmegac) {
             registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac[0]);
-          } else {
-            resultSelections = false;
           }
           hfMlSelToOmegaPi(outputMlOmegac);
         }
       }
 
-      hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored, outputMlOmegac[0],
+      hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                      trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                      trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
