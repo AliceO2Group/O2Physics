@@ -489,12 +489,12 @@ struct ThreeParticleCorrelations {
 
     if (recCollisions.size() == 1) {
       for (const auto& recCollision : recCollisions) {
-	if (!acceptEvent(recCollision, false)) {
-	  return;
-	}
+        if (!acceptEvent(recCollision, false)) {
+          return;
+        }
       }
     }
-    
+
     rQARegistry.fill(HIST("hEventCentrality_MC"), collision.bestCollisionCentFT0C());
     auto groupMCTriggers = mcTriggers->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
     auto groupMCAssociates = mcAssociates->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -560,18 +560,18 @@ struct ThreeParticleCorrelations {
       auto recCollsA1 = recCollisions.sliceBy(perMCCol, coll_1.globalIndex());
       auto recCollsA2 = recCollisions.sliceBy(perMCCol, coll_2.globalIndex());
       if (recCollsA1.size() == 1 && recCollsA2.size() == 1) {
-	for (const auto& recColl_1 : recCollsA1) {
-	  if (!acceptEvent(recColl_1, false)) {
-	    return;
-	  }
-	}
-	for (const auto& recColl_2 : recCollsA2) {
-	  if (!acceptEvent(recColl_2, false)) {
-	    return;
-	  }
-	}
+        for (const auto& recColl_1 : recCollsA1) {
+          if (!acceptEvent(recColl_1, false)) {
+            return;
+          }
+        }
+        for (const auto& recColl_2 : recCollsA2) {
+          if (!acceptEvent(recColl_2, false)) {
+            return;
+          }
+        }
       }
-      
+
       auto groupMCTriggers = mcTriggers->sliceByCached(aod::mcparticle::mcCollisionId, coll_1.globalIndex(), cache);
       auto groupMCAssociates = mcAssociates->sliceByCached(aod::mcparticle::mcCollisionId, coll_2.globalIndex(), cache);
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(groupMCTriggers, groupMCAssociates))) {
@@ -609,12 +609,12 @@ struct ThreeParticleCorrelations {
 
     if (recCollisions.size() == 1) {
       for (const auto& recCollision : recCollisions) {
-	if (!acceptEvent(recCollision, false)) {
-	  return;
-	}
+        if (!acceptEvent(recCollision, false)) {
+          return;
+        }
       }
     }
-    
+
     auto groupMCTracks = mcTracks->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
     auto groupMCV0s = mcV0s->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
 
