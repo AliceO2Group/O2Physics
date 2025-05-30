@@ -23,6 +23,7 @@
 #include <cmath>     // std::abs, std::sqrt
 #include <cstdio>
 #include <utility> // std::move
+#include <tuple>   // std::apply
 #include <vector>  // std::vector
 
 // ROOT includes
@@ -283,6 +284,18 @@ struct RecoDecay {
   {
     // c t = l m c^2/(p c)
     return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
+  }
+
+  /// Calculates pseudoproper decay length.
+  /// \param posPV  {x, y, z} or {x, y} position of the primary vertex
+  /// \param posSV  {x, y, z} or {x, y} position of the secondary vertex
+  /// \param mom  {x, y, z} or {x, y} momentum array
+  /// \return pseudoproper decay length
+  template <std::size_t N, typename T, typename U, typename V, typename M = double>
+  static double pseudoProprDL(const T& posPV, const U& posSV, const std::array<std::array<V, 3>, N>& mom, const std::array<M, N> mass)
+  {
+    // t_xy = l_xy * m / pT
+    return distanceXY(posPV, posSV) * m(mom, mass) / std::apply([](const auto&... args) { return pt(args...); }, mom);
   }
 
   /// Calculates cosine of θ* (theta star).
