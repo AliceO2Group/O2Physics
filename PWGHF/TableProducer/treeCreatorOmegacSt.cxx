@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <TPDGCode.h>
 
@@ -503,7 +504,7 @@ struct HfTreeCreatorOmegacSt {
         }
         hCandidatesPrPi->Fill(SVFitting::FitOk);
 
-        std::array<double, 2> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
+        std::array<double, nProngs> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
         std::array<std::array<float, 3>, 2> momentaV0Daughters;
         o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
         trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
@@ -538,9 +539,9 @@ struct HfTreeCreatorOmegacSt {
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
-        std::array<double, 2> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
+        std::array<double, nProngs> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
         const auto massXi = RecoDecay::m(momentaCascDaughters, massesXiDaughters);
-        std::array<double, 2> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
+        std::array<double, nProngs> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
         const auto massOmega = RecoDecay::m(momentaCascDaughters, massesOmegaDaughters);
 
         registry.fill(HIST("hDca"), std::sqrt(impactParameterCasc.getR2()));
@@ -558,9 +559,9 @@ struct HfTreeCreatorOmegacSt {
               (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
               (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
 
-            std::array<double, 2> massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-            std::array<double, 2> massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
-            std::array<double, 2> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, nProngs> massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, nProngs> massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
+            std::array<double, nProngs> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, 2> momenta;
 
             auto trackParCovPr = getTrackParCov(v0TrackPr);
@@ -856,7 +857,7 @@ struct HfTreeCreatorOmegacSt {
           LOG(debug) << "cascade with PDG code: " << pdgCode;
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
-            std::array<double, 2> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, nProngs> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, 2> momenta;
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
