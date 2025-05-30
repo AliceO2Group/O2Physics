@@ -505,7 +505,7 @@ struct HfTreeCreatorOmegacSt {
         hCandidatesPrPi->Fill(SVFitting::FitOk);
 
         std::array<double, NDaughters> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
-        std::array<std::array<float, 3>, 2> momentaV0Daughters;
+        std::array<std::array<float, 3>, NDaughters> momentaV0Daughters;
         o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
         trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
         o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
@@ -530,7 +530,7 @@ struct HfTreeCreatorOmegacSt {
         const auto decayLengthCascXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
         o2::track::TrackPar trackParV0 = df2.getTrackParamAtPCA(0);
         o2::track::TrackPar trackParBachelor = df2.getTrackParamAtPCA(1);
-        std::array<std::array<float, 3>, 2> momentaCascDaughters;
+        std::array<std::array<float, 3>, NDaughters> momentaCascDaughters;
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
         o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
