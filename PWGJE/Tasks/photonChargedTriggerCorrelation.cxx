@@ -30,6 +30,8 @@
 #include <vector>
 #include <algorithm>
 #include <chrono>
+#include <memory>
+#include <random>
 
 #include <TMath.h>
 #include <Math/Vector4D.h>
@@ -309,14 +311,6 @@ struct CorrelationTableProducer
     return false;
   }
 
-  // check v0 PCM selection
-  template <typename T_v0PCM> bool checkV0PCM(T_v0PCM const& v0PCM) {
-    if (std::abs(v0PCM.eta()) > etaMax) {
-      return false;
-    }
-    return true;
-  }
-
 
 
   // analysis /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -425,7 +419,7 @@ struct CorrelationTableProducer
     // photonPCM
     for (auto const& v0Photon: v0PhotonsThisEvent) {
       // photon selection
-      // if (!checkV0PCM(v0Photon)) continue;
+      if (std::abs(v0Photon.eta()) > etaMax) continue;
 
       // photon PCM
       photonPCMTable(v0Photon.collisionId(), v0Photon.globalIndex(),
@@ -434,13 +428,14 @@ struct CorrelationTableProducer
 
     // photonPCm pairs
     for (auto const& [v0Photon1, v0Photon2]: soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(v0PhotonsThisEvent, v0PhotonsThisEvent))) {
-      // pi0 selection
-      // if (!checkV0PCM(v0Photon1) || !checkV0PCM(v0Photon2)) continue;
-
       // get kinematics
       ROOT::Math::PtEtaPhiMVector const p4V0PCM1(v0Photon1.pt(), v0Photon1.eta(), v0Photon1.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector const p4V0PCM2(v0Photon2.pt(), v0Photon2.eta(), v0Photon2.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector const p4V0PCMPair = p4V0PCM1 + p4V0PCM2;
+
+      // pi0 selection
+      if (std::abs(p4V0PCMPair.Eta()) > etaMax) continue;
+
       // save info
       photonPCMPairTable(v0Photon1.collisionId(), v0Photon1.globalIndex(), v0Photon2.globalIndex(),
                          v0Photon1.posTrack().trackId(), v0Photon1.negTrack().trackId(), v0Photon2.posTrack().trackId(), v0Photon2.negTrack().trackId(),
@@ -529,7 +524,7 @@ struct PhotonChargedTriggerCorrelation
 
   Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", {5, 10, 25, 50}, "correlation ptTrig bins"};
   Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc",
-     {0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10, 12, 14, 17, 20, 25, 30, 40, 50, 70}, "correlation ptAssoc bins"};
+     {0.2, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0, 9.0, 10, 12.5, 15, 17.5, 20, 30, 40}, "correlation ptAssoc bins"};
   Configurable<std::vector<double>> binsDPhi{"binsDPhi",
      {0.00*DPHI_SCALE,
       0.04*DPHI_SCALE, 0.08*DPHI_SCALE, 0.11*DPHI_SCALE, 0.14*DPHI_SCALE,
@@ -569,6 +564,11 @@ struct PhotonChargedTriggerCorrelation
   Service<ccdb::BasicCCDBManager> ccdb;
   // for mc
   Service<framework::O2DatabasePDG> pdg;
+
+  // random number generation
+  static constexpr unsigned int SeedRandomEngine = 12345;
+	std::mt19937 randomEngine{SeedRandomEngine};
+
 
 
   // partitions
@@ -623,7 +623,212 @@ struct PhotonChargedTriggerCorrelation
 
   // general (kenobi) /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // wow, such empty
+  // get histograms from ccdb
+  // save efficiencies from ccdb in histogram registry
+  void initCcdbHistograms() {
+    // trigger
+    h1PtInvEffTrigger = nullptr;
+    if (doEffCorrectionTrigger) {
+      h1PtInvEffTrigger = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/trigger", noLaterThanCcdb.value);
+
+      const double* effBinsTrigger = h1PtInvEffTrigger->GetXaxis()->GetXbins()->GetArray();
+      const AxisSpec axisPtEffTrigger{std::vector<double>(effBinsTrigger, effBinsTrigger + h1PtInvEffTrigger->GetNbinsX() + 1), "#it{p}_{T}"};
+      histos.add("usedEff/h1_pt_invEff_trigger_ccdb", "h1_pt_invEff_trigger_ccdb", kTH1D, {axisPtEffTrigger}, true);
+      for (int iBin = 1; iBin <= h1PtInvEffTrigger->GetNbinsX(); iBin++) {
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_trigger_ccdb"))->SetBinContent(iBin, h1PtInvEffTrigger->GetBinContent(iBin));
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_trigger_ccdb"))->SetBinError(iBin, h1PtInvEffTrigger->GetBinError(iBin));
+      }
+    }
+    // hadron
+    h1PtInvEffHadron = nullptr;
+    if (doEffCorrectionHadron) {
+      h1PtInvEffHadron = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/hadron", noLaterThanCcdb.value);
+
+      const double* effBinsHadron = h1PtInvEffHadron->GetXaxis()->GetXbins()->GetArray();
+      const AxisSpec axisPtEffHadron{std::vector<double>(effBinsHadron, effBinsHadron + h1PtInvEffHadron->GetNbinsX() + 1), "#it{p}_{T}"};
+      histos.add("usedEff/h1_pt_invEff_hadron_ccdb", "h1_pt_invEff_hadron_ccdb", kTH1D, {axisPtEffHadron}, true);
+      for (int iBin = 1; iBin <= h1PtInvEffHadron->GetNbinsX(); iBin++) {
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_hadron_ccdb"))->SetBinContent(iBin, h1PtInvEffHadron->GetBinContent(iBin));
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_hadron_ccdb"))->SetBinError(iBin, h1PtInvEffHadron->GetBinError(iBin));
+      }
+    }
+    // pipm
+    h1PtInvEffPipm = nullptr;
+    if (doEffCorrectionPipm) {
+      h1PtInvEffPipm = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/pipm", noLaterThanCcdb.value);
+
+      const double* effBinsPipm = h1PtInvEffPipm->GetXaxis()->GetXbins()->GetArray();
+      const AxisSpec axisPtEffPipm{std::vector<double>(effBinsPipm, effBinsPipm + h1PtInvEffPipm->GetNbinsX() + 1), "#it{p}_{T}"};
+      histos.add("usedEff/h1_pt_invEff_pipm_ccdb", "h1_pt_invEff_pipm_ccdb", kTH1D, {axisPtEffPipm}, true);
+      for (int iBin = 1; iBin <= h1PtInvEffPipm->GetNbinsX(); iBin++) {
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_pipm_ccdb"))->SetBinContent(iBin, h1PtInvEffPipm->GetBinContent(iBin));
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_pipm_ccdb"))->SetBinError(iBin, h1PtInvEffPipm->GetBinError(iBin));
+      }
+    }
+    // photonPCM
+    h1PtInvEffPhotonPCM = nullptr;
+    if (doEffCorrectionPhotonPCM) {
+      h1PtInvEffPhotonPCM = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/photonPCM", noLaterThanCcdb.value);
+
+      const double* effBinsPhotonPCM = h1PtInvEffPhotonPCM->GetXaxis()->GetXbins()->GetArray();
+      const AxisSpec axisPtEffPhotonPCM{std::vector<double>(effBinsPhotonPCM, effBinsPhotonPCM + h1PtInvEffPhotonPCM->GetNbinsX() + 1), "#it{p}_{T}"};
+      histos.add("usedEff/h1_pt_invEff_photonPCM_ccdb", "h1_pt_invEff_photonPCM_ccdb", kTH1D, {axisPtEffPhotonPCM}, true);
+      for (int iBin = 1; iBin <= h1PtInvEffPhotonPCM->GetNbinsX(); iBin++) {
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_photonPCM_ccdb"))->SetBinContent(iBin, h1PtInvEffPhotonPCM->GetBinContent(iBin));
+        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_photonPCM_ccdb"))->SetBinError(iBin, h1PtInvEffPhotonPCM->GetBinError(iBin));
+      }
+    }
+  }
+
+
+
+  // create histograms
+  void initHistograms() {
+    // define axes
+    const AxisSpec axisN{1, 0., 1., "#it{N}_{something}"};
+    const AxisSpec axisCategories{16, 0., 16., "categories"};
+
+    const AxisSpec axisZPv{nBinsZPv, -10, 10, "#it{z}_{pv}"};
+    const AxisSpec axisZPvSmol{nBinsZPvSmol, -7, 7, "#it{z}_{pv}"};
+    const AxisSpec axisMult{nBinsMult, 0, static_cast<double>(nBinsMult), "multiplicity"};
+    const AxisSpec axisMultSmol{nBinsMultSmol + 1, -0.5, nBinsMultSmol + 0.5, "multiplicity"};
+    const AxisSpec axisOccupancy{nBinsOccupancy + 1, -0.5, nBinsOccupancy + 0.5, "occupancy"};
+
+    const AxisSpec axisPhi{nBinsPhi, 0, constants::math::TwoPI, "#it{#varphi}"};
+    const AxisSpec axisEta{nBinsEta, -etaMax, etaMax, "#it{#eta}"};
+    const AxisSpec axisMgg{nBinsMgg, 0, 0.3, "#it{m}_{#gamma#gamma}"};
+
+    const AxisSpec axisPtTrig{binsPtTrig, "#it{p}_{T}^{trig}"};
+    const AxisSpec axisPtAssoc{binsPtAssoc, "#it{p}_{T}^{assoc}"};
+    const AxisSpec axisDPhi{binsDPhi, "#Delta#it{#varphi}"};
+    const AxisSpec axisDEta{binsDEta, "#Delta#it{#eta}"};
+    const AxisSpec axisZPvBinning{binsZPv, "#it{z}_{pv} correlation binning"};
+    const AxisSpec axisMultBinning{binsMult, "multiplicity correlation binning"};
+
+
+
+    // reco info
+    histos.add("reco/info/h1_nEvents", "h1_nEvents", kTH1D, {axisCategories});
+    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(1, "#it{N}_{ev}^{sel}");
+    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(2, "#it{N}_{ev}");
+    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(3, "#it{N}_{ev}^{trig}");
+
+    histos.add("reco/info/h1_zPv", "h1_zPv", kTH1F, {axisZPv}, true);
+    histos.add("reco/info/h1_mult", "h1_mult", kTH1F, {axisMult}, true);
+    histos.add("reco/info/h1_occupancy", "h1_occupancy", kTH1F, {axisOccupancy}, true);
+
+    // reco (correlation) analysis
+    histos.add("reco/info/h1_zPv_trigEv", "h1_zPv_trigEv", kTH1F, {axisZPv}, true);
+    histos.add("reco/info/h1_mult_trigEv", "h1_mult_trigEv", kTH1F, {axisMult}, true);
+    histos.add("reco/info/h1_occupancy_trigEv", "h1_occupancy_trigEv", kTH1F, {axisOccupancy}, true);
+    histos.add("reco/corr/h3_ptPhiEta_trig", "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+
+    // hadron
+    histos.add("reco/plain/h3_ptPhiEta_hadron", "h3_ptPhiEta_hadron", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h3_ptPhiEta_assoc_hadron", "h3_ptPhiEta_assoc_hadron", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h6_corr_hadron", "h6_corr_hadron",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_mix_hadron", "h6_mix_hadron",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    // pipm
+    histos.add("reco/plain/h3_ptPhiEta_pipm", "h3_ptPhiEta_pipm", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h3_ptPhiEta_assoc_pipm", "h3_ptPhiEta_assoc_pipm", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h6_corr_pipm", "h6_corr_pipm",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_mix_pipm", "h6_mix_pipm",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    // photonPCM
+    histos.add("reco/plain/h3_ptPhiEta_photonPCM", "h3_ptPhiEta_photonPCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h3_ptPhiEta_assoc_photonPCM", "h3_ptPhiEta_assoc_photonPCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h6_corr_photonPCM", "h6_corr_photonPCM",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_mix_photonPCM", "h6_mix_photonPCM",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    // pi0PCM
+    histos.add("reco/plain/h3_ptPhiEta_pi0PCM", "h3_ptPhiEta_pi0PCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCM", "h4_ptMggZPvMult_pi0PCM", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h3_ptPhiEta_assoc_pi0PCM", "h3_ptPhiEta_assoc_pi0PCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/corr/h4_ptMggZPvMult_assoc_pi0PCM", "h4_ptMggZPvMult_assoc_pi0PCM", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_corr_pi0PCM", "h6_corr_pi0PCM",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_mix_pi0PCM", "h6_mix_pi0PCM",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    // side band (mgg)
+    histos.add("reco/corr/h6_corr_pi0PCMSide", "h6_corr_pi0PCMSide",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h6_mix_pi0PCMSide", "h6_mix_pi0PCMSide",
+               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
+    // event mixing for photon pairs
+    histos.add("reco/plain/h3_ptPhiEta_pi0PCMMix", "h3_ptPhiEta_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCMMix", "h4_ptMggZPvMult_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+
+
+    // mc info
+    histos.add("mc/info/h1_nEvents_mcTrue", "h1_nEvents_mcTrue", kTH1D, {axisN});
+    histos.add("mc/info/h1_nTriggerEvents_mcTrue", "h1_nTriggerEvents_mcTrue", kTH1D, {axisN});
+
+    histos.add("mc/info/h1_zPv_mcTrue", "h1_zPv_mcTrue", kTH1F, {axisZPv}, true);
+    histos.add("mc/info/h1_mult_mcTrue", "h1_mult_mcTrue", kTH1F, {axisMult}, true);
+
+    // reco and true collision correlations
+    for (auto const& collision_type: {"true", "true_reco"}) {
+      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_trig", collision_type).data(), "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      // hadron
+      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_hadron", collision_type).data(), "h3_ptPhiEta_assoc_hadron",
+                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      histos.add(std::format("mc/{}/corr/h4_corr_hadron", collision_type).data(), "h4_corr_hadron",
+                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
+      // pipm
+      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pipm", collision_type).data(), "h3_ptPhiEta_assoc_pipm",
+                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      histos.add(std::format("mc/{}/corr/h4_corr_pipm", collision_type).data(), "h4_corr_pipm",
+                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
+      // photon
+      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_photon", collision_type).data(), "h3_ptPhiEta_assoc_photon",
+                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      histos.add(std::format("mc/{}/corr/h4_corr_photon", collision_type).data(), "h4_corr_photon",
+                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
+      // pi0
+      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pi0", collision_type).data(), "h3_ptPhiEta_assoc_pi0",
+                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      histos.add(std::format("mc/{}/corr/h4_corr_pi0", collision_type).data(), "h4_corr_pi0",
+                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
+    }
+
+    // mc efficiency/purity
+    std::function<void(std::string)> add_effHists =
+    [&](std::string name_id) {
+      histos.add(std::format("mc/eff/h3_ptPhiEta_{}", name_id).data(), "h3_ptPhiEta_mcReco_hadron",
+                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
+      histos.add(std::format("mc/eff/h3_ptZPvMult_{}", name_id).data(), "h3_ptZPvMult_mcReco_hadron",
+                 kTHnSparseF, {axisPtAssoc, axisZPvSmol, axisMultSmol}, true);
+    };
+    // mc tracks
+    add_effHists("mcReco_hadron");
+    add_effHists("mcReco_hasCorrectMc_hadron");
+    add_effHists("mcTrue_hadron");
+    add_effHists("mcTrue_recoCol_hadron");
+    // mc pipm PID
+    add_effHists("mcReco_pipm");
+    add_effHists("mcReco_hasCorrectMc_pipm");
+    add_effHists("mcTrue_pipm");
+    add_effHists("mcTrue_recoCol_pipm");
+    // mc photonPCM
+    add_effHists("mcReco_photonPCM");
+    add_effHists("mcReco_hasCorrectMc_photonPCM");
+    add_effHists("mcTrue_photon");
+    add_effHists("mcTrue_recoCol_photon");
+    // mc pi0PCM
+    add_effHists("mcReco_pi0PCM");
+    add_effHists("mcReco_hasCorrectMc_pi0PCM");
+    add_effHists("mcTrue_pi0");
+    add_effHists("mcTrue_recoCol_pi0");
+
+    // test of the test while testing another test. featuring a test
+    histos.add("test/h2_mult_comp", "h2_mult_comp", kTH2D, {axisMult, axisMult}, true);
+    histos.add("test/h2_tracks_zPvMultDep", "h2_tracks_zPvMultDep", kTH2D, {axisZPv, axisMult}, true);
+    histos.add("test/h2_globalTracks_zPvMultDep", "h2_globalTracks_zPvMultDep", kTH2D, {axisZPv, axisMult}, true);
+  }
 
 
 
@@ -660,7 +865,6 @@ struct PhotonChargedTriggerCorrelation
     if (mcParticle.template daughters_as<aod::JetParticles>().size() != NDaughtersPi0ToGG) return false;
     return true;
   }
-
 
 
 
@@ -816,204 +1020,11 @@ struct PhotonChargedTriggerCorrelation
       savedTriggersZPvMultEta[i_zPv].resize(binsMult.value.size());
     }
 
+    // histograms from ccdb
+    initCcdbHistograms();
 
-
-    // get histograms from ccdb
-    // save efficiencies from ccdb in histogram registry
-    // trigger
-    h1PtInvEffTrigger = nullptr;
-    if (doEffCorrectionTrigger) {
-      h1PtInvEffTrigger = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/trigger", noLaterThanCcdb.value);
-
-      const double* effBinsTrigger = h1PtInvEffTrigger->GetXaxis()->GetXbins()->GetArray();
-      const AxisSpec axisPtEffTrigger{std::vector<double>(effBinsTrigger, effBinsTrigger + h1PtInvEffTrigger->GetNbinsX() + 1), "#it{p}_{T}"};
-      histos.add("usedEff/h1_pt_invEff_trigger_ccdb", "h1_pt_invEff_trigger_ccdb", kTH1D, {axisPtEffTrigger}, true);
-      for (int iBin = 1; iBin <= h1PtInvEffTrigger->GetNbinsX(); iBin++) {
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_trigger_ccdb"))->SetBinContent(iBin, h1PtInvEffTrigger->GetBinContent(iBin));
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_trigger_ccdb"))->SetBinError(iBin, h1PtInvEffTrigger->GetBinError(iBin));
-      }
-    }
-    // hadron
-    h1PtInvEffHadron = nullptr;
-    if (doEffCorrectionHadron) {
-      h1PtInvEffHadron = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/hadron", noLaterThanCcdb.value);
-
-      const double* effBinsHadron = h1PtInvEffHadron->GetXaxis()->GetXbins()->GetArray();
-      const AxisSpec axisPtEffHadron{std::vector<double>(effBinsHadron, effBinsHadron + h1PtInvEffHadron->GetNbinsX() + 1), "#it{p}_{T}"};
-      histos.add("usedEff/h1_pt_invEff_hadron_ccdb", "h1_pt_invEff_hadron_ccdb", kTH1D, {axisPtEffHadron}, true);
-      for (int iBin = 1; iBin <= h1PtInvEffHadron->GetNbinsX(); iBin++) {
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_hadron_ccdb"))->SetBinContent(iBin, h1PtInvEffHadron->GetBinContent(iBin));
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_hadron_ccdb"))->SetBinError(iBin, h1PtInvEffHadron->GetBinError(iBin));
-      }
-    }
-    // pipm
-    h1PtInvEffPipm = nullptr;
-    if (doEffCorrectionPipm) {
-      h1PtInvEffPipm = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/pipm", noLaterThanCcdb.value);
-
-      const double* effBinsPipm = h1PtInvEffPipm->GetXaxis()->GetXbins()->GetArray();
-      const AxisSpec axisPtEffPipm{std::vector<double>(effBinsPipm, effBinsPipm + h1PtInvEffPipm->GetNbinsX() + 1), "#it{p}_{T}"};
-      histos.add("usedEff/h1_pt_invEff_pipm_ccdb", "h1_pt_invEff_pipm_ccdb", kTH1D, {axisPtEffPipm}, true);
-      for (int iBin = 1; iBin <= h1PtInvEffPipm->GetNbinsX(); iBin++) {
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_pipm_ccdb"))->SetBinContent(iBin, h1PtInvEffPipm->GetBinContent(iBin));
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_pipm_ccdb"))->SetBinError(iBin, h1PtInvEffPipm->GetBinError(iBin));
-      }
-    }
-    // photonPCM
-    h1PtInvEffPhotonPCM = nullptr;
-    if (doEffCorrectionPhotonPCM) {
-      h1PtInvEffPhotonPCM = ccdb->getForTimeStamp<TH1D>(pathCcdbEff.value + "/photonPCM", noLaterThanCcdb.value);
-
-      const double* effBinsPhotonPCM = h1PtInvEffPhotonPCM->GetXaxis()->GetXbins()->GetArray();
-      const AxisSpec axisPtEffPhotonPCM{std::vector<double>(effBinsPhotonPCM, effBinsPhotonPCM + h1PtInvEffPhotonPCM->GetNbinsX() + 1), "#it{p}_{T}"};
-      histos.add("usedEff/h1_pt_invEff_photonPCM_ccdb", "h1_pt_invEff_photonPCM_ccdb", kTH1D, {axisPtEffPhotonPCM}, true);
-      for (int iBin = 1; iBin <= h1PtInvEffPhotonPCM->GetNbinsX(); iBin++) {
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_photonPCM_ccdb"))->SetBinContent(iBin, h1PtInvEffPhotonPCM->GetBinContent(iBin));
-        histos.get<TH1>(HIST("usedEff/h1_pt_invEff_photonPCM_ccdb"))->SetBinError(iBin, h1PtInvEffPhotonPCM->GetBinError(iBin));
-      }
-    }
-
-
-
-    // define axes
-    const AxisSpec axisN{1, 0., 1., "#it{N}_{something}"};
-    const AxisSpec axisCategories{16, 0., 16., "categories"};
-
-    const AxisSpec axisZPv{nBinsZPv, -10, 10, "#it{z}_{pv}"};
-    const AxisSpec axisZPvSmol{nBinsZPvSmol, -7, 7, "#it{z}_{pv}"};
-    const AxisSpec axisMult{nBinsMult, 0, static_cast<double>(nBinsMult), "multiplicity"};
-    const AxisSpec axisMultSmol{nBinsMultSmol + 1, -0.5, nBinsMultSmol + 0.5, "multiplicity"};
-    const AxisSpec axisOccupancy{nBinsOccupancy + 1, -0.5, nBinsOccupancy + 0.5, "occupancy"};
-
-    const AxisSpec axisPhi{nBinsPhi, 0, constants::math::TwoPI, "#it{#varphi}"};
-    const AxisSpec axisEta{nBinsEta, -etaMax, etaMax, "#it{#eta}"};
-    const AxisSpec axisMgg{nBinsMgg, 0, 0.3, "#it{m}_{#gamma#gamma}"};
-
-    const AxisSpec axisPtTrig{binsPtTrig, "#it{p}_{T}^{trig}"};
-    const AxisSpec axisPtAssoc{binsPtAssoc, "#it{p}_{T}^{assoc}"};
-    const AxisSpec axisDPhi{binsDPhi, "#Delta#it{#varphi}"};
-    const AxisSpec axisDEta{binsDEta, "#Delta#it{#eta}"};
-    const AxisSpec axisZPvBinning{binsZPv, "#it{z}_{pv} correlation binning"};
-    const AxisSpec axisMultBinning{binsMult, "multiplicity correlation binning"};
-
-
-
-    // create histograms
-
-    // reco info
-    histos.add("reco/info/h1_nEvents", "h1_nEvents", kTH1D, {axisCategories});
-    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(1, "#it{N}_{ev}^{sel}");
-    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(2, "#it{N}_{ev}");
-    histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(3, "#it{N}_{ev}^{trig}");
-
-    histos.add("reco/info/h1_zPv", "h1_zPv", kTH1F, {axisZPv}, true);
-    histos.add("reco/info/h1_mult", "h1_mult", kTH1F, {axisMult}, true);
-    histos.add("reco/info/h1_occupancy", "h1_occupancy", kTH1F, {axisOccupancy}, true);
-
-    // reco (correlation) analysis
-    histos.add("reco/info/h1_zPv_trigEv", "h1_zPv_trigEv", kTH1F, {axisZPv}, true);
-    histos.add("reco/info/h1_mult_trigEv", "h1_mult_trigEv", kTH1F, {axisMult}, true);
-    histos.add("reco/info/h1_occupancy_trigEv", "h1_occupancy_trigEv", kTH1F, {axisOccupancy}, true);
-    histos.add("reco/corr/h3_ptPhiEta_trig", "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-
-    // hadron
-    histos.add("reco/plain/h3_ptPhiEta_hadron", "h3_ptPhiEta_hadron", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_hadron", "h3_ptPhiEta_assoc_hadron", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_hadron", "h6_corr_hadron",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_hadron", "h6_mix_hadron",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // pipm
-    histos.add("reco/plain/h3_ptPhiEta_pipm", "h3_ptPhiEta_pipm", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_pipm", "h3_ptPhiEta_assoc_pipm", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_pipm", "h6_corr_pipm",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pipm", "h6_mix_pipm",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // photonPCM
-    histos.add("reco/plain/h3_ptPhiEta_photonPCM", "h3_ptPhiEta_photonPCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_photonPCM", "h3_ptPhiEta_assoc_photonPCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h6_corr_photonPCM", "h6_corr_photonPCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_photonPCM", "h6_mix_photonPCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // pi0PCM
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCM", "h3_ptPhiEta_pi0PCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCM", "h4_ptMggZPvMult_pi0PCM", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h3_ptPhiEta_assoc_pi0PCM", "h3_ptPhiEta_assoc_pi0PCM", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/corr/h4_ptMggZPvMult_assoc_pi0PCM", "h4_ptMggZPvMult_assoc_pi0PCM", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_corr_pi0PCM", "h6_corr_pi0PCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pi0PCM", "h6_mix_pi0PCM",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // side band (mgg)
-    histos.add("reco/corr/h6_corr_pi0PCMSide", "h6_corr_pi0PCMSide",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h6_mix_pi0PCMSide", "h6_mix_pi0PCMSide",
-               kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
-    // event mixing for photon pairs
-    histos.add("reco/plain/h3_ptPhiEta_pi0PCMMix", "h3_ptPhiEta_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-    histos.add("reco/plain/h4_ptMggZPvMult_pi0PCMMix", "h4_ptMggZPvMult_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-
-
-    // mc info
-    histos.add("mc/info/h1_nEvents_mcTrue", "h1_nEvents_mcTrue", kTH1D, {axisN});
-    histos.add("mc/info/h1_nTriggerEvents_mcTrue", "h1_nTriggerEvents_mcTrue", kTH1D, {axisN});
-
-    histos.add("mc/info/h1_zPv_mcTrue", "h1_zPv_mcTrue", kTH1F, {axisZPv}, true);
-    histos.add("mc/info/h1_mult_mcTrue", "h1_mult_mcTrue", kTH1F, {axisMult}, true);
-
-    // reco and true collision correlations
-    for (auto const& collision_type: {"true", "true_reco"}) {
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_trig", collision_type).data(), "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      // hadron
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_hadron", collision_type).data(), "h3_ptPhiEta_assoc_hadron",
-                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_hadron", collision_type).data(), "h4_corr_hadron",
-                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // pipm
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pipm", collision_type).data(), "h3_ptPhiEta_assoc_pipm",
-                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_pipm", collision_type).data(), "h4_corr_pipm",
-                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // photonPCM
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_photon", collision_type).data(), "h3_ptPhiEta_assoc_photon",
-                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_photon", collision_type).data(), "h4_corr_photon",
-                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-      // pi0
-      histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_pi0", collision_type).data(), "h3_ptPhiEta_assoc_pi0",
-                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/{}/corr/h4_corr_pi0", collision_type).data(), "h4_corr_pi0",
-                 kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc}, true);
-    }
-
-    // mc efficiency/purity
-    std::function<void(std::string)> add_effHists =
-    [&](std::string name_id) {
-      histos.add(std::format("mc/eff/h3_ptPhiEta_{}", name_id).data(), "h3_ptPhiEta_mcReco_hadron",
-                 kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
-      histos.add(std::format("mc/eff/h3_ptZPvMult_{}", name_id).data(), "h3_ptZPvMult_mcReco_hadron",
-                 kTHnSparseF, {axisPtAssoc, axisZPvSmol, axisMultSmol}, true);
-    };
-    // mc tracks
-    add_effHists("mcReco_hadron");
-    add_effHists("mcReco_hasCorrectMc_hadron");
-    add_effHists("mcTrue_hadron");
-    add_effHists("mcTrue_recoCol_hadron");
-    // mc pipm PID
-    add_effHists("mcReco_pipm");
-    add_effHists("mcReco_hasCorrectMc_pipm");
-    add_effHists("mcTrue_pipm");
-    add_effHists("mcTrue_recoCol_pipm");
-    // mc photon PCM
-    add_effHists("mcReco_photonPCM");
-    add_effHists("mcReco_hasCorrectMc_photonPCM");
-    add_effHists("mcTrue_photon");
-    add_effHists("mcTrue_recoCol_photon");
-
-    // test of a test because a great test is neccessary to test the test while testing another test. featuring a test
-    histos.add("test/h2_mult_comp", "h2_mult_comp", kTH2D, {axisMult, axisMult}, true);
+    // create analysis histograms
+    initHistograms();
   }
 
 
@@ -1137,7 +1148,7 @@ struct PhotonChargedTriggerCorrelation
       }, nTriggerMixingHadron
     );
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrHadron, "process standard correlation for associated hardons", true);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrHadron, "process standard correlation for associated hardons", false);
 
 
 
@@ -1182,7 +1193,7 @@ struct PhotonChargedTriggerCorrelation
       }, nTriggerMixingPipm
     );
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPipm, "process standard correlation for associated pipm", true);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPipm, "process standard correlation for associated pipm", false);
 
 
 
@@ -1227,7 +1238,7 @@ struct PhotonChargedTriggerCorrelation
       }, nTriggerMixingPhotonPCM
     );
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCM, "process standard correlation for associated photonPCM", true);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCM, "process standard correlation for associated photonPCM", false);
 
 
 
@@ -1301,7 +1312,7 @@ struct PhotonChargedTriggerCorrelation
       }, nTriggerMixingPi0PCM
     );
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPi0PCM, "process standard correlation for associated pi0PCM", true);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPi0PCM, "process standard correlation for associated pi0PCM", false);
 
 
 
@@ -1505,23 +1516,32 @@ struct PhotonChargedTriggerCorrelation
     if (doTrigEvEff && !mcCollision.trigEv()) return;
 
     for (auto const& mcParticle: mcParticles) {
-      // selection of mc particles
-      if (!checkPrimaryEtaMc(mcParticle)) continue;
+      // standard particles (marked physical primary)
+      if (checkPrimaryEtaMc(mcParticle)) {
+        // hadrons
+        if (checkChargedMc(mcParticle)) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_hadron"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
+        }
+        // pipm
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_pipm"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
+        }
+        // photons
+        if (mcParticle.pdgCode() == PDG_t::kGamma) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_photon"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
+        }
+      }
 
-      // tracks
-      if (checkChargedMc(mcParticle)) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_hadron"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-      }
-      // pipm
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_pipm"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
-      }
-      // photons
-      if (mcParticle.pdgCode() == PDG_t::kGamma) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_photon"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
+      // decaying particles (not marked physical primary)
+      if ((std::abs(mcParticle.eta()) < etaMax)) {
+        // pi0
+        if (checkPi0ToGG(mcParticle)) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_pi0"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_pi0"), mcParticle.pt(), mcCollision.posZ(), mcCollision.multMCNParticlesEta08());
+        }
       }
     }
   }
@@ -1530,9 +1550,14 @@ struct PhotonChargedTriggerCorrelation
 
 
   void processMcRecoColEff(CorrMcDCollision const& collision, aod::JetMcCollisions const&, aod::JetTracksMCD const& tracks,
-                           aod::Hadrons const& hadrons,  aod::Pipms const& pipms, aod::PhotonPCMs const& photonPCMs,
+                           aod::Triggers const& triggers, aod::Hadrons const& hadrons, aod::Pipms const& pipms,
+                           aod::PhotonPCMs const& photonPCMs, aod::PhotonPCMPairs const& photonPCMPairs,
                            aod::JetParticles const& mcParticles)
   {
+    int excludeTriggerTrackId = -1;
+    int excludeTriggerParticleId = -1;
+
+
     // event selection
     if (!collision.selEv()) return;
     if (doTrigEvEff && !collision.trigEv()) return;
@@ -1540,85 +1565,143 @@ struct PhotonChargedTriggerCorrelation
     auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollision().globalIndex());
 
 
+    // random trigger
+    if (doTrigEvEff) {
+      std::uniform_int_distribution<int> intDistribution(0, static_cast<int>(triggers.size()) - 1);
+      auto const& excludeTrigger = triggers.rawIteratorAt(intDistribution(randomEngine));
+      if (excludeTrigger.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) {
+        excludeTriggerParticleId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().mcParticle().globalIndex();
+        excludeTriggerTrackId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().globalIndex();
+      }
+    }
+
+
     // hadrons
     for (auto const& hadron: hadrons) {
+      if (doTrigEvEff && hadron.jetTrackId() == excludeTriggerTrackId) continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
-      // for purity
-      if (hadron.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) {
-        auto const hadronParticle = hadron.jetTrack_as<aod::JetTracksMCD>().mcParticle();
-        if (checkPrimaryTrackMc(hadronParticle)) {
-          if (!requireSingleCollisionPurity || hadronParticle.mcCollisionId() == collision.mcCollision().globalIndex()) {
-            histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
-            histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
-          }
-        }
-      }
+      // purity
+      if (!hadron.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) continue;
+      auto const hadronParticle = hadron.jetTrack_as<aod::JetTracksMCD>().mcParticle();
+      if (!checkPrimaryTrackMc(hadronParticle)) continue;
+      if (requireSingleCollisionPurity && hadronParticle.mcCollisionId() != collision.mcCollision().globalIndex()) continue;
+
+      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
     }
 
     // pipm
     for (auto const& pipm: pipms) {
+      if (doTrigEvEff && pipm.jetTrackId() == excludeTriggerTrackId) continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
-      // for purity
-      if (pipm.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) {
-        auto const pipmParticle = pipm.jetTrack_as<aod::JetTracksMCD>().mcParticle();
-        if (std::abs(pipmParticle.pdgCode()) == PDG_t::kPiPlus && checkPrimaryEtaMc(pipmParticle)) {
-          if (!requireSingleCollisionPurity || pipmParticle.mcCollisionId() == collision.mcCollision().globalIndex()) {
-            histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
-            histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
-          }
-        }
-      }
+      // purity
+      if (!pipm.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) continue;
+      auto const pipmParticle = pipm.jetTrack_as<aod::JetTracksMCD>().mcParticle();
+      if (std::abs(pipmParticle.pdgCode()) != PDG_t::kPiPlus || !checkPrimaryEtaMc(pipmParticle)) continue;
+      if (requireSingleCollisionPurity && pipmParticle.mcCollisionId() != collision.mcCollision().globalIndex()) continue;
+
+      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
     }
+
+    // photon mc checks
+
+    auto isConversionPhoton = [&](auto const& posTrack, auto const& negTrack) {
+      // check same mother
+      auto const& posMothers = posTrack.mcParticle().template mothers_as<aod::JetParticles>();
+      auto const& negMothers = negTrack.mcParticle().template mothers_as<aod::JetParticles>();
+      if (posMothers.size() != 1 || negMothers.size() != 1) return false;
+      if (posMothers.begin()->globalIndex() != negMothers.begin()->globalIndex()) return false;
+      // check photon
+      if (posMothers.begin()->pdgCode() != PDG_t::kGamma) return false;
+
+      return true;
+    };
+    auto isGGFromPi0 = [&](auto const& posTrack1, auto const& negTrack1, auto const& posTrack2, auto const& negTrack2) {
+      if (!isConversionPhoton(posTrack1, negTrack1) || !isConversionPhoton(posTrack2, negTrack2)) return false;
+      // check same mother
+      auto const& mothers1 = (*(posTrack1.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
+      auto const& mothers2 = (*(posTrack2.mcParticle().template mothers_as<aod::JetParticles>().begin())).template mothers_as<aod::JetParticles>();
+      constexpr int NMothersPhotonFromPi0 = 2; // for some reason two mothers (same particle) for pi0 decays (contradicts PYTHIA documentation, but whatever)
+      if (mothers1.size() != NMothersPhotonFromPi0 || mothers2.size() != NMothersPhotonFromPi0) return false;
+      if (mothers1.begin()->globalIndex() != mothers2.begin()->globalIndex()) return false;
+      // check pi0
+      if (mothers1.begin()->pdgCode() != PDG_t::kPi0) return false;
+
+      return true;
+    };
 
     // photonPCM
     for (auto const& photonPCM: photonPCMs) {
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
 
-      // legs
+      // purity
       // (V0Legs does not have the tracks reference as index column (just int)??)
       auto const& posTrack = tracks.rawIteratorAt(photonPCM.posTrackId() - tracks.offset());
       auto const& negTrack = tracks.rawIteratorAt(photonPCM.negTrackId() - tracks.offset());
+      if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle()) continue;
+      if (!isConversionPhoton(posTrack, negTrack) || !checkPrimaryEtaMc(*(posTrack.mcParticle().mothers_as<aod::JetParticles>().begin()))) continue;
+      if (requireSingleCollisionPurity && posTrack.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex())  continue;
 
-      // for purity
-      if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
-        // check if v0 stems from a converted photon
-        auto const& posMothers = posTrack.mcParticle().mothers_as<aod::JetParticles>();
-        auto const& negMothers = negTrack.mcParticle().mothers_as<aod::JetParticles>();
-        auto posMotherIter = posMothers.begin();
-        auto negMotherIter = negMothers.begin();
-        for (; posMotherIter != posMothers.end(); ++posMotherIter, ++negMotherIter) {
-          if ((*posMotherIter).pdgCode() == PDG_t::kGamma && (*posMotherIter).globalIndex() == (*negMotherIter).globalIndex() && checkPrimaryEtaMc((*posMotherIter))) {
-            if (!requireSingleCollisionPurity || posTrack.mcParticle().mcCollisionId() == collision.mcCollision().globalIndex()) {
-              histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
-              histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
-            }
-          }
-        }
-      }
+      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
     }
+
+    // pi0PCM
+    for (auto const& photonPCMPair: photonPCMPairs) {
+      if (photonPCMPair.mgg() < pi0PCMMassRange.value[0] || photonPCMPair.mgg() > pi0PCMMassRange.value[1]) continue;
+
+      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pi0PCM"), photonPCMPair.pt(), collision.posZ(), collision.multNTracksGlobal());
+
+      // purity
+      auto const& posTrack1 = tracks.rawIteratorAt(photonPCMPair.posTrack1Id() - tracks.offset());
+      auto const& negTrack1 = tracks.rawIteratorAt(photonPCMPair.negTrack1Id() - tracks.offset());
+      auto const& posTrack2 = tracks.rawIteratorAt(photonPCMPair.posTrack2Id() - tracks.offset());
+      auto const& negTrack2 = tracks.rawIteratorAt(photonPCMPair.negTrack2Id() - tracks.offset());
+      if (!posTrack1.has_mcParticle() || !negTrack1.has_mcParticle() || !posTrack2.has_mcParticle() || !negTrack2.has_mcParticle())  continue;
+      if (!isGGFromPi0(posTrack1, negTrack1, posTrack2, negTrack2) ||
+          std::abs((*(posTrack1.mcParticle().mothers_as<aod::JetParticles>().begin())).mothers_as<aod::JetParticles>().begin()->eta()) > etaMax) continue;
+      if (requireSingleCollisionPurity &&
+          (posTrack1.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex() || posTrack2.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex())) continue;
+
+      histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
+      histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hasCorrectMc_pi0PCM"), photonPCMPair.pt(), collision.posZ(), collision.multNTracksGlobal());
+    }
+
+
 
     // mcParticle loop
     for (auto const& mcParticle: mcParticlesThisEvent) {
-      // selection of mc particles
-      if (!checkPrimaryEtaMc(mcParticle)) continue;
+      // standard particles (marked physical primary)
+      if (checkPrimaryEtaMc(mcParticle)) {
+        // hadrons
+        if (checkChargedMc(mcParticle) && (!doTrigEvEff || mcParticle.globalIndex() != excludeTriggerParticleId)) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_hadron"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+        }
+        // pipm
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && (!doTrigEvEff || mcParticle.globalIndex() != excludeTriggerParticleId)) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pipm"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+        }
+        // photons
+        if (mcParticle.pdgCode() == PDG_t::kGamma) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_photon"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+        }
+      }
 
-      // hadrons
-      if (checkChargedMc(mcParticle)) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_hadron"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_hadron"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
-      }
-      // pipm
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_pipm"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pipm"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
-      }
-      // photons
-      if (mcParticle.pdgCode() == PDG_t::kGamma) {
-        histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_photon"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
-        histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_photon"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+      // decaying particles (not marked physical primary)
+      if ((std::abs(mcParticle.eta()) < etaMax)) {
+        // pi0
+        if (checkPi0ToGG(mcParticle)) {
+          histos.fill(HIST("mc/eff/h3_ptPhiEta_mcTrue_recoCol_pi0"), mcParticle.pt(), mcParticle.phi(), mcParticle.eta());
+          histos.fill(HIST("mc/eff/h3_ptZPvMult_mcTrue_recoCol_pi0"), mcParticle.pt(), collision.mcCollision().posZ(), collision.multNTracksGlobal());
+        }
       }
     }
   }
@@ -1630,15 +1713,40 @@ struct PhotonChargedTriggerCorrelation
 
   // test /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void processTest(CorrCollision const& collision, aod::Hadrons const& hadrons)
+  void processTest(CorrCollision const& collision,
+                   soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra> const&,
+                   aod::Hadrons const& hadrons)
   {
     // event selection
     if (!collision.selEv()) return;
 
-    // tEsT info
+
     histos.fill(HIST("test/h2_mult_comp"), collision.multNTracksGlobal(), hadrons.size());
+
+    for (auto const& track: tracks) {
+      auto const fullTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+
+      constexpr float Mincrossedrows = 40;
+      constexpr float Maxchi2tpc = 5.0;
+      constexpr float Maxchi2its = 6.0;
+      constexpr float MaxR = 83.1;
+      constexpr float MinPtTrackiu = 0.1;
+
+      if (!fullTrack.hasITS() && !fullTrack.hasTPC()) continue;
+      if (fullTrack.x()*fullTrack.x() + fullTrack.y()*fullTrack.y() > MaxR*MaxR || fullTrack.pt() < MinPtTrackiu) continue;
+      if (fullTrack.hasTPC()) {
+        if (fullTrack.tpcNClsCrossedRows() < Mincrossedrows || fullTrack.tpcChi2NCl() > Maxchi2tpc) continue;
+      }
+      if (fullTrack.hasITS()) {
+        if (fullTrack.itsChi2NCl() > Maxchi2its) continue;
+      }
+
+      histos.fill(HIST("test/h2_tracks_zPvMultDep"), collision.posZ(), collision.multNTracksGlobal());
+    }
+
+    histos.fill(HIST("test/h2_globalTracks_zPvMultDep"), collision.posZ(), collision.multNTracksGlobal(), hadrons.size());
   }
-  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processTest, "process whatever (just to test things)", false);
+  PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processTest, "process just to test things", false);
 };
 
 
@@ -1652,3 +1760,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& configContext)
     adaptAnalysisTask<PhotonChargedTriggerCorrelation>(configContext)
   };
 }
+
