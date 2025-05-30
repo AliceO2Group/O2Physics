@@ -26,8 +26,8 @@
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_XIC0TOXIPIKF(FEATURE)                                 \
-  {                                                                  \
-    #FEATURE, static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::FEATURE) \
+  {                                                                    \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -35,16 +35,16 @@
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(OBJECT, FEATURE, GETTER) \
-  case static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::FEATURE): {    \
-    inputFeatures.emplace_back(OBJECT.GETTER());                    \
-    break;                                                          \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::FEATURE): {    \
+    inputFeatures.emplace_back(OBJECT.GETTER());                      \
+    break;                                                            \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_XIC0TOXIPIKF(GETTER)                   \
-  case static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());             \
-    break;                                                      \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::GETTER): { \
+    inputFeatures.emplace_back(candidate.GETTER());               \
+    break;                                                        \
   }
 
 namespace o2::analysis
