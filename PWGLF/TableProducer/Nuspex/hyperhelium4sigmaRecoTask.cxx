@@ -13,8 +13,10 @@
 /// \brief QA and analysis task for hyper-helium4sigma (He4S)
 /// \author Yuanzhe Wang <yuanzhe.wang@cern.ch>
 
-#include <vector>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
