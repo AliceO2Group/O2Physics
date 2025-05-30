@@ -88,11 +88,14 @@ struct ThreeParticleCorrelations {
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
 
-  // Table aliases - MC
+  // Table aliases - MC Gen
   using MyFilteredMCGenCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra>>;
   using MyFilteredMCGenCollision = MyFilteredMCGenCollisions::iterator;
   using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
-  using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::McCollisionLabels>>::iterator;
+
+  // Table aliases - MC Rec
+  using MCRecCollisions = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::McCollisionLabels>;
+  using MyFilteredMCRecCollisions = soa::Filtered<MCRecCollisions>;
   using MyFilteredMCV0s = soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>>;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
                                                      aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
@@ -110,6 +113,7 @@ struct ThreeParticleCorrelations {
   // Mixed-events binning policy
   SliceCache cache;
   Preslice<MyFilteredMCParticles> perCol = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<aod::McCollisionLabels> perMCCol = aod::mccollisionlabel::mcCollisionId;
 
   ConfigurableAxis confCentBins{"confCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "ME Centrality binning"};
   ConfigurableAxis confZvtxBins{"confZvtxBins", {VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 0.0f, 1.0f, 3.0f, 5.0f, 7.0f}, "ME Zvtx binning"};
@@ -417,7 +421,6 @@ struct ThreeParticleCorrelations {
 
     // Start of the Mixed-Event correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pairData) {
-
       if (!acceptEvent(coll_1, false) || !acceptEvent(coll_2, false)) {
         return;
       }
@@ -481,8 +484,16 @@ struct ThreeParticleCorrelations {
     // End of the Mixed-Event Correlations
   }
 
-  void processMCSame(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const&)
+  void processMCSame(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const&, soa::SmallGroups<MCRecCollisions> const& recCollisions)
   {
+
+    if (recCollisions.size() == 1) {
+      for (const auto& recCollision : recCollisions) {
+        if (!acceptEvent(recCollision, false)) {
+          return;
+        }
+      }
+    }
 
     rQARegistry.fill(HIST("hEventCentrality_MC"), collision.bestCollisionCentFT0C());
     auto groupMCTriggers = mcTriggers->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -541,14 +552,28 @@ struct ThreeParticleCorrelations {
     // End of the MC Same-Event Correlations
   }
 
-  void processMCMixed(MyFilteredMCGenCollisions const&, MyFilteredMCParticles const&)
+  void processMCMixed(MyFilteredMCGenCollisions const&, MyFilteredMCParticles const&, MyFilteredMCRecCollisions const& recCollisions)
   {
 
     // Start of the MC Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, particle_2] : pairMC) {
+      auto recCollsA1 = recCollisions.sliceBy(perMCCol, coll_1.globalIndex());
+      auto recCollsA2 = recCollisions.sliceBy(perMCCol, coll_2.globalIndex());
+      if (recCollsA1.size() == 1 && recCollsA2.size() == 1) {
+        for (const auto& recColl_1 : recCollsA1) {
+          if (!acceptEvent(recColl_1, false)) {
+            return;
+          }
+        }
+        for (const auto& recColl_2 : recCollsA2) {
+          if (!acceptEvent(recColl_2, false)) {
+            return;
+          }
+        }
+      }
+
       auto groupMCTriggers = mcTriggers->sliceByCached(aod::mcparticle::mcCollisionId, coll_1.globalIndex(), cache);
       auto groupMCAssociates = mcAssociates->sliceByCached(aod::mcparticle::mcCollisionId, coll_2.globalIndex(), cache);
-
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(groupMCTriggers, groupMCAssociates))) {
         if (trigger.isPhysicalPrimary() && associate.isPhysicalPrimary()) {
 
@@ -579,8 +604,16 @@ struct ThreeParticleCorrelations {
     // End of the MC Mixed-events Correlations
   }
 
-  void processMCGen(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const&)
+  void processMCGen(MyFilteredMCGenCollision const& collision, MyFilteredMCParticles const&, soa::SmallGroups<MCRecCollisions> const& recCollisions)
   {
+
+    if (recCollisions.size() == 1) {
+      for (const auto& recCollision : recCollisions) {
+        if (!acceptEvent(recCollision, false)) {
+          return;
+        }
+      }
+    }
 
     auto groupMCTracks = mcTracks->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
     auto groupMCV0s = mcV0s->sliceByCached(aod::mcparticle::mcCollisionId, collision.globalIndex(), cache);
@@ -621,7 +654,7 @@ struct ThreeParticleCorrelations {
     // End of the Monte-Carlo generated QA
   }
 
-  void processMCRec(MyFilteredMCRecCollision const& collision, MyFilteredMCV0s const& v0s, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  void processMCRec(MyFilteredMCRecCollisions::iterator const& collision, MyFilteredMCV0s const& v0s, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
 
     if (!acceptEvent(collision, false) || !collision.has_mcCollision()) {
