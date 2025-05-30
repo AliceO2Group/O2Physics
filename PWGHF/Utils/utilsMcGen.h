@@ -17,11 +17,14 @@
 #ifndef PWGHF_UTILS_UTILSMCGEN_H_
 #define PWGHF_UTILS_UTILSMCGEN_H_
 
-#include <vector>
-
+#include <Rtypes.h>
 #include <TPDGCode.h>
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <array>
+#include <cstdint>
+#include <vector>
 
 #include "Common/Core/RecoDecay.h"
 

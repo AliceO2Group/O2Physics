@@ -15,7 +15,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
-// std
+
+// C++
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +31,11 @@
 #include "Framework/RunningWorkflowInfo.h"
 // O2Physics
 #include "Common/Core/trackUtilities.h"
+// PWGLF
+#include "PWGLF/DataModel/mcCentrality.h"
 // PWGHF
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"

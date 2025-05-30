@@ -20,20 +20,18 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
-#include <cstdio>
-
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
-#include <TCanvas.h>
-#include <TDatabasePDG.h>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <TF1.h>
-#include <TFitResult.h>
 #include <TH1.h>
 #include <TNamed.h>
-#include <TPaveText.h>
-#include <TStyle.h>
-#include <TVirtualFitter.h>
+#include <TVirtualPad.h>
+
+#include <cstdio>
 
 class HFInvMassFitter : public TNamed
 {

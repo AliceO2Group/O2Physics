@@ -16,12 +16,15 @@
 #ifndef PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 #define PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h> // NOLINT
+#include <Framework/ASoA.h>
+
+#include <cstdint>
 
 #include "Common/Core/RecoDecay.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h" // NOLINT
 
 namespace o2::aod
 {
