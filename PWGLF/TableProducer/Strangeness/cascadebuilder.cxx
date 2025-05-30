@@ -2389,12 +2389,12 @@ struct cascadePreselector {
 };
 
 /// Extends the cascdata table with expression columns
-struct cascadeInitializer {
-  Spawns<aod::CascCores> cascdataext;
-  Spawns<aod::KFCascCores> kfcascdataext;
-  Spawns<aod::TraCascCores> tracascdataext;
-  void init(InitContext const&) {}
-};
+// struct cascadeInitializer {
+//   Spawns<aod::CascCores> cascdataext;
+//   Spawns<aod::KFCascCores> kfcascdataext;
+//   Spawns<aod::TraCascCores> tracascdataext;
+//   void init(InitContext const&) {}
+// };
 
 struct cascadeLinkBuilder {
   Produces<aod::CascDataLink> cascdataLink;
@@ -2482,7 +2482,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<cascadeBuilder>(cfgc),
     adaptAnalysisTask<cascadePreselector>(cfgc),
-    adaptAnalysisTask<cascadeInitializer>(cfgc),
+    // adaptAnalysisTask<cascadeInitializer>(cfgc),
     adaptAnalysisTask<cascadeLinkBuilder>(cfgc),
     adaptAnalysisTask<kfcascadeLinkBuilder>(cfgc),
     adaptAnalysisTask<tracascadeLinkBuilder>(cfgc)};

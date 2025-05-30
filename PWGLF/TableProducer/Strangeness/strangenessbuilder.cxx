@@ -2496,17 +2496,17 @@ struct StrangenessBuilder {
 };
 
 // Extends the v0data table with expression columns
-struct strangenessbuilderInitializer {
-  Spawns<aod::V0Cores> v0cores;
-  Spawns<aod::CascCores> cascdataext;
-  Spawns<aod::KFCascCores> kfcascdataext;
-  Spawns<aod::TraCascCores> tracascdataext;
-  void init(InitContext const&) {}
-};
+// struct strangenessbuilderInitializer {
+//   Spawns<aod::V0Cores> v0cores;
+//   Spawns<aod::CascCores> cascdataext;
+//   Spawns<aod::KFCascCores> kfcascdataext;
+//   Spawns<aod::TraCascCores> tracascdataext;
+//   void init(InitContext const&) {}
+// };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<StrangenessBuilder>(cfgc),
-    adaptAnalysisTask<strangenessbuilderInitializer>(cfgc)};
+    adaptAnalysisTask<StrangenessBuilder>(cfgc)};
+    // adaptAnalysisTask<strangenessbuilderInitializer>(cfgc)};
 }

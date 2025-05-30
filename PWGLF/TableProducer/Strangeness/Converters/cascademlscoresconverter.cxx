@@ -8,39 +8,31 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-//  *+-+*+-+*+-+*+-+*+-+*+-+*
-//     Lambdakzero spawner
-//  *+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//  Creates V0 extension tables for derived data.
-//  A minimal task that saves a lot of disk space.
-
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <iterator>
-#include <utility>
-
 #include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
 
-// Extends the v0data table with expression columns
-struct lambdakzerospawner {
-  // Spawns<aod::V0Cores> v0cores;
-  void init(InitContext const&) {}
+// Converts V0 version 001 to 002
+struct cascademlscoresconverter {
+  Produces<aod::CascXiMLScores> xiMLSelections;
+  Produces<aod::CascOmMLScores> omegaMLSelections;
+
+  void process(aod::CascCores const& casccores)
+  {
+    for (int64_t i = 0; i < casccores.size(); ++i) {
+      xiMLSelections(-1);
+      omegaMLSelections(-1);
+    }
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdakzerospawner>(cfgc)};
+    adaptAnalysisTask<cascademlscoresconverter>(cfgc)};
 }
