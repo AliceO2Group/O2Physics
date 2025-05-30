@@ -281,7 +281,7 @@ DECLARE_SOA_TABLE(HfRedTracksCov, "AOD", "HFREDTRACKCOV", //! Table with track c
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
 // to call DECLARE_SOA_INDEX_COLUMN_FULL later on
-DECLARE_SOA_TABLE(HfRedBachProng0Bases, "AOD", "HFREDTRK0BASE", //! Table with track information for reduced workflow
+DECLARE_SOA_TABLE(HfRedBach0Bases, "AOD", "HFREDBACH0BASE", //! Table with track information for reduced workflow
                   soa::Index<>,
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
@@ -305,13 +305,13 @@ DECLARE_SOA_TABLE(HfRedBachProng0Bases, "AOD", "HFREDTRK0BASE", //! Table with t
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
                   aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
-DECLARE_SOA_TABLE(HfRedBachProng0Cov, "AOD", "HFREDTRK0COV", //! Table with track covariance information for reduced workflow
+DECLARE_SOA_TABLE(HfRedBach0Cov, "AOD", "HFREDBACH0COV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
                   HFTRACKPARCOV_COLUMNS);
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
 // to call DECLARE_SOA_INDEX_COLUMN_FULL later on
-DECLARE_SOA_TABLE(HfRedBachProng1Bases, "AOD", "HFREDTRK1BASE", //! Table with track information for reduced workflow
+DECLARE_SOA_TABLE(HfRedBach1Bases, "AOD", "HFREDBACH1BASE", //! Table with track information for reduced workflow
                   soa::Index<>,
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
@@ -335,7 +335,7 @@ DECLARE_SOA_TABLE(HfRedBachProng1Bases, "AOD", "HFREDTRK1BASE", //! Table with t
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
                   aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
 
-DECLARE_SOA_TABLE(HfRedBachProng1Cov, "AOD", "HFREDTRK1COV", //! Table with track covariance information for reduced workflow
+DECLARE_SOA_TABLE(HfRedBach1Cov, "AOD", "HFREDBACH1COV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
                   HFTRACKPARCOV_COLUMNS);
 
@@ -350,14 +350,14 @@ DECLARE_SOA_TABLE(HfRedTracksPid, "AOD", "HFREDTRACKPID", //! Table with PID tra
 
 DECLARE_SOA_EXTENDED_TABLE_USER(HfRedTracksExt, HfRedTrackBases, "HFREDTRACKEXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
-DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBachProng0Ext, HfRedBachProng0Bases, "HFREDTRK0EXT", //! Track parameters at collision vertex
+DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBach0Ext, HfRedBach0Bases, "HFREDBACH0EXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
-DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBachProng1Ext, HfRedBachProng1Bases, "HFREDTRK1EXT", //! Track parameters at collision vertex
+DECLARE_SOA_EXTENDED_TABLE_USER(HfRedBach1Ext, HfRedBach1Bases, "HFREDBACH1EXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
 
 using HfRedTracks = HfRedTracksExt;
-using HfRedBachProng0Tracks = HfRedBachProng0Ext;
-using HfRedBachProng1Tracks = HfRedBachProng1Ext;
+using HfRedBach0Tracks = HfRedBach0Ext;
+using HfRedBach1Tracks = HfRedBach1Ext;
 
 namespace hf_charm_cand_reduced
 {
@@ -679,13 +679,13 @@ using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 
 namespace hf_cand_bplus_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2Prongs, "_0");         //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");      //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(JPsi, jPsi, int, HfRedJPsis, "_0");               //! J/Psi index
-DECLARE_SOA_INDEX_COLUMN_FULL(BachKa, bachKa, int, HfRedBachProng0Bases, "_0"); //! J/Psi index
-DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                  //! Bkg ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);            //! Prompt ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);      //! Nonprompt ML score of the D daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed2Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(JPsi, jPsi, int, HfRedJPsis, "_0");          //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(BachKa, bachKa, int, HfRedBach0Bases, "_0"); //! J/Psi index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_bplus_reduced
 
 DECLARE_SOA_TABLE(HfRedBplusProngs, "AOD", "HFREDBPPRONG",
@@ -701,18 +701,18 @@ DECLARE_SOA_TABLE(HfRedBplusD0Mls, "AOD", "HFREDBPLUSD0ML", //! Table with ML sc
                   o2::soa::Marker<1>);
 
 using HfRedCandBplus = soa::Join<HfCandBplusExt, HfRedBplusProngs>;
-using HfRedCandBplusToJPsiK = soa::Join<HfCandBplusExt, HfRedBplus2JPsiDaus>;
+using HfRedCandBplusToJPsiK = soa::Join<HfCandBpJPExt, HfRedBplus2JPsiDaus>;
 
 namespace hf_cand_bs_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");               //! Prong0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");            //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(JPsi, jPsi, int, HfRedJPsis, "_0");                     //! J/Psi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Phi, prong0Phi, int, HfRedBachProng0Bases, "_0"); //! J/Psi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Phi, prong1Phi, int, HfRedBachProng1Bases, "_0"); //! J/Psi index
-DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                        //! Bkg ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                  //! Prompt ML score of the D daughter
-DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);            //! Nonprompt ML score of the D daughter
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");          //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1");       //! Prong1 index
+DECLARE_SOA_INDEX_COLUMN_FULL(JPsi, jPsi, int, HfRedJPsis, "_0");                //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0Phi, prong0Phi, int, HfRedBach0Bases, "_0"); //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1Phi, prong1Phi, int, HfRedBach1Bases, "_0"); //! J/Psi index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                   //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);             //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);       //! Nonprompt ML score of the D daughter
 } // namespace hf_cand_bs_reduced
 
 DECLARE_SOA_TABLE(HfRedBsProngs, "AOD", "HFREDBSPRONG", //! Table with Bs daughter indices
@@ -728,7 +728,7 @@ DECLARE_SOA_TABLE(HfRedBsDsMls, "AOD", "HFREDBSDSML", //! Table with ML scores f
                   o2::soa::Marker<1>);
 
 using HfRedCandBs = soa::Join<HfCandBsExt, HfRedBsProngs>;
-using HfRedCandBsToJPsiPhi = soa::Join<HfCandBsExt, HfRedBs2JPsiDaus>;
+using HfRedCandBsToJPsiPhi = soa::Join<HfCandBsJPExt, HfRedBs2JPsiDaus>;
 
 namespace hf_cand_lb_reduced
 {
@@ -865,7 +865,7 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
                   hf_bplus_mc::PtMother);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfMcRecRedJPsiKs, "AOD", "HFMCRECREDJPSIK", //! Table with reconstructed MC information on J/PsiK(<-B+) pairs for reduced workflow
+DECLARE_SOA_TABLE(HfMcRecRedJPKs, "AOD", "HFMCRECREDJPK", //! Table with reconstructed MC information on J/PsiK(<-B+) pairs for reduced workflow
                   hf_cand_bplus_reduced::JPsiId,
                   hf_cand_bplus_reduced::Prong1Id,
                   hf_cand_bplus::FlagMcMatchRec,
@@ -960,7 +960,7 @@ DECLARE_SOA_TABLE(HfMcRecRedDsPis, "AOD", "HFMCRECREDDSPI", //! Table with recon
                   hf_bs_mc::PtMother);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfMcRecRedJPsiPhis, "AOD", "HFMCRECREDJPSIPHI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
+DECLARE_SOA_TABLE(HfMcRecRedJPPhis, "AOD", "HFMCRECREDJPPHI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
                   hf_cand_bs_reduced::JPsiId,
                   hf_cand_bs_reduced::Prong0PhiId,
                   hf_cand_bs_reduced::Prong1PhiId,
@@ -1021,7 +1021,7 @@ DECLARE_SOA_TABLE(HfCandBsConfigs, "AOD", "HFCANDBSCONFIG", //! Table with confi
                   hf_cand_bs_config::MySelectionFlagD,
                   hf_cand_bs_config::MyInvMassWindowDPi);
 
-DECLARE_SOA_TABLE(HfCfgBsToJPsi, "AOD", "HFCFGBSTOJPSI", //! Table with configurables information for reduced workflow
+DECLARE_SOA_TABLE(HfCfgBsToJPsis, "AOD", "HFCFGBSTOJPSI", //! Table with configurables information for reduced workflow
                   hf_cand_bs_config::MyInvMassWindowJPsiPhi);
 namespace hf_lb_mc
 {
