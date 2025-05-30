@@ -59,8 +59,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -82,8 +82,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -105,8 +105,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -127,8 +127,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -150,8 +150,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
