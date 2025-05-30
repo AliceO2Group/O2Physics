@@ -69,8 +69,8 @@ struct ThreeParticleCorrelations {
   Filter evSelect = aod::evsel::sel8 == true;
 
   // V0 filters
-  Filter v0Pt = aod::v0data::pt > v0PtMin&& aod::v0data::pt < v0PtMax;
-  Filter v0Eta = nabs(aod::v0data::eta) < v0EtaMax;
+  // Filter v0Pt = aod::v0data::pt > v0PtMin&& aod::v0data::pt < v0PtMax;
+  // Filter v0Eta = nabs(aod::v0data::eta) < v0EtaMax;
 
   // Track filters
   Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
@@ -83,7 +83,7 @@ struct ThreeParticleCorrelations {
   // Table aliases - Data
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
-  using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
+  using MyFilteredV0s = aod::V0Datas;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
@@ -765,6 +765,10 @@ struct ThreeParticleCorrelations {
   template <class V0Cand>
   bool v0Filters(const V0Cand& v0)
   {
+    if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
+      return false;
+    if (std::abs(v0.eta()) > v0EtaMax)
+      return false;
 
     if (v0Sign(v0) == 1) {
       const auto& posDaughter = v0.template posTrack_as<MyFilteredTracks>();
