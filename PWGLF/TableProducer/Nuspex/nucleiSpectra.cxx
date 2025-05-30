@@ -1007,8 +1007,6 @@ struct nucleiSpectra {
           if (particle.y() > cfgCutRapidityMin && particle.y() < cfgCutRapidityMax) {
             nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
           }
-        } else {
-          continue; /// for not-reconstructed particles we store only the primaries
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
