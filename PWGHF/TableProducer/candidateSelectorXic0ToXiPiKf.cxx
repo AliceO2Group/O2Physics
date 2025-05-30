@@ -133,13 +133,13 @@ struct HfCandidateSelectorXic0ToXiPiKf {
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0ToXipikf"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_Xic0ToXipikf.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXic0ToXiPikf<float> hfMlResponse;
-  std::vector<float> outputMlXic0ToXiPi = {};
+  std::vector<float> outputMlXic0ToXiPikf = {};
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPr selectorProton;
@@ -547,11 +547,11 @@ struct HfCandidateSelectorXic0ToXiPiKf {
       if (applyMl) {
         bool isSelectedMlXic0 = false;
         std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
-        isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPi);
+        isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPikf); 
         if (!isSelectedMlXic0) {
           continue;
         }
-        hfMlToXiPi(outputMlXic0ToXiPi);
+        hfMlToXiPi(outputMlXic0ToXiPikf);
       }
 
       hfSelToXiPi(statusPidCharmBaryon, statusPidCascade, statusPidLambda, statusInvMassCharmBaryon, statusInvMassCascade, statusInvMassLambda, resultSelections, infoTpcStored, infoTofStored,
