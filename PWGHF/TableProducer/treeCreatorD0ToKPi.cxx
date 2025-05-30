@@ -514,9 +514,9 @@ struct HfTreeCreatorD0ToKPi {
     LOG(info) << "Processing " << candidates.size() << " candidates";
     for (const auto& candidate : candidates) {
       if constexpr (onlyBkg) {
-        if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          continue;
-        }
+        // if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        //   continue;
+        // }
         if (downSampleBkgFactor < 1.) {
           float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -525,9 +525,9 @@ struct HfTreeCreatorD0ToKPi {
         }
       }
       if constexpr (onlySig) {
-        if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-          continue;
-        }
+        // if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+        //   continue;
+        // }
       }
       double yD = hfHelper.yD0(candidate);
       double eD = hfHelper.eD0(candidate);
@@ -555,7 +555,7 @@ struct HfTreeCreatorD0ToKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      // if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
           particle.pt(),
@@ -566,7 +566,7 @@ struct HfTreeCreatorD0ToKPi {
           particle.flagMcDecayChanGen(),
           particle.originMcGen(),
           particle.globalIndex());
-      }
+      // }
     }
   }
 
