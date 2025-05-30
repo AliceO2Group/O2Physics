@@ -41,8 +41,8 @@
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel
 # PWG-LF
 /PWGLF @alibuild @sustripathy @skundu692
-/PWGLF/Tasks/GlobalEventProperties         @alibuild @sustripathy @skundu692 @gbencedi @abmodak
-/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak
+/PWGLF/Tasks/GlobalEventProperties         @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @sustripathy @skundu692 @gbencedi @abmodak @omvazque
 /PWGLF/Tasks/Nuspex         @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
 /PWGLF/TableProducer/Nuspex @alibuild @sustripathy @skundu692 @fmazzasc @chiarapinto @maciacco
 /PWGLF/Tasks/Resonances         @alibuild @sustripathy @skundu692 @dmallick2 @smaff92
