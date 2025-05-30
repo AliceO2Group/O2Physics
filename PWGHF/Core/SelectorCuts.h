@@ -899,7 +899,7 @@ static const std::vector<std::string> labelsCutVar = {"m", "DCA_xy", "DCA_z", "p
 namespace hf_cuts_jpsi_to_mu_mu
 {
 static constexpr int NBinsPt = 9;
-static constexpr int NCutVars = 7;
+static constexpr int NCutVars = 8;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double BinsPt[NBinsPt + 1] = {
@@ -917,15 +917,15 @@ constexpr double BinsPt[NBinsPt + 1] = {
 auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-constexpr double Cuts[NBinsPt][NCutVars] = {{0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 0   < pT < 0.5 */
-                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 0.5 < pT < 1   */
-                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 1   < pT < 2   */
-                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 2   < pT < 3   */
-                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 3   < pT < 4   */
-                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0.},  /* 4   < pT < 5   */
-                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 0.},  /* 5   < pT < 6   */
-                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1.},  /* 6   < pT < 10  */
-                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1.}}; /* 10  < pT < 16  */
+constexpr double Cuts[NBinsPt][NCutVars] = {{0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 0   < pT < 0.5 */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 0.5 < pT < 1   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 1   < pT < 2   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 2   < pT < 3   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 3   < pT < 4   */
+                                            {0.6, 1.0, 0.2, 0.2, 0.9, 0.9, 0., 0.},  /* 4   < pT < 5   */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 0., 0.},  /* 5   < pT < 6   */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1., 0.},  /* 6   < pT < 10  */
+                                            {0.8, 1.0, 0.3, 0.3, 0.9, 0.9, 1., 0.}}; /* 10  < pT < 16  */
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -940,7 +940,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 8"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT mu", "decay length", "decay length xy", "cpa", "cpa xy", "d0xd0"};
+static const std::vector<std::string> labelsCutVar = {"m", "pT mu", "decay length", "decay length xy", "cpa", "cpa xy", "d0xd0", "pseudoprop. decay length"};
 } // namespace hf_cuts_jpsi_to_mu_mu
 
 namespace hf_cuts_b0_to_d_pi

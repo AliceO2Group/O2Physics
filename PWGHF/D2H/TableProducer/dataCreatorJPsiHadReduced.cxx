@@ -228,6 +228,8 @@ struct HfDataCreatorJPsiHadReduced {
   bool selectionTopol(const T1& candidate, const T2& trackPos, const T2& trackNeg)
   {
     auto candpT = candidate.pt();
+    auto candInvMass = runJPsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+    auto pseudoPropDecLen = candidate.decayLengthXY() * candInvMass / candpT;
     auto pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
@@ -239,9 +241,7 @@ struct HfDataCreatorJPsiHadReduced {
     }
 
     // cut on μ+ μ− (e+e−) invariant mass
-    if (runJPsiToee && std::abs(hfHelper.invMassJpsiToEE(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
-      return false;
-    } else if (!runJPsiToee && std::abs(hfHelper.invMassJpsiToMuMu(candidate) - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
+    if (std::abs(candInvMass - o2::constants::physics::MassJPsi) > cuts->get(pTBin, "m")) {
       return false;
     }
 
@@ -272,6 +272,11 @@ struct HfDataCreatorJPsiHadReduced {
 
     // product of daughter impact parameters
     if (candidate.impactParameterProduct() > cuts->get(pTBin, "d0xd0")) {
+      return false;
+    }
+
+    // pseudoproper decay length
+    if (pseudoPropDecLen < cuts->get(pTBin, "pseudoprop. decay length")) {
       return false;
     }
 
