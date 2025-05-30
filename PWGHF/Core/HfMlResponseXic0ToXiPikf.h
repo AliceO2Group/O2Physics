@@ -25,24 +25,24 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XIC0TOXIPI(FEATURE)                                 \
+#define FILL_MAP_XIC0TOXIPIKF(FEATURE)                                 \
   {                                                                  \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE) \
+    #FEATURE, static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
-#define CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(OBJECT, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE): {    \
+#define CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(OBJECT, FEATURE, GETTER) \
+  case static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::FEATURE): {    \
     inputFeatures.emplace_back(OBJECT.GETTER());                    \
     break;                                                          \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
-#define CHECK_AND_FILL_VEC_XIC0TOXIPI(GETTER)                   \
-  case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::GETTER): { \
+#define CHECK_AND_FILL_VEC_XIC0TOXIPIKF(GETTER)                   \
+  case static_cast<uint8_t>( InputFeaturesXic0ToXiPikf::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());             \
     break;                                                      \
   }
@@ -50,7 +50,7 @@
 namespace o2::analysis
 {
 
-enum class InputFeaturesXic0ToXiPi : uint8_t {
+enum class InputFeaturesXic0ToXiPikf : uint8_t {
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -88,26 +88,26 @@ class HfMlResponseXic0ToXiPikf : public HfMlResponse<TypeOutputScore>
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
         // PID variables
-        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(lamProngPi, tpcNSigmaPiFromLambda, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(cascProngPi, tpcNSigmaPiFromCasc, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(lamProngPi, tpcNSigmaPiFromLambda, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(cascProngPi, tpcNSigmaPiFromCasc, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(charmBaryonProngPi, tpcNSigmaPiFromCharmBaryon, tpcNSigmaPi);
         // DCA
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCascDau);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCharmBaryonDau);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYPiFromXic);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(kfDcaXYCascToPv);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(dcaCascDau);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(dcaCharmBaryonDau);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(kfDcaXYPiFromXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(kfDcaXYCascToPv);
         // Chi2Geo
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(cascChi2OverNdf);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(xicChi2OverNdf);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cascChi2OverNdf);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(xicChi2OverNdf);
         // ldl
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(cascldl);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cascldl);
         // Chi2Topo
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(chi2TopoCascToPv);
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(chi2TopoCascToXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoCascToPv);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(chi2TopoCascToXic);
         // CosPa
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(cosPaCascToXic);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(cosPaCascToXic);
         // Decay length
-        CHECK_AND_FILL_VEC_XIC0TOXIPI(decayLenXYCasc);
+        CHECK_AND_FILL_VEC_XIC0TOXIPIKF(decayLenXYCasc);
       }
     }
 
@@ -119,28 +119,28 @@ class HfMlResponseXic0ToXiPikf : public HfMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromLambda),
-      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromCasc),
-      FILL_MAP_XIC0TOXIPI(tpcNSigmaPiFromCharmBaryon),
-      FILL_MAP_XIC0TOXIPI(dcaCascDau),
-      FILL_MAP_XIC0TOXIPI(dcaCharmBaryonDau),
-      FILL_MAP_XIC0TOXIPI(kfDcaXYPiFromXic),
-      FILL_MAP_XIC0TOXIPI(kfDcaXYCascToPv),
-      FILL_MAP_XIC0TOXIPI(cascChi2OverNdf),
-      FILL_MAP_XIC0TOXIPI(xicChi2OverNdf),
-      FILL_MAP_XIC0TOXIPI(cascldl),
-      FILL_MAP_XIC0TOXIPI(chi2TopoCascToPv),
-      FILL_MAP_XIC0TOXIPI(chi2TopoCascToXic),
-      FILL_MAP_XIC0TOXIPI(cosPaCascToXic),
-      FILL_MAP_XIC0TOXIPI(decayLenXYCasc),
+      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromLambda),
+      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromCasc),
+      FILL_MAP_XIC0TOXIPIKF(tpcNSigmaPiFromCharmBaryon),
+      FILL_MAP_XIC0TOXIPIKF(dcaCascDau),
+      FILL_MAP_XIC0TOXIPIKF(dcaCharmBaryonDau),
+      FILL_MAP_XIC0TOXIPIKF(kfDcaXYPiFromXic),
+      FILL_MAP_XIC0TOXIPIKF(kfDcaXYCascToPv),
+      FILL_MAP_XIC0TOXIPIKF(cascChi2OverNdf),
+      FILL_MAP_XIC0TOXIPIKF(xicChi2OverNdf),
+      FILL_MAP_XIC0TOXIPIKF(cascldl),
+      FILL_MAP_XIC0TOXIPIKF(chi2TopoCascToPv),
+      FILL_MAP_XIC0TOXIPIKF(chi2TopoCascToXic),
+      FILL_MAP_XIC0TOXIPIKF(cosPaCascToXic),
+      FILL_MAP_XIC0TOXIPIKF(decayLenXYCasc),
     };
   }
 };
 
 } // namespace o2::analysis
 
-#undef FILL_MAP_XIC0TOXIPI
-#undef CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL
-#undef CHECK_AND_FILL_VEC_XIC0TOXIPI
+#undef FILL_MAP_XIC0TOXIPIKF
+#undef CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL
+#undef CHECK_AND_FILL_VEC_XIC0TOXIPIKF
 
 #endif // PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
