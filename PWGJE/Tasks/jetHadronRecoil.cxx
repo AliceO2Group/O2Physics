@@ -116,6 +116,8 @@ struct JetHadronRecoil {
 
   HistogramRegistry registry{"registry",
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
+                              {"hSignalTriggersPtHard", "Signal triggers vs PtHard", {HistType::kTH1F, {{20, 0, 5}}}},
+                              {"hReferenceTriggersPtHard", "Reference triggers vs PtHard", {HistType::kTH1F, {{20, 0, 5}}}},
                               {"hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}},
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
@@ -243,6 +245,7 @@ struct JetHadronRecoil {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
         registry.fill(HIST("hRhoSignal"), rho, weight);
+        registry.fill(HIST("hSignalTriggersPtHard"), ptTT / pTHat, weight);
       }
       if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
@@ -251,6 +254,7 @@ struct JetHadronRecoil {
         for (double shift = 0.0; shift <= 2.0; shift += 0.1) {
           registry.fill(HIST("hRhoReferenceShift"), rho + shift, shift, weight);
         }
+        registry.fill(HIST("hReferenceTriggersPtHard"), ptTT / pTHat, weight);
       }
     }
 
