@@ -1808,7 +1808,6 @@ struct lambdakzeroV0DataLinkBuilder {
   PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFindable, "process findable V0s", false);
 };
 
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
