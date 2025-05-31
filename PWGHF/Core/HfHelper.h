@@ -174,6 +174,12 @@ class HfHelper
   }
 
   template <typename T>
+  auto invMassBplusToJPsiK(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   auto cosThetaStarBplus(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBPlus, 1);
@@ -660,6 +666,12 @@ class HfHelper
   }
 
   template <typename T>
+  auto invMassBsToJPsiPhi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   auto cosThetaStarBs(const T& candidate)
   {
     return candidate.cosThetaStar(std::array{o2::constants::physics::MassDSBar, o2::constants::physics::MassPiPlus}, o2::constants::physics::MassBS, 1);
@@ -873,6 +885,106 @@ class HfHelper
     return true;
   }
 
+  // Apply topological cuts as defined in SelectorCuts.h
+  /// \param candBp B+ candidate
+  /// \param cuts B+ candidate selection per pT bin
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionBplusToJPsiKTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+  {
+    auto ptcandBp = candBp.pt();
+    auto mcandBp = invMassBplusToJPsiK(candBp);
+    auto ptJPsi = RecoDecay::pt(candBp.pxProng0(), candBp.pyProng0());
+    auto ptKa = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
+    auto candJPsi = candBp.jPsi();
+    float pseudoPropDecLen = candBp.decayLengthXY() * mcandBp / ptcandBp;
+
+    int pTBin = o2::analysis::findBin(binsPt, ptcandBp);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // B+ mass cut
+    if (std::abs(mcandBp - o2::constants::physics::MassBPlus) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // kaon pt
+    if (ptKa < cuts->get(pTBin, "pT K")) {
+      return false;
+    }
+
+    // J/Psi pt
+    if (ptJPsi < cuts->get(pTBin, "pT J/Psi")) {
+      return false;
+    }
+
+    // J/Psi mass
+    if (std::abs(candJPsi.m() - o2::constants::physics::MassJPsi) < cuts->get(pTBin, "DeltaM J/Psi")) {
+      return false;
+    }
+
+    // d0(J/Psi)xd0(K)
+    if (candBp.impactParameterProduct() > cuts->get(pTBin, "B Imp. Par. Product")) {
+      return false;
+    }
+
+    // B+ Decay length
+    if (candBp.decayLength() < cuts->get(pTBin, "B decLen")) {
+      return false;
+    }
+
+    // B+ Decay length XY
+    if (candBp.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+      return false;
+    }
+
+    // B+ CPA cut
+    if (candBp.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // B+ CPAXY cut
+    if (candBp.cpaXY() < cuts->get(pTBin, "CPAXY")) {
+      return false;
+    }
+
+    // d0 of K
+    if (std::abs(candBp.impactParameter1()) < cuts->get(pTBin, "d0 K")) {
+      return false;
+    }
+
+    // d0 of J/Psi
+    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 J/Psi")) {
+      return false;
+    }
+
+    // B pseudoproper decay length
+    if (pseudoPropDecLen < cuts->get(pTBin, "B pseudoprop. decLen")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of B+ candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionBplusToJPsiKPid(const T1& pidTrackKa, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackKa == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Apply topological cuts as defined in SelectorCuts.h
   /// \param candBs Bs candidate
   /// \param cuts Bs candidate selections
@@ -954,6 +1066,114 @@ class HfHelper
       return false;
     }
     if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Apply topological cuts as defined in SelectorCuts.h
+  /// \param candBs Bs candidate
+  /// \param cuts Bs candidate selection per pT bin
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool selectionBsToJPsiPhiTopol(const T1& candBs, const T2& candKa0, const T3& candKa1, const T4& cuts, const T5& binsPt)
+  {
+    auto ptcandBs = candBs.pt();
+    auto mcandBs = invMassBsToJPsiPhi(candBs);
+    std::array<float, 3> pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
+    std::array<float, 3> pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
+    auto mcandPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+    auto ptJPsi = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
+    auto candJPsi = candBs.jPsi();
+    float pseudoPropDecLen = candBs.decayLengthXY() * mcandBs / ptcandBs;
+
+    int pTBin = o2::analysis::findBin(binsPt, ptcandBs);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // Bs mass cut
+    if (std::abs(mcandBs - o2::constants::physics::MassBPlus) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // kaon pt
+    if (candKa0.pt() < cuts->get(pTBin, "pT K") &&
+        candKa1.pt() < cuts->get(pTBin, "pT K")) {
+      return false;
+    }
+
+    // J/Psi pt
+    if (ptJPsi < cuts->get(pTBin, "pT J/Psi")) {
+      return false;
+    }
+
+    // phi mass
+    if (std::abs(mcandPhi - o2::constants::physics::MassPhi) < cuts->get(pTBin, "DeltaM phi")) {
+      return false;
+    }
+
+    // J/Psi mass
+    if (std::abs(candJPsi.m() - o2::constants::physics::MassJPsi) < cuts->get(pTBin, "DeltaM J/Psi")) {
+      return false;
+    }
+
+    // d0(J/Psi)xd0(phi)
+    if (candBs.impactParameterProduct() > cuts->get(pTBin, "B Imp. Par. Product")) {
+      return false;
+    }
+
+    // Bs Decay length
+    if (candBs.decayLength() < cuts->get(pTBin, "B decLen")) {
+      return false;
+    }
+
+    // Bs Decay length XY
+    if (candBs.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+      return false;
+    }
+
+    // Bs CPA cut
+    if (candBs.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // Bs CPAXY cut
+    if (candBs.cpaXY() < cuts->get(pTBin, "CPAXY")) {
+      return false;
+    }
+
+    // d0 of phi
+    if (std::abs(candBs.impactParameter1()) < cuts->get(pTBin, "d0 phi")) {
+      return false;
+    }
+
+    // d0 of J/Psi
+    if (std::abs(candBs.impactParameter0()) < cuts->get(pTBin, "d0 J/Psi")) {
+      return false;
+    }
+
+    // B pseudoproper decay length
+    if (pseudoPropDecLen < cuts->get(pTBin, "B pseudoprop. decLen")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply PID selection
+  /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of B+ candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionBsToJPsiPhiPid(const T1& pidTrackKa, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackKa == TrackSelectorPID::Rejected) {
       return false;
     }
 
