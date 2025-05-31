@@ -16,8 +16,6 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
 #define PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
 
-#include <map>
-#include <string>
 #include <vector>
 
 #include "PWGHF/Core/HfMlResponse.h"
