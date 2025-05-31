@@ -224,7 +224,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
 
-      auto ptCand = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      auto ptCand = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
