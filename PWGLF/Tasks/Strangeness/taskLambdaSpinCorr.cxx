@@ -625,7 +625,7 @@ struct LfTaskLambdaSpinCorr {
           // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
           // continue;
           // }
-          if (t3.index() >= rows || t2.index() >= cols || pairStatus[t3.index()][t2.index()]) {
+          if (pairStatus[t3.index()][t2.index()]) {
             continue;
           }
           if (t1.collisionId() == t3.collisionId()) {
