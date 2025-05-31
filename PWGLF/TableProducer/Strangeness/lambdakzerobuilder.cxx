@@ -1808,12 +1808,6 @@ struct lambdakzeroV0DataLinkBuilder {
   PROCESS_SWITCH(lambdakzeroV0DataLinkBuilder, processFindable, "process findable V0s", false);
 };
 
-// Extends the v0data table with expression columns
-// struct lambdakzeroInitializer {
-//   Spawns<aod::V0Cores> v0cores;
-//   Spawns<aod::V0fCCores> v0fccores;
-//   void init(InitContext const&) {}
-// };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -1821,5 +1815,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<lambdakzeroBuilder>(cfgc),
     adaptAnalysisTask<lambdakzeroPreselector>(cfgc),
     adaptAnalysisTask<lambdakzeroV0DataLinkBuilder>(cfgc)};
-    // adaptAnalysisTask<lambdakzeroInitializer>(cfgc)};
 }

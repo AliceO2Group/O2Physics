@@ -68,10 +68,6 @@ struct ThreeParticleCorrelations {
   Filter mcCollZvtx = nabs(aod::mccollision::posZ) < zvtxMax;
   Filter evSelect = aod::evsel::sel8 == true;
 
-  // V0 filters
-  // Filter v0Pt = aod::v0data::pt > v0PtMin&& aod::v0data::pt < v0PtMax;
-  // Filter v0Eta = nabs(aod::v0data::eta) < v0EtaMax;
-
   // Track filters
   Filter trackPt = aod::track::pt > trackPtMin&& aod::track::pt < trackPtMax;
   Filter trackEta = nabs(aod::track::eta) < trackEtaMax;
@@ -83,7 +79,6 @@ struct ThreeParticleCorrelations {
   // Table aliases - Data
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
-  using MyFilteredV0s = aod::V0Datas;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>>;
@@ -116,7 +111,7 @@ struct ThreeParticleCorrelations {
 
   BinningType collBinning{{confCentBins, confZvtxBins}, true};
   BinningTypeMC collBinningMC{{confCentBins, confZvtxBins}, true};
-  Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
+  Pair<MyFilteredCollisions, aod::V0Datas, MyFilteredTracks, BinningType> pairData{collBinning, 5, -1, &cache};
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 
   // Process configurables
@@ -281,7 +276,7 @@ struct ThreeParticleCorrelations {
 
   //==========================================================================================================================================================================================================================================================================
 
-  void processSame(MyFilteredCollision const& collision, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
+  void processSame(MyFilteredCollision const& collision, aod::V0Datas const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -389,7 +384,7 @@ struct ThreeParticleCorrelations {
     // End of the Same-Event correlations
   }
 
-  void processMixed(MyFilteredCollisions const&, MyFilteredV0s const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
+  void processMixed(MyFilteredCollisions const&, aod::V0Datas const&, MyFilteredTracks const&, aod::BCsWithTimestamps const&)
   {
 
     // Start of the Mixed-Event correlations
