@@ -301,6 +301,9 @@ struct StrangenessBuilder {
 
   Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
 
+  // Autoconfigure process functions
+  Configurable<bool> autoConfigureProcess{"autoConfigureProcess", true, "if true, will configure process function switches based on metadata"};
+
   // V0 building options
   struct : ConfigurableGroup {
     std::string prefix = "v0BuilderOpts";
@@ -2655,12 +2658,65 @@ struct strangenessbuilderInitializer {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  LOGF(info, "Strangeness builder pre-initializing now...");
-
   auto strangenessBuilderTask = adaptAnalysisTask<StrangenessBuilder>(cfgc);
-  
-  for(auto const& option : strangenessBuilderTask.options){ 
-    LOGF(info, "option identified: %s", option.name);
+
+  bool isRun3 = true; 
+  bool isMC = false;
+  if(cfgc.options().hasOption("aod-metadata-Run") && cfgc.options().get<std::string>("aod-metadata-Run") == "2"){ 
+    isRun3 = false;
+  }
+  if(cfgc.options().hasOption("aod-metadata-DataType") && cfgc.options().get<std::string>("aod-metadata-DataType") == "MC"){ 
+    isMC = true;
+  }
+
+  int idxSwitches[8]; //8 switches (real / real r2 / MC / MC r2 + PID)
+  bool autoConfigureProcess = true;
+  bool withPID = false;
+
+  for(size_t ipar = 0; ipar<strangenessBuilderTask.options.size(); ipar++){ 
+    auto option = strangenessBuilderTask.options[ipar];
+    if(option.name == "processRealData"){ 
+      idxSwitches[0] = ipar;
+    }
+    if(option.name == "processRealDataRun2"){ 
+      idxSwitches[1] = ipar;
+    }
+    if(option.name == "processMonteCarlo"){ 
+      idxSwitches[2] = ipar;
+    }
+    if(option.name == "processMonteCarloRun2"){ 
+      idxSwitches[3] = ipar;
+    }
+    if(option.name == "processRealDataWithPID"){ 
+      idxSwitches[4] = ipar;
+    }
+    if(option.name == "processRealDataRun2WithPID"){ 
+      idxSwitches[5] = ipar;
+    }
+    if(option.name == "processMonteCarloWithPID"){ 
+      idxSwitches[6] = ipar;
+    }
+    if(option.name == "processMonteCarloRun2WithPID"){ 
+      idxSwitches[7] = ipar;
+    }
+    if(option.name == "autoConfigureProcess"){ 
+      autoConfigureProcess = option.defaultValue.get<bool>(); // check if autoconfig requested
+    }
+    // use withPID in case preselection is requested
+    if(option.name == "preSelectOpts.preselectOnlyDesiredV0s" || option.name == "preSelectOpts.preselectOnlyDesiredCascades" ){ 
+      withPID = withPID || option.defaultValue.get<bool>();
+    }
+  }
+
+  // positions of switches known - flip if asked for 
+  if(autoConfigureProcess){ 
+    int relevantProcess = static_cast<int>(isMC) + 2*static_cast<int>(!isRun3)  + 4*static_cast<int>(withPID); 
+    LOGF(info, "Automatic configuration of process switches requested! Bools: isRun3? %i, isMC? %i, withPID? %i (switch #%i)", isRun3, isMC, withPID, relevantProcess);
+    for(size_t idx = 0; idx < 8; idx ++){ 
+      auto option = strangenessBuilderTask.options[idxSwitches[idx]];
+      option.defaultValue = false; // switch all off
+    }
+    strangenessBuilderTask.options[idxSwitches[relevantProcess]].defaultValue = true;
   }
 
   return WorkflowSpec{
