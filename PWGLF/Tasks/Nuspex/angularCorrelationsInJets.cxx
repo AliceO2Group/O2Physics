@@ -597,8 +597,8 @@ struct AngularCorrelationsInJets {
   {
     for (const auto& pair : tempBuffer) { // loop over angles we collected during same-event correlations
       if (static_cast<int>(buffer.size()) == trackBufferSize) {
-        buffer.insert(buffer.begin(), pair); // insert angles at the beginning
-        buffer.resize(trackBufferSize); // trim at the end, down to buffer size
+        buffer.insert(buffer.begin(), pair);                          // insert angles at the beginning
+        buffer.resize(trackBufferSize);                               // trim at the end, down to buffer size
       } else if (static_cast<int>(buffer.size()) < trackBufferSize) { // buffer not full yet
         buffer.emplace_back(pair);
       }
@@ -726,7 +726,7 @@ struct AngularCorrelationsInJets {
         }
       } // for (int j = i + 1; j < static_cast<int>(particleVector.size()); j++)
       fillMixedEventDeltas(particleVector.at(i), buffer, particleType, jetAxis); // do ME distribution of current track vs all tracks in buffer
-      tempBuffer.emplace_back(std::make_pair(phiToAxis, etaToAxis)); // use pair to maintain phi-eta correlation
+      tempBuffer.emplace_back(std::make_pair(phiToAxis, etaToAxis));             // use pair to maintain phi-eta correlation
     } // for (int i = 0; i < static_cast<int>(particleVector.size()); i++)
   }
 
@@ -1052,7 +1052,7 @@ struct AngularCorrelationsInJets {
     std::vector<typename U::iterator> particlesForCF; // particles for full event angular correlations
     jetInput.clear();
     particles.clear();
-    int index = 0; // index attached to input PseudoJets
+    int index = 0;      // index attached to input PseudoJets
     int jetCounter = 0; // how many actual jets in the event
 
     for (const auto& track : tracks) {
@@ -1129,16 +1129,17 @@ struct AngularCorrelationsInJets {
     // untested so far, and the method may need to be rethought, this is the best I could think of
     // useBkgEstimateForUE == true tries to somewhat imitate a seeded anti-kt algorithm centred around the perp cone axis
     // useBkgEstimateForUE == false simply collects all tracks geometrically, with a hard cut at R
-    for (const auto& track : tracks) { // try for first cone
+    for (const auto& track : tracks) {                           // try for first cone
       double uePt = rhoPerp * constants::math::PI * jetR * jetR; // pt = rho_bkg * area
       double trackPt = track.pt();
       if (isProton(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis1.Phi(), 2) + std::pow(track.eta() - ueAxis1.Eta(), 2)) / (jetR * jetR);
-        double dij = useBkgEstimateForUE ? std::min(1/(trackPt * trackPt), 1 / (uePt * uePt)) * geometricDelta : geometricDelta;
+        double dij = useBkgEstimateForUE ? std::min(1 / (trackPt * trackPt), 1 / (uePt * uePt)) * geometricDelta : geometricDelta;
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           protonsUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 1); // see if track ends up in cone 1 or 2
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 1); // see if track ends up in cone 1 or 2
         }
       } else if (isAntiproton(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis1.Phi(), 2) + std::pow(track.eta() - ueAxis1.Eta(), 2)) / (jetR * jetR);
@@ -1146,7 +1147,8 @@ struct AngularCorrelationsInJets {
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           antiprotonsUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 1);
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 1);
         }
       } else if (isPion(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis1.Phi(), 2) + std::pow(track.eta() - ueAxis1.Eta(), 2)) / (jetR * jetR);
@@ -1154,7 +1156,8 @@ struct AngularCorrelationsInJets {
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           track.sign() > 0 ? piPlusUE.emplace_back(track) : piMinusUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 1);
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 1);
         }
       }
     } // for (const auto& track : tracks)
@@ -1166,7 +1169,7 @@ struct AngularCorrelationsInJets {
 
     doCorrelations(protonsUE, fBufferProtonsUE, fTempBufferProtonUE, 5, ueAxis1);
     setTrackBuffer(fTempBufferProtonUE, fBufferProtonsUE);
-    
+
     doCorrelations(antiprotonsUE, fBufferAntiprotonsUE, fTempBufferAntiprotonUE, 6, ueAxis1);
     setTrackBuffer(fTempBufferProtonUE, fBufferAntiprotonsUE);
 
@@ -1185,16 +1188,17 @@ struct AngularCorrelationsInJets {
     fBufferPiPlusUE.clear();
     fBufferPiMinusUE.clear();
 
-    for (const auto& track : tracks) { // try for second cone
+    for (const auto& track : tracks) {                           // try for second cone
       double uePt = rhoPerp * constants::math::PI * jetR * jetR; // pt = rho_bkg * area
       double trackPt = track.pt();
       if (isProton(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis2.Phi(), 2) + std::pow(track.eta() - ueAxis2.Eta(), 2)) / (jetR * jetR);
-        double dij = useBkgEstimateForUE ? std::min(1/(trackPt * trackPt), 1 / (uePt * uePt)) * geometricDelta : geometricDelta;
+        double dij = useBkgEstimateForUE ? std::min(1 / (trackPt * trackPt), 1 / (uePt * uePt)) * geometricDelta : geometricDelta;
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           protonsUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 2); // see if track ends up in cone 1 or 2
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 2); // see if track ends up in cone 1 or 2
         }
       } else if (isAntiproton(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis2.Phi(), 2) + std::pow(track.eta() - ueAxis2.Eta(), 2)) / (jetR * jetR);
@@ -1202,7 +1206,8 @@ struct AngularCorrelationsInJets {
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           antiprotonsUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 2);
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 2);
         }
       } else if (isPion(track)) {
         double geometricDelta = (std::pow(track.phi() - ueAxis2.Phi(), 2) + std::pow(track.eta() - ueAxis2.Eta(), 2)) / (jetR * jetR);
@@ -1210,14 +1215,15 @@ struct AngularCorrelationsInJets {
         double diB = useBkgEstimateForUE ? 1 / (uePt * uePt) : 1;
         if (dij < diB) {
           track.sign() > 0 ? piPlusUE.emplace_back(track) : piMinusUE.emplace_back(track);
-          if (outputQC) registryQC.fill(HIST("whichUECone"), 2);
+          if (outputQC)
+            registryQC.fill(HIST("whichUECone"), 2);
         }
       }
     } // for (const auto& track : tracks)
 
     doCorrelations(protonsUE, fBufferProtonsUE, fTempBufferProtonUE, 5, ueAxis2);
     setTrackBuffer(fTempBufferProtonUE, fBufferProtonsUE);
-    
+
     doCorrelations(antiprotonsUE, fBufferAntiprotonsUE, fTempBufferAntiprotonUE, 6, ueAxis2);
     setTrackBuffer(fTempBufferProtonUE, fBufferAntiprotonsUE);
 
@@ -1227,9 +1233,6 @@ struct AngularCorrelationsInJets {
     doCorrelations(piMinusUE, fBufferPiMinusUE, fTempBufferPiMinusUE, 7, ueAxis2);
     setTrackBuffer(fTempBufferProtonUE, fBufferPiMinusUE);
   }
-
-
-
 
   // this may need to be reworked, it hasn't really been tested yet
   // so far it does almost the same as fillHistograms without correlations but including MCgen tracks
