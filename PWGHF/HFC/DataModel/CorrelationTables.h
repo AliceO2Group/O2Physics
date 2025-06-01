@@ -217,7 +217,7 @@ DECLARE_SOA_TABLE(TrkRecInfoLc, "AOD", "TRKRECINFOLC", //! Tracks Reconstructed 
                   aod::hf_correlation_lc_hadron::TrackDcaXY,
                   aod::hf_correlation_lc_hadron::TrackDcaZ,
                   aod::hf_correlation_lc_hadron::TrackTPCNClsCrossedRows);
-                  
+
 DECLARE_SOA_TABLE(LcHadronPairY, "AOD", "LCHPAIRY",
                   aod::hf_correlation_lc_hadron::DeltaY);
 DECLARE_SOA_TABLE(CandChargePair, "AOD", "CANDCHARGEPAIR",
