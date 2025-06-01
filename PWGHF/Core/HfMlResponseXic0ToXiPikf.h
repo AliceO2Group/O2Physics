@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file HfMlResponseXic0ToXiPikf.h
-/// \brief Class to compute the ML response for Ξc^0 → Ξ∓ π± analysis selections
+/// \brief Class to compute the ML response for Ξc^0 → Ξ∓ π± kf analysis selections
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
 #ifndef PWGHF_CORE_HFMLRESPONSEXIC0TOXIPIKF_H_
