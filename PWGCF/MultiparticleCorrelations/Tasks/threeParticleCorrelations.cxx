@@ -49,7 +49,7 @@ struct ThreeParticleCorrelations {
   float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
   float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
 
-  float dEtaMin = 0.02, dPhiStarMin = 0.1;
+  float dEtaMin = 0.05, dPhiStarMin = 0.11;
   float rMin = 0.8, rMax = 2.5;
 
   // Lambda invariant mass fit
@@ -202,14 +202,23 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hInvMassAntiLambda_MC", "hInvMassAntiLambda_MC", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
 
     // PhiStar
-    rPhiStarRegistry.add("hSEProtonPreCut_OS", "hSEProtonPreCut_OS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hSEProtonPreCut_SS", "hSEProtonPreCut_SS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hSEProtonPostCut_OS", "hSEProtonPostCut_OS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hSEProtonPostCut_SS", "hSEProtonPostCut_SS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPreCut_OS", "hMEProtonPreCut_OS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPreCut_SS", "hMEProtonPreCut_SS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPostCut_OS", "hMEProtonPostCut_OS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
-    rPhiStarRegistry.add("hMEProtonPostCut_SS", "hMEProtonPostCut_SS", {HistType::kTH2D, {{80, -0.2, 0.2}, {40, -0.1, 0.1}}});
+    rPhiStarRegistry.add("hSEProtonPreCut_OS", "hSEProtonPreCut_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPreCut_SS", "hSEProtonPreCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPreCut_SSP", "hSEProtonPreCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPreCut_SSN", "hSEProtonPreCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPostCut_OS", "hSEProtonPostCut_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPostCut_SS", "hSEProtonPostCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPostCut_SSP", "hSEProtonPostCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hSEProtonPostCut_SSN", "hSEProtonPostCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+
+    rPhiStarRegistry.add("hMEProtonPreCut_OS", "hMEProtonPreCut_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPreCut_SS", "hMEProtonPreCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPreCut_SSP", "hMEProtonPreCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPreCut_SSN", "hMEProtonPreCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPostCut_OS", "hMEProtonPostCut_OS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPostCut_SS", "hMEProtonPostCut_SS", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPostCut_SSP", "hMEProtonPostCut_SSP", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
+    rPhiStarRegistry.add("hMEProtonPostCut_SSN", "hMEProtonPostCut_SSN", {HistType::kTH2D, {{121, -0.3025, 0.3025}, {101, -0.0505, 0.0505}}});
 
     // Efficiency
     rMCRegistry.add("hGenerated", "hGenerated", {HistType::kTH3D, {{trackPtAxis}, {trackEtaAxis}, {centralityAxis}}});
@@ -1089,6 +1098,11 @@ struct ThreeParticleCorrelations {
               rPhiStarRegistry.fill(HIST("hSEProtonPreCut_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEProtonPreCut_SS"), dPhiStar, dEta);
+              if (proton.sign() == 1) { // Positive
+                rPhiStarRegistry.fill(HIST("hSEProtonPreCut_SSP"), dPhiStar, dEta);
+              } else if (proton.sign() == -1) { // Negative
+                rPhiStarRegistry.fill(HIST("hSEProtonPreCut_SSN"), dPhiStar, dEta);
+              }
             }
 
           } else {                                    // Mixed-event
@@ -1096,6 +1110,11 @@ struct ThreeParticleCorrelations {
               rPhiStarRegistry.fill(HIST("hMEProtonPreCut_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
               rPhiStarRegistry.fill(HIST("hMEProtonPreCut_SS"), dPhiStar, dEta);
+              if (proton.sign() == 1) { // Positive
+                rPhiStarRegistry.fill(HIST("hMEProtonPreCut_SSP"), dPhiStar, dEta);
+              } else if (proton.sign() == -1) { // Negative
+                rPhiStarRegistry.fill(HIST("hMEProtonPreCut_SSN"), dPhiStar, dEta);
+              }
             }
           }
         }
@@ -1110,6 +1129,11 @@ struct ThreeParticleCorrelations {
               rPhiStarRegistry.fill(HIST("hSEProtonPostCut_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
               rPhiStarRegistry.fill(HIST("hSEProtonPostCut_SS"), dPhiStar, dEta);
+              if (proton.sign() == 1) { // Positive
+                rPhiStarRegistry.fill(HIST("hSEProtonPostCut_SSP"), dPhiStar, dEta);
+              } else if (proton.sign() == -1) { // Negative
+                rPhiStarRegistry.fill(HIST("hSEProtonPostCut_SSN"), dPhiStar, dEta);
+              }
             }
 
           } else {                                    // Mixed-event
@@ -1117,6 +1141,11 @@ struct ThreeParticleCorrelations {
               rPhiStarRegistry.fill(HIST("hMEProtonPostCut_OS"), dPhiStar, dEta);
             } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
               rPhiStarRegistry.fill(HIST("hMEProtonPostCut_SS"), dPhiStar, dEta);
+              if (proton.sign() == 1) { // Positive
+                rPhiStarRegistry.fill(HIST("hMEProtonPostCut_SSP"), dPhiStar, dEta);
+              } else if (proton.sign() == -1) { // Negative
+                rPhiStarRegistry.fill(HIST("hMEProtonPostCut_SSN"), dPhiStar, dEta);
+              }
             }
           }
         }
