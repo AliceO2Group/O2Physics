@@ -95,7 +95,6 @@ struct UccZdc {
   Configurable<float> evtFracMCcl{"evtFracMCcl", 0.5, "fraction of events for MC closure"};
 
   // Track-kinematics selection
-  Configurable<int> itsRequirement{"itsRequirement", TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, "0: Global Tracks, 2: Hits in the 7 ITS layers"};
   Configurable<float> minPt{"minPt", 0.1, "minimum pt of the tracks"};
   Configurable<float> maxPt{"maxPt", 50., "maximum pt of the tracks"};
   Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
