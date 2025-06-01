@@ -16,7 +16,7 @@
 #ifndef PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
 #define PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
 
 namespace o2::aod
 {

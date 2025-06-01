@@ -148,6 +148,10 @@ auto calculateEfficiencyCorrection(const fs::path& resultsPath, const fs::path& 
   histWeights->Reset();
   setAxisTitles(histWeights, projection);
 
+  auto* histCont{cloneHistogram(histPrimary, "hCont")};
+  histCont->Reset();
+  setAxisTitles(histCont, projection);
+
   forEachBin(histPrimary, [&](int x, int y, int z) {
     auto primVal{histPrimary->GetBinContent(x, y, z)};
     auto primErr{histPrimary->GetBinError(x, y, z)};
@@ -178,6 +182,9 @@ auto calculateEfficiencyCorrection(const fs::path& resultsPath, const fs::path& 
       contErr = std::sqrt(std::pow(secErr / totalVal, 2) + std::pow((secVal * totalErr / std::pow(totalVal, 2)), 2));
     }
 
+    histCont->SetBinContent(x, y, z, contVal);
+    histCont->SetBinError(x, y, z, contErr);
+
     auto weightVal{0.};
     auto weightErr{0.};
     if (effVal > 0) {
@@ -190,6 +197,7 @@ auto calculateEfficiencyCorrection(const fs::path& resultsPath, const fs::path& 
   });
 
   outputFile->WriteTObject(histEfficiency);
+  outputFile->WriteTObject(histCont);
   outputFile->WriteTObject(histWeights);
 
   outputFile->Close();

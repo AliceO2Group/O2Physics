@@ -20,6 +20,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 // #include "PWGHF/DataModel/CandidateReconstructionTables.h"

@@ -16,6 +16,9 @@
 
 #include <fairlogger/Logger.h>
 #include <tuple>
+#include <string>
+#include <vector>
+#include "Math/Vector2D.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "Math/GenVector/Boost.h"
@@ -45,11 +48,22 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
 
 struct LfTaskLambdaSpinCorr {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
   // mixing
+  Configurable<int> mixingCombination{"mixingCombination", 1, "mixing Combination"};
+  Configurable<bool> mixingEvSel{"mixingEvSel", false, "mixingEvSel"};
+  Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
   ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
   Configurable<int> nMix{"nMix", 5, "number of event mixing"};
@@ -59,6 +73,8 @@ struct LfTaskLambdaSpinCorr {
   // fill output
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
+  Configurable<bool> additionalEvSel4{"additionalEvSel4", false, "additionalEvSel4"};
+  Configurable<bool> additionalEvSel5{"additionalEvSel5", false, "additionalEvSel5"};
   Configurable<bool> fillGEN{"fillGEN", false, "filling generated histograms"};
   Configurable<bool> fillQA{"fillQA", false, "filling QA histograms"};
 
@@ -103,14 +119,17 @@ struct LfTaskLambdaSpinCorr {
   ConfigurableAxis configthnAxisPol{"configthnAxisPol", {VARIABLE_WIDTH, -1.0, -0.6, -0.2, 0, 0.2, 0.4, 0.8}, "Pol"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  RCTFlagsChecker rctChecker;
   void init(o2::framework::InitContext&)
   {
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     AxisSpec thnAxisInvMass{iMNbins, lbinIM, hbinIM, "#it{M} (GeV/#it{c}^{2})"};
     AxisSpec thnAxisInvMasspair{iMNbinspair, lbinIMpair, hbinIMpair, "#it{M} (GeV/#it{c}^{2})"};
-
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
+    histos.add("hPtDiff", "hPtDiff", kTH1F, {{1000, 0, 100.0}});
+    histos.add("hRDiff", "hRDiff", kTH1F, {{640, 0, 16.0}});
+    histos.add("hv0Mult", "hv0Mult", kTH1F, {{10001, -0.5, 10000.5}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
-
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
@@ -237,8 +256,10 @@ struct LfTaskLambdaSpinCorr {
                       double centrality, int datatype)
   {
 
-    auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
-    auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
+    // auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), 1.115683);
+    // auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), 1.115683);
+    auto particle1Dummy = ROOT::Math::PxPyPzMVector(particle1.Px(), particle1.Py(), particle1.Pz(), particle1.M());
+    auto particle2Dummy = ROOT::Math::PxPyPzMVector(particle2.Px(), particle2.Py(), particle2.Pz(), particle2.M());
     auto pairDummy = particle1Dummy + particle2Dummy;
 
     // auto pairParticle = particle1 + particle2;
@@ -395,17 +416,37 @@ struct LfTaskLambdaSpinCorr {
 
   void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& /*tracks*/, ResoV0s const& V0s)
   {
+    histos.fill(HIST("hEvtSelInfo"), 0.5);
+    if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 1.5);
     if (!collision.sel8()) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
     auto centrality = collision.centFT0C();
+    int occupancy = collision.trackOccupancyInTimeRange();
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
-
+    histos.fill(HIST("hEvtSelInfo"), 3.5);
     if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
+    histos.fill(HIST("hEvtSelInfo"), 4.5);
+    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 5.5);
+    if (additionalEvSel5 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 6.5);
+    if (occupancy > cfgCutOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEvtSelInfo"), 7.5);
     histos.fill(HIST("hCentrality"), centrality);
     for (const auto& v0 : V0s) {
       auto [lambdaTag, aLambdaTag, isValid] = getLambdaTags(v0, collision);
@@ -482,6 +523,14 @@ struct LfTaskLambdaSpinCorr {
   {
     for (auto& [collision1, collision2] : selfCombinations(colBinning, nMix, -1, collisions, collisions)) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision1)) {
+        continue;
+      }
+      if (rctCut.requireRCTFlagChecker && !rctChecker(collision2)) {
+        continue;
+      }
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
 
       if (collision1.index() == collision2.index()) {
         continue;
@@ -492,26 +541,53 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
-      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (occupancy1 > cfgCutOccupancy) {
         continue;
       }
       if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
+      if (occupancy2 > cfgCutOccupancy) {
+        continue;
+      }
+
+      if (additionalEvSel3 && (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (mixingEvSel && additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       if (additionalEvSel3 && (!collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
+      if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (mixingEvSel && additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+
       auto centrality = collision1.centFT0C();
       auto groupV01 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       auto groupV02 = V0s.sliceBy(tracksPerCollisionV0, collision1.globalIndex());
       auto groupV03 = V0s.sliceBy(tracksPerCollisionV0, collision2.globalIndex());
       // for (auto& [t1, t2, t3] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02, groupV03))) {
       // LOGF(info, "Mixed event collisions: (%d, %d, %d)", t1.collisionId(),t2.collisionId(),t3.collisionId());
-      auto maxV0Size = 1100;
-      if (groupV01.size() > maxV0Size || groupV02.size() > maxV0Size || groupV03.size() > maxV0Size) {
-        continue;
-      }
-      bool pairStatus[1150][1150] = {{false}};
+
+      // auto maxV0Size = 1400;
+      // if (groupV01.size() > maxV0Size || groupV02.size() > maxV0Size || groupV03.size() > maxV0Size) {
+      //  continue;
+      // }
+      // bool pairStatus[1500][1500] = {{false}};
+
+      size_t rows = groupV03.size() + 20;
+      size_t cols = groupV01.size() + 20;
+      std::vector<std::vector<bool>> pairStatus(rows, std::vector<bool>(cols, false));
+      histos.fill(HIST("hv0Mult"), groupV01.size());
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {
         bool pairfound = false;
         if (t2.index() <= t1.index()) {
@@ -542,9 +618,14 @@ struct LfTaskLambdaSpinCorr {
         if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
           continue;
         }
+        auto samePairSumPt = t1.pt() + t2.pt();
+        auto samePairR = TMath::Sqrt(TMath::Power(t1.phi() - t2.phi(), 2.0) + TMath::Power(t1.eta() - t2.eta(), 2.0));
         for (const auto& t3 : groupV03) {
+          // if (pairStatus[t3.index()][t2.index()]) {
+          // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
+          // continue;
+          // }
           if (pairStatus[t3.index()][t2.index()]) {
-            // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
             continue;
           }
           if (t1.collisionId() == t3.collisionId()) {
@@ -560,13 +641,33 @@ struct LfTaskLambdaSpinCorr {
           if (lambdaTag1 != lambdaTag3 || aLambdaTag1 != aLambdaTag3) {
             continue;
           }
-          if (std::abs(t1.pt() - t3.pt()) > ptMix) {
+          // if (std::abs(t1.pt() - t3.pt()) > ptMix) {
+          // continue;
+          // }
+          // if (std::abs(t1.eta() - t3.eta()) > etaMix) {
+          // continue;
+          // }
+          // if (std::abs(t1.phi() - t3.phi()) > phiMix) {
+          // continue;
+          // }
+          auto mixPairSumPt = t3.pt() + t2.pt();
+          auto mixPairR = TMath::Sqrt(TMath::Power(t3.phi() - t2.phi(), 2.0) + TMath::Power(t3.eta() - t2.eta(), 2.0));
+          histos.fill(HIST("hPtDiff"), TMath::Abs(mixPairSumPt - samePairSumPt));
+          histos.fill(HIST("hRDiff"), TMath::Abs(mixPairR - samePairR));
+          if (mixingCombination == 0 && std::abs(t1.pt() - t3.pt()) > ptMix) {
             continue;
           }
-          if (std::abs(t1.eta() - t3.eta()) > etaMix) {
+          if (mixingCombination == 0 && std::abs(t1.eta() - t3.eta()) > etaMix) {
             continue;
           }
-          if (std::abs(t1.phi() - t3.phi()) > phiMix) {
+          if (mixingCombination == 0 && std::abs(t1.phi() - t3.phi()) > phiMix) {
+            continue;
+          }
+
+          if (mixingCombination == 1 && std::abs(mixPairSumPt - samePairSumPt) > ptMix) {
+            continue;
+          }
+          if (mixingCombination == 1 && std::abs(mixPairR - samePairR) > etaMix) {
             continue;
           }
           if (lambdaTag2) {
@@ -591,17 +692,17 @@ struct LfTaskLambdaSpinCorr {
           }
           if (lambdaTag2 && lambdaTag3) {
             fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 2);
-          }
-          if (aLambdaTag2 && aLambdaTag3) {
+          } else if (aLambdaTag2 && aLambdaTag3) {
             fillHistograms(0, 1, 0, 1, antiLambda, antiLambda2, antiProton, antiProton2, centrality, 2);
-          }
-          if (lambdaTag2 && aLambdaTag3) {
+          } else if (lambdaTag2 && aLambdaTag3) {
             fillHistograms(1, 0, 0, 1, lambda, antiLambda2, proton, antiProton2, centrality, 2);
-          }
-          if (aLambdaTag2 && lambdaTag3) {
+          } else if (aLambdaTag2 && lambdaTag3) {
             fillHistograms(0, 1, 1, 0, antiLambda, lambda2, antiProton, proton2, centrality, 2);
+          } else {
+            continue;
           }
           pairfound = true;
+          // pairStatus[t3.index()][t2.index()] = true;
           pairStatus[t3.index()][t2.index()] = true;
           // LOGF(info, "v0 id: (%d, %d)", t3.index(), t2.index());
           if (pairfound) {

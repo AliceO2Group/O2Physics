@@ -1007,13 +1007,21 @@ struct nucleiSpectra {
           if (particle.y() > cfgCutRapidityMin && particle.y() < cfgCutRapidityMax) {
             nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
           }
-        } else {
-          continue; /// for not-reconstructed particles we store only the primaries
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           float absDecL = computeAbsoDecL(particle);
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), 0, goodCollisions[particle.mcCollisionId()], absDecL);
+          int motherPdgCode = 0;
+          if (particle.has_mothers()) {
+            for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+              if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                flags |= kIsSecondaryFromWeakDecay;
+                motherPdgCode = motherparticle.pdgCode();
+                break;
+              }
+            }
+          }
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, goodCollisions[particle.mcCollisionId()], absDecL);
         }
         break;
       }

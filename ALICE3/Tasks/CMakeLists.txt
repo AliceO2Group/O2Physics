@@ -39,6 +39,11 @@ o2physics_add_dpl_workflow(alice3-pid-ftof-qa
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-pid-separation-power
+                    SOURCES alice3SeparationPower.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-cdeuteron
                     SOURCES alice3-cdeuteron.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -51,5 +56,10 @@ o2physics_add_dpl_workflow(alice3-dilepton
 
 o2physics_add_dpl_workflow(alice3-taskcorrelationddbar
                     SOURCES alice3-taskcorrelationDDbar.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(alice3-efficiency
+                    SOURCES alice3Efficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

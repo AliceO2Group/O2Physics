@@ -641,6 +641,47 @@ DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::Glo
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
+// Dummy data for MC
+namespace emdummydata
+{
+DECLARE_SOA_COLUMN(A, a, float);
+DECLARE_SOA_COLUMN(B, b, float);
+DECLARE_SOA_COLUMN(C, c, float);
+DECLARE_SOA_COLUMN(D, d, float);
+DECLARE_SOA_COLUMN(E, e, float);
+DECLARE_SOA_COLUMN(F, f, float);
+DECLARE_SOA_COLUMN(G, g, float);
+DECLARE_SOA_COLUMN(H, h, float);
+DECLARE_SOA_COLUMN(I, i, float);
+DECLARE_SOA_COLUMN(J, j, float);
+DECLARE_SOA_COLUMN(K, k, float);
+DECLARE_SOA_COLUMN(L, l, float);
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(N, n, float);
+DECLARE_SOA_COLUMN(O, o, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Q, q, float);
+DECLARE_SOA_COLUMN(R, r, float);
+DECLARE_SOA_COLUMN(S, s, float);
+DECLARE_SOA_COLUMN(T, t, float);
+DECLARE_SOA_COLUMN(U, u, float);
+DECLARE_SOA_COLUMN(V, v, float);
+DECLARE_SOA_COLUMN(W, w, float);
+DECLARE_SOA_COLUMN(X, x, float);
+DECLARE_SOA_COLUMN(Y, y, float);
+DECLARE_SOA_COLUMN(Z, z, float);
+} // namespace emdummydata
+DECLARE_SOA_TABLE(EMDummyDatas, "AOD", "EMDUMMYDATA",
+                  o2::soa::Index<>,
+                  emdummydata::A, emdummydata::B, emdummydata::C, emdummydata::D, emdummydata::E,
+                  emdummydata::F, emdummydata::G, emdummydata::H, emdummydata::I, emdummydata::J,
+                  emdummydata::K, emdummydata::L, emdummydata::M, emdummydata::N, emdummydata::O,
+                  emdummydata::P, emdummydata::Q, emdummydata::R, emdummydata::S, emdummydata::T,
+                  emdummydata::U, emdummydata::V, emdummydata::W, emdummydata::X, emdummydata::Y,
+                  emdummydata::Z);
+
+// iterators
+using EMDummyData = EMDummyDatas::iterator;
 } // namespace o2::aod
 
 #endif // PWGEM_DILEPTON_DATAMODEL_DILEPTONTABLES_H_
