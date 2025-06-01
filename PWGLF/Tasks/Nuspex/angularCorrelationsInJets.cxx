@@ -19,6 +19,7 @@
 #include <map>
 #include <string>
 #include <random>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
