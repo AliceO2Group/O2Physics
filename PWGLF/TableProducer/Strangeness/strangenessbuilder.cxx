@@ -302,7 +302,7 @@ struct StrangenessBuilder {
   Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
 
   // Autoconfigure process functions
-  Configurable<bool> autoConfigureProcess{"autoConfigureProcess", true, "if true, will configure process function switches based on metadata"};
+  Configurable<bool> autoConfigureProcess{"autoConfigureProcess", false, "if true, will configure process function switches based on metadata"};
 
   // V0 building options
   struct : ConfigurableGroup {
@@ -2712,9 +2712,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       withPID = withPID || option.defaultValue.get<bool>();
     }
   }
-  // if((!hasRunInfo || !hasDataTypeInfo) && autoConfigureProcessConfig){ 
-  //   throw std::runtime_error("Autoconfigure requested but no metadata information found! Please check if --aod-file <file> was used in the last workflow added in the execution and if the AO2D in question has metadata save.");
-  // }
+  if((!hasRunInfo || !hasDataTypeInfo) && autoConfigureProcessConfig){ 
+    throw std::runtime_error("Autoconfigure requested but no metadata information found! Please check if --aod-file <file> was used in the last workflow added in the execution and if the AO2D in question has metadata save.");
+  }
 
   // positions of switches are known. Next: flip if asked for 
   if(autoConfigureProcessConfig){ 
