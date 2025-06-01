@@ -262,7 +262,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Preslice<SelectedCandidatesMl> candsD0PerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   // Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-  std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc;
+  std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc, hCandidatesDD;
   HistogramRegistry registry{"registry"};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "Tcc candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "Tcc candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
@@ -370,6 +370,9 @@ struct HfTreeCreatorTccToD0D0Pi {
         dfD1.setBz(bz);
         dfD2.setBz(bz);
       }
+
+      o2::dataformats::V0 trackD1;
+      o2::dataformats::V0 trackD2;
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       if (candwD0ThisColl.size() <= 1)
@@ -431,7 +434,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
 
             // build a D1 neutral track
-            auto trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
+            trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
 
             auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
             auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
@@ -463,7 +466,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
             trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
             // build a D2 neutral track
-            auto trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
+            trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
 
             hCandidatesDD->Fill(SVFitting::BeforeFit);
             try {
