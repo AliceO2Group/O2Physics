@@ -48,6 +48,25 @@ struct Cascqaanalysis {
 
   HistogramRegistry registry{"registry"};
 
+  // Axes
+  ConfigurableAxis ptAxis{"ptAxis", {200, 0.0f, 10.0f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis rapidityAxis{"rapidityAxis", {200, -2.0f, 2.0f}, "y"};
+  ConfigurableAxis centFT0MAxis{"centFT0MAxis",
+                                {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
+                                "FT0M (%)"};
+  ConfigurableAxis centFV0AAxis{"centFV0AAxis",
+                                {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
+                                "FV0A (%)"};
+  ConfigurableAxis eventTypeAxis{"eventTypeAxis", {3, -0.5f, 2.5f}, "Event Type"};
+
+  ConfigurableAxis nAssocCollAxis{"nAssocCollAxis", {5, -0.5f, 4.5f}, "N_{assoc.}"};
+  ConfigurableAxis nChargedFT0MGenAxis{"nChargedFT0MGenAxis", {300, 0, 300}, "N_{FT0M, gen.}"};
+  ConfigurableAxis nChargedFV0AGenAxis{"nChargedFV0AGenAxis", {300, 0, 300}, "N_{FV0A, gen.}"};
+  ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
+  ConfigurableAxis signalFT0MAxis{"signalFT0MAxis", {10000, 0, 40000}, "FT0M amplitude"};
+  ConfigurableAxis signalFV0AAxis{"signalFV0AAxis", {10000, 0, 40000}, "FV0A amplitude"};
+  ConfigurableAxis nCandidates{"nCandidates", {30, -0.5, 29.5}, "N_{cand.}"};
+
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> isVertexITSTPC{"isVertexITSTPC", 0, "Select collisions with at least one ITS-TPC track"};
@@ -98,74 +117,57 @@ struct Cascqaanalysis {
 
   void init(InitContext const&)
   {
-    AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-    ConfigurableAxis centFT0MAxis{"centFT0MAxis",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
-                                  "FT0M (%)"};
-    ConfigurableAxis centFV0AAxis{"centFV0AAxis",
-                                  {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
-                                  "FV0A (%)"};
-    AxisSpec eventTypeAxis = {3, -0.5f, 2.5f, "Event Type"};
-    AxisSpec nAssocCollAxis = {5, -0.5f, 4.5f, "N_{assoc.}"};
-    AxisSpec nChargedFT0MGenAxis = {500, 0, 500, "N_{FT0M, gen.}"};
-    AxisSpec nChargedFV0AGenAxis = {500, 0, 500, "N_{FV0A, gen.}"};
-    AxisSpec multNTracksAxis = {500, 0, 500, "N_{tracks}"};
-    AxisSpec signalFT0MAxis = {10000, 0, 40000, "FT0M amplitude"};
-    AxisSpec signalFV0AAxis = {10000, 0, 40000, "FV0A amplitude"};
-    AxisSpec nCandidates = {30, -0.5, 29.5, "N_{cand.}"};
-
     TString hCandidateCounterLabels[4] = {"All candidates", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
     TString hNEventsLabels[13] = {"All", "kIsTriggerTVX", "kNoTimeFrameBorder", "kNoITSROFrameBorder", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "isVertexTOFmatched", "kNoCollInTimeRangeNarrow", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{13, 0.f, 13.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{13, 0.f, 13.f}}});
 
     for (int n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
-    registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
+    registry.add("hZCollision", "hZCollision", {HistType::kTH1D, {{200, -20.f, 20.f}}});
 
-    registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}});
+    registry.add("hCandidateCounter", "hCandidateCounter", {HistType::kTH1D, {{4, 0.0f, 4.0f}}});
     for (int n = 1; n <= registry.get<TH1>(HIST("hCandidateCounter"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hCandidateCounter"))->GetXaxis()->SetBinLabel(n, hCandidateCounterLabels[n - 1]);
     }
     if (isMC) {
       // Rec. lvl
       registry.add("fakeEvents", "fakeEvents", {HistType::kTH1F, {{1, -0.5f, 0.5f}}});
-      registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{6, 0.0f, 6.0f}}});
       for (int n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
-      registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
-      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
-      registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3F, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
+      registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1D, {{200, -20.f, 20.f}}});
+      registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
+      registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
       registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
-      registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2F, {nChargedFT0MGenAxis, eventTypeAxis}});
-      registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2F, {nChargedFV0AGenAxis, eventTypeAxis}});
-      registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2F, {centFT0MAxis, eventTypeAxis}});
+      registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2D, {nChargedFT0MGenAxis, eventTypeAxis}});
+      registry.add("hNchFV0AGenEvType", "hNchFV0AGenEvType", {HistType::kTH2D, {nChargedFV0AGenAxis, eventTypeAxis}});
+      registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
     }
 
-    registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2F, {centFT0MAxis, eventTypeAxis}});
+    registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
 
     if (candidateQA) {
-      registry.add("hNcandidates", "hNcandidates", {HistType::kTH3F, {nCandidates, centFT0MAxis, {2, -0.5f, 1.5f}}});
+      registry.add("hNcandidates", "hNcandidates", {HistType::kTH3D, {nCandidates, centFT0MAxis, {2, -0.5f, 1.5f}}});
     }
 
     if (multQA) {
       if (isMC) {
         // Rec. lvl
-        registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+        registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+        registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
+        registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3D, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       }
-      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3F, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3F, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
-      registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3F, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
-      registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2F, {signalFT0MAxis, signalFV0AAxis}});
-      registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3F, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFT0MpvContr", "hFT0MpvContr", {HistType::kTH3D, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFV0ApvContr", "hFV0ApvContr", {HistType::kTH3D, {centFV0AAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFT0Mglobal", "hFT0Mglobal", {HistType::kTH3D, {centFT0MAxis, multNTracksAxis, eventTypeAxis}});
+      registry.add("hFV0AFT0M", "hFV0AFT0M", {HistType::kTH3D, {centFV0AAxis, centFT0MAxis, eventTypeAxis}});
+      registry.add("hFT0MFV0Asignal", "hFT0MFV0Asignal", {HistType::kTH2D, {signalFT0MAxis, signalFV0AAxis}});
+      registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
   }
 

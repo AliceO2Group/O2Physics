@@ -69,7 +69,7 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
 using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
+using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes>;
 
 struct alice3multicharm {
   SliceCache cache;
@@ -89,6 +89,8 @@ struct alice3multicharm {
   Configurable<float> piFromXiC_dcaZconstant{"piFromXiC_dcaZconstant", 0.001f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromXiC_dcaXYpTdep{"piFromXiC_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromXiC_dcaZpTdep{"piFromXiC_dcaZpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+  Configurable<float> piFromXiC_tofDiffInner{"piFromXiC_tofDiffInner", 50, "|signal - expected| (ps)"};
+  Configurable<float> piFromXiCC_tofDiffInner{"piFromXiCC_tofDiffInner", 50, "|signal - expected| (ps)"};
   Configurable<float> piFromXiCC_dcaXYconstant{"piFromXiCC_dcaXYconstant", 0.001f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromXiCC_dcaZconstant{"piFromXiCC_dcaZconstant", 0.001f, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piFromXiCC_dcaXYpTdep{"piFromXiCC_dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
@@ -107,22 +109,30 @@ struct alice3multicharm {
   Configurable<float> minPiCCPt{"minPiCCPt", 0.3, "Minimum pT for XiCC pions"};
   Configurable<float> minNTracks{"minNTracks", -1, "Minimum number of tracks"};
 
+  Configurable<float> minXiRadius{"minXiRadius", 0.5, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> minXiCRadius{"minXiCRadius", 0.001, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> minXiCCRadius{"minXiCCRadius", 0.005, "Minimum R2D for XiCC decay (cm)"};
+  Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", 0.002, "Minimum distance for XiC decay from PV (cm)"};
   Configurable<float> xicMinProperLength{"xicMinProperLength", 0.002, "Minimum proper length for XiC decay (cm)"};
   Configurable<float> xicMaxProperLength{"xicMaxProperLength", 0.06, "Minimum proper length for XiC decay (cm)"};
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", 0.004, "Minimum proper length for XiCC decay (cm)"};
   Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 999, "Minimum proper length for XiCC decay (cm)"};
-  Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak"};
-  Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak"};
+  Configurable<float> xiccMaxEta{"xiccMaxEta", 1.5, "Max eta"};
+  Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak (GeV/c)"};
+  Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak (GeV/c)"};
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
-  ConfigurableAxis axisDCA2d{"axisDCA2d", {400, -200, 200}, "DCA2d (#mum)"};
-  ConfigurableAxis axisDCA{"axisDCA", {200, 0, 200}, "DCA (#mum)"};
-  ConfigurableAxis axisRadius{"axisRadius", {1000, 0, 1000}, "Decay radius (#mum)"};
+  ConfigurableAxis axisDCA2D{"axisDCA2D", {400, -200, 200}, "DCA2d (#mum)"};
+  ConfigurableAxis axisDCA{"axisDCA", {400, 0, 400}, "DCA (#mum)"};
+  ConfigurableAxis axisRadius{"axisRadius", {10000, 0, 10000}, "Decay radius (#mum)"};
+  ConfigurableAxis axisRadius2D{"axisRadius2D", {1000, 0, 100000}, "Decay radius (#mum)"};
+  ConfigurableAxis axisRadius2DXi{"axisRadius2DXi", {1000, 0, 20}, "Decay radius (cm)"};
   ConfigurableAxis axisDecayLength{"axisDecayLength", {2000, 0, 2000}, "Decay lenght (#mum)"};
+  ConfigurableAxis axisTOFTrack{"axisTOFTrack", {1000, 0, 5000}, "TOF track time"};
 
+  ConfigurableAxis axisPiMass{"axisPiMass", {200, 0.089f, 0.189f}, "Pi Inv Mass (GeV/c^{2})"};
+  ConfigurableAxis axisPrMass{"axisPrMass", {200, 0.838f, 1.038f}, "Pr Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.221f, 1.421f}, "Xi Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCMass{"axisXiCMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiCCMass{"axisXiCCMass", {200, 3.521f, 3.721f}, "XiCC Inv Mass (GeV/c^{2})"};
@@ -404,7 +414,15 @@ struct alice3multicharm {
 
     histos.add("hEtaXiCC", "hEtaXiCC", kTH1D, {axisEta});
     histos.add("hPtXiCC", "hPtXiCC", kTH1D, {axisPt});
-    histos.add("h3dMassXiCC", "h3dMassXiCC", kTH3D, {axisPt, axisEta, axisXiCCMass});
+    histos.add("h3dXicc", "h3dXicc", kTH3D, {axisPt, axisEta, axisXiCCMass});
+    histos.add("h3dXic", "h3dXic", kTH3D, {axisPt, axisEta, axisXiCMass});
+    histos.add("h3dXi", "h3dXi", kTH3D, {axisPt, axisEta, axisXiMass});
+    histos.add("h3dPicc", "h3dPicc", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPi1c", "h3dPi1c", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPi2c", "h3dPi2c", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dBach", "h3dBach", kTH3D, {axisPt, axisEta, axisPiMass});
+    histos.add("h3dPos", "h3dPos", kTH3D, {axisPt, axisEta, axisPrMass});
+    histos.add("h3dNeg", "h3dNeg", kTH3D, {axisPt, axisEta, axisPiMass});
 
     histos.add("hDCAXiCDaughters", "hDCAXiCDaughters", kTH1D, {axisDCAXiCDaughters});
     histos.add("hDCAXiCCDaughters", "hDCAXiCCDaughters", kTH1D, {axisDCAXiCCDaughters});
@@ -421,11 +439,20 @@ struct alice3multicharm {
     histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
     histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
 
+    histos.add("hMinXiDecayRadius", "hMinXiDecayRadius", kTH1D, {axisRadius2DXi});
     histos.add("hMinXiCDecayRadius", "hMinXiCDecayRadius", kTH1D, {axisRadius});
     histos.add("hMinXiCCDecayRadius", "hMinXiCCDecayRadius", kTH1D, {axisRadius});
 
+    histos.add("hMinxicDecayDistanceFromPV", "hMinxicDecayDistanceFromPV", kTH1D, {axisDecayLength});
     histos.add("hProperLengthXiC", "hProperLengthXiC", kTH1D, {axisDecayLength});
     histos.add("hProperLengthXiCC", "hProperLengthXiCC", kTH1D, {axisDecayLength});
+
+    histos.add("hInnerTOFTrackTimeRecoPi1c", "hInnerTOFTrackTimeRecoPi1c", kTH1D, {axisTOFTrack});
+    histos.add("hInnerTOFTrackTimeRecoPi2c", "hInnerTOFTrackTimeRecoPi2c", kTH1D, {axisTOFTrack});
+    histos.add("hInnerTOFTrackTimeRecoPicc", "hInnerTOFTrackTimeRecoPicc", kTH1D, {axisTOFTrack});
+
+    histos.add("hXiRadiusVsXicRadius", "hXiRadiusVsXicRadius", kTH2D, {axisRadius2D, axisRadius2D});
+    histos.add("hXicRadiusVsXiccRadius", "hXicRadiusVsXiccRadius", kTH2D, {axisRadius2D, axisRadius2D});
 
     // These histograms bookkeep the exact number of combinations attempted
     // CombinationsXiC: triplets Xi-pi-pi considered per Xi
@@ -436,9 +463,9 @@ struct alice3multicharm {
     histos.add("hNTracks", "hNTracks", kTH1D, {{20000, 0, 20000}});
 
     if (doDCAplots) {
-      histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA2d});
-      histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2D, {axisPt, axisDCA2d});
-      histos.add("h2dDCAxyVsPtPiFromXiCC", "h2dDCAxyVsPtPiFromXiCC", kTH2D, {axisPt, axisDCA2d});
+      histos.add("h2dDCAxyVsPtXiFromXiC", "h2dDCAxyVsPtXiFromXiC", kTH2D, {axisPt, axisDCA2D});
+      histos.add("h2dDCAxyVsPtPiFromXiC", "h2dDCAxyVsPtPiFromXiC", kTH2D, {axisPt, axisDCA2D});
+      histos.add("h2dDCAxyVsPtPiFromXiCC", "h2dDCAxyVsPtPiFromXiCC", kTH2D, {axisPt, axisDCA2D});
     }
   }
 
@@ -499,31 +526,61 @@ struct alice3multicharm {
       auto piFromLa = xiCand.negTrack_as<alice3tracks>();  // de-reference neg track
       auto prFromLa = xiCand.posTrack_as<alice3tracks>();  // de-reference pos track
 
+      histos.fill(HIST("h3dXi"), xi.pt(), xi.eta(), xiCand.mXi());
+      histos.fill(HIST("h3dBach"), piFromXi.pt(), piFromXi.eta(), o2::constants::physics::MassPionCharged);
+      histos.fill(HIST("h3dNeg"), piFromLa.pt(), piFromLa.eta(), o2::constants::physics::MassPionCharged);
+      histos.fill(HIST("h3dPos"), prFromLa.pt(), prFromLa.eta(), o2::constants::physics::MassProton);
+
       if (!bitcheck(xi.decayMap(), kTrueXiFromXiC))
         continue;
 
       if (std::fabs(xi.dcaXY()) < xiFromXiC_dcaXYconstant || std::fabs(xi.dcaZ()) < xiFromXiC_dcaZconstant)
+        continue; // likely a primary xi
+
+      histos.fill(HIST("hDCAxyXi"), std::fabs(xi.dcaXY() * 1e+4));
+      histos.fill(HIST("hDCAzXi"), std::fabs(xi.dcaZ() * 1e+4));
+
+      if (xiCand.cascRadius() < minXiRadius)
         continue;
 
+      histos.fill(HIST("hMinXiDecayRadius"), xiCand.cascRadius());
       for (auto const& pi1c : tracksPiFromXiCgrouped) {
         if (mcSameMotherCheck && !checkSameMother(xi, pi1c))
           continue;
         if (xiCand.posTrackId() == pi1c.globalIndex() || xiCand.negTrackId() == pi1c.globalIndex() || xiCand.bachTrackId() == pi1c.globalIndex())
           continue; // avoid using any track that was already used
-        if (pi1c.pt() < minPiCPt)
-          continue;
 
+        if (pi1c.pt() < minPiCPt)
+          continue; // too low momentum
+
+        histos.fill(HIST("hPi1cPt"), pi1c.pt());
+        double pi1cTOFDiffInner = std::fabs(pi1c.innerTOFTrackTimeReco() - pi1c.innerTOFExpectedTimePi());
+        if (pi1cTOFDiffInner > piFromXiC_tofDiffInner)
+          continue; // did not arrive at expected time
+
+        histos.fill(HIST("h3dPi1c"), pi1c.pt(), pi1c.eta(), o2::constants::physics::MassPionCharged);
+        histos.fill(HIST("hInnerTOFTrackTimeRecoPi1c"), pi1cTOFDiffInner);
         // second pion from XiC decay for starts here
         for (auto const& pi2c : tracksPiFromXiCgrouped) {
-
           if (mcSameMotherCheck && !checkSameMother(xi, pi2c))
             continue; // keep only if same mother
+
           if (pi1c.globalIndex() >= pi2c.globalIndex())
             continue; // avoid same-mother, avoid double-counting
+
           if (xiCand.posTrackId() == pi2c.globalIndex() || xiCand.negTrackId() == pi2c.globalIndex() || xiCand.bachTrackId() == pi2c.globalIndex())
             continue; // avoid using any track that was already used
+
           if (pi2c.pt() < minPiCPt)
-            continue;
+            continue; // too low momentum
+
+          histos.fill(HIST("hPi2cPt"), pi2c.pt());
+          double pi2cTOFDiffInner = std::fabs(pi2c.innerTOFTrackTimeReco() - pi2c.innerTOFExpectedTimePi());
+          if (pi2cTOFDiffInner > piFromXiC_tofDiffInner)
+            continue; // did not arrive at expected time
+
+          histos.fill(HIST("hInnerTOFTrackTimeRecoPi2c"), pi2cTOFDiffInner);
+          histos.fill(HIST("h3dPi2c"), pi2c.pt(), pi2c.eta(), o2::constants::physics::MassPionCharged);
 
           // if I am here, it means this is a triplet to be considered for XiC vertexing.
           // will now attempt to build a three-body decay candidate with these three track rows.
@@ -533,8 +590,11 @@ struct alice3multicharm {
           if (!buildDecayCandidateThreeBody(xi, pi1c, pi2c, o2::constants::physics::MassXiMinus, o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged))
             continue; // failed at building candidate
 
+          histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca * 1e+4);
+
           if (std::fabs(thisXiCcandidate.mass - o2::constants::physics::MassXiCPlus) > massWindowXiC)
             continue; // out of mass region
+
           histos.fill(HIST("hCharmBuilding"), 1.0f);
 
           const std::array<float, 3> momentumC = {
@@ -547,9 +607,15 @@ struct alice3multicharm {
           if (xicDecayRadius2D < minXiCRadius)
             continue; // do not take if radius too small, likely a primary combination
 
+          histos.fill(HIST("hMinXiCDecayRadius"), xicDecayRadius2D * 1e+4);
+
+          if (xicDecayRadius2D > xiCand.cascRadius())
+            continue;
+
+          histos.fill(HIST("hXiRadiusVsXicRadius"), xiCand.cascRadius() * 1e+4, xicDecayRadius2D * 1e+4);
+
           o2::dataformats::DCA dcaInfo;
           float xicdcaXY = 1e+10, xicdcaZ = 1e+10;
-          ;
           o2::track::TrackParCov xicTrackCopy(xicTrack); // paranoia
           o2::vertexing::PVertex primaryVertex;
           primaryVertex.setXYZ(collision.posX(), collision.posY(), collision.posZ());
@@ -560,25 +626,40 @@ struct alice3multicharm {
           }
 
           if (std::fabs(xicdcaXY) < xiCFromXiCC_dcaXY || std::fabs(xicdcaZ) < xiCFromXiCC_dcaZ)
-            continue;
+            continue; // likely a primary xic
 
+          histos.fill(HIST("hDCAxyXiC"), std::fabs(xicdcaXY * 1e+4));
+          histos.fill(HIST("hDCAzXiC"), std::fabs(xicdcaZ * 1e+4));
           histos.fill(HIST("hMassXiC"), thisXiCcandidate.mass);
-
+          histos.fill(HIST("h3dXic"), thisXiCcandidate.pt, thisXiCcandidate.eta, thisXiCcandidate.mass);
           // attempt XiCC finding
           uint32_t nCombinationsCC = 0;
           for (auto const& picc : tracksPiFromXiCCgrouped) {
             if (mcSameMotherCheck && !checkSameMotherExtra(xi, picc))
               continue;
+
             if (xiCand.posTrackId() == picc.globalIndex() || xiCand.negTrackId() == picc.globalIndex() || xiCand.bachTrackId() == picc.globalIndex())
               continue; // avoid using any track that was already used
+
             if (picc.pt() < minPiCCPt)
-              continue;
+              continue; // too low momentum
+
+            histos.fill(HIST("hPiccPt"), picc.pt());
+
+            double piccTOFDiffInner = std::fabs(picc.innerTOFTrackTimeReco() - picc.innerTOFExpectedTimePi());
+            if (piccTOFDiffInner > piFromXiCC_tofDiffInner)
+              continue; // did not arrive at expected time
+
+            histos.fill(HIST("hInnerTOFTrackTimeRecoPicc"), piccTOFDiffInner);
+            histos.fill(HIST("h3dPicc"), picc.pt(), picc.eta(), o2::constants::physics::MassPionCharged);
 
             o2::track::TrackParCov piccTrack = getTrackParCov(picc);
             nCombinationsCC++;
             histos.fill(HIST("hCharmBuilding"), 2.0f);
             if (!buildDecayCandidateTwoBody(xicTrack, piccTrack, o2::constants::physics::MassXiCPlus, o2::constants::physics::MassPionCharged))
               continue; // failed at building candidate
+
+            histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca * 1e+4);
 
             const std::array<float, 3> momentumCC = {
               thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0],
@@ -590,15 +671,44 @@ struct alice3multicharm {
             if (xiccDecayRadius2D < minXiCCRadius)
               continue; // do not take if radius too small, likely a primary combination
 
+            histos.fill(HIST("hMinXiCCDecayRadius"), xiccDecayRadius2D * 1e+4);
+
             double totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
-            double xicProperLength = std::fabs(std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1], thisXiCcandidate.xyz[2]) - std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1], thisXiCCcandidate.xyz[2]) * totalMomentumC) / (std::fabs(totalMomentumC) * thisXiCcandidate.mass);
+            double decayLengthXiC = std::hypot(
+              thisXiCcandidate.xyz[0] - thisXiCCcandidate.xyz[0],
+              thisXiCcandidate.xyz[1] - thisXiCCcandidate.xyz[1],
+              thisXiCcandidate.xyz[2] - thisXiCCcandidate.xyz[2]);
+            double xicProperLength = decayLengthXiC * thisXiCcandidate.mass / totalMomentumC;
+
             if (xicProperLength < xicMinProperLength || xicProperLength > xicMaxProperLength)
-              continue;
+              continue; // likely background
+
+            histos.fill(HIST("hProperLengthXiC"), xicProperLength * 1e+4);
+
+            double xicDistanceFromPV = std::hypot(
+              thisXiCcandidate.xyz[0] - collision.posX(),
+              thisXiCcandidate.xyz[1] - collision.posY(),
+              thisXiCcandidate.xyz[2] - collision.posZ());
+            double xicDecayDistanceFromPV = xicDistanceFromPV * thisXiCcandidate.mass / totalMomentumC;
+            if (xicDecayDistanceFromPV < xicMinDecayDistanceFromPV)
+              continue; // too close to PV
+
+            histos.fill(HIST("hMinxicDecayDistanceFromPV"), xicDecayDistanceFromPV * 1e+4);
 
             double totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
-            double xiccProperLength = std::fabs(std::hypot(collision.posX(), collision.posY(), collision.posZ()) - std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1], thisXiCCcandidate.xyz[2]) * totalMomentumCC) / (std::fabs(totalMomentumCC) * thisXiCCcandidate.mass);
+            double decayLengthXiCC = std::hypot(
+              thisXiCCcandidate.xyz[0] - collision.posX(),
+              thisXiCCcandidate.xyz[1] - collision.posY(),
+              thisXiCCcandidate.xyz[2] - collision.posZ());
+            double xiccProperLength = decayLengthXiCC * thisXiCCcandidate.mass / totalMomentumCC;
             if (xiccProperLength < xiccMinProperLength || xiccProperLength > xicMaxProperLength)
-              continue;
+              continue; // likely background
+
+            histos.fill(HIST("hProperLengthXiCC"), xiccProperLength * 1e+4);
+            if (xiccDecayRadius2D > xicDecayRadius2D)
+              continue; // XiCC should decay before XiC
+
+            histos.fill(HIST("hXicRadiusVsXiccRadius"), xicDecayRadius2D * 1e+4, xiccDecayRadius2D * 1e+4);
 
             float xiccdcaXY = 1e+10, xiccdcaZ = 1e+10;
             if (xiccTrack.propagateToDCA(primaryVertex, magneticField, &dcaInfo)) {
@@ -607,28 +717,19 @@ struct alice3multicharm {
             }
 
             if (std::fabs(xiccdcaXY) > xiCC_dcaXY || std::fabs(xiccdcaZ) > xiCC_dcaZ)
-              continue;
+              continue; // not pointing to PV
 
-            histos.fill(HIST("hDCAXiCDaughters"), thisXiCcandidate.dca * 1e+4);
-            histos.fill(HIST("hDCAXiCCDaughters"), thisXiCCcandidate.dca * 1e+4);
-            histos.fill(HIST("hProperLengthXiCC"), xiccProperLength * 1e+4);
-            histos.fill(HIST("hProperLengthXiC"), xicProperLength * 1e+4);
-            histos.fill(HIST("hMinXiCCDecayRadius"), xiccDecayRadius2D * 1e+4);
-            histos.fill(HIST("hMinXiCDecayRadius"), xicDecayRadius2D * 1e+4);
-            histos.fill(HIST("hPi2cPt"), pi2c.pt());
-            histos.fill(HIST("hPi1cPt"), pi1c.pt());
-            histos.fill(HIST("hPiccPt"), picc.pt());
-            histos.fill(HIST("hDCAxyXi"), std::fabs(xi.dcaXY() * 1e+4));
-            histos.fill(HIST("hDCAzXi"), std::fabs(xi.dcaZ() * 1e+4));
-            histos.fill(HIST("hDCAxyXiC"), std::fabs(xicdcaXY * 1e+4));
-            histos.fill(HIST("hDCAzXiC"), std::fabs(xicdcaZ * 1e+4));
             histos.fill(HIST("hDCAxyXiCC"), std::fabs(xiccdcaXY * 1e+4));
             histos.fill(HIST("hDCAzXiCC"), std::fabs(xiccdcaZ * 1e+4));
+
+            if (std::fabs(thisXiCcandidate.eta) > xiccMaxEta)
+              continue; // not in central barrel
+
             histos.fill(HIST("hCharmBuilding"), 3.0f);
             histos.fill(HIST("hMassXiCC"), thisXiCCcandidate.mass);
             histos.fill(HIST("hPtXiCC"), thisXiCCcandidate.pt);
             histos.fill(HIST("hEtaXiCC"), thisXiCCcandidate.eta);
-            histos.fill(HIST("h3dMassXiCC"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
+            histos.fill(HIST("h3dXicc"), thisXiCCcandidate.pt, thisXiCCcandidate.eta, thisXiCCcandidate.mass);
 
             // produce multi-charm table for posterior analysis
             if (fillDerivedTable) {

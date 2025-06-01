@@ -59,8 +59,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -82,8 +82,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -105,8 +105,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -127,8 +127,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -150,8 +150,8 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
     qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
-    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 5.0);
-    qualityCuts->AddCut(VarManager::kTPCncls, 60, 161.);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
     qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
 
     AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
@@ -3188,6 +3188,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonQualityCutsMUONStandalone")) {
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonQualityCutsGlobal")) {
+    cut->AddCut(GetAnalysisCut("matchedGlobal"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
   // -----------------------------------------------------------
   // Pair cuts
   if (!nameStr.compare("pairNoCut")) {
@@ -3995,6 +4006,16 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexTOFmatched, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8multAnalysis")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
     return cut;
   }
 

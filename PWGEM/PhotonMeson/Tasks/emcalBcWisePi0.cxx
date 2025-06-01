@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -36,50 +36,79 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+using SelectedClusters = soa::Filtered<aod::BCWiseClusters>;
+using SelectedMCClusters = soa::Filtered<soa::Join<aod::BCWiseClusters, aod::BCWiseMCClusters>>;
+
 struct EmcalBcWisePi0 {
   HistogramRegistry mHistManager{"EmcalGammaGammaBcWiseHistograms"};
 
-  Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 10, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
-  Configurable<float> cfgMinClusterEnergy{"cfgMinClusterEnergy", 0.7, "Minimum energy of selected clusters (GeV)"};
-  Configurable<float> cfgMinM02{"cfgMinM02", 0.1, "Minimum M02 of selected clusters"};
-  Configurable<float> cfgMaxM02{"cfgMaxM02", 0.7, "Maximum M02 of selected clusters"};
-  Configurable<float> cfgMinTime{"cfgMinTime", -15, "Minimum time of selected clusters (ns)"};
-  Configurable<float> cfgMaxTime{"cfgMaxTime", 15, "Maximum time of selected clusters (ns)"};
+  Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct pi0s only in kTVXinEMC triggered BCs"};
+  Configurable<int> cfgSelectOnlyUniqueAmbiguous{"cfgSelectOnlyUniqueAmbiguous", 0, "0: all clusters, 1: only unique clusters, 2: only ambiguous clusters"};
+
+  Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 13, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
+  Configurable<int16_t> cfgMinClusterEnergy{"cfgMinClusterEnergy", 700, "Minimum energy of selected clusters (MeV)"};
+  Configurable<int16_t> cfgMinM02{"cfgMinM02", 1000, "Minimum M02 of selected clusters (x1000)"};
+  Configurable<int16_t> cfgMaxM02{"cfgMaxM02", 7000, "Maximum M02 of selected clusters (x1000)"};
+  Configurable<int16_t> cfgMinTime{"cfgMinTime", -1500, "Minimum time of selected clusters (10 ps)"};
+  Configurable<int16_t> cfgMaxTime{"cfgMaxTime", 1500, "Maximum time of selected clusters (10 ps)"};
   Configurable<float> cfgRapidityCut{"cfgRapidityCut", 0.8f, "Maximum absolute rapidity of counted particles"};
   Configurable<float> cfgMinOpenAngle{"cfgMinOpenAngle", 0.0202, "Minimum opening angle between photons"};
   Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   Configurable<int> cfgBGEventDownsampling{"cfgBGEventDownsampling", 1, "Only calculate background for every n-th event (performance reasons in PbPb)"};
 
-  static constexpr float DefaultCentralityWindow[2] = {-1., 101.};
-  Configurable<LabeledArray<float>> cfgCentralityWindow{"cfgCentralityWindow", {DefaultCentralityWindow, 2, {"Min_Centrality", "Max_Centrality"}}, "Select centrality window (also requires unique collision)"};
+  ConfigurableAxis cfgCentralityBinning{"cfgCentralityBinning", {VARIABLE_WIDTH, 0.f, 5.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f, 101.f, 102.f}, "FT0M centrality (%)"};
 
-  Filter clusterDefinitionFilter = aod::bcwisecluster::storedDefinition == static_cast<uint8_t>(cfgClusterDefinition);
-  Filter energyFilter = aod::bcwisecluster::storedE > static_cast<uint16_t>(cfgMinClusterEnergy* aod::emdownscaling::downscalingFactors[aod::emdownscaling::kEnergy]);
-  Filter m02Filter = (aod::bcwisecluster::storedNCells == static_cast<uint8_t>(1) || (aod::bcwisecluster::storedM02 > static_cast<uint16_t>(cfgMinM02 * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kM02]) && aod::bcwisecluster::storedM02 < static_cast<uint16_t>(cfgMaxM02 * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kM02])));
-  Filter timeFilter = (aod::bcwisecluster::storedTime > static_cast<int16_t>(cfgMinTime * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kTime]) && aod::bcwisecluster::storedTime < static_cast<int16_t>(cfgMaxTime * aod::emdownscaling::downscalingFactors[aod::emdownscaling::kTime]));
+  Configurable<bool> cfgIsMC{"cfgIsMC", false, "Flag to indicate if the task is running on MC data and should fill MC histograms"};
+
+  Filter clusterDefinitionFilter = aod::bcwisecluster::storedDefinition == cfgClusterDefinition;
+  Filter energyFilter = aod::bcwisecluster::storedE > cfgMinClusterEnergy;
+  Filter m02Filter = (aod::bcwisecluster::storedNCells == 1 || (aod::bcwisecluster::storedM02 > cfgMinM02 && aod::bcwisecluster::storedM02 < cfgMaxM02));
+  Filter timeFilter = (aod::bcwisecluster::storedTime > cfgMinTime && aod::bcwisecluster::storedTime < cfgMaxTime);
 
   emcal::Geometry* emcalGeom;
 
   void init(InitContext const&)
   {
     emcalGeom = emcal::Geometry::GetInstanceFromRunNumber(300000);
-    const int nEventBins = 8;
-    mHistManager.add("nBCs", "Number of BCs;;#bf{#it{N}_{BC}}", HistType::kTH1F, {{nEventBins, -0.5, 7.5}});
-    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "Cluster", "NoBorder", "Collision"};
-    for (int iBin = 0; iBin < nEventBins; iBin++)
-      mHistManager.get<TH1>(HIST("nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+    const int nEventBins = 6;
+    mHistManager.add("Event/nBCs", "Number of BCs;;#bf{FT0M centrality (%)};#bf{#it{N}_{BC}}", HistType::kTH2F, {{nEventBins, -0.5, 5.5}, cfgCentralityBinning});
+    mHistManager.add("Event/nCollisions", "Number of Collisions (BCs x P(mu));;#bf{FT0M centrality (%)};#bf{#it{N}_{coll}}", HistType::kTH2F, {{nEventBins, -0.5, 5.5}, cfgCentralityBinning});
+    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "Cluster"};
+    for (int iBin = 0; iBin < nEventBins; iBin++) {
+      mHistManager.get<TH2>(HIST("Event/nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+      mHistManager.get<TH2>(HIST("Event/nCollisions"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+    }
 
-    mHistManager.add("Centrality", "FT0M centrality;FT0M centrality (%);#bf{#it{N}_{BC} (only BCs containing exactly 1 collision)}", HistType::kTH1F, {{100, 0., 100.}});
+    mHistManager.add("Event/nCollPerBC", "Number of collisions per BC;#bf{#it{N}_{coll}};#bf{FT0M centrality (%)};#bf{#it{N}_{BC}}", HistType::kTH2F, {{5, -0.5, 4.5}, cfgCentralityBinning});
+    mHistManager.add("Event/Z1VsZ2", "Z vertex positions for BCs with two collisions;#bf{#it{z}_{vtx}^{1} (cm)};#bf{#it{z}_{vtx}^{2} (cm)}", HistType::kTH2F, {{150, -15, 15}, {150, -15, 15}});
+    mHistManager.add("Event/dZ", "Distance between vertices for BCs with two collisions;#bf{#Delta #it{z}_{vtx} (cm)};#bf{#it{N}_{BC}}", HistType::kTH1F, {{600, -30, 30}});
+    mHistManager.add("Event/Mu", "Probablity of a collision in the BC;#bf{#mu};#bf{#it{N}_{BC}}", HistType::kTH1F, {{1000, 0., 0.1}});
 
-    mHistManager.add("clusterE", "Energy of cluster;#bf{#it{E} (GeV)};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 20}});
-    mHistManager.add("clusterM02", "Shape of cluster;#bf{#it{M}_{02}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, 0, 2}});
-    mHistManager.add("clusterTime", "Time of cluster;#bf{#it{t} (ns)};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{200, -100, 100}});
-    mHistManager.add("clusterNCells", "Number of cells per cluster;#bf{#it{N}_{cells}};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, 0., 50.5}});
-    mHistManager.add("clusterExotic", "Is cluster exotic?;#bf{Exotic?};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{2, -0.5, 1.5}});
-    mHistManager.add("clusterEtaPhi", "Eta/Phi distribution of clusters;#eta;#phi", HistType::kTH2F, {{400, -0.8, 0.8}, {400, 0, constants::math::TwoPI}});
+    mHistManager.add("Event/Centrality", "FT0M centrality;FT0M centrality (%);#bf{#it{N}_{BC}}", HistType::kTH1F, {cfgCentralityBinning});
+    mHistManager.add("Event/CentralityVsAmplitude", "FT0M AmplitudeVsCentrality;FT0M Centrality;FT0M Amplitude", HistType::kTH2F, {cfgCentralityBinning, {600, 0, 300000}});
 
-    mHistManager.add("invMassVsPt", "Invariant mass and pT of meson candidates", HistType::kTH2F, {{400, 0., 0.8}, {200, 0., 20.}});
-    mHistManager.add("invMassVsPtBackground", "Invariant mass and pT of background meson candidates", HistType::kTH2F, {{400, 0., 0.8}, {200, 0., 20.}});
+    mHistManager.add("Cluster/E", "Energy of cluster;#bf{#it{E} (GeV)};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+    mHistManager.add("Cluster/M02", "Shape of cluster;#bf{#it{M}_{02}};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{200, 0, 2}, cfgCentralityBinning});
+    mHistManager.add("Cluster/Time", "Time of cluster;#bf{#it{t} (ns)};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{200, -100, 100}, cfgCentralityBinning});
+    mHistManager.add("Cluster/NCells", "Number of cells per cluster;#bf{#it{N}_{cells}};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{51, 0., 50.5}, cfgCentralityBinning});
+    mHistManager.add("Cluster/Exotic", "Is cluster exotic?;#bf{Exotic?};#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH2F, {{2, -0.5, 1.5}, cfgCentralityBinning});
+    mHistManager.add("Cluster/EtaPhi", "Eta/Phi distribution of clusters;#eta;#phi;#bf{FT0M centrality (%)};#bf{#it{N}_{clusters}}", HistType::kTH3F, {{400, -0.8, 0.8}, {400, 0, constants::math::TwoPI}, cfgCentralityBinning});
+
+    mHistManager.add("GG/invMassVsPt", "Invariant mass and pT of meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+    mHistManager.add("GG/invMassVsPtBackground", "Invariant mass and pT of background meson candidates;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+
+    if (cfgIsMC) {
+      mHistManager.add("True/clusterERecVsETrue", "True vs reconstructed energy of cluster inducing particle;#bf{#it{E}_{rec} (GeV)};#bf{#it{E}_{true}^{cls inducing part} (GeV)};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0, 20}, {200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("True/PtRecVsPtTrue", "True vs reconstructed pT of true pi0s;#bf{#it{p}_{T}^{rec} (GeV/#it{c})};#bf{#it{p}_{T}^{true} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 20.}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/invMassVsPt_Primary", "Reconstructed validated primary pi0;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/invMassVsPt_Secondary", "Reconstructed validated pi0 from secondary decay;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+      mHistManager.add("True/invMassVsPt_HadronicShower", "Reconstructed validated pi0 from hadronic shower;#bf{#it{M}^{#gamma#gamma} (GeV/#it{c}^{2})};#bf{#it{p}_{T}^{#gamma#gamma} (GeV/#it{c})};#bf{FT0M centrality (%)}", HistType::kTH3F, {{200, 0., 0.4}, {200, 0., 20.}, cfgCentralityBinning});
+
+      mHistManager.add("Generated/pi0_AllBCs", "pT spectrum of generated pi0s in all BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/pi0_TVX", "pT spectrum of generated pi0s in TVX triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Generated/pi0_kTVXinEMC", "pT spectrum of generated pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{gen}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+      mHistManager.add("Accepted/pi0_kTVXinEMC", "pT spectrum of accepted pi0s in kTVXinEMC triggered BCs;#bf{#it{p}_{T} (GeV/#it{c})};#bf{FT0M centrality (%)};#bf{#it{N}_{#pi^{0}}^{acc}}", HistType::kTH2F, {{200, 0, 20}, cfgCentralityBinning});
+    }
   }
 
   /// \brief returns if cluster is too close to edge of EMCal
@@ -100,41 +129,55 @@ struct EmcalBcWisePi0 {
 
   void fillEventHists(const auto& bc, const auto& collisions, const auto& clusters)
   {
-    mHistManager.fill(HIST("nBCs"), 0);
-    if (bc.hasFT0())
-      mHistManager.fill(HIST("nBCs"), 1);
-    if (bc.hasTVX())
-      mHistManager.fill(HIST("nBCs"), 2);
-    if (bc.haskTVXinEMC())
-      mHistManager.fill(HIST("nBCs"), 3);
-    if (bc.hasEMCCell())
-      mHistManager.fill(HIST("nBCs"), 4);
-    if (clusters.size() > 0)
-      mHistManager.fill(HIST("nBCs"), 5);
-    if (bc.hasNoTFROFBorder())
-      mHistManager.fill(HIST("nBCs"), 6);
-    if (collisions.size() > 0)
-      mHistManager.fill(HIST("nBCs"), 7);
+    mHistManager.fill(HIST("Event/nBCs"), 0, bc.centrality());
+    float mu = bc.mu();
+    mHistManager.fill(HIST("Event/Mu"), mu);
+    double p = mu > 0.001 ? mu / (1 - std::exp(-mu)) : 1.; // No pile-up for small mu (protection against division by zero)
+    mHistManager.fill(HIST("Event/nCollisions"), 0, bc.centrality(), p);
+    if (bc.hasFT0()) {
+      mHistManager.fill(HIST("Event/nBCs"), 1, bc.centrality());
+      mHistManager.fill(HIST("Event/nCollisions"), 1, bc.centrality(), p);
+    }
+    if (bc.hasTVX()) {
+      mHistManager.fill(HIST("Event/nBCs"), 2, bc.centrality());
+      mHistManager.fill(HIST("Event/nCollisions"), 2, bc.centrality(), p);
+    }
+    if (bc.haskTVXinEMC()) {
+      mHistManager.fill(HIST("Event/nBCs"), 3, bc.centrality());
+      mHistManager.fill(HIST("Event/nCollisions"), 3, bc.centrality(), p);
+    }
+    if (bc.hasEMCCell()) {
+      mHistManager.fill(HIST("Event/nBCs"), 4, bc.centrality());
+      mHistManager.fill(HIST("Event/nCollisions"), 4, bc.centrality(), p);
+    }
+    if (clusters.size() > 0) {
+      mHistManager.fill(HIST("Event/nBCs"), 5, bc.centrality());
+      mHistManager.fill(HIST("Event/nCollisions"), 5, bc.centrality(), p);
+    }
 
-    if (collisions.size() == 1) {
-      for (const auto& collision : collisions)
-        mHistManager.fill(HIST("Centrality"), collision.centrality());
+    mHistManager.fill(HIST("Event/Centrality"), bc.centrality());
+    mHistManager.fill(HIST("Event/CentralityVsAmplitude"), bc.centrality(), bc.ft0Amplitude());
+
+    mHistManager.fill(HIST("Event/nCollPerBC"), collisions.size(), bc.centrality());
+    if (collisions.size() == 2) {
+      mHistManager.fill(HIST("Event/Z1VsZ2"), collisions.iteratorAt(0).zVtx(), collisions.iteratorAt(1).zVtx());
+      mHistManager.fill(HIST("Event/dZ"), collisions.iteratorAt(0).zVtx() - collisions.iteratorAt(1).zVtx());
     }
   }
 
-  void fillClusterHists(const auto& clusters)
+  void fillClusterHists(const auto& clusters, float centrality)
   {
     for (const auto& cluster : clusters) {
-      mHistManager.fill(HIST("clusterE"), cluster.e());
-      mHistManager.fill(HIST("clusterM02"), cluster.m02());
-      mHistManager.fill(HIST("clusterTime"), cluster.time());
-      mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
-      mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi());
-      mHistManager.fill(HIST("clusterExotic"), cluster.isExotic());
+      mHistManager.fill(HIST("Cluster/E"), cluster.e(), centrality);
+      mHistManager.fill(HIST("Cluster/M02"), cluster.m02(), centrality);
+      mHistManager.fill(HIST("Cluster/Time"), cluster.time(), centrality);
+      mHistManager.fill(HIST("Cluster/NCells"), cluster.nCells(), centrality);
+      mHistManager.fill(HIST("Cluster/EtaPhi"), cluster.eta(), cluster.phi(), centrality);
+      mHistManager.fill(HIST("Cluster/Exotic"), cluster.isExotic(), centrality);
     }
   }
 
-  void reconstructMesons(const auto& clusters, int bcId)
+  void reconstructMesons(const auto& clusters, const auto& bc)
   {
     for (const auto& [g1, g2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(clusters, clusters))) {
       ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
@@ -147,12 +190,12 @@ struct EmcalBcWisePi0 {
       if (openingAngle12 < cfgMinOpenAngle)
         continue;
 
-      mHistManager.fill(HIST("invMassVsPt"), v12.M(), v12.Pt());
+      mHistManager.fill(HIST("GG/invMassVsPt"), v12.M(), v12.Pt(), bc.centrality());
 
       if (clusters.size() < 3)
         continue;
 
-      if (bcId % cfgBGEventDownsampling != 0)
+      if (bc.globalIndex() % cfgBGEventDownsampling != 0)
         continue;
 
       // "else: Calculate background"
@@ -183,36 +226,94 @@ struct EmcalBcWisePi0 {
 
           ROOT::Math::PtEtaPhiMVector vBG = v3 + vi;
 
-          mHistManager.fill(HIST("invMassVsPtBackground"), vBG.M(), vBG.Pt());
+          mHistManager.fill(HIST("GG/invMassVsPtBackground"), vBG.M(), vBG.Pt(), bc.centrality());
         }
       }
     }
   }
-
-  bool isCentralitySelected(const auto& collisions)
+  void reconstructTrueMesons(const auto& clusters, const auto& mcPi0s, const auto& bc)
   {
-    if (cfgCentralityWindow->get("Min_Centrality") > -0.5 || cfgCentralityWindow->get("Max_Centrality") < 100.5) { // Centrality window is set
-      if (collisions.size() != 1)
-        return false;
-      for (const auto& collision : collisions) {
-        if (collision.centrality() < cfgCentralityWindow->get("Min_Centrality") || collision.centrality() > cfgCentralityWindow->get("Max_Centrality"))
-          return false;
-      }
+    for (const auto& [g1, g2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(clusters, clusters))) {
+      if (g1.pi0ID() == -1 || g1.pi0ID() != g2.pi0ID())
+        continue;
+
+      ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+      ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+      ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+      if (std::fabs(v12.Rapidity()) > cfgRapidityCut)
+        continue;
+
+      float openingAngle12 = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+      if (openingAngle12 < cfgMinOpenAngle)
+        continue;
+
+      const auto& mcPi0 = mcPi0s.iteratorAt(g1.pi0ID() - mcPi0s.offset());
+
+      mHistManager.fill(HIST("True/PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), bc.centrality());
+
+      if (mcPi0.isPrimary())
+        mHistManager.fill(HIST("True/invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
+      else if (mcPi0.isFromWD())
+        mHistManager.fill(HIST("True/invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
+      else
+        mHistManager.fill(HIST("True/invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
     }
+  }
+
+  bool isBCSelected(const auto& bc, const auto& collisions)
+  {
+    if (cfgRequirekTVXinEMC && !bc.haskTVXinEMC())
+      return false;
+    if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1)
+      return false;
+    if (cfgSelectOnlyUniqueAmbiguous == 2 && collisions.size() == 1)
+      return false;
     return true;
   }
 
-  void process(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, soa::Filtered<aod::BCWiseClusters> const& clusters)
+  void fillGeneratedPi0Hists(const auto& mcPi0s, const auto& bc)
   {
-    if (!isCentralitySelected(collisions))
+    for (const auto& mcPi0 : mcPi0s) {
+      if (mcPi0.isPrimary()) {
+        mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), bc.centrality());
+        if (bc.hasTVX())
+          mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), bc.centrality());
+        if (bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
+        if (mcPi0.isAccepted() && bc.haskTVXinEMC())
+          mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
+      }
+    }
+  }
+
+  void process(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedClusters const& clusters)
+  {
+    if (!isBCSelected(bc, collisions))
       return;
 
     fillEventHists(bc, collisions, clusters);
 
-    fillClusterHists(clusters);
+    fillClusterHists(clusters, bc.centrality());
 
-    reconstructMesons(clusters, bc.globalIndex());
+    reconstructMesons(clusters, bc);
   }
+
+  void processMCInfo(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedMCClusters const& clusters, aod::BCWiseMCPi0s const& mcPi0s)
+  {
+    if (!cfgIsMC)
+      LOG(fatal) << "MC processing is not enabled, but the task is running on MC data. Please set cfgIsMC to true.";
+
+    fillGeneratedPi0Hists(mcPi0s, bc); // Fill before BC selection to also store pi0s in BCs that were not triggered
+
+    if (!isBCSelected(bc, collisions))
+      return;
+
+    for (const auto& cluster : clusters)
+      mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE(), bc.centrality());
+
+    reconstructTrueMesons(clusters, mcPi0s, bc);
+  }
+  PROCESS_SWITCH(EmcalBcWisePi0, processMCInfo, "Run true and gen", false);
 };
 
 WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EmcalBcWisePi0>(cfgc)}; }

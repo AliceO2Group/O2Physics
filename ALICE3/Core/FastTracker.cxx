@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <string>
 #include "TMath.h"
 #include "TMatrixD.h"
 #include "TRandom.h"
@@ -60,7 +61,7 @@ void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho,
   layers.push_back(newLayer);
 }
 
-DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers)
+DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers) const
 {
   int layerIdx = layer;
   if (ignoreBarrelLayers) {
@@ -72,6 +73,18 @@ DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers)
     }
   }
   return layers[layerIdx];
+}
+
+int FastTracker::GetLayerIndex(std::string name) const
+{
+  int i = 0;
+  for (const auto& layer : layers) {
+    if (layer.name == name) {
+      return i;
+    }
+    i++;
+  }
+  return -1;
 }
 
 void FastTracker::Print()
@@ -100,18 +113,18 @@ void FastTracker::AddSiliconALICE3v4(std::vector<float> pixelResolution)
   float resRPhiOT = pixelResolution[2];
   float resZOT = pixelResolution[3];
 
-  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0}); // 150 mum Be
-  layers.push_back(DetLayer{"ddd0", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"ddd1", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"ddd2", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"bpipe1", 5.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0}); // 500 mum Be
-  layers.push_back(DetLayer{"ddd3", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd4", 10., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd5", 13., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd6", 16., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd7", 25., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd8", 40., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"ddd9", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
+  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
+  AddLayer("ddd0", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("ddd1", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("ddd2", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("bpipe1", 5.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
+  AddLayer("ddd3", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd4", 10., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd5", 13., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd6", 16., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd7", 25., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd8", 40., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("ddd9", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
 void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
@@ -128,19 +141,19 @@ void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
   float resRPhiOT = pixelResolution[2];
   float resZOT = pixelResolution[3];
 
-  layers.push_back(DetLayer{"bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0}); // 150 mum Be
-  layers.push_back(DetLayer{"B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1});
-  layers.push_back(DetLayer{"bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0}); // 500 mum Be
-  layers.push_back(DetLayer{"B03", 3.75, 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B04", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B09", 60., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
-  layers.push_back(DetLayer{"B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1});
+  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
+  AddLayer("B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
+  AddLayer("B03", 3.75, 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B04", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B09", 60., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
 void FastTracker::AddTPC(float phiResMean, float zResMean)
@@ -202,7 +215,7 @@ float FastTracker::Dist(float z, float r)
     if (i == nSteps - 1)
       index = 1;
     z0 = -4 * sigmaD + i * dz0;
-    dist += index * (dz0 / 3.) * (1 / o2::math_utils::sqrt(o2::constants::math::TwoPI) / sigmaD) * exp(-z0 * z0 / 2. / sigmaD / sigmaD) * (1 / o2::math_utils::sqrt((z - z0) * (z - z0) + r * r));
+    dist += index * (dz0 / 3.) * (1 / o2::math_utils::sqrt(o2::constants::math::TwoPI) / sigmaD) * std::exp(-z0 * z0 / 2. / sigmaD / sigmaD) * (1 / o2::math_utils::sqrt((z - z0) * (z - z0) + r * r));
     if (index != 4)
       index = 4;
     else
@@ -283,7 +296,7 @@ float FastTracker::ProbGoodChiSqHit(float radius, float searchRadiusRPhi, float 
 
 // function to provide a reconstructed track from a perfect input track
 // returns number of intercepts (generic for now)
-int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, float nch)
+int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackParCov& outputTrack, const float nch)
 {
   hits.clear();
   nIntercepts = 0;
@@ -333,7 +346,6 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     // was there a problem on this layer?
     if (!ok && il > 0) { // may fail to reach target layer due to the eloss
       float rad2 = inputTrack.getX() * inputTrack.getX() + inputTrack.getY() * inputTrack.getY();
-      float fMinRadTrack = 132.;
       float maxR = layers[il - 1].r + kTrackingMargin * 2;
       float minRad = (fMinRadTrack > 0 && fMinRadTrack < maxR) ? fMinRadTrack : maxR;
       if (rad2 - minRad * minRad < kTrackingMargin * kTrackingMargin) { // check previously reached layer

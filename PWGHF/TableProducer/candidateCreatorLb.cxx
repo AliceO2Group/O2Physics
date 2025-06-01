@@ -43,7 +43,7 @@ using namespace o2::hf_trkcandsel;
 /// Reconstruction of Λb candidates
 struct HfCandidateCreatorLb {
   Produces<aod::HfCandLbBase> rowCandidateBase;
-
+  Produces<aod::HfCandLbProngs> rowCandidateProngs;
   // vertexing
   Configurable<float> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -217,8 +217,6 @@ struct HfCandidateCreatorLb {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << hf_cand_lb::DecayType::LbToLcPi;
-
         // fill the candidate table for the Lb here:
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
@@ -228,10 +226,8 @@ struct HfCandidateCreatorLb {
                          pvecLc[0], pvecLc[1], pvecLc[2],
                          pvecPion[0], pvecPion[1], pvecPion[2],
                          impactParameter0.getY(), impactParameter1.getY(),
-                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                         lcCand.globalIndex(), trackPion.globalIndex(),
-                         hfFlag);
-
+                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
+        rowCandidateProngs(lcCand.globalIndex(), trackPion.globalIndex());
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecLc, pvecPion};
         massLcPi = RecoDecay::m(std::move(arrayMomenta), std::array{massLc, massPi});
@@ -257,9 +253,10 @@ struct HfCandidateCreatorLbExpressions {
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
 
-  void processMc(aod::HfCand3Prong const& lcCandidates,
-                 aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
+                 aod::McParticles const& mcParticles,
+                 aod::HfCandLbProngs const& candsLb)
   {
     int indexRec = -1;
     int8_t sign = 0;
@@ -267,11 +264,8 @@ struct HfCandidateCreatorLbExpressions {
     int8_t origin = 0;
     int8_t debug = 0;
 
-    rowCandidateLb->bindExternalIndices(&tracks);
-    rowCandidateLb->bindExternalIndices(&lcCandidates);
-
     // Match reconstructed candidates.
-    for (const auto& candidate : *rowCandidateLb) {
+    for (const auto& candidate : candsLb) {
       flag = 0;
       origin = 0;
       debug = 0;

@@ -125,7 +125,7 @@ struct nucleiFilter {
   struct : ConfigurableGroup {
     Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
-    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.15, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
     Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
     Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
@@ -138,7 +138,7 @@ struct nucleiFilter {
     Configurable<float> maxPionPt{"trgH3L3Body.maxPionPt", 1.2, "maxPionPt"};
     Configurable<float> minDeuteronPt{"trgH3L3Body.minDeuteronPt", 0.6, "minDeuteronPt"};
     Configurable<float> maxDeuteronPt{"trgH3L3Body.maxDeuteronPt", 10, "maxDeuteronPt"};
-    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
+    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 999, "minDeuteronPt Enable TOF PID"};
     Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
     Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
     Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 1.5, "min P3Body"};
@@ -431,73 +431,86 @@ struct nucleiFilter {
           h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
       }
-
-      for (const auto& track : tracks) {
-        if (track.itsNCls() < cfgCutNclusITS ||
-            track.tpcNClsFound() < cfgCutNclusTPC ||
-            std::abs(track.dcaXY()) > cfgCutDCAxy ||
-            std::abs(track.dcaZ()) > cfgCutDCAz ||
-            std::abs(track.eta()) > cfgCutEta) {
-          continue;
-        }
-        const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
-        for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
-          if (h3indices[iH3] == track.globalIndex()) {
-            continue;
-          }
-          const auto& h3vector = h3vectors[iH3];
-          auto pivector = trackVector;
-          auto cm = h3vector + trackVector;
-          const ROOT::Math::Boost boost(cm.BoostToCM());
-          boost(pivector);
-          if (pivector.P() < cfgCutKstar) {
-            keepEvent[kTritonFemto] = true;
-            break;
-          }
-        }
-      }
-
-      for (const auto& v0 : v0s) {
-        const auto& posTrack = v0.posTrack_as<TrackCandidates>();
-        const auto& negTrack = v0.negTrack_as<TrackCandidates>();
-        if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
-            (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
-          continue;
-        }
-        float nSigmas[2]{
-          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
-          cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
-        if ((nSigmas[0] < cfgCutsPID->get(2, 0u) || nSigmas[0] > cfgCutsPID->get(2, 1u)) &&
-            (nSigmas[1] < cfgCutsPID->get(2, 0u) || nSigmas[1] > cfgCutsPID->get(2, 1u))) {
-          continue;
-        }
-        int n2bodyVtx = fitter2body.process(getTrackParCov(posTrack), getTrackParCov(negTrack));
-        if (n2bodyVtx == 0) {
-          continue;
-        }
-        auto vtxXYZ = fitter2body.getPCACandidate();
-        o2::gpu::gpustd::array<float, 3> mom = {0.};
-        vtxXYZ[0] -= collision.posX();
-        vtxXYZ[1] -= collision.posY();
-        vtxXYZ[2] -= collision.posZ();
-        auto momTrackParCov = fitter2body.createParentTrackPar();
-        momTrackParCov.getPxPyPzGlo(mom);
-        double cosPA = (vtxXYZ[0] * mom[0] + vtxXYZ[1] * mom[1] + vtxXYZ[2] * mom[2]) /
-                       std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
-                                 (mom[0] * mom[0] + mom[1] * mom[1] + mom[2] * mom[2]));
-        if (cosPA < cfgCutCosPAheV0) {
-          continue;
-        }
-        keepEvent[kHeV0] = true;
-        break;
-      }
-
       //
       // fill QA histograms
       //
       qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
     } // end loop over tracks
+
+    for (const auto& track : tracks) {
+      if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC ||
+          std::abs(track.dcaXY()) > cfgCutDCAxy ||
+          std::abs(track.dcaZ()) > cfgCutDCAz ||
+          std::abs(track.eta()) > cfgCutEta) {
+        continue;
+      }
+      const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
+      for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
+        if (h3indices[iH3] == track.globalIndex()) {
+          continue;
+        }
+        const auto& h3vector = h3vectors[iH3];
+        auto pivector = trackVector;
+        auto cm = h3vector + trackVector;
+        const ROOT::Math::Boost boost(cm.BoostToCM());
+        boost(pivector);
+        if (pivector.P() < cfgCutKstar) {
+          keepEvent[kTritonFemto] = true;
+          break;
+        }
+      }
+    }
+
+    for (const auto& v0 : v0s) {
+      const auto& posTrack = v0.posTrack_as<TrackCandidates>();
+      const auto& negTrack = v0.negTrack_as<TrackCandidates>();
+      if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
+          (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
+        continue;
+      }
+      float nSigmas[2]{
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
+
+      bool isHe3 = nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u);
+      bool isAntiHe3 = nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u);
+      if (!isHe3 && !isAntiHe3) {
+        continue;
+      }
+      auto& he3Track = isHe3 ? posTrack : negTrack;
+      auto& piTrack = isHe3 ? negTrack : posTrack;
+
+      int n2bodyVtx = fitter2body.process(getTrackParCov(he3Track), getTrackParCov(piTrack));
+      if (n2bodyVtx == 0) {
+        continue;
+      }
+      auto vtxXYZ = fitter2body.getPCACandidate();
+      vtxXYZ[0] -= collision.posX();
+      vtxXYZ[1] -= collision.posY();
+      vtxXYZ[2] -= collision.posZ();
+
+      std::array<float, 3> momHe3 = {0.};
+      std::array<float, 3> momPi = {0.};
+      std::array<float, 3> momTot = {0.};
+      auto& hePropTrack = fitter2body.getTrack(0);
+      auto& piPropTrack = fitter2body.getTrack(1);
+      hePropTrack.getPxPyPzGlo(momHe3);
+      piPropTrack.getPxPyPzGlo(momPi);
+      for (int i = 0; i < 3; ++i) {
+        momHe3[i] *= 2;
+        momTot[i] = momHe3[i] + momPi[i];
+      }
+      double cosPA = (vtxXYZ[0] * momTot[0] + vtxXYZ[1] * momTot[1] + vtxXYZ[2] * momTot[2]) /
+                     std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
+                               (momTot[0] * momTot[0] + momTot[1] * momTot[1] + momTot[2] * momTot[2]));
+      if (cosPA < cfgCutCosPAheV0) {
+        continue;
+      }
+      keepEvent[kHeV0] = true;
+      break;
+    }
 
     // fH3L3Body trigger
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -577,7 +590,7 @@ struct nucleiFilter {
       }
 
       // Calculate DCA with respect to the collision associated to the SV, not individual tracks
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
 
       auto track0Par = getTrackPar(track0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
@@ -605,7 +618,7 @@ struct nucleiFilter {
         continue;
       }
 
-      float dcaDaughters = fitter3body.getChi2AtPCACandidate();
+      float dcaDaughters = std::sqrt(fitter3body.getChi2AtPCACandidate());
       if (dcaDaughters > trgH3L3Body.dcavtxdau) {
         continue;
       }

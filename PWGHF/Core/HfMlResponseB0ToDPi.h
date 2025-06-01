@@ -12,6 +12,7 @@
 /// \file HfMlResponseB0ToDPi.h
 /// \brief Class to compute the ML response for B0 → D∓ π± analysis selections
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
+/// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 #ifndef PWGHF_CORE_HFMLRESPONSEB0TODPI_H_
 #define PWGHF_CORE_HFMLRESPONSEB0TODPI_H_
@@ -59,6 +60,14 @@
     break;                                                   \
   }
 
+//
+// Make FEATURE from an element of VECTOR at INDEX.
+#define CHECK_AND_FILL_VEC_B0_INDEX(FEATURE, VECTOR, INDEX)   \
+  case static_cast<uint8_t>(InputFeaturesB0ToDPi::FEATURE): { \
+    inputFeatures.emplace_back((VECTOR)[INDEX]);              \
+    break;                                                    \
+  }
+
 namespace o2::analysis
 {
 
@@ -84,7 +93,7 @@ enum class InputFeaturesB0ToDPi : uint8_t {
   tpcTofNSigmaPi1
 };
 
-template <typename TypeOutputScore = float>
+template <typename TypeOutputScore, bool reduced>
 class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
 {
  public:
@@ -99,57 +108,50 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
   /// \return inputFeatures vector
   template <bool withDmesMl, typename T1, typename T2>
   std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong1)
+                                      T2 const& prong1,
+                                      const std::vector<float>* mlScoresD = nullptr)
   {
     std::vector<float> inputFeatures;
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
+      switch (idx) {
+        CHECK_AND_FILL_VEC_B0(ptProng0);
+        CHECK_AND_FILL_VEC_B0(ptProng1);
+        CHECK_AND_FILL_VEC_B0(impactParameter0);
+        CHECK_AND_FILL_VEC_B0(impactParameter1);
+        CHECK_AND_FILL_VEC_B0(impactParameterProduct);
+        CHECK_AND_FILL_VEC_B0(chi2PCA);
+        CHECK_AND_FILL_VEC_B0(decayLength);
+        CHECK_AND_FILL_VEC_B0(decayLengthXY);
+        CHECK_AND_FILL_VEC_B0(decayLengthNormalised);
+        CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
+        CHECK_AND_FILL_VEC_B0(cpa);
+        CHECK_AND_FILL_VEC_B0(cpaXY);
+        CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
+        // TPC PID variable
+        CHECK_AND_FILL_VEC_B0_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
+        // TOF PID variable
+        CHECK_AND_FILL_VEC_B0_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
+        // Combined PID variables
+        CHECK_AND_FILL_VEC_B0_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+      }
       if constexpr (withDmesMl) {
-        switch (idx) {
-          CHECK_AND_FILL_VEC_B0(ptProng0);
-          CHECK_AND_FILL_VEC_B0(ptProng1);
-          CHECK_AND_FILL_VEC_B0(impactParameter0);
-          CHECK_AND_FILL_VEC_B0(impactParameter1);
-          CHECK_AND_FILL_VEC_B0(impactParameterProduct);
-          CHECK_AND_FILL_VEC_B0(chi2PCA);
-          CHECK_AND_FILL_VEC_B0(decayLength);
-          CHECK_AND_FILL_VEC_B0(decayLengthXY);
-          CHECK_AND_FILL_VEC_B0(decayLengthNormalised);
-          CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
-          CHECK_AND_FILL_VEC_B0(cpa);
-          CHECK_AND_FILL_VEC_B0(cpaXY);
-          CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
-          CHECK_AND_FILL_VEC_B0(prong0MlScoreBkg);
-          CHECK_AND_FILL_VEC_B0(prong0MlScorePrompt);
-          CHECK_AND_FILL_VEC_B0(prong0MlScoreNonprompt);
-          // TPC PID variable
-          CHECK_AND_FILL_VEC_B0_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
-          // TOF PID variable
-          CHECK_AND_FILL_VEC_B0_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
-          // Combined PID variables
-          CHECK_AND_FILL_VEC_B0_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
-        }
-      } else {
-        switch (idx) {
-          CHECK_AND_FILL_VEC_B0(ptProng0);
-          CHECK_AND_FILL_VEC_B0(ptProng1);
-          CHECK_AND_FILL_VEC_B0(impactParameter0);
-          CHECK_AND_FILL_VEC_B0(impactParameter1);
-          CHECK_AND_FILL_VEC_B0(impactParameterProduct);
-          CHECK_AND_FILL_VEC_B0(chi2PCA);
-          CHECK_AND_FILL_VEC_B0(decayLength);
-          CHECK_AND_FILL_VEC_B0(decayLengthXY);
-          CHECK_AND_FILL_VEC_B0(decayLengthNormalised);
-          CHECK_AND_FILL_VEC_B0(decayLengthXYNormalised);
-          CHECK_AND_FILL_VEC_B0(cpa);
-          CHECK_AND_FILL_VEC_B0(cpaXY);
-          CHECK_AND_FILL_VEC_B0(maxNormalisedDeltaIP);
-          // TPC PID variable
-          CHECK_AND_FILL_VEC_B0_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
-          // TOF PID variable
-          CHECK_AND_FILL_VEC_B0_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
-          // Combined PID variables
-          CHECK_AND_FILL_VEC_B0_FUNC(prong1, tpcTofNSigmaPi1, o2::pid_tpc_tof_utils::getTpcTofNSigmaPi1);
+        if constexpr (reduced) {
+          switch (idx) {
+            CHECK_AND_FILL_VEC_B0(prong0MlScoreBkg);
+            CHECK_AND_FILL_VEC_B0(prong0MlScorePrompt);
+            CHECK_AND_FILL_VEC_B0(prong0MlScoreNonprompt);
+          }
+        } else {
+          if (mlScoresD) {
+            switch (idx) {
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreBkg, *mlScoresD, 0);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScorePrompt, *mlScoresD, 1);
+              CHECK_AND_FILL_VEC_B0_INDEX(prong0MlScoreNonprompt, *mlScoresD, 2);
+            }
+          } else {
+            LOG(fatal) << "ML scores of D not provided";
+          }
         }
       }
     }

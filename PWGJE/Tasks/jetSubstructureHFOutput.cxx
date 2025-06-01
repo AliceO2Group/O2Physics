@@ -695,11 +695,10 @@ struct JetSubstructureHFOutputTask {
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputSubstructureMatchingMC, "jet substructure matching output MC", false);
 
   void processOutputJetsMCD(aod::JetCollisionMCD const& collision,
-                            aod::JetMcCollisions const&,
                             JetTableMCD const& jets,
                             soa::Join<CandidateTableMCD, CandidateRhosTable> const& candidates)
   {
-    analyseCharged<false>(collision, jets, candidates, products.collisionOutputTableMCD, products.jetOutputTableMCD, products.jetSubstructureOutputTableMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, jetMappingMCD, candidateMapping, configs.jetPtMinMCD, collision.mcCollision().weight());
+    analyseCharged<false>(collision, jets, candidates, products.collisionOutputTableMCD, products.jetOutputTableMCD, products.jetSubstructureOutputTableMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, jetMappingMCD, candidateMapping, configs.jetPtMinMCD, collision.weight());
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputJetsMCD, "hf jet substructure output MCD", false);
 
