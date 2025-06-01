@@ -65,8 +65,8 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 
 struct UccZdc {
 
-  static constexpr float collEnergy{2.68};
-  static constexpr float zEro{0.};
+  static constexpr float kCollEnergy{2.68};
+  static constexpr float kZero{0.};
 
   // Configurables Event Selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "use isNoCollInTimeRangeStrict?"};
@@ -101,13 +101,19 @@ struct UccZdc {
   Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
 
   // Configurables, binning
+  Configurable<int> nBinsITSTrack{"nBinsITSTrack", 2000, "N bins ITS tracks"};
+  Configurable<float> minITSTrack{"minITSTrack", 0., "Min ITS tracks"};
+  Configurable<float> maxITSTrack{"maxITSTrack", 6000., "Min ITS tracks"};
   Configurable<float> maxAmpFV0{"maxAmpFV0", 2000, "Max FV0 amp"};
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
+  Configurable<int> nBinsAmpFT0Fine{"nBinsAmpFT0Fine", 1000, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
   Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
+  Configurable<int> nBinsNchFine{"nBinsNchFine", 3000, "N bins Nch (|eta|<0.8)"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
-  Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
-  Configurable<int> nBinsZDC{"nBinsZDC", 400, "N bins ZDC"};
+  Configurable<float> maxNch{"maxNch", 3000, "Max Nch (|eta|<0.8)"};
+  Configurable<int> nBinsZN{"nBinsZN", 400, "N bins ZN"};
+  Configurable<int> nBinsZP{"nBinsZP", 160, "N bins ZP"};
   Configurable<float> minZN{"minZN", 0, "Min ZN signal"};
   Configurable<float> maxZN{"maxZN", 150, "Max ZN signal"};
   Configurable<float> maxZP{"maxZP", 60, "Max ZP signal"};
@@ -171,7 +177,7 @@ struct UccZdc {
     registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
     registry.add("NchUncorrected", ";#it{N}_{ch} (|#eta| < 0.8);Entries;", kTH1F, {{300, 0., 3000.}});
     registry.add("hEventCounter", ";;Events", kTH1F, {axisEvent});
-    registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
+    registry.add("ZNamp", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
     registry.add("ExcludedEvtVsFT0M", ";T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9);Entries;", kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsNch", ";#it{N}_{ch} (|#eta|<0.8);Entries;", kTH1F, {{300, 0, 3000}});
     registry.add("Nch", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);", kTH1F, {{nBinsNch, minNch, maxNch}});
@@ -202,11 +208,17 @@ struct UccZdc {
     x->SetBinLabel(17, "Within ZEM cut?");
 
     if (doprocessZdcCollAss) {
-      registry.add("NchVsPt", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);;", kTH2F, {{{nBinsNch, minNch, maxNch}, {axisPt}}});
-      registry.add("NchVsOneParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected); ZNA+ZNC; #LT[#it{p}_{T}^{(1)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("NchVsTwoParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(2)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("NchVsThreeParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(3)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("NchVsFourParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(4)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, -0.5, maxZN}}});
+      registry.add("NchVsZN", ";#it{N}_{ch} (|#eta| < 0.8); ZNA+ZNC;", kTH2F, {{{nBinsNchFine, minNch, maxNch}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NchVsZP", ";#it{N}_{ch} (|#eta| < 0.8); ZPA+ZPC;", kTH2F, {{{nBinsNchFine, minNch, maxNch}, {nBinsZP, -0.5, maxZP}}});
+      registry.add("NITSTacksVsZN", ";ITS tracks; ZNA+ZNC;", kTH2F, {{{nBinsITSTrack, minITSTrack, maxITSTrack}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NITSTacksVsZP", ";ITS tracks; ZPA+ZPC;", kTH2F, {{{nBinsITSTrack, minITSTrack, maxITSTrack}, {nBinsZP, -0.5, maxZP}}});
+      registry.add("T0MVsZN", ";T0A+T0C amp (#times 1/100); ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0Fine, 0., maxAmpFT0}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("T0MVsZP", ";T0A+T0C amp (#times 1/100); ZPA+ZPC;", kTH2F, {{{nBinsAmpFT0Fine, 0., maxAmpFT0}, {nBinsZP, -0.5, maxZP}}});
+      registry.add("NchVsZNVsPt", ";#it{N}_{ch} (|#eta| < 0.8); ZNA+ZNC;#it{p}_{T} (GeV/#it{c})", kTH3F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, -0.5, maxZN}, {axisPt}}});
+      registry.add("NchVsOneParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected); ZNA+ZNC; #LT[#it{p}_{T}^{(1)}]#G (GeV/#it{c})T", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NchVsTwoParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(2)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NchVsThreeParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(3)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("NchVsFourParCorrVsZN", ";#it{N}_{ch} (|#eta| < 0.8, Corrected);ZNA+ZNC;#LT[#it{p}_{T}^{(4)}]#GT", kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, -0.5, maxZN}}});
     }
 
     if (doprocessMCclosure) {
@@ -260,21 +272,21 @@ struct UccZdc {
       registry.add("NchVsEt", ";#it{E}_{T} (|#eta|<0.8);#LTITS+TPC tracks#GT (|#eta|<0.8);", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsNPV", ";#it{N}_{PV} (|#eta|<1);ITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
       registry.add("NchVsITStracks", ";ITS tracks nCls >= 5;TITS+TPC tracks (|#eta|<0.8);", kTH2F, {{{300, -0.5, 5999.5}, {nBinsNch, minNch, maxNch}}});
-      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 1800.}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 600.}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZN}}});
-      registry.add("ZNAamp", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-      registry.add("ZPAamp", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
-      registry.add("ZNCamp", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZN}});
-      registry.add("ZPCamp", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZP}});
+      registry.add("ZNVsFT0A", ";T0A (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 1800.}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{80, 0., 600.}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZN, -0.5, maxZN}}});
+      registry.add("ZNAamp", ";ZNA;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
+      registry.add("ZPAamp", ";ZPA;Entries;", kTH1F, {{nBinsZP, -0.5, maxZP}});
+      registry.add("ZNCamp", ";ZNC;Entries;", kTH1F, {{nBinsZN, -0.5, maxZN}});
+      registry.add("ZPCamp", ";ZPC;Entries;", kTH1F, {{nBinsZP, -0.5, maxZP}});
       registry.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZN}, {30, -0.5, maxZN}}});
       registry.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZP}, {100, -0.5, maxZP}}});
       registry.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
       registry.add("ZNCVsZPC", ";ZPC;ZNC;", kTH2F, {{{20, -0.5, maxZP}, {30, -0.5, maxZN}}});
       registry.add("ZNVsZEM", ";ZEM;ZNA+ZNC;", kTH2F, {{{60, -0.5, maxZEM}, {60, -0.5, maxZN}}});
-      registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
-      registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
-      registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minZN, maxZN}}});
+      registry.add("ZNCVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+      registry.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+      registry.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
     }
 
@@ -429,10 +441,10 @@ struct UccZdc {
     float tZPC{zdc.timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= collEnergy;
-    znC /= collEnergy;
-    zpA /= collEnergy;
-    zpC /= collEnergy;
+    znA /= kCollEnergy;
+    znC /= kCollEnergy;
+    zpA /= kCollEnergy;
+    zpC /= kCollEnergy;
     float sumZNs{znA + znC};
     float sumZEMs{aZEM1 + aZEM2};
 
@@ -576,6 +588,8 @@ struct UccZdc {
     const double normT0M{(aT0A + aT0C) / 100.};
     float znA{foundBC.zdc().amplitudeZNA()};
     float znC{foundBC.zdc().amplitudeZNC()};
+    float zpA{foundBC.zdc().amplitudeZPA()};
+    float zpC{foundBC.zdc().amplitudeZPC()};
     float aZEM1{foundBC.zdc().amplitudeZEM1()};
     float aZEM2{foundBC.zdc().amplitudeZEM2()};
     float tZNA{foundBC.zdc().timeZNA()};
@@ -584,9 +598,12 @@ struct UccZdc {
     float tZPC{foundBC.zdc().timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= collEnergy;
-    znC /= collEnergy;
+    znA /= kCollEnergy;
+    znC /= kCollEnergy;
+    zpA /= kCollEnergy;
+    zpC /= kCollEnergy;
     float sumZNs{znA + znC};
+    float sumZPs{zpA + zpC};
     float sumZEMs{aZEM1 + aZEM2};
 
     // TDC cut
@@ -609,9 +626,12 @@ struct UccZdc {
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
 
     // Nch-based selection
-    int glbTracks{0};
+    int itsTracks = 0, glbTracks = 0;
     for (const auto& track : tracks) {
       // Track Selection
+      if (track.hasITS()) {
+        itsTracks++;
+      }
       if (!track.isGlobalTrack()) {
         continue;
       }
@@ -693,7 +713,7 @@ struct UccZdc {
       if (!track.isGlobalTrack()) {
         continue;
       }
-      registry.fill(HIST("NchVsPt"), w1, track.pt());
+      registry.fill(HIST("NchVsZNVsPt"), w1, sumZNs, track.pt());
     }
 
     // EbE one-particle pT correlation
@@ -716,6 +736,12 @@ struct UccZdc {
 
     registry.fill(HIST("Nch"), w1);
     registry.fill(HIST("ZNamp"), sumZNs);
+    registry.fill(HIST("NchVsZN"), w1, sumZNs);
+    registry.fill(HIST("NchVsZP"), w1, sumZPs);
+    registry.fill(HIST("NITSTacksVsZN"), itsTracks, sumZNs);
+    registry.fill(HIST("NITSTacksVsZP"), itsTracks, sumZPs);
+    registry.fill(HIST("T0MVsZN"), normT0M, sumZNs);
+    registry.fill(HIST("T0MVsZP"), normT0M, sumZPs);
     registry.fill(HIST("NchUncorrected"), glbTracks);
     registry.fill(HIST("NchVsOneParCorr"), w1, oneParCorr, w1);
     registry.fill(HIST("NchVsOneParCorrVsZN"), w1, sumZNs, oneParCorr, w1);
@@ -760,7 +786,7 @@ struct UccZdc {
       registry.fill(HIST("T0Ccent"), cent);
 
       // Half of the statistics for MC closure
-      if (rndNum >= zEro && rndNum < evtFracMCcl) {
+      if (rndNum >= kZero && rndNum < evtFracMCcl) {
         registry.fill(HIST("EvtsDivided"), 0);
 
         // To use run-by-run efficiency
