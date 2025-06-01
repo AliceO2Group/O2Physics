@@ -65,8 +65,8 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 
 struct UccZdc {
 
-  static constexpr float collEnergy{2.68};
-  static constexpr float zEro{0.};
+  static constexpr float KcollEnergy{2.68};
+  static constexpr float KzEro{0.};
 
   // Configurables Event Selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "use isNoCollInTimeRangeStrict?"};
@@ -441,10 +441,10 @@ struct UccZdc {
     float tZPC{zdc.timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= collEnergy;
-    znC /= collEnergy;
-    zpA /= collEnergy;
-    zpC /= collEnergy;
+    znA /= KcollEnergy;
+    znC /= KcollEnergy;
+    zpA /= KcollEnergy;
+    zpC /= KcollEnergy;
     float sumZNs{znA + znC};
     float sumZEMs{aZEM1 + aZEM2};
 
@@ -598,10 +598,10 @@ struct UccZdc {
     float tZPC{foundBC.zdc().timeZPC()};
     float tZDCdif{tZNC + tZPC - tZNA - tZPA};
     float tZDCsum{tZNC + tZPC + tZNA + tZPA};
-    znA /= collEnergy;
-    znC /= collEnergy;
-    zpA /= collEnergy;
-    zpC /= collEnergy;
+    znA /= KcollEnergy;
+    znC /= KcollEnergy;
+    zpA /= KcollEnergy;
+    zpC /= KcollEnergy;
     float sumZNs{znA + znC};
     float sumZPs{zpA + zpC};
     float sumZEMs{aZEM1 + aZEM2};
@@ -786,7 +786,7 @@ struct UccZdc {
       registry.fill(HIST("T0Ccent"), cent);
 
       // Half of the statistics for MC closure
-      if (rndNum >= zEro && rndNum < evtFracMCcl) {
+      if (rndNum >= KzEro && rndNum < evtFracMCcl) {
         registry.fill(HIST("EvtsDivided"), 0);
 
         // To use run-by-run efficiency
