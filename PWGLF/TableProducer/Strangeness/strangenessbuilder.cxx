@@ -2660,13 +2660,21 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto strangenessBuilderTask = adaptAnalysisTask<StrangenessBuilder>(cfgc);
 
-  bool isRun3 = true; 
-  bool isMC = false;
-  if(cfgc.options().hasOption("aod-metadata-Run") && cfgc.options().get<std::string>("aod-metadata-Run") == "2"){ 
-    isRun3 = false;
+  bool isRun3 = true, hasRunInfo = false; 
+  bool isMC = false, hasDataTypeInfo = false;
+  LOGF(info, "Bool: %i", cfgc.options().hasOption("aod-metadata-Run"));
+  
+  if(cfgc.options().hasOption("aod-metadata-Run") == true){ 
+    hasRunInfo = true;
+    if(cfgc.options().get<std::string>("aod-metadata-Run") == "2"){ 
+      isRun3 = false;
+    }
   }
-  if(cfgc.options().hasOption("aod-metadata-DataType") && cfgc.options().get<std::string>("aod-metadata-DataType") == "MC"){ 
-    isMC = true;
+  if(cfgc.options().hasOption("aod-metadata-DataType") == true){
+    hasDataTypeInfo = true;
+    if(cfgc.options().get<std::string>("aod-metadata-DataType") == "MC"){ 
+      isMC = true;
+    }
   }
 
   int idxSwitches[8]; //8 switches (real / real r2 / MC / MC r2 + PID)
@@ -2708,10 +2716,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     }
   }
 
-  // positions of switches known - flip if asked for 
+  // positions of switches are known. Next: flip if asked for 
   if(autoConfigureProcess){ 
     int relevantProcess = static_cast<int>(isMC) + 2*static_cast<int>(!isRun3)  + 4*static_cast<int>(withPID); 
-    LOGF(info, "Automatic configuration of process switches requested! Bools: isRun3? %i, isMC? %i, withPID? %i (switch #%i)", isRun3, isMC, withPID, relevantProcess);
+    LOGF(info, "Automatic configuration of process switches requested! Present in metadata? Run %i DataType %i, Values: isRun3? %i, isMC? %i, withPID? %i (switch #%i)", hasRunInfo, hasDataTypeInfo, isRun3, isMC, withPID, relevantProcess);
     for(size_t idx = 0; idx < 8; idx ++){ 
       auto option = strangenessBuilderTask.options[idxSwitches[idx]];
       option.defaultValue = false; // switch all off
