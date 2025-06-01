@@ -170,7 +170,7 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::GIndexCol,
                   full::TimeStamp);
 
-DECLARE_SOA_TABLE(HfCandDDPairs, "AOD", "HFCANDDPAIR",
+DECLARE_SOA_TABLE(HfCandDDPairs, "AOD", "HFCANDDDPAIR",
                   full::PxProng0D1,
                   full::PxProng1D1,
                   full::PyProng0D1,
