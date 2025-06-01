@@ -44,7 +44,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "TPDGCode.h"
 
 using namespace std;
