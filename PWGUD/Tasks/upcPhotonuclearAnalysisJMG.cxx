@@ -179,8 +179,10 @@ struct UpcPhotonuclearAnalysisJMG {
   bool doPairCuts = false;
 
   // Output definitions
-  OutputObj<CorrelationContainer> same{"sameEvent"};
-  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+  OutputObj<CorrelationContainer> sameGapSideA{"sameEventGapSideA"};
+  OutputObj<CorrelationContainer> mixedGapSideA{"mixedEventGapSideA"};
+  OutputObj<CorrelationContainer> sameGapSideC{"sameEventGapSideC"};
+  OutputObj<CorrelationContainer> mixedGapSideC{"mixedEventGapSideC"};
 
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
