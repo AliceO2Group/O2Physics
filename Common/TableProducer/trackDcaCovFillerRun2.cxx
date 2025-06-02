@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file traciDcaCovFillerRun2.cxx
+/// \file trackDcaCovFillerRun2.cxx
 /// \author Aimeric Landou <aimeric.landou@cern.ch>, CERN
 /// \brief Fills DCA and DCA Cov tables for Run 2 tracks
 // Run 2 AO2Ds cannot have their dcacov filled by the current track-propagation workflow as the workflow isn't designed for them, given Run 2 tracks are already propagated to the PV.
