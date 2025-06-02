@@ -77,7 +77,7 @@ enum DType : uint8_t {
   D0
 };
 
-enum PairingType: uint8_t {
+enum PairingType : uint8_t {
   V0Only,
   TrackOnly,
   V0AndTrack
@@ -152,8 +152,8 @@ struct HfDataCreatorCharmResoReduced {
   // tracks, V0 and D candidates reduced tables
   Produces<aod::HfRedVzeros> hfCandV0;            // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRedTrkNoParams> hfTrackNoParam; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  Produces<aod::HfRed3PrNoTrks> hfCandD3Pr;          // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
-  Produces<aod::HfRed2PrNoTrks> hfCandD2Pr;      // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRed3PrNoTrks> hfCandD3Pr;       // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRed2PrNoTrks> hfCandD2Pr;       // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandD3PrMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfRed2ProngsMl> hfCandD2PrMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -267,7 +267,6 @@ struct HfDataCreatorCharmResoReduced {
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == cfgDmesCuts.selectionFlagDstarToD0Pi);
   Filter filterSelectD0Candidates = (aod::hf_sel_candidate_d0::isSelD0 >= cfgDmesCuts.selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= cfgDmesCuts.selectionFlagD0bar);
 
-
   Preslice<CandsDplusFiltered> candsDplusPerCollision = aod::hf_cand::collisionId;
   Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::hf_cand::collisionId;
   Preslice<CandsDstarFiltered> candsDstarPerCollision = aod::hf_cand::collisionId;
@@ -296,7 +295,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisPt{50, 0.f, 50.f, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisP{100, 0.f, 10.f, "#it{p} (GeV/#it{c})"};
     const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
-    const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"}; 
+    const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, "inv. mass (GeV/#it{c}^{2})"};
@@ -333,7 +332,7 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMassDplusK", "DplusK candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
     registry.add("hMassDplusProton", "DplusProton candidates; m_{D^{+}p} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPr}});
     registry.add("hMassDplusLambda", "DplusLambda candidates; m_{D^{+}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToLambda}});
-    // MC Rec 
+    // MC Rec
     registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{17, -8.5, 8.5}}});
     registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1F, {{16, -0.5, 15.5}}});
     registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
@@ -840,7 +839,7 @@ struct HfDataCreatorCharmResoReduced {
     std::map<int64_t, int64_t> selectedTracks;
     bool fillHfReducedCollision = false;
     const bool doTracks = pairingType == PairingType::TrackOnly || pairingType == PairingType::V0AndTrack;
-    const bool doV0s = pairingType == PairingType::V0Only|| pairingType == PairingType::V0AndTrack;
+    const bool doV0s = pairingType == PairingType::V0Only || pairingType == PairingType::V0AndTrack;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
@@ -859,7 +858,7 @@ struct HfDataCreatorCharmResoReduced {
       std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
       std::vector<typename TrIU::iterator> charmHadDauTracks{};
       varUtils.ptD = candD.pt();
-      if constexpr (dType == DType::Dstar){
+      if constexpr (dType == DType::Dstar) {
         LOG(info) << "I'm in the D* case";
         varUtils.signD = candD.signSoftPi();
         if (varUtils.signD > 0) {
@@ -922,11 +921,11 @@ struct HfDataCreatorCharmResoReduced {
         std::copy(candD.pVectorProng1().begin(), candD.pVectorProng1().end(), varUtils.pVectorProng1.begin());
         varUtils.pVectorProng2 = {0.f, 0.f, 0.f}; // D0 does not have a third prong
         if constexpr (withMl) {
-            std::copy(candD.mlProbD0().begin(), candD.mlProbD0().end(), bdtScores.begin());
-            std::copy(candD.mlProbD0bar().begin(), candD.mlProbD0bar().end(), bdtScores.begin() + 3);
+          std::copy(candD.mlProbD0().begin(), candD.mlProbD0().end(), bdtScores.begin());
+          std::copy(candD.mlProbD0bar().begin(), candD.mlProbD0bar().end(), bdtScores.begin() + 3);
         }
       } // end of dType switch
-      
+
       // Get single track variables
       float chi2TpcDauMax = -1.f;
       int nItsClsDauMin = 8, nTpcCrossRowsDauMin = 200;
@@ -987,27 +986,27 @@ struct HfDataCreatorCharmResoReduced {
                 } else {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, varUtils.pVectorProng2, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
                 }
-                if (!applyCutsForQaHistograms || 
+                if (!applyCutsForQaHistograms ||
                     (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
-                    varUtils.invMassD - varUtils.invMassD0 < 0.148f &&
-                    candidateV0.mK0Short > 0.485f &&
-                    candidateV0.mK0Short < 0.509f)) {
-                      registry.fill(HIST("hMassDstarK0s"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
+                     varUtils.invMassD - varUtils.invMassD0 < 0.148f &&
+                     candidateV0.mK0Short > 0.485f &&
+                     candidateV0.mK0Short < 0.509f)) {
+                  registry.fill(HIST("hMassDstarK0s"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
                 break;
               case DType::Dplus:
-              varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
-              varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom));
-              if (!applyCutsForQaHistograms || 
-                (varUtils.invMassD > 1.83f &&
-                 varUtils.invMassD < 1.92f &&
-                 candidateV0.mK0Short > 0.485f &&
-                 candidateV0.mK0Short < 0.509f)) {
+                varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+                varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom));
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD > 1.83f &&
+                     varUtils.invMassD < 1.92f &&
+                     candidateV0.mK0Short > 0.485f &&
+                     candidateV0.mK0Short < 0.509f)) {
                   registry.fill(HIST("hMassDplusK0s"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
                 }
                 break;
               default:
-                  break; // no other D meson types expected
+                break; // no other D meson types expected
             } // end of dType switch
           } // matched with K0s
           bool isLambda = TESTBIT(candidateV0.v0Type, Lambda);
@@ -1022,49 +1021,49 @@ struct HfDataCreatorCharmResoReduced {
                 } else {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, varUtils.pVectorProng2, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda});
                 }
-                if (!applyCutsForQaHistograms || 
+                if (!applyCutsForQaHistograms ||
                     (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
-                    varUtils.invMassD - varUtils.invMassD0 < 0.148f &&
-                    candidateV0.mLambda > 1.11f &&
-                    candidateV0.mLambda < 1.12f)) {
-                      registry.fill(HIST("hMassDstarLambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
+                     varUtils.invMassD - varUtils.invMassD0 < 0.148f &&
+                     candidateV0.mLambda > 1.11f &&
+                     candidateV0.mLambda < 1.12f)) {
+                  registry.fill(HIST("hMassDstarLambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
                 break;
               case DType::Dplus:
                 varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda});
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, candidateV0.mom));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD > 1.83f &&
-                  varUtils.invMassD < 1.92f &&
-                  candidateV0.mLambda > 1.11f &&
-                  candidateV0.mLambda < 1.12f)) {
-                    registry.fill(HIST("hMassDplusLambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD > 1.83f &&
+                     varUtils.invMassD < 1.92f &&
+                     candidateV0.mLambda > 1.11f &&
+                     candidateV0.mLambda < 1.12f)) {
+                  registry.fill(HIST("hMassDplusLambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
                 }
                 break;
               case DType::D0:
-                if (isLambda){
+                if (isLambda) {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassLambda});
                 } else {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassLambda});
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, candidateV0.mom));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD0 > 1.83f &&
-                  varUtils.invMassD0 < 1.92f &&
-                  candidateV0.mLambda > 1.11f &&
-                  candidateV0.mLambda < 1.12f)) {
-                    if (isLambda) {
-                      registry.fill(HIST("hMassD0Lambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
-                    } else {
-                      registry.fill(HIST("hMassD0Lambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
-                    }
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD0 > 1.83f &&
+                     varUtils.invMassD0 < 1.92f &&
+                     candidateV0.mLambda > 1.11f &&
+                     candidateV0.mLambda < 1.12f)) {
+                  if (isLambda) {
+                    registry.fill(HIST("hMassD0Lambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
+                  } else {
+                    registry.fill(HIST("hMassD0Lambda"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
+                  }
                 }
                 break;
               default:
-                break; 
+                break;
             } // end of dType switch
           } // matched with Lambda or AntiLambda
-                
+
           // fill V0 table
           // if information on V0 already stored, go to next V0
           if (!selectedV0s.count(v0.globalIndex())) {
@@ -1098,7 +1097,7 @@ struct HfDataCreatorCharmResoReduced {
       if constexpr (doTracks) {
         for (const auto& trackIndex : bachelorTrks) {
           LOG(info) << "I'm in the track loop";
-          auto track = tracks.rawIteratorAt(trackIndex.trackId());//trackIndex.template track_as<Tr>();
+          auto track = tracks.rawIteratorAt(trackIndex.trackId()); // trackIndex.template track_as<Tr>();
           if (!isTrackSelected(track, prongIdsD)) {
             continue;
           }
@@ -1115,7 +1114,7 @@ struct HfDataCreatorCharmResoReduced {
           switch (dType) {
             case DType::Dstar:
               // D* pi
-              if (std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi){
+              if (std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi) {
                 if (varUtils.signD > 0 && track.sign() < 0) {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus});
                 } else if (varUtils.signD < 0 && track.sign() > 0) {
@@ -1124,13 +1123,13 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
-                   varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
-                    registry.fill(HIST("hMassDstarPi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
-              } 
-              if (std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa){
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
+                     varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
+                  registry.fill(HIST("hMassDstarPi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
+              }
+              if (std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa) {
                 if (varUtils.signD > 0 && track.sign() < 0) {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus});
                 } else if (varUtils.signD < 0 && track.sign() > 0) {
@@ -1139,11 +1138,11 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
-                   varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
-                    registry.fill(HIST("hMassDstarK"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
+                     varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
+                  registry.fill(HIST("hMassDstarK"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
               }
               // D* p
               if (std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr) {
@@ -1155,11 +1154,11 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
-                   varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
-                      registry.fill(HIST("hMassDstarProton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD - varUtils.invMassD0 > 0.143f &&
+                     varUtils.invMassD - varUtils.invMassD0 < 0.148f)) {
+                  registry.fill(HIST("hMassDstarProton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
               }
               break;
             case DType::Dplus:
@@ -1171,12 +1170,12 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD > 1.83f &&
-                   varUtils.invMassD < 1.92f)) {
-                      registry.fill(HIST("hMassDplusPi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
-              } 
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD > 1.83f &&
+                     varUtils.invMassD < 1.92f)) {
+                  registry.fill(HIST("hMassDplusPi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
+              }
               // D+ K
               if (std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa) {
                 if (varUtils.signD * track.sign() < 0) {
@@ -1185,12 +1184,12 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD > 1.83f &&
-                   varUtils.invMassD < 1.92f)) {
-                      registry.fill(HIST("hMassDplusK"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
-              } 
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD > 1.83f &&
+                     varUtils.invMassD < 1.92f)) {
+                  registry.fill(HIST("hMassDplusK"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
+              }
               // D+ pr
               if (std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr) {
                 if (varUtils.signD * track.sign() < 0) {
@@ -1199,12 +1198,12 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = -1.f; // invalid case
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, varUtils.pVectorProng2, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD > 1.83f &&
-                   varUtils.invMassD < 1.92f)) {
-                      registry.fill(HIST("hMassDplusProton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
-                    }
-              } 
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD > 1.83f &&
+                     varUtils.invMassD < 1.92f)) {
+                  registry.fill(HIST("hMassDplusProton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD);
+                }
+              }
               break;
             case DType::D0:
               // D0 pi
@@ -1215,16 +1214,16 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus});
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD0 > 1.83f &&
-                   varUtils.invMassD0 < 1.92f)) {
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD0 > 1.83f &&
+                     varUtils.invMassD0 < 1.92f)) {
                   if (track.sign() > 0) {
                     registry.fill(HIST("hMassD0Pi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
                   } else {
                     registry.fill(HIST("hMassD0Pi"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
                   }
                 }
-              } 
+              }
               // D0 K
               if (std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa) {
                 if (track.sign() > 0) {
@@ -1233,14 +1232,14 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, pVecTrack}, std::array{MassPiPlus, MassKPlus, MassKPlus});
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD0 > 1.83f &&
-                   varUtils.invMassD0 < 1.92f)) {
-                    if (track.sign() > 0) {
-                      registry.fill(HIST("hMassD0K"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
-                    } else {
-                      registry.fill(HIST("hMassD0K"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
-                    }
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD0 > 1.83f &&
+                     varUtils.invMassD0 < 1.92f)) {
+                  if (track.sign() > 0) {
+                    registry.fill(HIST("hMassD0K"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
+                  } else {
+                    registry.fill(HIST("hMassD0K"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
+                  }
                 }
               }
               // D0 p
@@ -1251,14 +1250,14 @@ struct HfDataCreatorCharmResoReduced {
                   varUtils.invMassReso = RecoDecay::m(std::array{varUtils.pVectorProng1, varUtils.pVectorProng0, pVecTrack}, std::array{MassProton, MassKPlus, MassProton});
                 }
                 varUtils.ptReso = RecoDecay::pt(RecoDecay::sumOfVec(varUtils.pVectorProng0, varUtils.pVectorProng1, pVecTrack));
-                if (!applyCutsForQaHistograms || 
-                  (varUtils.invMassD0 > 1.83f &&
-                   varUtils.invMassD0 < 1.92f)) {
-                    if (track.sign() > 0) {
-                      registry.fill(HIST("hMassD0Proton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
-                    } else {
-                      registry.fill(HIST("hMassD0Proton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
-                    }
+                if (!applyCutsForQaHistograms ||
+                    (varUtils.invMassD0 > 1.83f &&
+                     varUtils.invMassD0 < 1.92f)) {
+                  if (track.sign() > 0) {
+                    registry.fill(HIST("hMassD0Proton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0);
+                  } else {
+                    registry.fill(HIST("hMassD0Proton"), varUtils.ptReso, varUtils.invMassReso - varUtils.invMassD0Bar);
+                  }
                 }
               }
               break;
@@ -1288,8 +1287,8 @@ struct HfDataCreatorCharmResoReduced {
                      varUtils.pVectorProng2[0], varUtils.pVectorProng2[1], varUtils.pVectorProng2[2],
                      nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax, dtype);
           if constexpr (withMl) {
-          hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
-        }  
+            hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
+          }
         } else if constexpr (dType == DType::D0) {
           hfCandD2Pr(prongIdsD[0], prongIdsD[1],
                      indexHfReducedCollision,
@@ -1298,9 +1297,9 @@ struct HfDataCreatorCharmResoReduced {
                      candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
                      nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax);
           if constexpr (withMl) {
-          hfCandD2PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
-        }  
-        }      
+            hfCandD2PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
+          }
+        }
         fillHfReducedCollision = true;
         if constexpr (dType == DType::Dstar) {
           registry.fill(HIST("hMassVsPtDstarPaired"), candD.pt(), varUtils.invMassD - varUtils.invMassD0);
@@ -1323,7 +1322,7 @@ struct HfDataCreatorCharmResoReduced {
     uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     // fill collision table if it contains a DPi pair a minima
     hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
-    } // end of runDataCreation function
+  } // end of runDataCreation function
 
   // to be modified in the future to allow for different decay channels
   template <uint8_t decayChannel>
@@ -1460,197 +1459,197 @@ struct HfDataCreatorCharmResoReduced {
 
   // Process functions
   // No ML
-  // Data 
+  // Data
   // D*
   void processDstarV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFiltered const& candsDstar,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                      CandsDstarFiltered const& candsDstar,
+                      aod::V0s const& V0s,
+                      TracksIUWithPID const& tracksIU,
+                      aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process Dstar candidates paired with V0s", true);
 
   void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFiltered const& candsDstar,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                         CandsDstarFiltered const& candsDstar,
+                         aod::TrackAssoc const& trackIndices,
+                         TracksWithPID const& tracks,
+                         aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrack, "Process Dstar candidates paired with Tracks", false);
 
   void processDstarV0AndTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFiltered const& candsDstar,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                              CandsDstarFiltered const& candsDstar,
+                              aod::V0s const& V0s,
+                              aod::TrackAssoc const& trackIndices,
+                              TracksWithPID const& tracks,
+                              TracksIUWithPID const& tracksIU,
+                              aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dstar, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dstar, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0AndTrack, "Process Dstar candidates paired with V0s and Tracks", false);
-  
+
   // Dplus
   void processDplusV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFiltered const& candsDplus,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                      CandsDplusFiltered const& candsDplus,
+                      aod::V0s const& V0s,
+                      TracksIUWithPID const& tracksIU,
+                      aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates paired with V0s", false);
 
   void processDplusTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFiltered const& candsDplus,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                         CandsDplusFiltered const& candsDplus,
+                         aod::TrackAssoc const& trackIndices,
+                         TracksWithPID const& tracks,
+                         aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusTrack, "Process Dplus candidates paired with Tracks", false);
 
   void processDplusV0AndTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFiltered const& candsDplus,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                              CandsDplusFiltered const& candsDplus,
+                              aod::V0s const& V0s,
+                              aod::TrackAssoc const& trackIndices,
+                              TracksWithPID const& tracks,
+                              TracksIUWithPID const& tracksIU,
+                              aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::Dplus, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::Dplus, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0AndTrack, "Process Dplus candidates paired with V0s and Tracks", false);
-  
+
   // D0
   void processD0V0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0Filtered const& candsD0,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                   CandsD0Filtered const& candsD0,
+                   aod::V0s const& V0s,
+                   TracksIUWithPID const& tracksIU,
+                   aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<false, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<false, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0V0, "Process D0 candidates paired with V0s", false);
 
   void processD0Track(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0Filtered const& candsD0,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                      CandsD0Filtered const& candsD0,
+                      aod::TrackAssoc const& trackIndices,
+                      TracksWithPID const& tracks,
+                      aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
   }
   // handle normalization by the right number of collisions
   hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -1658,39 +1657,39 @@ struct HfDataCreatorCharmResoReduced {
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0Track, "Process D0 candidates paired with Tracks", false);
 
   void processD0V0AndTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0Filtered const& candsD0,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                           CandsD0Filtered const& candsD0,
+                           aod::V0s const& V0s,
+                           aod::TrackAssoc const& trackIndices,
+                           TracksWithPID const& tracks,
+                           TracksIUWithPID const& tracksIU,
+                           aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<false, false, DType::D0, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<false, false, DType::D0, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0V0AndTrack, "Process D0 candidates paired with V0s and Tracks", false);
 
   // MC
   // D*
   void processDstarV0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDstarFiltered const& candsDstar,
-                              aod::V0s const& V0s,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              aod::BCsWithTimestamps const& bcs)
+                        CandsDstarFiltered const& candsDstar,
+                        aod::V0s const& V0s,
+                        TracksIUWithPIDAndMC const& tracksIU,
+                        aod::McParticles const& particlesMc,
+                        aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -1712,11 +1711,11 @@ struct HfDataCreatorCharmResoReduced {
 
   // Dplus
   void processDplusV0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                              CandsDplusFiltered const& candsDplus,
-                              aod::V0s const& V0s,
-                              TracksIUWithPIDAndMC const& tracksIU,
-                              aod::McParticles const& particlesMc,
-                              aod::BCsWithTimestamps const& bcs)
+                        CandsDplusFiltered const& candsDplus,
+                        aod::V0s const& V0s,
+                        TracksIUWithPIDAndMC const& tracksIU,
+                        aod::McParticles const& particlesMc,
+                        aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
     int sel8Coll{0};
@@ -1738,227 +1737,227 @@ struct HfDataCreatorCharmResoReduced {
   // D0
   // Not implemented yet
 
-  // ML 
-  // Data 
+  // ML
+  // Data
   // D*
   void processDstarV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFilteredWithMl const& candsDstar,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                            CandsDstarFilteredWithMl const& candsDstar,
+                            aod::V0s const& V0s,
+                            TracksIUWithPID const& tracksIU,
+                            aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dstar, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process Dstar candidates paired with V0s with ML info", false);
 
   void processDstarTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFilteredWithMl const& candsDstar,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                               CandsDstarFilteredWithMl const& candsDstar,
+                               aod::TrackAssoc const& trackIndices,
+                               TracksWithPID const& tracks,
+                               aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dstar, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarTrackWithMl, "Process Dstar candidates paired with Tracks with ML info", false);
 
   void processDstarV0AndTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDstarFilteredWithMl const& candsDstar,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                                    CandsDstarFilteredWithMl const& candsDstar,
+                                    aod::V0s const& V0s,
+                                    aod::TrackAssoc const& trackIndices,
+                                    TracksWithPID const& tracks,
+                                    TracksIUWithPID const& tracksIU,
+                                    aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dstar, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dstar, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0AndTrackWithMl, "Process Dstar candidates paired with V0s and Tracks with ML info", false);
-  
+
   // Dplus
   void processDplusV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFilteredWithMl const& candsDplus,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                            CandsDplusFilteredWithMl const& candsDplus,
+                            aod::V0s const& V0s,
+                            TracksIUWithPID const& tracksIU,
+                            aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dplus, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates paired with V0s with ML info", false);
 
   void processDplusTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFilteredWithMl const& candsDplus,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                               CandsDplusFilteredWithMl const& candsDplus,
+                               aod::TrackAssoc const& trackIndices,
+                               TracksWithPID const& tracks,
+                               aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dplus, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusTrackWithMl, "Process Dplus candidates paired with Tracks with ML info", false);
 
   void processDplusV0AndTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsDplusFilteredWithMl const& candsDplus,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                                    CandsDplusFilteredWithMl const& candsDplus,
+                                    aod::V0s const& V0s,
+                                    aod::TrackAssoc const& trackIndices,
+                                    TracksWithPID const& tracks,
+                                    TracksIUWithPID const& tracksIU,
+                                    aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::Dplus, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::Dplus, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0AndTrackWithMl, "Process Dplus candidates paired with V0s and Tracks with ML info", false);
-  
+
   // D0
   void processD0V0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0FilteredWithMl const& candsD0,
-    aod::V0s const& V0s,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                         CandsD0FilteredWithMl const& candsD0,
+                         aod::V0s const& V0s,
+                         TracksIUWithPID const& tracksIU,
+                         aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    runDataCreation<true, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, false, DType::D0, PairingType::V0Only>(collision, candsDThisColl, V0sThisColl, V0sThisColl, tracksIU, tracksIU, tracksIU, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0V0WithMl, "Process D0 candidates paired with V0s with ML info", false);
 
   void processD0TrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0FilteredWithMl const& candsD0,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    aod::BCsWithTimestamps const& bcs)
+                            CandsD0FilteredWithMl const& candsD0,
+                            aod::TrackAssoc const& trackIndices,
+                            TracksWithPID const& tracks,
+                            aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
     for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
 
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::D0, PairingType::TrackOnly>(collision, candsDThisColl, trackIdsThisColl, trackIdsThisColl, tracks, tracks, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0TrackWithMl, "Process D0 candidates paired with Tracks with ML info", false);
 
   void processD0V0AndTrackWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-    CandsD0FilteredWithMl const& candsD0,
-    aod::V0s const& V0s,
-    aod::TrackAssoc const& trackIndices,
-    TracksWithPID const& tracks,
-    TracksIUWithPID const& tracksIU,
-    aod::BCsWithTimestamps const& bcs)
+                                 CandsD0FilteredWithMl const& candsD0,
+                                 aod::V0s const& V0s,
+                                 aod::TrackAssoc const& trackIndices,
+                                 TracksWithPID const& tracks,
+                                 TracksIUWithPID const& tracksIU,
+                                 aod::BCsWithTimestamps const& bcs)
   {
-  int zvtxColl{0};
-  int sel8Coll{0};
-  int zvtxAndSel8Coll{0};
-  int zvtxAndSel8CollAndSoftTrig{0};
-  int allSelColl{0};
-  for (const auto& collision : collisions) {
-    o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
-    auto thisCollId = collision.globalIndex();
-    auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-    auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-    auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-    runDataCreation<true, false, DType::D0, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
-  }
-  // handle normalization by the right number of collisions
-  hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsD0.sliceBy(candsD0PerCollisionWithMl, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      runDataCreation<true, false, DType::D0, PairingType::V0AndTrack>(collision, candsDThisColl, V0sThisColl, trackIdsThisColl, tracks, tracksIU, tracks, bcs);
+    }
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processD0V0AndTrackWithMl, "Process D0 candidates paired with V0s and Tracks with ML info", false);
 
