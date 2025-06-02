@@ -10,10 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file traciDcaCovFillerRun2.cxx
-/// \brief Fills DCA and DCA Cov tables for Run 2 tracks
 /// \author Aimeric Landou <aimeric.landou@cern.ch>, CERN
+/// \brief Fills DCA and DCA Cov tables for Run 2 tracks
 // Run 2 AO2Ds cannot have their dcacov filled by the current track-propagation workflow as the workflow isn't designed for them, given Run 2 tracks are already propagated to the PV.
 // This task fills the DCA Cov (and DCA) tables for Run 2 tracks by "propagating" the tracks (though given they are already at the PV it doesn't actually do the propagation) and retrieving the DCA and DCA cov given by the propagateToDCABxByBz function
+
+#include <string>
 
 #include "TableHelper.h"
 #include "Common/Tools/TrackTuner.h"
@@ -42,7 +44,7 @@ struct TrackDcaCovFillerRun2 {
   o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathGrp{"grpmagPath", "GLO/GRP/GRP", "CCDB path of the grp file (run2)"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "CCDB path of the grp file (run2)"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
   HistogramRegistry registry{"registry"};
@@ -104,7 +106,7 @@ struct TrackDcaCovFillerRun2 {
       }
     }
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if constexpr (fillCovMat) {
         if (fillTracksDCA || fillTracksDCACov) {
           mDcaInfoCov.set(999, 999, 999, 999, 999);
