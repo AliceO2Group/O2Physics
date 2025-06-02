@@ -79,7 +79,7 @@ struct TrackDcaCovFillerRun2 {
   }
 
   // Running variables
-  gpu::gpustd::array<float, 2> mDcaInfo;
+  std::array<float, 2> mDcaInfo;
   o2::dataformats::DCA mDcaInfoCov;
   o2::dataformats::VertexBase mVtx;
   o2::track::TrackParametrization<float> mTrackPar;
