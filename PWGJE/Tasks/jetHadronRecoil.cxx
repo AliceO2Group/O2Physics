@@ -71,6 +71,8 @@ struct JetHadronRecoil {
   Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
+  Configurable<float> pTHatTrackMaxMCD{"pTHatTrackMaxMCD", 999.0, "maximum fraction of hard scattering for track acceptance in detector MC"};
+  Configurable<float> pTHatTrackMaxMCP{"pTHatTrackMaxMCP", 999.0, "maximum fraction of hard scattering for track acceptance in particle MC"};
   Configurable<float> rhoReferenceShift{"rhoReferenceShift", 0.0, "shift in rho calculated in reference events for consistency with signal events"};
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
@@ -219,6 +221,9 @@ struct JetHadronRecoil {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
+      if (track.pt() > pTHatTrackMaxMCD * pTHat) {
+        return;
+      }
       if (isSigCol && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(track.phi());
         ptTTAr.push_back(track.pt());
@@ -260,7 +265,7 @@ struct JetHadronRecoil {
 
     for (const auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCD * pTHat) {
-        continue;
+        return;
       }
       for (const auto& constituent : jet.template tracks_as<U>()) {
         if (constituent.pt() > leadingPT) {
@@ -335,6 +340,9 @@ struct JetHadronRecoil {
       isSigCol = false;
 
     for (const auto& particle : particles) {
+      if (particle.pt() > pTHatTrackMaxMCD * pTHat) {
+        return;
+      }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
       if (!pdgParticle) {
         continue;
@@ -370,7 +378,7 @@ struct JetHadronRecoil {
 
     for (const auto& jet : jets) {
       if (jet.pt() > pTHatMaxMCP * pTHat) {
-        continue;
+        return;
       }
       for (const auto& constituent : jet.template tracks_as<U>()) {
         registry.fill(HIST("hConstituents3D"), constituent.pt(), constituent.eta(), constituent.phi());
