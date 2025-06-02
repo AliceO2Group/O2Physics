@@ -162,6 +162,13 @@ struct upcPhotonuclearAnalysisJMG {
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
 
+  // Output definitions
+  OutputObj<CorrelationContainer> same{"sameEvent"};
+  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  UPCPairCuts mPairCuts;
+  bool doPairCuts = false;
+
   void init(InitContext const&)
   {
     const AxisSpec axisCollision{4, -0.5, 3.5};
@@ -276,6 +283,7 @@ struct upcPhotonuclearAnalysisJMG {
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -5.0f, 0.0f, 5.0f, 10.0f};
   // std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 50.0f, 400.0f};
+
   SliceCache cache;
 
   // Binning only on PosZ without multiplicity
@@ -428,6 +436,7 @@ struct upcPhotonuclearAnalysisJMG {
     float sumPt = 0;
     std::vector<float> vTrackPtSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA;
     std::vector<float> vTrackPtSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC;
+
     int nTracksChargedSideA(-222), nTracksChargedSideC(-222);
     int multiplicitySideA(-222), multiplicitySideC(-222);
 
@@ -589,10 +598,12 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
 
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process sameGapSideA event", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 
   void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
   {
+    int sgSide = reconstructedCollision.gapSide();
+    // int sgSide = 0;
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (collision1.size() == 0 || collision2.size() == 0) {
@@ -633,7 +644,7 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
 
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixedGapSideA events", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

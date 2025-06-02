@@ -81,6 +81,30 @@ enum CentEstimators { FV0A,
                       FDDM,
                       NTPV };
 
+bool testLambda(float pt, float l1, float l2, float cutThreshold, bool useNegativeCrossTerm)
+{
+  float l2Mean = 1.53126f + 9.50835e+06f / (1.f + 1.08728e+07f * pt + 1.73420e+06f * pt * pt);
+  float l1Mean = 1.12365f + 0.123770f * std::exp(-pt * 0.246551f) + 5.30000e-03f * pt;
+  float l2Sigma = 6.48260e-02f + 7.60261e+10f / (1.f + 1.53012e+11f * pt + 5.01265e+05f * pt * pt) + 9.00000e-03f * pt;
+  float l1Sigma = 4.44719e-04f + 6.99839e-01f / (1.f + 1.22497e+00f * pt + 6.78604e-07f * pt * pt) + 9.00000e-03f * pt;
+  float c = -0.35f - 0.550f * std::exp(-0.390730f * pt);
+  if (l1Sigma == 0.f || l2Sigma == 0.f)
+    return false;
+
+  float term1 = 0.5f * (l1 - l1Mean) * (l1 - l1Mean) / (l1Sigma * l1Sigma);
+  float term2 = 0.5f * (l2 - l2Mean) * (l2 - l2Mean) / (l2Sigma * l2Sigma);
+  float crossTerm = 0.5f * c * (l1 - l1Mean) * (l2 - l2Mean) / (l1Sigma * l2Sigma);
+
+  float rSquared;
+  if (useNegativeCrossTerm) {
+    rSquared = term1 + term2 - crossTerm;
+  } else {
+    rSquared = term1 + term2 + crossTerm;
+  }
+
+  return rSquared < cutThreshold;
+}
+
 struct PhosElId {
 
   Produces<o2::aod::PHOSMatchindexTable> phosMatch;
@@ -89,7 +113,10 @@ struct PhosElId {
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                              aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl,
                              aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
-  Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"};
+  Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"},
+    mSwapM20M02ForTestLambda{"mSwapM20M02ForTestLambda", false, "Swap m20 and m02 arguments for testLambda (false for note's correct order, true for swapped/original incorrect order)"},
+    mUseNegativeCrossTerm{"mUseNegativeCrossTerm", true, "Use negative sign for the cross-term in testLambda (true for analysis note version, false for old version)"};
+
   Configurable<float> mColMaxZ{"mColMaxZ", 10.f, "maximum z accepted in analysis"},
     mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"},
     mMinCluTime{"minCluTime", -25.e-9, "Min. cluster time"},
@@ -125,7 +152,8 @@ struct PhosElId {
     TPCNSigmaKaMax{"TPCNSigmaKaMax", {4.f}, "max TPC nsigma kaon for exclusion"},
     TOFNSigmaElMin{"TOFNSigmaElMin", {-3.f}, "min TOF nsigma e for inclusion"},
     TOFNSigmaElMax{"TOFNSigmaElMax", {3.f}, "max TOF nsigma e for inclusion"},
-    NsigmaTrackMatch{"NsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"};
+    NsigmaTrackMatch{"NsigmaTrackMatch", {2.f}, "PHOS Track Matching Nsigma for inclusion"},
+    mShowerShapeCutValue{"mShowerShapeCutValue", 4.f, "Cut threshold for testLambda shower shape"};
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
     mAmountOfModules{"mAmountOfModules", 4, "amount of modules for PHOS"},
@@ -371,7 +399,11 @@ struct PhosElId {
             clu.time() > mMaxCluTime || clu.time() < mMinCluTime)
           continue;
 
-        bool isDispOK = testLambda(cluE, clu.m02(), clu.m20());
+        bool isDispOK = false;
+        if (mSwapM20M02ForTestLambda)
+          isDispOK = testLambda(cluE, clu.m02(), clu.m20(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+        else
+          isDispOK = testLambda(cluE, clu.m20(), clu.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
         float posX = clu.x(), posZ = clu.z(), dX = trackX - posX, dZ = trackZ - posZ, Ep = cluE / trackMom;
 
         mHistManager.fill(HIST("coordinateMatching/hdZpmod"), dZ, trackPT, module);
@@ -446,6 +478,11 @@ struct PhosElId {
     for (auto const& clu : clusters) {
       double cluE = clu.e(), cluTime = clu.time();
       int mod = clu.mod();
+      bool isDispOK = false;
+      if (mSwapM20M02ForTestLambda)
+        isDispOK = testLambda(cluE, clu.m02(), clu.m20(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+      else
+        isDispOK = testLambda(cluE, clu.m20(), clu.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
       if (cluE > mMinCluE) {
         mHistManager.fill(HIST("clusterSpectra/hCluE_mod_energy_cut"), cluE, mod);
         mHistManager.fill(HIST("clusterSpectra/hCluE_v_mod_v_time"), cluE, cluTime * 1e9, mod);
@@ -455,7 +492,7 @@ struct PhosElId {
             mHistManager.fill(HIST("clusterSpectra/hCluE_mod_cell_cut"), cluE, mod);
             mHistManager.fill(HIST("coordinateMatching/hCluXZ_mod"), clu.x(), clu.z(), mod);
             mHistManager.fill(HIST("clusterSpectra/hCluE_ncells_mod"), cluE, clu.ncell(), mod);
-            if (testLambda(cluE, clu.m02(), clu.m20()))
+            if (isDispOK)
               mHistManager.fill(HIST("clusterSpectra/hCluE_mod_disp"), cluE, mod);
           }
         }
@@ -482,7 +519,7 @@ struct PhosElId {
       mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma"), cluE, matchedTrack.pt(), mod);
       mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
       mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma"), cluE / matchedTrack.p(), cluE, mod);
-      if (testLambda(cluE, clu.m02(), clu.m20())) {
+      if (isDispOK) {
         mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma_disp"), cluE, matchedTrack.pt(), mod);
         mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma_disp"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
         mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma_disp"), cluE / matchedTrack.p(), cluE, mod);
@@ -505,13 +542,13 @@ struct PhosElId {
           isElectron = true;
       }
       if (isElectron) {
-        mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma_TPC"), cluE, matchedTrack.pt(), mod);
-        mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma_TPC"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
-        mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma_TPC"), cluE / matchedTrack.p(), cluE, mod);
-        if (testLambda(cluE, clu.m02(), clu.m20())) {
-          mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma_disp_TPC"), cluE, matchedTrack.pt(), mod);
-          mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma_disp_TPC"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
-          mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma_disp_TPC"), cluE / matchedTrack.p(), cluE, mod);
+        mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma_TPCel"), cluE, matchedTrack.pt(), mod);
+        mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma_TPCel"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
+        mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma_TPCel"), cluE / matchedTrack.p(), cluE, mod);
+        if (isDispOK) {
+          mHistManager.fill(HIST("singleLoop/trackdist/clusterSpectra/hCluE_v_pt_Nsigma_disp_TPCel"), cluE, matchedTrack.pt(), mod);
+          mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_pt_Nsigma_disp_TPCel"), cluE / matchedTrack.p(), matchedTrack.pt(), mod);
+          mHistManager.fill(HIST("singleLoop/trackdist/energyMomentumRatio/hEp_v_E_Nsigma_disp_TPCel"), cluE / matchedTrack.p(), cluE, mod);
         }
       }
     } // end of cluster loop
@@ -592,21 +629,6 @@ struct PhosElId {
     trackX = posL[0];
     trackZ = posL[1];
     return true;
-  }
-  //_____________________________________________________________________________
-  bool testLambda(float pt, float l1, float l2)
-  {
-    // Parameterization for full dispersion
-    float l2Mean = 1.53126 + 9.50835e+06 / (1. + 1.08728e+07 * pt + 1.73420e+06 * pt * pt);
-    float l1Mean = 1.12365 + 0.123770 * std::exp(-pt * 0.246551) + 5.30000e-03 * pt;
-    float l2Sigma = 6.48260e-02 + 7.60261e+10 / (1. + 1.53012e+11 * pt + 5.01265e+05 * pt * pt) + 9.00000e-03 * pt;
-    float l1Sigma = 4.44719e-04 + 6.99839e-01 / (1. + 1.22497e+00 * pt + 6.78604e-07 * pt * pt) + 9.00000e-03 * pt;
-    float c = -0.35 - 0.550 * std::exp(-0.390730 * pt);
-
-    return 0.5 * (l1 - l1Mean) * (l1 - l1Mean) / l1Sigma / l1Sigma +
-             0.5 * (l2 - l2Mean) * (l2 - l2Mean) / l2Sigma / l2Sigma +
-             0.5 * c * (l1 - l1Mean) * (l2 - l2Mean) / l1Sigma / l2Sigma <
-           4.;
   }
 };
 
@@ -863,7 +885,10 @@ struct TpcElIdMassSpectrum {
   using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                              aod::TracksDCACov, aod::pidTOFFullEl, aod::pidTPCFullEl,
                              aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
-  Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"};
+  Configurable<bool> isSel8{"isSel8", 1, "check if event is Single Event Latch-up 8"},
+    mSwapM20M02ForTestLambda{"mSwapM20M02ForTestLambda", false, "Swap m20 and m02 arguments for testLambda (false for note's correct order, true for swapped/original incorrect order)"},
+    mUseNegativeCrossTerm{"mUseNegativeCrossTerm", true, "Use negative sign for the cross-term in testLambda (true for analysis note version, false for old version)"};
+
   Configurable<float> mColMaxZ{"mColMaxZ", 10.f, "maximum z accepted in analysis"},
     mMinCluE{"mMinCluE", 0.1, "Minimum cluster energy for photons in the analysis"},
     mCutMIPCluE{"mCutMIPCluE", 0.3, "Min cluster energy to reject MIPs in the analysis"},
@@ -903,7 +928,8 @@ struct TpcElIdMassSpectrum {
     eeMassMin{"eeMassMin", {2.9f}, "J/psi(e+e-) Mass corridor lower limit (for Chic selection)"},
     eeMassMax{"eeMassMax", {3.3f}, "J/psi(e+e-) Mass corridor upper limit (for Chic selection)"},
     JpsiMass{"JpsiMass", {3.097f}, "J/psi Mass constant"},
-    mMassSpectrumLowerCutoff{"mMassSpectrumLowerCutoff", {0.01f}, "Used to exclude 0+0 masses"};
+    mMassSpectrumLowerCutoff{"mMassSpectrumLowerCutoff", {0.01f}, "Used to exclude 0+0 masses"},
+    mShowerShapeCutValue{"mShowerShapeCutValue", 4.f, "Cut threshold for testLambda shower shape"};
 
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"},
     CentBinning{"CentBinning", 10, "Binning for centrality"},
@@ -1223,7 +1249,11 @@ struct TpcElIdMassSpectrum {
                 continue;
               bool matchFlag = false;
               bool isJpsi = (pairMass > eeMassMin && pairMass < eeMassMax);
-              bool isDispOK = testLambda(cluE, gamma.m02(), gamma.m20());
+              bool isDispOK = false;
+              if (mSwapM20M02ForTestLambda)
+                isDispOK = testLambda(cluE, gamma.m02(), gamma.m20(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+              else
+                isDispOK = testLambda(cluE, gamma.m20(), gamma.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
               for (auto const& match : matches) {
                 if (gamma.index() == match.caloClusterId()) {
                   matchFlag = true;
@@ -1333,10 +1363,16 @@ struct TpcElIdMassSpectrum {
 
     for (auto const& gamma1 : clusters) {
       float cluE1 = gamma1.e();
-      if (cluE1 < mMinCluE || cluE1 > mMaxCluE || gamma1.ncell() < mMinCluNcell || gamma1.time() > mMaxCluTime || gamma1.time() < mMinCluTime)
+      if (cluE1 < mMinCluE || gamma1.ncell() < mMinCluNcell || gamma1.time() > mMaxCluTime || gamma1.time() < mMinCluTime)
         continue;
       bool matchFlag1 = false;
-      if (!testLambda(cluE1, gamma1.m02(), gamma1.m20()))
+
+      bool isDispOKClu1 = false;
+      if (mSwapM20M02ForTestLambda)
+        isDispOKClu1 = testLambda(cluE1, gamma1.m02(), gamma1.m20(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+      else
+        isDispOKClu1 = testLambda(cluE1, gamma1.m20(), gamma1.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+      if (!isDispOKClu1)
         continue;
       for (auto const& match : matches) {
         if (gamma1.index() == match.caloClusterId()) {
@@ -1348,9 +1384,14 @@ struct TpcElIdMassSpectrum {
         if (gamma1.index() >= gamma2.index())
           continue;
         float cluE2 = gamma2.e();
-        if (cluE2 < mMinCluE || cluE2 > mMaxCluE || gamma2.ncell() < mMinCluNcell || gamma2.time() > mMaxCluTime || gamma2.time() < mMinCluTime)
+        if (cluE2 < mMinCluE || gamma2.ncell() < mMinCluNcell || gamma2.time() > mMaxCluTime || gamma2.time() < mMinCluTime)
           continue;
-        if (!testLambda(cluE2, gamma2.m02(), gamma2.m20()))
+        bool isDispOKClu2 = false;
+        if (mSwapM20M02ForTestLambda)
+          isDispOKClu2 = testLambda(cluE2, gamma2.m02(), gamma2.m20(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+        else
+          isDispOKClu2 = testLambda(cluE2, gamma2.m20(), gamma2.m02(), mShowerShapeCutValue, mUseNegativeCrossTerm);
+        if (!isDispOKClu2)
           continue;
         bool matchFlag2 = false;
         for (auto const& match : matches) {
@@ -1394,21 +1435,6 @@ struct TpcElIdMassSpectrum {
         mHistManager.fill(HIST("hTrackVZ_Cut"), track.z());
       }
     }
-  }
-
-  bool testLambda(float pt, float l1, float l2)
-  {
-    float l2Mean = 1.53126f + 9.50835e+06f / (1.f + 1.08728e+07f * pt + 1.73420e+06f * pt * pt);
-    float l1Mean = 1.12365f + 0.123770f * std::exp(-pt * 0.246551f) + 5.30000e-03f * pt;
-    float l2Sigma = 6.48260e-02f + 7.60261e+10f / (1.f + 1.53012e+11f * pt + 5.01265e+05f * pt * pt) + 9.00000e-03f * pt;
-    float l1Sigma = 4.44719e-04f + 6.99839e-01f / (1.f + 1.22497e+00f * pt + 6.78604e-07f * pt * pt) + 9.00000e-03f * pt;
-    float c = -0.35f - 0.550f * std::exp(-0.390730f * pt);
-    if (l1Sigma == 0.f || l2Sigma == 0.f)
-      return false;
-    return 0.5f * (l1 - l1Mean) * (l1 - l1Mean) / (l1Sigma * l1Sigma) +
-             0.5f * (l2 - l2Mean) * (l2 - l2Mean) / (l2Sigma * l2Sigma) +
-             0.5f * c * (l1 - l1Mean) * (l2 - l2Mean) / (l1Sigma * l2Sigma) <
-           4.f;
   }
 };
 
