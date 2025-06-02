@@ -886,7 +886,9 @@ struct PhotonChargedTriggerCorrelation
       return doEffCorrectionPipm ? getH1ValueAt(h1PtInvEffPipm, value) : 1;
     } else if constexpr (T == ParticleType::PhotonPCM) {
       return doEffCorrectionPhotonPCM ? getH1ValueAt(h1PtInvEffPhotonPCM, value) : 1;
-    } else return 1;
+    } else {
+      return 1;
+    }
   }
 
 
@@ -1258,8 +1260,8 @@ struct PhotonChargedTriggerCorrelation
                     associated.pt(), associated.mgg(), collision.posZ(), collision.multNTracksGlobal(),
                     getInvEff<ParticleType::Trigger>(trigger.pt()));
 
-        // pi0 mass range
         if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
+          // pi0 mass range
           histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCM"),
                       associated.pt(), associated.phi(), associated.eta(),
                       getInvEff<ParticleType::Trigger>(trigger.pt()));
@@ -1268,9 +1270,8 @@ struct PhotonChargedTriggerCorrelation
                       trigger.eta() - associated.eta(),
                       trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                       getInvEff<ParticleType::Trigger>(trigger.pt()));
-        }
-        // pi0 mass side range
-        else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
+        } else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
+          // pi0 mass side range
           histos.fill(HIST("reco/corr/h6_corr_pi0PCMSide"),
                       getDeltaPhi(trigger.phi(), associated.phi()),
                       trigger.eta() - associated.eta(),
