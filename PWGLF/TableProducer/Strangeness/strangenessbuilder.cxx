@@ -2713,7 +2713,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     }
   }
   if((!hasRunInfo || !hasDataTypeInfo) && autoConfigureProcessConfig){ 
-    throw std::runtime_error("Autoconfigure requested but no metadata information found! Please check if --aod-file <file> was used in the last workflow added in the execution and if the AO2D in question has metadata save.");
+    throw std::runtime_error("Autoconfigure requested but no metadata information found! Please check if --aod-file <file> was used in the last workflow added in the execution and if the AO2D in question has metadata saved in it.");
   }
 
   // positions of switches are known. Next: flip if asked for 
