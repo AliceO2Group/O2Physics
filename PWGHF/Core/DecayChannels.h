@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 
 /// \file DecayChannels.h
-/// \brief Definitions of constants for MC flagging of decay channels.
+/// \brief Definitions of constants for MC flagging of HF decay channels.
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
-/// \note DecayChannel enums define unique combinations of the mother particle and final daughters.
-/// \note DecayChannelResonant enums define unique combinations of the mother particle and intermediate daughters.
+/// \note DecayChannel enums define unique combinations of the mother particle and the daughters for non-resonant channels.
+/// \note DecayChannelResonant enums define unique combinations of the mother particle and the daughters for resonant channels.
 /// \note Daughter ordering convention: (charm|strange|π±|K±|π0), (baryon|meson), (+|−)
 
 #ifndef PWGHF_CORE_DECAYCHANNELS_H_
@@ -30,7 +30,7 @@ namespace o2::hf_decay
 
 namespace hf_cand_2prong
 {
-/// @brief 2-prong candidates
+/// @brief 2-prong decay channels
 enum DecayChannel : int8_t {
   // D0
   D0ToPiK = 1, // π+ K−
@@ -45,7 +45,7 @@ enum DecayChannel : int8_t {
 
 namespace hf_cand_3prong
 {
-/// @brief 3-prong candidates
+/// @brief 3-prong decay channels
 enum DecayChannel : int8_t {
   // D+
   DplusToPiKPi = 1, // π+ K− π+
@@ -71,7 +71,7 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
-/// @brief 3-prong candidates resonant
+/// @brief resonant 3-prong decay channels
 enum DecayChannelResonant : int8_t {
   // D+
   DplusToPhiPi,   // φ π+
@@ -86,7 +86,7 @@ enum DecayChannelResonant : int8_t {
 
 namespace hf_cand_dstar
 {
-/// @brief D*+ candidates
+/// @brief D*+ decay channels
 enum DecayChannel : int8_t {
   // D*+
   DstarToPiKPi = 1, // π+ K− π+ (from [(D0 → π+ K−) π+])
@@ -98,7 +98,7 @@ enum DecayChannel : int8_t {
 
 namespace hf_cand_beauty_neutral
 {
-/// @brief neutral beauty candidates
+/// @brief neutral-beauty decay channels
 enum DecayChannel : int8_t {
   // B0
   B0ToDminusPi = 1, // D− π+
@@ -115,6 +115,7 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
+/// @brief resonant neutral-beauty decay channels
 enum DecayChannelResonant : int8_t {
   // B0
   B0ToDminusRhoplus = 1, // D− ρ+
@@ -131,7 +132,7 @@ enum DecayChannelResonant : int8_t {
 
 namespace hf_cand_bplus
 {
-/// @brief B+ candidates
+/// @brief B+ decay channels
 enum DecayChannel : int8_t {
   // B+
   BplusToD0Pi = 1, // anti-D0 π+
@@ -139,7 +140,7 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
-/// @brief B+ candidates resonant
+/// @brief resonant B+ decay channels
 enum DecayChannelResonant : int8_t {
   // B+
   BplusToD0Rhoplus = 1, // anti-D0 ρ+
