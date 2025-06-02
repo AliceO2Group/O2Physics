@@ -162,13 +162,6 @@ struct upcPhotonuclearAnalysisJMG {
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
 
-  // Output definitions
-  OutputObj<CorrelationContainer> same{"sameEvent"};
-  OutputObj<CorrelationContainer> mixed{"mixedEvent"};
-
-  UPCPairCuts mPairCuts;
-  bool doPairCuts = false;
-
   void init(InitContext const&)
   {
     const AxisSpec axisCollision{4, -0.5, 3.5};
@@ -600,9 +593,9 @@ struct upcPhotonuclearAnalysisJMG {
 
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 
-  void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
+  void processMixed()
   {
-    int sgSide = reconstructedCollision.gapSide();
+    // int sgSide = reconstructedCollision.gapSide();
     // int sgSide = 0;
 
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
