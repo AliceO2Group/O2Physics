@@ -267,6 +267,7 @@ struct nucleiSpectra {
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
+  Produces<o2::aod::NucleiPairTable> nucleiPairTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -297,6 +298,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
+  Configurable<bool> cfgFillPairTree{"cfgFillPairTree", true, "Fill trees for pairs of light nuclei"};
   Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
@@ -833,14 +835,24 @@ struct nucleiSpectra {
     }
 
     fillDataInfo(collision, tracks);
-    for (auto& c : nuclei::candidates) {
-      if (c.fillTree) {
-        nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS);
+    for (size_t i1{0}; i1 < nuclei::candidates.size(); ++i1) {
+      auto& c1 = nuclei::candidates[i1];
+      if (c1.fillTree) {
+        nucleiTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.beta, c1.zVertex, c1.DCAxy, c1.DCAz, c1.TPCsignal, c1.ITSchi2, c1.TPCchi2, c1.TOFchi2, c1.flags, c1.TPCfindableCls, c1.TPCcrossedRows, c1.ITSclsMap, c1.TPCnCls, c1.TPCnClsShared, c1.clusterSizesITS);
+        if (cfgFillPairTree) {
+          for (size_t i2{i1 + 1}; i2 < nuclei::candidates.size(); ++i2) {
+            auto& c2 = nuclei::candidates[i2];
+            if (!c2.fillTree || ((c1.flags & c2.flags) & 0x1F) == 0) {
+              continue;
+            }
+            nucleiPairTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.TPCsignal, c1.DCAxy, c1.DCAz, c1.clusterSizesITS, c1.flags, c2.pt, c2.eta, c2.phi, c2.tpcInnerParam, c2.TPCsignal, c2.DCAxy, c2.DCAz, c2.clusterSizesITS, c2.flags);
+          }
+        }
       }
-      if (c.fillDCAHist) {
+      if (c1.fillDCAHist) {
         for (int iS{0}; iS < nuclei::species; ++iS) {
-          if (c.flags & BIT(iS)) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls);
+          if (c1.flags & BIT(iS)) {
+            nuclei::hDCAHists[c1.pt < 0][iS]->Fill(std::abs(c1.pt), c1.DCAxy, c1.DCAz, c1.nSigmaTPC[iS], c1.tofMasses[iS], c1.ITSnCls, c1.TPCnCls);
           }
         }
       }
