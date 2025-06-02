@@ -514,7 +514,7 @@ struct nucleiSpectra {
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
-    spectra.add("hMCDCAxyVsDecRadius", "DCA xy vs DecayRadius", HistType::kTH2F, {{100, 0., 0.1, "Decay radius"}, {1500, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    spectra.add("hMCDCAxyVsDecRadius", "DCA xy vs DecayRadius", HistType::kTH2F, {{20, 0., 0.2, "Decay radius"}, {150, -0.05, 0.05, "DCA_{xy} (cm)"}});
     for (int iC{0}; iC < 2; ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
 
