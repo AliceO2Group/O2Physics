@@ -20,7 +20,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -38,7 +37,7 @@ using PIDTracks = soa::Join<
   aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection,
   aod::pidTOFFullPi, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFbeta>;
 
-using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct DedxAnalysis {
 
@@ -53,8 +52,6 @@ struct DedxAnalysis {
   static constexpr int kEtaIntervals = 8;
   static constexpr int kParticlesType = 4;
   float tpcCut = 0.6;
-  float centMin = 0.0;
-  float centMax = 100.0;
   float pionMin = 0.35;
   float pionMax = 0.45;
   float elTofCut = 0.1;
@@ -71,6 +68,8 @@ struct DedxAnalysis {
                                  "max chi2 per cluster TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f,
                                  "max chi2 per cluster ITS"};
+  Configurable<float> maxZDistanceToIP{"maxZDistanceToIP", 10.0f,
+                                       "max z distance to IP"};
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
@@ -95,6 +94,7 @@ struct DedxAnalysis {
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
   Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
+  Configurable<bool> additionalCuts{"additionalCuts", false, "additional cuts"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -117,6 +117,7 @@ struct DedxAnalysis {
     selectedTracks.SetMaxChi2PerClusterITS(maxChi2ITS);
     selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
     selectedTracks.SetMaxDcaZ(maxDCAz);
+    selectedTracks.SetRequireGoldenChi2(true);
 
     return selectedTracks;
   }
@@ -382,13 +383,22 @@ struct DedxAnalysis {
     if (!collision.sel8())
       return;
 
+    if (additionalCuts) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        return;
+
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        return;
+
+      if (std::abs(collision.posZ()) >= maxZDistanceToIP)
+        return;
+
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+        return;
+    }
+
     // Event Counter
     registryDeDx.fill(HIST("histRecVtxZData"), collision.posZ());
-
-    // Centrality
-    float centrality = collision.centFT0C();
-    if (centrality < centMin || centrality > centMax)
-      centrality = 1.0;
 
     // Kaons
     for (const auto& trk : tracks) {
