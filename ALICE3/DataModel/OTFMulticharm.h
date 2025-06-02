@@ -32,7 +32,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(XiCPion1, xiCPion1, int, Tracks, "_Pi1XiC");
 DECLARE_SOA_INDEX_COLUMN_FULL(XiCPion2, xiCPion2, int, Tracks, "_Pi2XiC");
 DECLARE_SOA_INDEX_COLUMN_FULL(XiCCPion, xiCCPion, int, Tracks, "_PiXiCC");
 
-
 DECLARE_SOA_COLUMN(XicMass, xicMass, float);
 DECLARE_SOA_COLUMN(XiccMass, xiccMass, float);
 
@@ -100,7 +99,6 @@ DECLARE_SOA_COLUMN(Pi2cEta, pi2cEta, float);
 DECLARE_SOA_COLUMN(PiccPt, piccPt, float);
 DECLARE_SOA_COLUMN(PiccEta, piccEta, float);
 
-
 } // namespace otfmulticharm
 DECLARE_SOA_TABLE(MCharmIndices, "AOD", "MCharmIndices",
                   o2::soa::Index<>,
@@ -158,7 +156,7 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::PiccTofNSigmaInner,
                   otfmulticharm::PiccTofDeltaOuter,
                   otfmulticharm::PiccTofNSigmaOuter,
-                
+
                   otfmulticharm::BachPt,
                   otfmulticharm::BachEta,
 

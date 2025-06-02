@@ -726,14 +726,14 @@ struct alice3multicharmTable {
                 thisXiCcandidate.dca, thisXiCCcandidate.dca,
                 thisXiCcandidate.mass, thisXiCCcandidate.mass,
                 thisXiCCcandidate.pt, thisXiCCcandidate.eta,
-                xi.dcaXY(), xi.dcaZ(), 
-                xicdcaXY, xicdcaZ, 
+                xi.dcaXY(), xi.dcaZ(),
+                xicdcaXY, xicdcaZ,
                 xiccdcaXY, xiccdcaZ,
-                piFromXi.dcaXY(), piFromXi.dcaZ(), 
-                piFromLa.dcaXY(), piFromLa.dcaZ(), 
+                piFromXi.dcaXY(), piFromXi.dcaZ(),
+                piFromLa.dcaXY(), piFromLa.dcaZ(),
                 prFromLa.dcaXY(), prFromLa.dcaZ(),
-                pi1c.dcaXY(), pi1c.dcaZ(), 
-                pi2c.dcaXY(), pi2c.dcaZ(), 
+                pi1c.dcaXY(), pi1c.dcaZ(),
+                pi2c.dcaXY(), pi2c.dcaZ(),
                 picc.dcaXY(), picc.dcaZ(),
                 xicDecayRadius2D, xiccDecayRadius2D,
                 xicProperLength, xicDecayDistanceFromPV,
@@ -749,8 +749,7 @@ struct alice3multicharmTable {
                 piFromLa.pt(), piFromLa.eta(),
                 pi1c.pt(), pi1c.eta(),
                 pi2c.pt(), pi2c.eta(),
-                picc.pt(), picc.eta()
-              );
+                picc.pt(), picc.eta());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);

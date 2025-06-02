@@ -53,17 +53,15 @@
 #include "DetectorsVertexing/PVertexerHelpers.h"
 #include "CommonConstants/PhysicsConstants.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using multicharmtracks = soa::Join<aod::MCharmIndices, aod::MCharmCores>;
 
-struct alice3multicharm
-{
+struct alice3multicharm {
   SliceCache cache;
-  
+
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisXiccMass{"axisXiccMass", {200, 3.521f, 3.721f}, "Xicc Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisDCA{"axisDCA", {400, 0, 400}, "DCA (#mum)"};
@@ -82,7 +80,7 @@ struct alice3multicharm
   Configurable<float> picMinDCAz{"picMinDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> picMaxTofDiffInner{"picTofDiffInner", 1e+4, "|signal - expected| (ps)"};
   Configurable<float> picMinPt{"picMinPt", -1, "Minimum pT for Xic pions"};
-  
+
   Configurable<float> piccMinDCAxy{"piccMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
   Configurable<float> piccMinDCAz{"piccMinDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
   Configurable<float> piccMaxTofDiffInner{"piccMaxTofDiffInner", 1e+4, "|signal - expected| (ps)"};
@@ -97,7 +95,7 @@ struct alice3multicharm
   Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for Xic decay from PV (cm)"};
   Configurable<float> xicMinProperLength{"xicMinProperLength", -1, "Minimum proper length for Xic decay (cm)"};
   Configurable<float> xicMaxProperLength{"xicMaxProperLength", 1e+4, "Minimum proper length for Xic decay (cm)"};
-  
+
   Configurable<float> xiccMaxDauDCA{"xiccMaxDauDCA", 1e+4, "DCA between Xicc daughters (cm)"};
   Configurable<float> xiccMinRadius{"xiccMinRadius", -1, "Minimum R2D for Xicc decay (cm)"};
   Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
@@ -141,59 +139,59 @@ struct alice3multicharm
     for (const auto& xiccCand : multiCharmTracks) {
       if (xiccCand.xicDauDCA() > xicMaxDauDCA || xiccCand.xiccDauDCA() > xiccMaxDauDCA)
         continue;
-      
+
       if (std::fabs(xiccCand.xiDCAxy()) < xiMinDCAxy || std::fabs(xiccCand.xiDCAz()) < xiMinDCAz)
         continue;
-      
+
       if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz)
-       continue;
-      
-      if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz)
-       continue;
-      
-      if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy || std::fabs(xiccCand.piccDCAz()) < piccMinDCAz)
-       continue;
-      
-      if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy || std::fabs(xiccCand.xicDCAz()) < xicMinDCAz)
-       continue;
-      
-      if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz)
-       continue;
-      
+        continue;
+
       if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz)
         continue;
-      
+
+      if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy || std::fabs(xiccCand.piccDCAz()) < piccMinDCAz)
+        continue;
+
+      if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy || std::fabs(xiccCand.xicDCAz()) < xicMinDCAz)
+        continue;
+
+      if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz)
+        continue;
+
+      if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy || std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz)
+        continue;
+
       if (std::fabs(xiccCand.xiccDCAxy()) > xiccMaxDCAxy || std::fabs(xiccCand.xiccDCAz()) > xiccMaxDCAz)
         continue;
-      
+
       // Cut on time delta as LoI for now
       if (xiccCand.pi1cTofDeltaInner() > picMaxTofDiffInner)
-       continue;
-      
+        continue;
+
       if (xiccCand.pi2cTofDeltaInner() > picMaxTofDiffInner)
         continue;
-      
+
       if (xiccCand.piccTofDeltaInner() > piccMaxTofDiffInner)
-       continue;
-      
+        continue;
+
       if (xiccCand.pi1cPt() < picMinPt || xiccCand.pi2cPt() < picMinPt)
         continue;
-      
+
       if (xiccCand.piccPt() < piccMinPt)
-       continue;
-      
+        continue;
+
       if (xiccCand.xicDecayRadius2D() < xicMinRadius)
-       continue;
-      
+        continue;
+
       if (xiccCand.xiccDecayRadius2D() < xiccMinRadius)
         continue;
-      
+
       if (xiccCand.xicProperLength() < xicMinProperLength || xiccCand.xicProperLength() > xicMaxProperLength)
         continue;
-      
+
       if (xiccCand.xiccProperLength() < xiccMinProperLength || xiccCand.xiccProperLength() > xiccMaxProperLength)
-       continue;
-      
+        continue;
+
       if (xiccCand.xicDistanceFromPV() < xicMinDecayDistanceFromPV)
         continue;
 
