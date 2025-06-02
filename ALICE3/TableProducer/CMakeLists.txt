@@ -41,7 +41,7 @@ o2physics_add_dpl_workflow(alice3-decayfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
-                    o2physics_add_dpl_workflow(alice3-multicharm-table
+o2physics_add_dpl_workflow(alice3-multicharm-table
                     SOURCES alice3-multicharmTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
