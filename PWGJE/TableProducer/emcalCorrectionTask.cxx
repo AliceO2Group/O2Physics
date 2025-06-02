@@ -97,6 +97,7 @@ struct EmcalCorrectionTask {
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
   Configurable<bool> applyCellTimeCorrection{"applyCellTimeCorrection", true, "apply a correction to the cell time for data and MC: Shift both average cell times to 0 and smear MC time distribution to fit data better. For MC requires isMC to be true"};
   Configurable<float> trackMinPt{"trackMinPt", 0.3, "Minimum pT for tracks to perform track matching, to reduce computing time. Tracks below a certain pT will be loopers anyway."};
+  Configurable<bool> fillQA{"fillQA", false, "Switch to turn on QA histograms."};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -206,22 +207,26 @@ struct EmcalCorrectionTask {
     // Setup QA hists.
     // NOTE: This is not comprehensive.
     using O2HistType = o2::framework::HistType;
-    o2::framework::AxisSpec energyAxis{200, 0., 100., "E (GeV)"},
-      timeAxis{300, -100, 200., "t (ns)"},
-      etaAxis{160, -0.8, 0.8, "#eta"},
-      phiAxis{72, 0, 2 * 3.14159, "phi"},
-      nlmAxis{50, -0.5, 49.5, "NLM"};
-    mHistManager.add("hCellE", "hCellE", O2HistType::kTH1F, {energyAxis});
+    o2::framework::AxisSpec energyAxis{200, 0., 100., "#it{E} (GeV)"},
+      timeAxis{300, -100, 200., "#it{t} (ns)"},
+      etaAxis{160, -0.8, 0.8, "#it{#eta}"},
+      phiAxis{72, 0, 2 * 3.14159, "#it{#varphi} (rad)"},
+      nlmAxis{50, -0.5, 49.5, "NLM"},
+      fCrossAxis{100, 0., 1., "F_{+}"},
+      sigmaLongAxis{100, 0., 1.0, "#sigma^{2}_{long}"},
+      sigmaShortAxis{100, 0., 1.0, "#sigma^{2}_{short}"},
+      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"};
+    mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hHGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for high gain cells (low energies)
     mHistManager.add("hLGCellTimeEnergy", "hCellTime", O2HistType::kTH2F, {{300, -30, 30}, cellEnergyBins}); // Cell time vs energy for low gain cells (high energies)
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", O2HistType::kTH2D, {{96, -0.5, 95.5}, {208, -0.5, 207.5}});
-    mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1F, {energyAxis});
-    mHistManager.add("hClusterNLM", "hClusterNLM", O2HistType::kTH1F, {nlmAxis});
+    mHistManager.add("hClusterE", "hClusterE", O2HistType::kTH1D, {energyAxis});
+    mHistManager.add("hClusterNLM", "hClusterNLM", O2HistType::kTH1D, {nlmAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
-    mHistManager.add("hClusterTime", "hClusterTime", O2HistType::kTH1F, {timeAxis});
+    mHistManager.add("hClusterTime", "hClusterTime", O2HistType::kTH1D, {timeAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", O2HistType::kTH1D, {{200, -0.5, 199.5, "N_{trk}"}});
     mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", O2HistType::kTH1D, {{3, -0.5, 2.5}});
@@ -251,9 +256,15 @@ struct EmcalCorrectionTask {
     hBC->GetXaxis()->SetBinLabel(6, "no EMCal cells and with collision");
     hBC->GetXaxis()->SetBinLabel(7, "no EMCal cells and mult. collisions");
     hBC->GetXaxis()->SetBinLabel(8, "all BC");
-    if (isMC) {
-      mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", O2HistType::kTH1I, {{20, 0, 20}});
-      mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", O2HistType::kTH1F, {energyAxis});
+    if (isMC.value) {
+      mHistManager.add("hContributors", "hContributors;contributor per cell hit;#it{counts}", O2HistType::kTH1D, {{20, 0, 20}});
+      mHistManager.add("hMCParticleEnergy", "hMCParticleEnergy;#it{E} (GeV/#it{c});#it{counts}", O2HistType::kTH1D, {energyAxis});
+    }
+    if (fillQA.value) {
+      mHistManager.add("hClusterNCellE", "hClusterNCellE", O2HistType::kTH2D, {energyAxis, nCellAxis});
+      mHistManager.add("hClusterFCrossE", "hClusterFCrossE", O2HistType::kTH2D, {energyAxis, fCrossAxis});
+      mHistManager.add("hClusterFCrossSigmaLongE", "hClusterFCrossSigmaLongE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaLongAxis});
+      mHistManager.add("hClusterFCrossSigmaShortE", "hClusterFCrossSigmaShortE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaShortAxis});
     }
 
     // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
@@ -721,6 +732,12 @@ struct EmcalCorrectionTask {
       mHistManager.fill(HIST("hClusterNLM"), cluster.getNExMax());
       mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
+      if (fillQA.value) {
+        mHistManager.fill(HIST("hClusterNCellE"), cluster.E(), cluster.getNCells());
+        mHistManager.fill(HIST("hClusterFCrossE"), cluster.E(), cluster.getFCross());
+        mHistManager.fill(HIST("hClusterFCrossSigmaLongE"), cluster.E(), cluster.getFCross(), cluster.getM02());
+        mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
+      }
       if (indexMapPair && trackGlobalIndex) {
         for (unsigned int iTrack = 0; iTrack < std::get<0>(*indexMapPair)[iCluster].size(); iTrack++) {
           if (std::get<0>(*indexMapPair)[iCluster][iTrack] >= 0) {
