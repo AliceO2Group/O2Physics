@@ -30,7 +30,7 @@ namespace o2::hf_decay
 
 namespace hf_cand_2prong
 {
-/// @brief 2-prong decay channels
+/// @brief 2-prong candidates: non-resonant channels
 enum DecayChannel : int8_t {
   // D0
   D0ToPiK = 1, // π+ K−
@@ -41,11 +41,21 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
+/// @brief 2-prong candidates: resonant channels
+enum DecayChannelResonant : int8_t {
+  // D0
+  D0ToRhoplusPi = 1, // ρ+ π−
+  D0ToRhoplusK,      // ρ+ K−
+  D0ToKstar0Pi0,     // anti-K*0 π0
+  D0ToKstarPi,       // K*− π+
+  //
+  LastChannelResonant
+};
 } // namespace hf_cand_2prong
 
 namespace hf_cand_3prong
 {
-/// @brief 3-prong decay channels
+/// @brief 3-prong candidates: non-resonant channels
 enum DecayChannel : int8_t {
   // D+
   DplusToPiKPi = 1, // π+ K− π+
@@ -56,6 +66,7 @@ enum DecayChannel : int8_t {
   DsToPiKK,      // π+ K− K+
   DsToPiKKPi0,   // π+ K− K+ π0
   DsToPiPiK,     // π+ π− K+
+  DsToPiPiPi,    // π+ π− π+
   DsToPiPiPiPi0, // π+ π− π+ π0
   // D*+
   DstarToPiKPi, // π+ K− π+ (from [(D0 → π+ K−) π+])
@@ -71,14 +82,32 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
-/// @brief resonant 3-prong decay channels
+/// @brief 3-prong candidates: resonant channels
 enum DecayChannelResonant : int8_t {
   // D+
-  DplusToPhiPi,   // φ π+
-  DplusToK0starK, // K0* K+
+  DplusToPhiPi = 1, // φ π+
+  DplusToKstar0K,   // anti-K*0 K+
+  DplusToAKstar0K,  // anti-K*0(1430) K+ // FIXME: What to call this?
+  DplusToRho0Pi,    // ρ0 π+
+  DplusToF2Pi,      // f2(1270) π+
   // Ds+
-  DsToPhiPi,   // φ π+
-  DsToK0starK, // K0* K+
+  DsToPhiPi,      // φ π+
+  DsToPhiRhoplus, // φ ρ+
+  DsToKstar0K,    // anti-K*0 K+
+  DsToKstar0Pi,   // anti-K*0 π+
+  DsToRho0Pi,     // ρ0 π+
+  DsToRho0K,      // ρ0 K+
+  DsToF2Pi,       // f2(1270) π+
+  DsToF0K,        // f0(1370) K+
+  DsToEtaPi,      // η π+
+  // Λc+
+  LcToPKstar0,        // p K*0(892)
+  LcToDeltaplusplusK, // Δ++ K−
+  LcToLPi,            // Λ(1520) π+
+  LcToLK,             // Λ(1520) K+
+  // Ξc+
+  XicToPKstar0, // p anti-K*0(892)
+  XicToPPhi,    // p φ
   //
   LastChannelResonant
 };
@@ -86,7 +115,7 @@ enum DecayChannelResonant : int8_t {
 
 namespace hf_cand_dstar
 {
-/// @brief D*+ decay channels
+/// @brief D*+ candidates: non-resonant channels
 enum DecayChannel : int8_t {
   // D*+
   DstarToPiKPi = 1, // π+ K− π+ (from [(D0 → π+ K−) π+])
@@ -98,7 +127,7 @@ enum DecayChannel : int8_t {
 
 namespace hf_cand_beauty_neutral
 {
-/// @brief neutral-beauty decay channels
+/// @brief neutral-beauty candidates: non-resonant channels
 enum DecayChannel : int8_t {
   // B0
   B0ToDminusPi = 1, // D− π+
@@ -115,7 +144,7 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
-/// @brief resonant neutral-beauty decay channels
+/// @brief neutral-beauty candidates: resonant channels
 enum DecayChannelResonant : int8_t {
   // B0
   B0ToDminusRhoplus = 1, // D− ρ+
@@ -132,7 +161,7 @@ enum DecayChannelResonant : int8_t {
 
 namespace hf_cand_bplus
 {
-/// @brief B+ decay channels
+/// @brief B+ candidates: non-resonant channels
 enum DecayChannel : int8_t {
   // B+
   BplusToD0Pi = 1, // anti-D0 π+
@@ -140,7 +169,7 @@ enum DecayChannel : int8_t {
   //
   LastChannel
 };
-/// @brief resonant B+ decay channels
+/// @brief B+ candidates: resonant channels
 enum DecayChannelResonant : int8_t {
   // B+
   BplusToD0Rhoplus = 1, // anti-D0 ρ+
