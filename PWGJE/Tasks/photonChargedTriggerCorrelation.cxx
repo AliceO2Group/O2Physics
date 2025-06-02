@@ -26,17 +26,19 @@
 #define DETA_SCALE 4*ETA_MAX_DEFAULT - 2*ETA_MAX_DEFAULT
 
 
+#include <cmath>
 #include <deque>
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <chrono>
 #include <memory>
 #include <random>
 
-#include <TMath.h>
-#include <Math/Vector4D.h>
+#include "TMath.h"
+#include "Math/Vector4D.h"
 
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -72,7 +74,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(JetMcCollision, jetMcCollision, int , JMcCollision
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
-} // end corr_particle namespace
+} // namespace corr_particle
 
 // reco
 
@@ -81,7 +83,7 @@ namespace collision_extra_corr
 {
 DECLARE_SOA_COLUMN(SelEv, selEv, bool);
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
-} // end collision_extra_corr namespace
+} // namespace collision_extra_corr
 DECLARE_SOA_TABLE(CollisionsExtraCorr, "AOD", "COLLISIONSEXTRACORR",
                   collision_extra_corr::SelEv, collision_extra_corr::TrigEv);
 
@@ -89,7 +91,7 @@ DECLARE_SOA_TABLE(CollisionsExtraCorr, "AOD", "COLLISIONSEXTRACORR",
 namespace trigger
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // end trigger namespace
+} // namespace trigger
 DECLARE_SOA_TABLE(Triggers, "AOD", "TRIGGERS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, trigger::JetTrackId,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
@@ -99,7 +101,7 @@ using Trigger = Triggers::iterator;
 namespace hadron
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // end hadron namespace
+} // namespace hadron
 DECLARE_SOA_TABLE(Hadrons, "AOD", "HADRONS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, hadron::JetTrackId,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
@@ -109,7 +111,7 @@ using Hadron = Hadrons::iterator;
 namespace pipm
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(JetTrack, jetTrack, int, JetTracks, "");
-} // end pipm namespace
+} // namespace pipm
 DECLARE_SOA_TABLE(Pipms, "AOD", "PIPMS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, pipm::JetTrackId,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
@@ -121,7 +123,7 @@ namespace photon_pcm
 DECLARE_SOA_INDEX_COLUMN_FULL(V0PhotonKF, v0PhotonKF, int, V0PhotonsKF, "");
 DECLARE_SOA_COLUMN(PosTrackId, posTrackId, int);
 DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int);
-} // end photon_pcm namespace
+} // namespace photon_pcm
 DECLARE_SOA_TABLE(PhotonPCMs, "AOD", "PHOTONPCMS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm::V0PhotonKFId,
                   photon_pcm::PosTrackId, photon_pcm::NegTrackId,
@@ -138,7 +140,7 @@ DECLARE_SOA_COLUMN(NegTrack1Id, negTrack1Id, int);
 DECLARE_SOA_COLUMN(PosTrack2Id, posTrack2Id, int);
 DECLARE_SOA_COLUMN(NegTrack2Id, negTrack2Id, int);
 DECLARE_SOA_COLUMN(Mgg, mgg, float);
-} // end photon_pcm_pair namespace
+} // namespace photon_pcm_pair
 DECLARE_SOA_TABLE(PhotonPCMPairs, "AOD", "PHOTONPCMPAIRS",
                   o2::soa::Index<>, corr_particle::JetCollisionId, photon_pcm_pair::V0PhotonKF1Id, photon_pcm_pair::V0PhotonKF2Id,
                   photon_pcm_pair::PosTrack1Id, photon_pcm_pair::NegTrack1Id, photon_pcm_pair::PosTrack2Id, photon_pcm_pair::NegTrack2Id,
@@ -153,7 +155,7 @@ using PhotonPCMPair = PhotonPCMPairs::iterator;
 namespace mc_collision_extra_corr
 {
 DECLARE_SOA_COLUMN(TrigEv, trigEv, bool);
-} // end mc_collision_extra_corr namespace
+} // namespace mc_collision_extra_corr
 DECLARE_SOA_TABLE(McCollisionsExtraCorr, "AOD", "MCCOLLISIONSEXTRACORR",
                   mc_collision_extra_corr::TrigEv);
 
@@ -161,12 +163,12 @@ DECLARE_SOA_TABLE(McCollisionsExtraCorr, "AOD", "MCCOLLISIONSEXTRACORR",
 namespace trigger_particle
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(JetMcParticle, jetMcParticle, int, JetParticles, "");
-} // end trigger_particle namespace
+} // namespace trigger_particle
 DECLARE_SOA_TABLE(TriggerParticles, "AOD", "TRIGGERPARTICLES",
                   o2::soa::Index<>, corr_particle::JetMcCollisionId, trigger_particle::JetMcParticleId,
                   corr_particle::Pt, corr_particle::Phi, corr_particle::Eta);
 using TriggerParticle = TriggerParticles::iterator;
-} // end o2::aod namespace
+} // namespace o2::aod
 
 
 
@@ -275,7 +277,7 @@ struct CorrelationTableProducer
   // checks pipm selection (just PID (no additional track cuts))
   template <typename T_track> bool checkPipmTPCTOF(T_track const& track) {
     // too low for tof
-    if(track.pt() < piPIDLowPt) {
+    if (track.pt() < piPIDLowPt) {
       if (track.tpcNSigmaPi() > nSigmaPiTpcLowPt.value[0] && track.tpcNSigmaPi() < nSigmaPiTpcLowPt.value[1]) {
         return true;
       }
@@ -335,7 +337,7 @@ struct CorrelationTableProducer
 
 
       // trigger loop
-      for (auto const& trigger: triggers) {
+      for (auto const& trigger : triggers) {
         // track selection
         if (!checkGlobalTrackEta(trigger)) continue;
 
@@ -362,7 +364,7 @@ struct CorrelationTableProducer
 
 
     // hadron/pipm
-    for (auto const& track: tracks) {
+    for (auto const& track : tracks) {
       // track selection
       if (!checkGlobalTrackEta(track)) continue;
 
@@ -386,7 +388,7 @@ struct CorrelationTableProducer
 
 
     // hadron/pipm
-    for (auto const& track: tracks) {
+    for (auto const& track : tracks) {
       // track selection
       if (!checkGlobalTrackEta(track)) continue;
 
@@ -415,7 +417,7 @@ struct CorrelationTableProducer
 
 
     // photonPCM
-    for (auto const& v0Photon: v0PhotonsThisEvent) {
+    for (auto const& v0Photon : v0PhotonsThisEvent) {
       // photon selection
       if (std::abs(v0Photon.eta()) > etaMax) continue;
 
@@ -425,7 +427,7 @@ struct CorrelationTableProducer
     }
 
     // photonPCm pairs
-    for (auto const& [v0Photon1, v0Photon2]: soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(v0PhotonsThisEvent, v0PhotonsThisEvent))) {
+    for (auto const& [v0Photon1, v0Photon2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(v0PhotonsThisEvent, v0PhotonsThisEvent))) {
       // get kinematics
       ROOT::Math::PtEtaPhiMVector const p4V0PCM1(v0Photon1.pt(), v0Photon1.eta(), v0Photon1.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector const p4V0PCM2(v0Photon2.pt(), v0Photon2.eta(), v0Photon2.phi(), 0.);
@@ -453,7 +455,7 @@ struct CorrelationTableProducer
 
 
     // trigger loop
-    for (auto const& trigger: triggers) {
+    for (auto const& trigger : triggers) {
       // track selection
       auto const pdgParticle = pdg->GetParticle(trigger.pdgCode());
       if (!pdgParticle || pdgParticle->Charge() == 0) continue;
@@ -486,9 +488,9 @@ struct PhotonChargedTriggerCorrelation
   // general (kenobi)
   Configurable<std::string> pathCcdbEff{"pathCcdbEff", "Users/j/jkinner/efficiency/set_in_config", "base path to the ccdb efficiencies"};
   Configurable<std::string> urlCcdb{"urlCcdb", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<long> noLaterThanCcdb{"noLaterThanCcdb",
-                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                      "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> noLaterThanCcdb{"noLaterThanCcdb",
+                                         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                         "latest acceptable timestamp of creation for the object"};
 
   // analysis
   Configurable<bool> doEffCorrectionTrigger{"doEffCorrectionTrigger", false, "whether to do on-the-fly mixing correction for triggers"};
@@ -565,7 +567,7 @@ struct PhotonChargedTriggerCorrelation
 
   // random number generation
   static constexpr unsigned int SeedRandomEngine = 12345;
-	std::mt19937 randomEngine{SeedRandomEngine};
+  std::mt19937 randomEngine{SeedRandomEngine};
 
 
 
@@ -769,7 +771,7 @@ struct PhotonChargedTriggerCorrelation
     histos.add("mc/info/h1_mult_mcTrue", "h1_mult_mcTrue", kTH1F, {axisMult}, true);
 
     // reco and true collision correlations
-    for (auto const& collision_type: {"true", "true_reco"}) {
+    for (auto const& collision_type : {"true", "true_reco"}) {
       histos.add(std::format("mc/{}/corr/h3_ptPhiEta_trig", collision_type).data(), "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
       // hadron
       histos.add(std::format("mc/{}/corr/h3_ptPhiEta_assoc_hadron", collision_type).data(), "h3_ptPhiEta_assoc_hadron",
@@ -855,7 +857,7 @@ struct PhotonChargedTriggerCorrelation
     if (mcParticle.pdgCode() != PDG_t::kPi0) return false;
     // identify primary pi0 (account for 0 daughters for some reason)
     if (mcParticle.template daughters_as<aod::JetParticles>().size() == 0) return false;
-    for (auto const& pi0_daughter: mcParticle.template daughters_as<aod::JetParticles>()) {
+    for (auto const& pi0_daughter : mcParticle.template daughters_as<aod::JetParticles>()) {
       if (!pi0_daughter.isPhysicalPrimary()) return false;
     }
     // select pi0 -> gg
@@ -884,7 +886,7 @@ struct PhotonChargedTriggerCorrelation
       return doEffCorrectionPipm ? getH1ValueAt(h1PtInvEffPipm, value) : 1;
     } else if constexpr (T == ParticleType::PhotonPCM) {
       return doEffCorrectionPhotonPCM ? getH1ValueAt(h1PtInvEffPhotonPCM, value) : 1;
-    }
+    } else return 1;
   }
 
 
@@ -938,7 +940,7 @@ struct PhotonChargedTriggerCorrelation
   void corrProcessPlain(T_collision const& collision, T_associatedThisEvent const& associatedThisEvent,
                         T_funcPlain&& funcPlain) {
     // normal spectra (per event - not per trigger)
-    for (auto const& associated: associatedThisEvent) {
+    for (auto const& associated : associatedThisEvent) {
       funcPlain(collision, associated);
     }
   }
@@ -949,7 +951,7 @@ struct PhotonChargedTriggerCorrelation
   void corrProcessCorrelation(T_collision const& collision, T_triggersThisEvent const& triggersThisEvent, T_associatedThisEvent const& associatedThisEvent,
                               T_funcCorrelation&& funcCorrelation) {
     // correlation combinations
-    for (auto const& [trigger, associated]: soa::combinations(soa::CombinationsFullIndexPolicy(triggersThisEvent, associatedThisEvent))) {
+    for (auto const& [trigger, associated] : soa::combinations(soa::CombinationsFullIndexPolicy(triggersThisEvent, associatedThisEvent))) {
       funcCorrelation(collision, trigger, associated);
     }
   }
@@ -975,7 +977,7 @@ struct PhotonChargedTriggerCorrelation
     const float perTriggerWeight = 1./(mixUpToTriggerN - nTriggersThisDataFrame); // mixUpToTriggerN <= nTriggersThisDataFrame not problematic since no loop then
     // mixing loops
     for (int i_mixingTrigger = nTriggersThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
-      for (auto const& associated: associatedThisEvent) {
+      for (auto const& associated : associatedThisEvent) {
         funcMixing(collision, savedTriggersPt[i_mixingTrigger], savedTriggersPhi[i_mixingTrigger], savedTriggersEta[i_mixingTrigger], associated, perTriggerWeight);
       }
     }
@@ -1064,7 +1066,7 @@ struct PhotonChargedTriggerCorrelation
 
 
 
-    for (auto const& collision: collisions) {
+    for (auto const& collision : collisions) {
       // event selection
       if (!collision.selEv()) continue;
 
@@ -1072,7 +1074,7 @@ struct PhotonChargedTriggerCorrelation
       auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
 
       // trigger loop
-      for (auto const& trigger: triggersThisEvent) {
+      for (auto const& trigger : triggersThisEvent) {
         // trigger info
         histos.fill(HIST("reco/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta(),
                                                         getInvEff<ParticleType::Trigger>(trigger.pt()));
@@ -1116,8 +1118,7 @@ struct PhotonChargedTriggerCorrelation
         histos.fill(HIST("reco/plain/h3_ptPhiEta_hadron"),
                     associated.pt(), associated.phi(), associated.eta(),
                     getInvEff<ParticleType::Hadron>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessCorrelation(collision, triggers, hadrons,
       [this](auto const& collision, auto const& trigger, auto const& associated) {
@@ -1132,8 +1133,7 @@ struct PhotonChargedTriggerCorrelation
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     getInvEff<ParticleType::Trigger>(trigger.pt())*getInvEff<ParticleType::Hadron>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessMixing(collision, hadrons,
       [this](auto const& collision,
@@ -1143,8 +1143,7 @@ struct PhotonChargedTriggerCorrelation
                     mixingTriggerEta - associated.eta(),
                     mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     perTriggerWeight*getInvEff<ParticleType::Trigger>(mixingTriggerPt)*getInvEff<ParticleType::Hadron>(associated.pt()));
-      }, nTriggerMixingHadron
-    );
+      }, nTriggerMixingHadron);
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrHadron, "process standard correlation for associated hardons", false);
 
@@ -1161,8 +1160,7 @@ struct PhotonChargedTriggerCorrelation
         histos.fill(HIST("reco/plain/h3_ptPhiEta_pipm"),
                     associated.pt(), associated.phi(), associated.eta(),
                     getInvEff<ParticleType::Pipm>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessCorrelation(collision, triggers, pipms,
       [this](auto const& collision, auto const& trigger, auto const& associated) {
@@ -1177,8 +1175,7 @@ struct PhotonChargedTriggerCorrelation
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     getInvEff<ParticleType::Trigger>(trigger.pt())*getInvEff<ParticleType::Pipm>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessMixing(collision, pipms,
       [this](auto const& collision,
@@ -1188,8 +1185,7 @@ struct PhotonChargedTriggerCorrelation
                     mixingTriggerEta - associated.eta(),
                     mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     perTriggerWeight*getInvEff<ParticleType::Trigger>(mixingTriggerPt)*getInvEff<ParticleType::Pipm>(associated.pt()));
-      }, nTriggerMixingPipm
-    );
+      }, nTriggerMixingPipm);
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPipm, "process standard correlation for associated pipm", false);
 
@@ -1206,8 +1202,7 @@ struct PhotonChargedTriggerCorrelation
         histos.fill(HIST("reco/plain/h3_ptPhiEta_photonPCM"),
                     associated.pt(), associated.phi(), associated.eta(),
                     getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessCorrelation(collision, triggers, photonPCMs,
       [this](auto const& collision, auto const& trigger, auto const& associated) {
@@ -1222,8 +1217,7 @@ struct PhotonChargedTriggerCorrelation
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     getInvEff<ParticleType::Trigger>(trigger.pt())*getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-      }
-    );
+      });
 
     corrProcessMixing(collision, photonPCMs,
       [this](auto const& collision,
@@ -1233,8 +1227,7 @@ struct PhotonChargedTriggerCorrelation
                     mixingTriggerEta - associated.eta(),
                     mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                     perTriggerWeight*getInvEff<ParticleType::Trigger>(mixingTriggerPt)*getInvEff<ParticleType::PhotonPCM>(associated.pt()));
-      }, nTriggerMixingPhotonPCM
-    );
+      }, nTriggerMixingPhotonPCM);
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCM, "process standard correlation for associated photonPCM", false);
 
@@ -1253,8 +1246,7 @@ struct PhotonChargedTriggerCorrelation
         if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
           histos.fill(HIST("reco/plain/h3_ptPhiEta_pi0PCM"), associated.pt(), associated.phi(), associated.eta());
         }
-      }
-    );
+      });
 
     corrProcessCorrelation(collision, triggers, photonPCMPairs,
       [this](auto const& collision, auto const& trigger, auto const& associated) {
@@ -1285,30 +1277,27 @@ struct PhotonChargedTriggerCorrelation
                       trigger.pt(), associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                       getInvEff<ParticleType::Trigger>(trigger.pt()));
         }
-      }
-    );
+      });
 
     corrProcessMixing(collision, photonPCMPairs,
       [this](auto const& collision,
              float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-        // pi0 mass range
         if (associated.mgg() > pi0PCMMassRange.value[0] && associated.mgg() < pi0PCMMassRange.value[1]) {
+          // pi0 mass range
           histos.fill(HIST("reco/corr/h6_mix_pi0PCM"),
                       getDeltaPhi(mixingTriggerPhi, associated.phi()),
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                       perTriggerWeight*getInvEff<ParticleType::Trigger>(mixingTriggerPt));
-        }
-        // pi0 mass side range
-        else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
+        } else if (associated.mgg() > pi0PCMSideMassRange.value[0] && associated.mgg() < pi0PCMSideMassRange.value[1]) {
+          // pi0 mass side range
           histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
                       getDeltaPhi(mixingTriggerPhi, associated.phi()),
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.multNTracksGlobal(),
                       perTriggerWeight*getInvEff<ParticleType::Trigger>(mixingTriggerPt));
         }
-      }, nTriggerMixingPi0PCM
-    );
+      }, nTriggerMixingPi0PCM);
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPi0PCM, "process standard correlation for associated pi0PCM", false);
 
@@ -1337,7 +1326,7 @@ struct PhotonChargedTriggerCorrelation
       if (!collision2.selEv()) continue;
 
       // mixing loop
-      for (auto const& [photonPCM1, photonPCM2]: soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
+      for (auto const& [photonPCM1, photonPCM2] : soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
         ROOT::Math::PtEtaPhiMVector const p4photonPCM1(photonPCM1.pt(), photonPCM1.eta(), photonPCM1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector const p4photonPCM2(photonPCM2.pt(), photonPCM2.eta(), photonPCM2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector const p4photonPCMPair = p4photonPCM1 + p4photonPCM2;
@@ -1379,13 +1368,13 @@ struct PhotonChargedTriggerCorrelation
   void processMcTrueCorr(CorrMcCollision const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
   {
     // trigger pairing loop
-    for (auto const& trigger: triggerParticles) {
+    for (auto const& trigger : triggerParticles) {
       // trigger info
       histos.fill(HIST("mc/true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
 
 
       // hadrons (tracks) and pipm
-      for (auto const& associated: mcParticles) {
+      for (auto const& associated : mcParticles) {
         // exclude self correlation
         if (trigger.jetMcParticleId() == associated.globalIndex()) continue;
 
@@ -1448,13 +1437,13 @@ struct PhotonChargedTriggerCorrelation
 
 
     // trigger pairing loop
-    for (auto const& trigger: triggerParticlesThisEvent) {
+    for (auto const& trigger : triggerParticlesThisEvent) {
       // trigger info
       histos.fill(HIST("mc/true_reco/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
 
 
       // hadrons (tracks) and pipm
-      for (auto const& associated: mcParticlesThisEvent) {
+      for (auto const& associated : mcParticlesThisEvent) {
         // exclude self correlation
         if (trigger.jetMcParticleId() == associated.globalIndex()) continue;
 
@@ -1513,7 +1502,7 @@ struct PhotonChargedTriggerCorrelation
     // event selection
     if (doTrigEvEff && !mcCollision.trigEv()) return;
 
-    for (auto const& mcParticle: mcParticles) {
+    for (auto const& mcParticle : mcParticles) {
       // standard particles (marked physical primary)
       if (checkPrimaryEtaMc(mcParticle)) {
         // hadrons
@@ -1575,7 +1564,7 @@ struct PhotonChargedTriggerCorrelation
 
 
     // hadrons
-    for (auto const& hadron: hadrons) {
+    for (auto const& hadron : hadrons) {
       if (doTrigEvEff && hadron.jetTrackId() == excludeTriggerTrackId) continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_hadron"), hadron.pt(), collision.posZ(), collision.multNTracksGlobal());
@@ -1590,7 +1579,7 @@ struct PhotonChargedTriggerCorrelation
     }
 
     // pipm
-    for (auto const& pipm: pipms) {
+    for (auto const& pipm : pipms) {
       if (doTrigEvEff && pipm.jetTrackId() == excludeTriggerTrackId) continue;
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_pipm"), pipm.pt(), collision.posZ(), collision.multNTracksGlobal());
@@ -1632,7 +1621,7 @@ struct PhotonChargedTriggerCorrelation
     };
 
     // photonPCM
-    for (auto const& photonPCM: photonPCMs) {
+    for (auto const& photonPCM : photonPCMs) {
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
       histos.fill(HIST("mc/eff/h3_ptZPvMult_mcReco_photonPCM"), photonPCM.pt(), collision.posZ(), collision.multNTracksGlobal());
 
@@ -1649,7 +1638,7 @@ struct PhotonChargedTriggerCorrelation
     }
 
     // pi0PCM
-    for (auto const& photonPCMPair: photonPCMPairs) {
+    for (auto const& photonPCMPair : photonPCMPairs) {
       if (photonPCMPair.mgg() < pi0PCMMassRange.value[0] || photonPCMPair.mgg() > pi0PCMMassRange.value[1]) continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
@@ -1673,7 +1662,7 @@ struct PhotonChargedTriggerCorrelation
 
 
     // mcParticle loop
-    for (auto const& mcParticle: mcParticlesThisEvent) {
+    for (auto const& mcParticle : mcParticlesThisEvent) {
       // standard particles (marked physical primary)
       if (checkPrimaryEtaMc(mcParticle)) {
         // hadrons
@@ -1721,7 +1710,7 @@ struct PhotonChargedTriggerCorrelation
 
     histos.fill(HIST("test/h2_mult_comp"), collision.multNTracksGlobal(), hadrons.size());
 
-    for (auto const& track: tracks) {
+    for (auto const& track : tracks) {
       auto const fullTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
 
       constexpr float Mincrossedrows = 40;
