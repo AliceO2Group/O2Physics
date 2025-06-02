@@ -31,7 +31,7 @@ namespace o2::hf_corrbkg
     enum FinalStates2Prongs {
         KPi = 1,
         KK,
-        KPiPi0,
+        KMinusPiPi0,
         PiPi,
         PiPiPi0,
         NFinalStates2P
@@ -39,35 +39,45 @@ namespace o2::hf_corrbkg
 
     std::unordered_map<FinalStates2Prongs, std::vector<int> > finalStates2Prongs = 
     {
-        {FinalStates2Prongs::KPi,      std::vector<int>{+kKMinus,   +kPiPlus}},
-        {FinalStates2Prongs::KK,       std::vector<int>{+kKMinus,   +kKPlus}},
-        {FinalStates2Prongs::KPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus, +kPi0}},
-        {FinalStates2Prongs::PiPi,     std::vector<int>{+kPiMinus,  +kPiPlus}},
-        {FinalStates2Prongs::PiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus, +kPi0}}
+        {FinalStates2Prongs::KPi,          std::vector<int>{+kKMinus,   +kPiPlus}},
+        {FinalStates2Prongs::KK,           std::vector<int>{+kKMinus,   +kKPlus}},
+        {FinalStates2Prongs::KMinusPiPi0,  std::vector<int>{+kKMinus,   +kPiPlus, +kPi0}},
+        {FinalStates2Prongs::PiPi,         std::vector<int>{+kPiMinus,  +kPiPlus}},
+        {FinalStates2Prongs::PiPiPi0,      std::vector<int>{+kPiMinus,  +kPiPlus, +kPi0}}
     };
 
     enum FinalStates3Prongs {
         KKPi = 1,
         KKPiPi0,
-        KPiPi,
-        KPiPiPi0,
+        KMinusPiPi,
+        KMinusPiPiPi0,
+        KPlusPiPi,
+        KPlusPiPiPi0,
         PiPiPi,
         PiPiPiPi0,
-        ProtonPiPi,
         ProtonKPi,
+        ProtonKPiPi0,
+        ProtonPiPi,
+        ProtonKK,
+        SigmaPiPi,
         NFinalStates3P
     };
 
     std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStates3Prongs = 
     {
-        {FinalStates3Prongs::KKPi,       std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
-        {FinalStates3Prongs::KKPiPi0,    std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::KPiPi,      std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
-        {FinalStates3Prongs::KPiPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::PiPiPi,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
-        {FinalStates3Prongs::PiPiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
-        {FinalStates3Prongs::ProtonPiPi, std::vector<int>{+kProton,   +kPiMinus, +kPiPlus}},
-        {FinalStates3Prongs::ProtonKPi,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}}
+        {FinalStates3Prongs::KKPi,          std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
+        {FinalStates3Prongs::KKPiPi0,       std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::KMinusPiPi,    std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::KMinusPiPiPi0, std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::KPlusPiPi,     std::vector<int>{+kPlus,   +kPiPlus,  +kPiMinus}},
+        {FinalStates3Prongs::KPlusPiPiPi0,  std::vector<int>{+kPlus,   +kPiPlus,  +kPiMinus, +kPi0}},
+        {FinalStates3Prongs::PiPiPi,        std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::PiPiPiPi0,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::ProtonKPi,     std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}},
+        {FinalStates3Prongs::ProtonKPiPi0,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::ProtonPiPi,    std::vector<int>{+kProton,   +kPiMinus, +kPiPlus}},
+        {FinalStates3Prongs::ProtonKK,      std::vector<int>{+kProton,   +kKMinus,  +kKPlus}},
+        {FinalStates3Prongs::SigmaPiPi,     std::vector<int>{+kSigmaPlus,   +kPiMinus,  +kPiPlus}},
     };
 
     // Dstar → K± K∓ π±
@@ -106,6 +116,15 @@ namespace o2::hf_corrbkg
         {DecayChannelResoDplus::RhoPi,      std::array<int, 2>{+113,        +kPiPlus}},
         {DecayChannelResoDplus::f2_1270Pi,  std::array<int, 2>{+225,        +kPiPlus}},
       };
+
+      std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStatesDPlus = 
+      {
+        {FinalStates3Prongs::KKPi,          std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
+        {FinalStates3Prongs::KMinusPiPi,    std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::KMinusPiPiPi0, std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::PiPiPi,        std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::PiPiPiPi0,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+      };
     }
     
     // Ds± → K± K∓ π±
@@ -134,6 +153,15 @@ namespace o2::hf_corrbkg
         {DecayChannelResoDs::f2_1270Pi,   std::array<int, 2>{225,          +kPiPlus}},
         {DecayChannelResoDs::f2_1370K,    std::array<int, 2>{10221,        +kKPlus}},
       };
+
+      std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStatesDs = 
+      {
+        {FinalStates3Prongs::KKPi,       std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
+        {FinalStates3Prongs::KKPiPi0,    std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::KPlusPiPi,  std::vector<int>{+kKPlus,   +kPiPlus,  +kPiMinus}},
+        {FinalStates3Prongs::PiPiPi,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::PiPiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+      };
     }
 
     // Dstar → K± K∓ π±
@@ -151,6 +179,15 @@ namespace o2::hf_corrbkg
         {DecayChannelResoDStarD0::RhoK,          std::array<int, 2>{213,            +kKMinus}},
         {DecayChannelResoDStarD0::K0starPi0,     std::array<int, 2>{-kK0Star892,    +kPi0}},
         {DecayChannelResoDStarD0::K0starPiPlus,  std::array<int, 2>{-kKPlusStar892, +kPiPlus}},
+      };
+
+      std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStatesDStar = 
+      {
+        {FinalStates3Prongs::KKPi,           std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
+        {FinalStates3Prongs::KMinusPiPi,     std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::KMinusPiPiPi0,  std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::PiPiPi,         std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
+        {FinalStates3Prongs::PiPiPiPi0,      std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
       };
     }
 
@@ -170,6 +207,14 @@ namespace o2::hf_corrbkg
         {DecayChannelResoLambdaC::DeltaK,         std::array<int, 2>{+2224,       +kKMinus}},
         {DecayChannelResoLambdaC::Lambda1520Pi,   std::array<int, 2>{+102134,     +kPiPlus}},
       };
+
+      std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStatesLc = 
+      {
+        {FinalStates3Prongs::ProtonKPi,     std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}},
+        {FinalStates3Prongs::ProtonKPiPi0,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus, +kPi0}},
+        {FinalStates3Prongs::ProtonPiPi,    std::vector<int>{+kProton,   +kPiMinus, +kPiPlus}},
+        {FinalStates3Prongs::ProtonKK,      std::vector<int>{+kProton,   +kKMinus,  +kKPlus}}
+      };
     }
     
     // Xic → p K∓ π±
@@ -186,9 +231,36 @@ namespace o2::hf_corrbkg
         {DecayChannelResoXiC::ProtonPhi,  std::array<int, 2>{+kProton,    +kPhi}},
         {DecayChannelResoXiC::SigmaPiPi,  std::array<int, 2>{+kSigmaPlus, +kPiPlus}},
       };
+
+      std::unordered_map<FinalStates3Prongs, std::vector<int> > finalStatesXic = 
+      {
+        {FinalStates3Prongs::ProtonKPi,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}},
+        {FinalStates3Prongs::ProtonKK,   std::vector<int>{+kProton,   +kKMinus,  +kKPlus}},
+        {FinalStates3Prongs::SigmaPiPi,  std::vector<int>{+kSigmaPlus,   +kPiMinus,  +kPiPlus}},
+      };
+    }
+
+    std::unordered_map<FinalStates3Prongs, std::vector<int> > getParticleFinalStates3Prongs(int pdgMother) {
+      switch (pdgMother) {
+        case Pdg::kDPlus:
+          return DPlus::finalStatesDPlus;
+        case Pdg::kDS:
+          return DS::finalStatesDs;
+        case Pdg::kDStar:
+          return DStar::finalStatesDStar;
+        case Pdg::kLambdaCPlus:
+          return LambdaC::finalStatesLc;
+        case Pdg::kXiCPlus:
+          return XiC::finalStatesXic;
+        default:
+          LOG(error) << "Unknown PDG code for 3-prong final states: " << pdgMother;
+          return {};
+      }
     }
 
     bool checkResonantDecay(std::vector<int> arrDaughIndex, std::array<int, 2> arrPDGResonant) {
+      // LOG(info) << "Entered checkResonantDecay with daughters: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " and resonant PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
+      // LOG(info) << "arrDaughIndex.size(): " << arrDaughIndex.size() << ", arrPDGResonant.size(): " << arrPDGResonant.size();
       std::array<int, 2> arrPDGResonantAbs = {std::abs(arrPDGResonant[0]), std::abs(arrPDGResonant[1])};
       LOG(info) << "Testing: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " matching PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
       for (int i = 0; i < 2; i++) {
@@ -250,7 +322,7 @@ namespace o2::hf_corrbkg
           break;
         case Pdg::kDStar:
           for (const auto& [flag, pdgCodes] : DStar::resoStatesDStarD0) {
-            // std::cout << "Checking DStar resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
+            std::cout << "Checking DStar resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
             if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
               *channel = flag;
               LOG(info) << "Dstar resonant decay found with channel: " << static_cast<int>(*channel);

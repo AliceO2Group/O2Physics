@@ -946,27 +946,19 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       if (matchCorrBkgs) {
-        LOG(info) << "--------------------------------------------";
-        LOG(info) << "Matching correlated bkgs";
+        // LOG(info) << "--------------------------------------------";
+        // LOG(info) << "Matching correlated bkgs";
         std::array<int, 5> mothersPdgCodes = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus};
         indexRec = -1; // Index of the matched reconstructed candidate
         std::vector<int> arrResoDaughIndex = {};
-        // const std::unordered_map<int, std::vector<int>>* finalStates = nullptr;
-        // switch (pdgMother) {
-          //   case Pdg::kD0:
-          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates2Prongs);
-          //   break;
-          //   default:
-          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates3Prongs);
-          //   break;
-          // }
-          
+
         for (const auto& pdg : mothersPdgCodes) {
           int depth = 2;
           if (pdg == Pdg::kDStar) {
             depth = 3; // D0 resonant decays are active
           }
-          for (const auto& [chn, finalState] : finalStates3Prongs) {
+          auto finalStates = getParticleFinalStates3Prongs(pdg);
+          for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
             if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -988,13 +980,13 @@ struct HfCandidateCreator3ProngExpressions {
               }
             } else if (finalState.size() == 3) {            // Fully Reco 3-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks);
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks);
               } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
               } else {
-                  indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
+                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
               }
             } else {
               LOG(info) << "Final state size not supported: " << finalState.size();
@@ -1003,23 +995,20 @@ struct HfCandidateCreator3ProngExpressions {
             if (indexRec > -1) {
               // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
               switch (pdg) {
-                case Pdg::kD0:
-                  flag = sign * (chn + 10);
-                  break;
                 case Pdg::kDPlus:
-                  flag = sign * (chn + 20);
-                  break;
-                  case Pdg::kDS:
                   flag = sign * (chn + 30);
                   break;
-                case Pdg::kDStar:
-                  flag = sign * (chn + 40);
-                  break;
-                case Pdg::kLambdaCPlus:
+                  case Pdg::kDS:
                   flag = sign * (chn + 50);
                   break;
+                case Pdg::kDStar:
+                  flag = sign * (chn + 70);
+                  break;
+                case Pdg::kLambdaCPlus:
+                  flag = sign * (chn + 90);
+                  break;
                 case Pdg::kXiCPlus:
-                  flag = sign * (chn + 60);
+                  flag = sign * (chn + 110);
                   break;
                 default:
                   LOG(info) << "Unknown mother PDG code: " << pdg << ", skipping.";
@@ -1053,7 +1042,7 @@ struct HfCandidateCreator3ProngExpressions {
             }
           }
         }
-        LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
+        // LOG(info) <Corr Bkg matching ended with flag< "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D± → π± K∓ π±
         LOG(info) << "--------------------------------------------";
@@ -1169,7 +1158,7 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        LOG(info) << "Setting origin";
+        // LOG(info) << "Setting origin";
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }

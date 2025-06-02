@@ -25,6 +25,7 @@
 #include <tuple>   // std::apply
 #include <utility> // std::move
 #include <vector>  // std::vector
+#include <iostream>
 
 // ROOT includes
 #include <TMCProcess.h> // for VMC Particle Production Process
@@ -918,7 +919,11 @@ struct RecoDecay {
     }
     // Check the PDG code of the particle.
     auto pdgCandidate = candidate.pdgCode();
+    bool print = false; // Print debug messages only if print is true.
     // Printf("MC Gen: Candidate PDG: %d", pdgCandidate);
+    if (std::abs(pdgCandidate) == 413) {
+      print = true; // Print debug messages for D* candidates.
+    }
     if (pdgCandidate == pdgParticle) { // exact PDG match
       sgn = 1;
     } else if (acceptAntiParticles && pdgCandidate == -pdgParticle) { // antiparticle PDG match
@@ -929,22 +934,45 @@ struct RecoDecay {
     }
     // Check the PDG codes of the decay products.
     if (N > 0) {
+      if (print) {
+        std::cout << "MC Gen: Checking decay products of " << N << " daughters" << std::endl;
+        // Printf("MC Gen: Checking decay products of %ld daughters", N);
+      }
       // Printf("MC Gen: Checking %d daughters", N);
       std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
       // Check the daughter indices.
       if (!candidate.has_daughters()) {
+        if (print) {
+          std::cout << "MC Gen: Rejected: bad daughter index range: " << candidate.daughtersIds().front() << "-" << candidate.daughtersIds().back() << std::endl;
+          // Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
+        }
         // Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
       // Check that the number of direct daughters is not larger than the number of expected final daughters.
       if constexpr (!checkProcess) {
         if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
+          if (print) {
+            std::cout << "MC Gen: Rejected: too many direct daughters: " << candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1
+                      << " (expected " << N << " final)" << std::endl;
+            // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
+          }
           // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
           return false;
         }
       }
       // Get the list of actual final daughters.
       getDaughters<checkProcess>(candidate, &arrAllDaughtersIndex, arrPdgDaughters, depthMax);
+      if (print) {
+        std::cout << "MC Gen: Mother " << candidate.globalIndex() << " has " << arrAllDaughtersIndex.size() << " final daughters:";
+        // Printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
+        for (auto i : arrAllDaughtersIndex) {
+          std::cout << " " << i;
+          // Printf(" %d", i);
+        }
+        std::cout << std::endl;
+        // Printf("\n");
+      }
       // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
       //   printf(" %d", i);
@@ -952,6 +980,10 @@ struct RecoDecay {
       // printf("\n");
       //  Check whether the number of final daughters is equal to the required number.
       if (arrAllDaughtersIndex.size() != N) {
+        if (print) {
+          std::cout << "MC Gen: Rejected: incorrect number of final daughters: " << arrAllDaughtersIndex.size() << " (expected " << N << ")" << std::endl;
+          // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
+        }
         // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         return false;
       }
@@ -969,6 +1001,10 @@ struct RecoDecay {
       for (auto indexDaughterI : arrAllDaughtersIndex) {                                            // o2-linter: disable=const-ref-in-for-loop (int elements)
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto pdgCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
+        if (print) {
+          std::cout << "MC Gen: Daughter " << indexDaughterI << " PDG: " << pdgCandidateDaughterI << std::endl;
+          // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, pdgCandidateDaughterI);
+        }
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, pdgCandidateDaughterI);
         bool isPdgFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
@@ -986,6 +1022,10 @@ struct RecoDecay {
       if (listIndexDaughters) {
         *listIndexDaughters = arrAllDaughtersIndex;
       }
+    }
+    if (print) {
+      std::cout << "MC Gen: Accepted: m: " << candidate.globalIndex() << std::endl;
+      // Printf("MC Gen: Accepted: m: %ld", candidate.globalIndex());
     }
     // Printf("MC Gen: Accepted: m: %d", candidate.globalIndex());
     if (sign) {
