@@ -173,7 +173,7 @@ enum DecayChannel : int8_t {
 enum DecayChannelResonant : int8_t {
   // B+
   BplusToD0Rhoplus = 1, // anti-D0 ρ+
-  BplusToD0starPi,      // anti-D0* π+
+  BplusToDstar0Pi,      // anti-D*0 π+
   //
   LastChannelResonant
 };
