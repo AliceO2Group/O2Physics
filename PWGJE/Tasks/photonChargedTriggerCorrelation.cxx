@@ -14,10 +14,10 @@
 /// \author Julius Kinner
 /// \brief photon-jet correlation analysis
 ///
-/// Analysis for correlations between jets and photons via two-particle correlations with charged high-pt triggers
+/// Analysis for angular correlations between jets and photons via two-particle correlations with charged high-pt triggers
 /// Associated hadrons (tracks), pipm, photons (PCM), pi0 (PCM)
 /// Also contains checks and monte-carlo (efficiency, purity, mc-true correlation,...)
-/// Towards culminating in eventual final ultimate end goal of studying correlations between direct photons and jets
+/// End goal of studying correlations between direct photons and jets
 
 
 
@@ -243,8 +243,6 @@ struct CorrelationTableProducer
   Partition<aod::JetTracks> partitionTriggerTracks = aod::jtrack::pt > ptTrigMin;
   Partition<aod::JetParticles> partitionTriggerParticles = aod::jmcparticle::pt > ptTrigMin;
 
-  // this line is here now. i do not know what it does. it is neccessary to work. i do not know why. i will never know why.
-  // there go 5 hours my life. everything is fine. O2 is great.
   Preslice<aod::JetTracks> perColTracks = aod::jtrack::collisionId;
   Preslice<aod::JetParticles> perColMcParticles = aod::jmcparticle::mcCollisionId;
 
