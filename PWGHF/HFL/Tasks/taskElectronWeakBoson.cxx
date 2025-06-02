@@ -244,9 +244,6 @@ struct HfTaskElectronWeakBoson {
     int trackCount = 0;
 
     for (const auto& track : tracks) {
-      // skip the reference track
-      if (std::abs(track.pt() - ptEle) < 1e-4)
-        continue;
 
       double dEta = track.eta() - etaEle;
       double dPhi = track.phi() - phiEle;
@@ -413,7 +410,7 @@ struct HfTaskElectronWeakBoson {
 
             double isoEnergy = getIsolatedCluster(cluster, emcClusters);
 
-            int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks);
+            int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks) - 1;
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
               registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount);
