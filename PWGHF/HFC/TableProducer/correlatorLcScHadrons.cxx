@@ -220,7 +220,7 @@ struct HfCorrelatorLcScHadrons {
   bool isNonPrompt = false;
   bool isSignal = false;
 
-  static constexpr size_t Ndaughters{3u};
+  static constexpr size_t NDaughters{3u};
   TRandom3* rnd = new TRandom3(0);
   std::vector<float> outputMl = {-1., -1., -1.};
   std::vector<float> outputMlPKPi = {-1., -1., -1.};
@@ -965,12 +965,12 @@ struct HfCorrelatorLcScHadrons {
 
       // prompt and non-prompt division
       std::vector<int> listDaughters{};
-      std::array<int, Ndaughters> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
-      std::array<int, Ndaughters> prongsId;
+      std::array<int, NDaughters> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> prongsId;
       listDaughters.clear();
       RecoDecay::getDaughters(particle, &listDaughters, arrDaughLcPDG, 2);
       int counterDaughters = 0;
-      if (listDaughters.size() == Ndaughters) {
+      if (listDaughters.size() == NDaughters) {
         for (const auto& dauIdx : listDaughters) {
           auto daughI = mcParticles.rawIteratorAt(dauIdx - mcParticles.offset());
           counterDaughters += 1;
