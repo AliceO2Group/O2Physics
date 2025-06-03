@@ -84,7 +84,7 @@ enum PairingType : uint8_t {
   V0AndTrack
 };
 
-enum D0Sel: uint8_t {
+enum D0Sel : uint8_t {
   selectedD0 = 0,
   selectedD0Bar
 };
@@ -279,7 +279,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
     const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
-    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "delta inv. mass (GeV/#it{c}^{2})"}; //o2-linter: disable=pdg/explicit-mass (false positive)
+    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "delta inv. mass (GeV/#it{c}^{2})"}; // o2-linter: disable=pdg/explicit-mass (false positive)
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassKzero{100, 0.35f, 0.65f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToK{500, 0.49, 1.49, "inv. mass (GeV/#it{c}^{2})"};
@@ -1271,10 +1271,10 @@ struct HfDataCreatorCharmResoReduced {
           }
         } else if constexpr (dType == DType::D0) {
           uint8_t selFlagD0 = {BIT(D0Sel::selectedD0) | BIT(D0Sel::selectedD0Bar)};
-          if (candD.isSelD0() < cfgDmesCuts.selectionFlagD0){
+          if (candD.isSelD0() < cfgDmesCuts.selectionFlagD0) {
             CLRBIT(selFlagD0, D0Sel::selectedD0);
           }
-          if (candD.isSelD0bar() < cfgDmesCuts.selectionFlagD0Bar){
+          if (candD.isSelD0bar() < cfgDmesCuts.selectionFlagD0Bar) {
             CLRBIT(selFlagD0, D0Sel::selectedD0Bar);
           }
           hfCandD2Pr(prongIdsD[0], prongIdsD[1],

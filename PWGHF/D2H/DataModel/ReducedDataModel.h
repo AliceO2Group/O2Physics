@@ -880,7 +880,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector,
 namespace hf_reso_2_prong
 {
 DECLARE_SOA_COLUMN(SelFlagD0, selFlagD0, uint8_t); //! Integer with D0 selection flag: 1 = selected as D0, 2 = selected as D0bar, 3 = selected as D0 and D0bar
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                 //!
                            [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pyProng0, float pyProng1) -> float { return 1.f * pyProng0 + 1.f * pyProng1; });
