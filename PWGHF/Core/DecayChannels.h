@@ -126,9 +126,9 @@ enum DecayChannelMain : int8_t {
 };
 } // namespace hf_cand_dstar
 
-namespace hf_cand_beauty_neutral
+namespace hf_cand_beauty
 {
-/// @brief neutral-beauty candidates: main channels
+/// @brief beauty candidates: main channels
 enum DecayChannelMain : int8_t {
   // B0
   B0ToDminusPi = 1,  // D− π+
@@ -147,10 +147,15 @@ enum DecayChannelMain : int8_t {
   LbToLcPiGamma, // Λc+ π− γ0
   LbToLcK,       // Λc+ K−
   LbToLcKPi0,    // Λc+ K− π0
+  // B+
+  BplusToD0Pi,      // anti-D0 π+
+  BplusToD0PiPi0,   // anti-D0 π+ π0
+  BplusToD0PiGamma, // anti-D0 π+ γ0
+  BplusToD0K,       // anti-D0 K+
   //
   LastChannelMain
 };
-/// @brief neutral-beauty candidates: resonant channels
+/// @brief beauty candidates: resonant channels
 enum DecayChannelResonant : int8_t {
   // B0
   B0ToDminusRhoplus = 1, // D− ρ+
@@ -163,32 +168,13 @@ enum DecayChannelResonant : int8_t {
   LbToScPi,      // Σc+ π−
   LbToScK,       // Σc+ K−
   LbToSc0Pi0,    // Σc0 π0
+  // B+
+  BplusToD0Rhoplus, // anti-D0 ρ+
+  BplusToDstar0Pi,  // anti-D*0 π+
   //
   LastChannelResonant
 };
-} // namespace hf_cand_beauty_neutral
-
-namespace hf_cand_bplus
-{
-/// @brief B+ candidates: main channels
-enum DecayChannelMain : int8_t {
-  // B+
-  BplusToD0Pi = 1,  // anti-D0 π+
-  BplusToD0PiPi0,   // anti-D0 π+ π0
-  BplusToD0PiGamma, // anti-D0 π+ γ0
-  BplusToD0K,       // anti-D0 K+
-  //
-  LastChannelMain
-};
-/// @brief B+ candidates: resonant channels
-enum DecayChannelResonant : int8_t {
-  // B+
-  BplusToD0Rhoplus = 1, // anti-D0 ρ+
-  BplusToDstar0Pi,      // anti-D*0 π+
-  //
-  LastChannelResonant
-};
-} // namespace hf_cand_bplus
+} // namespace hf_cand_beauty
 } // namespace o2::hf_decay
 
 #endif // PWGHF_CORE_DECAYCHANNELS_H_
