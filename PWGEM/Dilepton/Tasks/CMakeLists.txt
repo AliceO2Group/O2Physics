@@ -141,3 +141,8 @@ o2physics_add_dpl_workflow(matching-mft
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tagging-hfe
+                    SOURCES taggingHFE.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+

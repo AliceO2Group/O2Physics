@@ -1562,7 +1562,7 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/signed1Pt"), track.signed1Pt());
     histos.fill(HIST("Tracks/snp"), track.snp());
     histos.fill(HIST("Tracks/tgl"), track.tgl());
-    for (unsigned int i = 0; i < 64; i++) {
+    for (unsigned int i = 0; i < 32; i++) {
       if (track.flags() & (1 << i)) {
         histos.fill(HIST("Tracks/flags"), i);
       }

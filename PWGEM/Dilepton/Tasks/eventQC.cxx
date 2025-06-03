@@ -1048,7 +1048,7 @@ struct eventQC {
   PROCESS_SWITCH(eventQC, processEventQC_Cent_Qvec, "event QC + q vector", false);
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cuts.cfg_min_cospa_v0hadron.value&& o2::aod::v0data::dcaV0daughters < v0cuts.cfg_max_pca_v0hadron.value;
+  Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > v0cuts.cfg_min_cospa_v0hadron&& o2::aod::v0data::dcaV0daughters < v0cuts.cfg_max_pca_v0hadron;
   using filteredV0s = soa::Filtered<aod::V0Datas>;
 
   void processEventQC_V0_PID(FilteredMyCollisions const& collisions, FilteredMyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredV0s const& v0strhadrons)

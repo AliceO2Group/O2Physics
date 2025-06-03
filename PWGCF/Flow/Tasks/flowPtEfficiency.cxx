@@ -145,18 +145,22 @@ struct FlowPtEfficiency {
 
   void init(InitContext const&)
   {
+    const AxisSpec axisVertex{20, -10, 10, "Vtxz (cm)"};
+    const AxisSpec axisEta{20, -1., 1., "#eta"};
     const AxisSpec axisCounter{1, 0, +1, ""};
     // create histograms
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
     registry.add("hBVsPtVsPhiRec", "hBVsPtVsPhiRec", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzRec", "hEtaPtVz Reconstructed", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
     registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
     registry.add("hBVsPtVsPhiTrue", "hBVsPtVsPhiTrue", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzTrue", "hEtaPtVz True", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
@@ -406,6 +410,7 @@ struct FlowPtEfficiency {
         if (isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCRec"), track.pt());
           registry.fill(HIST("hPtNchMCRec"), track.pt(), tracks.size());
+          registry.fill(HIST("hEtaPtVzRec"), track.eta(), track.pt(), vtxz);
 
           if (cfgFlowEnabled) {
             float deltaPhi = RecoDecay::constrainAngle(track.phi() - evPhi);
@@ -462,6 +467,7 @@ struct FlowPtEfficiency {
     float lRandom = fRndm->Rndm();
     float wacc = 1.0f;
     float weff = 1.0f;
+    float vtxz = mcCollision.posZ();
 
     if (collisions.size() > -1) {
       registry.fill(HIST("mcEventCounter"), 0.5);
@@ -477,8 +483,10 @@ struct FlowPtEfficiency {
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-          if (collisions.size() > 0)
+          if (collisions.size() > 0) {
             registry.fill(HIST("hPtNchMCGen"), mcParticle.pt(), numberOfTracks[0]);
+          }
+          registry.fill(HIST("hEtaPtVzTrue"), mcParticle.eta(), mcParticle.pt(), vtxz);
 
           if (cfgFlowEnabled) {
             float deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - evPhi);
