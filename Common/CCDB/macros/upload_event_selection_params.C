@@ -12,8 +12,8 @@
 #include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "TString.h"
-#include "map"
-#include "string"
+#include <map>
+#include <string>
 #include "EventSelectionParams.h"
 using std::map;
 using std::string;
