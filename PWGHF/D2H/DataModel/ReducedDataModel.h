@@ -879,6 +879,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVector, pVector,
 
 namespace hf_reso_2_prong
 {
+DECLARE_SOA_COLUMN(SelFlagD0, selFlagD0, uint8_t); //! Integer with D0 selection flag: 1 = selected as D0, 2 = selected as D0bar, 3 = selected as D0 and D0bar
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -1018,6 +1019,7 @@ DECLARE_SOA_TABLE(HfRed2PrNoTrks, "AOD", "HFRED2PRNOTRK", //! Table with 2 prong
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_track_vars_reduced::ItsNClsProngMin, hf_track_vars_reduced::TpcNClsCrossedRowsProngMin, hf_track_vars_reduced::TpcChi2NClProngMax,
+                  hf_reso_2_prong::SelFlagD0,
                   // Dynamic
                   hf_reso_2_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
                   hf_reso_2_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1>,

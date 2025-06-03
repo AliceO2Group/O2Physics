@@ -84,6 +84,11 @@ enum PairingType : uint8_t {
   V0AndTrack
 };
 
+enum D0Sel: uint8_t {
+  selectedD0 = 0,
+  selectedD0Bar
+};
+
 enum DecayTypeMc : uint8_t {
   Ds1ToDstarK0ToD0PiK0s = 1,
   Ds2StarToDplusK0sToPiKaPiPiPi,
@@ -93,47 +98,6 @@ enum DecayTypeMc : uint8_t {
   Ds1ToDstarK0ToD0PiK0sOneMu,
   Ds2StarToDplusK0sOneMu
 };
-
-// For MC refactoring, not yet implemented
-/*
-enum DecayTypeMcReso: uint8_t {
-  Ds1ToDstarK0ToD0PiK0s = 1,
-  Ds1ToDstarK0ToD0PiK0sWithMu,
-  Ds1ToDstarK0ToD0PartPiK0s,
-  Ds1ToDstarK0ToD0NoPiK0s,
-  Ds2StarToDplusK0s,
-  Ds2StarToDplusK0sWithMu,
-  Ds2StarToD0KPlus,
-  Ds2StarToD0KPlusWithMu, //TO DO
-  Ds2StarToD0PartKPlus, //TO DO
-  Ds2StarToDstarK0ToD0PiK0s, //TO DO
-  Ds2StarToDstarK0ToD0PiK0sWithMu, //TO DO
-  Ds2StarToDstarK0ToD0PartPiK0s, //TO DO
-  Ds2StarToDstarK0ToD0NoPiK0s, //TO DO
-  Ds1Star2700ToDstarK0ToD0PiK0s, //NOT IMPLEMENTED YET
-  Ds1Star2700ToDstarK0ToD0PiK0sWithMu, //NOT IMPLEMENTED YET
-  Ds1Star2700ToDstarK0ToD0PartPiK0s, //NOT IMPLEMENTED YET
-  Ds1Star2700ToDstarK0ToD0NoPiK0s, //NOT IMPLEMENTED YET
-  Ds1Star2860ToDstarK0ToD0PiK0s, //NOT IMPLEMENTED YET
-  Ds1Star2860ToDstarK0ToD0PiK0sWithMu, //NOT IMPLEMENTED YET
-  Ds1Star2860ToDstarK0ToD0PartPiK0s, //NOT IMPLEMENTED YET
-  Ds1Star2860ToDstarK0ToD0NoPiK0s, //NOT IMPLEMENTED YET
-  Ds3Star2860ToDstarK0ToD0PiK0s, //NOT IMPLEMENTED YET
-  Ds3Star2860ToDstarK0ToD0PiK0sWithMu, //NOT IMPLEMENTED YET
-  Ds3Star2860ToDstarK0ToD0PartPiK0s, //NOT IMPLEMENTED YET
-  Ds3Star2860ToDstarK0ToD0NoPiK0s, //NOT IMPLEMENTED YET
-  XiC3055PlusToDplusLambda, //NOT IMPLEMENTED YET
-  XiC3055PlusToDplusLambdaWithMu, //NOT IMPLEMENTED YET
-  XiC3080PlusToDplusLambda, //NOT IMPLEMENTED YET
-  XiC3080PlusToDplusLambdaWithMu, //NOT IMPLEMENTED YET
-  XiC3055_0ToD0Lambda, //NOT IMPLEMENTED YET
-  XiC3055_0ToD0LambdaWithMu, //NOT IMPLEMENTED YET
-  XiC3055_0ToD0PartLambda, //NOT IMPLEMENTED YET
-  XiC3080_0ToD0Lambda, //NOT IMPLEMENTED YET
-  XiC3080_0ToD0LambdaWithMu, //NOT IMPLEMENTED YET
-  XiC3080_0ToD0PartLambda //NOT IMPLEMENTED YET
-}
-*/
 
 enum PartialMatchMc : uint8_t {
   K0Matched = 0,
@@ -206,7 +170,7 @@ struct HfDataCreatorCharmResoReduced {
   struct : ConfigurableGroup {
     Configurable<bool> applyCutsForQaHistograms{"applyCutsForQaHistograms", true, "flag to apply cuts to QA histograms"};
     Configurable<float> cutMassDstarMin{"cutMassDstarMin", 0.143, "minimum mass for Dstar candidates"};
-    Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.148, "maximum mass for Dstar candidates"};
+    Configurable<float> cutMassDstarMax{"cutMassDstarMax", 0.155, "maximum mass for Dstar candidates"};
     Configurable<float> cutMassDMin{"cutMassDMin", 1.83, "minimum mass for D0 and Dplus candidates"};
     Configurable<float> cutMassDMax{"cutMassDMax", 1.92, "maximum mass for D0 and Dplus candidates"};
     Configurable<float> cutMassK0sMin{"cutMassK0sMin", 0.485, "minimum mass for K0s candidates"};
@@ -305,7 +269,7 @@ struct HfDataCreatorCharmResoReduced {
     labels[Event::NoDV0Selected] = "without DV0 pairs";
     labels[Event::DV0Selected] = "with DV0 pairs";
     static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    registry.add("hEvents", "Events;;entries", HistType::kTH1D, {axisEvents});
     for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
@@ -315,7 +279,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
     const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
-    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"}; // o2-linter: disable=pdg/explicit-mass (false positive)
+    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "delta inv. mass (GeV/#it{c}^{2})"}; //o2-linter: disable=pdg/explicit-mass (false positive)
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassKzero{100, 0.35f, 0.65f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToK{500, 0.49, 1.49, "inv. mass (GeV/#it{c}^{2})"};
@@ -323,62 +287,62 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeltaMassToPr{500, 0.93, 1.93, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToLambda{500, 1.05, 2.05, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDsj{400, 0.49f, 0.89f, ""}; // Ds1 and Ds2Star legacy
-    registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-    registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
-    registry.add("hMassVsPtD0All", "D0 candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassD0}});
-    registry.add("hMassVsPtDplusPaired", "Dplus candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-    registry.add("hMassVsPtDstarPaired", "Dstar candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
-    registry.add("hMassVsPtD0Paired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassD0}});
-    registry.add("hMassVsPtD0BarPaired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassD0}});
-    registry.add("hMassVsPtK0s", "K0^{s} candidates;#it{p}_{T} (GeV/#it{c});inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
-    registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassLambda}});
-    registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {HistType::kTH2F, {axisP, axisDeDx}});
-    registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
+    registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+    registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+    registry.add("hMassVsPtD0All", "D0 candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+    registry.add("hMassVsPtDplusPaired", "Dplus candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+    registry.add("hMassVsPtDstarPaired", "Dstar candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+    registry.add("hMassVsPtD0Paired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+    registry.add("hMassVsPtD0BarPaired", "D0 candidates (paired with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassD0}});
+    registry.add("hMassVsPtK0s", "K0^{s} candidates;#it{p}_{T} (GeV/#it{c});inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassKzero}});
+    registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassLambda}});
+    registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {HistType::kTH2D, {axisP, axisDeDx}});
+    registry.add("hDType", "D selection flag", {HistType::kTH1D, {{5, -2.5, 2.5}}});
 
     // QA reso invariant mass histograms
-    registry.add("hMassD0Pi", "D0Pi candidates; m_{D^{0}#pi^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassD0K", "D0Kplus candidates; m_{D^{0}K^{+}} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassD0Proton", "D0Proton candidates; m_{D^{0}p} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassD0Lambda", "D0Lambda candidates; m_{D^{0}#Lambda} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToLambda}});
-    registry.add("hMassDstarPi", "DstarPi candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassDstarK", "DstarK candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDstarProton", "DstarProton candidates; m_{D^{*}p} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassDstarK0s", "DstarK0s candidates; m_{D^{*}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDstarLambda", "DstarLambda candidates; m_{D^{*}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToLambda}});
-    registry.add("hMassDplusK0s", "DplusK0s candidates; m_{D^{+}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDplusPi", "DplusPi candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPi}});
-    registry.add("hMassDplusK", "DplusK candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToK}});
-    registry.add("hMassDplusProton", "DplusProton candidates; m_{D^{+}p} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToPr}});
-    registry.add("hMassDplusLambda", "DplusLambda candidates; m_{D^{+}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisDeltaMassToLambda}});
+    registry.add("hMassD0Pi", "D0Pi candidates; m_{D^{0}#pi^{+}} - m_{D^{0}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+    registry.add("hMassD0K", "D0Kplus candidates; m_{D^{0}K^{+}} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+    registry.add("hMassD0Proton", "D0Proton candidates; m_{D^{0}p} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+    registry.add("hMassD0Lambda", "D0Lambda candidates; m_{D^{0}#Lambda} - m_{D^{0} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    registry.add("hMassDstarPi", "DstarPi candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+    registry.add("hMassDstarK", "DstarK candidates; m_{D^{*+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+    registry.add("hMassDstarProton", "DstarProton candidates; m_{D^{*}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+    registry.add("hMassDstarK0s", "DstarK0s candidates; m_{D^{*}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+    registry.add("hMassDstarLambda", "DstarLambda candidates; m_{D^{*}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
+    registry.add("hMassDplusK0s", "DplusK0s candidates; m_{D^{+}K^{0}_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+    registry.add("hMassDplusPi", "DplusPi candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPi}});
+    registry.add("hMassDplusK", "DplusK candidates; m_{D^{+}#pi^{-}} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToK}});
+    registry.add("hMassDplusProton", "DplusProton candidates; m_{D^{+}p} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToPr}});
+    registry.add("hMassDplusLambda", "DplusLambda candidates; m_{D^{+}#Lambda} (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisDeltaMassToLambda}});
     // MC Rec
-    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{17, -8.5, 8.5}}});
-    registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1F, {{16, -0.5, 15.5}}});
-    registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-    registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1F, {{2000, 1.8, 3.8}}});
+    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{17, -8.5, 8.5}}});
+    registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{16, -0.5, 15.5}}});
+    registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+    registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1D, {{2000, 1.8, 3.8}}});
     // MC Gen
-    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{17, -8.5, 8.5}, {100, 0, 50}}});
-    registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1F, {{3, -1.5, 1.5}}});
-    registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
-    registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2D, {{17, -8.5, 8.5}, {100, 0, 50}}});
+    registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1D, {{3, -1.5, 1.5}}});
+    registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
+    registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1D, {{3, -0.5, 2.5}}});
 
     if (doMcRecQa) {
-      registry.add("hMassVsPtK0Matched", "K0s candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
-      registry.add("hMassVsPtD0Matched", "D0 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDstarMatched", "Dstar candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
-      registry.add("hMassVsPtDplusMatched", "Dplus candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDs1Matched", "Ds1 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
-      registry.add("hMassVsPtDs2StarMatched", "Ds2Star candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
-      registry.add("hMassVsPtK0MatchedPiToMu", "K0s candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
-      registry.add("hMassVsPtD0MatchedPiToMu", "D0 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDstarMatchedPiToMu", "Dstar candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
-      registry.add("hMassVsPtDplusMatchedPiToMu", "Dplus candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDs1MatchedPiToMu", "Ds1 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
-      registry.add("hMassVsPtDs2StarMatchedPiToMu", "Ds2Star candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
-      registry.add("hMassVsPtD0MatchedKaToPi", "D0 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDstarMatchedKaToPi", "Dstar candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
-      registry.add("hMassVsPtDplusMatchedKaToPi", "Dplus candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
-      registry.add("hMassVsPtDs1MatchedKaToPi", "Ds1 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
-      registry.add("hMassVsPtDs2StarMatchedKaToPi", "Ds2Star candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtK0Matched", "K0s candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassKzero}});
+      registry.add("hMassVsPtD0Matched", "D0 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatched", "Dstar candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatched", "Dplus candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1Matched", "Ds1 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatched", "Ds2Star candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtK0MatchedPiToMu", "K0s candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassKzero}});
+      registry.add("hMassVsPtD0MatchedPiToMu", "D0 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatchedPiToMu", "Dstar candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatchedPiToMu", "Dplus candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1MatchedPiToMu", "Ds1 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatchedPiToMu", "Ds2Star candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtD0MatchedKaToPi", "D0 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatchedKaToPi", "Dstar candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatchedKaToPi", "Dplus candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1MatchedKaToPi", "Ds1 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatchedKaToPi", "Ds2Star candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2D, {axisPt, axisMassDsj}});
     }
 
     // Configure CCDB access
@@ -877,7 +841,6 @@ struct HfDataCreatorCharmResoReduced {
       std::vector<typename TrIU::iterator> charmHadDauTracks{};
       varUtils.ptD = candD.pt();
       if constexpr (dType == DType::Dstar) {
-        LOG(info) << "I'm in the D* case";
         varUtils.signD = candD.signSoftPi();
         if (varUtils.signD > 0) {
           varUtils.invMassD = candD.invMassDstar();
@@ -1114,8 +1077,7 @@ struct HfDataCreatorCharmResoReduced {
       // Loop on the bachelor tracks
       if constexpr (doTracks) {
         for (const auto& trackIndex : bachelorTrks) {
-          LOG(info) << "I'm in the track loop";
-          auto track = tracks.rawIteratorAt(trackIndex.trackId()); // trackIndex.template track_as<Tr>();
+          auto track = tracks.rawIteratorAt(trackIndex.trackId());
           if (!isTrackSelected(track, prongIdsD)) {
             continue;
           }
@@ -1308,12 +1270,20 @@ struct HfDataCreatorCharmResoReduced {
             hfCandD3PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
           }
         } else if constexpr (dType == DType::D0) {
+          uint8_t selFlagD0 = {BIT(D0Sel::selectedD0) | BIT(D0Sel::selectedD0Bar)};
+          if (!candD.isSelD0() < cfgDmesCuts.selectionFlagD0){
+            CLRBIT(selFlagD0, D0Sel::selectedD0);
+          }
+          if (!candD.isSelD0Bar() < cfgDmesCuts.selectionFlagD0Bar){
+            CLRBIT(selFlagD0, D0Sel::selectedD0Bar);
+          }
           hfCandD2Pr(prongIdsD[0], prongIdsD[1],
                      indexHfReducedCollision,
                      secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
                      candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
                      candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
-                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax);
+                     nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax,
+                     selFlagD0);
           if constexpr (withMl) {
             hfCandD2PrMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
           }
