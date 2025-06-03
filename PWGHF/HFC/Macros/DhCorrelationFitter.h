@@ -19,10 +19,9 @@
 
 #include <cstdio>
 
-#include <TFile.h>
-#include <TH1F.h>
-#include <TCanvas.h>
-#include <TLatex.h>
+#include <RtypesCore.h>
+#include <TF1.h>
+#include <TH1.h>
 
 class DhCorrelationFitter
 {

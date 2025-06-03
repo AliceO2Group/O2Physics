@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(alice3-taskcorrelationddbar
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-multicharm
+                    SOURCES alice3-multicharm.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3-efficiency
                     SOURCES alice3Efficiency.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

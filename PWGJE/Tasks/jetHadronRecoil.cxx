@@ -116,10 +116,13 @@ struct JetHadronRecoil {
 
   HistogramRegistry registry{"registry",
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
+                              {"hSignalTriggersPtHard", "Signal triggers vs PtHard", {HistType::kTH1F, {{20, 0, 5}}}},
+                              {"hReferenceTriggersPtHard", "Reference triggers vs PtHard", {HistType::kTH1F, {{20, 0, 5}}}},
                               {"hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}},
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{200, 0, 200}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI}}}},
+                              {"hPtTrackPtHard", "Track p_{T} vs #hat{p};p_{T};#frac{p_{T}}{#hat{p}}", {HistType::kTH2F, {{200, 0, 200}, {20, 0, 5}}}},
                               {"hConstituents3D", "3D constituents histogram;p_{T};#eta;#phi", {HistType::kTH3F, {{200, 0, 200}, {100, -1.0, 1.0}, {100, 0.0, o2::constants::math::TwoPI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;#Delta#phi;p_{T,jet}", {HistType::kTH2F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}}}},
                               {"hReferencePtDPhiShifts", "rho shifts;#Delta#phi;p_{T,jet};shifts", {HistType::kTH3F, {{100, 0, o2::constants::math::TwoPI}, {500, -100, 400}, {20, 0.0, 2.0}}}},
@@ -231,6 +234,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtTrack"), track.pt(), weight);
       registry.fill(HIST("hEtaTrack"), track.eta(), weight);
       registry.fill(HIST("hPhiTrack"), track.phi(), weight);
+      registry.fill(HIST("hPtTrackPtHard"), track.pt(), track.pt() / pTHat);
     }
 
     if (nTT > 0) {
@@ -241,6 +245,7 @@ struct JetHadronRecoil {
         registry.fill(HIST("hNtrig"), 1.5, weight);
         registry.fill(HIST("hSigEventTriggers"), nTT, weight);
         registry.fill(HIST("hRhoSignal"), rho, weight);
+        registry.fill(HIST("hSignalTriggersPtHard"), ptTT / pTHat, weight);
       }
       if (!isSigCol) {
         registry.fill(HIST("hNtrig"), 0.5, weight);
@@ -249,6 +254,7 @@ struct JetHadronRecoil {
         for (double shift = 0.0; shift <= 2.0; shift += 0.1) {
           registry.fill(HIST("hRhoReferenceShift"), rho + shift, shift, weight);
         }
+        registry.fill(HIST("hReferenceTriggersPtHard"), ptTT / pTHat, weight);
       }
     }
 

@@ -112,13 +112,12 @@ static const std::vector<float> particleMasses{
   o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3};
 static const std::vector<int> particleCharge{1, 2};
 static const std::vector<float> particleChargeFactor{2.3, 2.55};
-static const std::vector<float> particleChargeFactor{2.3, 2.55};
 static const std::vector<std::string> betheBlochParNames{
   "p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr float betheBlochDefault[nParticles][nBetheParams]{
   {0.248753, 3.58634, 0.0167065, 2.29194, 0.774344,
-   0.07},                                                     // triton
-  {0.0274556,18.3054, 3.99987e-05, 3.17219, 11.1775,
+   0.07}, // triton
+  {0.0274556, 18.3054, 3.99987e-05, 3.17219, 11.1775,
    0.07}}; // Helion
 } // namespace
 using namespace o2;
@@ -139,7 +138,6 @@ class Particle
   float mass;
   int charge;
   float resolution;
-  float chargeFactor;
   float chargeFactor;
   std::vector<float> betheParams;
   static constexpr int NNumBetheParams = 5;
@@ -643,7 +641,6 @@ struct TrHeAnalysis {
       return -999;
 
     float expBethe{betheBlochAleph(particle, rigidity)};
-    float expBethe{betheBlochAleph(particle, rigidity)};
     float expSigma{expBethe * particle.resolution};
     float sigmaTPC =
       static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
@@ -693,7 +690,6 @@ struct TrHeAnalysis {
     bool hePID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
   }
-
   template <class T>
   float getMass(const T& track)
   {
