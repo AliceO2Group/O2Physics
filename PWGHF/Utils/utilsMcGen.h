@@ -136,9 +136,9 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
           }
           if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannel::DsToPhiPi;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi;
           } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannel::DplusToK0starK : o2::hf_decay::hf_cand_3prong::DecayChannel::DsToK0starK;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K;
           }
         }
       }
