@@ -24,7 +24,6 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include "EventFiltering/PWGHF/HFFilterHelpers.h"
 
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Core/SelectorCutsRedDataFormat.h"

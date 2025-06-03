@@ -17,22 +17,16 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
 
-#include <iostream>
-#include "TObject.h"
-#include "TMath.h"
-#include "TFile.h"
-#include "TDirectoryFile.h"
-#include "TList.h"
-#include "TCanvas.h"
-#include "TPaveText.h"
-#include "TLegend.h"
-#include "TSystem.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "TH3D.h"
-#include "TF1.h"
-#include "THnSparse.h"
-#include "TVector.h"
+#include <Rtypes.h>
+#include <RtypesCore.h>
+#include <TAttMarker.h>
+#include <TDirectoryFile.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TLegend.h>
+#include <TObject.h>
+#include <TString.h>
 
 class DhCorrelationExtraction : public TObject
 {
