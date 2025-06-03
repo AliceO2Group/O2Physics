@@ -71,7 +71,7 @@ using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
 using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
 using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes>;
 
-struct alice3multicharm {
+struct alice3multicharmTable {
   SliceCache cache;
 
   Produces<aod::MCharmIndices> multiCharmIdx;
@@ -539,7 +539,8 @@ struct alice3multicharm {
           continue; // too low momentum
 
         histos.fill(HIST("hPi1cPt"), pi1c.pt());
-        double pi1cTOFDiffInner = std::fabs(pi1c.innerTOFTrackTimeReco() - pi1c.innerTOFExpectedTimePi());
+        float pi1cTOFDiffInner = std::fabs(pi1c.innerTOFTrackTimeReco() - pi1c.innerTOFExpectedTimePi());
+        float pi1cTOFDiffOuter = std::fabs(pi1c.outerTOFTrackTimeReco() - pi1c.outerTOFExpectedTimePi());
         if (pi1cTOFDiffInner > piFromXiC_tofDiffInner)
           continue; // did not arrive at expected time
 
@@ -559,7 +560,8 @@ struct alice3multicharm {
             continue; // too low momentum
 
           histos.fill(HIST("hPi2cPt"), pi2c.pt());
-          double pi2cTOFDiffInner = std::fabs(pi2c.innerTOFTrackTimeReco() - pi2c.innerTOFExpectedTimePi());
+          float pi2cTOFDiffInner = std::fabs(pi2c.innerTOFTrackTimeReco() - pi2c.innerTOFExpectedTimePi());
+          float pi2cTOFDiffOuter = std::fabs(pi2c.outerTOFTrackTimeReco() - pi2c.outerTOFExpectedTimePi());
           if (pi2cTOFDiffInner > piFromXiC_tofDiffInner)
             continue; // did not arrive at expected time
 
@@ -585,7 +587,7 @@ struct alice3multicharm {
             thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]};
 
           o2::track::TrackParCov xicTrack(thisXiCcandidate.xyz, momentumC, thisXiCcandidate.parentTrackCovMatrix, +1);
-          double xicDecayRadius2D = std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]);
+          float xicDecayRadius2D = std::hypot(thisXiCcandidate.xyz[0], thisXiCcandidate.xyz[1]);
           if (xicDecayRadius2D < minXiCRadius)
             continue; // do not take if radius too small, likely a primary combination
 
@@ -628,7 +630,8 @@ struct alice3multicharm {
 
             histos.fill(HIST("hPiccPt"), picc.pt());
 
-            double piccTOFDiffInner = std::fabs(picc.innerTOFTrackTimeReco() - picc.innerTOFExpectedTimePi());
+            float piccTOFDiffInner = std::fabs(picc.innerTOFTrackTimeReco() - picc.innerTOFExpectedTimePi());
+            float piccTOFDiffOuter = std::fabs(picc.outerTOFTrackTimeReco() - picc.outerTOFExpectedTimePi());
             if (piccTOFDiffInner > piFromXiCC_tofDiffInner)
               continue; // did not arrive at expected time
 
@@ -648,40 +651,40 @@ struct alice3multicharm {
               thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]};
 
             o2::track::TrackParCov xiccTrack(thisXiCCcandidate.xyz, momentumCC, thisXiCCcandidate.parentTrackCovMatrix, +2);
-            double xiccDecayRadius2D = std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1]);
+            float xiccDecayRadius2D = std::hypot(thisXiCCcandidate.xyz[0], thisXiCCcandidate.xyz[1]);
             if (xiccDecayRadius2D < minXiCCRadius)
               continue; // do not take if radius too small, likely a primary combination
 
             histos.fill(HIST("hMinXiCCDecayRadius"), xiccDecayRadius2D * 1e+4);
 
-            double totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
-            double decayLengthXiC = std::hypot(
+            float totalMomentumC = std::hypot(momentumC[0], momentumC[1], momentumC[2]);
+            float decayLengthXiC = std::hypot(
               thisXiCcandidate.xyz[0] - thisXiCCcandidate.xyz[0],
               thisXiCcandidate.xyz[1] - thisXiCCcandidate.xyz[1],
               thisXiCcandidate.xyz[2] - thisXiCCcandidate.xyz[2]);
-            double xicProperLength = decayLengthXiC * thisXiCcandidate.mass / totalMomentumC;
+            float xicProperLength = decayLengthXiC * thisXiCcandidate.mass / totalMomentumC;
 
             if (xicProperLength < xicMinProperLength || xicProperLength > xicMaxProperLength)
               continue; // likely background
 
             histos.fill(HIST("hProperLengthXiC"), xicProperLength * 1e+4);
 
-            double xicDistanceFromPV = std::hypot(
+            float xicDistanceFromPV = std::hypot(
               thisXiCcandidate.xyz[0] - collision.posX(),
               thisXiCcandidate.xyz[1] - collision.posY(),
               thisXiCcandidate.xyz[2] - collision.posZ());
-            double xicDecayDistanceFromPV = xicDistanceFromPV * thisXiCcandidate.mass / totalMomentumC;
+            float xicDecayDistanceFromPV = xicDistanceFromPV * thisXiCcandidate.mass / totalMomentumC;
             if (xicDecayDistanceFromPV < xicMinDecayDistanceFromPV)
               continue; // too close to PV
 
             histos.fill(HIST("hMinxicDecayDistanceFromPV"), xicDecayDistanceFromPV * 1e+4);
 
-            double totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
-            double decayLengthXiCC = std::hypot(
+            float totalMomentumCC = std::hypot(momentumCC[0], momentumCC[1], momentumCC[2]);
+            float decayLengthXiCC = std::hypot(
               thisXiCCcandidate.xyz[0] - collision.posX(),
               thisXiCCcandidate.xyz[1] - collision.posY(),
               thisXiCCcandidate.xyz[2] - collision.posZ());
-            double xiccProperLength = decayLengthXiCC * thisXiCCcandidate.mass / totalMomentumCC;
+            float xiccProperLength = decayLengthXiCC * thisXiCCcandidate.mass / totalMomentumCC;
             if (xiccProperLength < xiccMinProperLength || xiccProperLength > xicMaxProperLength)
               continue; // likely background
 
@@ -714,18 +717,39 @@ struct alice3multicharm {
 
             // produce multi-charm table for posterior analysis
             if (fillDerivedTable) {
+              multiCharmIdx(
+                xiCand.globalIndex(),
+                pi1c.globalIndex(), pi2c.globalIndex(),
+                picc.globalIndex());
+
               multiCharmCore(
                 thisXiCcandidate.dca, thisXiCCcandidate.dca,
                 thisXiCcandidate.mass, thisXiCCcandidate.mass,
                 thisXiCCcandidate.pt, thisXiCCcandidate.eta,
-                xi.nSiliconHits(), piFromXi.nSiliconHits(),
-                piFromLa.nSiliconHits(), prFromLa.nSiliconHits(),
-                pi1c.nSiliconHits(), pi2c.nSiliconHits(), picc.nSiliconHits(),
-                piFromXi.nTPCHits(), piFromLa.nTPCHits(), prFromLa.nTPCHits(),
-                pi1c.nTPCHits(), pi2c.nTPCHits(), picc.nTPCHits(),
-                xi.dcaXY(), xicdcaXY, xiccdcaXY,
-                piFromXi.dcaXY(), piFromLa.dcaXY(), prFromLa.dcaXY(),
-                pi1c.dcaXY(), pi2c.dcaXY(), picc.dcaXY());
+                xi.dcaXY(), xi.dcaZ(),
+                xicdcaXY, xicdcaZ,
+                xiccdcaXY, xiccdcaZ,
+                piFromXi.dcaXY(), piFromXi.dcaZ(),
+                piFromLa.dcaXY(), piFromLa.dcaZ(),
+                prFromLa.dcaXY(), prFromLa.dcaZ(),
+                pi1c.dcaXY(), pi1c.dcaZ(),
+                pi2c.dcaXY(), pi2c.dcaZ(),
+                picc.dcaXY(), picc.dcaZ(),
+                xicDecayRadius2D, xiccDecayRadius2D,
+                xicProperLength, xicDecayDistanceFromPV,
+                xiccProperLength,
+                pi1cTOFDiffInner, pi1c.nSigmaPionInnerTOF(),
+                pi1cTOFDiffOuter, pi1c.nSigmaPionOuterTOF(),
+                pi2cTOFDiffInner, pi2c.nSigmaPionInnerTOF(),
+                pi2cTOFDiffOuter, pi2c.nSigmaPionOuterTOF(),
+                piccTOFDiffInner, picc.nSigmaPionInnerTOF(),
+                piccTOFDiffOuter, picc.nSigmaPionOuterTOF(),
+                piFromXi.pt(), piFromXi.eta(),
+                prFromLa.pt(), prFromLa.eta(),
+                piFromLa.pt(), piFromLa.eta(),
+                pi1c.pt(), pi1c.eta(),
+                pi2c.pt(), pi2c.eta(),
+                picc.pt(), picc.eta());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
@@ -737,13 +761,13 @@ struct alice3multicharm {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
-  PROCESS_SWITCH(alice3multicharm, processGenerated, "fill MC-only histograms", true);
-  PROCESS_SWITCH(alice3multicharm, processFindXiCC, "find XiCC baryons", true);
+  PROCESS_SWITCH(alice3multicharmTable, processGenerated, "fill MC-only histograms", true);
+  PROCESS_SWITCH(alice3multicharmTable, processFindXiCC, "find XiCC baryons", true);
   //*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*>-~-<*
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<alice3multicharm>(cfgc)};
+    adaptAnalysisTask<alice3multicharmTable>(cfgc)};
 }

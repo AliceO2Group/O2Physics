@@ -26,6 +26,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -370,7 +371,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
 
     } // close loop mcParticles
-  }   // close candidateMcLoop
+  } // close candidateMcLoop
 
   // process functions
   void processXic0(Xic0CandidateInfo const& candidates,

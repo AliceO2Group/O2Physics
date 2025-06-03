@@ -350,7 +350,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   typename U::iterator parton1;
   typename U::iterator parton2;
   for (auto const& particle : particles) {
-    if (std::abs(particle.getGenStatusCode() == 23)) {
+    if (std::abs(particle.getGenStatusCode()) == 23) {
       if (!firstPartonFound) {
         parton1 = particle;
         firstPartonFound = true;

@@ -52,6 +52,7 @@ struct DijetFinderQATask {
   Configurable<float> centralityMax{"centralityMax", 999.0, "maximum centrality"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum pT acceptance for tracks"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum pT acceptance for tracks"};
@@ -73,6 +74,28 @@ struct DijetFinderQATask {
 
   std::vector<double> dijetMassBins;
 
+  void labelCollisionHistograms(HistogramRegistry& registry)
+  {
+    if (doprocessDijetMCP) {
+      auto hColCounter_MCP = registry.get<TH1>(HIST("hColCounter_MCP"));
+      hColCounter_MCP->GetXaxis()->SetBinLabel(1, "AllMcCollisions");
+      hColCounter_MCP->GetXaxis()->SetBinLabel(2, "McCollisionsWithVertexZ");
+      hColCounter_MCP->GetXaxis()->SetBinLabel(3, "MatchedMcCollisions");
+    }
+    if (doprocessDijetMCD) {
+      auto hColCounter_MCD = registry.get<TH1>(HIST("hColCounter_MCD"));
+      hColCounter_MCD->GetXaxis()->SetBinLabel(1, "AllDetCollisions");
+      hColCounter_MCD->GetXaxis()->SetBinLabel(2, "DetCollisionsWithVertexZ");
+      hColCounter_MCD->GetXaxis()->SetBinLabel(3, "AcceptedDetCollisions");
+    }
+    if (doprocessDijetData) {
+      auto hColCounter_Data = registry.get<TH1>(HIST("hColCounter_Data"));
+      hColCounter_Data->GetXaxis()->SetBinLabel(1, "AllDataCollisions");
+      hColCounter_Data->GetXaxis()->SetBinLabel(2, "DataCollisionsWithVertexZ");
+      hColCounter_Data->GetXaxis()->SetBinLabel(3, "AcceptedDataCollisions");
+    }
+  }
+
   void init(o2::framework::InitContext&)
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
@@ -86,32 +109,33 @@ struct DijetFinderQATask {
     }
 
     AxisSpec dijetMassAxis = {dijetMassBins, "M_{jj} (GeV/#it{c}^2)"};
-    AxisSpec eventCountAxis = {{0.5, 1.5}, "events"};
 
     if (doprocessDijetMCP) {
       registry.add("h_part_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
-      registry.add("hColCounterFinal_MCP", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
+      registry.add("hColCounter_MCP", "event status; event status;entries", {HistType::kTH1F, {{10, 0., 10.0}}});
     }
 
     if (doprocessDijetMCD) {
       registry.add("h_detec_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
-      registry.add("hColCounterFinal_MCD", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
+      registry.add("hColCounter_MCD", "event status; event status;entries", {HistType::kTH1F, {{10, 0., 10.0}}});
+      // registry.add("hColCounter_MCD", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
     }
 
     if (doprocessDijetData) {
       registry.add("h_data_dijet_mass", "Dijet invariant mass;;entries", {HistType::kTH1F, {dijetMassAxis}});
-      registry.add("hColCounterFinal_Data", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
+      registry.add("hColCounter_Data", "event status; event status;entries", {HistType::kTH1F, {{10, 0., 10.0}}});
+      // registry.add("hColCounter_Data", "Event count;;entries", {HistType::kTH1F, {eventCountAxis}});
     }
 
-    if (doprocessDijetMCMatched) {
+    if (doprocessDijetMCPMCDMatched) {
       registry.add("h_matched_dijet_mass", "M_{jj matched};M_{jj part}; M_{jj det}", {HistType::kTH2F, {dijetMassAxis, dijetMassAxis}});
     }
+
+    labelCollisionHistograms(registry);
   }
 
   /****************************************************************************************************************************************************************/
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
-  Filter mcCollisionsFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   /****************************************************************************************************************************************************************/
 
@@ -170,7 +194,7 @@ struct DijetFinderQATask {
   }
 
   template <typename T>
-  void fillMassHistogramsMCMatched(T const& mass_P, T const& mass_D)
+  void fillMassHistogramsMCPMCDMatched(T const& mass_P, T const& mass_D)
   {
     registry.fill(HIST("h_matched_dijet_mass"), mass_P, mass_D);
   }
@@ -180,25 +204,44 @@ struct DijetFinderQATask {
   }
   PROCESS_SWITCH(DijetFinderQATask, processDummy, "dummy", false);
 
-  void processDijetMCP(soa::Filtered<aod::JetMcCollisions>::iterator const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions)
+  void processDijetMCP(aod::JetMcCollisions::iterator const& mccollision,
+                       soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
+                       soa::SmallGroups<aod::JetCollisionsMCD> const& collisions)
   {
-    if (collisions.size() == 0) {
+    registry.fill(HIST("hColCounter_MCP"), 0.5);
+    if (fabs(mccollision.posZ()) > vertexZCut) {
       return;
     }
-    for (auto& collision : collisions) {
-      if (fabs(collision.posZ()) > vertexZCut || !jetderiveddatautilities::selectCollision(collision, eventSelection))
+    registry.fill(HIST("hColCounter_MCP"), 1.5);
+    if (checkMcCollisionIsMatched) {
+      if (collisions.size() == 0) {
         return;
+      }
+      for (auto& collision : collisions) {
+        if (fabs(collision.posZ()) > vertexZCut || !jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+          return;
+        }
+      }
+      registry.fill(HIST("hColCounter_MCP"), 2.5);
     }
-
-    registry.fill(HIST("hColCounterFinal_MCP"), 1);
 
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+        continue;
+      }
+      if (jet.pt() < setJetPtCut) {
+        continue;
+      }
       jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
       auto& leading_jet = jetPtcuts[0];
+
       bool found_pair = false;
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
@@ -219,21 +262,36 @@ struct DijetFinderQATask {
   }
   PROCESS_SWITCH(DijetFinderQATask, processDijetMCP, "QA for invariant mass of dijet in particle level MC", false);
 
-  void processDijetMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+  void processDijetMCD(aod::JetCollisions::iterator const& collision,
+                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>> const& jets)
   {
+    registry.fill(HIST("hColCounter_MCD"), 0.5);
+    if (fabs(collision.posZ()) > vertexZCut) {
+      return;
+    }
+    registry.fill(HIST("hColCounter_MCD"), 1.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-
-    registry.fill(HIST("hColCounterFinal_MCD"), 1);
+    registry.fill(HIST("hColCounter_MCD"), 2.5);
 
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+        continue;
+      }
+      if (jet.pt() < setJetPtCut) {
+        continue;
+      }
       jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
       auto& leading_jet = jetPtcuts[0];
+
       bool found_pair = false;
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
@@ -254,22 +312,36 @@ struct DijetFinderQATask {
   }
   PROCESS_SWITCH(DijetFinderQATask, processDijetMCD, "QA for invariant mass of dijet in detector level MC", false);
 
-  void processDijetData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+  void processDijetData(aod::JetCollisions::iterator const& collision,
+                        soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
+    registry.fill(HIST("hColCounter_Data"), 0.5);
+    if (fabs(collision.posZ()) > vertexZCut) {
+      return;
+    }
+    registry.fill(HIST("hColCounter_Data"), 1.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
-
-    // Fill event count histogram
-    registry.fill(HIST("hColCounterFinal_Data"), 1);
+    registry.fill(HIST("hColCounter_Data"), 2.5);
 
     std::vector<std::array<double, 3>> jetPtcuts;
     for (auto& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(jet)) {
+        continue;
+      }
+      if (jet.pt() < setJetPtCut) {
+        continue;
+      }
       jetPtcuts.push_back({jet.pt(), jet.eta(), jet.phi()});
     }
 
     if (jetPtcuts.size() >= 2) {
       auto& leading_jet = jetPtcuts[0];
+
       bool found_pair = false;
 
       for (size_t i = 1; i < jetPtcuts.size() && !found_pair; i++) {
@@ -290,11 +362,22 @@ struct DijetFinderQATask {
   }
   PROCESS_SWITCH(DijetFinderQATask, processDijetData, "QA for invariant mass of dijet in data", false);
 
-  using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-  void processDijetMCMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
-                             soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                             JetMCPTable const&, aod::JetTracks const&, aod::JetParticles const&)
+  using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets,
+                                              aod::ChargedMCParticleLevelJetConstituents,
+                                              aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+  using JetMCDTable = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets,
+                                              aod::ChargedMCDetectorLevelJetConstituents,
+                                              aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+
+  void processDijetMCPMCDMatched(aod::JetCollisionsMCD::iterator const& collision,
+                                 JetMCDTable const& mcdjets,
+                                 JetMCPTable const&,
+                                 aod::JetTracks const&,
+                                 aod::JetParticles const&)
   {
+    if (fabs(collision.posZ()) > vertexZCut) {
+      return;
+    }
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
@@ -302,14 +385,29 @@ struct DijetFinderQATask {
     std::vector<std::array<double, 3>> jetPtcuts_D;
     std::vector<std::array<double, 3>> jetPtcuts_P;
 
-    for (auto& jet : mcdjets) {
-      if (jet.has_matchedJetGeo()) {
-        for (auto& matchedJet : jet.template matchedJetPt_as<JetMCPTable>()) {
-          if (matchedJet.pt() > setJetPtCut) {
-            jetPtcuts_D.push_back({jet.pt(), jet.eta(), jet.phi()});
-            jetPtcuts_P.push_back({matchedJet.pt(), matchedJet.eta(), matchedJet.phi()});
-            break;
+    for (auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetParticles>(mcdjet)) {
+        continue;
+      }
+      if (mcdjet.pt() < setJetPtCut) {
+        continue;
+      }
+      if (mcdjet.has_matchedJetGeo()) {
+        for (auto& matchedjet : mcdjet.template matchedJetPt_as<JetMCPTable>()) {
+          if (matchedjet.pt() < setJetPtCut) {
+            continue;
           }
+          if (!jetfindingutilities::isInEtaAcceptance(matchedjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+            continue;
+          }
+          if (!isAcceptedJet<aod::JetParticles>(matchedjet)) {
+            continue;
+          }
+          jetPtcuts_D.push_back({mcdjet.pt(), mcdjet.eta(), mcdjet.phi()});
+          jetPtcuts_P.push_back({matchedjet.pt(), matchedjet.eta(), matchedjet.phi()});
         }
       }
     }
@@ -317,34 +415,48 @@ struct DijetFinderQATask {
     if (jetPtcuts_D.size() >= 2 && jetPtcuts_P.size() >= 2) {
       auto& leading_jet_D = jetPtcuts_D[0];
       auto& leading_jet_P = jetPtcuts_P[0];
-      bool found_pair = false;
 
-      for (size_t i = 1; i < jetPtcuts_D.size() && !found_pair; i++) {
-        auto& candidate_jet_D = jetPtcuts_D[i];
-        auto& candidate_jet_P = jetPtcuts_P[i];
+      std::array<double, 3> candidate_jet_D{};
+      std::array<double, 3> candidate_jet_P{};
 
-        Double_t dphi_D = fabs(leading_jet_D[2] - candidate_jet_D[2]);
-        Double_t deta_D = fabs(leading_jet_D[1] - candidate_jet_D[1]);
-        Double_t dphi_P = fabs(leading_jet_P[2] - candidate_jet_P[2]);
-        Double_t deta_P = fabs(leading_jet_P[1] - candidate_jet_P[1]);
+      auto dphi_D = 0.;
+      auto dphi_P = 0.;
+
+      bool found_pair_MCD = false;
+      bool found_pair_MCP = false;
+
+      for (size_t i = 1; i < jetPtcuts_D.size() && !found_pair_MCD; i++) {
+        candidate_jet_D = jetPtcuts_D[i];
+        dphi_D = fabs(leading_jet_D[2] - candidate_jet_D[2]);
         Double_t condition = fabs(dphi_D - M_PI);
-
-        if (condition < setPhiCut * M_PI) {
-          double pt1_D = leading_jet_D[0];
-          double pt2_D = candidate_jet_D[0];
-          double dijet_mass_D = sqrt(2 * pt1_D * pt2_D * (cosh(deta_D) - cos(dphi_D)));
-
-          double pt1_P = leading_jet_P[0];
-          double pt2_P = candidate_jet_P[0];
-          double dijet_mass_P = sqrt(2 * pt1_P * pt2_P * (cosh(deta_P) - cos(dphi_P)));
-
-          fillMassHistogramsMCMatched(dijet_mass_P, dijet_mass_D);
-          found_pair = true;
+        if (condition > setPhiCut * M_PI) {
+          continue;
         }
+        found_pair_MCD = true;
+      }
+      for (size_t i = 1; i < jetPtcuts_P.size() && !found_pair_MCP; i++) {
+        candidate_jet_P = jetPtcuts_P[i];
+        dphi_P = fabs(leading_jet_P[2] - candidate_jet_P[2]);
+        Double_t condition = fabs(dphi_P - M_PI);
+        if (condition > setPhiCut * M_PI) {
+          continue;
+        }
+        found_pair_MCP = true;
+      }
+      if (found_pair_MCD && found_pair_MCP) {
+        Double_t deta_D = fabs(leading_jet_D[1] - candidate_jet_D[1]);
+        Double_t deta_P = fabs(leading_jet_P[1] - candidate_jet_P[1]);
+        double pt1_D = leading_jet_D[0];
+        double pt2_D = candidate_jet_D[0];
+        double pt1_P = leading_jet_P[0];
+        double pt2_P = candidate_jet_P[0];
+        double dijet_mass_D = sqrt(2 * pt1_D * pt2_D * (cosh(deta_D) - cos(dphi_D)));
+        double dijet_mass_P = sqrt(2 * pt1_P * pt2_P * (cosh(deta_P) - cos(dphi_P)));
+        fillMassHistogramsMCPMCDMatched(dijet_mass_P, dijet_mass_D);
       }
     }
   }
-  PROCESS_SWITCH(DijetFinderQATask, processDijetMCMatched, "QA for invariant mass of dijet in mcmactched", false);
+  PROCESS_SWITCH(DijetFinderQATask, processDijetMCPMCDMatched, "QA for invariant mass of dijet in mcmactched", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
