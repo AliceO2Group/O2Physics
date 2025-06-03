@@ -1035,8 +1035,7 @@ struct nucleiSpectra {
               }
             }
           }
-        }
-        else if (particle.has_mothers()) {
+        } else if (particle.has_mothers()) {
           flags |= kIsSecondaryFromWeakDecay;
           for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             motherPdgCode = motherparticle.pdgCode();
