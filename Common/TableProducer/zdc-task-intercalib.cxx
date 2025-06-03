@@ -101,6 +101,7 @@ struct ZDCCalibTower {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
   }
 
+
   template <typename TCollision>
   uint8_t eventSelected(TCollision collision)
   {
@@ -110,7 +111,7 @@ struct ZDCCalibTower {
     registry.fill(HIST("hEventCount"), evSel_allEvents);
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
-    if (selected) {
+    if (selected){
       selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
       registry.fill(HIST("hEventCount"), evSel_zvtx);
     }
@@ -164,6 +165,8 @@ struct ZDCCalibTower {
   void process(ColEvSels const& cols, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/)
   {
     // collision-based event selection
+    int nTowers = 4; // number of ZDC towers
+
     for (auto const& collision : cols) {
       const auto& foundBC = collision.foundBC_as<BCsRun3>();
       if (foundBC.has_zdc()) {
@@ -215,7 +218,7 @@ struct ZDCCalibTower {
         };
         //
         if (isZNChit) {
-          for (int it = 0; it < 4; it++) {
+          for (int it = 0; it < nTowers; it++) {
             pmqZNC[it] = (zdc.energySectorZNC())[it];
             sumZNC += pmqZNC[it];
           }
@@ -225,9 +228,9 @@ struct ZDCCalibTower {
           registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
           registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
           registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
-        }
+        } 
         if (isZNAhit) {
-          for (int it = 0; it < 4; it++) {
+          for (int it = 0; it < nTowers; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
             sumZNA += pmqZNA[it];
           }
