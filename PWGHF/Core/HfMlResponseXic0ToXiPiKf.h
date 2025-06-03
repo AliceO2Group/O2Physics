@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponseXic0ToXiPikf.h
+/// \file HfMlResponseXic0ToXiPiKf.h
 /// \brief Class to compute the ML response for Ξc^0 → Ξ∓ π± kf analysis selections
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
@@ -25,7 +25,7 @@
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_XIC0TOXIPIKF(FEATURE)                                 \
   {                                                                    \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::FEATURE) \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPiKf::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -33,14 +33,14 @@
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XIC0TOXIPIKF_FULL(OBJECT, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::FEATURE): {    \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPiKf::FEATURE): {    \
     inputFeatures.emplace_back(OBJECT.GETTER());                      \
     break;                                                            \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_XIC0TOXIPIKF(GETTER)                   \
-  case static_cast<uint8_t>(InputFeaturesXic0ToXiPikf::GETTER): { \
+  case static_cast<uint8_t>(InputFeaturesXic0ToXiPiKf::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());               \
     break;                                                        \
   }
@@ -48,7 +48,7 @@
 namespace o2::analysis
 {
 
-enum class InputFeaturesXic0ToXiPikf : uint8_t {
+enum class InputFeaturesXic0ToXiPiKf : uint8_t {
   tpcNSigmaPiFromLambda,
   tpcNSigmaPiFromCasc,
   tpcNSigmaPiFromCharmBaryon,
@@ -66,13 +66,13 @@ enum class InputFeaturesXic0ToXiPikf : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class HfMlResponseXic0ToXiPikf : public HfMlResponse<TypeOutputScore>
+class HfMlResponseXic0ToXiPiKf : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseXic0ToXiPikf() = default;
+  HfMlResponseXic0ToXiPiKf() = default;
   /// Default destructor
-  virtual ~HfMlResponseXic0ToXiPikf() = default;
+  virtual ~HfMlResponseXic0ToXiPiKf() = default;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the Xic0 candidate
