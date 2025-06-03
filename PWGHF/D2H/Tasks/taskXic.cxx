@@ -48,7 +48,15 @@ struct HfTaskXic {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  // THnSparse for ML outputScores and Vars
+  HfHelper hfHelper;
+  Service<o2::framework::O2DatabasePDG> pdg;
+
+  float etaMaxAcceptance = 0.8;
+  float ptMinAcceptance = 0.1;
+
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
+
+   // THnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Xic"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
@@ -61,14 +69,7 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
-  Service<o2::framework::O2DatabasePDG> pdg;
-  HfHelper hfHelper;
 
-  float etaMaxAcceptance = 0.8;
-  float ptMinAcceptance = 0.1;
-
-
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
@@ -351,10 +352,11 @@ struct HfTaskXic {
       if (enableTHn) {
         double massXic(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        const int ternaryCl = 3;
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPKPi(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPKPi().size() == 3) {
+            if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -368,7 +370,7 @@ struct HfTaskXic {
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPiKP(candidate);
           if constexpr (useMl) {
-            if (candidate.mlProbXicToPiKP().size() == 3) {
+            if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
@@ -490,6 +492,7 @@ struct HfTaskXic {
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          const int ternaryCl =3;
           bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
@@ -501,7 +504,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPKPi().size() == 3) {
+              if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
@@ -522,7 +525,7 @@ struct HfTaskXic {
             }
             allProngsInAcceptance = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]) && isProngInAcceptance(etaProngs[2], ptProngs[2]);
             if constexpr (useMl) {
-              if (candidate.mlProbXicToPiKP().size() == 3) {
+              if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbXicToPiKP()[2];     /// non-prompt score
