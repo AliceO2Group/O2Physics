@@ -428,12 +428,18 @@ struct alice3decayFinder {
       if (doDCAplotsD) {
         histos.add("hDCADDaughters", "hDCADDaughters", kTH1D, {axisDCADaughters});
         histos.add("hDCADbarDaughters", "hDCADbarDaughters", kTH1D, {axisDCADaughters});
-        histos.add("hDCADDaughters_Selected", "hDCADDaughters", kTH1D, {axisDCADaughters});
-        histos.add("hDCADbarDaughters_Selected", "hDCADbarDaughters", kTH1D, {axisDCADaughters});
+        histos.add("hDCADDaughters_Selected", "hDCADDaughters_Selected", kTH1D, {axisDCADaughters});
+        histos.add("hDCADbarDaughters_Selected", "hDCADbarDaughters_Selected", kTH1D, {axisDCADaughters});
         histos.add("h2dDCAxyVsPtPiPlusFromD", "h2dDCAxyVsPtPiPlusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtPiMinusFromD", "h2dDCAxyVsPtPiMinusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaPlusFromD", "h2dDCAxyVsPtKaPlusFromD", kTH2F, {axisPt, axisDCA});
         histos.add("h2dDCAxyVsPtKaMinusFromD", "h2dDCAxyVsPtKaMinusFromD", kTH2F, {axisPt, axisDCA});
+        if (doTopoPlotsForSAndB) {
+          histos.add("hDCADDaughters_Signal", "hDCADDaughters_Signal", kTH1D, {axisDCADaughters});
+          histos.add("hDCADDaughters_Bkg", "hDCADDaughters_Bkg", kTH1D, {axisDCADaughters});
+          histos.add("hDCADbarDaughters_Signal", "hDCADbarDaughters_Signal", kTH1D, {axisDCADaughters});
+          histos.add("hDCADbarDaughters_Bkg", "hDCADbarDaughters_Bkg", kTH1D, {axisDCADaughters});
+        }
       }
     }
     if (doprocessFindLcBaryons) {
@@ -532,29 +538,31 @@ struct alice3decayFinder {
         if (doDCAplotsD)
           histos.fill(HIST("hDCADDaughters"), dmeson.dcaDau * 1e+4);
 
-        if (doTopoPlotsForSAndB) { // fill plots of topological variables for S and B separately (reflections not considered here)
-          histos.fill(HIST("hDCosPA_Signal"), dmeson.cosPA);
-          histos.fill(HIST("hDCosPAxy_Signal"), dmeson.cosPAxy);
-          histos.fill(HIST("hDCosThetaStar_Signal"), dmeson.cosThetaStar);
-          histos.fill(HIST("hDDecayLength_Signal"), decayLength);
-          histos.fill(HIST("hDDecayLengthXY_Signal"), decayLengthXY);
-          histos.fill(HIST("hDNormDecayLength_Signal"), dmeson.normalizedDecayLength);
-          histos.fill(HIST("hImpParPi_Signal"), impParXY_daugPos);
-          histos.fill(HIST("hImpParK_Signal"), impParXY_daugNeg);
-          histos.fill(HIST("hImpParProduct_Signal"), impParXY_daugPos * impParXY_daugNeg);
-          histos.fill(HIST("hDCosPA_Bkg"), dmeson.cosPA);
-          histos.fill(HIST("hDCosPAxy_Bkg"), dmeson.cosPAxy);
-          histos.fill(HIST("hDCosThetaStar_Bkg"), dmeson.cosThetaStar);
-          histos.fill(HIST("hDDecayLength_Bkg"), decayLength);
-          histos.fill(HIST("hDDecayLengthXY_Bkg"), decayLengthXY);
-          histos.fill(HIST("hDNormDecayLength_Bkg"), dmeson.normalizedDecayLength);
-          histos.fill(HIST("hDCADDaughters_Bkg"), dmeson.dcaDau * 1e+4);
-          histos.fill(HIST("hImpParPi_Bkg"), impParXY_daugPos);
-          histos.fill(HIST("hImpParK_Bkg"), impParXY_daugNeg);
-          histos.fill(HIST("hImpParProduct_Bkg"), impParXY_daugPos * impParXY_daugNeg);
-          if (doDCAplotsD) {
-            histos.fill(HIST("hDCADDaughters_Signal"), dmeson.dcaDau * 1e+4);
-            histos.fill(HIST("hDCADDaughters_Bkg"), dmeson.dcaDau * 1e+4);
+        if (doTopoPlotsForSAndB) {   // fill plots of topological variables for S and B separately (reflections not considered here)
+          if (dmeson.mcTruth == 1) { // true D0
+            histos.fill(HIST("hDCosPA_Signal"), dmeson.cosPA);
+            histos.fill(HIST("hDCosPAxy_Signal"), dmeson.cosPAxy);
+            histos.fill(HIST("hDCosThetaStar_Signal"), dmeson.cosThetaStar);
+            histos.fill(HIST("hDDecayLength_Signal"), decayLength);
+            histos.fill(HIST("hDDecayLengthXY_Signal"), decayLengthXY);
+            histos.fill(HIST("hDNormDecayLength_Signal"), dmeson.normalizedDecayLength);
+            histos.fill(HIST("hImpParPi_Signal"), impParXY_daugPos);
+            histos.fill(HIST("hImpParK_Signal"), impParXY_daugNeg);
+            histos.fill(HIST("hImpParProduct_Signal"), impParXY_daugPos * impParXY_daugNeg);
+            if (doDCAplotsD)
+              histos.fill(HIST("hDCADDaughters_Signal"), dmeson.dcaDau * 1e+4);
+          } else if (!dmeson.mcTruth) { // bkg D0
+            histos.fill(HIST("hDCosPA_Bkg"), dmeson.cosPA);
+            histos.fill(HIST("hDCosPAxy_Bkg"), dmeson.cosPAxy);
+            histos.fill(HIST("hDCosThetaStar_Bkg"), dmeson.cosThetaStar);
+            histos.fill(HIST("hDDecayLength_Bkg"), decayLength);
+            histos.fill(HIST("hDDecayLengthXY_Bkg"), decayLengthXY);
+            histos.fill(HIST("hDNormDecayLength_Bkg"), dmeson.normalizedDecayLength);
+            histos.fill(HIST("hImpParPi_Bkg"), impParXY_daugPos);
+            histos.fill(HIST("hImpParK_Bkg"), impParXY_daugNeg);
+            histos.fill(HIST("hImpParProduct_Bkg"), impParXY_daugPos * impParXY_daugNeg);
+            if (doDCAplotsD)
+              histos.fill(HIST("hDCADDaughters_Bkg"), dmeson.dcaDau * 1e+4);
           }
         }
 
@@ -675,30 +683,32 @@ struct alice3decayFinder {
         if (doDCAplotsD)
           histos.fill(HIST("hDCADbarDaughters"), dmeson.dcaDau * 1e+4);
 
-        if (doTopoPlotsForSAndB) { // fill plots of topological variables for S and B separately (reflections not considered here)
-          histos.fill(HIST("hDCosPA_Signal"), dmeson.cosPA);
-          histos.fill(HIST("hDCosPAxy_Signal"), dmeson.cosPAxy);
-          histos.fill(HIST("hDCosThetaStar_Signal"), dmeson.cosThetaStar);
-          histos.fill(HIST("hDDecayLength_Signal"), decayLength);
-          histos.fill(HIST("hDDecayLengthXY_Signal"), decayLengthXY);
-          histos.fill(HIST("hDNormDecayLength_Signal"), dmeson.normalizedDecayLength);
-          histos.fill(HIST("hImpParPi_Signal"), impParXY_daugNeg);
-          histos.fill(HIST("hImpParK_Signal"), impParXY_daugPos);
-          histos.fill(HIST("hImpParProduct_Signal"), impParXY_daugPos * impParXY_daugNeg);
-          histos.fill(HIST("hDCosPA_Bkg"), dmeson.cosPA);
-          histos.fill(HIST("hDCosPAxy_Bkg"), dmeson.cosPAxy);
-          histos.fill(HIST("hDCosThetaStar_Bkg"), dmeson.cosThetaStar);
-          histos.fill(HIST("hDDecayLength_Bkg"), decayLength);
-          histos.fill(HIST("hDDecayLengthXY_Bkg"), decayLengthXY);
-          histos.fill(HIST("hDNormDecayLength_Bkg"), dmeson.normalizedDecayLength);
-          histos.fill(HIST("hDCADDaughters_Bkg"), dmeson.dcaDau * 1e+4);
-          histos.fill(HIST("hImpParPi_Bkg"), impParXY_daugNeg);
-          histos.fill(HIST("hImpParK_Bkg"), impParXY_daugPos);
-          histos.fill(HIST("hImpParProduct_Bkg"), impParXY_daugPos * impParXY_daugNeg);
-          if (doDCAplotsD) {
-            histos.fill(HIST("hDCADDaughters_Signal"), dmeson.dcaDau * 1e+4);
-            histos.fill(HIST("hDCADDaughters_Bkg"), dmeson.dcaDau * 1e+4);
+        if (doTopoPlotsForSAndB) {   // fill plots of topological variables for S and B separately (reflections not considered here)
+          if (dmeson.mcTruth == 2) { // true D0bar
+            histos.fill(HIST("hDCosPA_Signal"), dmeson.cosPA);
+            histos.fill(HIST("hDCosPAxy_Signal"), dmeson.cosPAxy);
+            histos.fill(HIST("hDCosThetaStar_Signal"), dmeson.cosThetaStar);
+            histos.fill(HIST("hDDecayLength_Signal"), decayLength);
+            histos.fill(HIST("hDDecayLengthXY_Signal"), decayLengthXY);
+            histos.fill(HIST("hDNormDecayLength_Signal"), dmeson.normalizedDecayLength);
+            histos.fill(HIST("hImpParPi_Signal"), impParXY_daugNeg);
+            histos.fill(HIST("hImpParK_Signal"), impParXY_daugPos);
+            histos.fill(HIST("hImpParProduct_Signal"), impParXY_daugPos * impParXY_daugNeg);
+            if (doDCAplotsD)
+              histos.fill(HIST("hDCADbarDaughters_Signal"), dmeson.dcaDau * 1e+4);
+          } else if (!dmeson.mcTruth) { // bkg D0bar
+            histos.fill(HIST("hDCosPA_Bkg"), dmeson.cosPA);
+            histos.fill(HIST("hDCosPAxy_Bkg"), dmeson.cosPAxy);
+            histos.fill(HIST("hDCosThetaStar_Bkg"), dmeson.cosThetaStar);
+            histos.fill(HIST("hDDecayLength_Bkg"), decayLength);
+            histos.fill(HIST("hDDecayLengthXY_Bkg"), decayLengthXY);
+            histos.fill(HIST("hDNormDecayLength_Bkg"), dmeson.normalizedDecayLength);
+            histos.fill(HIST("hImpParPi_Bkg"), impParXY_daugNeg);
+            histos.fill(HIST("hImpParK_Bkg"), impParXY_daugPos);
+            histos.fill(HIST("hImpParProduct_Bkg"), impParXY_daugPos * impParXY_daugNeg);
           }
+          if (doDCAplotsD)
+            histos.fill(HIST("hDCADbarDaughters_Bkg"), dmeson.dcaDau * 1e+4);
         }
 
         if (dmeson.dcaDau > dcaDaughtersSelection)
