@@ -666,22 +666,17 @@ struct TrHeAnalysis {
     constexpr int NNumLayers = 8;
     constexpr int NBitsPerLayer = 4;
     constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
-    constexpr int NNumLayers = 8;
-    constexpr int NBitsPerLayer = 4;
-    constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
+
     int sum = 0, n = 0;
     for (int i = 0; i < NNumLayers; i++) {
       int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
       sum += clsSize;
-      if (clsSize)
-        for (int i = 0; i < NNumLayers; i++) {
-          int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
-          sum += clsSize;
-          if (clsSize)
-            n++;
-        }
-      return n > 0 ? static_cast<float>(sum) / n : 0.f;
+      if (clsSize) {
+        n++;
+      }
     }
+    return n > 0 ? static_cast<float>(sum) / n : 0.f;
+  }
   template <class T>
   float getRigidity(T const& track)
   {
