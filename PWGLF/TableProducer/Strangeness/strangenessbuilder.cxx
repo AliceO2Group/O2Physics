@@ -196,12 +196,12 @@ struct StrangenessBuilder {
                     kCascFoundTags,
                     nTables };
 
-  enum V0PreSelection : uint8_t { selGamma = 0,
+  enum V0PreSelection : uint8_t { selGamma = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
                                   selK0Short,
                                   selLambda,
                                   selAntiLambda };
 
-  enum CascPreSelection : uint8_t { selXiMinus = 0,
+  enum CascPreSelection : uint8_t { selXiMinus = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
                                     selXiPlus,
                                     selOmegaMinus,
                                     selOmegaPlus };
