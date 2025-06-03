@@ -56,7 +56,7 @@ struct HfTaskXic {
 
   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
-   // THnSparse for ML outputScores and Vars
+  // THnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Xic"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
@@ -69,7 +69,6 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
-
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
@@ -492,7 +491,7 @@ struct HfTaskXic {
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-          const int ternaryCl =3;
+          const int ternaryCl = 3;
           bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
