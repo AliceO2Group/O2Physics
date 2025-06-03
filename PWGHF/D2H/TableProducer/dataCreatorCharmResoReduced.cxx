@@ -132,7 +132,7 @@ struct HfDataCreatorCharmResoReduced {
     Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D"};
     Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
     Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-    Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+    Configurable<int> selectionFlagD0Bar{"selectionFlagD0Bar", 1, "Selection Flag for D0bar"};
   } cfgDmesCuts;
 
   // selection V0
@@ -247,7 +247,7 @@ struct HfDataCreatorCharmResoReduced {
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= cfgDmesCuts.selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == cfgDmesCuts.selectionFlagDstarToD0Pi);
-  Filter filterSelectD0Candidates = (aod::hf_sel_candidate_d0::isSelD0 >= cfgDmesCuts.selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= cfgDmesCuts.selectionFlagD0bar);
+  Filter filterSelectD0Candidates = (aod::hf_sel_candidate_d0::isSelD0 >= cfgDmesCuts.selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= cfgDmesCuts.selectionFlagD0Bar);
 
   Preslice<CandsDplusFiltered> candsDplusPerCollision = aod::hf_cand::collisionId;
   Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::hf_cand::collisionId;
@@ -1271,10 +1271,10 @@ struct HfDataCreatorCharmResoReduced {
           }
         } else if constexpr (dType == DType::D0) {
           uint8_t selFlagD0 = {BIT(D0Sel::selectedD0) | BIT(D0Sel::selectedD0Bar)};
-          if (!candD.isSelD0() < cfgDmesCuts.selectionFlagD0){
+          if (candD.isSelD0() < cfgDmesCuts.selectionFlagD0){
             CLRBIT(selFlagD0, D0Sel::selectedD0);
           }
-          if (!candD.isSelD0Bar() < cfgDmesCuts.selectionFlagD0Bar){
+          if (candD.isSelD0bar() < cfgDmesCuts.selectionFlagD0Bar){
             CLRBIT(selFlagD0, D0Sel::selectedD0Bar);
           }
           hfCandD2Pr(prongIdsD[0], prongIdsD[1],
