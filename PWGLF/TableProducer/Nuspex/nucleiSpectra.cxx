@@ -267,6 +267,7 @@ struct nucleiSpectra {
   };
 
   Produces<o2::aod::NucleiTable> nucleiTable;
+  Produces<o2::aod::NucleiPairTable> nucleiPairTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
   Produces<o2::aod::NucleiTableFlow> nucleiTableFlow;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -297,6 +298,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
+  Configurable<bool> cfgFillPairTree{"cfgFillPairTree", true, "Fill trees for pairs of light nuclei"};
   Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
@@ -514,6 +516,7 @@ struct nucleiSpectra {
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
+    spectra.add("hMCDCAxyVsDecRadius", "DCA xy vs DecayRadius", HistType::kTH2F, {{20, 0., 0.2, "Decay radius"}, {150, -0.05, 0.05, "DCA_{xy} (cm)"}});
     for (int iC{0}; iC < 2; ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
 
@@ -833,14 +836,24 @@ struct nucleiSpectra {
     }
 
     fillDataInfo(collision, tracks);
-    for (auto& c : nuclei::candidates) {
-      if (c.fillTree) {
-        nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS);
+    for (size_t i1{0}; i1 < nuclei::candidates.size(); ++i1) {
+      auto& c1 = nuclei::candidates[i1];
+      if (c1.fillTree) {
+        nucleiTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.beta, c1.zVertex, c1.DCAxy, c1.DCAz, c1.TPCsignal, c1.ITSchi2, c1.TPCchi2, c1.TOFchi2, c1.flags, c1.TPCfindableCls, c1.TPCcrossedRows, c1.ITSclsMap, c1.TPCnCls, c1.TPCnClsShared, c1.clusterSizesITS);
+        if (cfgFillPairTree) {
+          for (size_t i2{i1 + 1}; i2 < nuclei::candidates.size(); ++i2) {
+            auto& c2 = nuclei::candidates[i2];
+            if (!c2.fillTree || ((c1.flags & c2.flags) & 0x1F) == 0) {
+              continue;
+            }
+            nucleiPairTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.TPCsignal, c1.DCAxy, c1.DCAz, c1.clusterSizesITS, c1.flags, c2.pt, c2.eta, c2.phi, c2.tpcInnerParam, c2.TPCsignal, c2.DCAxy, c2.DCAz, c2.clusterSizesITS, c2.flags);
+          }
+        }
       }
-      if (c.fillDCAHist) {
+      if (c1.fillDCAHist) {
         for (int iS{0}; iS < nuclei::species; ++iS) {
-          if (c.flags & BIT(iS)) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls);
+          if (c1.flags & BIT(iS)) {
+            nuclei::hDCAHists[c1.pt < 0][iS]->Fill(std::abs(c1.pt), c1.DCAxy, c1.DCAz, c1.nSigmaTPC[iS], c1.tofMasses[iS], c1.ITSnCls, c1.TPCnCls);
           }
         }
       }
@@ -979,6 +992,8 @@ struct nucleiSpectra {
             if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
               c.flags |= kIsSecondaryFromWeakDecay;
               MotherpdgCode = motherparticle.pdgCode();
+              float decRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+              spectra.fill(HIST("hMCDCAxyVsDecRadius"), decRadius, c.DCAxy);
               break;
             }
           }

@@ -187,8 +187,8 @@ struct FlowSP {
     evSel_MultCuts,
     evSel_kIsGoodITSLayersAll,
     evSel_isSelectedZDC,
-    nEventSelections,
-    evSel_CentCuts
+    evSel_CentCuts,
+    nEventSelections
   };
 
   enum TrackSelections {
