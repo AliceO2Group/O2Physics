@@ -376,7 +376,7 @@ struct HfTaskLc {
         continue;
       }
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         // Get the corresponding MC particle.
         auto mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
         auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
@@ -589,7 +589,7 @@ struct HfTaskLc {
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;

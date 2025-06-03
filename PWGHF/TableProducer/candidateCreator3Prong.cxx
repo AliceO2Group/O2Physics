@@ -982,8 +982,6 @@ struct HfCandidateCreator3ProngExpressions {
           }
         }
         if (indexRec > -1) {
-          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-          // TODO: move to different and explicit flags
           flag = sign * (isDplus ? DecayChannelMain::DplusToPiKK : DecayChannelMain::DsToPiKK);
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);

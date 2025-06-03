@@ -12,8 +12,9 @@
 /// \file DecayChannels.h
 /// \brief Definitions of constants for MC flagging of HF decay channels.
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
-/// \note DecayChannelMain enums define unique combinations of the mother particle and the daughters for main channels.
-/// \note DecayChannelResonant enums define unique combinations of the mother particle and the daughters for resonant channels.
+/// \note DecayChannelMain enums define unique combinations of the mother and the daughters for main channels.
+/// \note DecayChannelResonant enums define unique combinations of the mother and the daughters for resonant channels.
+/// \note Value 0 is reserved to indicate no match.
 /// \note Daughter ordering convention: (charm|strange|π±|K±|π0), (baryon|meson), (+|−)
 
 #ifndef PWGHF_CORE_DECAYCHANNELS_H_
@@ -27,6 +28,7 @@ namespace o2::hf_decay
 // TODO
 // - HF cascades (Λc+ → p K0short)
 // - HF cascades to LF cascades (Ωc0/Ξc0 → Ξ+ π−, Ξc+ → Ξ+ π− π+)
+// - Σc
 
 namespace hf_cand_2prong
 {
