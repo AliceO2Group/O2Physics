@@ -239,7 +239,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtTrack"), track.pt(), weight);
       registry.fill(HIST("hEtaTrack"), track.eta(), weight);
       registry.fill(HIST("hPhiTrack"), track.phi(), weight);
-      registry.fill(HIST("hPtTrackPtHard"), track.pt(), track.pt() / pTHat);
+      registry.fill(HIST("hPtTrackPtHard"), track.pt(), track.pt() / pTHat, weight);
     }
 
     if (nTT > 0) {
