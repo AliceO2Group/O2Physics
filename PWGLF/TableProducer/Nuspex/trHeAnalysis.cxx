@@ -674,14 +674,14 @@ struct TrHeAnalysis {
       int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
       sum += clsSize;
       if (clsSize)
-    for (int i = 0; i < NNumLayers; i++) {
-      int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
-      sum += clsSize;
-      if (clsSize)
-        n++;
+        for (int i = 0; i < NNumLayers; i++) {
+          int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
+          sum += clsSize;
+          if (clsSize)
+            n++;
+        }
+      return n > 0 ? static_cast<float>(sum) / n : 0.f;
     }
-    return n > 0 ? static_cast<float>(sum) / n : 0.f;
-  }
   template <class T>
   float getRigidity(T const& track)
   {
@@ -693,32 +693,28 @@ struct TrHeAnalysis {
   template <class T>
   float getMass(const T& track)
   {
-    if (cfgMassMethod == 0) 
-    {
+    if (cfgMassMethod == 0) {
       return track.mass();
     }
-    if (cfgMassMethod == 1) 
-    {
+    if (cfgMassMethod == 1) {
       const float beta = track.beta();
       const float rigidity = getRigidity(track);
-      float gamma = 1 / TMath::Sqrt(1-beta*beta);
+      float gamma = 1 / TMath::Sqrt(1 - beta * beta);
       float mass = (rigidity / TMath::Sqrt(gamma * gamma - 1.f));
       return mass;
     }
-    if (cfgMassMethod == 2) 
-    {
+    if (cfgMassMethod == 2) {
       const float rigidity = getRigidity(track);
       float tofStartTime = track.evTimeForTrack();
       float tofTime = track.tofSignal();
-      constexpr float cInCmPs = 2.99792458e-2f; 
-      float length = track.length(); 
-      float time = tofTime - tofStartTime;  
-      if (time > 0.f && length > 0.f)
-      {
+      constexpr float cInCmPs = 2.99792458e-2f;
+      float length = track.length();
+      float time = tofTime - tofStartTime;
+      if (time > 0.f && length > 0.f) {
         float beta = length / (cInCmPs * time);
-		    float gamma = 1/ TMath::Sqrt(1- beta*beta);
-		    float mass = rigidity / std::sqrt(gamma*gamma - 1.f);
-        return mass; 
+        float gamma = 1 / TMath::Sqrt(1 - beta * beta);
+        float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
+        return mass;
       }
       return -1.f;
     }
@@ -732,3 +728,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<TrHeAnalysis>(cfgc),
   };
 }
+ 
