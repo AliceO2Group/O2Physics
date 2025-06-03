@@ -101,7 +101,6 @@ struct ZDCCalibTower {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
   }
 
-
   template <typename TCollision>
   uint8_t eventSelected(TCollision collision)
   {
@@ -226,7 +225,7 @@ struct ZDCCalibTower {
           registry.get<TH1>(HIST("ZNCpm3"))->Fill(pmqZNC[2]);
           registry.get<TH1>(HIST("ZNCpm4"))->Fill(pmqZNC[3]);
           registry.get<TH1>(HIST("ZNCsumq"))->Fill(sumZNC);
-        } 
+        }
         if (isZNAhit) {
           for (int it = 0; it < 4; it++) {
             pmqZNA[it] = (zdc.energySectorZNA())[it];
@@ -252,3 +251,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disab
   return WorkflowSpec{
     adaptAnalysisTask<ZDCCalibTower>(cfgc)};
 }
+ 
