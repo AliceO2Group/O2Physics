@@ -96,7 +96,8 @@ struct UccZdc {
 
   // Track-kinematics selection
   Configurable<float> minPt{"minPt", 0.1, "minimum pt of the tracks"};
-  Configurable<float> maxPt{"maxPt", 50., "maximum pt of the tracks"};
+  Configurable<float> maxPt{"maxPt", 3., "maximum pt of the tracks"};
+  Configurable<float> maxPtSpectra{"maxPtSpectra", 50., "maximum pt of the tracks"};
   Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
   Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
 
@@ -150,8 +151,7 @@ struct UccZdc {
     Zem
   };
 
-  // Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt) && requireGlobalTrackInFilter());
-  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta) && (aod::track::pt > minPt) && (aod::track::pt < maxPt));
+  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
 
   // Apply Filters
   using TheFilteredTracks = soa::Filtered<o2::aod::TracksSel>;
@@ -296,6 +296,9 @@ struct UccZdc {
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
     LOG(info) << "\tpaTHmeanNch=" << paTHmeanNch.value;
     LOG(info) << "\tpaTHsigmaNch=" << paTHsigmaNch.value;
+    LOG(info) << "\tminPt=" << minPt.value;
+    LOG(info) << "\tmaxPt=" << maxPt.value;
+    LOG(info) << "\tmaxPtSpectra=" << maxPtSpectra.value;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     // Enabling object caching, otherwise each call goes to the CCDB server
@@ -473,6 +476,9 @@ struct UccZdc {
       if (!track.isGlobalTrack()) {
         continue;
       }
+      if ((track.pt() < minPt) || (track.pt() > maxPt)) {
+        continue;
+      }
       glbTracks++;
     }
 
@@ -511,6 +517,9 @@ struct UccZdc {
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
+        continue;
+      }
+      if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
         continue;
       }
 
@@ -635,6 +644,9 @@ struct UccZdc {
       if (!track.isGlobalTrack()) {
         continue;
       }
+      if ((track.pt() < minPt) || (track.pt() > maxPt)) {
+        continue;
+      }
       registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
       registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
       registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
@@ -687,6 +699,9 @@ struct UccZdc {
       if (!track.isGlobalTrack()) {
         continue;
       }
+      if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
+        continue;
+      }
 
       float pt{track.pt()};
       double weight{1.};
@@ -711,6 +726,9 @@ struct UccZdc {
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
+        continue;
+      }
+      if ((track.pt() < minPt) || (track.pt() > maxPtSpectra)) {
         continue;
       }
       registry.fill(HIST("NchVsZNVsPt"), w1, sumZNs, track.pt());
