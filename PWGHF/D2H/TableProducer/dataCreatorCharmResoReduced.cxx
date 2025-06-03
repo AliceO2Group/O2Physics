@@ -44,8 +44,6 @@
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
-
-
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
@@ -163,7 +161,7 @@ struct HfDataCreatorCharmResoReduced {
   // MC Tables
   Produces<aod::HfMcRecRedDV0s> rowHfDV0McRecReduced;
   Produces<aod::HfMcGenRedResos> rowHfResoMcGenReduced;
-  
+
   // selection D
   struct : ConfigurableGroup {
     std::string prefix = "dmesons";
@@ -222,7 +220,7 @@ struct HfDataCreatorCharmResoReduced {
   Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
   Configurable<bool> doMcRecQa{"doMcRecQa", true, "Fill QA histograms for Mc matching"};
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject already at this stage the pairs that share a daughter track"};
-  
+
   HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
 
@@ -235,11 +233,11 @@ struct HfDataCreatorCharmResoReduced {
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  
+
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  //vertex fitter
+  // vertex fitter
   o2::vertexing::DCAFitterN<2> fitter;
 
   // Helper struct to pass V0 informations
@@ -317,7 +315,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
     const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
-    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"}; //o2-linter: disable=pdg/explicit-mass (false positive)
+    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"}; // o2-linter: disable=pdg/explicit-mass (false positive)
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassKzero{100, 0.35f, 0.65f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToK{500, 0.49, 1.49, "inv. mass (GeV/#it{c}^{2})"};
