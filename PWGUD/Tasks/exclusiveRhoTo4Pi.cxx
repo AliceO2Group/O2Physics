@@ -44,7 +44,6 @@ namespace o2::aod
 {
 namespace branch
 {
-
 // vertex Position
 DECLARE_SOA_COLUMN(PosX, posX, double);
 DECLARE_SOA_COLUMN(PosY, posY, double);
@@ -67,6 +66,9 @@ DECLARE_SOA_COLUMN(TimeFddc, timeFddc, double);
 // ZDC times
 DECLARE_SOA_COLUMN(TimeZna, timeZna, double);
 DECLARE_SOA_COLUMN(TimeZnc, timeZnc, double);
+
+// Occupancy
+DECLARE_SOA_COLUMN(Occupancy, occupancy, double);
 
 // DCA
 DECLARE_SOA_COLUMN(Dcaxy1, dcaxy1, double);
@@ -182,6 +184,8 @@ DECLARE_SOA_TABLE(SignalData, "AOD", "signalData",
                   branch::TimeZna,
                   branch::TimeZnc,
 
+                  branch::Occupancy,
+
                   branch::Dcaxy1,
                   branch::Dcaxy2,
                   branch::Dcaxy3,
@@ -281,6 +285,8 @@ DECLARE_SOA_TABLE(BkgroundData, "AOD", "bkgroundData",
                   branch::TimeFddc,
                   branch::TimeZna,
                   branch::TimeZnc,
+
+                  branch::Occupancy,
 
                   branch::Dcaxy1,
                   branch::Dcaxy2,
@@ -408,6 +414,8 @@ DECLARE_SOA_TABLE(SignalMCreco, "AOD", "SignalMCreco",
                   branch::TimeZna,
                   branch::TimeZnc,
 
+                  branch::Occupancy,
+
                   branch::Dcaxy1,
                   branch::Dcaxy2,
                   branch::Dcaxy3,
@@ -512,7 +520,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> ft0aCut{"ft0aCut", 150., "FT0A threshold"};
   Configurable<float> ft0cCut{"ft0cCut", 50., "FT0C threshold"};
   Configurable<float> zdcCut{"zdcCut", 1., "ZDC threshold"};
-  Configurable<float> occupancyCut{"occupancyCut", 1000, "Occupancy Cut"};
+  // Configurable<float> occupancyCut{"occupancyCut", 1000, "Occupancy Cut"};
 
   Configurable<float> pvCut{"pvCut", 1.0, "Use Only PV tracks"};
   Configurable<uint16_t> numPVContrib{"numPVContrib", 4, "Number of PV Contributors"};
@@ -837,7 +845,6 @@ struct ExclusiveRhoTo4Pi {
   Filter vertexCut = (nabs(o2::aod::collision::posZ) <= vZCut) && (o2::aod::collision::numContrib == numPVContrib);
   Filter fitcuts = o2::aod::udcollision::totalFV0AmplitudeA < fv0Cut && o2::aod::udcollision::totalFT0AmplitudeA < ft0aCut && o2::aod::udcollision::totalFT0AmplitudeC < ft0cCut;
   Filter zdcCuts = (o2::aod::udzdc::energyCommonZNA < zdcCut) && (o2::aod::udzdc::energyCommonZNC < zdcCut);
-  Filter occupCut = nabs(o2::aod::udcollision::occupancyInTime) < occupancyCut;
   using UDtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisions = soa::Filtered<soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced>>; //
   using UDCollision = UDCollisions::iterator;
@@ -923,6 +930,18 @@ struct ExclusiveRhoTo4Pi {
       return;
     }
 
+    // Check if there is at least one track with TOF in the selected events, otherwise return
+    bool hasAtleastOneTOF = false;
+    for (int i = 0; i < numPiPlusTracks; i++) {
+      if (selectedPionPlusTracks[i].hasTOF() == true) {
+        hasAtleastOneTOF = true;
+        break;
+      }
+    }
+    if (!hasAtleastOneTOF) {
+      return;
+    }
+
     // Selecting Events with net charge = 0
     if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
 
@@ -964,7 +983,7 @@ struct ExclusiveRhoTo4Pi {
       sigFromData(
         collision.posX(), collision.posY(), collision.posZ(),
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
-        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(), collision.timeZNA(), collision.timeZNC(),
+        collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(), collision.timeZNA(), collision.timeZNC(), collision.occupancyInTime(),
         selectedPionPlusTracks[0].dcaXY(), selectedPionPlusTracks[1].dcaXY(), selectedPionMinusTracks[0].dcaXY(), selectedPionMinusTracks[1].dcaXY(),
 
         selectedPionPlusTracks[0].dcaZ(), selectedPionPlusTracks[1].dcaZ(), selectedPionMinusTracks[0].dcaZ(), selectedPionMinusTracks[1].dcaZ(),
@@ -1037,7 +1056,7 @@ struct ExclusiveRhoTo4Pi {
         collision.posX(), collision.posY(), collision.posZ(),
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
-        collision.timeZNA(), collision.timeZNC(),
+        collision.timeZNA(), collision.timeZNC(), collision.occupancyInTime(),
         selectedPionTracks[0].dcaXY(), selectedPionTracks[1].dcaXY(), selectedPionTracks[0].dcaXY(), selectedPionTracks[1].dcaXY(),
         selectedPionTracks[0].dcaZ(), selectedPionTracks[1].dcaZ(), selectedPionTracks[0].dcaZ(), selectedPionTracks[1].dcaZ(),
         selectedPionTracks[0].tpcNSigmaPi(), selectedPionTracks[1].tpcNSigmaPi(), selectedPionTracks[0].tpcNSigmaPi(), selectedPionTracks[1].tpcNSigmaPi(),
@@ -1174,7 +1193,7 @@ struct ExclusiveRhoTo4Pi {
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCgen, "The Process for 4 Pion Analysis from MC Generation", false);
 
   // Begin of MC Reconstruction function-----------------------------------------------------------------------------------------------------------------------------------------------
-  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
+  using CollisionStuff = soa::Filtered<soa::Join<aod::UDCollisions_001, aod::SGCollisions, aod::UDCollisionsSels, aod::UDCollisionSelExtras_002, aod::UDZdcsReduced, aod::UDMcCollsLabels>>;
   using CollisionTotal = CollisionStuff::iterator;
   using TrackStuff = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
 
@@ -1303,7 +1322,7 @@ struct ExclusiveRhoTo4Pi {
         collision.posX(), collision.posY(), collision.posZ(),
         collision.totalFV0AmplitudeA(), collision.totalFT0AmplitudeA(), collision.totalFT0AmplitudeC(), collision.totalFDDAmplitudeA(), collision.totalFDDAmplitudeC(),
         collision.timeFV0A(), collision.timeFT0A(), collision.timeFT0C(), collision.timeFDDA(), collision.timeFDDC(),
-        collision.timeZNA(), collision.timeZNC(),
+        collision.timeZNA(), collision.timeZNC(), collision.occupancyInTime(),
         selectedPionPlusTracks[0].dcaXY(), selectedPionPlusTracks[1].dcaXY(), selectedPionMinusTracks[0].dcaXY(), selectedPionMinusTracks[1].dcaXY(),
         selectedPionPlusTracks[0].dcaZ(), selectedPionPlusTracks[1].dcaZ(), selectedPionMinusTracks[0].dcaZ(), selectedPionMinusTracks[1].dcaZ(),
         selectedPionPlusTracks[0].tpcNSigmaPi(), selectedPionPlusTracks[1].tpcNSigmaPi(), selectedPionMinusTracks[0].tpcNSigmaPi(), selectedPionMinusTracks[1].tpcNSigmaPi(),
