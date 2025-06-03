@@ -100,6 +100,7 @@ struct upcPhotonuclearAnalysisJMG {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Declare configurables on events/collisions
+  Configurable<int> nEvenstMixed{"nEvenstMixed", 3, {"Events to be Mixed"}};
   Configurable<float> myZVtxCut{"myZVtxCut", 10., {"My collision cut"}};
   Configurable<float> myTimeZNACut{"myTimeZNACut", 2., {"My collision cut"}};
   Configurable<float> myTimeZNCCut{"myTimeZNCCut", 2., {"My collision cut"}};
@@ -275,14 +276,15 @@ struct upcPhotonuclearAnalysisJMG {
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -5.0f, 0.0f, 5.0f, 10.0f};
-  // std::vector<double> multBinsEdges{VARIABLE_WIDTH, 0.0f, 50.0f, 400.0f};
+  std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
   SliceCache cache;
 
   // Binning only on PosZ without multiplicity
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
-  BinningType bindingOnVtx{{vtxBinsEdges}, true};
-  SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, 5, -1, &cache};
+  // using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::GapSide>;
+  BinningType bindingOnVtx{{vtxBinsEdges, {gapSideBinsEdges}}, true};
+  SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEvenstMixed, -1, &cache};
 
   // ColumnBinningPolicy<aod::collision::PosZ, aod::udcollision::TotalFT0AmplitudeC> bindingOnVtx{{vtxBinsEdges, multBinsEdges}, true};
 
@@ -376,7 +378,7 @@ struct upcPhotonuclearAnalysisJMG {
   template <typename TTracks>
   void fillQAUD(const TTracks tracks)
   {
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       histos.fill(HIST("yields"), tracks.size(), track.pt(), eta(track.px(), track.py(), track.pz()));
       histos.fill(HIST("etaphi"), tracks.size(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
     }
@@ -394,12 +396,12 @@ struct upcPhotonuclearAnalysisJMG {
   void fillCorrelationsUD(TTarget target, const TTracks tracks1, const TTracks tracks2, float multiplicity, float posZ)
   {
     multiplicity = tracks1.size();
-    for (auto& track1 : tracks1) {
+    for (const auto& track1 : tracks1) {
       if (isTrackCut(track1) == false) {
         continue;
       }
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
-      for (auto& track2 : tracks2) {
+      for (const auto& track2 : tracks2) {
         if (track1 == track2) {
           continue;
         }
@@ -448,7 +450,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
-        for (auto& track : reconstructedTracks) {
+        for (const auto& track : reconstructedTracks) {
           if (track.sign() == 1 || track.sign() == -1) {
             if (isTrackCut(track) == false) {
               continue;
@@ -504,7 +506,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideC/hZVtx"), reconstructedCollision.posZ());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideC/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
-        for (auto& track : reconstructedTracks) {
+        for (const auto& track : reconstructedTracks) {
           if (track.sign() == 1 || track.sign() == -1) {
             if (isTrackCut(track) == false) {
               continue;
@@ -593,12 +595,13 @@ struct upcPhotonuclearAnalysisJMG {
 
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 
-  void processMixed()
+  void processMixed(FullSGUDCollision::iterator const& reconstructedCollision)
   {
+    (void)reconstructedCollision;
     // int sgSide = reconstructedCollision.gapSide();
     // int sgSide = 0;
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (collision1.size() == 0 || collision2.size() == 0) {
         LOGF(info, "One or both collisions are empty.");
         continue;
@@ -614,7 +617,8 @@ struct upcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(mixedGapSideA, multiplicity) == false) {
           return;
         }
-        histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+        // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+        histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
         fillCorrelationsUD(mixedGapSideA, tracks1, tracks2, multiplicity, collision1.posZ());
         LOGF(info, "Filling mixedGapSideA events, Gap for side A");
       }
@@ -628,7 +632,6 @@ struct upcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(mixedGapSideC, multiplicity) == false) {
           return;
         }
-        histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
         fillCorrelationsUD(mixedGapSideC, tracks1, tracks2, multiplicity, collision1.posZ());
         LOGF(info, "Filling mixedGapSideC events, Gap for side C");
       } else {
