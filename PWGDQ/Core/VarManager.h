@@ -3972,6 +3972,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0) {
       // TODO: set the other variables to appropriate values and return
+      values[kVertexingChi2PCA] = -999.;
       values[kVertexingLxy] = -999.;
       values[kVertexingLxyz] = -999.;
       values[kVertexingLz] = -999.;
@@ -4005,6 +4006,10 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
+
+      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
+      if (fgUsedVars[kVertexingChi2PCA])
+        values[VarManager::kVertexingChi2PCA] = chi2PCA;
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
