@@ -338,51 +338,36 @@ struct HfCorrelatorLcScHadrons {
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
-  template <typename mlProbType>
-  void fillMlOutput(mlProbType& mlProb, std::vector<float>& outputMl)
+  template <typename MlProbType>
+  void fillMlOutput(MlProbType const& mlProb, std::vector<float>& outputMl)
   {
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = mlProb[classMl->at(iclass)];
     }
   };
 
-  template <bool isCandSc = false, typename candtype>
-  double estimateY(candtype& cand)
+  template <bool isCandSc = false, typename CandType>
+  double estimateY(CandType const& candidate)
   {
     double y = -999.;
     const int chargeScZero = 0;
     if constexpr (isCandSc) {
-      int8_t chargeCand = cand.charge();
+      int8_t chargeCand = candidate.charge();
 
       if (chargeCand == chargeScZero) {
-        y = hfHelper.ySc0(cand);
+        y = hfHelper.ySc0(candidate);
       } else {
-        y = hfHelper.yScPlusPlus(cand);
+        y = hfHelper.yScPlusPlus(candidate);
       }
 
     } else {
-      y = hfHelper.yLc(cand);
+      y = hfHelper.yLc(candidate);
     }
     return y;
   }
 
-  template <typename L, typename S>
-  int isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
-  {
-    int channel = 0;
-    if ((candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
-      // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      channel += 1;
-    }
-    if ((candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
-      // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      channel += 2;
-    }
-    return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
-  }
-
-  template <typename t1, typename t2, typename mcPart>
-  void calculateTrkEff(t1& trackPos1, t2& trackPos2, mcPart& mcParticles)
+  template <typename T1, typename T2, typename McPart>
+  void calculateTrkEff(T1 const& trackPos1, T2 const& trackPos2, McPart const& mcParticles)
   {
     // genrated tracks
     decltype(trackPos1.template mcParticle_as<aod::McParticles>()) mctrk{};
@@ -417,43 +402,43 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hPtTracksVsSignGen"), track.pt(), chargeTrack / (2 * std::abs(chargeTrack)));
     }
   }
-  template <bool isMcRec = false, typename tracktype, typename candtype, typename mcPart>
-  void fillCorrelationTable(bool trkPidFill, tracktype& trk, candtype& cand, std::vector<float> outMl, int binPool, int8_t correlStatus, double candY, int signCand, mcPart& mcParticles)
+  template <bool isMcRec, typename TrackType, typename CandType, typename McPart>
+  void fillCorrelationTable(bool trkPidFill, TrackType const& track, CandType const& candidate, std::vector<float> const outMl, int binPool, int8_t correlStatus, double yCand, int signCand, McPart const& mcParticles)
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
 
-    entryCandHadronPair(getDeltaPhi(trk.phi(), cand.phi()),
-                        trk.eta() - cand.eta(),
-                        cand.pt(),
-                        trk.pt() * trk.sign(),
+    entryCandHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+                        track.eta() - candidate.eta(),
+                        candidate.pt(),
+                        track.pt() * track.sign(),
                         binPool,
                         correlStatus);
-    entryCandHadronPairY(trk.y() - candY);
+    entryCandHadronPairY(track.y() - yCand);
     entryCandHadronMlInfo(outMl[0], outMl[1]);
-    entryTrackRecoInfo(trk.dcaXY(), trk.dcaZ(), trk.tpcNClsCrossedRows());
+    entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.tpcNClsCrossedRows());
     entryPairCandCharge(signCand);
     if (trkPidFill) {
-      entryCandHadronPairTrkPID(trk.tpcNSigmaPr(), trk.tpcNSigmaKa(), trk.tpcNSigmaPi(), trk.tofNSigmaPr(), trk.tofNSigmaKa(), trk.tofNSigmaPi());
+      entryCandHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
     }
     if constexpr (isMcRec) {
-      if (trk.has_mcParticle()) {
-        auto mcParticle = trk.template mcParticle_as<aod::McParticles>();
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.template mcParticle_as<aod::McParticles>();
         isPhysicalPrimary = mcParticle.isPhysicalPrimary();
         trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
         entryCandHadronGenInfo(isPrompt, isPhysicalPrimary, trackOrigin);
       } else {
         entryCandHadronGenInfo(isPrompt, false, 0);
-        registry.fill(HIST("hFakeTracksMcRec"), trk.pt());
+        registry.fill(HIST("hFakeTracksMcRec"), track.pt());
       }
-      registry.fill(HIST("hPtParticleAssocVsCandMcRec"), trk.pt(), cand.pt());
+      registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
       if (isPhysicalPrimary) {
-        registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), trk.pt(), cand.pt());
+        registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
       }
     }
   }
 
-  template <bool isMcRec = false, bool isCandSc = false, typename CollisionType, typename CandType, typename TrackType>
+  template <bool isMcRec, bool isCandSc, typename CollisionType, typename CandType, typename TrackType>
   void doSameEvent(CollisionType const& collision,
                    TrackType const& tracks,
                    CandType const& candidates,
@@ -722,7 +707,7 @@ struct HfCorrelatorLcScHadrons {
     registry.fill(HIST("hMultFT0M"), multiplicityFT0M);
   }
 
-  template <bool isMcRec = false, bool isCandSc = false, typename CollisionType, typename CandType, typename TrackType>
+  template <bool isMcRec, bool isCandSc, typename CollisionType, typename CandType, typename TrackType>
   void doMixEvent(CollisionType const& collisions,
                   TrackType const& tracks,
                   CandType const& candidates,
@@ -845,7 +830,8 @@ struct HfCorrelatorLcScHadrons {
   /// Lc-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processDataLc(SelCollisionsWithLc::iterator const& collision,
                      TracksData const& tracks,
-                     CandsLcDataFiltered const& candidates, aod::BCsWithTimestamps const&)
+                     CandsLcDataFiltered const& candidates,
+                      aod::BCsWithTimestamps const&)
   {
     doSameEvent<false, false>(collision, tracks, candidates);
   }
@@ -854,7 +840,8 @@ struct HfCorrelatorLcScHadrons {
   void processDataSc(SelCollisionsWithSc::iterator const& collision,
                      TracksData const& tracks,
                      aod::Tracks const&,
-                     aod::HfCandSc const& candidates, CandsLcData const&,
+                     aod::HfCandSc const& candidates,
+                    CandsLcData const&,
                      aod::BCsWithTimestamps const&) // MUST be last among index-compatible
   {
     doSameEvent<false, true>(collision, tracks, candidates);
@@ -875,7 +862,8 @@ struct HfCorrelatorLcScHadrons {
   void processMcRecSc(SelCollisionsWithSc::iterator const& collision,
                       TracksWithMc const& tracks,
                       aod::TracksWMc const&,
-                      soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidates,
+                      soa::Join<aod::HfCandSc,
+                      aod::HfCandScMcRec> const& candidates,
                       CandsLcData const&,
                       aod::McParticles const& mcParticles)
   {
@@ -886,7 +874,8 @@ struct HfCorrelatorLcScHadrons {
   void processDataMixedEventSc(SelCollisionsWithSc const& collisions,
                                TracksData const& tracks,
                                aod::Tracks const&,
-                               aod::HfCandSc const& candidates, CandsLcData const&)
+                               aod::HfCandSc const& candidates,
+                                CandsLcData const&)
   {
     doMixEvent<false, true>(collisions, tracks, candidates);
   }
@@ -904,7 +893,8 @@ struct HfCorrelatorLcScHadrons {
   void processMcRecMixedEventSc(SelCollisionsWithSc const& collisions,
                                 TracksWithMc const& tracks,
                                 aod::TracksWMc const&,
-                                soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidates,
+                                soa::Join<aod::HfCandSc,
+                                aod::HfCandScMcRec> const& candidates,
                                 CandsLcData const&,
                                 aod::McParticles const& mcParticles)
   {
