@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-#include "DetectorsBase/Propagator.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
@@ -39,9 +39,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
+
+
 
 using namespace o2;
 using namespace o2::analysis;
@@ -160,16 +163,7 @@ struct HfDataCreatorCharmResoReduced {
   // MC Tables
   Produces<aod::HfMcRecRedDV0s> rowHfDV0McRecReduced;
   Produces<aod::HfMcGenRedResos> rowHfResoMcGenReduced;
-
-  // CCDB configuration
-  o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-  Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
-  Configurable<bool> doMcRecQa{"doMcRecQa", true, "Fill QA histograms for Mc matching"};
-
-  int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
+  
   // selection D
   struct : ConfigurableGroup {
     std::string prefix = "dmesons";
@@ -210,6 +204,7 @@ struct HfDataCreatorCharmResoReduced {
     Configurable<float> maxNsigmaTpcPr{"maxNsigmaTpcPr", 3., "maximum proton NSigma in TPC for single tracks to be paired with D mesons; set negative to reject"};
   } cfgSingleTrackCuts;
 
+  // QA histograms
   struct : ConfigurableGroup {
     Configurable<bool> applyCutsForQaHistograms{"applyCutsForQaHistograms", true, "flag to apply cuts to QA histograms"};
     Configurable<float> cutMassDstarMin{"cutMassDstarMin", 0.143, "minimum mass for Dstar candidates"};
@@ -222,17 +217,30 @@ struct HfDataCreatorCharmResoReduced {
     Configurable<float> cutMassLambdaMax{"cutMassLambdaMax", 1.12, "maximum mass for Lambda candidates"};
   } cfgQaPlots;
   // other configurables
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
+  Configurable<bool> doMcRecQa{"doMcRecQa", true, "Fill QA histograms for Mc matching"};
   Configurable<bool> rejectPairsWithCommonDaughter{"rejectPairsWithCommonDaughter", true, "flag to reject already at this stage the pairs that share a daughter track"};
+  
+  HfHelper hfHelper;
+  o2::hf_evsel::HfEventSelection hfEvSel;
+
+  // CCDB service
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  double bz{0.};
+  int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
+
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  HfHelper hfHelper;
-  o2::hf_evsel::HfEventSelection hfEvSel;
-  o2::vertexing::DCAFitterN<2> fitter;
-  double bz{0.};
+  
+  // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  // bool isHfCandResoConfigFilled = false;
+  //vertex fitter
+  o2::vertexing::DCAFitterN<2> fitter;
 
   // Helper struct to pass V0 informations
   struct {
@@ -264,6 +272,7 @@ struct HfDataCreatorCharmResoReduced {
     std::array<float, 3> pVectorProng1;
     std::array<float, 3> pVectorProng2;
   } varUtils;
+
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandsDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
@@ -308,7 +317,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisDeDx{500, 0.f, 1000.f, ""};
     const AxisSpec axisMassD0{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassDplus{200, 1.7f, 2.1f, "inv. mass (GeV/#it{c}^{2})"};
-    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"};
+    const AxisSpec axisMassDstar{200, 0.139f, 0.179f, "inv. mass (GeV/#it{c}^{2})"}; //o2-linter: disable=pdg/explicit-mass (false positive)
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisMassKzero{100, 0.35f, 0.65f, "inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisDeltaMassToK{500, 0.49, 1.49, "inv. mass (GeV/#it{c}^{2})"};
@@ -375,11 +384,11 @@ struct HfDataCreatorCharmResoReduced {
     }
 
     // Configure CCDB access
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    ccdbApi.init(url);
+    ccdbApi.init(ccdbUrl);
     runNumber = 0;
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
@@ -483,7 +492,7 @@ struct HfDataCreatorCharmResoReduced {
     auto& trackNegProp = fitter.getTrack(1);
     trackPosProp.getPxPyPzGlo(candidateV0.momPos);
     trackNegProp.getPxPyPzGlo(candidateV0.momNeg);
-    for (int i = 0; i < 3; ++i) { // o2-linter: disable=magic-number (loop on v0 prongs)
+    for (int i = 0; i < 3; ++i) { // o2-linter: disable=magic-number (loop on xyz)
       candidateV0.mom[i] = candidateV0.momPos[i] + candidateV0.momNeg[i];
     }
     candidateV0.pT = std::hypot(candidateV0.mom[0], candidateV0.mom[1]);
@@ -504,7 +513,7 @@ struct HfDataCreatorCharmResoReduced {
     if (candidateV0.radius < cfgV0Cuts.radiusMin) {
       return false;
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) { // o2-linter: disable=magic-number (loop on xyz)
       candidateV0.pos[i] = vtx[i];
     }
     // v0 DCA to primary vertex
