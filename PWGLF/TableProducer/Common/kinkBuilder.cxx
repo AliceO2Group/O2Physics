@@ -247,7 +247,7 @@ struct kinkBuilder {
   }
 
   template <class Tcolls, class Ttracks>
-  void fillCandidateData(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCsWithTimestamps const& bcs)
+  void fillCandidateData(const Tcolls& collisions, const Ttracks& tracks, aod::AmbiguousTracks const& ambiguousTracks, aod::BCs const& bcs)
   {
     svCreator.clearPools();
     svCreator.fillBC2Coll(collisions, bcs);
@@ -274,7 +274,7 @@ struct kinkBuilder {
       auto trackDaug = tracks.rawIteratorAt(svCand.tr1Idx);
 
       auto const& collision = trackMoth.template collision_as<Tcolls>();
-      auto const& bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      auto const& bc = collision.template bc_as<aod::BCs>();
       initCCDB(bc);
 
       o2::dataformats::VertexBase primaryVertex;
@@ -401,34 +401,34 @@ struct kinkBuilder {
     }
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(aod::BCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
+    mRunNumber = bc.runNumber();
 
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(grpPath, mRunNumber);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       if (inputBz < -990) {
         // Fetch magnetic field from ccdb for current collision
         mBz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
+        LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << mBz << " kZG";
       } else {
         mBz = inputBz;
       }
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run " << mRunNumber;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       if (inputBz < -990) {
         // Fetch magnetic field from ccdb for current collision
         mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
+        LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << mBz << " kZG";
       } else {
         mBz = inputBz;
       }
@@ -440,12 +440,11 @@ struct kinkBuilder {
     mBBparamsDaug[5] = cfgBetheBlochParams->get("Daughter", "resolution");
 
     fitter.setBz(mBz);
-    mRunNumber = bc.runNumber();
     o2::base::Propagator::Instance()->setMatLUT(lut);
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
+  void process(aod::Collisions const& collisions, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCs const& bcs)
   {
 
     kinkCandidates.clear();
