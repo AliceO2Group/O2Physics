@@ -248,7 +248,7 @@ struct CorrelationTableProducer {
   {
     if (!jetderiveddatautilities::selectTrack(track, trackSelection))
       return false;
-    if (std::abs(track.eta()) > etaMax)
+    if (!jetderiveddatautilities::applyTrackKinematics(track, 0.1, 1000, -1 * etaMax, etaMax))
       return false;
     return true;
   }
@@ -334,7 +334,7 @@ struct CorrelationTableProducer {
   PROCESS_SWITCH(CorrelationTableProducer, processRecoCollisionTrigger, "process correlation collision_extra and trigger table (reconstructed)", false);
 
   void processRecoPipmTPCTOF(aod::JetCollision const& collision,
-                             soa::Join<aod::JetTracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi> const& tracks)
+                             soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi> const&)
   {
     // event selection
     if (!checkEventSelection(collision))
@@ -350,7 +350,8 @@ struct CorrelationTableProducer {
       hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
 
       // pipm selection
-      if (!checkPipmTPCTOF(track))
+      auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCPi, aod::pidTOFPi>>();
+      if (!checkPipmTPCTOF(trackPID))
         continue;
 
       // pipm
@@ -360,7 +361,7 @@ struct CorrelationTableProducer {
   PROCESS_SWITCH(CorrelationTableProducer, processRecoPipmTPCTOF, "process pipm (TPC-TOF) table (reconstructed)", false);
 
   void processRecoPipmTPC(aod::JetCollision const& collision,
-                          soa::Join<aod::JetTracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCPi> const& tracks)
+                          soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::pidTPCPi> const&)
   {
     // event selection
     if (!checkEventSelection(collision))
@@ -376,7 +377,8 @@ struct CorrelationTableProducer {
       hadronTable(track.collisionId(), track.globalIndex(), track.pt(), track.phi(), track.eta());
 
       // pipm selection
-      if (!checkPipmTPC(track))
+      auto const& trackPID = track.track_as<soa::Join<aod::Tracks, aod::pidTPCPi>>();
+      if (!checkPipmTPC(trackPID))
         continue;
 
       // pipm
@@ -393,7 +395,7 @@ struct CorrelationTableProducer {
       return;
 
     // photonsPCM (for some reason collsionId not an index column (?))
-    auto const v0PhotonsThisEvent = v0Photons.sliceBy(perColV0Photons, collision.collision().globalIndex());
+    auto const v0PhotonsThisEvent = v0Photons.sliceBy(perColV0Photons, collision.collisionId());
 
     // photonPCM
     for (auto const& v0Photon : v0PhotonsThisEvent) {
@@ -1394,8 +1396,8 @@ struct PhotonChargedTriggerCorrelation {
       return;
 
     // group collision
-    auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollision().globalIndex());
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollision().globalIndex());
+    auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
+    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
 
     // trigger pairing loop
     for (auto const& trigger : triggerParticlesThisEvent) {
@@ -1506,14 +1508,14 @@ struct PhotonChargedTriggerCorrelation {
     if (doTrigEvEff && !collision.trigEv())
       return;
 
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollision().globalIndex());
+    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
 
     // random trigger
     if (doTrigEvEff) {
       std::uniform_int_distribution<int> intDistribution(0, static_cast<int>(triggers.size()) - 1);
       auto const& excludeTrigger = triggers.rawIteratorAt(intDistribution(randomEngine));
       if (excludeTrigger.jetTrack_as<aod::JetTracksMCD>().has_mcParticle()) {
-        excludeTriggerParticleId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().mcParticle().globalIndex();
+        excludeTriggerParticleId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().mcParticleId();
         excludeTriggerTrackId = excludeTrigger.jetTrack_as<aod::JetTracksMCD>().globalIndex();
       }
     }
@@ -1530,7 +1532,7 @@ struct PhotonChargedTriggerCorrelation {
       auto const hadronParticle = hadron.jetTrack_as<aod::JetTracksMCD>().mcParticle();
       if (!checkPrimaryTrackMc(hadronParticle))
         continue;
-      if (requireSingleCollisionPurity && hadronParticle.mcCollisionId() != collision.mcCollision().globalIndex())
+      if (requireSingleCollisionPurity && hadronParticle.mcCollisionId() != collision.mcCollisionId())
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_hadron"), hadron.pt(), hadron.phi(), hadron.eta());
@@ -1549,7 +1551,7 @@ struct PhotonChargedTriggerCorrelation {
       auto const pipmParticle = pipm.jetTrack_as<aod::JetTracksMCD>().mcParticle();
       if (std::abs(pipmParticle.pdgCode()) != PDG_t::kPiPlus || !checkPrimaryEtaMc(pipmParticle))
         continue;
-      if (requireSingleCollisionPurity && pipmParticle.mcCollisionId() != collision.mcCollision().globalIndex())
+      if (requireSingleCollisionPurity && pipmParticle.mcCollisionId() != collision.mcCollisionId())
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pipm"), pipm.pt(), pipm.phi(), pipm.eta());
@@ -1603,7 +1605,7 @@ struct PhotonChargedTriggerCorrelation {
         continue;
       if (!isConversionPhoton(posTrack, negTrack) || !checkPrimaryEtaMc(*(posTrack.mcParticle().mothers_as<aod::JetParticles>().begin())))
         continue;
-      if (requireSingleCollisionPurity && posTrack.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex())
+      if (requireSingleCollisionPurity && posTrack.mcParticle().mcCollisionId() != collision.mcCollisionId())
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_photonPCM"), photonPCM.pt(), photonPCM.phi(), photonPCM.eta());
@@ -1629,7 +1631,7 @@ struct PhotonChargedTriggerCorrelation {
           std::abs((*(posTrack1.mcParticle().mothers_as<aod::JetParticles>().begin())).mothers_as<aod::JetParticles>().begin()->eta()) > etaMax)
         continue;
       if (requireSingleCollisionPurity &&
-          (posTrack1.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex() || posTrack2.mcParticle().mcCollisionId() != collision.mcCollision().globalIndex()))
+          (posTrack1.mcParticle().mcCollisionId() != collision.mcCollisionId() || posTrack2.mcParticle().mcCollisionId() != collision.mcCollisionId()))
         continue;
 
       histos.fill(HIST("mc/eff/h3_ptPhiEta_mcReco_hasCorrectMc_pi0PCM"), photonPCMPair.pt(), photonPCMPair.phi(), photonPCMPair.eta());
