@@ -164,7 +164,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing (used only in MC processes)"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  Configurable<int> decayChannel{"decayChannel", 1, "Decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Resonant decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
