@@ -1822,5 +1822,5 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FullJetSpectra>(cfgc, TaskName{"full-jet-spectra"})};
+    adaptAnalysisTask<FullJetSpectra>(cfgc)};
   }
