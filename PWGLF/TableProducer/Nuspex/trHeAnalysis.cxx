@@ -699,20 +699,20 @@ struct TrHeAnalysis {
     if (cfgMassMethod == 1) {
       const float beta = track.beta();
       const float rigidity = getRigidity(track);
-      float gamma = 1 / TMath::Sqrt(1 - beta * beta);
-      float mass = (rigidity / TMath::Sqrt(gamma * gamma - 1.f));
+      float gamma = 1 / std::sqrt(1 - beta * beta);
+      float mass = (rigidity / std::sqrt(gamma * gamma - 1.f));
       return mass;
     }
     if (cfgMassMethod == 2) {
       const float rigidity = getRigidity(track);
       float tofStartTime = track.evTimeForTrack();
       float tofTime = track.tofSignal();
-      constexpr float cInCmPs = 2.99792458e-2f;
+      constexpr float CInCmPS = 2.99792458e-2f;
       float length = track.length();
       float time = tofTime - tofStartTime;
       if (time > 0.f && length > 0.f) {
-        float beta = length / (cInCmPs * time);
-        float gamma = 1 / TMath::Sqrt(1 - beta * beta);
+        float beta = length / (CInCmPs * time);
+        float gamma = 1 / std::sqrt(1 - beta * beta);
         float mass = rigidity / std::sqrt(gamma * gamma - 1.f);
         return mass;
       }
