@@ -74,6 +74,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                            
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                             //! Pseudo-proper decay length of candidate
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! Impact parameter product of B daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductJPsi, impactParameterProductJPsi, float); //! Impact parameter product of JPsi daughters
 DECLARE_SOA_COLUMN(ImpactParameterJPsiDauPos, impactParameterJPsiDauPos, float);   //! Impact parameter of JPsi daughter candidate
@@ -101,6 +102,7 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::DecayLengthXY,
                   hf_cand_bplustojpsik_lite::DecayLengthNormalised,
                   hf_cand_bplustojpsik_lite::DecayLengthXYNormalised,
+                  hf_cand_bplustojpsik_lite::CtXY,
                   hf_cand_bplustojpsik_lite::ImpactParameterProduct,
                   hf_cand_bplustojpsik_lite::ImpactParameterProductJPsi,
                   hf_cand_bplustojpsik_lite::MaxNormalisedDeltaIP,
@@ -381,6 +383,7 @@ struct HfTaskBplusToJPsiKReduced {
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
+        candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus}),
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJPsi(),
         candidate.maxNormalisedDeltaIP(),

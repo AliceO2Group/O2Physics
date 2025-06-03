@@ -80,6 +80,7 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                            
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                           //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);           //! Normalised decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);       //! Normalised transverse decay length of candidate
+DECLARE_SOA_COLUMN(CtXY, ctXY, float);                                             //! Pseudo-proper decay length of candidate
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);         //! Impact parameter product of B daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductJPsi, impactParameterProductJPsi, float); //! Impact parameter product of JPsi daughters
 DECLARE_SOA_COLUMN(ImpactParameterProductPhi, impactParameterProductPhi, float);   //! Impact parameter product of Phi daughters
@@ -109,6 +110,7 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::DecayLengthXY,
                   hf_cand_bstojpsiphi_lite::DecayLengthNormalised,
                   hf_cand_bstojpsiphi_lite::DecayLengthXYNormalised,
+                  hf_cand_bstojpsiphi_lite::CtXY,
                   hf_cand_bstojpsiphi_lite::ImpactParameterProduct,
                   hf_cand_bstojpsiphi_lite::ImpactParameterProductJPsi,
                   hf_cand_bstojpsiphi_lite::ImpactParameterProductPhi,
@@ -416,6 +418,7 @@ struct HfTaskBsToJPsiPhiReduced {
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
+        candidate.ctXY(std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus}),
         candidate.impactParameterProduct(),
         candidate.impactParameterProductJPsi(),
         candidate.impactParameterProductPhi(),
