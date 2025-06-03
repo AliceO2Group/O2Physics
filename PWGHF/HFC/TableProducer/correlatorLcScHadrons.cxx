@@ -831,7 +831,7 @@ struct HfCorrelatorLcScHadrons {
   void processDataLc(SelCollisionsWithLc::iterator const& collision,
                      TracksData const& tracks,
                      CandsLcDataFiltered const& candidates,
-                      aod::BCsWithTimestamps const&)
+                     aod::BCsWithTimestamps const&)
   {
     doSameEvent<false, false>(collision, tracks, candidates);
   }
@@ -841,7 +841,7 @@ struct HfCorrelatorLcScHadrons {
                      TracksData const& tracks,
                      aod::Tracks const&,
                      aod::HfCandSc const& candidates,
-                    CandsLcData const&,
+                     CandsLcData const&,
                      aod::BCsWithTimestamps const&) // MUST be last among index-compatible
   {
     doSameEvent<false, true>(collision, tracks, candidates);
@@ -863,7 +863,7 @@ struct HfCorrelatorLcScHadrons {
                       TracksWithMc const& tracks,
                       aod::TracksWMc const&,
                       soa::Join<aod::HfCandSc,
-                      aod::HfCandScMcRec> const& candidates,
+                                aod::HfCandScMcRec> const& candidates,
                       CandsLcData const&,
                       aod::McParticles const& mcParticles)
   {
@@ -875,7 +875,7 @@ struct HfCorrelatorLcScHadrons {
                                TracksData const& tracks,
                                aod::Tracks const&,
                                aod::HfCandSc const& candidates,
-                                CandsLcData const&)
+                               CandsLcData const&)
   {
     doMixEvent<false, true>(collisions, tracks, candidates);
   }
@@ -894,7 +894,7 @@ struct HfCorrelatorLcScHadrons {
                                 TracksWithMc const& tracks,
                                 aod::TracksWMc const&,
                                 soa::Join<aod::HfCandSc,
-                                aod::HfCandScMcRec> const& candidates,
+                                          aod::HfCandScMcRec> const& candidates,
                                 CandsLcData const&,
                                 aod::McParticles const& mcParticles)
   {
