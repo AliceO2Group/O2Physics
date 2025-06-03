@@ -35,6 +35,7 @@
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "PWGLF/DataModel/PIDTOFGeneric.h"
 #include <TF1.h>
 
 namespace o2::aod
@@ -111,12 +112,13 @@ static const std::vector<float> particleMasses{
   o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3};
 static const std::vector<int> particleCharge{1, 2};
 static const std::vector<float> particleChargeFactor{2.3, 2.55};
+static const std::vector<float> particleChargeFactor{2.3, 2.55};
 static const std::vector<std::string> betheBlochParNames{
   "p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr float betheBlochDefault[nParticles][nBetheParams]{
   {0.248753, 3.58634, 0.0167065, 2.29194, 0.774344,
-   0.07}, // triton
-  {0.0274556, 18.3054, 3.99987e-05, 3.17219, 11.1775,
+   0.07},                                                     // triton
+  {0.0274556,18.3054, 3.99987e-05, 3.17219, 11.1775,
    0.07}}; // Helion
 } // namespace
 using namespace o2;
@@ -126,7 +128,8 @@ using TracksFull =
   soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
             o2::aod::TracksDCA, aod::pidTOFmass, aod::pidTOFbeta,
             aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
-            aod::TOFSignal, aod::TrackSelectionExtension>;
+            aod::TOFSignal, aod::TrackSelectionExtension,
+            o2::aod::EvTimeTOFFT0ForTrack>;
 
 class Particle
 {
@@ -137,7 +140,9 @@ class Particle
   int charge;
   float resolution;
   float chargeFactor;
+  float chargeFactor;
   std::vector<float> betheParams;
+  static constexpr int NNumBetheParams = 5;
   static constexpr int NNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
@@ -186,7 +191,7 @@ struct TrHeAnalysis {
   } evselOptions;
 
   Configurable<bool> cfgTPCPidMethod{"cfgTPCPidMethod", false, "Using own or built in bethe parametrization"}; // false for built in
-
+  Configurable<int> cfgMassMethod{"cfgMassMethod", 0, "0: Using built in 1: mass calculated with beta 2: mass calculated with the event time"};
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
   Configurable<float> cfgHighMultCut{"cfgHighMultCut", 100.0f, "Accepted multiplicity percentage higher limit"};
@@ -638,6 +643,7 @@ struct TrHeAnalysis {
       return -999;
 
     float expBethe{betheBlochAleph(particle, rigidity)};
+    float expBethe{betheBlochAleph(particle, rigidity)};
     float expSigma{expBethe * particle.resolution};
     float sigmaTPC =
       static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
@@ -663,7 +669,14 @@ struct TrHeAnalysis {
     constexpr int NNumLayers = 8;
     constexpr int NBitsPerLayer = 4;
     constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
+    constexpr int NNumLayers = 8;
+    constexpr int NBitsPerLayer = 4;
+    constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
     int sum = 0, n = 0;
+    for (int i = 0; i < NNumLayers; i++) {
+      int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
+      sum += clsSize;
+      if (clsSize)
     for (int i = 0; i < NNumLayers; i++) {
       int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
       sum += clsSize;
@@ -680,14 +693,40 @@ struct TrHeAnalysis {
     bool hePID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
     return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
   }
+
   template <class T>
-  float getMass(T const& track)
+  float getMass(const T& track)
   {
-    const float beta = track.beta();
-    const float rigidity = getRigidity(track);
-    float gamma = 1 / std::sqrt(1 - beta * beta);
-    float mass = (rigidity / std::sqrt(gamma * gamma - 1));
-    return mass;
+    if (cfgMassMethod == 0) 
+    {
+      return track.mass();
+    }
+    if (cfgMassMethod == 1) 
+    {
+      const float beta = track.beta();
+      const float rigidity = getRigidity(track);
+      float gamma = 1 / TMath::Sqrt(1-beta*beta);
+      float mass = (rigidity / TMath::Sqrt(gamma * gamma - 1.f));
+      return mass;
+    }
+    if (cfgMassMethod == 2) 
+    {
+      const float rigidity = getRigidity(track);
+      float tofStartTime = track.evTimeForTrack();
+      float tofTime = track.tofSignal();
+      constexpr float cInCmPs = 2.99792458e-2f; 
+      float length = track.length(); 
+      float time = tofTime - tofStartTime;  
+      if (time > 0.f && length > 0.f)
+      {
+        float beta = length / (cInCmPs * time);
+		    float gamma = 1/ TMath::Sqrt(1- beta*beta);
+		    float mass = rigidity / std::sqrt(gamma*gamma - 1.f);
+        return mass; 
+      }
+      return -1.f;
+    }
+    return -1.f;
   }
 };
 
