@@ -86,7 +86,7 @@ enum class InputFeaturesBplusToJPsiKReduced : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
-  pseudoPropDL,
+  ctXY,
   tpcNSigmaKa1,
   tofNSigmaKa1,
   tpcTofNSigmaKa1
@@ -128,7 +128,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BPLUS(cpa);
         CHECK_AND_FILL_VEC_BPLUS(cpaXY);
         CHECK_AND_FILL_VEC_BPLUS(maxNormalisedDeltaIP);
-        CHECK_AND_FILL_VEC_BPLUS_WITH_ARGS(pseudoPropDL, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
+        CHECK_AND_FILL_VEC_BPLUS_WITH_ARGS(ctXY, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus});
         // TPC PID variable
         CHECK_AND_FILL_VEC_BPLUS_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
         // TOF PID variable
@@ -161,7 +161,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(cpa),
       FILL_MAP_BPLUS(cpaXY),
       FILL_MAP_BPLUS(maxNormalisedDeltaIP),
-      FILL_MAP_BPLUS(pseudoPropDL),
+      FILL_MAP_BPLUS(ctXY),
       // TPC PID variable
       FILL_MAP_BPLUS(tpcNSigmaKa1),
       // TOF PID variable

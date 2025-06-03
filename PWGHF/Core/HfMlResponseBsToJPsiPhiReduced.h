@@ -88,7 +88,7 @@ enum class InputFeaturesBsToJPsiPhiReduced : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
-  pseudoPropDL,
+  ctXY,
   tpcNSigmaKa0,
   tofNSigmaKa0,
   tpcTofNSigmaKa0,
@@ -136,7 +136,7 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BS(cpa);
         CHECK_AND_FILL_VEC_BS(cpaXY);
         CHECK_AND_FILL_VEC_BS(maxNormalisedDeltaIP);
-        CHECK_AND_FILL_VEC_BS_WITH_ARGS(pseudoPropDL, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
+        CHECK_AND_FILL_VEC_BS_WITH_ARGS(ctXY, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon, o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
         // TPC PID variable
         CHECK_AND_FILL_VEC_BS_FULL(prong1, tpcNSigmaKa0, tpcNSigmaKa);
         // TOF PID variable
@@ -177,7 +177,7 @@ class HfMlResponseBsToJPsiPhiReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BS(cpa),
       FILL_MAP_BS(cpaXY),
       FILL_MAP_BS(maxNormalisedDeltaIP),
-      FILL_MAP_BS(pseudoPropDL),
+      FILL_MAP_BS(ctXY),
       // TPC PID variable
       FILL_MAP_BS(tpcNSigmaKa0),
       // TOF PID variable

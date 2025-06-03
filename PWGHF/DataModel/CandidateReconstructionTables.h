@@ -635,8 +635,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum,
                            [](float impParProng0, float impParProng1) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1); });
 DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float errDlxy, float pxM, float pyM, float ip0, float errIp0, float ip1, float errIp1, float px0, float py0, float px1, float py1) -> float { return RecoDecay::maxNormalisedDeltaIP(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, errDlxy, std::array{pxM, pyM}, std::array{ip0, ip1}, std::array{errIp0, errIp1}, std::array{std::array{px0, py0}, std::array{px1, py1}}); });
-DECLARE_SOA_DYNAMIC_COLUMN(PseudoPropDL, pseudoPropDL, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 2>& m) -> float { return RecoDecay::pseudoProprDL(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
+DECLARE_SOA_DYNAMIC_COLUMN(CtXY, ctXY, //!
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 2>& m) -> float { return RecoDecay::ctXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); //! reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); //! generator level
@@ -934,7 +934,7 @@ DECLARE_SOA_TABLE(HfCandBplusBase, "AOD", "HFCANDBPLUSBASE",
                   hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand_2prong::PseudoPropDL<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
+                  hf_cand_2prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBplusExt, HfCandBplusBase, "HFCANDBPLUSEXT",
@@ -972,9 +972,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum,
                            [](float impParProng0, float impParProng1, float impParProng2) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1, impParProng2); });
 DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float errDlxy, float pxM, float pyM, float ip0, float errIp0, float ip1, float errIp1, float ip2, float errIp2, float px0, float py0, float px1, float py1, float px2, float py2) -> float { return RecoDecay::maxNormalisedDeltaIP(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, errDlxy, std::array{pxM, pyM}, std::array{ip0, ip1, ip2}, std::array{errIp0, errIp1, errIp2}, std::array{std::array{px0, py0}, std::array{px1, py1}, std::array{px2, py2}}); });
-DECLARE_SOA_DYNAMIC_COLUMN(PseudoPropDL, pseudoPropDL, //!
+DECLARE_SOA_DYNAMIC_COLUMN(CtXY, ctXY, //!
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 3>& m) -> float {
-                             return RecoDecay::pseudoProprDL(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}}, m);
+                             return RecoDecay::ctXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}}, m);
                            });
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         //! reconstruction level
@@ -1155,7 +1155,7 @@ DECLARE_SOA_TABLE(HfCandBpJPBase, "AOD", "HFCANDBPJPBASE",
                   hf_cand::Y<hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz>,
                   hf_cand::E<hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz>,
                   hf_cand::E2<hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz>,
-                  hf_cand_3prong::PseudoPropDL<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
+                  hf_cand_3prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBpJPExt, HfCandBpJPBase, "HFCANDBPJPEXT",
@@ -2212,7 +2212,7 @@ DECLARE_SOA_TABLE(HfCandBsBase, "AOD", "HFCANDBSBASE",
                   hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand_2prong::PseudoPropDL<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
+                  hf_cand_2prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
                   o2::soa::Marker<1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
@@ -2248,8 +2248,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProngSqSum, impactParameterProngSqSum,
                            [](float impParProng0, float impParProng1, float impParProng2, float impParProng3) -> float { return RecoDecay::sumOfSquares(impParProng0, impParProng1, impParProng2, impParProng3); });
 DECLARE_SOA_DYNAMIC_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, //!
                            [](float xVtxP, float yVtxP, float xVtxS, float yVtxS, float errDlxy, float pxM, float pyM, float ip0, float errIp0, float ip1, float errIp1, float ip2, float errIp2, float ip3, float errIp3, float px0, float py0, float px1, float py1, float px2, float py2, float px3, float py3) -> float { return RecoDecay::maxNormalisedDeltaIP(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, errDlxy, std::array{pxM, pyM}, std::array{ip0, ip1, ip2, ip3}, std::array{errIp0, errIp1, errIp2, errIp3}, std::array{std::array{px0, py0}, std::array{px1, py1}, std::array{px2, py2}, std::array{px3, py3}}); });
-DECLARE_SOA_DYNAMIC_COLUMN(PseudoPropDL, pseudoPropDL, //!
-                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, float px3, float py3, float pz3, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 4>& m) -> float { return RecoDecay::pseudoProprDL(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}, std::array{px3, py3, pz3}}, m); });
+DECLARE_SOA_DYNAMIC_COLUMN(CtXY, ctXY, //!
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2, float px3, float py3, float pz3, float xVtxP, float yVtxP, float xVtxS, float yVtxS, const std::array<double, 4>& m) -> float { return RecoDecay::ctXY(std::array{xVtxP, yVtxP}, std::array{xVtxS, yVtxS}, std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}, std::array{px3, py3, pz3}}, m); });
 } // namespace hf_cand_4prong
 
 // declare dedicated Bs -> J/Psi phi decay candidate table
@@ -2296,7 +2296,7 @@ DECLARE_SOA_TABLE(HfCandBsJPBase, "AOD", "HFCANDBSJPBASE",
                   hf_cand::Y<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
                   hf_cand::E<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
                   hf_cand::E2<hf_cand_4prong::Px, hf_cand_4prong::Py, hf_cand_4prong::Pz>,
-                  hf_cand_4prong::PseudoPropDL<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
+                  hf_cand_4prong::CtXY<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
                   o2::soa::Marker<1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
