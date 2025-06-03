@@ -881,11 +881,6 @@ struct ThreeParticleCorrelations {
   template <class CollCand>
   bool acceptEvent(const CollCand& collision, bool FillHist) // Event filter
   {
-    if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
-      return false;
-    if (std::abs(v0.eta()) > v0EtaMax)
-      return false;
-
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 0.5);
     }
@@ -910,8 +905,12 @@ struct ThreeParticleCorrelations {
   template <class V0Cand>
   bool v0Filters(const V0Cand& v0, bool MCRec) // V0 filter
   {
-
     if (!MCRec) { // Data
+      if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
+        return false;
+      if (std::abs(v0.eta()) > v0EtaMax)
+        return false;
+
       if (v0Sign(v0) == 1) {
         const auto& posDaughter = v0.template posTrack_as<MyFilteredTracks>();
         if (std::abs(posDaughter.tpcNSigmaPr()) > nSigma4) {
@@ -924,6 +923,11 @@ struct ThreeParticleCorrelations {
         }
       }
     } else { // MC Reconstructed
+      if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
+        return false;
+      if (std::abs(v0.eta()) > v0EtaMax)
+        return false;
+
       if (v0Sign(v0) == 1) {
         const auto& posDaughter = v0.template posTrack_as<MyFilteredMCTracks>();
         if (std::abs(posDaughter.tpcNSigmaPr()) > nSigma4) {
