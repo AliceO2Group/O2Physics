@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file netchargeFluctuations.cxx
-/// \brief Calculate nu_dyn fluctuations 
-///        For charged particles 
+/// \brief Calculate nu_dyn fluctuations
+///        For charged particles
 ///        For RUN-3
 ///
 /// \author Nida Malik <nida.malik@cern.ch>
@@ -47,9 +47,12 @@ using namespace o2::framework::expressions;
 using namespace std;
 using namespace o2::constants::physics;
 
-namespace o2{
-namespace aod{
-namespace net_charge{
+namespace o2
+{
+namespace aod
+{
+namespace net_charge
+{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
 DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
@@ -60,7 +63,8 @@ DECLARE_SOA_COLUMN(PosNegCharge, posNegCharge, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 } // namespace net_charge
 
-namespace net_charge_rec{
+namespace net_charge_rec
+{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
 DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
@@ -71,7 +75,8 @@ DECLARE_SOA_COLUMN(PosNegCharge, posNegCharge, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 } // namespace net_charge_rec
 
-namespace net_charge_gen{
+namespace net_charge_gen
+{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
 DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
@@ -127,7 +132,7 @@ using MyMCCollisionRun3 = MyMCCollisionsRun3::iterator;
 
 using MyMCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::StoredTracks, aod::TrackSelection, aod::McTrackLabels>;
 using MyMCTrack = MyMCTracks::iterator;
-} //aod
+} // namespace aod
 } // namespace o2
 
 enum RunType {
@@ -464,7 +469,7 @@ struct NetchargeFluctuations {
       posNegRec = posRec * negRec;
 
       netChargeRec(posRec, negRec, posRec * posRec, negRec * negRec,
-                     termPRec, termNRec, posNegRec, cent);
+                   termPRec, termNRec, posNegRec, cent);
     } // loop over inputTracks (reco)
 
     for (const auto& mcpart : mcpartgen) {
@@ -480,12 +485,11 @@ struct NetchargeFluctuations {
       if (sign == 0) {
         continue;
       }
-     //auto pdgServicecode = mcpart.pdgCode();
-     if (std::abs(pid) != kElectron && std::abs(pid) != kMuonMinus && std::abs(pid) != kPiPlus && std::abs(pid) != kKPlus && std::abs(pid) != kProton) {
-          continue;     
-     
-     }
-     
+      // auto pdgServicecode = mcpart.pdgCode();
+      if (std::abs(pid) != kElectron && std::abs(pid) != kMuonMinus && std::abs(pid) != kPiPlus && std::abs(pid) != kKPlus && std::abs(pid) != kProton) {
+        continue;
+      }
+
       if (std::fabs(mcpart.eta()) > etaCut)
         continue;
       if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut))
@@ -507,7 +511,7 @@ struct NetchargeFluctuations {
       posNegGen = posGen * negGen;
 
       netChargeGen(posGen, negGen, posGen * posGen, negGen * negGen,
-                     termPGen, termNGen, posNegGen, cent);
+                   termPGen, termNGen, posNegGen, cent);
 
     } // particle
   } // void
