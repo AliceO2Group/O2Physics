@@ -34,6 +34,7 @@
 #include "Common/DataModel/Qvectors.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
@@ -54,7 +55,7 @@ enum Event : uint8_t { // TODO: check if needed
   Processed = 0,
   NoCharmHadPiSelected,
   CharmHadPiSelected,
-  kNEvent
+  NEvent
 };
 
 enum DecayChannel : uint8_t {
@@ -172,7 +173,7 @@ struct HfDataCreatorJPsiHadReduced {
       registry.get<TH2>(HIST("hSelectionsJPsi"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    constexpr int kNBinsEvents = kNEvent;
+    constexpr int kNBinsEvents = NEvent;
     std::string labelsEvents[kNBinsEvents];
     labelsEvents[Event::Processed] = "processed";
     labelsEvents[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
@@ -323,7 +324,7 @@ struct HfDataCreatorJPsiHadReduced {
       return false;
     }
     // minimum pT, eta, and DCA selection
-    if (trackParCov.getPt() < ptTrackMin || std::abs(trackParCov.getEta()) > absEtaTrackMax || !isSelectedTrackDCA(trackParCov, dca)) {
+    if (trackParCov.getPt() < ptTrackMin || std::abs(trackParCov.getEta()) > absEtaTrackMax || !isSelectedTrackDCA(trackParCov, dca, binsPtTrack, cutsTrackDCA)) {
       return false;
     }
     // reject kaons that are J/Psi daughters

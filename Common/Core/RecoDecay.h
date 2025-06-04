@@ -286,13 +286,14 @@ struct RecoDecay {
     return static_cast<double>(length) * static_cast<double>(mass) / p(mom);
   }
 
-  /// Calculates ctXY, the pseudoproper decay length.
+  /// Calculates proper lifetime times c (pseudoproper decay length) in XY from information on daughter tracks.
   /// \param posPV  {x, y, z} or {x, y} position of the primary vertex
   /// \param posSV  {x, y, z} or {x, y} position of the secondary vertex
-  /// \param mom  {x, y, z} or {x, y} momentum array
+  /// \param mom  {x, y, z} or {x, y} momentum arrays of the decay products
+  /// \param mass  mass of the decay products
   /// \return pseudoproper decay length
-  template <std::size_t N, typename T, typename U, typename V, typename M = double>
-  static double ctXY(const T& posPV, const U& posSV, const std::array<std::array<V, 3>, N>& mom, const std::array<M, N> mass)
+  template <std::size_t N, std::size_t NM, typename T, typename U, typename V, typename M>
+  static double ctXY(const T& posPV, const U& posSV, const std::array<std::array<V, NM>, N>& mom, const std::array<M, N> mass)
   {
     // t_xy = l_xy * m / pT
     return distanceXY(posPV, posSV) * m(mom, mass) / std::apply([](const auto&... args) { return pt(args...); }, mom);
