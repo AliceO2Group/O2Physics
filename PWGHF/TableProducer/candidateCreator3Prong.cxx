@@ -46,7 +46,7 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -55,10 +55,10 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
+using namespace o2::hf_decay::hf_cand_3prong;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
@@ -953,7 +953,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::DplusToPiKPi);
+          flag = sign * DecayChannelMain::DplusToPiKPi;
         }
       }
 
@@ -982,9 +982,7 @@ struct HfCandidateCreator3ProngExpressions {
           }
         }
         if (indexRec > -1) {
-          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
-          // TODO: move to different and explicit flags
-          flag = sign * (1 << DecayType::DsToKKPi);
+          flag = sign * (isDplus ? DecayChannelMain::DplusToPiKK : DecayChannelMain::DsToPiKK);
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -995,9 +993,9 @@ struct HfCandidateCreator3ProngExpressions {
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
+              channel = isDplus ? DecayChannelResonant::DplusToPhiPi : DecayChannelResonant::DsToPhiPi;
             } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-              channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
+              channel = isDplus ? DecayChannelResonant::DplusToKstar0K : DecayChannelResonant::DsToKstar0K;
             }
           }
         }
@@ -1011,7 +1009,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DstarToPiKPiBkg);
+          flag = sign * DecayChannelMain::DstarToPiKPi;
           channel = 1;
         }
       }
@@ -1028,7 +1026,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::LcToPKPi);
+          flag = sign * DecayChannelMain::LcToPKPi;
 
           // Flagging the different Λc± → p± K∓ π± decay channels
           if (arrayDaughters[0].has_mcParticle()) {
@@ -1063,7 +1061,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::XicToPKPi);
+          flag = sign * DecayChannelMain::XicToPKPi;
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }

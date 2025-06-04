@@ -532,7 +532,7 @@ struct HfCorrelatorLcHadrons {
       auto trackPos1 = candidate.template prong0_as<TracksWithMc>(); // positive daughter (negative for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWithMc>();
       int8_t chargeLc = trackPos1.sign(); // charge of 1st prong will be the charge of Lc candidate
-      isLcSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
+      isLcSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
       isLcPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       isLcNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       std::vector<float> outputMl = {-1., -1., -1.};
@@ -778,7 +778,7 @@ struct HfCorrelatorLcHadrons {
       if (std::abs(particle.pdgCode()) != Pdg::kLambdaCPlus) {
         continue;
       }
-      if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         continue;
       }
       double yL = RecoDecay::y(particle.pVector(), MassLambdaCPlus);
@@ -944,7 +944,7 @@ struct HfCorrelatorLcHadrons {
         continue;
       }
       // Lc flag
-      bool isLcSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi);
+      bool isLcSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
       // prompt and non-prompt division
       bool isLcPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isLcNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -993,7 +993,7 @@ struct HfCorrelatorLcHadrons {
         std::vector<float> outputMl = {-1., -1., -1.};
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
-        bool isLcSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi;
+        bool isLcSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
         bool isLcPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         if (pidTrkApplied) {
           if (!passPIDSelection(pAssoc, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))

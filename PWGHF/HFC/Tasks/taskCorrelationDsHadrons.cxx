@@ -693,7 +693,7 @@ struct HfTaskCorrelationDsHadrons {
 
         // generated candidate loop
         for (const auto& mcParticle : groupedMcParticles) {
-          if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
+          if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
             hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
             auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
             if (std::abs(yDs) <= yCandGenMax) {
@@ -738,7 +738,7 @@ struct HfTaskCorrelationDsHadrons {
             continue;
           }
 
-          if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+          if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
             auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
             // DsToKKPi and DsToPiKK division
             if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
@@ -773,7 +773,7 @@ struct HfTaskCorrelationDsHadrons {
     float multiplicity = -1.;
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
-      if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
+      if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
         hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
@@ -824,7 +824,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
       multiplicity = collision.multFT0M();
-      if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+      if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == decayChannel)) {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {

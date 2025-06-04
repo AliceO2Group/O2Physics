@@ -57,6 +57,19 @@ enum DataType { Data = 0,
                 McBkg,
                 kDataTypes };
 
+enum Mother : int8_t {
+  Ds,
+  Dplus
+};
+
+enum ResonantChannel : int8_t {
+  PhiPi = 1,
+  Kstar0K = 2
+};
+
+static std::unordered_map<int8_t, std::unordered_map<int8_t, int8_t>> channelsResonant = {{{Mother::Ds, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}},
+                                                                                           {Mother::Dplus, {{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K}}}}};
+
 template <typename T>
 concept hasDsMlInfo = requires(T candidate) {
   candidate.mlProbDsToKKPi();
@@ -66,7 +79,7 @@ concept hasDsMlInfo = requires(T candidate) {
 /// Ds± analysis task
 struct HfTaskDs {
 
-  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Switch between resonant decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", true, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of ML scores to be stored. Three indexes max."};
@@ -128,7 +141,6 @@ struct HfTaskDs {
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0., 1.}, "axis for centrality/multiplicity"};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
-  int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
   int mRunNumber{0};
   bool lCalibLoaded;
   TList* lCalibObjects;
@@ -160,6 +172,10 @@ struct HfTaskDs {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
     } else if (nProcesses == 0) {
       LOGP(fatal, "No process function enabled");
+    }
+
+    if (decayChannel != ResonantChannel::PhiPi && decayChannel != ResonantChannel::Kstar0K) {
+      LOGP(fatal, "Invalid value of decayChannel");
     }
 
     AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -272,37 +288,37 @@ struct HfTaskDs {
   template <typename CandDs>
   bool isDsPrompt(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && candidate.flagMcDecayChanRec() == decayChannel && candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Ds][decayChannel] && candidate.originMcRec() == RecoDecay::OriginType::Prompt;
   }
 
   template <typename CandDs>
   bool isDplusPrompt(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && candidate.flagMcDecayChanRec() == decayChannel + offsetDplusDecayChannel && candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel] && candidate.originMcRec() == RecoDecay::OriginType::Prompt;
   }
 
   template <typename CandDs>
   bool isDsNonPrompt(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && candidate.flagMcDecayChanRec() == decayChannel && candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Ds][decayChannel] && candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
   }
 
   template <typename CandDs>
   bool isDplusNonPrompt(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && candidate.flagMcDecayChanRec() == decayChannel + offsetDplusDecayChannel && candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel] && candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
   }
 
   template <typename CandDs>
   bool isDplusBkg(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
   }
 
   template <typename CandDs>
   bool isLcBkg(const CandDs& candidate)
   {
-    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi);
   }
 
   /// Checks whether the candidate is in the signal region of either the Ds or D+ decay
@@ -673,9 +689,9 @@ struct HfTaskDs {
     // MC gen.
     for (const auto& particle : mcParticles) {
 
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK || std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) {
         const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
-        if (particle.flagMcDecayChanGen() == decayChannel || (fillDplusMc && particle.flagMcDecayChanGen() == (decayChannel + offsetDplusDecayChannel))) {
+        if (particle.flagMcDecayChanGen() == channelsResonant[Mother::Ds][decayChannel] || (fillDplusMc && particle.flagMcDecayChanGen() == channelsResonant[Mother::Dplus][decayChannel])) {
           auto pt = particle.pt();
           double y{0.f};
 
@@ -689,7 +705,7 @@ struct HfTaskDs {
             occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
           }
 
-          if (particle.flagMcDecayChanGen() == decayChannel) {
+          if (particle.flagMcDecayChanGen() == channelsResonant[Mother::Ds][decayChannel]) {
             y = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS);
             if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
               continue;
