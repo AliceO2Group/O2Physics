@@ -404,8 +404,8 @@ struct HfCorrelatorLcScHadrons {
   }
   template <bool isMcRec, typename TrackType, typename CandType, typename McPart>
   void fillCorrelationTable(bool trkPidFill, TrackType const& track, CandType const& candidate,
-  const std::vector<float>& outMl, int binPool, int8_t correlStatus,
-  double yCand, int signCand, McPart const& mcParticles)
+                            const std::vector<float>& outMl, int binPool, int8_t correlStatus,
+                            double yCand, int signCand, McPart const& mcParticles)
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
