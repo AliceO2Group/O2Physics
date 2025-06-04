@@ -2523,7 +2523,7 @@ void VarManager::FillTrack(T const& track, float* values)
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
-
+    
     if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
       values[kTOFnSigmaEl] = track.tofNSigmaEl();
       values[kTOFnSigmaPi] = track.tofNSigmaPi();
