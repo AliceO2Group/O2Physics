@@ -18,15 +18,14 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 float fReal_fTPCSignalN(float mbb0R, float a1pt, float atgl, float side, float occ, float fOccTPCN, float fTrackOccMeanN)
 {
-  return ((0.019869f * mbb0R) + (0.0012031f * a1pt) + (-0.0031766f * atgl) + (-0.0058023f * atgl * mbb0R) + (0.00087494f * a1pt * mbb0R) + (0.0020074f * side) + (-0.0010434f * a1pt * a1pt) + (0.011812f)) * occ / 1.e3f + //
-         ((0.009032f * mbb0R) + (0.0011737f * a1pt) + (-0.0010241f * atgl) + (-0.0075789f * atgl * mbb0R) + (0.00029324f * a1pt * mbb0R) + (0.00052475f * side) + (-0.00045413f * a1pt * a1pt) + (0.0024879f)) * fOccTPCN + //
+  return ((0.019869f * mbb0R) + (0.0012031f * a1pt) + (-0.0031766f * atgl) + (-0.0058023f * atgl * mbb0R) + (0.00087494f * a1pt * mbb0R) + (0.0020074f * side) + (-0.0010434f * a1pt * a1pt) + (0.011812f)) * occ / 1.e3f +       //
+         ((0.009032f * mbb0R) + (0.0011737f * a1pt) + (-0.0010241f * atgl) + (-0.0075789f * atgl * mbb0R) + (0.00029324f * a1pt * mbb0R) + (0.00052475f * side) + (-0.00045413f * a1pt * a1pt) + (0.0024879f)) * fOccTPCN +       //
          ((0.004255f * mbb0R) + (0.0011954f * a1pt) + (0.0054092f * atgl) + (-0.0033655f * atgl * mbb0R) + (0.00052243f * a1pt * mbb0R) + (-0.0002969f * side) + (-0.00074909f * a1pt * a1pt) + (-0.0075754f)) * fTrackOccMeanN + //
          ((-0.07925f * mbb0R) + (-0.03737f * a1pt) + (0.0017054f * atgl) + (0.093686f * atgl * mbb0R) + (0.023925f * a1pt * mbb0R) + (-0.0083407f * side) + (0.00336f * a1pt * a1pt) + (1.0461f));
 };
