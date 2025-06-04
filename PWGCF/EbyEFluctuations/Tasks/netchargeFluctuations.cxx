@@ -15,6 +15,8 @@
 ///        For RUN-3
 ///
 /// \author Nida Malik <nida.malik@cern.ch>
+#include <vector> // Include for std::vector
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
@@ -39,7 +41,6 @@
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TRandom3.h"
-#include <vector> // Include for std::vector
 
 using namespace o2;
 using namespace o2::framework;
