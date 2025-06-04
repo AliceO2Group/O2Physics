@@ -353,19 +353,6 @@ struct ItsImpactParStudies {
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
 
-    auto PDGtoIndex = [](const int pdg) {
-      switch (pdg) {
-        case 211: // pion
-          return 1;
-        case 321: // kaon
-          return 2;
-        case 2212: // proton
-          return 3;
-        default: // not identified
-          return 0;
-      }
-    };
-
     /// trigger selection
     if (useTriggerkINT7) {
       // from Tutorial/src/multiplicityEventTrackSelection.cxx
