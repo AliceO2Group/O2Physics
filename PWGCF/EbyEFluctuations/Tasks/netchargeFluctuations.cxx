@@ -29,7 +29,6 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
@@ -40,6 +39,7 @@
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TRandom3.h"
+#include <vector> // Include for std::vector
 
 using namespace o2;
 using namespace o2::framework;
