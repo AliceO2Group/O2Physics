@@ -346,7 +346,7 @@ struct HfCorrelatorLcScHadrons {
     }
   };
 
-  template <bool isCandSc = false, typename CandType>
+  template <bool isCandSc, typename CandType>
   double estimateY(CandType const& candidate)
   {
     double y = -999.;
@@ -403,7 +403,9 @@ struct HfCorrelatorLcScHadrons {
     }
   }
   template <bool isMcRec, typename TrackType, typename CandType, typename McPart>
-  void fillCorrelationTable(bool trkPidFill, TrackType const& track, CandType const& candidate, std::vector<float> const outMl, int binPool, int8_t correlStatus, double yCand, int signCand, McPart const& mcParticles)
+  void fillCorrelationTable(bool trkPidFill, TrackType const& track, CandType const& candidate,
+  const std::vector<float>& outMl, int binPool, int8_t correlStatus,
+  double yCand, int signCand, McPart const& mcParticles)
   {
     bool isPhysicalPrimary = false;
     int trackOrigin = -1;
