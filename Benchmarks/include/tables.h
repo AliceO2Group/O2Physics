@@ -101,12 +101,13 @@ DECLARE_SOA_TABLE(ExtTracksIDM, "AOD", "TRKIDM", extensions::IndirectM);
 DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksE, TracksIU, "TRKE", extensions::Expr);
 
 // intermediate values for the realistic calculation
-namespace intermediate {
+namespace intermediate
+{
 DECLARE_SOA_COLUMN(HRate, hRate, float);
 DECLARE_SOA_COLUMN(ClampedTPCMult, clampedTPCmult, float);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
 DECLARE_SOA_COLUMN(Correction1, correction1, float);
-}
+} // namespace intermediate
 
 // intermediate table
 DECLARE_SOA_TABLE(TracksTemporaryExtra, "AOD", "TRKTEMPEX",
