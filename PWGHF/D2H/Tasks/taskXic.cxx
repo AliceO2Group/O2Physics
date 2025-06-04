@@ -65,8 +65,6 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
 
-
-
    Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::   isSelXicToPiKP >= selectionFlagXic);
 
   float etaMaxAcceptance = 0.8;
@@ -493,7 +491,7 @@ struct HfTaskXic {
         if (enableTHn) {
           double massXic(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-          const int ternaryCl =3;
+          const int ternaryCl = 3;
           bool allProngsInAcceptance = false;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             massXic = hfHelper.invMassXicToPKPi(candidate);
