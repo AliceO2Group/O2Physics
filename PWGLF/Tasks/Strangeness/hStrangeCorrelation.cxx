@@ -602,6 +602,7 @@ struct HStrangeCorrelation {
           }
 
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+          weight = weight * etaWeight;
           if (TESTBIT(doCorrelation, Index) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(kV0names[Index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
@@ -729,6 +730,7 @@ struct HStrangeCorrelation {
             efficiency = 1;
           }
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+          weight = weight * etaWeight;
           if (TESTBIT(doCorrelation, Index + 3) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(kCascadenames[Index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
