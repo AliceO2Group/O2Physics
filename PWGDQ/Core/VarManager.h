@@ -2483,10 +2483,13 @@ void VarManager::FillTrack(T const& track, float* values)
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
-    values[kTOFnSigmaEl] = track.tofNSigmaEl();
-    values[kTOFnSigmaPi] = track.tofNSigmaPi();
-    values[kTOFnSigmaKa] = track.tofNSigmaKa();
-    values[kTOFnSigmaPr] = track.tofNSigmaPr();
+    
+    if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTOFnSigmaEl] = track.tofNSigmaEl();
+      values[kTOFnSigmaPi] = track.tofNSigmaPi();
+      values[kTOFnSigmaKa] = track.tofNSigmaKa();
+      values[kTOFnSigmaPr] = track.tofNSigmaPr();
+    }
 
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
