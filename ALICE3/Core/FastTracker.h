@@ -39,10 +39,10 @@ class FastTracker
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
   DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true) const;
   int GetLayerIndex(const std::string name) const;
-  void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].x0 = x0; }
-  void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].r = r; }
-  void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].resRPhi = resRPhi; }
-  void SetResolutionZ(const std::string layerName, float resZ) { layers[GetLayerIndex(layerName)].resZ = resZ; }
+  void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
+  void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
+  void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
+  void SetResolutionZ(const std::string layerName, float resZ) { layers[GetLayerIndex(layerName)].setResolutionZ(resZ); }
   void SetResolution(const std::string layerName, float resRPhi, float resZ)
   {
     SetResolutionRPhi(layerName, resRPhi);

@@ -196,12 +196,12 @@ struct StrangenessBuilder {
                     kCascFoundTags,
                     nTables };
 
-  enum V0PreSelection : uint8_t { selGamma = 0,
+  enum V0PreSelection : uint8_t { selGamma = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
                                   selK0Short,
                                   selLambda,
                                   selAntiLambda };
 
-  enum CascPreSelection : uint8_t { selXiMinus = 0,
+  enum CascPreSelection : uint8_t { selXiMinus = static_cast<uint8_t>(1) << static_cast<uint8_t>(0),
                                     selXiPlus,
                                     selOmegaMinus,
                                     selOmegaPlus };
@@ -2647,15 +2647,6 @@ struct StrangenessBuilder {
   PROCESS_SWITCH(StrangenessBuilder, processMonteCarloRun2WithPID, "process monte carlo (Run 2)", false);
 };
 
-// Extends the v0data table with expression columns
-struct strangenessbuilderInitializer {
-  Spawns<aod::V0Cores> v0cores;
-  Spawns<aod::CascCores> cascdataext;
-  Spawns<aod::KFCascCores> kfcascdataext;
-  Spawns<aod::TraCascCores> tracascdataext;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto strangenessBuilderTask = adaptAnalysisTask<StrangenessBuilder>(cfgc);
@@ -2728,6 +2719,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   }
 
   return WorkflowSpec{
-    strangenessBuilderTask,
-    adaptAnalysisTask<strangenessbuilderInitializer>(cfgc)};
+    strangenessBuilderTask};
 }

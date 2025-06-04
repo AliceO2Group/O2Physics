@@ -16,6 +16,8 @@
 #ifndef PWGHF_CORE_CENTRALITYESTIMATION_H_
 #define PWGHF_CORE_CENTRALITYESTIMATION_H_
 
+#include <fairlogger/Logger.h>
+
 namespace o2::hf_centrality
 {
 // centrality selection estimators
@@ -30,32 +32,27 @@ enum CentralityEstimator {
 };
 
 template <typename T>
-concept hasFT0ACent = requires(T collision)
-{
+concept hasFT0ACent = requires(T collision) {
   collision.centFT0A();
 };
 
 template <typename T>
-concept hasFT0CCent = requires(T collision)
-{
+concept hasFT0CCent = requires(T collision) {
   collision.centFT0C();
 };
 
 template <typename T>
-concept hasFT0MCent = requires(T collision)
-{
+concept hasFT0MCent = requires(T collision) {
   collision.centFT0M();
 };
 
 template <typename T>
-concept hasFV0ACent = requires(T collision)
-{
+concept hasFV0ACent = requires(T collision) {
   collision.centFV0A();
 };
 
 template <typename T>
-concept hasNTracksPVCent = requires(T collision)
-{
+concept hasNTracksPVCent = requires(T collision) {
   collision.centNTPV();
 };
 
