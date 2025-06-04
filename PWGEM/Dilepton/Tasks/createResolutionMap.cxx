@@ -68,7 +68,7 @@ struct CreateResolutionMap {
 
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<bool> cfg_require_true_mc_collision_association{"cfg_require_true_mc_collision_association", true, "flag to require true mc collision association"};
+  Configurable<bool> cfg_require_true_mc_collision_association{"cfg_require_true_mc_collision_association", false, "flag to require true mc collision association"};
   Configurable<bool> cfg_reject_fake_match_its_tpc{"cfg_reject_fake_match_its_tpc", false, "flag to reject fake match between ITS-TPC"};
   // Configurable<bool> cfg_reject_fake_match_its_tpc_tof{"cfg_reject_fake_match_its_tpc_tof", false, "flag to reject fake match between ITS-TPC-TOF"};
   Configurable<bool> cfg_reject_fake_match_mft_mch{"cfg_reject_fake_match_mft_mch", false, "flag to reject fake match between MFT-MCH"};
@@ -83,6 +83,9 @@ struct CreateResolutionMap {
   ConfigurableAxis ConfRelDeltaPtBins{"ConfRelDeltaPtBins", {200, -1.f, +1.f}, "rel. dpt for output histograms"};
   ConfigurableAxis ConfDeltaEtaBins{"ConfDeltaEtaBins", {200, -0.5f, +0.5f}, "deta bins for output histograms"};
   ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.5f, +0.5f}, "dphi bins for output histograms"};
+
+  Configurable<bool> cfgFillTHnSparse{"cfgFillTHnSparse", true, "fill THnSparse for output"};
+  Configurable<bool> cfgFillTH2{"cfgFillTH2", false, "fill TH2 for output"};
 
   Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
   Configurable<std::string> cfgRCTLabelCB{"cfgRCTLabelCB", "CBT_hadronPID", "select 1 [CBT, CBT_hadron] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -212,18 +215,22 @@ struct CreateResolutionMap {
     registry.add("Event/Electron/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
     registry.add("Event/Muon/hImpPar_Centrality", "true imapact parameter vs. estimated centrality;impact parameter (fm);centrality (%)", kTH2F, {{200, 0, 20}, {110, 0, 110}}, true);
 
-    registry.add("Electron/hPt", "rec. p_{T,l};p_{T,l} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
-    registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{l} (rad.);#eta_{l}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
-    registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
-    registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
-    registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
-    registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
-    registry.addClone("Electron/", "StandaloneMuon/");
-    registry.addClone("Electron/", "GlobalMuon/");
+    if (cfgFillTH2) {
+      registry.add("Electron/hPt", "rec. p_{T,l};p_{T,l} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
+      registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{l} (rad.);#eta_{l}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
+      registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+      registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
+      registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+      registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+      registry.addClone("Electron/", "StandaloneMuon/");
+      registry.addClone("Electron/", "GlobalMuon/");
+    }
 
-    registry.add("Electron/hs_reso", "8D resolution positive", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("StandaloneMuon/hs_reso", "8D resolution positive", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
-    registry.add("GlobalMuon/hs_reso", "8D resolution positive", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    if (cfgFillTHnSparse) {
+      registry.add("Electron/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+      registry.add("StandaloneMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+      registry.add("GlobalMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -376,8 +383,8 @@ struct CreateResolutionMap {
   std::pair<int8_t, std::set<uint8_t>> itsRequirement_ibany = {1, {0, 1, 2}}; // any hits on 3 ITS ib layers.
   std::pair<int8_t, std::set<uint8_t>> itsRequirement_ib1st = {1, {0}};       // first hit on ITS ib layers.
 
-  template <typename TCollision, typename TTrack>
-  bool isSelectedTrack(TCollision const& collision, TTrack const& track)
+  template <typename TTrack>
+  bool isSelectedTrack(TTrack const& track)
   {
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
@@ -425,23 +432,63 @@ struct CreateResolutionMap {
       return false;
     }
 
-    o2::dataformats::DCA mDcaInfoCov;
-    mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto track_par_cov_recalc = getTrackParCov(track);
-    track_par_cov_recalc.setPID(o2::track::PID::Electron);
-    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
+    return true;
+  }
 
-    // LOGF(info, "collision.globalIndex() = %d, track.collisionId() = %d, track.pt() = %.16f, track_par_cov_recalc.getPt() = %.16f", collision.globalIndex(), track.collisionId(), track.pt(), track_par_cov_recalc.getPt());
+  template <typename TTrack>
+  bool isSelectedTrackKine(TTrack const& track, const float pt, const float eta, const float dcaXY, const float dcaZ)
+  {
+    if (!track.hasITS() || !track.hasTPC()) {
+      return false;
+    }
+
+    if (track.tpcChi2NCl() > electroncuts.cfg_max_chi2tpc) {
+      return false;
+    }
+
+    if (track.itsChi2NCl() > electroncuts.cfg_max_chi2its) {
+      return false;
+    }
+
+    if (track.itsNCls() < electroncuts.cfg_min_ncluster_its) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < electroncuts.cfg_min_ncluster_itsib) {
+      return false;
+    }
+
+    auto hits = std::count_if(itsRequirement_ibany.second.begin(), itsRequirement_ibany.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+    if (hits < itsRequirement_ibany.first) {
+      return false;
+    }
+    if (electroncuts.cfg_require_itsib_1st) {
+      auto hit_ib1st = std::count_if(itsRequirement_ib1st.second.begin(), itsRequirement_ib1st.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
+      if (hit_ib1st < itsRequirement_ib1st.first) {
+        return false;
+      }
+    }
+
+    if (track.tpcNClsFound() < electroncuts.cfg_min_ncluster_tpc) {
+      return false;
+    }
+
+    if (track.tpcNClsCrossedRows() < electroncuts.cfg_min_ncrossedrows) {
+      return false;
+    }
+
+    if (track.tpcCrossedRowsOverFindableCls() < electroncuts.cfg_min_tpc_cr_findable_ratio) {
+      return false;
+    }
+
+    if (track.tpcFractionSharedCls() > electroncuts.cfg_max_frac_shared_clusters_tpc) {
+      return false;
+    }
 
     if (std::fabs(dcaXY) > electroncuts.cfg_max_dcaxy || std::fabs(dcaZ) > electroncuts.cfg_max_dcaz) {
       return false;
     }
 
-    if (track_par_cov_recalc.getPt() < electroncuts.cfg_min_pt_track || std::fabs(track_par_cov_recalc.getEta()) > electroncuts.cfg_max_eta_track) {
+    if (pt < electroncuts.cfg_min_pt_track || std::fabs(eta) > electroncuts.cfg_max_eta_track) {
       return false;
     }
 
@@ -555,29 +602,38 @@ struct CreateResolutionMap {
       if (cfgRequireGoodRCT && !rctCheckerFWDSA.checkTable(collision)) {
         return;
       }
-      registry.fill(HIST("StandaloneMuon/hPt"), pt);
-      registry.fill(HIST("StandaloneMuon/hEtaPhi"), phi, eta);
-      registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
-      registry.fill(HIST("StandaloneMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
-      registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
-      if (mcparticle.pdgCode() == -13) { // positive muon
-        registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
-      } else if (mcparticle.pdgCode() == 13) { // negative muon
-        registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+      if (cfgFillTHnSparse) {
+        registry.fill(HIST("StandaloneMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+      }
+
+      if (cfgFillTH2) {
+        registry.fill(HIST("StandaloneMuon/hPt"), pt);
+        registry.fill(HIST("StandaloneMuon/hEtaPhi"), phi, eta);
+        registry.fill(HIST("StandaloneMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
+        registry.fill(HIST("StandaloneMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
+        if (mcparticle.pdgCode() == -13) { // positive muon
+          registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
+        } else if (mcparticle.pdgCode() == 13) { // negative muon
+          registry.fill(HIST("StandaloneMuon/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+        }
       }
     } else if (muon.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
       if (cfgRequireGoodRCT && !rctCheckerFWDGL.checkTable(collision)) {
         return;
       }
-      registry.fill(HIST("GlobalMuon/hPt"), pt);
-      registry.fill(HIST("GlobalMuon/hEtaPhi"), phi, eta);
-      registry.fill(HIST("GlobalMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
-      registry.fill(HIST("GlobalMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
-      registry.fill(HIST("GlobalMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
-      if (mcparticle.pdgCode() == -13) { // positive muon
-        registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
-      } else if (mcparticle.pdgCode() == 13) { // negative muon
-        registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+      if (cfgFillTHnSparse) {
+        registry.fill(HIST("GlobalMuon/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 13, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+      }
+      if (cfgFillTH2) {
+        registry.fill(HIST("GlobalMuon/hPt"), pt);
+        registry.fill(HIST("GlobalMuon/hEtaPhi"), phi, eta);
+        registry.fill(HIST("GlobalMuon/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
+        registry.fill(HIST("GlobalMuon/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
+        if (mcparticle.pdgCode() == -13) { // positive muon
+          registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
+        } else if (mcparticle.pdgCode() == 13) { // negative muon
+          registry.fill(HIST("GlobalMuon/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+        }
       }
     }
     return;
@@ -655,7 +711,8 @@ struct CreateResolutionMap {
     if (cfg_require_true_mc_collision_association && mcparticle.mcCollisionId() != collision.mcCollisionId()) {
       return;
     }
-    if (!isSelectedTrack(collision, track)) {
+
+    if (!isSelectedTrack(track)) {
       return;
     }
 
@@ -666,23 +723,31 @@ struct CreateResolutionMap {
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
-    // float dcaXY = mDcaInfoCov.getY();
-    // float dcaZ = mDcaInfoCov.getZ();
+    float dcaXY = mDcaInfoCov.getY();
+    float dcaZ = mDcaInfoCov.getZ();
 
     float pt = track_par_cov_recalc.getPt();
     float eta = track_par_cov_recalc.getEta();
     float phi = track_par_cov_recalc.getPhi();
     o2::math_utils::bringTo02Pi(phi);
 
-    registry.fill(HIST("Electron/hPt"), pt);
-    registry.fill(HIST("Electron/hEtaPhi"), phi, eta);
-    registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 11, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
-    registry.fill(HIST("Electron/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
-    registry.fill(HIST("Electron/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
-    if (mcparticle.pdgCode() == -11) { // positron
-      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
-    } else if (mcparticle.pdgCode() == 11) { // electron
-      registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+    if (!isSelectedTrackKine(track, pt, eta, dcaXY, dcaZ)) {
+      return;
+    }
+
+    if (cfgFillTHnSparse) {
+      registry.fill(HIST("Electron/hs_reso"), centrality, mcparticle.pt(), mcparticle.eta(), mcparticle.phi(), -mcparticle.pdgCode() / 11, (mcparticle.pt() - pt) / mcparticle.pt(), mcparticle.eta() - eta, mcparticle.phi() - phi);
+    }
+    if (cfgFillTH2) {
+      registry.fill(HIST("Electron/hPt"), pt);
+      registry.fill(HIST("Electron/hEtaPhi"), phi, eta);
+      registry.fill(HIST("Electron/Ptgen_RelDeltaPt"), mcparticle.pt(), (mcparticle.pt() - pt) / mcparticle.pt());
+      registry.fill(HIST("Electron/Ptgen_DeltaEta"), mcparticle.pt(), mcparticle.eta() - eta);
+      if (mcparticle.pdgCode() == -11) { // positron
+        registry.fill(HIST("Electron/Ptgen_DeltaPhi_Pos"), mcparticle.pt(), mcparticle.phi() - phi);
+      } else if (mcparticle.pdgCode() == 11) { // electron
+        registry.fill(HIST("Electron/Ptgen_DeltaPhi_Neg"), mcparticle.pt(), mcparticle.phi() - phi);
+      }
     }
   }
 
