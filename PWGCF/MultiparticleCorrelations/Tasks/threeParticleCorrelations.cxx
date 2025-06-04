@@ -890,7 +890,7 @@ struct ThreeParticleCorrelations {
   template <class CollCand>
   bool acceptEvent(const CollCand& collision, bool FillHist) // Event filter
   {
-    
+
     if (FillHist) {
       rQARegistry.fill(HIST("hNEvents"), 0.5);
     }
@@ -915,7 +915,7 @@ struct ThreeParticleCorrelations {
   template <class V0Cand>
   bool v0Filters(const V0Cand& v0, bool MCRec) // V0 filter
   {
-        
+
     if (v0.pt() < v0PtMin || v0.pt() > v0PtMax)
       return kFALSE;
     if (std::abs(v0.eta()) > v0EtaMax)
@@ -1132,16 +1132,16 @@ struct ThreeParticleCorrelations {
           }
         }
 
-	if (std::abs(dEta) < dEtaMin) {
-	  if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-	    if (std::abs(dPhiStar) < dPhiStarMinOS) {
-	      pass = false;
-	    }
-	  } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-	    if (std::abs(dPhiStar) < dPhiStarMinSS) {
-	      pass = false;
-	    }
-	  }
+        if (std::abs(dEta) < dEtaMin) {
+          if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+            if (std::abs(dPhiStar) < dPhiStarMinOS) {
+              pass = false;
+            }
+          } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+            if (std::abs(dPhiStar) < dPhiStarMinSS) {
+              pass = false;
+            }
+          }
         }
 
         if (r == rMin && pass) {
@@ -1171,33 +1171,33 @@ struct ThreeParticleCorrelations {
           }
         }
 
-	dPhiStarMean += (dPhiStar/170);
+        dPhiStarMean += (dPhiStar / 170);
       }
       // End of the TPC radius loop
-      
+
       if (!Mix) {                                 // Same-event
-	if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-	  rPhiStarRegistry.fill(HIST("hSEPhiStarMean_OS"), dPhiStarMean, dEta);
-	} else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-	  rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SS"), dPhiStarMean, dEta);
-	  if (proton.sign() == 1) { // Positive
-	    rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSP"), dPhiStarMean, dEta);
-	  } else if (proton.sign() == -1) { // Negative
-	    rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSN"), dPhiStarMean, dEta);
-	  }
-	}
+        if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hSEPhiStarMean_OS"), dPhiStarMean, dEta);
+        } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SS"), dPhiStarMean, dEta);
+          if (proton.sign() == 1) { // Positive
+            rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSP"), dPhiStarMean, dEta);
+          } else if (proton.sign() == -1) { // Negative
+            rPhiStarRegistry.fill(HIST("hSEPhiStarMean_SSN"), dPhiStarMean, dEta);
+          }
+        }
 
       } else {                                    // Mixed-event
-	if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
-	  rPhiStarRegistry.fill(HIST("hMEPhiStarMean_OS"), dPhiStarMean, dEta);
-	} else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
-	  rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SS"), dPhiStarMean, dEta);
-	  if (proton.sign() == 1) { // Positive
-	    rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSP"), dPhiStarMean, dEta);
-	  } else if (proton.sign() == -1) { // Negative
-	    rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSN"), dPhiStarMean, dEta);
-	  }
-	}
+        if (proton.sign() * track.sign() == -1) { // OS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hMEPhiStarMean_OS"), dPhiStarMean, dEta);
+        } else if (proton.sign() * track.sign() == 1) { // SS (Electric charge)
+          rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SS"), dPhiStarMean, dEta);
+          if (proton.sign() == 1) { // Positive
+            rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSP"), dPhiStarMean, dEta);
+          } else if (proton.sign() == -1) { // Negative
+            rPhiStarRegistry.fill(HIST("hMEPhiStarMean_SSN"), dPhiStarMean, dEta);
+          }
+        }
       }
     }
 
