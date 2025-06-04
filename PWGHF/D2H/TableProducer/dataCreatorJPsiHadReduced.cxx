@@ -694,7 +694,7 @@ struct HfDataCreatorJPsiHadReduced {
 
         // apply selections on bachelor tracks
         auto trackParCovBach = getTrackParCov(trackBach);
-        o2::gpu::gpustd::array<float, 2> dcaBach{trackBach.dcaXY(), trackBach.dcaZ()};
+        std::array<float, 2> dcaBach{trackBach.dcaXY(), trackBach.dcaZ()};
         std::array<float, 3> pVecBach = trackBach.pVector();
         if (trackBach.collisionId() != thisCollId) {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovBach, 2.f, noMatCorr, &dcaBach);
@@ -781,7 +781,7 @@ struct HfDataCreatorJPsiHadReduced {
             auto trackBach2 = trackBachId2.template track_as<TTracks>();
             auto trackBach2ParCov = getTrackParCov(trackBach2);
 
-            o2::gpu::gpustd::array<float, 2> dcaBach2{trackBach2.dcaXY(), trackBach2.dcaZ()};
+            std::array<float, 2> dcaBach2{trackBach2.dcaXY(), trackBach2.dcaZ()};
             std::array<float, 3> pVecBach2 = trackBach2.pVector();
             if (trackBach2.collisionId() != thisCollId) {
               o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackBach2ParCov, 2.f, noMatCorr, &dcaBach2);
