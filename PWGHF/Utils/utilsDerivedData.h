@@ -16,18 +16,17 @@
 #ifndef PWGHF_UTILS_UTILSDERIVEDDATA_H_
 #define PWGHF_UTILS_UTILSDERIVEDDATA_H_
 
-#include <vector>
+#include <fairlogger/Logger.h>
+
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/ASoA.h>
+#include <Framework/Configurable.h>
+
+#include <cstdint>
 #include <map>
-
-#include "fairlogger/Logger.h"
-
-#include "Framework/AnalysisHelpers.h"
-#include "Framework/Configurable.h"
-#include "Framework/ASoA.h"
+#include <vector>
 
 #include "Common/Core/RecoDecay.h"
-
-#include "PWGHF/DataModel/DerivedTables.h"
 
 // Macro to store nSigma for prong _id_ with PID hypothesis _hyp_ in an array
 #define GET_N_SIGMA_PRONG(_array_, _candidate_, _id_, _hyp_) \

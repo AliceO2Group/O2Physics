@@ -9,13 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorOmegacToOmegaPi.cxx
+/// \file treeCreatorOmegac0ToOmegaPi.cxx
 /// \brief Writer of the omegac0 to Omega Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
+/// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -217,7 +218,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorOmegacToOmegaPi {
+struct HfTreeCreatorOmegac0ToOmegaPi {
 
   Produces<o2::aod::HfOmegac0ToOmegaPiLites> rowCandidateLite;
   Produces<o2::aod::HfKfOmegacFulls> rowKfCandidateFull;
@@ -446,7 +447,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
       fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processDataLite, "Process data", true);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processDataLite, "Process data", false);
 
   void processKfDataFull(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
   {
@@ -462,7 +463,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
       fillKfCandidate(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataFull, "Process KF data", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataFull, "Process KF data", false);
 
   void processKfDataLite(Colls const& collisions, Tracks const&, CandKfSel const& candidates)
   {
@@ -478,7 +479,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
       fillKfCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKfDataLite, "Process KF data Lite", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKfDataLite, "Process KF data Lite", false);
 
   void processMcLite(Colls const& collisions, Tracks const&,
                      soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfToOmegaPiMCRec>> const& candidates)
@@ -495,7 +496,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
       fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processMcLite, "Process MC", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
 
   void processKFMcFull(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
   {
@@ -517,7 +518,7 @@ struct HfTreeCreatorOmegacToOmegaPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKFMcFull, "Process KF MC", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcFull, "Process KF MC", false);
 
   void processKFMcLite(Colls const& collisions, Tracks const&, CascKfMcSel const& candidates)
   {
@@ -539,12 +540,12 @@ struct HfTreeCreatorOmegacToOmegaPi {
       }
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorOmegacToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
+  PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processKFMcLite, "Process KF MC Lite", false);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTreeCreatorOmegacToOmegaPi>(cfgc)};
+    adaptAnalysisTask<HfTreeCreatorOmegac0ToOmegaPi>(cfgc)};
 }

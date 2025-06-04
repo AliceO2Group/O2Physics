@@ -49,11 +49,6 @@ o2physics_add_dpl_workflow(hyhefour-analysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(antid-lambda-ebye
-    SOURCES antidLambdaEbye.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(mc-spectra-efficiency
     SOURCES mcspectraefficiency.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -85,7 +80,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-tpcspectra
-    SOURCES NucleiTPCPbPb.cxx
+    SOURCES nucleitpcpbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -139,18 +134,8 @@ o2physics_add_dpl_workflow(nuclei-toward-transv
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(ebye-mult
-    SOURCES ebyeMult.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
     SOURCES nucleiFromHypertritonMap.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(hyperhelium4sigma-analysis
-    SOURCES hyperhelium4sigmaAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

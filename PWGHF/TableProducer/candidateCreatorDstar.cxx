@@ -15,7 +15,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
-// std
+
+// C++
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +31,11 @@
 #include "Framework/RunningWorkflowInfo.h"
 // O2Physics
 #include "Common/Core/trackUtilities.h"
+// PWGLF
+#include "PWGLF/DataModel/mcCentrality.h"
 // PWGHF
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -186,7 +190,7 @@ struct HfCandidateCreatorDstar {
   void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
                        aod::Hf2Prongs const&,
-                       aod::TracksWCov const&,
+                       TracksWCovExtraPidPiKa const&,
                        aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     // LOG(info) << "runCreatorDstar function called";
@@ -386,7 +390,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                      aod::TracksWCov const& tracks,
+                      TracksWCovExtraPidPiKa const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -397,7 +401,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
-                        aod::TracksWCov const& tracks,
+                        TracksWCovExtraPidPiKa const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -414,7 +418,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                              aod::TracksWCov const& tracks,
+                              TracksWCovExtraPidPiKa const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -425,7 +429,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-                                aod::TracksWCov const& tracks,
+                                TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -442,7 +446,7 @@ struct HfCandidateCreatorDstar {
   void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
-                              aod::TracksWCov const& tracks,
+                              TracksWCovExtraPidPiKa const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
@@ -453,7 +457,7 @@ struct HfCandidateCreatorDstar {
   void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
-                                aod::TracksWCov const& tracks,
+                                TracksWCovExtraPidPiKa const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);

@@ -36,7 +36,6 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <TF1.h>
-#include <TLorentzVector.h>
 
 namespace o2::aod
 {
@@ -111,13 +110,14 @@ static const std::vector<int> particlePdgCodes{
 static const std::vector<float> particleMasses{
   o2::constants::physics::MassTriton, o2::constants::physics::MassHelium3};
 static const std::vector<int> particleCharge{1, 2};
+static const std::vector<float> particleChargeFactor{2.3, 2.55};
 static const std::vector<std::string> betheBlochParNames{
   "p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr float betheBlochDefault[nParticles][nBetheParams]{
-  {0.313129, 181.664226, 2779397163087.684082, 2.130773, 29.609643,
-   0.09},                                                     // triton
-  {70.584685, 3.196364, 0.133878, 2.731736, 1.675617, 0.09}}; // Helion
-
+  {0.248753, 3.58634, 0.0167065, 2.29194, 0.774344,
+   0.07}, // triton
+  {0.0274556, 18.3054, 3.99987e-05, 3.17219, 11.1775,
+   0.07}}; // Helion
 } // namespace
 using namespace o2;
 using namespace o2::framework;
@@ -136,21 +136,24 @@ class Particle
   float mass;
   int charge;
   float resolution;
+  float chargeFactor;
   std::vector<float> betheParams;
+  static constexpr int NNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
-           LabeledArray<float> bethe)
+           LabeledArray<float> bethe, float chargeFactor_)
   {
     name = TString(name_);
     pdgCode = pdgCode_;
     mass = mass_;
     charge = charge_;
+    chargeFactor = chargeFactor_;
 
     resolution =
       bethe.get(name, "resolution"); // Access the "resolution" parameter
 
     betheParams.clear();
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < NNumBetheParams; ++i) {
       betheParams.push_back(bethe.get(name, i));
     }
   }
@@ -166,6 +169,7 @@ struct TrHeAnalysis {
   std::vector<Particle> particles;
   Configurable<bool> enableTr{"enableTr", true, "Flag to enable triton analysis."};
   Configurable<bool> enableHe{"enableHe", true, "Flag to enable helium-3 analysis."};
+  Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", true, "Enable Rigidity correction"};
   ConfigurableAxis binsDeDx{"binsDeDx", {600, 0.f, 3000.f}, ""};
   ConfigurableAxis binsBeta{"binsBeta", {120, 0.0, 1.2}, ""};
   ConfigurableAxis binsDca{"binsDca", {400, -1.f, 1.f}, ""};
@@ -212,7 +216,7 @@ struct TrHeAnalysis {
   Configurable<float> cfgCutMaxTofMassH3{"cfgCutMaxTofMassH3", 3.32f, "Maximum TOF mass H3"};
   // Set the kinematic and PID cuts for tracks
   struct : ConfigurableGroup {
-    Configurable<float> pCut{"pCut", 0.3f, "Value of the p selection for spectra (default 0.3)"};
+    Configurable<float> pCut{"pCut", 0.6f, "Value of the p selection for spectra (default 0.3)"};
     Configurable<float> etaCut{"etaCut", 0.8f, "Value of the eta selection for spectra (default 0.8)"};
     Configurable<float> yLowCut{"yLowCut", -1.0f, "Value of the low rapidity selection for spectra (default -1.0)"};
     Configurable<float> yHighCut{"yHighCut", 1.0f, "Value of the high rapidity selection for spectra (default 1.0)"};
@@ -293,7 +297,7 @@ struct TrHeAnalysis {
     for (int i = 0; i < nParticles; i++) {
       particles.push_back(Particle(particleNames.at(i), particlePdgCodes.at(i),
                                    particleMasses.at(i), particleCharge.at(i),
-                                   cfgBetheBlochParams));
+                                   cfgBetheBlochParams, particleChargeFactor.at(i)));
     }
   }
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& event,
@@ -326,7 +330,7 @@ struct TrHeAnalysis {
           track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
             kinemOptions.yHighCut;
         histos.fill(HIST("histogram/cuts"), 0);
-        if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
+        if (std::abs(track.p()) < kinemOptions.pCut) {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
@@ -365,10 +369,11 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    track.tpcInnerParam() / (1.f * track.sign()),
+                    getRigidity(track) * track.sign(),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
-                    track.p() / (1.f * track.sign()), track.beta());
+                    getRigidity(track) * track.sign(),
+                    track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(getTPCnSigma(track, particles.at(0))) <
               nsigmaTPCvar.nsigmaTPCTr) {
@@ -385,22 +390,23 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
-            if (track.mass() < cfgCutMinTofMassH3 || track.mass() > cfgCutMaxTofMassH3) {
+            if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (1.f * track.sign()),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        track.p() / (1.f * track.sign()), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
             int8_t tCharge = track.sign();
             float tH3DeDx = track.tpcSignal();
-            float tnSigmaTpc = track.tpcNSigmaTr();
-            float tTofSignalH3 = track.mass();
+            float tnSigmaTpc = getTPCnSigma(track, particles.at(0));
+            float tTofSignalH3 = getMass(track);
             float tDcaXY = track.dcaXY();
             float tDcaZ = track.dcaZ();
             float tSigmaYX = track.sigmaY();
@@ -410,7 +416,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = track.tpcInnerParam();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
@@ -436,17 +442,18 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (2.f * track.sign()),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        track.p() / (2.f * track.sign()), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
             int8_t tCharge = 2.f * track.sign();
             float tHeDeDx = track.tpcSignal();
-            float tnSigmaTpc = track.tpcNSigmaHe();
-            float tTofSignalHe = track.mass();
+            float tnSigmaTpc = getTPCnSigma(track, particles.at(1));
+            float tTofSignalHe = getMass(track);
             float tDcaXY = track.dcaXY();
             float tDcaZ = track.dcaZ();
             float tSigmaYX = track.sigmaY();
@@ -456,7 +463,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = track.tpcInnerParam();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
@@ -480,7 +487,7 @@ struct TrHeAnalysis {
           track.rapidity(o2::track::PID::getMass2Z(o2::track::PID::Helium3)) <
             kinemOptions.yHighCut;
         histos.fill(HIST("histogram/cuts"), 0);
-        if (std::abs(track.tpcInnerParam()) < kinemOptions.pCut) {
+        if (std::abs(track.p()) < kinemOptions.pCut) {
           histos.fill(HIST("histogram/cuts"), 1);
           continue;
         }
@@ -519,10 +526,10 @@ struct TrHeAnalysis {
         histos.fill(HIST("histogram/pT"), track.pt());
         histos.fill(HIST("histogram/p"), track.p());
         histos.fill(HIST("histogram/TPCsignVsTPCmomentum"),
-                    track.tpcInnerParam() / (1.f * track.sign()),
+                    getRigidity(track) * (1.f * track.sign()),
                     track.tpcSignal());
         histos.fill(HIST("histogram/TOFbetaVsP"),
-                    track.p() / (1.f * track.sign()), track.beta());
+                    track.p() * (1.f * track.sign()), track.beta());
         if (enableTr && trRapCut) {
           if (std::abs(track.tpcNSigmaTr()) < nsigmaTPCvar.nsigmaTPCTr) {
             if (track.itsChi2NCl() > cfgCutMaxChi2ItsH3) {
@@ -538,22 +545,23 @@ struct TrHeAnalysis {
               histos.fill(HIST("histogram/cuts"), 12);
               continue;
             }
-            if (track.mass() < cfgCutMinTofMassH3 || track.mass() > cfgCutMaxTofMassH3) {
+            if (getMass(track) < cfgCutMinTofMassH3 || getMass(track) > cfgCutMaxTofMassH3) {
               histos.fill(HIST("histogram/cuts"), 13);
               continue;
             }
             histos.fill(HIST("histogram/H3/H3-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (1.f * track.sign()),
+                        getRigidity(track) * (1.f * track.sign()),
                         track.tpcSignal());
             histos.fill(HIST("histogram/H3/H3-TOFbetaVsP"),
-                        track.p() / (1.f * track.sign()), track.beta());
+                        track.p() * (1.f * track.sign()),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
             int8_t tCharge = track.sign();
             float tH3DeDx = track.tpcSignal();
             float tnSigmaTpc = track.tpcNSigmaTr();
-            float tTofSignalH3 = track.mass();
+            float tTofSignalH3 = getMass(track);
             float tDcaXY = track.dcaXY();
             float tDcaZ = track.dcaZ();
             float tSigmaYX = track.sigmaY();
@@ -563,7 +571,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = track.tpcInnerParam();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             h3Data(tPt, tEta, tPhi, tCharge, tH3DeDx, tnSigmaTpc, tTofSignalH3,
@@ -588,17 +596,18 @@ struct TrHeAnalysis {
               continue;
             }
             histos.fill(HIST("histogram/He/He-TPCsignVsTPCmomentum"),
-                        track.tpcInnerParam() / (2.f * track.sign()),
+                        getRigidity(track) * track.sign(),
                         track.tpcSignal());
             histos.fill(HIST("histogram/He/He-TOFbetaVsP"),
-                        track.p() / (2.f * track.sign()), track.beta());
+                        getRigidity(track) * track.sign(),
+                        track.beta());
             float tPt = track.pt();
             float tEta = track.eta();
             float tPhi = track.phi();
             int8_t tCharge = 2.f * track.sign();
             float tHeDeDx = track.tpcSignal();
             float tnSigmaTpc = track.tpcNSigmaHe();
-            float tTofSignalHe = track.mass();
+            float tTofSignalHe = getMass(track);
             float tDcaXY = track.dcaXY();
             float tDcaZ = track.dcaZ();
             float tSigmaYX = track.sigmaY();
@@ -608,7 +617,7 @@ struct TrHeAnalysis {
             int tnItsCluster = track.itsNCls();
             float tTpcChi2NCl = track.tpcChi2NCl();
             float tItsChi2NCl = track.itsChi2NCl();
-            float tRigidity = track.tpcInnerParam();
+            float tRigidity = getRigidity(track);
             float tItsClusterSize =
               getMeanItsClsSize(track) / std::cosh(track.eta());
             heData(tPt, tEta, tPhi, tCharge, tHeDeDx, tnSigmaTpc, tTofSignalHe,
@@ -624,15 +633,11 @@ struct TrHeAnalysis {
   template <class T>
   float getTPCnSigma(T const& track, Particle const& particle)
   {
-    const float rigidity = track.tpcInnerParam();
+    const float rigidity = getRigidity(track);
     if (!track.hasTPC())
       return -999;
 
-    float expBethe{tpc::BetheBlochAleph(
-      static_cast<float>(particle.charge * rigidity / particle.mass),
-      particle.betheParams[0], particle.betheParams[1],
-      particle.betheParams[2], particle.betheParams[3],
-      particle.betheParams[4])};
+    float expBethe{betheBlochAleph(particle, rigidity)};
     float expSigma{expBethe * particle.resolution};
     float sigmaTPC =
       static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
@@ -640,15 +645,49 @@ struct TrHeAnalysis {
   }
 
   template <class T>
+  float betheBlochAleph(Particle const& particle, T const& rigidity)
+  {
+    double bg = particle.charge * rigidity / particle.mass;
+    double beta = bg / std::sqrt(1. + bg * bg);
+    double aa = std::pow(beta, particle.betheParams[3]);
+    double bb = std::pow(1. / bg, particle.betheParams[4]);
+    if ((particle.betheParams[2] + bb) <= 0)
+      return 0;
+    bb = std::log(particle.betheParams[2] + bb);
+    return std::pow(particle.charge, particle.chargeFactor) * 50 * (particle.betheParams[1] - aa - bb) * particle.betheParams[0] / aa;
+  }
+
+  template <class T>
   float getMeanItsClsSize(T const& track)
   {
+    constexpr int NNumLayers = 8;
+    constexpr int NBitsPerLayer = 4;
+    constexpr int NBitMask = (1 << NBitsPerLayer) - 1;
     int sum = 0, n = 0;
-    for (int i = 0; i < 8; i++) {
-      sum += (track.itsClusterSizes() >> (4 * i) & 15);
-      if (track.itsClusterSizes() >> (4 * i) & 15)
+    for (int i = 0; i < NNumLayers; i++) {
+      int clsSize = (track.itsClusterSizes() >> (NBitsPerLayer * i)) & NBitMask;
+      sum += clsSize;
+      if (clsSize)
         n++;
     }
     return n > 0 ? static_cast<float>(sum) / n : 0.f;
+  }
+  template <class T>
+  float getRigidity(T const& track)
+  {
+    if (!cfgRigidityCorrection)
+      return track.tpcInnerParam();
+    bool hePID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
+    return hePID ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
+  }
+  template <class T>
+  float getMass(T const& track)
+  {
+    const float beta = track.beta();
+    const float rigidity = getRigidity(track);
+    float gamma = 1 / std::sqrt(1 - beta * beta);
+    float mass = (rigidity / std::sqrt(gamma * gamma - 1));
+    return mass;
   }
 };
 
