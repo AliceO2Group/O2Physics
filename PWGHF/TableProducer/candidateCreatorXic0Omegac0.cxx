@@ -243,7 +243,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   } kfXic0Candidate;
 
   void init(InitContext const&)
-  { 
+  {
     std::array<bool, 16> allProcesses = {doprocessNoCentToXiPi, doprocessNoCentToXiPiTraCasc, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi, doprocessNoCentToOmegaPi, doprocessNoCentOmegacToOmegaPiWithKFParticle, doprocessCentFT0COmegacToOmegaPiWithKFParticle, doprocessCentFT0MOmegacToOmegaPiWithKFParticle, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK, doprocessNoCentXicToXiPiWithKFParticle, doprocessCentFT0CXicToXiPiWithKFParticle, doprocessCentFT0MXicToXiPiWithKFParticle};
     if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
       LOGP(fatal, "No process function enabled, please select one for at least one channel.");
@@ -1693,22 +1693,22 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToOmegaPi, "Run candidate creator w/o centrality selections for omega pi decay channel", false);
 
   void processNoCentOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                                            aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                            MyKfTracks const& tracks,
-                                            MyKfCascTable const& cascades,
-                                            KFCascadesLinked const& cascadeLinks,
-                                            aod::HfCascLf2Prongs const& candidates)
+                                                  aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                  MyKfTracks const& tracks,
+                                                  MyKfCascTable const& cascades,
+                                                  KFCascadesLinked const& cascadeLinks,
+                                                  aod::HfCascLf2Prongs const& candidates)
   {
     runKfOmegac0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processNoCentXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                      MyKfTracks const& tracks,
-                                      MyKfCascTable const& cascades,
-                                      KFCascadesLinked const& cascadeLinks,
-                                      aod::HfCascLf2Prongs const& candidates)
+                                            aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                            MyKfTracks const& tracks,
+                                            MyKfCascTable const& cascades,
+                                            KFCascadesLinked const& cascadeLinks,
+                                            aod::HfCascLf2Prongs const& candidates)
   {
     runKfXic0CreatorWithKFParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
@@ -1752,22 +1752,22 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0CToOmegaPi, "Run candidate creator w/ centrality selection on FT0C for omega pi channel", false);
 
   void processCentFT0COmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
-                                            aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                            MyKfTracks const& tracks,
-                                            MyKfCascTable const& cascades,
-                                            KFCascadesLinked const& cascadeLinks,
-                                            aod::HfCascLf2Prongs const& candidates)
+                                                    aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                    MyKfTracks const& tracks,
+                                                    MyKfCascTable const& cascades,
+                                                    KFCascadesLinked const& cascadeLinks,
+                                                    aod::HfCascLf2Prongs const& candidates)
   {
     runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0COmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processCentFT0CXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                      MyKfTracks const& tracks,
-                                      MyKfCascTable const& cascades,
-                                      KFCascadesLinked const& cascadeLinks,
-                                      aod::HfCascLf2Prongs const& candidates)
+                                              aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                              MyKfTracks const& tracks,
+                                              MyKfCascTable const& cascades,
+                                              KFCascadesLinked const& cascadeLinks,
+                                              aod::HfCascLf2Prongs const& candidates)
   {
     runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
@@ -1811,22 +1811,22 @@ struct HfCandidateCreatorXic0Omegac0 {
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MToOmegaPi, "Run candidate creator w/ centrality selection on FT0M for omega pi channel", false);
 
   void processCentFT0MOmegacToOmegaPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
-                                            aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                            MyKfTracks const& tracks,
-                                            MyKfCascTable const& cascades,
-                                            KFCascadesLinked const& cascadeLinks,
-                                            aod::HfCascLf2Prongs const& candidates)
+                                                    aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                                    MyKfTracks const& tracks,
+                                                    MyKfCascTable const& cascades,
+                                                    KFCascadesLinked const& cascadeLinks,
+                                                    aod::HfCascLf2Prongs const& candidates)
   {
     runKfOmegac0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToOmegaPi, hFitterStatusToOmegaPi, hCandidateCounterToOmegaPi, hCascadesCounterToOmegaPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processCentFT0MOmegacToOmegaPiWithKFParticle, "Run candidate creator w/o centrality selections for Omegac0 To omega pi decay channel using KFParticle", false);
 
   void processCentFT0MXicToXiPiWithKFParticle(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
-                                      aod::BCsWithTimestamps const& bcWithTimeStamps,
-                                      MyKfTracks const& tracks,
-                                      MyKfCascTable const& cascades,
-                                      KFCascadesLinked const& cascadeLinks,
-                                      aod::HfCascLf2Prongs const& candidates)
+                                              aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                              MyKfTracks const& tracks,
+                                              MyKfCascTable const& cascades,
+                                              KFCascadesLinked const& cascadeLinks,
+                                              aod::HfCascLf2Prongs const& candidates)
   {
     runKfXic0CreatorWithKFParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
@@ -2252,10 +2252,10 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else if (origin == RecoDecay::OriginType::Prompt) {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
-        } else if (keepMcIntermediate){
+        } else if (keepMcIntermediate) {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
         }
-        
+
         if (debug == McMatchFlag::CascUnmatched || debug == McMatchFlag::V0Unmatched) {
           LOGF(info, "WARNING: Omegac0ToXiPi decays in the expected final state but the condition on the intermediate states are not fulfilled");
         }
@@ -2475,7 +2475,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else if (origin == RecoDecay::OriginType::Prompt) {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-          } else if (keepMcIntermediate){
+          } else if (keepMcIntermediate) {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
