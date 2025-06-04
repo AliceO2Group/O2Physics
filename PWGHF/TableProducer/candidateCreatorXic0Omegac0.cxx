@@ -72,6 +72,7 @@ using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
 using namespace o2::aod::hf_track_index;
 using namespace o2::hf_centrality;
+using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
