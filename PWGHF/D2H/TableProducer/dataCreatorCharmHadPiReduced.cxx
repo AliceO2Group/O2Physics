@@ -341,7 +341,7 @@ struct HfDataCreatorCharmHadPiReduced {
       return false;
     }
     // minimum pT and eta selection
-    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.etaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion)) {
+    if (trackParCovPion.getPt() < trackPionConfigurations.ptPionMin || std::abs(trackParCovPion.getEta()) > trackPionConfigurations.etaPionMax || !isSelectedTrackDCA(trackParCovPion, dcaPion, trackPionConfigurations.binsPtPion, trackPionConfigurations.cutsTrackPionDCA)) {
       return false;
     }
     // reject pions that are charm-hadron daughters
@@ -351,27 +351,6 @@ struct HfDataCreatorCharmHadPiReduced {
       }
     }
 
-    return true;
-  }
-
-  /// Single-track cuts for pions on dcaXY
-  /// \param trackPar is the track parametrisation
-  /// \param dca is the 2-D array with track DCAs
-  /// \return true if track passes all cuts
-  template <typename T1, typename T2>
-  bool isSelectedTrackDCA(const T1& trackPar, const T2& dca)
-  {
-    auto pTBinTrack = findBin(trackPionConfigurations.binsPtPion, trackPar.getPt());
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dca[0]) < trackPionConfigurations.cutsTrackPionDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dca[0]) > trackPionConfigurations.cutsTrackPionDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
     return true;
   }
 

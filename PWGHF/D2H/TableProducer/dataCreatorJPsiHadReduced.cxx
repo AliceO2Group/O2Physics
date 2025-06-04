@@ -309,27 +309,6 @@ struct HfDataCreatorJPsiHadReduced {
     return true;
   }
 
-  /// Single-track cuts for kaons on dcaXY
-  /// \param trackPar is the track parametrisation
-  /// \param dca is the 2-D array with track DCAs
-  /// \return true if track passes all cuts
-  template <typename T1, typename T2>
-  bool isSelectedTrackDCA(const T1& trackPar, const T2& dca)
-  {
-    auto pTBinTrack = findBin(binsPtTrack, trackPar.getPt());
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dca[0]) < cutsTrackDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dca[0]) > cutsTrackDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
-    return true;
-  }
-
   /// Kaon selection (J/Psi K+ <-- B+)
   /// \param track is the considered track
   /// \param trackParCov is the track parametrisation
