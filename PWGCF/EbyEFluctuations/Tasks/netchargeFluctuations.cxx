@@ -1,18 +1,20 @@
-/**
- * \file netchargeFluctuations.cxx
- * \brief Study the net charge fluctuations by observable.
- * \author Nida Malik <nida.malik@cern.ch>
- */
-
-// Copyright CERN 2025
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
 
+/// \file netchargeFluctuations.cxx
+/// \brief Calculate nu_dyn fluctuations 
+///        For charged particles 
+///        For RUN-3
+///
+/// \author Nida Malik <nida.malik@cern.ch>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
@@ -45,73 +47,70 @@ using namespace o2::framework::expressions;
 using namespace std;
 using namespace o2::constants::physics;
 
-namespace o2::aod
-{
-namespace netCharge
-{
+namespace o2{
+namespace aod{
+namespace net_charge{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
-DECLARE_SOA_COLUMN(PosSqCharge, possqCharge, float);
-DECLARE_SOA_COLUMN(NegSqCharge, negsqCharge, float);
-DECLARE_SOA_COLUMN(TermpCharge, termpCharge, float);
-DECLARE_SOA_COLUMN(TermnCharge, termnCharge, float);
-DECLARE_SOA_COLUMN(PosNegCharge, posnegCharge, float);
+DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
+DECLARE_SOA_COLUMN(NegSqCharge, negSqCharge, float);
+DECLARE_SOA_COLUMN(TermPCharge, termPCharge, float);
+DECLARE_SOA_COLUMN(TermNCharge, termNCharge, float);
+DECLARE_SOA_COLUMN(PosNegCharge, posNegCharge, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-} // namespace netCharge
+} // namespace net_charge
 
-namespace netChargeRec
-{
+namespace net_charge_rec{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
-DECLARE_SOA_COLUMN(PosSqCharge, possqCharge, float);
-DECLARE_SOA_COLUMN(NegSqCharge, negsqCharge, float);
-DECLARE_SOA_COLUMN(TermpCharge, termpCharge, float);
-DECLARE_SOA_COLUMN(TermnCharge, termnCharge, float);
-DECLARE_SOA_COLUMN(PosNegCharge, posnegCharge, float);
+DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
+DECLARE_SOA_COLUMN(NegSqCharge, negSqCharge, float);
+DECLARE_SOA_COLUMN(TermPCharge, termPCharge, float);
+DECLARE_SOA_COLUMN(TermNCharge, termNCharge, float);
+DECLARE_SOA_COLUMN(PosNegCharge, posNegCharge, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-} // namespace netChargeRec
+} // namespace net_charge_rec
 
-namespace netChargeGen
-{
+namespace net_charge_gen{
 DECLARE_SOA_COLUMN(PosCharge, posCharge, float);
 DECLARE_SOA_COLUMN(NegCharge, negCharge, float);
-DECLARE_SOA_COLUMN(PosSqCharge, possqCharge, float);
-DECLARE_SOA_COLUMN(NegSqCharge, negsqCharge, float);
-DECLARE_SOA_COLUMN(TermpCharge, termpCharge, float);
-DECLARE_SOA_COLUMN(TermnCharge, termnCharge, float);
-DECLARE_SOA_COLUMN(PosNegCharge, posnegCharge, float);
+DECLARE_SOA_COLUMN(PosSqCharge, posSqCharge, float);
+DECLARE_SOA_COLUMN(NegSqCharge, negSqCharge, float);
+DECLARE_SOA_COLUMN(TermPCharge, termPCharge, float);
+DECLARE_SOA_COLUMN(TermNCharge, termNCharge, float);
+DECLARE_SOA_COLUMN(PosNegCharge, posNegCharge, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-} // namespace netChargeGen
+} // namespace net_charge_gen
 
 DECLARE_SOA_TABLE(NetCharge, "AOD", "NETChargefluct",
-                  netCharge::PosCharge,
-                  netCharge::NegCharge,
-                  netCharge::PosSqCharge,
-                  netCharge::NegSqCharge,
-                  netCharge::TermpCharge,
-                  netCharge::TermnCharge,
-                  netCharge::PosNegCharge,
-                  netCharge::Centrality);
+                  net_charge::PosCharge,
+                  net_charge::NegCharge,
+                  net_charge::PosSqCharge,
+                  net_charge::NegSqCharge,
+                  net_charge::TermPCharge,
+                  net_charge::TermNCharge,
+                  net_charge::PosNegCharge,
+                  net_charge::Centrality);
 
 DECLARE_SOA_TABLE(NetChargeRec, "AOD", "NETfluctRec",
-                  netChargeRec::PosCharge,
-                  netChargeRec::NegCharge,
-                  netChargeRec::PosSqCharge,
-                  netChargeRec::NegSqCharge,
-                  netChargeRec::TermpCharge,
-                  netChargeRec::TermnCharge,
-                  netChargeRec::PosNegCharge,
-                  netChargeRec::Centrality);
+                  net_charge_rec::PosCharge,
+                  net_charge_rec::NegCharge,
+                  net_charge_rec::PosSqCharge,
+                  net_charge_rec::NegSqCharge,
+                  net_charge_rec::TermPCharge,
+                  net_charge_rec::TermNCharge,
+                  net_charge_rec::PosNegCharge,
+                  net_charge_rec::Centrality);
 
 DECLARE_SOA_TABLE(NetChargeGen, "AOD", "NETfluctGen",
-                  netChargeGen::PosCharge,
-                  netChargeGen::NegCharge,
-                  netChargeGen::PosSqCharge,
-                  netChargeGen::NegSqCharge,
-                  netChargeGen::TermpCharge,
-                  netChargeGen::TermnCharge,
-                  netChargeGen::PosNegCharge,
-                  netChargeGen::Centrality);
+                  net_charge_gen::PosCharge,
+                  net_charge_gen::NegCharge,
+                  net_charge_gen::PosSqCharge,
+                  net_charge_gen::NegSqCharge,
+                  net_charge_gen::TermPCharge,
+                  net_charge_gen::TermNCharge,
+                  net_charge_gen::PosNegCharge,
+                  net_charge_gen::Centrality);
 
 using MyCollisionsRun2 = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::Mults>;
 using MyCollisionRun2 = MyCollisionsRun2::iterator;
@@ -128,8 +127,8 @@ using MyMCCollisionRun3 = MyMCCollisionsRun3::iterator;
 
 using MyMCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::StoredTracks, aod::TrackSelection, aod::McTrackLabels>;
 using MyMCTrack = MyMCTracks::iterator;
-
-} // namespace o2::aod
+} //aod
+} // namespace o2
 
 enum RunType {
   kRun3 = 0,
@@ -137,25 +136,23 @@ enum RunType {
 };
 
 struct NetchargeFluctuations {
-  Produces<aod::NetCharge> net_charge;
+  Produces<aod::NetCharge> netCharge;
   Produces<aod::NetChargeRec> netChargeRec;
-  Produces<aod::NetChargeGen> net_charge_gen;
+  Produces<aod::NetChargeGen> netChargeGen;
   Service<o2::framework::O2DatabasePDG> pdgService;
 
   HistogramRegistry histogramRegistry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables
-  Configurable<float> vertexZcut{"vertexZ", 10.f, "Vertex Z"};
-  Configurable<float> cEtacut{"cEta", 0.8, "Eta cut"};
-  Configurable<float> cPtmincut{"cPtmincut", 0.2, "Pt min cut"};
-  Configurable<float> cPtmaxcut{"cPtmaxcut", 5.0, "Pt max cut"};
-  Configurable<float> cDcaXYcut{"cDcaXYcut", 0.12, "DCA XY cut"};
-  Configurable<float> cDcaZcut{"cDcaZcut", 0.3, "DCA Z cut"};
-  Configurable<float> cCentmincut{"cCentmincut", 0.0, "Min cent cut"};
-  Configurable<float> cCentmaxcut{"cCentmaxcut", 90.0, "Max cent cut"};
-  Configurable<int> cTPCcrosscut{"cTPCcrosscut", 70, "TPC crossrows cut"};
-  Configurable<int> cITSchicut{"cITSchi2clustercut", 70, "ITS chi2 cluster cut"};
-  Configurable<int> cTPCchicut{"cTPCchi2clustercut", 70, "TPC chi2 cluster cut"};
+  Configurable<float> vertexZcut{"vertexZcut", 10.f, "Vertex Z"};
+  Configurable<float> etaCut{"etaCut", 0.8, "Eta cut"};
+  Configurable<float> ptMinCut{"ptMinCut", 0.2, "Pt min cut"};
+  Configurable<float> ptMaxCut{"ptMaxCut", 5.0, "Pt max cut"};
+  Configurable<float> dcaXYCut{"dcaXYCut", 0.12, "DCA XY cut"};
+  Configurable<float> dcaZCut{"dcaZCut", 0.3, "DCA Z cut"};
+  Configurable<int> tpcCrossCut{"tpcCrossCut", 70, "TPC crossrows cut"};
+  Configurable<int> itsChiCut{"itsChiCut", 70, "ITS chi2 cluster cut"};
+  Configurable<int> tpcChiCut{"tpcChiCut", 70, "TPC chi2 cluster cut"};
 
   // Event selections
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};    // sel8
@@ -180,26 +177,26 @@ struct NetchargeFluctuations {
     const AxisSpec etaAxis = {20, -1., 1., "#eta"};
     const AxisSpec centAxis = {100, 0., 100., "centrality"};
     const AxisSpec multAxis = {200, 0., 10000., "FT0M Amplitude"};
-    const AxisSpec TPCChi2Axis = {140, 0., 7., "Chi2"};
-    const AxisSpec ITSChi2Axis = {80, 0., 40., "Chi2"};
-    const AxisSpec CrossedrowTPCAxis = {160, 0., 160., "TPC Crossed rows"};
+    const AxisSpec tpcChiAxis = {140, 0., 7., "Chi2"};
+    const AxisSpec itsChiAxis = {80, 0., 40., "Chi2"};
+    const AxisSpec crossedRowAxis = {160, 0., 160., "TPC Crossed rows"};
     const AxisSpec eventsAxis = {10, 0, 10, ""};
     const AxisSpec signAxis = {20, -10, 10, ""};
 
     histogramRegistry.add("hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("hDcaXY_before", "", kTH1F, {dcaAxis});
     histogramRegistry.add("hDcaZ_before", "", kTH1F, {dcazAxis});
-    histogramRegistry.add("hTPCchi2perCluster_before", "", kTH1D, {TPCChi2Axis});
-    histogramRegistry.add("hITSchi2perCluster_before", "", kTH1D, {ITSChi2Axis});
-    histogramRegistry.add("hTPCCrossedrows_before", "", kTH1D, {CrossedrowTPCAxis});
+    histogramRegistry.add("hTPCchi2perCluster_before", "", kTH1D, {tpcChiAxis});
+    histogramRegistry.add("hITSchi2perCluster_before", "", kTH1D, {itsChiAxis});
+    histogramRegistry.add("hTPCCrossedrows_before", "", kTH1D, {crossedRowAxis});
     histogramRegistry.add("hPtDcaXY_before", "", kTH2D, {ptAxis, dcaAxis});
     histogramRegistry.add("hPtDcaZ_before", "", kTH2D, {ptAxis, dcazAxis});
     histogramRegistry.add("hVtxZ_after", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("hDcaXY_after", "", kTH1F, {dcaAxis});
     histogramRegistry.add("hDcaZ_after", "", kTH1F, {dcazAxis});
-    histogramRegistry.add("hTPCchi2perCluster_after", "", kTH1D, {TPCChi2Axis});
-    histogramRegistry.add("hITSchi2perCluster_after", "", kTH1D, {ITSChi2Axis});
-    histogramRegistry.add("hTPCCrossedrows_after", "", kTH1D, {CrossedrowTPCAxis});
+    histogramRegistry.add("hTPCchi2perCluster_after", "", kTH1D, {tpcChiAxis});
+    histogramRegistry.add("hITSchi2perCluster_after", "", kTH1D, {itsChiAxis});
+    histogramRegistry.add("hTPCCrossedrows_after", "", kTH1D, {crossedRowAxis});
     histogramRegistry.add("hPtDcaXY_after", "", kTH2D, {ptAxis, dcaAxis});
     histogramRegistry.add("hPtDcaZ_after", "", kTH2D, {ptAxis, dcazAxis});
     histogramRegistry.add("hEta", "", kTH1F, {etaAxis});
@@ -210,16 +207,16 @@ struct NetchargeFluctuations {
     histogramRegistry.add("gen_hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("rec_hDcaXY_before", "", kTH1D, {dcaAxis});
     histogramRegistry.add("rec_hDcaZ_before", "", kTH1D, {dcazAxis});
-    histogramRegistry.add("rec_hTPCchi2perCluster_before", "TPC #Chi^{2}/Cluster", kTH1D, {TPCChi2Axis});
-    histogramRegistry.add("rec_hITSchi2perCluster_before", "ITS #Chi^{2}/Cluster", kTH1D, {ITSChi2Axis});
-    histogramRegistry.add("rec_hTPCCrossedrows_before", "Crossed TPC rows", kTH1D, {CrossedrowTPCAxis});
+    histogramRegistry.add("rec_hTPCchi2perCluster_before", "TPC #Chi^{2}/Cluster", kTH1D, {tpcChiAxis});
+    histogramRegistry.add("rec_hITSchi2perCluster_before", "ITS #Chi^{2}/Cluster", kTH1D, {itsChiAxis});
+    histogramRegistry.add("rec_hTPCCrossedrows_before", "Crossed TPC rows", kTH1D, {crossedRowAxis});
     histogramRegistry.add("rec_hVtxZ_after", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("gen_hVtxZ_after", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("rec_hDcaXY_after", "", kTH1D, {dcaAxis});
     histogramRegistry.add("rec_hDcaZ_after", "", kTH1D, {dcazAxis});
-    histogramRegistry.add("rec_hTPCchi2perCluster_after", "TPC #Chi^{2}/Cluster", kTH1D, {TPCChi2Axis});
-    histogramRegistry.add("rec_hITSchi2perCluster_after", "ITS #Chi^{2}/Cluster", kTH1D, {ITSChi2Axis});
-    histogramRegistry.add("rec_hTPCCrossedrows_after", "Crossed TPC rows", kTH1D, {CrossedrowTPCAxis});
+    histogramRegistry.add("rec_hTPCchi2perCluster_after", "TPC #Chi^{2}/Cluster", kTH1D, {tpcChiAxis});
+    histogramRegistry.add("rec_hITSchi2perCluster_after", "ITS #Chi^{2}/Cluster", kTH1D, {itsChiAxis});
+    histogramRegistry.add("rec_hTPCCrossedrows_after", "Crossed TPC rows", kTH1D, {crossedRowAxis});
     histogramRegistry.add("gen_hEta", "", kTH1F, {etaAxis});
     histogramRegistry.add("rec_hEta", "", kTH1F, {etaAxis});
     histogramRegistry.add("gen_hSign", "", kTH1F, {signAxis});
@@ -288,31 +285,31 @@ struct NetchargeFluctuations {
       return false;
     } // accept only global tracks
 
-    if (std::fabs(track.dcaXY()) > cDcaXYcut) {
+    if (std::fabs(track.dcaXY()) > dcaXYCut) {
       return false;
     }
 
-    if (std::fabs(track.dcaZ()) > cDcaZcut) {
+    if (std::fabs(track.dcaZ()) > dcaZCut) {
       return false;
     }
 
-    if (std::fabs(track.eta()) >= cEtacut) {
+    if (std::fabs(track.eta()) >= etaCut) {
       return false;
     }
 
-    if (track.pt() <= cPtmincut || track.pt() >= cPtmaxcut) {
+    if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < cTPCcrosscut) {
+    if (track.tpcNClsCrossedRows() < tpcCrossCut) {
       return false;
     }
 
-    if (track.itsChi2NCl() > cITSchicut) {
+    if (track.itsChi2NCl() > itsChiCut) {
       return false;
     }
 
-    if (track.tpcChi2NCl() > cTPCchicut) {
+    if (track.tpcChi2NCl() > tpcChiCut) {
       return false;
     }
 
@@ -369,7 +366,7 @@ struct NetchargeFluctuations {
       }
 
       posneg = fpos * fneg;
-      net_charge(fpos, fneg, fpos * fpos, fneg * fneg, termp, termn, posneg, cent);
+      netCharge(fpos, fneg, fpos * fpos, fneg * fneg, termp, termn, posneg, cent);
     } // tracks
 
     return;
@@ -425,8 +422,8 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("rec_hCentrality"), cent);
     histogramRegistry.fill(HIST("rec_hMultiplicity"), mult);
 
-    int fpos_rec = 0, fneg_rec = 0, posneg_rec = 0, termn_rec = 0, termp_rec = 0;
-    int fpos_gen = 0, fneg_gen = 0, posneg_gen = 0, termn_gen = 0, termp_gen = 0;
+    int posRec = 0, negRec = 0, posNegRec = 0, termNRec = 0, termPRec = 0;
+    int posGen = 0, negGen = 0, posNegGen = 0, termNGen = 0, termPGen = 0;
 
     const auto& mccolgen = coll.template mcCollision_as<aod::McCollisions>();
     if (std::abs(mccolgen.posZ()) > vertexZcut) {
@@ -439,13 +436,13 @@ struct NetchargeFluctuations {
     for (const auto& track : inputTracks) {
       if (!track.isGlobalTrack())
         continue;
-      if (std::fabs(track.dcaXY()) > cDcaXYcut)
+      if (std::fabs(track.dcaXY()) > dcaXYCut)
         continue;
-      if (std::fabs(track.dcaZ()) > cDcaZcut)
+      if (std::fabs(track.dcaZ()) > dcaZCut)
         continue;
-      if (std::fabs(track.eta()) > cEtacut)
+      if (std::fabs(track.eta()) > etaCut)
         continue;
-      if ((track.pt() <= cPtmincut) || (track.pt() >= cPtmaxcut))
+      if ((track.pt() <= ptMinCut) || (track.pt() >= ptMaxCut))
         continue;
       if (track.sign() == 0) {
         continue;
@@ -455,19 +452,19 @@ struct NetchargeFluctuations {
       histogramRegistry.fill(HIST("rec_hEta"), track.eta());
 
       if (track.sign() == 1) {
-        fpos_rec += 1;
-        termp_rec = fpos_rec * (fpos_rec - 1);
+        posRec += 1;
+        termPRec = posRec * (posRec - 1);
       }
 
       if (track.sign() == -1) {
-        fneg_rec += 1;
-        termn_rec = fneg_rec * (fneg_rec - 1);
+        negRec += 1;
+        termNRec = negRec * (negRec - 1);
       }
 
-      posneg_rec = fpos_rec * fneg_rec;
+      posNegRec = posRec * negRec;
 
-      netChargeRec(fpos_rec, fneg_rec, fpos_rec * fpos_rec, fneg_rec * fneg_rec,
-                     termp_rec, termn_rec, posneg_rec, cent);
+      netChargeRec(posRec, negRec, posRec * posRec, negRec * negRec,
+                     termPRec, termNRec, posNegRec, cent);
     } // loop over inputTracks (reco)
 
     for (const auto& mcpart : mcpartgen) {
@@ -489,28 +486,28 @@ struct NetchargeFluctuations {
      
      }
      
-      if (std::fabs(mcpart.eta()) > cEtacut)
+      if (std::fabs(mcpart.eta()) > etaCut)
         continue;
-      if ((mcpart.pt() <= cPtmincut) || (mcpart.pt() >= cPtmaxcut))
+      if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut))
         continue;
       histogramRegistry.fill(HIST("gen_hPt"), mcpart.pt());
       histogramRegistry.fill(HIST("gen_hEta"), mcpart.eta());
       histogramRegistry.fill(HIST("gen_hSign"), sign);
 
       if (sign == 1) {
-        fpos_gen += 1;
-        termp_gen = fpos_gen * (fpos_gen - 1);
+        posGen += 1;
+        termPGen = posGen * (posGen - 1);
       }
 
       if (sign == -1) {
-        fneg_gen += 1;
-        termn_gen = fneg_gen * (fneg_gen - 1);
+        negGen += 1;
+        termNGen = negGen * (negGen - 1);
       }
 
-      posneg_gen = fpos_gen * fneg_gen;
+      posNegGen = posGen * negGen;
 
-      net_charge_gen(fpos_gen, fneg_gen, fpos_gen * fpos_gen, fneg_gen * fneg_gen,
-                     termp_gen, termn_gen, posneg_gen, cent);
+      netChargeGen(posGen, negGen, posGen * posGen, negGen * negGen,
+                     termPGen, termNGen, posNegGen, cent);
 
     } // particle
   } // void
@@ -551,10 +548,10 @@ struct NetchargeFluctuations {
 }; // struct
 
 struct NetchargeAnalysis {
-  Configurable<int> cfgNSubsample{"cfgNSubsample", 20, "Number of subsamples"};
+  Configurable<int> cfSubSample{"cfSubSample", 20, "Number of subsamples"};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile>>> net;
-  std::vector<std::vector<std::shared_ptr<TProfile>>> Subsample;
+  std::vector<std::vector<std::shared_ptr<TProfile>>> subSample;
   TRandom3* fRndm = new TRandom3(0);
 
   void init(o2::framework::InitContext&)
@@ -570,17 +567,17 @@ struct NetchargeAnalysis {
     registry.add("neg_sq_vs_cent", "", {HistType::kTProfile, {centAxis}});
     registry.add("posneg_vs_cent", "", {HistType::kTProfile, {centAxis}});
 
-    Subsample.resize(cfgNSubsample);
+    subSample.resize(cfSubSample);
 
-    for (int i = 0; i < cfgNSubsample; ++i) {
-      Subsample[i].resize(7);
-      Subsample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+    for (int i = 0; i < cfSubSample; ++i) {
+      subSample[i].resize(7);
+      subSample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
     }
 
   } // void
@@ -589,30 +586,30 @@ struct NetchargeAnalysis {
   {
     registry.get<TProfile>(HIST("pos_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.posCharge());
     registry.get<TProfile>(HIST("neg_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.negCharge());
-    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.termpCharge());
-    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.termnCharge());
-    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.possqCharge());
-    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.negsqCharge());
-    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.posnegCharge());
+    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.termPCharge());
+    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.termNCharge());
+    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.posSqCharge());
+    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.negSqCharge());
+    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.posNegCharge());
 
-    int SampleIndex = static_cast<int>(cfgNSubsample * fRndm->Rndm());
-    Subsample[SampleIndex][0]->Fill(event_netcharge.centrality(), event_netcharge.posCharge());
-    Subsample[SampleIndex][1]->Fill(event_netcharge.centrality(), event_netcharge.negCharge());
-    Subsample[SampleIndex][2]->Fill(event_netcharge.centrality(), event_netcharge.termpCharge());
-    Subsample[SampleIndex][3]->Fill(event_netcharge.centrality(), event_netcharge.termnCharge());
-    Subsample[SampleIndex][4]->Fill(event_netcharge.centrality(), event_netcharge.possqCharge());
-    Subsample[SampleIndex][5]->Fill(event_netcharge.centrality(), event_netcharge.negsqCharge());
-    Subsample[SampleIndex][6]->Fill(event_netcharge.centrality(), event_netcharge.posnegCharge());
+    int sampleIndex = static_cast<int>(cfSubSample * fRndm->Rndm());
+    subSample[sampleIndex][0]->Fill(event_netcharge.centrality(), event_netcharge.posCharge());
+    subSample[sampleIndex][1]->Fill(event_netcharge.centrality(), event_netcharge.negCharge());
+    subSample[sampleIndex][2]->Fill(event_netcharge.centrality(), event_netcharge.termPCharge());
+    subSample[sampleIndex][3]->Fill(event_netcharge.centrality(), event_netcharge.termNCharge());
+    subSample[sampleIndex][4]->Fill(event_netcharge.centrality(), event_netcharge.posSqCharge());
+    subSample[sampleIndex][5]->Fill(event_netcharge.centrality(), event_netcharge.negSqCharge());
+    subSample[sampleIndex][6]->Fill(event_netcharge.centrality(), event_netcharge.posNegCharge());
   } // void
 
 }; // struct Netcharge_analysis
 
 struct NetchargeAnalysisRec {
-  Configurable<int> cfgNSubsample{"cfgNSubsample", 20, "Number of subsamples"};
+  Configurable<int> cfSubSample{"cfSubSample", 20, "Number of subsamples"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile>>> net;
-  std::vector<std::vector<std::shared_ptr<TProfile>>> Subsample;
+  std::vector<std::vector<std::shared_ptr<TProfile>>> subSample;
   TRandom3* fRndm = new TRandom3(0);
 
   void init(o2::framework::InitContext&)
@@ -628,19 +625,19 @@ struct NetchargeAnalysisRec {
     registry.add("neg_sq_vs_cent", "", {HistType::kTProfile, {centAxis}});
     registry.add("posneg_vs_cent", "", {HistType::kTProfile, {centAxis}});
 
-    Subsample.resize(cfgNSubsample);
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i].resize(7);
+    subSample.resize(cfSubSample);
+    for (int i = 0; i < cfSubSample; i++) {
+      subSample[i].resize(7);
     }
 
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+    for (int i = 0; i < cfSubSample; i++) {
+      subSample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
     }
   } // void
 
@@ -648,30 +645,30 @@ struct NetchargeAnalysisRec {
   {
     registry.get<TProfile>(HIST("pos_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.posCharge());
     registry.get<TProfile>(HIST("neg_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.negCharge());
-    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.termpCharge());
-    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.termnCharge());
-    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.possqCharge());
-    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.negsqCharge());
-    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.posnegCharge());
+    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.termPCharge());
+    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.termNCharge());
+    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.posSqCharge());
+    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.negSqCharge());
+    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(rec_netcharge.centrality(), rec_netcharge.posNegCharge());
 
-    float l_Random = fRndm->Rndm();
-    int SampleIndex = static_cast<int>(cfgNSubsample * l_Random);
-    Subsample[SampleIndex][0]->Fill(rec_netcharge.centrality(), rec_netcharge.posCharge());
-    Subsample[SampleIndex][1]->Fill(rec_netcharge.centrality(), rec_netcharge.negCharge());
-    Subsample[SampleIndex][2]->Fill(rec_netcharge.centrality(), rec_netcharge.termpCharge());
-    Subsample[SampleIndex][3]->Fill(rec_netcharge.centrality(), rec_netcharge.termnCharge());
-    Subsample[SampleIndex][4]->Fill(rec_netcharge.centrality(), rec_netcharge.possqCharge());
-    Subsample[SampleIndex][5]->Fill(rec_netcharge.centrality(), rec_netcharge.negsqCharge());
-    Subsample[SampleIndex][6]->Fill(rec_netcharge.centrality(), rec_netcharge.posnegCharge());
+    float randValue = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfSubSample * randValue);
+    subSample[sampleIndex][0]->Fill(rec_netcharge.centrality(), rec_netcharge.posCharge());
+    subSample[sampleIndex][1]->Fill(rec_netcharge.centrality(), rec_netcharge.negCharge());
+    subSample[sampleIndex][2]->Fill(rec_netcharge.centrality(), rec_netcharge.termPCharge());
+    subSample[sampleIndex][3]->Fill(rec_netcharge.centrality(), rec_netcharge.termNCharge());
+    subSample[sampleIndex][4]->Fill(rec_netcharge.centrality(), rec_netcharge.posSqCharge());
+    subSample[sampleIndex][5]->Fill(rec_netcharge.centrality(), rec_netcharge.negSqCharge());
+    subSample[sampleIndex][6]->Fill(rec_netcharge.centrality(), rec_netcharge.posNegCharge());
   } // void
 }; // struct rec
 
 struct NetchargeAnalysisGen {
-  Configurable<int> cfgNSubsample{"cfgNSubsample", 20, "Number of subsamples"};
+  Configurable<int> cfSubSample{"cfSubSample", 20, "Number of subsamples"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<std::vector<std::shared_ptr<TProfile>>> net;
-  std::vector<std::vector<std::shared_ptr<TProfile>>> Subsample;
+  std::vector<std::vector<std::shared_ptr<TProfile>>> subSample;
   TRandom3* fRndm = new TRandom3(0);
 
   void init(o2::framework::InitContext&)
@@ -687,19 +684,19 @@ struct NetchargeAnalysisGen {
     registry.add("neg_sq_vs_cent", "", {HistType::kTProfile, {centAxis}});
     registry.add("posneg_vs_cent", "", {HistType::kTProfile, {centAxis}});
 
-    Subsample.resize(cfgNSubsample);
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i].resize(7);
+    subSample.resize(cfSubSample);
+    for (int i = 0; i < cfSubSample; i++) {
+      subSample[i].resize(7);
     }
 
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
-      Subsample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("Subsample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+    for (int i = 0; i < cfSubSample; i++) {
+      subSample[i][0] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][1] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][2] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termp_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][3] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/termn_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][4] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/pos_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][5] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/neg_sq_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
+      subSample[i][6] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("subSample_%d/posneg_vs_cent", i), "", {HistType::kTProfile, {centAxis}}));
     }
   } // void
 
@@ -707,21 +704,21 @@ struct NetchargeAnalysisGen {
   {
     registry.get<TProfile>(HIST("pos_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.posCharge());
     registry.get<TProfile>(HIST("neg_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.negCharge());
-    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.termpCharge());
-    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.termnCharge());
-    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.possqCharge());
-    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.negsqCharge());
-    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.posnegCharge());
+    registry.get<TProfile>(HIST("termp_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.termPCharge());
+    registry.get<TProfile>(HIST("termn_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.termNCharge());
+    registry.get<TProfile>(HIST("pos_sq_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.posSqCharge());
+    registry.get<TProfile>(HIST("neg_sq_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.negSqCharge());
+    registry.get<TProfile>(HIST("posneg_vs_cent"))->Fill(gen_netcharge.centrality(), gen_netcharge.posNegCharge());
 
-    float l_Random = fRndm->Rndm();
-    int SampleIndex = static_cast<int>(cfgNSubsample * l_Random);
-    Subsample[SampleIndex][0]->Fill(gen_netcharge.centrality(), gen_netcharge.posCharge());
-    Subsample[SampleIndex][1]->Fill(gen_netcharge.centrality(), gen_netcharge.negCharge());
-    Subsample[SampleIndex][2]->Fill(gen_netcharge.centrality(), gen_netcharge.termpCharge());
-    Subsample[SampleIndex][3]->Fill(gen_netcharge.centrality(), gen_netcharge.termnCharge());
-    Subsample[SampleIndex][4]->Fill(gen_netcharge.centrality(), gen_netcharge.possqCharge());
-    Subsample[SampleIndex][5]->Fill(gen_netcharge.centrality(), gen_netcharge.negsqCharge());
-    Subsample[SampleIndex][6]->Fill(gen_netcharge.centrality(), gen_netcharge.posnegCharge());
+    float randValue = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfSubSample * randValue);
+    subSample[sampleIndex][0]->Fill(gen_netcharge.centrality(), gen_netcharge.posCharge());
+    subSample[sampleIndex][1]->Fill(gen_netcharge.centrality(), gen_netcharge.negCharge());
+    subSample[sampleIndex][2]->Fill(gen_netcharge.centrality(), gen_netcharge.termPCharge());
+    subSample[sampleIndex][3]->Fill(gen_netcharge.centrality(), gen_netcharge.termNCharge());
+    subSample[sampleIndex][4]->Fill(gen_netcharge.centrality(), gen_netcharge.posSqCharge());
+    subSample[sampleIndex][5]->Fill(gen_netcharge.centrality(), gen_netcharge.negSqCharge());
+    subSample[sampleIndex][6]->Fill(gen_netcharge.centrality(), gen_netcharge.posNegCharge());
   } // void
 }; // struct
 
