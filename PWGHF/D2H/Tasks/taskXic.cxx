@@ -48,16 +48,12 @@ struct HfTaskXic {
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz for track"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_p_k_pi::vecBinsPt}, "pT bin limits"};
 
-  HfHelper hfHelper;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  float etaMaxAcceptance = 0.8;
-  float ptMinAcceptance = 0.1;
+  HfHelper hfHelper;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
-
-   // THnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Xic"};
+   // THnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
@@ -70,6 +66,10 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
 
+   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::   isSelXicToPiKP >= selectionFlagXic);
+
+  float etaMaxAcceptance = 0.8;
+  float ptMinAcceptance = 0.1;
 
   HistogramRegistry registry{
     "registry", // histo not in pt bins
