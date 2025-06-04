@@ -79,10 +79,10 @@ struct HfDerivedDataCreatorLcToPKPi {
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
-  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc>>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
-  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfSelLc, aod::HfMlLcToPKPi>>;
-  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPid, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>>;
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
+  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc, aod::HfMlLcToPKPi>>;
+  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 

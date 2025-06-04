@@ -127,11 +127,11 @@ struct HfTaskBsReduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bs::isSelBsToDsPi >= selectionFlagBs);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
   void init(InitContext&)
   {
@@ -262,6 +262,8 @@ struct HfTaskBsReduced {
           labels[hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) #pi";
           labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi] = "B^{0} #rightarrow (D_{s} #rightarrow #Phi#pi #rightarrow KK#pi) #pi";
           labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToK0starKPiToKKPiPi] = "B^{0} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) #pi";
+          labels[hf_cand_bs::DecayTypeMc::BsToDsKToPhiPiKToKKPiK] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow #Phi#pi #rightarrow KK#pi) K";
+          labels[hf_cand_bs::DecayTypeMc::BsToDsKToK0starKKToKKPiK] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) K";
           labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_bs::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};

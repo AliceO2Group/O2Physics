@@ -12,6 +12,10 @@
 /// \file candidateSelectorXic0ToXiPiKf.cxx
 /// \brief Xic0 → Xi Pi selection task
 /// \author Ran Tu <ran.tu@cern.ch>, Fudan University
+/// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
+
+#include <string>
+#include <vector>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -19,6 +23,9 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectorPID.h"
+
+#include "PWGHF/Core/HfMlResponseXic0ToXiPiKf.h"
+#include "PWGHF/Core/SelectorCuts.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -39,6 +46,7 @@ enum PidInfoStored {
 /// Struct for applying Xic0 -> Xi pi selection cuts
 struct HfCandidateSelectorXic0ToXiPiKf {
   Produces<aod::HfSelToXiPiKf> hfSelToXiPi;
+  Produces<aod::HfMlToXiPiKf> hfMlToXiPi;
 
   // LF analysis selections
   Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
@@ -116,6 +124,25 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0ToXipiKf"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_Xic0ToXipiKf.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+
+  o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponse;
+  std::vector<float> outputMlXic0ToXiPiKf = {};
+  o2::ccdb::CcdbApi ccdbApi;
+
   TrackSelectorPr selectorProton;
   TrackSelectorPi selectorPion;
 
@@ -176,6 +203,18 @@ struct HfCandidateSelectorXic0ToXiPiKf {
     registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelDcaXYToPvPiFromCasc", "hSelDcaXYToPvPiFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   void process(aod::HfCandToXiPiKf const& candidates,
@@ -185,6 +224,8 @@ struct HfCandidateSelectorXic0ToXiPiKf {
 
     // looping over charm baryon candidates
     for (const auto& candidate : candidates) {
+
+      auto ptCand = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
@@ -501,6 +542,17 @@ struct HfCandidateSelectorXic0ToXiPiKf {
         }
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
+      }
+
+      // ML selections
+      if (applyMl) {
+        bool isSelectedMlXic0 = false;
+        std::vector<float> inputFeaturesXic0 = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackPiFromCasc, trackPiFromCharm);
+        isSelectedMlXic0 = hfMlResponse.isSelectedMl(inputFeaturesXic0, ptCand, outputMlXic0ToXiPiKf);
+        if (!isSelectedMlXic0) {
+          continue;
+        }
+        hfMlToXiPi(outputMlXic0ToXiPiKf);
       }
 
       hfSelToXiPi(statusPidCharmBaryon, statusPidCascade, statusPidLambda, statusInvMassCharmBaryon, statusInvMassCascade, statusInvMassLambda, resultSelections, infoTpcStored, infoTofStored,
