@@ -32,6 +32,61 @@ DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(Expr, expr, float, "Expr");
 // 4. example realistic values - corrected dE/dx
 DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealTPCSignalN, realTPCSignalN, float, "fRealTPCSignalN");
 DECLARE_SOA_COLUMN(RealTPCSignalNC, realTPCSignalNC, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax0R0, realQMax0R0, float, "fRealQMax0R0");
+DECLARE_SOA_COLUMN(RealQMax0R0C, realQMax0R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax1R0, realQMax1R0, float, "fRealQMax1R0");
+DECLARE_SOA_COLUMN(RealQMax1R0C, realQMax1R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax2R0, realQMax2R0, float, "fRealQMax2R0");
+DECLARE_SOA_COLUMN(RealQMax2R0C, realQMax2R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax3R0, realQMax3R0, float, "fRealQMax3R0");
+DECLARE_SOA_COLUMN(RealQMax3R0C, realQMax3R0C, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot0R0, realQTot0R0, float, "fRealQTot0R0");
+DECLARE_SOA_COLUMN(RealQTot0R0C, realQTot0R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot1R0, realQTot1R0, float, "fRealQTot1R0");
+DECLARE_SOA_COLUMN(RealQTot1R0C, realQTot1R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot2R0, realQTot2R0, float, "fRealQTot2R0");
+DECLARE_SOA_COLUMN(RealQTot2R0C, realQTot2R0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot3R0, realQTot3R0, float, "fRealQTot3R0");
+DECLARE_SOA_COLUMN(RealQTot3R0C, realQTot3R0C, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot0, realQMaxTot0, float, "fRealQMaxTot0");
+DECLARE_SOA_COLUMN(RealQMaxTot0C, realQMaxTot0C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot1, realQMaxTot1, float, "fRealQMaxTot1");
+DECLARE_SOA_COLUMN(RealQMaxTot1C, realQMaxTot1C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot2, realQMaxTot2, float, "fRealQMaxTot2");
+DECLARE_SOA_COLUMN(RealQMaxTot2C, realQMaxTot2C, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot3, realQMaxTot3, float, "fRealQMaxTot3");
+DECLARE_SOA_COLUMN(RealQMaxTot3C, realQMaxTot3C, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax0R0_mad, realQMax0R0_mad, float, "fRealQMax0R0_mad");
+DECLARE_SOA_COLUMN(RealQMax0R0C_mad, realQMax0R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax1R0_mad, realQMax1R0_mad, float, "fRealQMax1R0_mad");
+DECLARE_SOA_COLUMN(RealQMax1R0C_mad, realQMax1R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax2R0_mad, realQMax2R0_mad, float, "fRealQMax2R0_mad");
+DECLARE_SOA_COLUMN(RealQMax2R0C_mad, realQMax2R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMax3R0_mad, realQMax3R0_mad, float, "fRealQMax3R0_mad");
+DECLARE_SOA_COLUMN(RealQMax3R0C_mad, realQMax3R0C_mad, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot0R0_mad, realQTot0R0_mad, float, "fRealQTot0R0_mad");
+DECLARE_SOA_COLUMN(RealQTot0R0C_mad, realQTot0R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot1R0_mad, realQTot1R0_mad, float, "fRealQTot1R0_mad");
+DECLARE_SOA_COLUMN(RealQTot1R0C_mad, realQTot1R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot2R0_mad, realQTot2R0_mad, float, "fRealQTot2R0_mad");
+DECLARE_SOA_COLUMN(RealQTot2R0C_mad, realQTot2R0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQTot3R0_mad, realQTot3R0_mad, float, "fRealQTot3R0_mad");
+DECLARE_SOA_COLUMN(RealQTot3R0C_mad, realQTot3R0C_mad, float);
+
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot0_mad, realQMaxTot0_mad, float, "fRealQMaxTot0_mad");
+DECLARE_SOA_COLUMN(RealQMaxTot0C_mad, realQMaxTot0C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot1_mad, realQMaxTot1_mad, float, "fRealQMaxTot1_mad");
+DECLARE_SOA_COLUMN(RealQMaxTot1C_mad, realQMaxTot1C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot2_mad, realQMaxTot2_mad, float, "fRealQMaxTot2_mad");
+DECLARE_SOA_COLUMN(RealQMaxTot2C_mad, realQMaxTot2C_mad, float);
+DECLARE_SOA_CONFIGURABLE_EXPRESSION_COLUMN(RealQMaxTot3_mad, realQMaxTot3_mad, float, "fRealQMaxTot3_mad");
+DECLARE_SOA_COLUMN(RealQMaxTot3C_mad, realQMaxTot3C_mad, float);
+
 } // namespace extensions
 
 // tables with simple and arbitrary function dynamic columns
@@ -50,12 +105,12 @@ namespace intermediate {
 DECLARE_SOA_COLUMN(HRate, hRate, float);
 DECLARE_SOA_COLUMN(ClampedTPCMult, clampedTPCmult, float);
 DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
-DECLARE_SOA_COLUMN(Correction0, correction0, float);
+DECLARE_SOA_COLUMN(Correction1, correction1, float);
 }
 
 // intermediate table
 DECLARE_SOA_TABLE(TracksTemporaryExtra, "AOD", "TRKTEMPEX",
-                  intermediate::HRate, intermediate::ClampedTPCMult, intermediate::Occupancy, intermediate::Correction0,
+                  intermediate::HRate, intermediate::ClampedTPCMult, intermediate::Occupancy, intermediate::Correction1,
                   aod::track::TPCSignal, aod::track::Signed1Pt, aod::track::Tgl);
 using TracksQAEx = soa::Join<TracksQAVersion, TracksTemporaryExtra>;
 
@@ -63,8 +118,26 @@ using TracksQAEx = soa::Join<TracksQAVersion, TracksTemporaryExtra>;
 DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksQACorrectedE, TracksQAEx, "TRKQACORE", extensions::RealTPCSignalN);
 using MoreTracksFinal = soa::Join<TracksQAVersion, TracksQACorrectedECfgExtension>;
 
+DECLARE_SOA_CONFIGURABLE_EXTENDED_TABLE(TracksQACorrectedEFull, TracksQAEx, "TRKQACOREF",
+                                        extensions::RealTPCSignalN,
+                                        extensions::RealQMax0R0, extensions::RealQMax1R0, extensions::RealQMax2R0, extensions::RealQMax3R0,
+                                        extensions::RealQMax0R0_mad, extensions::RealQMax1R0_mad, extensions::RealQMax2R0_mad, extensions::RealQMax3R0_mad,
+                                        extensions::RealQTot0R0, extensions::RealQTot1R0, extensions::RealQTot2R0, extensions::RealQTot3R0,
+                                        extensions::RealQTot0R0_mad, extensions::RealQTot1R0_mad, extensions::RealQTot2R0_mad, extensions::RealQTot3R0_mad,
+                                        extensions::RealQMaxTot0, extensions::RealQMaxTot1, extensions::RealQMaxTot2, extensions::RealQMaxTot3,
+                                        extensions::RealQMaxTot0_mad, extensions::RealQMaxTot1_mad, extensions::RealQMaxTot2_mad, extensions::RealQMaxTot3_mad);
+using MoreTracksFinalFull = soa::Join<TracksQAVersion, TracksQACorrectedEFullCfgExtension>;
+
 // final table for direct calculation
 DECLARE_SOA_TABLE(TracksQACorrected, "AOD", "TRKQACOR", extensions::RealTPCSignalNC);
+DECLARE_SOA_TABLE(TracksQACorrectedFull, "AOD", "TRKQACORF",
+                  extensions::RealTPCSignalNC,
+                  extensions::RealQMax0R0C, extensions::RealQMax1R0C, extensions::RealQMax2R0C, extensions::RealQMax3R0C,
+                  extensions::RealQMax0R0C_mad, extensions::RealQMax1R0C_mad, extensions::RealQMax2R0C_mad, extensions::RealQMax3R0C_mad,
+                  extensions::RealQTot0R0C, extensions::RealQTot1R0C, extensions::RealQTot2R0C, extensions::RealQTot3R0C,
+                  extensions::RealQTot0R0C_mad, extensions::RealQTot1R0C_mad, extensions::RealQTot2R0C_mad, extensions::RealQTot3R0C_mad,
+                  extensions::RealQMaxTot0C, extensions::RealQMaxTot1C, extensions::RealQMaxTot2C, extensions::RealQMaxTot3C,
+                  extensions::RealQMaxTot0C_mad, extensions::RealQMaxTot1C_mad, extensions::RealQMaxTot2C_mad, extensions::RealQMaxTot3C_mad);
 
 using TracksD = soa::Join<TracksIU, ExtTracksD>;
 using TracksID = soa::Join<TracksIU, ExtTracksID>;
