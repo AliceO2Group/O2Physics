@@ -1,4 +1,4 @@
-/ Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -1916,7 +1916,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
   // Configuration
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
-  Configurable<bool> keepMCTrackIntermediate{"keepMCIntermediate", true, "Keep track in the intermediate steps"};
+  Configurable<bool> keepMcIntermediate{"keepMcIntermediate", true, "Keep track in the intermediate steps"};
   Configurable<bool> acceptTrackIntWithMaterial{"acceptTrackIntWithMaterial", false, " switch to accept candidates with final (i.e. p, K, pi) daughter tracks interacting with material"};
 
   using MyTracksWMc = soa::Join<TracksIU, McTrackLabels>;
@@ -2252,7 +2252,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, bHadMother.pt(), bHadMother.pdgCode());
         } else if (origin == RecoDecay::OriginType::Prompt) {
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
-        } else if (keepMCTrackIntermediate){
+        } else if (keepMcIntermediate){
           rowMCMatchRecOmegacToXiPi(flag, debug, origin, collisionMatched, -1.f, 0);
         }
         
@@ -2475,7 +2475,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, idxBhadMothers[0]);
           } else if (origin == RecoDecay::OriginType::Prompt) {
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
-          } else if (keepMCTrackIntermediate){
+          } else if (keepMcIntermediate){
             rowMCMatchGenXicToXiPi(flag, debugGenCharmBar, debugGenCasc, debugGenLambda, ptCharmBaryonGen, rapidityCharmBaryonGen, origin, -1);
           }
 
