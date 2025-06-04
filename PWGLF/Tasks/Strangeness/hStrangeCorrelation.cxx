@@ -581,6 +581,13 @@ struct HStrangeCorrelation {
         hEfficiencyV0[0] = hEfficiencyK0Short;
         hEfficiencyV0[1] = hEfficiencyLambda;
         hEfficiencyV0[2] = hEfficiencyAntiLambda;
+
+        float etaWeight = 1;
+        if (systCuts.doOnTheFlyFlattening) {
+          float preWeight = 1 - std::abs(deltaeta) / 1.6;
+          etaWeight = preWeight != 0 ? 1.0f / preWeight : 0.0f;
+        }
+
         static_for<0, 2>([&](auto i) {
           constexpr int Index = i.value;
           float efficiency = 1.0f;
@@ -702,6 +709,12 @@ struct HStrangeCorrelation {
         hEfficiencyCascade[1] = hEfficiencyXiPlus;
         hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
         hEfficiencyCascade[3] = hEfficiencyOmegaPlus;
+
+        float etaWeight = 1;
+        if (systCuts.doOnTheFlyFlattening) {
+          float preWeight = 1 - std::abs(deltaeta) / 1.6;
+          etaWeight = preWeight != 0 ? 1.0f / preWeight : 0.0f;
+        }
 
         static_for<0, 3>([&](auto i) {
           constexpr int Index = i.value;
