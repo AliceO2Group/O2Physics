@@ -379,8 +379,9 @@ struct NetchargeFluctuations {
   }
 
   template <RunType run, typename C, typename T, typename M, typename P>
-  void histosMcRecoGen(C const& coll, T const& inputTracks, [[maybe_unused]] M const& mcCollisions, P const& mcParticles)
+  void histosMcRecoGen(C const& coll, T const& inputTracks, M const& mcCollisions, P const& mcParticles)
   {
+    (void)mcCollisions;
     if (!coll.has_mcCollision()) {
       return;
     }
