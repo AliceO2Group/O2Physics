@@ -47,7 +47,7 @@ using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorL
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 using MatchedMCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
 
-using CandidatesV0MCDWithFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
+using CandidatesV0MCDWithFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
 
 using MCPV0Jets = aod::V0ChargedMCParticleLevelJets;
 using MCPV0JetsWithConstituents = soa::Join<MCPV0Jets, aod::V0ChargedMCParticleLevelJetConstituents>;
@@ -1221,7 +1221,7 @@ struct V0QA {
 
   using DaughterJTracks = soa::Join<aod::JetTracks, aod::JTrackPIs>;
   using DaughterTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
-  void processV0TrackQA(aod::JetCollision const& /*jcoll*/, soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags> const& v0s, DaughterJTracks const&, DaughterTracks const&)
+  void processV0TrackQA(aod::JetCollision const& /*jcoll*/, aod::CandidatesV0Data const& v0s, DaughterJTracks const&, DaughterTracks const&)
   {
     //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelectionBits)) {
     //     return;
