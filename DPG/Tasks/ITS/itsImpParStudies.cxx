@@ -496,7 +496,6 @@ struct ItsImpactParStudies {
       }
 
       /// Specific MC selections
-      int pdgIndex = -1;
       if constexpr (IS_MC) {
         if (keepOnlyPhysPrimary) {
           /// we want only physical primary particles
@@ -507,12 +506,10 @@ struct ItsImpactParStudies {
           if (keepOnlyPhysPrimary && particle.isPhysicalPrimary()) {
             continue;
           }
-          pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));
           histograms.fill(HIST("MC/ptMC"), particle.pt());
         } else {
           if (track.has_mcParticle()) {
             auto particle = track.mcParticle();
-            pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));
             histograms.fill(HIST("MC/ptMC"), particle.pt());
           }
         }
