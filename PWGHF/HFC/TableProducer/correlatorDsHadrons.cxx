@@ -275,11 +275,11 @@ struct HfCorrelatorDsHadrons {
       registry.add("hEtaMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
       registry.add("hPhiMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
       registry.add("hMultFT0AMcGen", "Ds,Hadron multiplicity FT0A - MC Gen", {HistType::kTH1F, {axisMultiplicity}});
-      registry.add("hCorrAllPrimaryParticles", "Ds-ch. part. correlations MC Gen", {HistType::kTH3F, {{axisDetlaPhi}, {axisPtD}, {axisPtHadron}}});
-      registry.add("hCorrAllPrimaryHadrons", "Ds-h correlations MC Gen", {HistType::kTH3F, {{axisDetlaPhi}, {axisPtD}, {axisPtHadron}}});
-      registry.add("hCorrAllPrimaryPions", "Ds-pion correlations MC Gen", {HistType::kTH3F, {{axisDetlaPhi}, {axisPtD}, {axisPtHadron}}});
-      registry.add("hCorrAllPrimaryKaons", "Ds-kaon correlations MC Gen", {HistType::kTH3F, {{axisDetlaPhi}, {axisPtD}, {axisPtHadron}}});
-      registry.add("hCorrAllPrimaryProtons", "Ds-proton correlations MC Gen", {HistType::kTH3F, {{axisDetlaPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hCorrAllPrimaryParticles", "Ds-ch. part. correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hCorrAllPrimaryHadrons", "Ds-h correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hCorrAllPrimaryPions", "Ds-pion correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hCorrAllPrimaryKaons", "Ds-kaon correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      registry.add("hCorrAllPrimaryProtons", "Ds-proton correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
     }
   }
 
@@ -686,13 +686,13 @@ struct HfCorrelatorDsHadrons {
               }
 
               registry.fill(HIST("hCorrAllPrimaryParticles"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+              if (std::abs(particleAssoc.pdgCode()) == kPiPlus) {
                 registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
                 registry.fill(HIST("hCorrAllPrimaryPions"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+              } else if (std::abs(particleAssoc.pdgCode()) == kKPlus) {
                 registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
                 registry.fill(HIST("hCorrAllPrimaryKaons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
-              } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+              } else if (std::abs(particleAssoc.pdgCode()) == kProton) {
                 registry.fill(HIST("hCorrAllPrimaryHadrons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
                 registry.fill(HIST("hCorrAllPrimaryProtons"), getDeltaPhi(particleAssoc.phi(), particle.phi()), particle.pt(), particleAssoc.pt());
               }

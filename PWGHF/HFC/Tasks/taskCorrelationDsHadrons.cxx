@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -138,6 +139,11 @@ struct HfTaskCorrelationDsHadrons {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  std::vector<double> vBinsPtEfficiencyD;
+  std::vector<double> vBinsPtEfficiencyHad;
+  std::vector<double> vEfficiencyD;
+  std::vector<double> vEfficiencyHad;
+
   void init(InitContext&)
   {
     AxisSpec axisMassD = {binsMassD, "inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
@@ -151,6 +157,11 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
+
+    vBinsPtEfficiencyD = (std::vector<double>)binsPtEfficiencyD;
+    vBinsPtEfficiencyHad = (std::vector<double>)binsPtEfficiencyHad;
+    vEfficiencyD = (std::vector<double>)efficiencyD;
+    vEfficiencyHad = (std::vector<double>)efficiencyHad;
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "Ds BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
@@ -273,6 +284,37 @@ struct HfTaskCorrelationDsHadrons {
     return (ptBinD != -1 && bdtScorePrompt >= mlOutputPromptMin->at(ptBinD) && bdtScorePrompt <= mlOutputPromptMax->at(ptBinD) && bdtScoreBkg <= mlOutputBkg->at(ptBinD));
   }
 
+  template <typename T1, typename efficiencyContainer, typename histogram, typename T2>
+  double getEfficiencyWeight(const float& ptD,
+                             const bool& applyEfficiency,
+                             const bool& loadAccXEffFromCCDB,
+                             const T1* binsPtEfficiencyD,
+                             const efficiencyContainer efficiencyD,
+                             histogram* mEfficiencyD,
+                             const std::optional<float> ptAssoc = std::nullopt,
+                             const T2* binsPtEfficiencyAssoc = nullptr,
+                             const efficiencyContainer* efficiencyAssoc = nullptr,
+                             histogram* mEfficiencyAssoc = nullptr)
+  {
+    if (!applyEfficiency) {
+      return 1.;
+    }
+
+    if (loadAccXEffFromCCDB) {
+      double weight = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
+      if (ptAssoc && mEfficiencyAssoc) {
+        weight /= mEfficiencyAssoc->GetBinContent(mEfficiencyAssoc->FindBin(*ptAssoc));
+      }
+      return weight;
+    } else {
+      double weight = 1. / efficiencyD.at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+      if (ptAssoc && binsPtEfficiencyAssoc && efficiencyAssoc) {
+        weight /= efficiencyAssoc->at(o2::analysis::findBin(binsPtEfficiencyAssoc, *ptAssoc));
+      }
+      return weight;
+    }
+  }
+
   void processData(DsHadronPairWithMl const& pairEntries,
                    aod::DsCandRecoInfo const& candidates)
   {
@@ -287,13 +329,8 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
-        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
-        }
-      }
+      double efficiencyWeightD = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), std::nullopt, static_cast<const std::vector<double>*>(nullptr), static_cast<const std::vector<double>*>(nullptr), static_cast<TH1*>(nullptr));
+
       registry.fill(HIST("hMassDsVsPt"), massD, ptD, efficiencyWeightD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
       registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
@@ -321,13 +358,8 @@ struct HfTaskCorrelationDsHadrons {
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
-      }
+
+      double efficiencyWeight = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -367,13 +399,8 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
-        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
-        }
-      }
+      double efficiencyWeightD = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), std::nullopt, static_cast<const std::vector<double>*>(nullptr), static_cast<const std::vector<double>*>(nullptr), static_cast<TH1*>(nullptr));
+
       if (isDsPrompt) {
         registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
         registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
@@ -410,13 +437,9 @@ struct HfTaskCorrelationDsHadrons {
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
-      }
+
+      double efficiencyWeight = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
@@ -505,13 +528,8 @@ struct HfTaskCorrelationDsHadrons {
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
-      }
+
+      double efficiencyWeight = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -547,13 +565,7 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
-      }
+      double efficiencyWeight = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -605,13 +617,9 @@ struct HfTaskCorrelationDsHadrons {
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
-      double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
-      }
+
+      double efficiencyWeight = getEfficiencyWeight(ptD, applyEfficiency, loadAccXEffFromCCDB, &vBinsPtEfficiencyD, vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
