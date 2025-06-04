@@ -379,7 +379,7 @@ struct NetchargeFluctuations {
   }
 
   template <RunType run, typename C, typename T, typename M, typename P>
-  void histogramRegistryMcRecoGen(C const& coll, T const& inputTracks, M const& mcCollisions, P const& mcParticles)
+  void histosMcRecoGen(C const& coll, T const& inputTracks, [[maybe_unused]] M const& mcCollisions, P const& mcParticles)
   {
     if (!coll.has_mcCollision()) {
       return;
@@ -537,7 +537,7 @@ struct NetchargeFluctuations {
   void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    histogramRegistryMcRecoGen<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
+    histosMcRecoGen<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
   }
 
   PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
@@ -545,7 +545,7 @@ struct NetchargeFluctuations {
   void processMcRun2(aod::MyMCCollisionRun2 const& coll, aod::MyMCTracks const& inputTracks,
                      aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    histogramRegistryMcRecoGen<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
+    histosMcRecoGen<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
   }
 
   PROCESS_SWITCH(NetchargeFluctuations, processMcRun2, "Process reconstructed", false);
