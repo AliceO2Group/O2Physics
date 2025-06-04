@@ -28,6 +28,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace hf_mc_gen
@@ -85,6 +86,7 @@ template <typename T, typename U, typename V>
 void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
+  constexpr std::size_t NDaughtersResonant{2u};
 
   // Match generated particles.
   for (const auto& particle : mcParticlesPerMcColl) {
@@ -94,12 +96,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     int8_t sign = 0;
     std::vector<int> arrDaughIndex;
     std::vector<int> idxBhadMothers{};
-    std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};      // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};      // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {102134, kPiPlus};   // Λc± → Λ(1520) π±
-    std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus}; // Ds± → Phi π± and D± → Phi π±
-    std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+    std::array<int, NDaughtersResonant> arrPDGDaugh;
+    std::array<int, NDaughtersResonant> arrPDGResonant1 = {kProton, Pdg::kK0Star892};      // Λc± → p± K*
+    std::array<int, NDaughtersResonant> arrPDGResonant2 = {2224, kKPlus};                  // Λc± → Δ(1232)±± K∓
+    std::array<int, NDaughtersResonant> arrPDGResonant3 = {102134, kPiPlus};               // Λc± → Λ(1520) π±
+    std::array<int, NDaughtersResonant> arrPDGResonantDPhiPi = {Pdg::kPhi, kPiPlus};       // Ds± → Phi π± and D± → Phi π±
+    std::array<int, NDaughtersResonant> arrPDGResonantDKstarK = {Pdg::kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
       rowMcMatchGen(flag, origin, channel, -1);
@@ -109,7 +111,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // D± → π± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
       }
     }
 
@@ -119,24 +121,24 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
         // TODO: move to different and explicit flags
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK;
       } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
         // TODO: move to different and explicit flags
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::DsToKKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK;
         isDplus = true;
       }
       if (flag != 0) {
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-        if (arrDaughIndex.size() == 2) {
+        if (arrDaughIndex.size() == NDaughtersResonant) {
           for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
             auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
           }
           if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-            channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi;
           } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-            channel = isDplus ? o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToK0starK : o2::aod::hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK;
+            channel = isDplus ? o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToKstar0K : o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K;
           }
         }
       }
@@ -145,18 +147,18 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // D*± → D0(bar) π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DstarToPiKPiBkg);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::DstarToPiKPi;
       }
     }
 
     // Λc± → p± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
 
         // Flagging the different Λc± → p± K∓ π± decay channels
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-        if (arrDaughIndex.size() == 2) {
+        if (arrDaughIndex.size() == NDaughtersResonant) {
           for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
             auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
             arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
@@ -175,7 +177,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     // Ξc± → p± K∓ π±
     if (flag == 0) {
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi);
+        flag = sign * o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi;
       }
     }
 
