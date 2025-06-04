@@ -52,7 +52,7 @@ struct HfTaskXic {
   HfHelper hfHelper;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-   // THnSparse for ML outputScores and Vars
+  // THnSparse for ML outputScores and Vars
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {36, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
@@ -65,7 +65,7 @@ struct HfTaskXic {
   ConfigurableAxis thnConfigAxisYMC{"thnConfigAxisYMC", {100, -2., 2.}, ""};
   //
 
-   Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::   isSelXicToPiKP >= selectionFlagXic);
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic);
 
   float etaMaxAcceptance = 0.8;
   float ptMinAcceptance = 0.1;
