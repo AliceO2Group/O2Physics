@@ -27,6 +27,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -172,6 +173,8 @@ struct HfTaskPidStudies {
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
   Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
   Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
+  Configurable<float> interactionRateMin{"interactionRateMin", -1, "Minimum interaction rate (kHz)"};
+  Configurable<float> interactionRateMax{"interactionRateMax", 1.e20, "Maximum interaction rate (kHz)"};
   Configurable<float> radiusMax{"radiusMax", 2.3, "Maximum decay radius (cm)"};
   Configurable<float> cosPaMin{"cosPaMin", 0.98, "Minimum cosine of pointing angle"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 0.2, "Maximum DCA among the V0 daughters (cm)"};
@@ -181,6 +184,7 @@ struct HfTaskPidStudies {
   Configurable<float> qtArmenterosMaxForLambda{"qtArmenterosMaxForLambda", 0.12, "Minimum Armenteros' qt for (anti)Lambda"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<std::string> ctpFetcherSource{"ctpFetcherSource", "T0VTX", "Source for CTP rate fetching, e.g. T0VTX, T0CE, T0SC, ZNC (hadronic)"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   using PidTracks = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -191,6 +195,7 @@ struct HfTaskPidStudies {
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
 
+  ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
   HfEventSelectionMc hfEvSelMc;
 
@@ -328,6 +333,12 @@ struct HfTaskPidStudies {
   template <typename Coll>
   bool isCollSelected(const Coll& coll)
   {
+    auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
+    auto interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), ctpFetcherSource.value) * 1.e-3; // convert to kHz
+    if (interactionRate < interactionRateMin || interactionRate > interactionRateMax) {
+      return false;
+    }
+
     float cent{-1.f};
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, registry);
     /// monitor the satisfied event selections
