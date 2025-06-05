@@ -663,7 +663,7 @@ struct PhotonChargedTriggerCorrelation {
 
     const AxisSpec axisZPv{nBinsZPv, -10, 10, "#it{z}_{pv}"};
     const AxisSpec axisZPvSmol{nBinsZPvSmol, -7, 7, "#it{z}_{pv}"};
-    const AxisSpec axisMult{nBinsMult, 0, static_cast<double>(nBinsMult), "multiplicity"};
+    const AxisSpec axisMult{nBinsMult + 1, -0.5, nBinsMult + 0.5, "multiplicity"};
     const AxisSpec axisMultSmol{nBinsMultSmol + 1, -0.5, nBinsMultSmol + 0.5, "multiplicity"};
     const AxisSpec axisOccupancy{nBinsOccupancy + 1, -0.5, nBinsOccupancy + 0.5, "occupancy"};
 
@@ -684,13 +684,11 @@ struct PhotonChargedTriggerCorrelation {
     histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(2, "#it{N}_{ev}");
     histos.get<TH1>(HIST("reco/info/h1_nEvents"))->GetXaxis()->SetBinLabel(3, "#it{N}_{ev}^{trig}");
 
-    histos.add("reco/info/h1_zPv", "h1_zPv", kTH1F, {axisZPv}, true);
-    histos.add("reco/info/h1_mult", "h1_mult", kTH1F, {axisMult}, true);
+    histos.add("reco/info/h2_zPvMult", "h2_zPvMult", kTHnSparseF, {axisZPv, axisMult}, true);
     histos.add("reco/info/h1_occupancy", "h1_occupancy", kTH1F, {axisOccupancy}, true);
 
     // reco (correlation) analysis
-    histos.add("reco/info/h1_zPv_trigEv", "h1_zPv_trigEv", kTH1F, {axisZPv}, true);
-    histos.add("reco/info/h1_mult_trigEv", "h1_mult_trigEv", kTH1F, {axisMult}, true);
+    histos.add("reco/info/h2_zPvMult_trigEv", "h2_zPvMult_trigEv", kTHnSparseF, {axisZPv, axisMult}, true);
     histos.add("reco/info/h1_occupancy_trigEv", "h1_occupancy_trigEv", kTH1F, {axisOccupancy}, true);
     histos.add("reco/corr/h3_ptPhiEta_trig", "h3_ptPhiEta_trig", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
 
@@ -730,6 +728,7 @@ struct PhotonChargedTriggerCorrelation {
     histos.add("reco/corr/h6_mix_pi0PCMSide", "h6_mix_pi0PCMSide",
                kTHnSparseF, {axisDPhi, axisDEta, axisPtTrig, axisPtAssoc, axisZPvBinning, axisMultBinning}, true);
     // event mixing for photon pairs
+    histos.add("reco/plain/h2_zPvMult_pi0PCMMix", "h2_zPvMult_pi0PCMMix", kTHnSparseF, {axisZPv, axisMult}, true);
     histos.add("reco/plain/h3_ptPhiEta_pi0PCMMix", "h3_ptPhiEta_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisPhi, axisEta}, true);
     histos.add("reco/plain/h4_ptMggZPvMult_pi0PCMMix", "h4_ptMggZPvMult_pi0PCMMix", kTHnSparseF, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
 
@@ -1033,8 +1032,7 @@ struct PhotonChargedTriggerCorrelation {
     histos.fill(HIST("reco/info/h1_nEvents"), 0.5);
 
     // QA
-    histos.fill(HIST("reco/info/h1_zPv"), collision.posZ());
-    histos.fill(HIST("reco/info/h1_mult"), collision.multNTracksGlobal());
+    histos.fill(HIST("reco/info/h2_zPvMult"), collision.posZ(), collision.multNTracksGlobal());
     histos.fill(HIST("reco/info/h1_occupancy"), collision.trackOccupancyInTimeRange());
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processInfo, "process general info on collisions and tracks for analysis and qa", false);
@@ -1077,8 +1075,7 @@ struct PhotonChargedTriggerCorrelation {
 
       // trigger event info
       if (collision.trigEv()) {
-        histos.fill(HIST("reco/info/h1_zPv_trigEv"), collision.posZ());
-        histos.fill(HIST("reco/info/h1_mult_trigEv"), collision.multNTracksGlobal());
+        histos.fill(HIST("reco/info/h2_zPvMult_trigEv"), collision.posZ(), collision.multNTracksGlobal());
         histos.fill(HIST("reco/info/h1_occupancy_trigEv"), collision.trackOccupancyInTimeRange());
       }
     }
@@ -1298,6 +1295,9 @@ struct PhotonChargedTriggerCorrelation {
         continue;
       if (!collision2.selEv())
         continue;
+
+      // event info
+      histos.fill(HIST("reco/plain/h2_zPvMult_pi0PCMMix"), collision1.posZ(), collision1.multNTracksGlobal());
 
       // mixing loop
       for (auto const& [photonPCM1, photonPCM2] : soa::combinations(soa::CombinationsFullIndexPolicy(photonPCMs1, photonPCMs2))) {
@@ -1560,7 +1560,7 @@ struct PhotonChargedTriggerCorrelation {
 
     // photon mc checks
 
-    auto isConversionPhoton = [&](auto const& posTrack, auto const& negTrack) {
+    auto const isConversionPhoton = [&](auto const& posTrack, auto const& negTrack) {
       // check same mother
       auto const& posMothers = posTrack.mcParticle().template mothers_as<aod::JetParticles>();
       auto const& negMothers = negTrack.mcParticle().template mothers_as<aod::JetParticles>();
@@ -1574,7 +1574,7 @@ struct PhotonChargedTriggerCorrelation {
 
       return true;
     };
-    auto isGGFromPi0 = [&](auto const& posTrack1, auto const& negTrack1, auto const& posTrack2, auto const& negTrack2) {
+    auto const isGGFromPi0 = [&](auto const& posTrack1, auto const& negTrack1, auto const& posTrack2, auto const& negTrack2) {
       if (!isConversionPhoton(posTrack1, negTrack1) || !isConversionPhoton(posTrack2, negTrack2))
         return false;
       // check same mother
