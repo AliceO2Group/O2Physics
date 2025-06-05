@@ -9,13 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file zdcTaskIntercalib.cxx
+/// \file zdcTaskInterCalib.cxx
 /// \brief Task for ZDC tower inter-calibration
 /// \author chiara.oppedisano@cern.ch
-
-// o2-linter: disable=name/workflow-file
-// o2-linter: disable=name/file-cpp
-// o2-linter: disable=doc/file 
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -39,7 +35,7 @@ using namespace o2::aod::evsel;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
-struct ZDCCalibTower {
+struct ZdcTaskInterCalib {
 
   Produces<aod::ZDCInterCalib> zTab;
 
@@ -254,5 +250,5 @@ struct ZDCCalibTower {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ZDCCalibTower>(cfgc)};
+    adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
 }
