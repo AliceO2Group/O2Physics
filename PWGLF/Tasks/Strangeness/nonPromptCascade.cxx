@@ -195,7 +195,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
-  Configurable<std::string> cfgHMOmegaTrigger{"cfgHMOmegaTrigger", "HighMultOmega", "OTS high multiplicity Omega trigger"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -230,7 +230,6 @@ struct NonPromptCascadeTask {
   void init(InitContext const&)
   {
     mZorroSummary.setObject(mZorro.getZorroSummary());
-    mZorroSummary->setupTOIs(1, cfgHMOmegaTrigger);
     mCCDB->setURL(ccdbUrl);
     mCCDB->setFatalWhenNull(true);
     mCCDB->setCaching(true);
@@ -295,7 +294,7 @@ struct NonPromptCascadeTask {
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (runNumber != bc.runNumber()) {
-          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
