@@ -11,7 +11,7 @@
 
 /// \file corrSparse.cxx
 /// \brief Provides a sparse with usefull two particle correlation info
-/// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
+/// \author Thor Jensen (thor.kjaersgaard.jensen@cern.ch)
 
 #include <CCDB/BasicCCDBManager.h>
 #include "TRandom3.h"
@@ -253,15 +253,15 @@ struct CorrSparse {
 
       for (auto const& track2 : tracks2) {
 
-        if (track1.pt() <= track2.pt())
-          continue; // skip if the trigger pt is less than the associate pt
-
         if (processMFT) {
           if constexpr (std::is_same_v<aod::MFTTracks, TTracksAssoc>) {
             if (!isAcceptedMftTrack(track2)) {
               continue;
             }
           }
+        } else {
+          if (track1.pt() <= track2.pt())
+            continue; // skip if the trigger pt is less than the associate pt
         }
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -PIHalf);
