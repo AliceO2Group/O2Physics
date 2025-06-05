@@ -67,6 +67,7 @@
 #include "KFVertex.h"
 
 #include "Common/Core/EventPlaneHelper.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 using std::complex;
 using std::cout;
@@ -133,7 +134,9 @@ class VarManager : public TObject
     ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     MuonRealign = BIT(26),
-    MuonCovRealign = BIT(27)
+    MuonCovRealign = BIT(27),
+    TrackEMCal = BIT(28),
+    ReducedTrackBarrelEMCal = BIT(29)
   };
 
   enum PairCandidateType {
@@ -164,6 +167,10 @@ class VarManager : public TObject
     kDalitzBits = 5,          // first bit for Dalitz tagged tracks
     kBarrelUserCutsBits = 13, // first bit for user track cuts
     kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
+  };
+
+  enum EMCalTrackFilteringBits {
+    kEMcalUserCutsBits = 0 // first bit for user EMCal track cuts
   };
 
   enum MuonTrackFilteringBits {
@@ -561,6 +568,19 @@ class VarManager : public TObject
     kBarrelNAssocsInBunch = kIsDalitzLeg + 8, // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch,                 // number of out of bunch collision associations
     kNBarrelTrackVariables,
+    kEMCalEnergy,
+    kEMCalCoreEnergy,
+    kEMCalRawEnergy,
+    kEMCalEta,
+    kEMCalPhi,
+    kEMCalM02,
+    kEMCalM20,
+    kEMCalNCells,
+    kEMCalTime,
+    kEMCalIsExotic,
+    kEMCalDistanceToBadChannel,
+    kEMCalNLM,
+    kEMCalDefinition,
 
     // Muon track variables
     kMuonNClusters,
@@ -2525,6 +2545,23 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnSigmaMu] = track.tpcNSigmaMu();
     values[kTOFnSigmaMu] = track.tofNSigmaMu();
     values[kTOFbeta] = track.beta();
+  }
+
+  // Quantities based on the EMCal correction task
+  if constexpr ((fillMap & TrackEMCal) > 0 || (fillMap & ReducedTrackBarrelEMCal) > 0) {
+    values[kEMCalEnergy] = track.energy();
+    values[kEMCalCoreEnergy] = track.coreEnergy();
+    values[kEMCalRawEnergy] = track.rawEnergy();
+    values[kEMCalEta] = track.eta();
+    values[kEMCalPhi] = track.phi();
+    values[kEMCalM02] = track.m02();
+    values[kEMCalM20] = track.m20();
+    values[kEMCalNCells] = track.nCells();
+    values[kEMCalTime] = track.time();
+    values[kEMCalIsExotic] = track.isExotic();
+    values[kEMCalDistanceToBadChannel] = track.distanceToBadChannel();
+    values[kEMCalNLM] = track.nlm();
+    values[kEMCalDefinition] = track.definition();
   }
 
   // Quantities based on the muon extra table
