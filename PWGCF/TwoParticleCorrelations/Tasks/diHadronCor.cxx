@@ -36,6 +36,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
@@ -44,6 +45,7 @@
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,6 +102,8 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 2000, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgVerbosity, bool, false, "Verbose output")
 
   SliceCache cache;
   SliceCache cacheNch;
@@ -107,27 +111,37 @@ struct DiHadronCor {
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity axis for histograms"};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt axis for efficiency histograms"};
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ) && (aod::evsel::sel8) == true && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>; // aod::CentFT0Cs
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels>>;
+
+  // Filter for MCParticle
+  Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
+  using MyMcParticles = soa::Filtered<aod::McParticles>;
+
+  // Filter for MCcollisions
+  Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVtxZ;
+  using MyMcCollisions = soa::Filtered<aod::McCollisions>;
+
+  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   // Corrections
-  TH1D* mEfficiency = nullptr;
-  GFWWeights* mAcceptance = nullptr;
-  TObjArray* mAcceptanceList = nullptr;
+  TH3D* mEfficiency = nullptr;
   bool correctionsLoaded = false;
 
   // Define the outputs
@@ -150,6 +164,9 @@ struct DiHadronCor {
     MixedEvent = 3
   };
 
+  // persistent caches
+  std::vector<float> efficiencyAssociatedCache;
+
   // Additional Event selection cuts - Copy from flowGenericFramework.cxx
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -158,9 +175,6 @@ struct DiHadronCor {
   TF1* fMultMultPVCut = nullptr;
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
-
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>; // aod::CentFT0Cs
-  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   void init(InitContext&)
   {
@@ -224,6 +238,7 @@ struct DiHadronCor {
     registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
     registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
     registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
+    registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
     registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
     registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
@@ -237,6 +252,10 @@ struct DiHadronCor {
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
+    if (!cfgEfficiency.value.empty()) {
+      efficiencyAssociatedCache.reserve(512);
+    }
+
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -244,9 +263,9 @@ struct DiHadronCor {
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {axisDeltaEta, "#Delta#eta"}};
     std::vector<AxisSpec> effAxis = {
-      {axisVertexEfficiency, "z-vtx (cm)"},
-      {axisPtEfficiency, "p_{T} (GeV/c)"},
       {axisEtaEfficiency, "#eta"},
+      {axisPtEfficiency, "p_{T} (GeV/c)"},
+      {axisVertexEfficiency, "z-vtx (cm)"},
     };
     std::vector<AxisSpec> userAxis;
 
@@ -298,12 +317,18 @@ struct DiHadronCor {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
   }
 
-  void loadCorrections(uint64_t timestamp)
+  void loadEfficiency(uint64_t timestamp)
   {
-    if (correctionsLoaded)
+    if (correctionsLoaded) {
       return;
+    }
     if (cfgEfficiency.value.empty() == false) {
-      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      if (cfgLocalEfficiency > 0) {
+        TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiency.value.c_str(), "READ");
+        mEfficiency = reinterpret_cast<TH3D*>(fEfficiencyTrigger->Get("ccdb_object"));
+      } else {
+        mEfficiency = ccdb->getForTimeStamp<TH3D>(cfgEfficiency, timestamp);
+      }
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
@@ -312,13 +337,17 @@ struct DiHadronCor {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float pt)
+  bool getEfficiencyCorrection(float& weight_nue, float eta, float pt, float posZ)
   {
     float eff = 1.;
-    if (mEfficiency)
-      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
-    else
+    if (mEfficiency) {
+      int etaBin = mEfficiency->GetXaxis()->FindBin(eta);
+      int ptBin = mEfficiency->GetYaxis()->FindBin(pt);
+      int zBin = mEfficiency->GetZaxis()->FindBin(posZ);
+      eff = mEfficiency->GetBinContent(etaBin, ptBin, zBin);
+    } else {
       eff = 1.0;
+    }
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
@@ -336,13 +365,15 @@ struct DiHadronCor {
     registry.fill(HIST("zVtx"), collision.posZ());
 
     float weff1 = 1;
+    float vtxz = collision.posZ();
     for (auto const& track1 : tracks) {
       if (!trackSelected(track1))
         continue;
-      if (!setCurrentParticleWeights(weff1, track1.pt()))
+      if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), vtxz))
         continue;
       registry.fill(HIST("Phi"), RecoDecay::constrainAngle(track1.phi(), 0.0));
       registry.fill(HIST("Eta"), track1.eta());
+      registry.fill(HIST("EtaCorrected"), track1.eta(), weff1);
       registry.fill(HIST("pT"), track1.pt());
       registry.fill(HIST("pTCorrected"), track1.pt(), weff1);
     }
@@ -376,6 +407,16 @@ struct DiHadronCor {
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
   void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
+    // Cache efficiency for particles (too many FindBin lookups)
+    if (mEfficiency) {
+      efficiencyAssociatedCache.clear();
+      efficiencyAssociatedCache.reserve(tracks2.size());
+      for (const auto& track2 : tracks2) {
+        float weff = 1.;
+        getEfficiencyCorrection(weff, track2.eta(), track2.pt(), posZ);
+        efficiencyAssociatedCache.push_back(weff);
+      }
+    }
 
     if (system == SameEvent) {
       registry.fill(HIST("Centrality_used"), cent);
@@ -384,25 +425,26 @@ struct DiHadronCor {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
-    float weff1 = 1;
-    float weff2 = 1;
+    float triggerWeight = 1.0f;
+    float associatedWeight = 1.0f;
     // loop over all tracks
     for (auto const& track1 : tracks1) {
 
       if (!trackSelected(track1))
         continue;
-      if (!setCurrentParticleWeights(weff1, track1.pt()))
+      if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt());
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), triggerWeight);
       }
 
       for (auto const& track2 : tracks2) {
 
         if (!trackSelected(track2))
           continue;
-        if (!setCurrentParticleWeights(weff2, track2.pt()))
-          continue;
+        if (mEfficiency) {
+          associatedWeight = efficiencyAssociatedCache[track2.filteredIndex()];
+        }
 
         if (track1.pt() <= track2.pt())
           continue; // skip if the trigger pt is less than the associate pt
@@ -435,12 +477,12 @@ struct DiHadronCor {
         // fill the right sparse and histograms
         if (system == SameEvent) {
 
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
-          registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
 
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta);
-          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
         }
       }
     }
@@ -528,7 +570,7 @@ struct DiHadronCor {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    loadCorrections(bc.timestamp());
+    loadEfficiency(bc.timestamp());
     fillYield(collision, tracks);
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
@@ -561,7 +603,7 @@ struct DiHadronCor {
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      loadCorrections(bc.timestamp());
+      loadEfficiency(bc.timestamp());
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
         continue;
@@ -587,6 +629,57 @@ struct DiHadronCor {
   }
 
   PROCESS_SWITCH(DiHadronCor, processMixed, "Process mixed events", true);
+
+  int getSpecies(int pdgCode)
+  {
+    switch (pdgCode) {
+      case 211: // pion
+      case -211:
+        return 0;
+      case 321: // Kaon
+      case -321:
+        return 1;
+      case 2212: // proton
+      case -2212:
+        return 2;
+      default: // NOTE. The efficiency histogram is hardcoded to contain 4 species. Anything special will have the last slot.
+        return 3;
+    }
+  }
+
+  void processMCEfficiency(MyMcCollisions::iterator const& mcCollision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, MyMcParticles const& mcParticles, AodTracks const& tracks)
+  {
+    if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
+      return;
+    }
+    // Primaries
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary()) {
+        same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+      }
+    }
+    for (const auto& collision : collisions) {
+      auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+      if (cfgVerbosity) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+        LOGF(info, "  which has %d tracks", groupedTracks.size());
+      }
+
+      for (const auto& track : groupedTracks) {
+        if (track.has_mcParticle()) {
+          const auto& mcParticle = track.mcParticle();
+          if (mcParticle.isPhysicalPrimary()) {
+            same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+          }
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
+        } else {
+          // fake track
+          same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, 0., mcCollision.posZ());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(DiHadronCor, processMCEfficiency, "MC: Extract efficiencies", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
