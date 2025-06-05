@@ -99,11 +99,12 @@ DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of ba
 DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
 // Common columns
-DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);   //! Occupancy from FT0C
-DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);     //! Occupancy from ITS
-DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); //! Centrality from FT0C
-DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); //! Centrality from FT0M
-DECLARE_SOA_COLUMN(CandFlag, candFlag, int);               //! Flag for MC matching
+DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);      //! Occupancy from FT0C
+DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);        //! Occupancy from ITS
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);    //! Centrality from FT0C
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);    //! Centrality from FT0M
+DECLARE_SOA_COLUMN(InteractionRate, interactionRate, double); //! Centrality from FT0M
+DECLARE_SOA_COLUMN(CandFlag, candFlag, int);                  //! Flag for MC matching
 } // namespace pid_studies
 
 DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
@@ -133,6 +134,7 @@ DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::OccupancyIts,
                   pid_studies::CentralityFT0C,
                   pid_studies::CentralityFT0M,
+                  pid_studies::InteractionRate,
                   pid_studies::CandFlag);
 
 DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID information
@@ -153,6 +155,7 @@ DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::OccupancyIts,
                   pid_studies::CentralityFT0C,
                   pid_studies::CentralityFT0M,
+                  pid_studies::InteractionRate,
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
@@ -198,6 +201,7 @@ struct HfTaskPidStudies {
   ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
   HfEventSelectionMc hfEvSelMc;
+  double interactionRate{-1.};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry registry{"registry", {}};
@@ -264,6 +268,7 @@ struct HfTaskPidStudies {
         coll.trackOccupancyInTimeRange(),
         coll.centFT0C(),
         coll.centFT0M(),
+        interactionRate,
         flag);
     } else {
       const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
@@ -285,6 +290,7 @@ struct HfTaskPidStudies {
         coll.trackOccupancyInTimeRange(),
         coll.centFT0C(),
         coll.centFT0M(),
+        interactionRate,
         flag);
     }
   }
@@ -334,7 +340,7 @@ struct HfTaskPidStudies {
   bool isCollSelected(const Coll& coll)
   {
     auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
-    auto interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), ctpFetcherSource.value) * 1.e-3; // convert to kHz
+    interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), ctpFetcherSource.value) * 1.e-3; // convert to kHz
     if (interactionRate < interactionRateMin || interactionRate > interactionRateMax) {
       return false;
     }
