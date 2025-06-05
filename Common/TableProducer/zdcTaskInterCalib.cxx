@@ -251,4 +251,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disab
   return WorkflowSpec{
     adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
 }
- 
