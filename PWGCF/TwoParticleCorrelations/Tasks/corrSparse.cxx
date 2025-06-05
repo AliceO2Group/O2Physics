@@ -98,7 +98,7 @@ struct CorrSparse {
 
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgZVtxCut) && (aod::evsel::sel8) == true;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (cfgPtCutMin < aod::track::pt) && (cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (cfgPtCutMin < aod::track::pt) && (cfgPtCutMax > aod::track::pt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
 
   // Define the outputs
   OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
