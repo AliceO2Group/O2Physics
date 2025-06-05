@@ -9,12 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file zdc-task-intercalib.cxx
+/// \file zdcTaskIntercalib.cxx
 /// \brief Task for ZDC tower inter-calibration
 /// \author chiara.oppedisano@cern.ch
 
 // o2-linter: disable=name/workflow-file
 // o2-linter: disable=name/file-cpp
+// o2-linter: disable=doc/file 
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/HistogramRegistry.h"
@@ -24,7 +26,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/InterCalibrationZDC.h"
+#include "Common/DataModel/ZDCInterCalib.h" 
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -37,9 +39,9 @@ using namespace o2::aod::evsel;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 
-struct InterCalibrationZDC {
+struct ZDCCalibTower {
 
-  Produces<aod::InterCalibrationZDC> zTab;
+  Produces<aod::ZDCInterCalib> zTab;
 
   // Configurable parameters
   //
@@ -252,5 +254,5 @@ struct InterCalibrationZDC {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disable=name/file-cpp
 {
   return WorkflowSpec{
-    adaptAnalysisTask<InterCalibrationZDC>(cfgc)};
+    adaptAnalysisTask<ZDCCalibTower>(cfgc)};
 }
