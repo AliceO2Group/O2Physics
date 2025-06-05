@@ -4007,9 +4007,10 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
 
-      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
-      if (fgUsedVars[kVertexingChi2PCA])
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
         values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
@@ -4277,9 +4278,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
       }
 
-      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
-      if (fgUsedVars[kVertexingChi2PCA])
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
         values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
