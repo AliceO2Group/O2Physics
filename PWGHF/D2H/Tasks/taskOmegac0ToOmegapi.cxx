@@ -166,16 +166,15 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-
   template <bool applyMl, typename CandType, typename CollType>
   void processDataCent(const CandType& candidates, CollType const& collisions)
   {
     for (const auto& collision : collisions) {
 
       auto thisCollId = collision.globalIndex();
-      auto groupedOmegacCandidates = applyMl 
-          ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId)
-          : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
+      auto groupedOmegacCandidates = applyMl
+                                       ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId)
+                                       : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
       auto numPvContributors = collision.numContrib();
 
       for (const auto& candidate : groupedOmegacCandidates) {
@@ -187,7 +186,7 @@ struct HfTaskOmegac0ToOmegapi {
         }
         float cent = evaluateCentralityColl(collision);
         if constexpr (applyMl) {
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"), 
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
                         candidate.mlProbOmegac()[0],
                         candidate.invMassCharmBaryon(),
                         candidate.ptCharmBaryon(),
@@ -196,7 +195,7 @@ struct HfTaskOmegac0ToOmegapi {
                         candidate.kfptPiFromOmegac(),
                         numPvContributors);
         } else {
-          registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"), 
+          registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
                         candidate.invMassCharmBaryon(),
                         candidate.ptCharmBaryon(),
                         candidate.kfRapOmegac(),
@@ -273,28 +272,28 @@ struct HfTaskOmegac0ToOmegapi {
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
 
   void processDataWithKFParticleFT0C(Omegac0CandsKF const& candidates,
-                                  CollisionsWithFT0C const& collisions)
+                                     CollisionsWithFT0C const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0C centrality", false);
 
   void processDataWithKFParticleMlFT0C(Omegac0CandsMlKF const& candidates,
-                                  CollisionsWithFT0C const& collisions)
+                                       CollisionsWithFT0C const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMlFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections and with FT0C centrality", false);
 
   void processDataWithKFParticleFT0M(Omegac0CandsKF const& candidates,
-                                  CollisionsWithFT0M const& collisions)
+                                     CollisionsWithFT0M const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
   PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleFT0M, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0M centrality", false);
 
   void processDataWithKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
-                                  CollisionsWithFT0M const& collisions)
+                                       CollisionsWithFT0M const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
