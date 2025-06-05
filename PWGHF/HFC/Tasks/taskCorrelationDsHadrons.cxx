@@ -158,10 +158,10 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
 
-    vBinsPtEfficiencyD = (std::vector<double>)binsPtEfficiencyD;
-    vBinsPtEfficiencyHad = (std::vector<double>)binsPtEfficiencyHad;
-    vEfficiencyD = (std::vector<double>)efficiencyD;
-    vEfficiencyHad = (std::vector<double>)efficiencyHad;
+    vBinsPtEfficiencyD = static_cast<std::vector<double>>(binsPtEfficiencyD);
+    vBinsPtEfficiencyHad = static_cast<std::vector<double>>(binsPtEfficiencyHad);
+    vEfficiencyD = static_cast<std::vector<double>>(efficiencyD);
+    vEfficiencyHad = static_cast<std::vector<double>>(efficiencyHad);
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "Ds BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
