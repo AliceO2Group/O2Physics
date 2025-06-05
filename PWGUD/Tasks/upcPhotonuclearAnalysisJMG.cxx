@@ -571,7 +571,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(sameGapSideA, multiplicity) == false) {
           return;
         }
-        LOGF(info, "Filling sameGapSideA events");
+        // LOGF(debug, "Filling sameGapSideA events");
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedTracks);
         fillCorrelationsUD(sameGapSideA, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
@@ -584,7 +584,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(sameGapSideC, multiplicity) == false) {
           return;
         }
-        LOGF(info, "Filling sameGapSideC events");
+        // LOGF(debug, "Filling sameGapSideC events");
         fillCorrelationsUD(sameGapSideC, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
         break;
       default:
@@ -603,7 +603,7 @@ struct upcPhotonuclearAnalysisJMG {
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (collision1.size() == 0 || collision2.size() == 0) {
-        LOGF(info, "One or both collisions are empty.");
+        // LOGF(debug, "One or both collisions are empty.");
         continue;
       }
 
@@ -612,7 +612,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(collision1, 0) == false && isCollisionCutSG(collision2, 0) == false) {
           continue;
         }
-        LOGF(info, "In the pairs loop, gap side A");
+        // LOGF(debug, "In the pairs loop, gap side A");
         multiplicity = tracks1.size();
         if (fillCollisionUD(mixedGapSideA, multiplicity) == false) {
           return;
@@ -620,20 +620,20 @@ struct upcPhotonuclearAnalysisJMG {
         // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
         histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
         fillCorrelationsUD(mixedGapSideA, tracks1, tracks2, multiplicity, collision1.posZ());
-        LOGF(info, "Filling mixedGapSideA events, Gap for side A");
+        // LOGF(debug, "Filling mixedGapSideA events, Gap for side A");
       }
 
       if (collision1.gapSide() == 1 && collision2.gapSide() == 1) { // gap on side C
         if (isCollisionCutSG(collision1, 1) == false && isCollisionCutSG(collision2, 1) == false) {
           continue;
         }
-        LOGF(info, "In the pairs loop, gap side C");
+        // LOGF(debug, "In the pairs loop, gap side C");
         multiplicity = tracks1.size();
         if (fillCollisionUD(mixedGapSideC, multiplicity) == false) {
           return;
         }
         fillCorrelationsUD(mixedGapSideC, tracks1, tracks2, multiplicity, collision1.posZ());
-        LOGF(info, "Filling mixedGapSideC events, Gap for side C");
+        // LOGF(debug, "Filling mixedGapSideC events, Gap for side C");
       } else {
         continue;
       }
