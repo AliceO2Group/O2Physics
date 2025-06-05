@@ -732,7 +732,7 @@ struct HfTaskSigmac {
       if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandGenMax) {
         continue;
       }
-      double ptGenLc(-1.), ptGenLcBMother(-1.);
+      double ptGenLc(particle.pt()), ptGenLcBMother(-1.);
       int origin = particle.originMcGen();
       int channel = particle.flagMcDecayChanGen();
       if (origin == RecoDecay::OriginType::Prompt) {
