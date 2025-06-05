@@ -2917,7 +2917,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
       ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
       if (fgUsedVars[kCosThetaPP]) {
-        values[kCosThetaPP] = zaxis_PP.Dot(v_CM);
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
         values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
