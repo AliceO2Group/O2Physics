@@ -121,7 +121,7 @@ o2physics_add_dpl_workflow(match-mft-ft0
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(zdc-task-intercalib
-                    SOURCES zdcTaskIntercalib.cxx
+                    SOURCES zdcTaskInterCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
