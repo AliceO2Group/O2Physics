@@ -1507,7 +1507,8 @@ struct AnalysisSameEventPairing {
 
             // assign hist directories for pairs matched to MC signals for each (muon cut, MCrec signal) combination
             if (!sigNamesStr.IsNull()) {
-              for (auto& sig : fRecMCSignals) {
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+                auto sig = fRecMCSignals.at(isig);
                 names = {
                   Form("PairsMuonSEPM_%s_%s", objArray->At(icut)->GetName(), sig->GetName()),
                   Form("PairsMuonSEPP_%s_%s", objArray->At(icut)->GetName(), sig->GetName()),
@@ -1526,9 +1527,9 @@ struct AnalysisSameEventPairing {
                 for (auto& n : names) {
                   histNames += Form("%s;", n.Data());
                 }
+                fMuonHistNamesMCmatched.try_emplace(icut * fRecMCSignals.size() + isig, names);
               } // end loop over MC signals
             }
-            fMuonHistNamesMCmatched[icut] = names;
           }
         }
       } // end loop over cuts
