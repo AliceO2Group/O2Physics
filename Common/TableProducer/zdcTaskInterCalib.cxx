@@ -22,7 +22,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/ZDCInterCalib.h" 
+#include "Common/DataModel/ZDCInterCalib.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -99,7 +99,6 @@ struct ZdcTaskInterCalib {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
   }
 
-
   template <typename TCollision>
   uint8_t eventSelected(TCollision collision)
   {
@@ -109,7 +108,7 @@ struct ZdcTaskInterCalib {
     registry.fill(HIST("hEventCount"), evSel_allEvents);
 
     selected = std::fabs(collision.posZ()) < cfgEvSelVtxZ;
-    if (selected){
+    if (selected) {
       selectionBits |= (uint8_t)(0x1u << evSel_zvtx);
       registry.fill(HIST("hEventCount"), evSel_zvtx);
     }
@@ -252,3 +251,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) // o2-linter: disab
   return WorkflowSpec{
     adaptAnalysisTask<ZdcTaskInterCalib>(cfgc)};
 }
+ 

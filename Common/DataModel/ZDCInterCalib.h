@@ -20,7 +20,7 @@
 
 namespace o2::aod
 {
-namespace znoutput  // o2-linter: disable=name/workflow-file
+namespace znoutput // o2-linter: disable=name/workflow-file
 {
 DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float);            //! PMC ZNA         // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);                 //! PM1 ZNA         // o2-linter: disable=name/o2-column
@@ -34,9 +34,9 @@ DECLARE_SOA_COLUMN(ZNCpm2, ZNCPM2, float);                 //! PM2 ZNC         /
 DECLARE_SOA_COLUMN(ZNCpm3, ZNCPM3, float);                 //! PM3 ZNC         // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZNCpm4, ZNCPM4, float);                 //! PM4 ZNC         // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);                 //! TDC ZNC         // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(Centrality, centrality, float);         //! Centrality   
-DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp       
-DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags 
+DECLARE_SOA_COLUMN(Centrality, centrality, float);         //! Centrality
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
+DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
 } // namespace znoutput
 
 DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
