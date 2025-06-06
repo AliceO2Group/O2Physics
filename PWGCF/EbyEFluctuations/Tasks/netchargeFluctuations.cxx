@@ -357,7 +357,8 @@ struct NetchargeFluctuations {
 
   template <RunType run, typename C, typename T, typename M, typename P>
   void histosMcRecoGen(C const& coll, T const& inputTracks, M const& mcCollisions, P const& mcParticles)
-  { (void)mcCollisions;
+  {
+    (void)mcCollisions;
     if (!coll.has_mcCollision()) {
       return;
     }
@@ -447,7 +448,7 @@ struct NetchargeFluctuations {
       posNegRec = posRec * negRec;
 
       netCharge(posRec, negRec, posRec * posRec, negRec * negRec,
-                   termPRec, termNRec, posNegRec, cent);
+                termPRec, termNRec, posNegRec, cent);
     } // loop over inputTracks (reco)
 
     for (const auto& mcpart : mcpartgen) {
@@ -603,9 +604,9 @@ struct NetchargeAnalysis {
     subSample[sampleIndex][5]->Fill(event_netcharge.centrality(), event_netcharge.negSqCharge());
     subSample[sampleIndex][6]->Fill(event_netcharge.centrality(), event_netcharge.posNegCharge());
   } // void
-PROCESS_SWITCH(NetchargeAnalysis, processData, "Process reconstructed and Data", true);
+  PROCESS_SWITCH(NetchargeAnalysis, processData, "Process reconstructed and Data", true);
 
-void processGen(aod::NetChargeGen::iterator const& event_netcharge)
+  void processGen(aod::NetChargeGen::iterator const& event_netcharge)
   {
     registry.get<TProfile>(HIST("gen/pos_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.posCharge());
     registry.get<TProfile>(HIST("gen/neg_vs_cent"))->Fill(event_netcharge.centrality(), event_netcharge.negCharge());
@@ -624,10 +625,9 @@ void processGen(aod::NetChargeGen::iterator const& event_netcharge)
     genSubSample[sampleIndex][5]->Fill(event_netcharge.centrality(), event_netcharge.negSqCharge());
     genSubSample[sampleIndex][6]->Fill(event_netcharge.centrality(), event_netcharge.posNegCharge());
   } // void
-PROCESS_SWITCH(NetchargeAnalysis, processGen, "Process generated", true);
+  PROCESS_SWITCH(NetchargeAnalysis, processGen, "Process generated", true);
 
 }; // struct Netcharge_analysis
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
