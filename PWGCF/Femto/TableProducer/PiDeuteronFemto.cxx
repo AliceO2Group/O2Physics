@@ -152,8 +152,6 @@ struct PiDeuteronFemto {
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
   Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
-  Configurable<float> settingCutDCAxy{"settingCutDCAxy", 2.0f, "DCAxy range for tracks"};
-  Configurable<float> settingCutDCAz{"settingCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.0f, "Low cut on TPC chi2"};
   Configurable<float> settingCutChi2tpcHigh{"settingCutChi2tpcHigh", 999.f, "High cut on TPC chi2"};
   Configurable<float> settingCutInvMass{"settingCutInvMass", 0.0f, "Invariant mass upper limit"};
@@ -170,6 +168,18 @@ struct PiDeuteronFemto {
   Configurable<float> settingCutNsigmaTOFTPCPi{"settingCutNsigmaTOFTPCPi", 3.0f, "Value of the Pion TOF TPC Nsigma cut"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
+
+  Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
+  Configurable<float> settingCutPiptMin{"settingCutPiptMin", 0.14f, "Minimum PT cut on Pi"};
+  Configurable<float> settingCutPiptMax{"settingCutPiptMax", 4.0f, "Maximum PT cut on Pi"};
+  Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
+  Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
+  Configurable<float> settingCutPiDCAxyMin{"settingCutPiDCAxyMin", 0.3f, "DCAxy Min for Pi"};
+  Configurable<float> settingCutPiDCAzMin{"settingCutPiDCAzMin", 0.3f, "DCAz Min for Pi"};
+  Configurable<float> settingCutDeDCAzMin{"settingCutDeDCAzMin", 0.2f, "DCAxy Min for De"};
+  Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut on Pi"};
+  Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut on Pi"};
+
   Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
   Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
 
@@ -237,6 +247,11 @@ struct PiDeuteronFemto {
       {"h2NsigmaPiTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
       {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hisBkgEM", "; isBkgEM;", {HistType::kTH1F, {{3, -1, 2}}}}
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -683,6 +698,75 @@ struct PiDeuteronFemto {
     mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
     mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
     mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
+    mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
+  }
+
+  double computePrTPCnsig(double InnerParamTPCHad, double SignalTPCHad){
+    double m_BBparamsProton[6] = {-54.42066571222577, 0.2857381250239097, 1.247140602468868, 0.6297483918147729, 2.985438833884555, 0.09};
+ 
+     float TPCinnerParam = InnerParamTPCHad;
+     float expTPCSignal = o2::tpc::BetheBlochAleph((TPCinnerParam / 0.9382721), m_BBparamsProton[0], m_BBparamsProton[1], m_BBparamsProton[2], m_BBparamsProton[3], m_BBparamsProton[4]);
+     double resoTPC{expTPCSignal * m_BBparamsProton[5]};
+     return ((SignalTPCHad - expTPCSignal) / resoTPC);
+ }
+ 
+ double tofNSigmaCalculation(double MassTOFHad, double ptHad) 
+ {
+    double fExpTOFMassHad = 0.9487; // Proton mass in TOF
+    const float kp0 = 1.22204e-02;
+    const float kp1 = 7.48467e-01;
+ 
+    double fSigmaTOFMassHad = (kp0 * TMath::Exp(kp1 * TMath::Abs(ptHad))) * fExpTOFMassHad;
+    double fNSigmaTOFHad = (MassTOFHad - fExpTOFMassHad) / fSigmaTOFMassHad;
+    return fNSigmaTOFHad;
+ }
+
+  double computeKstar(const PiDecandidate& piDecand)
+  {
+    TLorentzVector he3, hadron;
+    float massHe3 = 2.80839;
+    float massHad = 0.1395704;
+    he3.SetPtEtaPhiM(abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massHe3);
+    hadron.SetPtEtaPhiM(abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+
+    TLorentzVector p_total_lab = he3 + hadron;
+    TVector3 v_cm = p_total_lab.BoostVector();
+    TLorentzVector p1_cm = he3;
+    TLorentzVector p2_cm = hadron;
+    p1_cm.Boost(-v_cm);
+    p2_cm.Boost(-v_cm);
+    TLorentzVector p_diff_cm = p1_cm - p2_cm;
+    double kStar = sqrt(p_diff_cm.X() * p_diff_cm.X() + p_diff_cm.Y() * p_diff_cm.Y() + p_diff_cm.Z() * p_diff_cm.Z());
+    return kStar / 2.0;
+  }
+
+  void fillKstar(const PiDecandidate& piDecand)
+  { 
+    double PrTPCnsigma = computePrTPCnsig(piDecand.momPiTPC, piDecand.tpcSignalPi);
+    double PrTOFnsigma = tofNSigmaCalculation(piDecand.massTOFPi, piDecand.recoPtPi());
+    if(abs(PrTPCnsigma) < settingCutNsigTPCPrMin) return;
+    if(abs(PrTOFnsigma) < settingCutNsigTOFPrMin) return;
+    float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(),1.1);
+    if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin) return;
+    if (std::abs(piDecand.recoPtPi()) < settingCutPiptMin || std::abs(piDecand.recoPtPi()) > settingCutPiptMax) return;
+    if (std::abs(piDecand.recoPtDe()) < settingCutDeptMin || std::abs(piDecand.recoPtDe()) > settingCutDeptMax) return;
+    
+    fillHistograms(piDecand);
+
+    double kstar = computeKstar(piDecand);
+    if(piDecand.isBkgUS == 0){
+      if(piDecand.recoPtDe() > 0){
+        mQaRegistry.fill(HIST("hkStar_LS_M"), kstar);
+      }else{
+        mQaRegistry.fill(HIST("hkStar_LS_A"), kstar);
+      }
+    }else{
+      if(piDecand.recoPtDe() > 0){
+        mQaRegistry.fill(HIST("hkStar_US_M"), kstar);
+      }else{
+        mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
+      }
+    }
   }
 
   // ==================================================================================================================
@@ -700,9 +784,15 @@ struct PiDeuteronFemto {
       if (!fillCandidateInfo(deTrack, piTrack, collBracket, collisions, piDecand, tracks, isMixedEvent)) {
         continue;
       }
-      fillHistograms(piDecand);
+  
+      fillKstar(piDecand);
+
       auto collision = collisions.rawIteratorAt(piDecand.collisionID);
-      fillTable(piDecand, collision);
+
+      if(settingFillTable) {
+        fillTable(piDecand, collision);
+      }
+      
     }
   }
 
