@@ -245,7 +245,13 @@ struct DiHadronCor {
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
-    if (doprocessMCSame) {
+    if (doprocessMCSame && doprocessOntheflySame) {
+      LOGF(fatal, "Full simulation and on-the-fly processing of same event not supported");
+    }
+    if (doprocessMCMixed && doprocessOntheflyMixed) {
+      LOGF(fatal, "Full simulation and on-the-fly processing of mixed event not supported");
+    }
+    if (doprocessMCSame || doprocessOntheflySame) {
       registry.add("MCTrue/MCeventcount", "MCeventcount", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
       registry.add("MCTrue/MCCentrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
       registry.add("MCTrue/MCNch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
@@ -806,6 +812,66 @@ struct DiHadronCor {
     }
   }
   PROCESS_SWITCH(DiHadronCor, processMCMixed, "Process MC mixed events", false);
+
+  void processOntheflySame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles)
+  {
+    if (cfgVerbosity) {
+      LOGF(info, "processOntheflySame. MC collision: %d, particles: %d", mcCollision.globalIndex(), mcParticles.size());
+    }
+
+    if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
+      return;
+    }
+
+    registry.fill(HIST("MCTrue/MCeventcount"), SameEvent); // because its same event i put it in the 1 bin
+    registry.fill(HIST("MCTrue/MCNch"), mcParticles.size());
+    registry.fill(HIST("MCTrue/MCzVtx"), mcCollision.posZ());
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary()) {
+        registry.fill(HIST("MCTrue/MCPhi"), mcParticle.phi());
+        registry.fill(HIST("MCTrue/MCEta"), mcParticle.eta());
+        registry.fill(HIST("MCTrue/MCpT"), mcParticle.pt());
+      }
+    }
+
+    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
+    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+
+    same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
+    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+  }
+  PROCESS_SWITCH(DiHadronCor, processOntheflySame, "Process on-the-fly same event", false);
+
+  void processOntheflyMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles)
+  {
+    auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
+      auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
+      auto mult = associatedTracks.size();
+      return mult;
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, o2::aod::mccollision::PosZ, decltype(getTracksSize)>;
+
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
+
+    auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
+    Pair<FilteredMcCollisions, FilteredMcParticles, FilteredMcParticles, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
+
+      if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
+        continue;
+
+      if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
+        continue;
+
+      registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
+
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+
+      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+    }
+  }
+  PROCESS_SWITCH(DiHadronCor, processOntheflyMixed, "Process on-the-fly mixed events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
