@@ -325,7 +325,6 @@ struct nucleiSpectra {
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
 
- 
   // running variables for track tuner
   o2::dataformats::DCA mDcaInfoCov;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
