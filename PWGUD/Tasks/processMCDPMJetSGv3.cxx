@@ -8,10 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief This task is an empty skeleton that fills a simple eta histogram.
-///        it is meant to be a blank page for further developments.
-/// \author everyone
+/// \file Task for the analysis of inclusive MC for spectra.
+/// \brief Task for the analysis of inclusive MC for spectra.
+/// \author Simone Ragoni
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -232,8 +231,8 @@ struct ProcessMCDPMJetSGv3 {
                    aod::UDMcParticles const& mcParticles)
   {
     histos.fill(HIST("numberOfRecoCollisions"), 2.); // number of times coll was reco-ed
-    Partition<TCs> PVContributors = aod::udtrack::isPVContributor == true;
-    PVContributors.bindTable(tracks);
+    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
+    pvContributors.bindTable(tracks);
 
     // auto massPion = 0.;
     // TParticlePDG pionPDG = fPDG->GetParticle(codePion);
@@ -248,13 +247,13 @@ struct ProcessMCDPMJetSGv3 {
     histos.fill(HIST("numberOfTracksReco"), tracks.size());
     double etaMax = 0.8;
     double ptMin = 0.1;
-    int NFindableMin = 70;
+    int nFindableMin = 70;
 
     int counter = 0;
     for (auto& track : tracks) {
       if (track.isPVContributor()) {
-        int NFindable = track.tpcNClsFindable();
-        if (NFindable < ptMin) {
+        int nFindable = track.tpcNClsFindable();
+        if (nFindable < nFindableMin) {
           continue;
         }
         // int NMinusFound = track.tpcNClsFindableMinusFound();
