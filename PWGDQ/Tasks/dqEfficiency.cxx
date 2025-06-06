@@ -308,8 +308,8 @@ struct AnalysisTrackSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      }   // end loop over MC signals
-    }     // end loop over tracks
+      } // end loop over MC signals
+    } // end loop over tracks
   }
 
   void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
@@ -481,8 +481,8 @@ struct AnalysisMuonSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      }   // end loop over MC signals
-    }     // end loop over muons
+      } // end loop over MC signals
+    } // end loop over muons
   }
 
   void processSkimmed(MyEventsSelected::iterator const& event, MyMuonTracks const& muons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
@@ -622,8 +622,8 @@ struct AnalysisSameEventPairing {
           }
           fBarrelHistNamesMCmatched.push_back(mcSigClasses);
         } // end loop over cuts
-      }   // end if(cutNames.IsNull())
-    }     // end if processBarrel
+      } // end if(cutNames.IsNull())
+    } // end if processBarrel
 
     if (enableMuonHistos) {
       TString cutNames = fConfigMuonCuts.value;
@@ -650,8 +650,8 @@ struct AnalysisSameEventPairing {
           }
           fMuonHistNamesMCmatched.push_back(mcSigClasses);
         } // end loop over cuts
-      }   // end if(cutNames.IsNull())
-    }     // end if processMuon
+      } // end if(cutNames.IsNull())
+    } // end if processMuon
 
     // NOTE: For the electron-muon pairing, the policy is that the user specifies n track and n muon cuts via configurables
     //     So for each barrel cut there is a corresponding muon cut
@@ -897,7 +897,7 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end loop over barrel track pairs
-  }   // end runPairing
+  } // end runPairing
 
   template <typename TTracksMC>
   void runMCGen(TTracksMC& groupedMCTracks)
@@ -947,7 +947,7 @@ struct AnalysisSameEventPairing {
         }
       }
     } // end of true pairing loop
-  }   // end runMCGen
+  } // end runMCGen
 
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -1410,7 +1410,7 @@ struct AnalysisDileptonTrackTrack {
               if (sig->GetNProngs() == 4) {
                 fRecMCSignals.push_back(*sig);
                 fRecMCSignalsNames.push_back(sig->GetName());
-                histNames += Form("MCTruthRecQaud_%s_%s;", fQuadrupletCutNames[icut].Data(), sig->GetName());
+                histNames += Form("MCTruthRecQuad_%s_%s;", fQuadrupletCutNames[icut].Data(), sig->GetName());
               }
             }
           }
@@ -1426,7 +1426,7 @@ struct AnalysisDileptonTrackTrack {
       if (sig) {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
           fGenMCSignals.push_back(*sig);
-          histNames += Form("MCTruthGenQaud_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
+          histNames += Form("MCTruthGenQuad_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         }
       }
     }
@@ -1539,7 +1539,7 @@ struct AnalysisDileptonTrackTrack {
               }
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-                  fHistMan->FillHistClass(Form("MCTruthRecQaud_%s_%s", fQuadrupletCutNames[iCut].Data(), fRecMCSignalsNames[isig].Data()), fValuesQuadruplet);
+                  fHistMan->FillHistClass(Form("MCTruthRecQuad_%s_%s", fQuadrupletCutNames[iCut].Data(), fRecMCSignalsNames[isig].Data()), fValuesQuadruplet);
                 }
               }
             }
@@ -1574,9 +1574,9 @@ struct AnalysisDileptonTrackTrack {
             auto dilepton = mcTracks.rawIteratorAt(daughterIdFirst);
             auto track1 = mcTracks.rawIteratorAt(daughterIdFirst + 1);
             auto track2 = mcTracks.rawIteratorAt(daughterIdFirst + 2);
-            VarManager::FillQaudMC<TCandidateType>(dilepton, track1, track2);
+            VarManager::FillQuadMC<TCandidateType>(dilepton, track1, track2);
           }
-          fHistMan->FillHistClass(Form("MCTruthGenQaud_%s", sig.GetName()), VarManager::fgValues);
+          fHistMan->FillHistClass(Form("MCTruthGenQuad_%s", sig.GetName()), VarManager::fgValues);
         }
       }
     }
@@ -1654,7 +1654,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       // histMan->AddHistogram(objArray->At(iclass)->GetName(), "Rapidity", "MC generator y distribution", false, 150, 2.5, 4.0, VarManager::kMCY);
       histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 50, 0.0, 2. * TMath::Pi(), VarManager::kMCPhi);
     }
-    if (classStr.Contains("MCTruthGenQaud")) {
+    if (classStr.Contains("MCTruthGenQuad")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_quad");
     }
     if (classStr.Contains("MCTruthGen")) {
@@ -1673,7 +1673,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("DileptonTrackInvMass")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
     }
-    if (classStr.Contains("Quadruplet") || classStr.Contains("MCTruthRecQaud")) {
+    if (classStr.Contains("Quadruplet") || classStr.Contains("MCTruthRecQuad")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", "xtojpsipipi");
     }
 
