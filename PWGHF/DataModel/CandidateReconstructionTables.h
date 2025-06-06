@@ -1826,6 +1826,21 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction le
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
+// Residuals and pulls
+DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
+DECLARE_SOA_COLUMN(PResidual, pResidual, float);
+DECLARE_SOA_COLUMN(XPvResidual, xPvResidual, float);
+DECLARE_SOA_COLUMN(YPvResidual, yPvResidual, float);
+DECLARE_SOA_COLUMN(ZPvResidual, zPvResidual, float);
+DECLARE_SOA_COLUMN(XPvPull, xPvPull, float);
+DECLARE_SOA_COLUMN(YPvPull, yPvPull, float);
+DECLARE_SOA_COLUMN(ZPvPull, zPvPull, float);
+DECLARE_SOA_COLUMN(XSvResidual, xSvResidual, float);
+DECLARE_SOA_COLUMN(YSvResidual, ySvResidual, float);
+DECLARE_SOA_COLUMN(ZSvResidual, zSvResidual, float);
+DECLARE_SOA_COLUMN(XSvPull, xSvPull, float);
+DECLARE_SOA_COLUMN(YSvPull, ySvPull, float);
+DECLARE_SOA_COLUMN(ZSvPull, zSvPull, float);
 // Dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(PProng0, pProng0, //!
                            [](float px, float py, float pz) -> float { return RecoDecay::p(px, py, pz); });
@@ -1897,9 +1912,9 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandXicExt, HfCandXicBase, "HFCANDXICEXT",
                                 hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz);
-
 using HfCandXic = HfCandXicExt;
 
+// table with KF-specific variables
 DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
                   cascdata::KFCascadeChi2, cascdata::KFV0Chi2,
                   hf_cand_xic_to_xi_pi_pi::KfDecayLength, hf_cand_xic_to_xi_pi_pi::KfDecayLengthNormalised, hf_cand_xic_to_xi_pi_pi::KfDecayLengthXY, hf_cand_xic_to_xi_pi_pi::KfDecayLengthXYNormalised,
@@ -1908,14 +1923,33 @@ DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
                   hf_cand_xic_to_xi_pi_pi::DcaPi0Pi1, hf_cand_xic_to_xi_pi_pi::DcaPi0Xi, hf_cand_xic_to_xi_pi_pi::DcaPi1Xi);
 
 // table with results of reconstruction level MC matching
-DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC", //!
+DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
                   hf_cand_xic_to_xi_pi_pi::OriginRec);
+
 // table with results of generator level MC matching
-DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN", //!
+DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
                   hf_cand_xic_to_xi_pi_pi::OriginGen,
                   hf_cand::PdgBhadMotherPart);
+
+// table with residuals and pulls of PV
+DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
+                  hf_cand_xic_to_xi_pi_pi::OriginGen,
+                  hf_cand_xic_to_xi_pi_pi::PResidual,
+                  hf_cand_xic_to_xi_pi_pi::PtResidual,
+                  hf_cand_xic_to_xi_pi_pi::XPvResidual,
+                  hf_cand_xic_to_xi_pi_pi::YPvResidual,
+                  hf_cand_xic_to_xi_pi_pi::ZPvResidual,
+                  hf_cand_xic_to_xi_pi_pi::XPvPull,
+                  hf_cand_xic_to_xi_pi_pi::YPvPull,
+                  hf_cand_xic_to_xi_pi_pi::ZPvPull,
+                  hf_cand_xic_to_xi_pi_pi::XSvResidual,
+                  hf_cand_xic_to_xi_pi_pi::YSvResidual,
+                  hf_cand_xic_to_xi_pi_pi::ZSvResidual,
+                  hf_cand_xic_to_xi_pi_pi::XSvPull,
+                  hf_cand_xic_to_xi_pi_pi::YSvPull,
+                  hf_cand_xic_to_xi_pi_pi::ZSvPull);
 
 // specific chic candidate properties
 namespace hf_cand_chic

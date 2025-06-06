@@ -91,21 +91,6 @@ DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
 DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
 DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
 DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
-// residuals and pulls
-DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
-DECLARE_SOA_COLUMN(PResidual, pResidual, float);
-DECLARE_SOA_COLUMN(XPvResidual, xPvResidual, float);
-DECLARE_SOA_COLUMN(YPvResidual, yPvResidual, float);
-DECLARE_SOA_COLUMN(ZPvResidual, zPvResidual, float);
-DECLARE_SOA_COLUMN(XPvPull, xPvPull, float);
-DECLARE_SOA_COLUMN(YPvPull, yPvPull, float);
-DECLARE_SOA_COLUMN(ZPvPull, zPvPull, float);
-DECLARE_SOA_COLUMN(XSvResidual, xSvResidual, float);
-DECLARE_SOA_COLUMN(YSvResidual, ySvResidual, float);
-DECLARE_SOA_COLUMN(ZSvResidual, zSvResidual, float);
-DECLARE_SOA_COLUMN(XSvPull, xSvPull, float);
-DECLARE_SOA_COLUMN(YSvPull, ySvPull, float);
-DECLARE_SOA_COLUMN(ZSvPull, zSvPull, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
@@ -344,23 +329,6 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y);
-
-DECLARE_SOA_TABLE(HfCandXicToXiPiPiResiduals, "AOD", "HFXICXI2PIRESID",
-                  hf_cand_xic_to_xi_pi_pi::OriginGen,
-                  full::PResidual,
-                  full::PtResidual,
-                  full::XPvResidual,
-                  full::YPvResidual,
-                  full::ZPvResidual,
-                  full::XPvPull,
-                  full::YPvPull,
-                  full::ZPvPull,
-                  full::XSvResidual,
-                  full::YSvResidual,
-                  full::ZSvResidual,
-                  full::XSvPull,
-                  full::YSvPull,
-                  full::ZSvPull);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -370,7 +338,6 @@ struct HfTreeCreatorXicToXiPiPi {
   Produces<o2::aod::HfCandXicToXiPiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfCandXicToXiPiPiFullKfs> rowCandidateFullKf;
   Produces<o2::aod::HfCandXicToXiPiPiFullPs> rowCandidateFullParticles;
-  Produces<o2::aod::HfCandXicToXiPiPiResiduals> rowCandidateResiduals;
 
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
@@ -380,9 +347,6 @@ struct HfTreeCreatorXicToXiPiPi {
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
-  // parameters for MC matching in residual process function
-  Configurable<bool> matchDecayedPions{"matchDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked topology"};
-  Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", true, "Match also candidates with daughter tracks that interact with material"};
 
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>>;
   using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>>;
@@ -791,102 +755,6 @@ struct HfTreeCreatorXicToXiPiPi {
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
-
-  void processResiduals(SelectedCandidatesMc const&,
-                        aod::TracksWMc const& tracks,
-                        aod::McParticles const& particles,
-                        aod::McCollisions const&)
-  {
-    rowCandidateResiduals.reserve(recSig.size());
-
-    recSig->bindExternalIndices(&tracks);
-
-    std::vector<int> arrDaughIndex;
-    int indexRecXicPlus;
-    int origin;
-    std::array<float, 3> pvResiduals;
-    std::array<float, 3> svResiduals;
-    std::array<float, 3> pvPulls;
-    std::array<float, 3> svPulls;
-
-    for (const auto& candidate : recSig) {
-      arrDaughIndex.clear();
-      indexRecXicPlus = -1;
-      origin = RecoDecay::OriginType::None;
-      pvResiduals = {-9999.9};
-      svResiduals = {-9999.9};
-      pvPulls = {-9999.9};
-      svPulls = {-9999.9};
-
-      auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
-                                       candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
-                                       candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
-                                       candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
-                                       candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
-
-      // get XicPlus as MC particle
-      if (matchDecayedPions && matchInteractionsWithMaterial) {
-        indexRecXicPlus = RecoDecay::getMatchedMCRec<false, true, false, true, true>(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, nullptr, 4);
-      } else if (matchDecayedPions && !matchInteractionsWithMaterial) {
-        indexRecXicPlus = RecoDecay::getMatchedMCRec<false, true, false, true, false>(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, nullptr, 4);
-      } else if (!matchDecayedPions && matchInteractionsWithMaterial) {
-        indexRecXicPlus = RecoDecay::getMatchedMCRec<false, true, false, false, true>(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, nullptr, 4);
-      } else {
-        indexRecXicPlus = RecoDecay::getMatchedMCRec<false, true, false, false, false>(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, nullptr, 4);
-      }
-      if (indexRecXicPlus == -1) {
-        continue;
-      }
-      auto particleXicPlusGen = particles.rawIteratorAt(indexRecXicPlus);
-      origin = RecoDecay::getCharmHadronOrigin(particles, particleXicPlusGen, false);
-
-      // get MC collision
-      auto mcCollision = particleXicPlusGen.mcCollision_as<aod::McCollisions>();
-
-      // get XicPlus daughters as MC particle
-      RecoDecay::getDaughters(particleXicPlusGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-      auto daugh0XicPlus = particles.rawIteratorAt(arrDaughIndex[0]);
-
-      // calculate residuals and pulls
-      float pResidual = candidate.p() - particleXicPlusGen.p();
-      float ptResidual = candidate.pt() - particleXicPlusGen.pt();
-      pvResiduals[0] = candidate.posX() - mcCollision.posX();
-      pvResiduals[1] = candidate.posY() - mcCollision.posY();
-      pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
-      svResiduals[0] = candidate.xSecondaryVertex() - daugh0XicPlus.vx();
-      svResiduals[1] = candidate.ySecondaryVertex() - daugh0XicPlus.vy();
-      svResiduals[2] = candidate.zSecondaryVertex() - daugh0XicPlus.vz();
-      try {
-        pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
-        pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
-        pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
-        svPulls[0] = svResiduals[0] / candidate.xSvErr();
-        svPulls[1] = svResiduals[1] / candidate.ySvErr();
-        svPulls[2] = svResiduals[2] / candidate.zSvErr();
-      } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -9999.9.";
-      }
-
-      // fill table
-      rowCandidateResiduals(
-        origin,
-        pResidual,
-        ptResidual,
-        pvResiduals[0],
-        pvResiduals[1],
-        pvResiduals[2],
-        pvPulls[0],
-        pvPulls[1],
-        pvPulls[2],
-        svResiduals[0],
-        svResiduals[1],
-        svResiduals[2],
-        svPulls[0],
-        svPulls[1],
-        svPulls[2]);
-    } // loop over reconstructed signal
-  }
-  PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processResiduals, "Process Residuals and pulls for both DCAFitter and KFParticle reconstruction", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

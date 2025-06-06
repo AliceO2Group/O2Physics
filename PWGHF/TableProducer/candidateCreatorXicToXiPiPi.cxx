@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <array>
 #include <algorithm>
 
 #include <KFParticleBase.h>
@@ -859,10 +860,12 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
   Spawns<aod::HfCandXicExt> rowCandidateXic;
   Produces<aod::HfCandXicMcRec> rowMcMatchRec;
   Produces<aod::HfCandXicMcGen> rowMcMatchGen;
+  Produces<aod::HfCandXicResid> rowResiduals;
 
   Configurable<bool> fillMcHistograms{"fillMcHistograms", true, "Fill validation plots"};
   Configurable<bool> matchDecayedPions{"matchDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", true, "Match also candidates with daughter tracks that interact with material"};
+  Configurable<bool> fillResidualTable{"fillResidualTable", false, "Fill table containing residuals and pulls of PV and SV"};
 
   HfEventSelectionMc hfEvSelMc;
 
@@ -930,6 +933,12 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     std::array<int, NDaughtersResonant> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
     // for non-prompt
     std::vector<int> idxBhadMothers;
+    // residuals and pulls
+    std::array<float, 2> momentumResiduals;
+    std::array<float, 3> pvResiduals;
+    std::array<float, 3> pvPulls;
+    std::array<float, 3> svResiduals;
+    std::array<float, 3> svPulls;
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
@@ -939,6 +948,13 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       nPionsDecayed = 0;
       nInteractionsWithMaterial = 0;
       arrDaughIndex.clear();
+      if (fillResidualTable) {
+        momentumResiduals.fill(-9999.f);
+        pvResiduals.fill(-9999.f);
+        pvPulls.fill(-9999.f);
+        svResiduals.fill(-9999.f);
+        svPulls.fill(-9999.f);
+      }
 
       auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
                                        candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
@@ -998,7 +1014,9 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
             if (fillMcHistograms) {
               registry.fill(HIST("hDebugRec"), LambdaToPPi);
             }
-            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRecXicPlus), &arrDaughIndex, std::array{0}, 1);
+            auto particleXicPlus = mcParticles.rawIteratorAt(indexRecXicPlus);
+            // Check whether XicPlus decays via resonant decay
+            RecoDecay::getDaughters(particleXicPlus, &arrDaughIndex, std::array{0}, 1);
             if (arrDaughIndex.size() == NDaughtersResonant) {
               for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
@@ -1010,22 +1028,53 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
             } else {
               flag = sign * (1 << aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi);
             }
+            // Check whether the charm baryon is non-prompt (from a b quark).
+            if (flag != 0) {
+              origin = RecoDecay::getCharmHadronOrigin(mcParticles, particleXicPlus, false);
+            }
+            // Calculate residuals and pulls
+            if (flag != 0 && fillResidualTable) {
+              auto mcCollision = particleXicPlus.template mcCollision_as<McCollisions>();
+              auto particleDaughter0 = mcParticles.rawIteratorAt(arrDaughIndex[0]);
+
+              momentumResiduals[0] = candidate.p() - particleXicPlus.p();
+              momentumResiduals[1] = candidate.pt() - particleXicPlus.pt();
+              pvResiduals[0] = candidate.posX() - mcCollision.posX();
+              pvResiduals[1] = candidate.posY() - mcCollision.posY();
+              pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
+              svResiduals[0] = candidate.xSecondaryVertex() - particleDaughter0.vx();
+              svResiduals[1] = candidate.ySecondaryVertex() - particleDaughter0.vy();
+              svResiduals[2] = candidate.zSecondaryVertex() - particleDaughter0.vz();
+              try {
+                pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+                pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+                pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+                svPulls[0] = svResiduals[0] / candidate.xSvErr();
+                svPulls[1] = svResiduals[1] / candidate.ySvErr();
+                svPulls[2] = svResiduals[2] / candidate.zSvErr();
+              } catch (const std::runtime_error& error) {
+                LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -9999.9.";
+              }
+            }
           }
         }
       }
 
-      // Check whether the charm baryon is non-prompt (from a b quark).
-      if (flag != 0) {
-        auto particle = mcParticles.rawIteratorAt(indexRecXicPlus);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false);
-      }
       // Fill histograms
       if (flag != 0 && fillMcHistograms) {
         registry.fill(HIST("hDecayedPions"), nPionsDecayed);
         registry.fill(HIST("hInteractionsWithMaterial"), nInteractionsWithMaterial);
       }
-      // Fill table
+
+      // Fill tables
       rowMcMatchRec(flag, origin);
+      if (fillResidualTable) {
+        rowResiduals(origin, momentumResiduals[0], momentumResiduals[1],
+                     pvResiduals[0], pvResiduals[1], pvResiduals[2],
+                     pvPulls[0], pvPulls[1], pvPulls[2],
+                     svResiduals[0], svResiduals[1], svResiduals[2],
+                     svPulls[0], svPulls[1], svPulls[2]);
+      }
     } // close loop over candidates
 
     // Match generated particles.
