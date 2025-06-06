@@ -9,17 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file trackPropagationTester.cxx
-/// \brief testing ground for track propagation
+/// \file multCentTable.cxx
+/// \brief unified, self-configuring mult/cent provider
 /// \author ALICE
 
 //===============================================================
 //
-// Experimental version of the track propagation task
-// this utilizes an analysis task module that can be employed elsewhere
-// and allows for the re-utilization of a material LUT
-//
-// candidate approach for core service approach
+// Unified, self-configuring multiplicity+centrality task 
+// still work in progress: use at your own discretion
 //
 //===============================================================
 
@@ -165,7 +162,7 @@ struct MultCentTable {
   PROCESS_SWITCH(MultCentTable, processRun2, "Process Run 2", false);
   PROCESS_SWITCH(MultCentTable, processRun3, "Process Run 3", true);
   PROCESS_SWITCH(MultCentTable, processRun3WithGlobalCounters, "Process Run 3 + global tracking counters", false);
-  PROCESS_SWITCH(MultCentTable, processMFT, "Process MFT info", true);
+  PROCESS_SWITCH(MultCentTable, processMFT, "Process MFT info", false);
   PROCESS_SWITCH(MultCentTable, processMonteCarlo, "Process Monte Carlo information", false);
   PROCESS_SWITCH(MultCentTable, processMonteCarlo2Mults, "Process Monte Carlo information", false);
   PROCESS_SWITCH(MultCentTable, processCentrality, "Generate centralities", true);
