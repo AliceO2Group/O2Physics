@@ -96,6 +96,7 @@ struct CascadeSelector {
   Configurable<bool> doNoSameBunchPileUp{"doNoSameBunchPileUp", true, "Switch to apply NoSameBunchPileUp event selection"};
   Configurable<int> INEL{"INEL", 0, "Number of charged tracks within |eta| < 1 has to be greater than value"};
   Configurable<double> maxVertexZ{"maxVertexZ", 10., "Maximum value of z coordinate of PV"};
+  Configurable<float> etaCascades{"etaCascades", 0.8, "min/max of eta for cascades"};
 
   // Tracklevel
   Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 3, "TPC NSigma bachelor"};
@@ -104,7 +105,6 @@ struct CascadeSelector {
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
   Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
   Configurable<float> etaTracks{"etaTracks", 1.0, "min/max of eta for tracks"};
-  Configurable<float> etaCascades{"etaCascades", 0.8, "min/max of eta for cascades"};
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -122,28 +122,32 @@ struct CascadeSelector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   // TODO: variables as function of Omega mass, only do Xi for now
-  AxisSpec vertexAxis = {100, -10.0f, 10.0f, "cm"};
-  AxisSpec dcaAxis = {50, 0.0f, 5.0f, "cm"};
-  // AxisSpec invMassAxis = {1000, 1.0f, 2.0f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec invXiMassAxis = {100, 1.28f, 1.38f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec invOmegaMassAxis = {100, 1.62f, 1.72f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec ptAxis = {150, 0, 15, "#it{p}_{T}"};
-  AxisSpec rapidityAxis{100, -1.f, 1.f, "y"};
+  ConfigurableAxis radiusAxis = {"radiusAxis", {100, 0.0f, 50.0f}, "cm"};
+  ConfigurableAxis cpaAxis = {"cpaAxis", {100, 0.95f, 1.0f}, "CPA"};
+  ConfigurableAxis vertexAxis = {"vertexAxis", {100, -10.0f, 10.0f}, "cm"};
+  ConfigurableAxis dcaAxis = {"dcaAxis", {100, 0.0f, 2.0f}, "cm"};
+  ConfigurableAxis invXiMassAxis = {"invXiMassAxis", {100, 1.28f, 1.38f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis invOmegaMassAxis = {"invOmegaMassAxis", {100, 1.62f, 1.72f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis ptAxis = {"ptAxis", {150, 0, 15}, "#it{p}_{T}"};
+  ConfigurableAxis rapidityAxis{"rapidityAxis", {100, -1.f, 1.f}, "y"};
+  ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
+  AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
+  AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
   HistogramRegistry registry{
     "registry",
     {
       // basic selection variables
-      {"hV0Radius", "hV0Radius", {HistType::kTH3F, {{100, 0.0f, 100.0f, "cm"}, invXiMassAxis, ptAxis}}},
-      {"hCascRadius", "hCascRadius", {HistType::kTH3F, {{100, 0.0f, 100.0f, "cm"}, invXiMassAxis, ptAxis}}},
-      {"hV0CosPA", "hV0CosPA", {HistType::kTH3F, {{100, 0.95f, 1.0f}, invXiMassAxis, ptAxis}}},
-      {"hCascCosPA", "hCascCosPA", {HistType::kTH3F, {{100, 0.95f, 1.0f}, invXiMassAxis, ptAxis}}},
+      {"hV0Radius", "hV0Radius", {HistType::kTH3F, {radiusAxis, invXiMassAxis, ptAxis}}},
+      {"hCascRadius", "hCascRadius", {HistType::kTH3F, {radiusAxis, invXiMassAxis, ptAxis}}},
+      {"hV0CosPA", "hV0CosPA", {HistType::kTH3F, {cpaAxis, invXiMassAxis, ptAxis}}},
+      {"hCascCosPA", "hCascCosPA", {HistType::kTH3F, {cpaAxis, invXiMassAxis, ptAxis}}},
       {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
       {"hDCABachToPV", "hDCABachToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
       {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH3F, {vertexAxis, invXiMassAxis, ptAxis}}},
       {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
       {"hDCACascDau", "hDCACascDau", {HistType::kTH3F, {dcaAxis, invXiMassAxis, ptAxis}}},
-      {"hLambdaMass", "hLambdaMass", {HistType::kTH3F, {{100, 1.0f, 1.2f, "Inv. Mass (GeV/c^{2})"}, invXiMassAxis, ptAxis}}},
+      {"hLambdaMass", "hLambdaMass", {HistType::kTH3F, {invLambdaMassAxis, invXiMassAxis, ptAxis}}},
 
       {"hMassXiMinus", "hMassXiMinus", {HistType::kTH3F, {invXiMassAxis, ptAxis, rapidityAxis}}},
       {"hMassXiPlus", "hMassXiPlus", {HistType::kTH3F, {invXiMassAxis, ptAxis, rapidityAxis}}},
@@ -159,12 +163,12 @@ struct CascadeSelector {
       // {"hMassXi5", "Xi inv mass after bachelor PID cut", {HistType::kTH2F, {invMassAxis, ptAxis}}},
 
       // ITS & TPC clusters, with Xi inv mass
-      {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH3F, {{160, -0.5, 159.5, "TPC crossed rows"}, invXiMassAxis, ptAxis}}},
-      {"hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", {HistType::kTH3F, {{160, -0.5, 159.5, "TPC crossed rows"}, invXiMassAxis, ptAxis}}},
-      {"hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", {HistType::kTH3F, {{160, -0.5, 159.5, "TPC crossed rows"}, invXiMassAxis, ptAxis}}},
-      {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invXiMassAxis, ptAxis}}},
-      {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invXiMassAxis, ptAxis}}},
-      {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH3F, {{8, -0.5, 7.5, "number of ITS clusters"}, invXiMassAxis, ptAxis}}},
+      {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
+      {"hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
+      {"hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", {HistType::kTH3F, {tpcRowsAxis, invXiMassAxis, ptAxis}}},
+      {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
+      {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
+      {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH3F, {itsClustersAxis, invXiMassAxis, ptAxis}}},
 
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
     },
@@ -196,23 +200,23 @@ struct CascadeSelector {
 
     if (doprocessRecMC) {
       // only create the rec matched to gen histograms if relevant
-      registry.add("truerec/hV0Radius", "hV0Radius", HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}});
-      registry.add("truerec/hCascRadius", "hCascRadius", HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}});
-      registry.add("truerec/hV0CosPA", "hV0CosPA", HistType::kTH1F, {{100, 0.95f, 1.0f}});
-      registry.add("truerec/hCascCosPA", "hCascCosPA", HistType::kTH1F, {{100, 0.95f, 1.0f}});
+      registry.add("truerec/hV0Radius", "hV0Radius", HistType::kTH1F, {radiusAxis});
+      registry.add("truerec/hCascRadius", "hCascRadius", HistType::kTH1F, {radiusAxis});
+      registry.add("truerec/hV0CosPA", "hV0CosPA", HistType::kTH1F, {cpaAxis});
+      registry.add("truerec/hCascCosPA", "hCascCosPA", HistType::kTH1F, {cpaAxis});
       registry.add("truerec/hDCAPosToPV", "hDCAPosToPV", HistType::kTH1F, {vertexAxis});
       registry.add("truerec/hDCANegToPV", "hDCANegToPV", HistType::kTH1F, {vertexAxis});
       registry.add("truerec/hDCABachToPV", "hDCABachToPV", HistType::kTH1F, {vertexAxis});
       registry.add("truerec/hDCAV0ToPV", "hDCAV0ToPV", HistType::kTH1F, {vertexAxis});
-      registry.add("truerec/hDCAV0Dau", "hDCAV0Dau", HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}});
-      registry.add("truerec/hDCACascDau", "hDCACascDau", HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}});
-      registry.add("truerec/hLambdaMass", "hLambdaMass", HistType::kTH1F, {{500, 1.0f, 1.5f, "Inv. Mass (GeV/c^{2})"}});
-      registry.add("truerec/hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}});
-      registry.add("truerec/hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}});
-      registry.add("truerec/hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}});
-      registry.add("truerec/hITSnClustersPos", "hITSnClustersPos", HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}});
-      registry.add("truerec/hITSnClustersNeg", "hITSnClustersNeg", HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}});
-      registry.add("truerec/hITSnClustersBach", "hITSnClustersBach", HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}});
+      registry.add("truerec/hDCAV0Dau", "hDCAV0Dau", HistType::kTH1F, {dcaAxis});
+      registry.add("truerec/hDCACascDau", "hDCACascDau", HistType::kTH1F, {dcaAxis});
+      registry.add("truerec/hLambdaMass", "hLambdaMass", HistType::kTH1F, {invLambdaMassAxis});
+      registry.add("truerec/hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", HistType::kTH1F, {tpcRowsAxis});
+      registry.add("truerec/hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", HistType::kTH1F, {tpcRowsAxis});
+      registry.add("truerec/hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", HistType::kTH1F, {tpcRowsAxis});
+      registry.add("truerec/hITSnClustersPos", "hITSnClustersPos", HistType::kTH1F, {itsClustersAxis});
+      registry.add("truerec/hITSnClustersNeg", "hITSnClustersNeg", HistType::kTH1F, {itsClustersAxis});
+      registry.add("truerec/hITSnClustersBach", "hITSnClustersBach", HistType::kTH1F, {itsClustersAxis});
       registry.add("truerec/hXiMinus", "hXiMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hXiPlus", "hXiPlus", HistType::kTH2F, {ptAxis, rapidityAxis});
       registry.add("truerec/hOmegaMinus", "hOmegaMinus", HistType::kTH2F, {ptAxis, rapidityAxis});
@@ -523,14 +527,20 @@ struct CascadeCorrelations {
   Configurable<bool> doTFBorderCut{"doTFBorderCut", true, "Switch to apply TimeframeBorderCut event selection"};
   Configurable<bool> doSel8{"doSel8", true, "Switch to apply sel8 event selection"};
 
-  AxisSpec invMassAxis = {1000, 1.0f, 2.0f, "Inv. Mass (GeV/c^{2})"};
-  AxisSpec deltaPhiAxis = {180, -PIHalf, 3 * PIHalf, "#Delta#varphi"};       // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
-  AxisSpec deltaYAxis = {40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"}; // TODO: narrower range?
-  AxisSpec ptAxis = {150, 0, 15, "#it{p}_{T}"};
-  AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
-  AxisSpec vertexAxis = {200, -10.0f, 10.0f, "cm"};
-  AxisSpec multiplicityAxis{100, 0, 100, "Multiplicity (MultFT0M?)"};
+  ConfigurableAxis radiusAxis = {"radiusAxis", {100, 0.0f, 50.0f}, "cm"};
+  ConfigurableAxis cpaAxis = {"cpaAxis", {100, 0.95f, 1.0f}, "CPA"};
+  ConfigurableAxis invMassAxis = {"invMassAxis", {1000, 1.0f, 2.0f}, "Inv. Mass (GeV/c^{2})"};
+  ConfigurableAxis deltaPhiAxis = {"deltaPhiAxis", {180, -PIHalf, 3 * PIHalf}, "#Delta#varphi"}; // 180 is divisible by 18 (tpc sectors) and 20 (run 2 binning)
+  ConfigurableAxis ptAxis = {"ptAxis", {150, 0, 15}, "#it{p}_{T}"};
+  ConfigurableAxis vertexAxis = {"vertexAxis", {200, -10.0f, 10.0f}, "cm"};
+  ConfigurableAxis dcaAxis = {"dcaAxis", {100, 0.0f, 2.0f}, "cm"};
+  ConfigurableAxis multiplicityAxis{"multiplicityAxis", {100, 0, 100}, "Multiplicity (MultFT0M?)"};
+  ConfigurableAxis invLambdaMassAxis{"invLambdaMassAxis", {100, 1.07f, 1.17f}, "Inv. Mass (GeV/c^{2})"};
+  AxisSpec deltaYAxis{40, -2 * maxRapidity, 2 * maxRapidity, "#Delta y"};
   AxisSpec rapidityAxis{100, -maxRapidity, maxRapidity, "y"};
+  AxisSpec selectionFlagAxis{4, -0.5f, 3.5f, "Selection flag of casc candidate"};
+  AxisSpec itsClustersAxis{8, -0.5, 7.5, "number of ITS clusters"};
+  AxisSpec tpcRowsAxis{160, -0.5, 159.5, "TPC crossed rows"};
 
   // initialize efficiency maps
   TH1D* hEffXiMin;
@@ -589,23 +599,23 @@ struct CascadeCorrelations {
       {"hTriggerQA", "hTriggerQA", {HistType::kTH1F, {{2, -0.5, 1.5, "Trigger y/n"}}}},
 
       // basic selection variables (after cuts)
-      {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
-      {"hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
-      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.0f}}}},
-      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.0f}}}},
+      {"hV0Radius", "hV0Radius", {HistType::kTH1F, {radiusAxis}}},
+      {"hCascRadius", "hCascRadius", {HistType::kTH1F, {radiusAxis}}},
+      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {cpaAxis}}},
+      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {cpaAxis}}},
       {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {vertexAxis}}},
-      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}}}},
-      {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}}}},
-      {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{500, 1.0f, 1.5f, "Inv. Mass (GeV/c^{2})"}}}},
-      {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}}}},
-      {"hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", {HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}}}},
-      {"hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", {HistType::kTH1F, {{160, -0.5, 159.5, "TPC crossed rows"}}}},
-      {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}}}},
-      {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}}}},
-      {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH1F, {{8, -0.5, 7.5, "number of ITS clusters"}}}},
+      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {dcaAxis}}},
+      {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {dcaAxis}}},
+      {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {invLambdaMassAxis}}},
+      {"hTPCnCrossedRowsPos", "hTPCnCrossedRowsPos", {HistType::kTH1F, {tpcRowsAxis}}},
+      {"hTPCnCrossedRowsNeg", "hTPCnCrossedRowsNeg", {HistType::kTH1F, {tpcRowsAxis}}},
+      {"hTPCnCrossedRowsBach", "hTPCnCrossedRowsBach", {HistType::kTH1F, {tpcRowsAxis}}},
+      {"hITSnClustersPos", "hITSnClustersPos", {HistType::kTH1F, {itsClustersAxis}}},
+      {"hITSnClustersNeg", "hITSnClustersNeg", {HistType::kTH1F, {itsClustersAxis}}},
+      {"hITSnClustersBach", "hITSnClustersBach", {HistType::kTH1F, {itsClustersAxis}}},
 
       {"hSelectionFlag", "hSelectionFlag", {HistType::kTH1I, {selectionFlagAxis}}},
       {"hAutoCorrelation", "hAutoCorrelation", {HistType::kTH1I, {{4, -0.5f, 3.5f, "Types of SS autocorrelation"}}}},
