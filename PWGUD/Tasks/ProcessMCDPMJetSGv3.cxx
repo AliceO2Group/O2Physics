@@ -56,18 +56,21 @@ struct ProcessMCDPMJetSGv3 {
   double massPion = 0.;
   double massKaon = 0.;
   double massProton = 0.;
+  const int codePion = 211;
+  const int codeKaon = 321;
+  const int codeProton = 2212;
 
   void init(InitContext const&)
   {
-    TParticlePDG* pionPDG = fPDG->GetParticle(211);
+    TParticlePDG* pionPDG = fPDG->GetParticle(codePion);
     if (pionPDG != nullptr) {
       massPion = pionPDG->Mass();
     }
-    TParticlePDG* kaonPDG = fPDG->GetParticle(321);
+    TParticlePDG* kaonPDG = fPDG->GetParticle(codeKaon);
     if (kaonPDG != nullptr) {
       massKaon = kaonPDG->Mass();
     }
-    TParticlePDG* protonPDG = fPDG->GetParticle(2212);
+    TParticlePDG* protonPDG = fPDG->GetParticle(codeProton);
     if (protonPDG != nullptr) {
       massProton = protonPDG->Mass();
     }
@@ -147,13 +150,13 @@ struct ProcessMCDPMJetSGv3 {
     histos.fill(HIST("eventCounter"), 0.5);
 
     // auto massPion = 0.;
-    // TParticlePDG pionPDG = fPDG->GetParticle(211);
+    // TParticlePDG pionPDG = fPDG->GetParticle(codePion);
     // massPion = pionPDG.Mass();
     // auto massKaon = 0.;
-    // TParticlePDG kaonPDG = fPDG->GetParticle(321);
+    // TParticlePDG kaonPDG = fPDG->GetParticle(codeKaon);
     // massKaon = kaonPDG.Mass();
     // auto massProton = 0.;
-    // TParticlePDG protonPDG = fPDG->GetParticle(2212);
+    // TParticlePDG protonPDG = fPDG->GetParticle(codeProton);
     // massProton = protonPDG.Mass();
     histos.fill(HIST("numberOfTracksMC"), mcParticles.size());
     // LOGF(info, "New event! mcParticles.size() = %d", mcParticles.size());
@@ -174,29 +177,29 @@ struct ProcessMCDPMJetSGv3 {
         continue;
       // if(mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta())<0.9){ // do this in the context of the MC loop ! (context matters!!!)
       TLorentzVector pMC;
-      if (std::abs(mcParticle.pdgCode()) == 211) {
+      if (std::abs(mcParticle.pdgCode()) == codePion) {
         // histos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
         pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
         histos.fill(HIST("ptGeneratedPion"), pMC.Pt());
       }
-      if (std::abs(mcParticle.pdgCode()) == 321) {
+      if (std::abs(mcParticle.pdgCode()) == codeKaon) {
         // histos.fill(HIST("ptGenerateKaon"), mcParticle.pt());
         pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massKaon);
         histos.fill(HIST("ptGeneratedKaon"), pMC.Pt());
       }
-      if (std::abs(mcParticle.pdgCode()) == 2212) {
+      if (std::abs(mcParticle.pdgCode()) == codeProton) {
         // histos.fill(HIST("ptGeneratedProton"), mcParticle.pt());
         pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massProton);
         histos.fill(HIST("ptGeneratedProton"), pMC.Pt());
       }
       if (std::abs(pMC.Rapidity()) < 0.8) {
-        if (std::abs(mcParticle.pdgCode()) == 211)
+        if (std::abs(mcParticle.pdgCode()) == codePion)
           histos.fill(HIST("ptGeneratedPionAxE"), pMC.Pt());
-        if (std::abs(mcParticle.pdgCode()) == 321)
+        if (std::abs(mcParticle.pdgCode()) == codeKaon)
           histos.fill(HIST("ptGeneratedKaonAxE"), pMC.Pt());
-        if (std::abs(mcParticle.pdgCode()) == 2212)
+        if (std::abs(mcParticle.pdgCode()) == codeProton)
           histos.fill(HIST("ptGeneratedProtonAxE"), pMC.Pt());
-        if (mcParticle.pdgCode() == 2212) {
+        if (mcParticle.pdgCode() == codeProton) {
           histos.fill(HIST("ptGeneratedProtonAxEPos"), pMC.Pt());
         } else {
           histos.fill(HIST("ptGeneratedProtonAxENeg"), pMC.Pt());
@@ -217,13 +220,13 @@ struct ProcessMCDPMJetSGv3 {
     PVContributors.bindTable(tracks);
 
     // auto massPion = 0.;
-    // TParticlePDG pionPDG = fPDG->GetParticle(211);
+    // TParticlePDG pionPDG = fPDG->GetParticle(codePion);
     // massPion = pionPDG.Mass();
     // auto massKaon = 0.;
-    // TParticlePDG kaonPDG = fPDG->GetParticle(321);
+    // TParticlePDG kaonPDG = fPDG->GetParticle(codeKaon);
     // massKaon = kaonPDG.Mass();
     // auto massProton = 0.;
-    // TParticlePDG protonPDG = fPDG->GetParticle(2212);
+    // TParticlePDG protonPDG = fPDG->GetParticle(codeProton);
     // massProton = protonPDG.Mass();
 
     histos.fill(HIST("numberOfTracksReco"), tracks.size());
@@ -276,8 +279,8 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaPion"), track.pt(), nSigmaPi);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              // if(abs(mcParticle.pdgCode())==211 && mcParticle.isPhysicalPrimary()) howManyPionsHavePionMCandPrimaries += 1;
-              if (std::abs(mcParticle.pdgCode()) == 211) {
+              // if(abs(mcParticle.pdgCode())==codePion && mcParticle.isPhysicalPrimary()) howManyPionsHavePionMCandPrimaries += 1;
+              if (std::abs(mcParticle.pdgCode()) == codePion) {
                 histos.fill(HIST("hSigmaPionTruth"), track.pt(), nSigmaPi);
                 histos.fill(HIST("allreconstructedPFPion"), track.pt());
                 if (mcParticle.isPhysicalPrimary()) {
@@ -290,7 +293,7 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaKaon"), track.pt(), nSigmaKa);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              if (std::abs(mcParticle.pdgCode()) == 321) {
+              if (std::abs(mcParticle.pdgCode()) == codeKaon) {
                 histos.fill(HIST("hSigmaKaonTruth"), track.pt(), nSigmaKa);
                 histos.fill(HIST("allreconstructedPFKaon"), track.pt());
                 if (mcParticle.isPhysicalPrimary()) {
@@ -303,17 +306,17 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaProton"), track.pt(), nSigmaPr);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              if (std::abs(mcParticle.pdgCode()) == 2212) {
+              if (std::abs(mcParticle.pdgCode()) == codeProton) {
                 histos.fill(HIST("hSigmaProtonTruth"), track.pt(), nSigmaPr);
                 histos.fill(HIST("allreconstructedPFProton"), track.pt());
-                if (mcParticle.pdgCode() == 2212) {
+                if (mcParticle.pdgCode() == codeProton) {
                   histos.fill(HIST("allreconstructedPFProtonPos"), track.pt());
                 } else {
                   histos.fill(HIST("allreconstructedPFProtonNeg"), track.pt());
                 }
                 if (mcParticle.isPhysicalPrimary()) {
                   histos.fill(HIST("ptReconstructedProton"), track.pt());
-                  if (mcParticle.pdgCode() == 2212) {
+                  if (mcParticle.pdgCode() == codeProton) {
                     histos.fill(HIST("ptReconstructedProtonPos"), track.pt());
                   } else {
                     histos.fill(HIST("ptReconstructedProtonNeg"), track.pt());
@@ -332,8 +335,8 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaPionTOF"), track.pt(), nSigmaPiTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              // if(abs(mcParticle.pdgCode())==211 && mcParticle.isPhysicalPrimary()) howManyPionsHavePionMCandPrimaries += 1;
-              if (std::abs(mcParticle.pdgCode()) == 211) {
+              // if(abs(mcParticle.pdgCode())==codePion && mcParticle.isPhysicalPrimary()) howManyPionsHavePionMCandPrimaries += 1;
+              if (std::abs(mcParticle.pdgCode()) == codePion) {
                 histos.fill(HIST("hSigmaPionTruthTOF"), track.pt(), nSigmaPiTOF);
                 histos.fill(HIST("allreconstructedPFPionTOF"), track.pt());
                 if (mcParticle.isPhysicalPrimary()) {
@@ -346,7 +349,7 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaKaonTOF"), track.pt(), nSigmaKaTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              if (std::abs(mcParticle.pdgCode()) == 321) {
+              if (std::abs(mcParticle.pdgCode()) == codeKaon) {
                 histos.fill(HIST("hSigmaKaonTruthTOF"), track.pt(), nSigmaKaTOF);
                 histos.fill(HIST("allreconstructedPFKaonTOF"), track.pt());
                 if (mcParticle.isPhysicalPrimary()) {
@@ -359,7 +362,7 @@ struct ProcessMCDPMJetSGv3 {
             histos.fill(HIST("hSigmaProtonTOF"), track.pt(), nSigmaPrTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
-              if (std::abs(mcParticle.pdgCode()) == 2212) {
+              if (std::abs(mcParticle.pdgCode()) == codeProton) {
                 histos.fill(HIST("hSigmaProtonTruthTOF"), track.pt(), nSigmaPrTOF);
                 histos.fill(HIST("allreconstructedPFProtonTOF"), track.pt());
                 if (mcParticle.isPhysicalPrimary()) {
