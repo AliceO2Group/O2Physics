@@ -92,7 +92,7 @@ struct ProcessMCDPMJetSGv3 {
     const AxisSpec axisBC{1000, -10000.0, +10000.0, "BCs"};
     const AxisSpec axisBCext{100000, -10000000.0, +10000000.0, "BCs"};
     const AxisSpec axisCosTheta{100, -1.0, +1.0, "cos#theta"};
-    const AxisSpec axisPhi{600, -TMath::Pi(), -TMath::Pi(), "#varphi"};
+    const AxisSpec axisPhi{600, -o2::constants::math::PI, -o2::constants::math::PI, "#varphi"};
 
     // create histograms
     histos.add("hdEdx", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {1000, 0.0, 2000.0}});
