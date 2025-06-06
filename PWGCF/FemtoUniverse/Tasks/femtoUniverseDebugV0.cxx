@@ -69,8 +69,8 @@ struct FemtoUniverseDebugV0 {
 
   /// Histogramming
   FemtoUniverseEventHisto eventHisto;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> posChildHistos;
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negChildHistos;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 3> positiveChildHistos;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0Child, 4> negativeChildHistos;
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kV0> V0Histos;
 
   /// Histogram output
@@ -81,8 +81,13 @@ struct FemtoUniverseDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry);
+<<<<<<< Updated upstream
     posChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodePositiveChild.value, true);
     negChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
+=======
+    positiveChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodePositiveChild.value, true);
+    negativeChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
+>>>>>>> Stashed changes
     V0Histos.init(&V0Registry, confV0TempFitVarpTBins, confV0TempFitVarBins, false, confPDGCodeV0.value, true);
 
     thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {50, -5, 5}});
@@ -97,14 +102,15 @@ struct FemtoUniverseDebugV0 {
       if (!part.has_children()) {
         continue;
       }
-      const auto& posChild = parts.iteratorAt(part.index() - 2);
-      const auto& negChild = parts.iteratorAt(part.index() - 1);
-      if (posChild.globalIndex() != part.childrenIds()[0] || negChild.globalIndex() != part.childrenIds()[1]) {
+      const auto& positiveChild = parts.iteratorAt(part.index() - 2);
+      const auto& negativeChild = parts.iteratorAt(part.index() - 1);
+      if (positiveChild.globalIndex() != part.childrenIds()[0] || negativeChild.globalIndex() != part.childrenIds()[1]) {
         LOG(warn) << "Indices of V0 children do not match";
         continue;
       }
 
       // Check cuts on V0 children
+<<<<<<< Updated upstream
       if (posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           isFullPIDSelected(posChild.pidCut(), posChild.p(), 999.f, confPositiveChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confPositiveChildPIDnSigmaMax.value, 1.f) &&
@@ -118,6 +124,20 @@ struct FemtoUniverseDebugV0 {
         V0Histos.fillQA<false, true>(part);
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);
+=======
+      if (positiveChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          negativeChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
+          isFullPIDSelected(positiveChild.pidCut(), positiveChild.p(), 999.f, confPositiveChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confPositiveChildPIDnSigmaMax.value, 1.f) &&
+          isFullPIDSelected(negativeChild.pidCut(), negativeChild.p(), 999.f, confNegativeChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confNegativeChildPIDnSigmaMax.value, 1.f)) {
+        auto positiveChildMass = pdg->Mass(confPDGCodePositiveChild);
+        auto negativeChildMass = pdg->Mass(confPDGCodeNegativeChild);
+        auto positiveChildBoosted = FemtoUniverseMath::boostPRF<decltype(positiveChild)>(positiveChild, positiveChildMass, negativeChild, negativeChildMass);
+        auto cosineTheta = (positiveChildBoosted.Px() * part.px() + positiveChildBoosted.Py() * part.py() + positiveChildBoosted.Pz() * part.pz()) / (positiveChildBoosted.P() * part.p());
+
+        V0Histos.fillQA<false, true>(part);
+        positiveChildHistos.fillQA<false, true>(positiveChild);
+        negativeChildHistos.fillQA<false, true>(negativeChild);
+>>>>>>> Stashed changes
         thetaRegistry.fill(HIST("Theta/hTheta"), part.p(), cosineTheta);
       }
     }
