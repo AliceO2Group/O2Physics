@@ -15,7 +15,7 @@
 
 //===============================================================
 //
-// Unified, self-configuring multiplicity+centrality task 
+// Unified, self-configuring multiplicity+centrality task
 // still work in progress: use at your own discretion
 //
 //===============================================================
@@ -61,10 +61,9 @@ struct MultCentTable {
   // hold multiplicity values for layover to centrality calculation
   std::vector<o2::common::multiplicity::multEntry> mults;
 
-  // slicers 
+  // slicers
   Preslice<soa::Join<aod::TracksIU, aod::TracksExtra>> slicerTracksIU = o2::aod::track::collisionId;
   Preslice<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>> slicerTracksIUwithSelections = o2::aod::track::collisionId;
- 
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -83,12 +82,12 @@ struct MultCentTable {
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                 soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks,
-                 soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs,
-                 aod::Zdcs const& zdcs,
-                 aod::FV0As const& fv0as,
-                 aod::FT0s const& ft0s,
-                 aod::FDDs const& fdds)
+                   soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks,
+                   soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs,
+                   aod::Zdcs const& zdcs,
+                   aod::FV0As const& fv0as,
+                   aod::FT0s const& ft0s,
+                   aod::FDDs const& fdds)
   {
     mults.clear();
     for (auto const& collision : collisions) {
@@ -120,38 +119,38 @@ struct MultCentTable {
     }
   }
   void processMFT(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                    o2::aod::MFTTracks const& mfttracks,
-                    soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
+                  o2::aod::MFTTracks const& mfttracks,
+                  soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
   {
-    if(opts.mEnabledTables[o2::common::multiplicity::kMFTMults]){
+    if (opts.mEnabledTables[o2::common::multiplicity::kMFTMults]) {
       // populates MFT information in the mults buffer (in addition to filling table)
       module.collisionProcessMFT(collision, mfttracks, retracks, mults, products);
     }
   }
   void processMonteCarlo(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    if(opts.mEnabledTables[o2::common::multiplicity::kMultMCExtras]){
+    if (opts.mEnabledTables[o2::common::multiplicity::kMultMCExtras]) {
       module.collisionProcessMonteCarlo(mcCollision, mcParticles, pdg, products);
     }
   }
   void processMonteCarlo2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
   {
-    if(opts.mEnabledTables[o2::common::multiplicity::kMult2MCExtras]){
+    if (opts.mEnabledTables[o2::common::multiplicity::kMult2MCExtras]) {
       // establish simple interlink for posterior analysis (derived data)
-      products.tableExtraMult2MCExtras(collision.mcCollisionId()); 
+      products.tableExtraMult2MCExtras(collision.mcCollisionId());
     }
   }
   void processCentrality(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
-    // it is important that this function is at the end of the other process functions. 
+    // it is important that this function is at the end of the other process functions.
     // it requires `mults` to be properly set, which will only happen after the other process
-    // functions have been called. 
+    // functions have been called.
 
-    // internally, the function below will do nothing if no centrality is requested. 
-    // it is thus safer to always keep the actual process function for centrality 
-    // generation to true, since the requisites for being in this context are 
+    // internally, the function below will do nothing if no centrality is requested.
+    // it is thus safer to always keep the actual process function for centrality
+    // generation to true, since the requisites for being in this context are
     // always fulfilled
-    if(collisions.size() != mults.size()) { 
+    if (collisions.size() != mults.size()) {
       LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
     }
     auto const& collision = collisions.begin();

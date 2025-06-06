@@ -63,7 +63,7 @@ static const std::vector<std::string> tableNames{
   "kMFTMults",
   "kMultsGlobal",
 
-  //centrality subcomponent
+  // centrality subcomponent
   "CentRun2V0Ms",
   "CentRun2V0As",
   "CentRun2SPDTrks",
@@ -84,51 +84,76 @@ static constexpr int nTablesConst = 32;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}, {-1}, {-1}, {-1},
-  {-1}, {-1}}; 
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1},
+  {-1}};
 
 // table index : match order above
-enum tableIndex {   kFV0Mults,        // standard
-                    kFV0AOuterMults,  // standard
-                    kFT0Mults,        // standard 
-                    kFDDMults,        // standard
-                    kZDCMults,        // standard 
-                    kTrackletMults,   // Run 2 
-                    kTPCMults,        // standard
-                    kPVMults,         // standard
-                    kMultsExtra,      // standard
-                    kMultSelections,  // event selection
-                    kFV0MultZeqs,     // zeq calib, standard
-                    kFT0MultZeqs,     // zeq calib, standard
-                    kFDDMultZeqs,     // zeq calib, standard
-                    kPVMultZeqs,      // zeq calib, standard
-                    kMultMCExtras,    // MC exclusive
-                    kMult2MCExtras,   // MC exclusive
-                    kMFTMults,        // requires MFT task
-                    kMultsGlobal,     // requires track selection task
+enum tableIndex { kFV0Mults,       // standard
+                  kFV0AOuterMults, // standard
+                  kFT0Mults,       // standard
+                  kFDDMults,       // standard
+                  kZDCMults,       // standard
+                  kTrackletMults,  // Run 2
+                  kTPCMults,       // standard
+                  kPVMults,        // standard
+                  kMultsExtra,     // standard
+                  kMultSelections, // event selection
+                  kFV0MultZeqs,    // zeq calib, standard
+                  kFT0MultZeqs,    // zeq calib, standard
+                  kFDDMultZeqs,    // zeq calib, standard
+                  kPVMultZeqs,     // zeq calib, standard
+                  kMultMCExtras,   // MC exclusive
+                  kMult2MCExtras,  // MC exclusive
+                  kMFTMults,       // requires MFT task
+                  kMultsGlobal,    // requires track selection task
 
-                    //centrality subcomponent
-                    kCentRun2V0Ms,      // Run 2
-                    kCentRun2V0As,      // Run 2
-                    kCentRun2SPDTrks,   // Run 2
-                    kCentRun2SPDClss,   // Run 2
-                    kCentRun2CL0s,      // Run 2
-                    kCentRun2CL1s,      // Run 2
-                    kCentFV0As,         // standard Run 3
-                    kCentFT0Ms,         // standard Run 3
-                    kCentFT0As,         // standard Run 3
-                    kCentFT0Cs,         // standard Run 3
-                    kCentFT0CVariant1s, // standard Run 3
-                    kCentFDDMs,         // standard Run 3
-                    kCentNTPVs,         // standard Run 3
-                    kCentNGlobals,      // requires track selection task 
-                    kCentMFTs,          // requires MFT task
-                    kNTables};
+                  // centrality subcomponent
+                  kCentRun2V0Ms,      // Run 2
+                  kCentRun2V0As,      // Run 2
+                  kCentRun2SPDTrks,   // Run 2
+                  kCentRun2SPDClss,   // Run 2
+                  kCentRun2CL0s,      // Run 2
+                  kCentRun2CL1s,      // Run 2
+                  kCentFV0As,         // standard Run 3
+                  kCentFT0Ms,         // standard Run 3
+                  kCentFT0As,         // standard Run 3
+                  kCentFT0Cs,         // standard Run 3
+                  kCentFT0CVariant1s, // standard Run 3
+                  kCentFDDMs,         // standard Run 3
+                  kCentNTPVs,         // standard Run 3
+                  kCentNGlobals,      // requires track selection task
+                  kCentMFTs,          // requires MFT task
+                  kNTables };
 
 struct products : o2::framework::ProducesGroup {
   //__________________________________________________
@@ -175,8 +200,8 @@ struct products : o2::framework::ProducesGroup {
   // FIXME - future development
 };
 
-// for providing temporary buffer 
-// FIXME ideally cursors could be readable 
+// for providing temporary buffer
+// FIXME ideally cursors could be readable
 // to avoid duplicate memory allocation but ok
 struct multEntry {
   float multFV0A = -999.0f;
@@ -192,8 +217,8 @@ struct multEntry {
   float multZEM2 = -999.0f;
   float multZPA = -999.0f;
   float multZPC = -999.0f;
-  int multTracklets = 0;        
-  
+  int multTracklets = 0;
+
   int multNContribs = 0;        // PVMult 0.8
   int multNContribsEta1 = 0;    // PVMult 1.0
   int multNContribsEtaHalf = 0; // PVMult 0.5
@@ -216,13 +241,13 @@ struct multEntry {
   float multFDDCZeq = -999.0f;
   float multNContribsZeq = 0;
 
-  int multGlobalTracks = 0; // multsGlobal                 
+  int multGlobalTracks = 0;                     // multsGlobal
   int multNbrContribsEta05GlobalTrackWoDCA = 0; // multsGlobal
   int multNbrContribsEta08GlobalTrackWoDCA = 0; // multsGlobal
   int multNbrContribsEta10GlobalTrackWoDCA = 0; // multsGlobal
 
   int multMFTAllTracks = 0; // mft
-  int multMFTTracks = 0; // mft
+  int multMFTTracks = 0;    // mft
 };
 
 // strangenessBuilder: 1st-order configurables
@@ -250,7 +275,7 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> ccdbPathCentrality{"ccdbPathCentrality", "Centrality/Estimators", "The CCDB path for centrality information"};
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
-  // centrality operation 
+  // centrality operation
   o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"Specify if and only if this is MC. Typical: PYTHIA"}};
   o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
@@ -290,7 +315,7 @@ class MultModule
   o2::common::multiplicity::standardConfigurables internalOpts;
 
   //_________________________________________________
-  // centrality-related objects 
+  // centrality-related objects
   struct TagRun2V0MCalibration {
     bool mCalibrationStored = false;
     TFormula* mMCScale = nullptr;
@@ -367,7 +392,6 @@ class MultModule
   CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
 
-
   template <typename TConfigurables, typename TInitContext>
   void init(TConfigurables const& opts, TInitContext& context)
   {
@@ -428,10 +452,10 @@ class MultModule
 
   //__________________________________________________
   template <typename TCollision, typename TTracks, typename TBCs, typename TZdc, typename TFV0A, typename TFV0C, typename TFT0>
-  o2::common::multiplicity::multEntry  collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TZdc const& zdc, TFV0A const& fv0a, TFV0C const& fv0c, TFT0 const& ft0 )
+  o2::common::multiplicity::multEntry collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TZdc const& zdc, TFV0A const& fv0a, TFV0C const& fv0c, TFT0 const& ft0)
   {
     // initialize properties
-    o2::common::multiplicity::multEntry mults; 
+    o2::common::multiplicity::multEntry mults;
 
     return mults;
   }
@@ -441,10 +465,10 @@ class MultModule
   o2::common::multiplicity::multEntry collisionProcessRun3(TCCDB const& ccdb, TMetadataInfo const& metadataInfo, TCollision const& collision, TTracks const& tracks, TBC const& bc, TOutputGroup& cursors)
   {
     // initialize properties
-    o2::common::multiplicity::multEntry mults; 
+    o2::common::multiplicity::multEntry mults;
 
     //_______________________________________________________________________
-    // preparatory steps 
+    // preparatory steps
     if (internalOpts.doVertexZeq > 0) {
       if (bc.runNumber() != mRunNumber) {
         mRunNumber = bc.runNumber(); // mark this run as at least tried
@@ -520,50 +544,50 @@ class MultModule
       mults.multZEM2 = bc.zdc().amplitudeZEM2();
       mults.multZPA = bc.zdc().amplitudeZPA();
       mults.multZPC = bc.zdc().amplitudeZPC();
-    } 
+    }
 
     // fill standard cursors if required
-    if(internalOpts.mEnabledTables[kFV0Mults]){
+    if (internalOpts.mEnabledTables[kFV0Mults]) {
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
-    if(internalOpts.mEnabledTables[kFV0AOuterMults]){
+    if (internalOpts.mEnabledTables[kFV0AOuterMults]) {
       cursors.tableFV0AOuter(mults.multFV0AOuter);
     }
-    if(internalOpts.mEnabledTables[kFT0Mults]){
+    if (internalOpts.mEnabledTables[kFT0Mults]) {
       cursors.tableFT0(mults.multFT0A, mults.multFT0C);
     }
-    if(internalOpts.mEnabledTables[kFDDMults]){
+    if (internalOpts.mEnabledTables[kFDDMults]) {
       cursors.tableFDD(mults.multFDDA, mults.multFDDC);
     }
-    if(internalOpts.mEnabledTables[kZDCMults]){
+    if (internalOpts.mEnabledTables[kZDCMults]) {
       cursors.tableZDC(mults.multZNA, mults.multZNC, mults.multZEM1, mults.multZEM2, mults.multZPA, mults.multZPC);
     }
 
     //_______________________________________________________________________
     // forward detector signals, vertex-Z equalized
-    if(internalOpts.mEnabledTables[kFV0MultZeqs]){
-      if(std::fabs(collision.posZ() && lCalibLoaded)){
+    if (internalOpts.mEnabledTables[kFV0MultZeqs]) {
+      if (std::fabs(collision.posZ() && lCalibLoaded)) {
         mults.multFV0AZeq = hVtxZFV0A->Interpolate(0.0) * mults.multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
-      }else{
+      } else {
         mults.multFV0AZeq = 0.0f;
       }
       cursors.tableFV0Zeqs(mults.multFV0AZeq);
     }
-    if(internalOpts.mEnabledTables[kFT0MultZeqs]){
-      if(std::fabs(collision.posZ() && lCalibLoaded)){
+    if (internalOpts.mEnabledTables[kFT0MultZeqs]) {
+      if (std::fabs(collision.posZ() && lCalibLoaded)) {
         mults.multFT0AZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
         mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
-      }else{
+      } else {
         mults.multFT0AZeq = 0.0f;
         mults.multFT0CZeq = 0.0f;
       }
       cursors.tableFT0Zeqs(mults.multFT0AZeq, mults.multFT0CZeq);
     }
-    if(internalOpts.mEnabledTables[kFDDMultZeqs]){
-      if(std::fabs(collision.posZ() && lCalibLoaded)){
+    if (internalOpts.mEnabledTables[kFDDMultZeqs]) {
+      if (std::fabs(collision.posZ() && lCalibLoaded)) {
         mults.multFDDAZeq = hVtxZFDDA->Interpolate(0.0) * mults.multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
         mults.multFDDCZeq = hVtxZFDDC->Interpolate(0.0) * mults.multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
-      }else{
+      } else {
         mults.multFDDAZeq = 0.0f;
         mults.multFDDCZeq = 0.0f;
       }
@@ -572,53 +596,53 @@ class MultModule
 
     //_______________________________________________________________________
     // determine if barrel track loop is required, do it (once!) if so but save CPU if not
-    if(internalOpts.mEnabledTables[kTPCMults] || internalOpts.mEnabledTables[kPVMults] || internalOpts.mEnabledTables[kMultsExtra] || internalOpts.mEnabledTables[kPVMultZeqs] || internalOpts.mEnabledTables[kMultsGlobal]){
+    if (internalOpts.mEnabledTables[kTPCMults] || internalOpts.mEnabledTables[kPVMults] || internalOpts.mEnabledTables[kMultsExtra] || internalOpts.mEnabledTables[kPVMultZeqs] || internalOpts.mEnabledTables[kMultsGlobal]) {
       // single loop to calculate all
       for (const auto& track : tracks) {
-        if(track.hasTPC()){ 
+        if (track.hasTPC()) {
           mults.multTPC++;
-          if(track.hasITS()){
+          if (track.hasITS()) {
             mults.multAllTracksITSTPC++; // multsextra
-          }else{
+          } else {
             mults.multAllTracksTPCOnly++; // multsextra
           }
         }
         // PV contributor checked explicitly
-        if(track.isPVContributor()){
-          if(std::abs(track.eta())<1.0){
+        if (track.isPVContributor()) {
+          if (std::abs(track.eta()) < 1.0) {
             mults.multNContribsEta1++; // pvmults
-            if(std::abs(track.eta())<0.8){
+            if (std::abs(track.eta()) < 0.8) {
               mults.multNContribs++; // pvmults
-              if(std::abs(track.eta())<0.5){
+              if (std::abs(track.eta()) < 0.5) {
                 mults.multNContribsEtaHalf++; // pvmults
               }
             }
           }
-          if(track.hasITS()){ 
+          if (track.hasITS()) {
             mults.multHasITS++; // multsextra
             if (track.hasTPC())
               mults.multITSTPC++; // multsextra
-            if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD()){
-              mults.multITSOnly++;  // multsextra
+            if (!track.hasTPC() && !track.hasTOF() && !track.hasTRD()) {
+              mults.multITSOnly++; // multsextra
             }
           }
-          if(track.hasTPC()){ 
+          if (track.hasTPC()) {
             mults.multHasTPC++; // multsextra
-            if (!track.hasITS() && !track.hasTOF() && !track.hasTRD()){
-              mults.multTPCOnly++;  // multsextra
+            if (!track.hasITS() && !track.hasTOF() && !track.hasTRD()) {
+              mults.multTPCOnly++; // multsextra
             }
           }
-          if(track.hasTOF()){ 
+          if (track.hasTOF()) {
             mults.multHasTOF++; // multsextra
           }
-          if(track.hasTRD()){ 
+          if (track.hasTRD()) {
             mults.multHasTRD++; // multsextra
           }
         }
 
         // global counters: do them only in case information is provided in tracks table
         if constexpr (requires { tracks.isQualityTrack(); }) {
-          if(track.pt()<internalOpts.maxPtGlobalTrack.value && track.pt()>internalOpts.minPtGlobalTrack.value && std::fabs(track.eta())<1.0f && track.isPVContributor() && tracks.isQualityTrack()){ 
+          if (track.pt() < internalOpts.maxPtGlobalTrack.value && track.pt() > internalOpts.minPtGlobalTrack.value && std::fabs(track.eta()) < 1.0f && track.isPVContributor() && tracks.isQualityTrack()) {
             if (track.itsNCls() < internalOpts.minNclsITSGlobalTrack || track.itsNClsInnerBarrel() < internalOpts.minNclsITSibGlobalTrack) {
               continue;
             }
@@ -641,26 +665,26 @@ class MultModule
     }
 
     // fill track counters at this stage if requested
-    if(internalOpts.mEnabledTables[kTPCMults]){
+    if (internalOpts.mEnabledTables[kTPCMults]) {
       cursors.tableTpc(mults.multTPC);
-    } 
-    if(internalOpts.mEnabledTables[kPVMults]){ 
+    }
+    if (internalOpts.mEnabledTables[kPVMults]) {
       cursors.tablePv(mults.multNContribs, mults.multNContribsEta1, mults.multNContribsEtaHalf);
     }
-    if(internalOpts.mEnabledTables[kMultsExtra]){
+    if (internalOpts.mEnabledTables[kMultsExtra]) {
       cursors.tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                          bc.runNumber(), collision.posZ(), collision.sel8(),
-                         mults.multHasITS, mults.multHasTPC, mults.multHasTOF, mults.multHasTRD, 
+                         mults.multHasITS, mults.multHasTPC, mults.multHasTOF, mults.multHasTRD,
                          mults.multITSOnly, mults.multTPCOnly, mults.multITSTPC,
-                         mults.multAllTracksTPCOnly, mults.multAllTracksITSTPC, 
+                         mults.multAllTracksTPCOnly, mults.multAllTracksITSTPC,
                          collision.trackOccupancyInTimeRange(),
                          collision.ft0cOccupancyInTimeRange(),
                          collision.flags());
     }
-    if(internalOpts.mEnabledTables[kPVMultZeqs]){
-      if(std::fabs(collision.posZ()) && lCalibLoaded){
+    if (internalOpts.mEnabledTables[kPVMultZeqs]) {
+      if (std::fabs(collision.posZ()) && lCalibLoaded) {
         mults.multNContribsZeq = hVtxZNTracks->Interpolate(0.0) * mults.multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
-      }else{
+      } else {
         mults.multNContribsZeq = 0.0f;
       }
       cursors.tablePVZeqs(mults.multNContribsZeq);
@@ -748,13 +772,14 @@ class MultModule
       }
     }
     cursors.mftMults(nAllTracks, nTracks);
-    mults[collision.globalIndex()].multMFTAllTracks = nAllTracks; 
-    mults[collision.globalIndex()].multMFTTracks = nTracks; 
+    mults[collision.globalIndex()].multMFTAllTracks = nAllTracks;
+    mults[collision.globalIndex()].multMFTTracks = nTracks;
   }
 
   //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBC>
-  void ConfigureCentralityRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc){
+  void ConfigureCentralityRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc)
+  {
     if (bc.runNumber() != mRunNumberCentrality) {
       mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
@@ -817,23 +842,23 @@ class MultModule
         };
 
         // invoke loading only for requested centralities
-        if(internalOpts.mEnabledTables[kCentFV0As])
+        if (internalOpts.mEnabledTables[kCentFV0As])
           getccdb(fv0aInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentFT0Ms]) 
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
           getccdb(ft0mInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentFT0As])
+        if (internalOpts.mEnabledTables[kCentFT0As])
           getccdb(ft0aInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentFT0Cs])
+        if (internalOpts.mEnabledTables[kCentFT0Cs])
           getccdb(ft0cInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentFT0CVariant1s])  
+        if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           getccdb(ft0cVariant1Info, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentFDDMs])
+        if (internalOpts.mEnabledTables[kCentFDDMs])
           getccdb(fddmInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentNTPVs])
+        if (internalOpts.mEnabledTables[kCentNTPVs])
           getccdb(ntpvInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentNGlobals])
+        if (internalOpts.mEnabledTables[kCentNGlobals])
           getccdb(nGlobalInfo, internalOpts.generatorName);
-        if(internalOpts.mEnabledTables[kCentMFTs])
+        if (internalOpts.mEnabledTables[kCentMFTs])
           getccdb(mftInfo, internalOpts.generatorName);
       } else {
         LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
@@ -843,22 +868,22 @@ class MultModule
 
   //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBC, typename TMultBuffer, typename TOutputGroup>
-  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc, TMultBuffer const& mults, TOutputGroup& cursors){
+  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc, TMultBuffer const& mults, TOutputGroup& cursors)
+  {
     // takes multiplicity buffer and generates the desirable centrality values (if any)
 
     // first step: did someone actually ask for it? Otherwise, go home
-    if(
-      internalOpts.mEnabledTables[kCentRun2V0Ms] || internalOpts.mEnabledTables[kCentRun2V0As] || 
-      internalOpts.mEnabledTables[kCentRun2SPDTrks] || internalOpts.mEnabledTables[kCentRun2SPDClss] || 
+    if (
+      internalOpts.mEnabledTables[kCentRun2V0Ms] || internalOpts.mEnabledTables[kCentRun2V0As] ||
+      internalOpts.mEnabledTables[kCentRun2SPDTrks] || internalOpts.mEnabledTables[kCentRun2SPDClss] ||
       internalOpts.mEnabledTables[kCentRun2CL0s] || internalOpts.mEnabledTables[kCentRun2CL1s] ||
       internalOpts.mEnabledTables[kCentFV0As] || internalOpts.mEnabledTables[kCentFT0Ms] ||
       internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
       internalOpts.mEnabledTables[kCentFT0CVariant1s] || internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
-      internalOpts.mEnabledTables[kCentMFTs])
-    {
+      internalOpts.mEnabledTables[kCentMFTs]) {
       // check and update centrality calibration objects for Run 3
-      ConfigureCentralityRun3(ccdb, metadataInfo, bc); 
+      ConfigureCentralityRun3(ccdb, metadataInfo, bc);
 
       /************************************************************
        * @brief Populates a table with data based on the given calibration information and multiplicity.
@@ -892,32 +917,32 @@ class MultModule
 
       // populate centralities
       for (size_t iEv = 0; iEv < mults.size(); iEv++) {
-      bool isInelGt0 = (mults[iEv].multNContribsEta1 > 0);
-      if(internalOpts.mEnabledTables[kCentFV0As])
-        populateTable(cursors.centFV0A, fv0aInfo, mults[iEv].multFV0AZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentFT0Ms]) 
-        populateTable(cursors.centFT0M, ft0mInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentFT0As])
-        populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentFT0Cs])
-        populateTable(cursors.centFT0C, ft0cInfo, mults[iEv].multFT0CZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentFT0CVariant1s])  
-        populateTable(cursors.centFT0CVariant1, ft0cVariant1Info, mults[iEv].multFT0CZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentFDDMs])
-        populateTable(cursors.centFDDM, fddmInfo, mults[iEv].multFDDAZeq + mults[iEv].multFDDCZeq, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentNTPVs])
-        populateTable(cursors.centNTPV, ntpvInfo, mults[iEv].multNContribs, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentNGlobals])
-        populateTable(cursors.centNGlobals, nGlobalInfo, mults[iEv].multGlobalTracks, isInelGt0);
-      if(internalOpts.mEnabledTables[kCentMFTs])
-        populateTable(cursors.centMFTs, mftInfo, mults[iEv].multMFTTracks, isInelGt0);
+        bool isInelGt0 = (mults[iEv].multNContribsEta1 > 0);
+        if (internalOpts.mEnabledTables[kCentFV0As])
+          populateTable(cursors.centFV0A, fv0aInfo, mults[iEv].multFV0AZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Ms])
+          populateTable(cursors.centFT0M, ft0mInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0As])
+          populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0Cs])
+          populateTable(cursors.centFT0C, ft0cInfo, mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
+          populateTable(cursors.centFT0CVariant1, ft0cVariant1Info, mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFDDMs])
+          populateTable(cursors.centFDDM, fddmInfo, mults[iEv].multFDDAZeq + mults[iEv].multFDDCZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentNTPVs])
+          populateTable(cursors.centNTPV, ntpvInfo, mults[iEv].multNContribs, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentNGlobals])
+          populateTable(cursors.centNGlobals, nGlobalInfo, mults[iEv].multGlobalTracks, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentMFTs])
+          populateTable(cursors.centMFTs, mftInfo, mults[iEv].multMFTTracks, isInelGt0);
       }
     }
   }
 }; // end BuilderModule
 
 } // namespace multiplicity
-} // namespace tools
+} // namespace common
 } // namespace o2
 
 #endif // COMMON_TOOLS_MULTMODULE_H_
