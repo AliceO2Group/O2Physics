@@ -15,7 +15,8 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
-// std
+
+// C++
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +31,11 @@
 #include "Framework/RunningWorkflowInfo.h"
 // O2Physics
 #include "Common/Core/trackUtilities.h"
+// PWGLF
+#include "PWGLF/DataModel/mcCentrality.h"
 // PWGHF
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -634,10 +638,10 @@ struct HfCandidateCreatorDstarExpressions {
       }
 
       if (indexRecDstar > -1) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+        flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi;
       }
       if (indexRecD0 > -1) {
-        flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+        flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
       }
 
       // check partly reconstructed decays, namely D0->Kpipi0
@@ -669,11 +673,11 @@ struct HfCandidateCreatorDstarExpressions {
           auto motherParticleDstar = mcParticles.rawIteratorAt(indexRecDstar);
           if (signDstar > 0) {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus, +kPi0}, false, &signDstar, 2)) {
-              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+              flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
             }
           } else {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleDstar, -Pdg::kDStar, std::array{-kPiPlus, -kPiPlus, +kKPlus, +kPi0}, false, &signDstar, 2)) {
-              flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
+              flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
             }
           }
         }
@@ -682,11 +686,11 @@ struct HfCandidateCreatorDstarExpressions {
           auto motherParticleD0 = mcParticles.rawIteratorAt(indexRecD0);
           if (signD0 > 0) {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0)) {
-              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+              flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
             }
           } else {
             if (RecoDecay::isMatchedMCGen(mcParticles, motherParticleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
-              flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+              flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
             }
           }
         }
@@ -760,11 +764,11 @@ struct HfCandidateCreatorDstarExpressions {
             }
           }
           if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
-            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+            flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi;
+            flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           } else if (RecoDecay::isMatchedMCGen(mcParticles, particleD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus, +kPi0}, false, &signD0) || RecoDecay::isMatchedMCGen(mcParticles, particleD0, -Pdg::kD0, std::array{-kPiPlus, +kKPlus, +kPi0}, false, &signD0)) {
-            flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0PiPi0));
-            flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiKPi0));
+            flagDstar = signDstar * hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0;
+            flagD0 = signD0 * hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
           }
         }
 

@@ -162,7 +162,7 @@ struct HfTaskCharmHadImpactPar {
     if constexpr (channel == Channel::DplusToKPiPi) { // D+ -> Kpipi
       if constexpr (doMc) {
         if (fillOnlySignal) {
-          if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+          if (std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
             return;
           }
         }

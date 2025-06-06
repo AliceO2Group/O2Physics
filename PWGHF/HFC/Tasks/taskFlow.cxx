@@ -809,7 +809,7 @@ struct HfTaskFlow {
         // }
       }
     } else { // For now, that means we do LambdaC
-      if (std::abs(mcCandidate.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(mcCandidate.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
 
         if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
           return false;

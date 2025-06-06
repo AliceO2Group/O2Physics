@@ -423,10 +423,10 @@ struct OnTheFlyTracker {
     rand.SetSeed(seed);
 
     // configure FastTracker
-    fastTracker.magneticField = magneticField;
-    fastTracker.applyZacceptance = fastTrackerSettings.applyZacceptance;
-    fastTracker.applyMSCorrection = fastTrackerSettings.applyMSCorrection;
-    fastTracker.applyElossCorrection = fastTrackerSettings.applyElossCorrection;
+    fastTracker.SetMagneticField(magneticField);
+    fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
+    fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+    fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
     if (fastTrackerSettings.alice3detector == 0) {
       fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
@@ -633,8 +633,8 @@ struct OnTheFlyTracker {
           nTPCHits[i] = 0;
           if (enableSecondarySmearing) {
             nHits[i] = fastTracker.FastTrack(xiDaughterTrackParCovsPerfect[i], xiDaughterTrackParCovsTracked[i], dNdEta);
-            nSiliconHits[i] = fastTracker.nSiliconPoints;
-            nTPCHits[i] = fastTracker.nGasPoints;
+            nSiliconHits[i] = fastTracker.GetNSiliconPoints();
+            nTPCHits[i] = fastTracker.GetNGasPoints();
 
             if (nHits[i] < 0) { // QA
               histos.fill(HIST("hFastTrackerQA"), o2::math_utils::abs(nHits[i]));
@@ -645,8 +645,8 @@ struct OnTheFlyTracker {
             } else {
               continue; // extra sure
             }
-            for (uint32_t ih = 0; ih < fastTracker.hits.size(); ih++) {
-              histos.fill(HIST("hFastTrackerHits"), fastTracker.hits[ih][2], std::hypot(fastTracker.hits[ih][0], fastTracker.hits[ih][1]));
+            for (uint32_t ih = 0; ih < fastTracker.GetNHits(); ih++) {
+              histos.fill(HIST("hFastTrackerHits"), fastTracker.GetHitZ(ih), std::hypot(fastTracker.GetHitX(ih), fastTracker.GetHitY(ih)));
             }
           } else {
             isReco[i] = true;
@@ -811,11 +811,11 @@ struct OnTheFlyTracker {
                     float phi{std::atan2(-posClusterCandidate[1], -posClusterCandidate[0]) + o2::its::constants::math::Pi};
                     o2::fastsim::DetLayer currentTrackingLayer = fastTracker.GetLayer(i);
 
-                    if (currentTrackingLayer.resRPhi > 1e-8 && currentTrackingLayer.resZ > 1e-8) { // catch zero (though should not really happen...)
-                      phi = gRandom->Gaus(phi, std::asin(currentTrackingLayer.resRPhi / r));
+                    if (currentTrackingLayer.getResolutionRPhi() > 1e-8 && currentTrackingLayer.getResolutionZ() > 1e-8) { // catch zero (though should not really happen...)
+                      phi = gRandom->Gaus(phi, std::asin(currentTrackingLayer.getResolutionRPhi() / r));
                       posClusterCandidate[0] = r * std::cos(phi);
                       posClusterCandidate[1] = r * std::sin(phi);
-                      posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.resZ);
+                      posClusterCandidate[2] = gRandom->Gaus(posClusterCandidate[2], currentTrackingLayer.getResolutionZ());
                     }
 
                     if (std::isnan(phi))
@@ -833,7 +833,7 @@ struct OnTheFlyTracker {
                     const o2::track::TrackParametrization<float>::dim2_t hitpoint = {
                       static_cast<float>(xyz1[1]),
                       static_cast<float>(xyz1[2])};
-                    const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.resRPhi * currentTrackingLayer.resRPhi, 0.f, currentTrackingLayer.resZ * currentTrackingLayer.resZ};
+                    const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.getResolutionRPhi() * currentTrackingLayer.getResolutionRPhi(), 0.f, currentTrackingLayer.getResolutionZ() * currentTrackingLayer.getResolutionZ()};
                     cascadeTrack.update(hitpoint, hitpointcov);
                     thisCascade.foundClusters++; // add to findable
                   }
@@ -1116,8 +1116,8 @@ struct OnTheFlyTracker {
     }
 
     // do bookkeeping of fastTracker tracking
-    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.covMatNotOK);
-    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.covMatOK);
+    histos.fill(HIST("hCovMatOK"), 0.0f, fastTracker.GetCovMatNotOK());
+    histos.fill(HIST("hCovMatOK"), 1.0f, fastTracker.GetCovMatOK());
   } // end process
 };
 
