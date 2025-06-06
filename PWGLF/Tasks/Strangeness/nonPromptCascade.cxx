@@ -121,8 +121,11 @@ struct NPCascCandidate {
   bool sel8;
   float multFT0C;
   float multFT0A;
+  float multFT0M;
+  float centFT0C;
+  float centFT0A;
+  float centFT0M;
 };
-
 std::array<bool, 2> isFromHF(auto& particle)
 {
   bool fromBeauty = false;
@@ -170,8 +173,8 @@ struct NonPromptCascadeTask {
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
-  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults>;
+  using CollisionCandidatesRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms>;
+  using CollisionCandidatesRun3MC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::CentFT0As, aod::CentFT0Ms>;
 
   Preslice<TracksExtData> perCollision = aod::track::collisionId;
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
@@ -192,6 +195,7 @@ struct NonPromptCascadeTask {
   Configurable<float> cfgMinCosPA{"cfgMinCosPA", -1.f, "Minimum cosine of pointing angle"};
   Configurable<LabeledArray<float>> cfgCutsPID{"particlesCutsPID", {cutsPID[0], nParticles, nCutsPID, particlesNames, cutsNames}, "Nuclei PID selections"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Skimmed dataset processing"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fOmegaHighMult", "Triggers of interest, comma separated for Zorro"};
 
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"ZorroSummary"};
@@ -290,7 +294,7 @@ struct NonPromptCascadeTask {
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (runNumber != bc.runNumber()) {
-          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
@@ -298,7 +302,6 @@ struct NonPromptCascadeTask {
       }
     }
   }
-
   template <typename TrackType, typename CollisionType>
   void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
   {
@@ -514,7 +517,7 @@ struct NonPromptCascadeTask {
                                               cascITSclusters, protonTrack.itsNCls(), pionTrack.itsNCls(), bachelor.itsNCls(), protonTrack.tpcNClsFound(), pionTrack.tpcNClsFound(), bachelor.tpcNClsFound(),
                                               protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi(), bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(),
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachelor.hasTOF(),
-                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A()});
+                                              protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi(), collision.sel8(), collision.multFT0C(), collision.multFT0A(), collision.multFT0M(), collision.centFT0C(), collision.centFT0A(), collision.centFT0M()});
     }
   }
 
@@ -534,7 +537,7 @@ struct NonPromptCascadeTask {
                                   c.protonTPCNSigma, c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma,
                                   c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                   c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                  c.sel8, c.multFT0C, c.multFT0A);
+                                  c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M);
     }
   }
 
@@ -570,7 +573,7 @@ struct NonPromptCascadeTask {
                                 c.cascNClusITS, c.protonNClusITS, c.pionNClusITS, c.bachNClusITS, c.protonNClusTPC, c.pionNClusTPC, c.bachNClusTPC, c.protonTPCNSigma,
                                 c.pionTPCNSigma, c.bachKaonTPCNSigma, c.bachPionTPCNSigma, c.protonHasTOF, c.pionHasTOF, c.bachHasTOF,
                                 c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
-                                c.sel8, c.multFT0C, c.multFT0A,
+                                c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
                                 mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters);

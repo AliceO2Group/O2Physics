@@ -35,6 +35,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGHF/Core/DecayChannels.h" // FIXME: temporary until propagated where needed
 
 namespace o2::aod
 {

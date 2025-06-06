@@ -105,7 +105,7 @@ struct HfCandidateCreatorXicc {
                aod::TracksWCov const& tracks)
   {
     for (const auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
+      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
@@ -195,9 +195,9 @@ struct HfCandidateCreatorXicc {
                          xicCand.globalIndex(), trackpion.globalIndex(),
                          hfFlag);
       } // if on selected Xicc
-    }   // loop over candidates
-  }     // end of process
-};      // end of struct
+    } // loop over candidates
+  } // end of process
+}; // end of struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorXiccExpressions {

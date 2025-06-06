@@ -811,7 +811,7 @@ struct HfTaskCorrelationLcHadrons {
         auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
         multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
-        if (std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+        if (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           hCandidates->Fill(kCandidateStepMcGenLcToPKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           auto yL = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassLambdaCPlus);
           if (std::abs(yL) <= yCandGenMax) {
@@ -862,7 +862,7 @@ struct HfTaskCorrelationLcHadrons {
         continue;
       }
       multiplicity = collision.multFT0M();
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
         if (std::abs(hfHelper.yLc(candidate)) <= yCandMax) {
           hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());

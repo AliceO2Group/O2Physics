@@ -410,7 +410,7 @@ struct HfTreeCreatorLcToPKPi {
 
     SigBgStatus status{Default};
 
-    if (std::abs(flag) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+    if (std::abs(flag) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       if (swapped == 0) {
         if (candFlag == 0) {
           if (origin == RecoDecay::OriginType::Prompt)
@@ -917,7 +917,7 @@ struct HfTreeCreatorLcToPKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
         auto p = particle.p();

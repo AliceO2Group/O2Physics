@@ -231,13 +231,13 @@ struct HfTreeCreatorXicToPKPi {
   using CandXicMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
 
   Partition<CandXicData> selectedXicToPKPiCand = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic;
   Partition<CandXicData> selectedXicToPiKPCand = aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
 
-  Partition<CandXicMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
-  Partition<CandXicMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
+  Partition<CandXicMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
+  Partition<CandXicMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi);
 
   void init(InitContext const&)
   {

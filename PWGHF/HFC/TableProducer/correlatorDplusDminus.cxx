@@ -298,7 +298,7 @@ struct HfCorrelatorDplusDminus {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
-      if (std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
+      if (std::abs(candidate1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
         // fill invariant mass plots and per-candidate distributions from Dplus/Dminus signal candidates
         if (outerParticleSign == 1) { // reco and matched as Dplus
           registry.fill(HIST("hMassDplusMCRecSig"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt(), efficiencyWeight);
@@ -326,7 +326,7 @@ struct HfCorrelatorDplusDminus {
       if (outerParticleSign == -1) {
         continue; // reject Dminus in outer loop
       }
-      flagDplusSignal = std::abs(candidate1.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
+      flagDplusSignal = std::abs(candidate1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
       for (const auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
         if (!(candidate2.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
           continue;
@@ -335,7 +335,7 @@ struct HfCorrelatorDplusDminus {
         if (innerSecondTrack.sign() != 1) { // keep only Dminus (with second daughter track positive)
           continue;
         }
-        flagDminusSignal = std::abs(candidate2.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
+        flagDminusSignal = std::abs(candidate2.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi; // flagDminusSignal 'true' if candidate2 matched to Dminus
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate2)) > yCandMax) {
           continue;
         }
@@ -428,7 +428,7 @@ struct HfCorrelatorDplusDminus {
 
         // fill pairs vs etaCut plot
         bool rightDecayChannels = false;
-        if ((std::abs(particle1.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) && (std::abs(particle2.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if ((std::abs(particle1.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && (std::abs(particle2.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
           rightDecayChannels = true;
         }
         do {
