@@ -78,12 +78,18 @@ static const std::vector<std::string> tableNames{
   "CentFDDMs",
   "CentNTPVs",
   "CentNGlobals",
-  "CentMFTs"};
+  "CentMFTs", 
+  "BCCentFT0Ms", 
+  "BCCentFT0As", 
+  "BCCentFT0Cs"};
 
-static constexpr int nTablesConst = 32;
+static constexpr int nTablesConst = 35;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {-1},
+  {-1},
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -153,6 +159,9 @@ enum tableIndex { kFV0Mults,       // standard
                   kCentNTPVs,         // standard Run 3
                   kCentNGlobals,      // requires track selection task
                   kCentMFTs,          // requires MFT task
+                  kBCCentFT0Ms,       // bc centrality 
+                  kBCCentFT0As,       // bc centrality
+                  kBCCentFT0Cs,       // bc centrality
                   kNTables };
 
 struct products : o2::framework::ProducesGroup {
@@ -194,6 +203,9 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::CentNTPVs> centNTPV;
   o2::framework::Produces<aod::CentNGlobals> centNGlobals;
   o2::framework::Produces<aod::CentMFTs> centMFTs;
+  o2::framework::Produces<aod::BCCentFT0As> bcCentFT0A;
+  o2::framework::Produces<aod::BCCentFT0Cs> bcCentFT0C;
+  o2::framework::Produces<aod::BCCentFT0Ms> bcCentFT0M;
 
   //__________________________________________________
   // centrality tables per BC
@@ -867,8 +879,8 @@ class MultModule
   }
 
   //__________________________________________________
-  template <typename TCCDB, typename TMetadata, typename TBC, typename TMultBuffer, typename TOutputGroup>
-  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc, TMultBuffer const& mults, TOutputGroup& cursors)
+  template <typename TCCDB, typename TMetadata, typename TBCs, typename TMultBuffer, typename TOutputGroup>
+  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
   {
     // takes multiplicity buffer and generates the desirable centrality values (if any)
 
@@ -881,9 +893,11 @@ class MultModule
       internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
       internalOpts.mEnabledTables[kCentFT0CVariant1s] || internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
-      internalOpts.mEnabledTables[kCentMFTs]) {
+      internalOpts.mEnabledTables[kCentMFTs] || internalOpts.mEnabledTables[kBCCentFT0Ms] ||
+      internalOpts.mEnabledTables[kBCCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0Cs]) {
       // check and update centrality calibration objects for Run 3
-      ConfigureCentralityRun3(ccdb, metadataInfo, bc);
+      const auto& firstbc = bcs.begin();
+      ConfigureCentralityRun3(ccdb, metadataInfo, firstbc);
 
       /************************************************************
        * @brief Populates a table with data based on the given calibration information and multiplicity.
@@ -915,7 +929,7 @@ class MultModule
         return percentile;
       };
 
-      // populate centralities
+      // populate centralities per event
       for (size_t iEv = 0; iEv < mults.size(); iEv++) {
         bool isInelGt0 = (mults[iEv].multNContribsEta1 > 0);
         if (internalOpts.mEnabledTables[kCentFV0As])
@@ -936,6 +950,30 @@ class MultModule
           populateTable(cursors.centNGlobals, nGlobalInfo, mults[iEv].multGlobalTracks, isInelGt0);
         if (internalOpts.mEnabledTables[kCentMFTs])
           populateTable(cursors.centMFTs, mftInfo, mults[iEv].multMFTTracks, isInelGt0);
+      }
+
+      // populate centralities per BC 
+      for (size_t ibc = 0; ibc < bcs.size(); ibc++) {
+        float bcMultFT0A = 0; 
+        float bcMultFT0C = 0; 
+
+        const auto& bc = bcs.rawIteratorAt(ibc);
+        if (bc.has_foundFT0()) {
+          const auto& ft0 = bc.foundFT0();
+          for (const auto& amplitude : ft0.amplitudeA()) {
+            bcMultFT0A += amplitude;
+          }
+          for (const auto& amplitude : ft0.amplitudeC()) {
+            bcMultFT0C += amplitude;
+          }
+        }
+
+        if (internalOpts.mEnabledTables[kBCCentFT0Ms])
+          populateTable(cursors.bcCentFT0M, ft0mInfo, bcMultFT0A+bcMultFT0C, true);
+        if (internalOpts.mEnabledTables[kBCCentFT0As])
+          populateTable(cursors.bcCentFT0A, ft0aInfo, bcMultFT0A, true);
+        if (internalOpts.mEnabledTables[kBCCentFT0Cs])
+          populateTable(cursors.bcCentFT0C, ft0cInfo, bcMultFT0C, true);
       }
     }
   }
