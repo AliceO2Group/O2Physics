@@ -78,9 +78,9 @@ static const std::vector<std::string> tableNames{
   "CentFDDMs",
   "CentNTPVs",
   "CentNGlobals",
-  "CentMFTs", 
-  "BCCentFT0Ms", 
-  "BCCentFT0As", 
+  "CentMFTs",
+  "BCCentFT0Ms",
+  "BCCentFT0As",
   "BCCentFT0Cs"};
 
 static constexpr int nTablesConst = 35;
@@ -159,7 +159,7 @@ enum tableIndex { kFV0Mults,       // standard
                   kCentNTPVs,         // standard Run 3
                   kCentNGlobals,      // requires track selection task
                   kCentMFTs,          // requires MFT task
-                  kBCCentFT0Ms,       // bc centrality 
+                  kBCCentFT0Ms,       // bc centrality
                   kBCCentFT0As,       // bc centrality
                   kBCCentFT0Cs,       // bc centrality
                   kNTables };
@@ -952,10 +952,10 @@ class MultModule
           populateTable(cursors.centMFTs, mftInfo, mults[iEv].multMFTTracks, isInelGt0);
       }
 
-      // populate centralities per BC 
+      // populate centralities per BC
       for (size_t ibc = 0; ibc < bcs.size(); ibc++) {
-        float bcMultFT0A = 0; 
-        float bcMultFT0C = 0; 
+        float bcMultFT0A = 0;
+        float bcMultFT0C = 0;
 
         const auto& bc = bcs.rawIteratorAt(ibc);
         if (bc.has_foundFT0()) {
@@ -969,7 +969,7 @@ class MultModule
         }
 
         if (internalOpts.mEnabledTables[kBCCentFT0Ms])
-          populateTable(cursors.bcCentFT0M, ft0mInfo, bcMultFT0A+bcMultFT0C, true);
+          populateTable(cursors.bcCentFT0M, ft0mInfo, bcMultFT0A + bcMultFT0C, true);
         if (internalOpts.mEnabledTables[kBCCentFT0As])
           populateTable(cursors.bcCentFT0A, ft0aInfo, bcMultFT0A, true);
         if (internalOpts.mEnabledTables[kBCCentFT0Cs])
