@@ -21,7 +21,9 @@
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "TLorentzVector.h"
-#include "TVector3.h"
+// #include "TVector3.h"
+#include "Math/LorentzVector.h"           // ROOT::Math::LorentzVector
+#include "Math/PxPyPzM4D.h"               // ROOT::Math::PxPyPzM4D
 #include "TMath.h"
 
 using namespace o2;
