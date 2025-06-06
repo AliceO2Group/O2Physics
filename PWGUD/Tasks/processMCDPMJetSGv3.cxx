@@ -32,7 +32,7 @@ using namespace o2::framework::expressions;
 
 struct ProcessMCDPMJetSGv3 {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  TDatabasePDG* fPDG = TDatabasePDG::Instance();
+  // TDatabasePDG* fPDG = TDatabasePDG::Instance();
 
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
 
@@ -250,11 +250,13 @@ struct ProcessMCDPMJetSGv3 {
 
     histos.fill(HIST("numberOfTracksReco"), tracks.size());
     double etaMax = 0.8;
+    double yMax = 0.8;
+    double sigmaMax = 3.;
     double ptMin = 0.1;
     int nFindableMin = 70;
 
     int counter = 0;
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
       if (track.isPVContributor()) {
         int nFindable = track.tpcNClsFindable();
         if (nFindable < nFindableMin) {
@@ -276,7 +278,7 @@ struct ProcessMCDPMJetSGv3 {
         //   continue;
         // }
 
-        double momentum = sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
+        double momentum = std::sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
         double dEdx = track.tpcSignal();
         histos.fill(HIST("hdEdx"), momentum, dEdx);
 
@@ -294,7 +296,7 @@ struct ProcessMCDPMJetSGv3 {
           nSigmaPi = track.tpcNSigmaPi();
           nSigmaKa = track.tpcNSigmaKa();
           nSigmaPr = track.tpcNSigmaPr();
-          if (std::abs(nSigmaPi) < 3. && std::abs(pion.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaPi) < sigmaMax && std::abs(pion.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaPion"), track.pt(), nSigmaPi);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
@@ -308,7 +310,7 @@ struct ProcessMCDPMJetSGv3 {
               }
             }
           }
-          if (std::abs(nSigmaKa) < 3. && std::abs(kaon.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaKa) < sigmaMax && std::abs(kaon.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaKaon"), track.pt(), nSigmaKa);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
@@ -321,7 +323,7 @@ struct ProcessMCDPMJetSGv3 {
               }
             }
           }
-          if (std::abs(nSigmaPr) < 3. && std::abs(proton.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaPr) < sigmaMax && std::abs(proton.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaProton"), track.pt(), nSigmaPr);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
@@ -350,7 +352,7 @@ struct ProcessMCDPMJetSGv3 {
           nSigmaPiTOF = track.tofNSigmaPi();
           nSigmaKaTOF = track.tofNSigmaKa();
           nSigmaPrTOF = track.tofNSigmaPr();
-          if (std::abs(nSigmaPiTOF) < 3. && std::abs(pion.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaPiTOF) < sigmaMax && std::abs(pion.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaPionTOF"), track.pt(), nSigmaPiTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
@@ -364,7 +366,7 @@ struct ProcessMCDPMJetSGv3 {
               }
             }
           }
-          if (std::abs(nSigmaKaTOF) < 3. && std::abs(kaon.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaKaTOF) < sigmaMax && std::abs(kaon.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaKaonTOF"), track.pt(), nSigmaKaTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
@@ -377,7 +379,7 @@ struct ProcessMCDPMJetSGv3 {
               }
             }
           }
-          if (std::abs(nSigmaPrTOF) < 3. && std::abs(proton.Rapidity()) < 0.8) {
+          if (std::abs(nSigmaPrTOF) < sigmaMax && std::abs(proton.Rapidity()) < yMax) {
             histos.fill(HIST("hSigmaProtonTOF"), track.pt(), nSigmaPrTOF);
             if (track.has_udMcParticle()) {
               auto mcParticle = track.udMcParticle();
