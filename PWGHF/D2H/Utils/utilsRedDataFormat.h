@@ -84,6 +84,7 @@ float getTpcTofNSigmaPi1(const T1& prong1)
 
 /// Helper function to retrive PID information of bachelor kaon from b-hadron decay
 /// \param prong1 kaon track from reduced data format, aod::HfRedBachProng0Tracks
+/// \return the combined TPC and TOF n-sigma for kaon
 template <typename T1>
 float getTpcTofNSigmaKa1(const T1& prong1)
 {

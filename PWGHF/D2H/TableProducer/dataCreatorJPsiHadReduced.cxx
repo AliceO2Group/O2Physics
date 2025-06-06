@@ -33,6 +33,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -500,18 +501,18 @@ struct HfDataCreatorJPsiHadReduced {
           // Printf("Checking J/Psi -> µ+µ-");
           if (!runJPsiToee) {
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BplusToJPsiK);
+              flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJPsiK;
             }
           } else { // debug
             // Printf("Checking J/Psi -> e+e-");
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BplusToJPsiK);
+              flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJPsiK;
             }
           }
         }
 
         // save information for B+ task
-        if (!TESTBIT(std::abs(flag), hf_cand_b_to_jpsi::DecayType::BplusToJPsiK)) {
+        if (std::abs(flag) != o2::hf_decay::hf_cand_beauty::BplusToJPsiK) {
           continue;
         }
 
@@ -542,19 +543,19 @@ struct HfDataCreatorJPsiHadReduced {
           if (!runJPsiToee) {
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2) &&
                 RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi);
+              flag = sign * o2::hf_decay::hf_cand_beauty::BsToJPsiPhi;
             }
           } else { // debug
             // Printf("Checking J/Psi -> e+e- and phi -> K+K-");
             if (RecoDecay::isMatchedMCGen(particlesMc, candJPsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2) &&
                 RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * BIT(hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi);
+              flag = sign * o2::hf_decay::hf_cand_beauty::BsToJPsiPhi;
             }
           }
         }
 
         // save information for Bs task
-        if (!TESTBIT(std::abs(flag), hf_cand_b_to_jpsi::DecayType::BsToJPsiPhi)) {
+        if (std::abs(flag) != o2::hf_decay::hf_cand_beauty::BsToJPsiPhi) {
           continue;
         }
 

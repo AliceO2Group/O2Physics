@@ -865,13 +865,6 @@ DECLARE_SOA_TABLE(HfCandCascadeMcGen, "AOD", "HFCANDCASCMCGEN", //!
                   hf_cand_casc::OriginMcGen,
                   hf_cand::IdxBhadMotherPart);
 
-namespace hf_cand_b_to_jpsi
-{
-enum DecayType { BplusToJPsiK = 0,
-                 B0ToJPsiKStar0,
-                 BsToJPsiPhi };
-}
-
 // specific BPlus candidate properties
 namespace hf_cand_bplus
 {
@@ -2075,8 +2068,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 // mapping of decay types
-enum DecayType { B0ToDPi = 0,
-                 B0ToJPsiK0Star };
+enum DecayType { B0ToDPi = 0 };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
