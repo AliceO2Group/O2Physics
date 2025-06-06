@@ -569,14 +569,15 @@ struct SginclusivePhiKstarSD {
     int trackextra = 0;
     int trackextraDG = 0;
 
-    Partition<UDtracksfull> pvContributors1 = aod::udtrack::isPVContributor == true;
-    pvContributors1.bindTable(tracks);
-    if (gapSide == 0) {
-      registry.get<TH1>(HIST("nPVContributors_data"))->Fill(pvContributors1.size(), 1.);
-    }
-    if (gapSide == 1) {
-      registry.get<TH1>(HIST("nPVContributors_data_1"))->Fill(pvContributors1.size(), 1.);
-    }
+    /*   Partition<UDtracksfull> pvContributors1 = aod::udtrack::isPVContributor == true;
+   pvContributors1.bindTable(tracks);
+   if (gapSide == 0) {
+   registry.get<TH1>(HIST("nPVContributors_data"))->Fill(pvContributors1.size(), 1.);
+   }
+   if (gapSide == 1) {
+   registry.get<TH1>(HIST("nPVContributors_data_1"))->Fill(pvContributors1.size(), 1.);
+   }
+    */
     for (const auto& track1 : tracks) {
       if (!trackselector(track1, parameters))
         continue;
@@ -1349,8 +1350,8 @@ struct SginclusivePhiKstarSD {
     std::vector<float> parameters = {pvCut, dcazCut, dcaxyCut, tpcChi2Cut, tpcNClsFindableCut, itsChi2Cut, etaCut, ptCut};
     int truegapSide = sgSelector.trueGap(collision, fitCut[0], fitCut[1], fitCut[2], zdcCut);
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(4.0, 1.);
-    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
-    pvContributors.bindTable(tracks);
+    //    Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
+    // pvContributors.bindTable(tracks);
     if (std::abs(collision.posZ()) > vzCut)
       return;
     if (std::abs(collision.occupancyInTime()) > occCut)
@@ -1358,7 +1359,7 @@ struct SginclusivePhiKstarSD {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(truegapSide, 1.);
     if (truegapSide != gapsideMC)
       return;
-    registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(pvContributors.size(), 1.);
+    // registry.get<TH1>(HIST("Reco/nPVContributors"))->Fill(pvContributors.size(), 1.);
     TLorentzVector vphi;
     TLorentzVector vkstar;
     TLorentzVector v0;
