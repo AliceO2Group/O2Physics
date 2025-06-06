@@ -287,7 +287,7 @@ struct HfCandidateSelectorLc {
         return false;
       }
 
-      float massLc, massKPi;
+      float massLc{0.f}, massKPi{0.f};
       if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
