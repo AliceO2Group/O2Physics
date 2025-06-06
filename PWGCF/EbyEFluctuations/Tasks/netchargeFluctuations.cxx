@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file netchargeFluctuations.cxx
-/// \brief Calculate nu_dyn fluctuations
+/// \brief Calculate net-charge fluctuations using nu_dyn observable
 ///        For charged particles
 ///        For RUN-3
 ///
