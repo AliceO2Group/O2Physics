@@ -559,7 +559,7 @@ struct TrackEfficiency {
         registry.fill(HIST("hTrackCutsCounts"), 2.5);
 
         float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-        if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
+        if (jet.pt() > pTHatMaxFractionMCD * pTHat) {
           continue;
         }
         registry.fill(HIST("hTrackCutsCounts"), 3.5);
