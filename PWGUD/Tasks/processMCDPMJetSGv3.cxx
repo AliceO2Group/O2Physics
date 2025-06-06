@@ -17,7 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
-#include "TDatabasePDG.h"
+// #include "TDatabasePDG.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
 // #include "TLorentzVector.h"
@@ -68,18 +68,21 @@ struct ProcessMCDPMJetSGv3 {
 
   void init(InitContext const&)
   {
-    TParticlePDG* pionPDG = fPDG->GetParticle(codePion);
-    if (pionPDG != nullptr) {
-      massPion = pionPDG->Mass();
-    }
-    TParticlePDG* kaonPDG = fPDG->GetParticle(codeKaon);
-    if (kaonPDG != nullptr) {
-      massKaon = kaonPDG->Mass();
-    }
-    TParticlePDG* protonPDG = fPDG->GetParticle(codeProton);
-    if (protonPDG != nullptr) {
-      massProton = protonPDG->Mass();
-    }
+    // TParticlePDG* pionPDG = fPDG->GetParticle(codePion);
+    // if (pionPDG != nullptr) {
+    //   massPion = pionPDG->Mass();
+    // }
+    // TParticlePDG* kaonPDG = fPDG->GetParticle(codeKaon);
+    // if (kaonPDG != nullptr) {
+    //   massKaon = kaonPDG->Mass();
+    // }
+    // TParticlePDG* protonPDG = fPDG->GetParticle(codeProton);
+    // if (protonPDG != nullptr) {
+    //   massProton = protonPDG->Mass();
+    // }
+    massPion = o2::constants::physics::MassPionCharged;
+    massKaon = o2::constants::physics::MassKaonCharged;
+    massProton = o2::constants::physics::MassProton;
 
     // define axes you want to use
     const AxisSpec axisCounter{10, 0, 10, ""};
@@ -273,7 +276,7 @@ struct ProcessMCDPMJetSGv3 {
         //   continue;
         // }
 
-        double momentum = TMath::Sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
+        double momentum = sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
         double dEdx = track.tpcSignal();
         histos.fill(HIST("hdEdx"), momentum, dEdx);
 
