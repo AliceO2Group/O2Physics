@@ -61,6 +61,7 @@ struct LfTaskLambdaSpinCorr {
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctCut;
   // mixing
+  Configurable<int> cosCalculation{"cosCalculation", 1, "cos calculation"};
   Configurable<int> mixingCombination{"mixingCombination", 1, "mixing Combination"};
   Configurable<bool> mixingEvSel{"mixingEvSel", false, "mixingEvSel"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
@@ -281,7 +282,18 @@ struct LfTaskLambdaSpinCorr {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-    double cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+    auto cosThetaDiff = -999.0;
+    if (cosCalculation == 0) {
+      cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+    }
+
+    if (cosCalculation == 1) {
+      ROOT::Math::XYZVector quantizationAxis = lambda1CM.Vect().Unit();
+      double cosTheta1 = proton1LambdaRF.Vect().Unit().Dot(quantizationAxis);
+      double cosTheta2 = proton2LambdaRF.Vect().Unit().Dot(quantizationAxis);
+      cosThetaDiff = cosTheta1 * cosTheta2;
+    }
+
     double deltaR = TMath::Sqrt(TMath::Power(particle1.Eta() - particle2.Eta(), 2.0) + TMath::Power(particle1.Phi() - particle2.Phi(), 2.0));
     if (datatype == 0) {
       if (tag1 && tag3) {
