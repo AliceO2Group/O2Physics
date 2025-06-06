@@ -16,10 +16,17 @@
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
-#include <cmath>
 #include <TPDGCode.h>
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <fairlogger/Logger.h>
+
+#include <cmath>
+#include <cstddef>
+
+#include "CommonConstants/MathConstants.h"
+
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 namespace o2::analysis::hf_correlations
 {
@@ -113,14 +120,11 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 }
 
 // ========= Find Leading Particle ==============
-template <typename TTracks, typename T1, typename T2, typename T3>
-int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax, T3 const etaTrackMax)
+template <typename TTracks, typename T1> //// FIXME: 14 days
+int findLeadingParticle(TTracks const& tracks, T1 const etaTrackMax)
 {
   auto leadingParticle = tracks.begin();
   for (auto const& track : tracks) {
-    if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-      continue;
-    }
     if (std::abs(track.eta()) > etaTrackMax) {
       continue;
     }

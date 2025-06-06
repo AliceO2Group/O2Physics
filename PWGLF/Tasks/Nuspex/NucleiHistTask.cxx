@@ -99,16 +99,16 @@ struct NucleiHistTask {
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(1, "Events read");
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(2, "Ev. sel. passed");
     histTrackcuts_data_particle->GetXaxis()->SetBinLabel(3, "Rap. cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(4, "DCA cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(5, "TPCnCls cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(6, "TPCCrossedRowsOverFindable cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(7, "Chi2 cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(8, "Passed TPC refit cut");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(9, "Passed ITS refit cut");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(10, "ITSnCls cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(11, "track.pt() cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(12, "hasITS & hasTPC cut passed");
-    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(13, "GoldenChi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(4, "TPCnCls cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(5, "TPCCrossedRowsOverFindable cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(6, "Chi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(7, "Passed TPC refit cut");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(8, "Passed ITS refit cut");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(9, "ITSnCls cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(10, "track.pt() cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(11, "hasITS & hasTPC cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(12, "GoldenChi2 cut passed");
+    histTrackcuts_data_particle->GetXaxis()->SetBinLabel(13, "DCA cut passed");
 
     // +++++++++++++++++++ reconstructed MC ++++++++++++++++++++++
     histTrackcuts_MC->GetXaxis()->SetBinLabel(1, "Events read");
@@ -141,9 +141,9 @@ struct NucleiHistTask {
     spectra_reg.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p*} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     spectra_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p*} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    spectra_reg.add("histDcaVsPtData_particle", "dcaXY vs Pt (particle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    spectra_reg.add("histDcaVsPtData_particle", "dcaXY vs Pt (particle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra_reg.add("histDcaZVsPtData_particle", "dcaZ vs Pt (particle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
-    spectra_reg.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    spectra_reg.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra_reg.add("histDcaZVsPtData_antiparticle", "dcaZ vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra_reg.add("histTOFm2", "TOF m^2 vs P", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     spectra_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
@@ -159,8 +159,10 @@ struct NucleiHistTask {
     // histograms for pi⁺
     pion_reg.add("histTpcSignalData", "Specific energy loss (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     pion_reg.add("histTofSignalData", "TOF signal (#pi^{+})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    pion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    pion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     pion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    pion_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#pi^{+}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    pion_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#pi^{+}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     pion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     pion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
@@ -179,8 +181,10 @@ struct NucleiHistTask {
     // histograms for pi⁻
     apion_reg.add("histTpcSignalData", "Specific energy loss (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     apion_reg.add("histTofSignalData", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    apion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    apion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     apion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    apion_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#pi^{-}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    apion_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#pi^{-}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     apion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     apion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
@@ -199,8 +203,10 @@ struct NucleiHistTask {
     // histograms for Proton
     proton_reg.add("histTpcSignalData", "Specific energy loss (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     proton_reg.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    proton_reg.add("histDcaVsPtData", "dcaXY vs Pt (p)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    proton_reg.add("histDcaVsPtData", "dcaXY vs Pt (p)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     proton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (p)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    proton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (p) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    proton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (p) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     proton_reg.add("histTOFm2", "TOF m^2 vs Pt (p)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     proton_reg.add("histTpcNsigmaData", "n-sigma TPC (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
     proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
@@ -219,8 +225,10 @@ struct NucleiHistTask {
     // histograms for antiProton
     aproton_reg.add("histTpcSignalData", "Specific energy loss (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aproton_reg.add("histTofSignalData", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    aproton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aproton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aproton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aproton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{p}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aproton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{p}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aproton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aproton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
     aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
@@ -239,8 +247,10 @@ struct NucleiHistTask {
     // histograms for Deuterons
     deuteron_reg.add("histTpcSignalData", "Specific energy loss (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     deuteron_reg.add("histTofSignalData", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    deuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (d)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    deuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     deuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    deuteron_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (d) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    deuteron_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (d) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
     deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
@@ -259,8 +269,10 @@ struct NucleiHistTask {
     // histograms for antiDeuterons
     adeuteron_reg.add("histTpcSignalData", "Specific energy loss (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     adeuteron_reg.add("histTofSignalData", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    adeuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    adeuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     adeuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    adeuteron_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{d}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    adeuteron_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{d}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
     adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
@@ -279,8 +291,10 @@ struct NucleiHistTask {
     // histograms for Triton
     triton_reg.add("histTpcSignalData", "Specific energy loss (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     triton_reg.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    triton_reg.add("histDcaVsPtData", "dcaXY vs Pt (t)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    triton_reg.add("histDcaVsPtData", "dcaXY vs Pt (t)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     triton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (t)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    triton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (t) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    triton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (t) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     triton_reg.add("histTOFm2", "TOF m^2 vs Pt (t)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     triton_reg.add("histTpcNsigmaData", "n-sigma TPC (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
     triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
@@ -299,8 +313,10 @@ struct NucleiHistTask {
     // histograms for antiTriton
     atriton_reg.add("histTpcSignalData", "Specific energy loss (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     atriton_reg.add("histTofSignalData", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    atriton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    atriton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     atriton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    atriton_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (#bar{t}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    atriton_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (#bar{t}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     atriton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     atriton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
     atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
@@ -319,8 +335,10 @@ struct NucleiHistTask {
     // histograms for Helium-3
     Helium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     Helium3_reg.add("histTofSignalData", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    Helium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    Helium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium3_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{3}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium3_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{3}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     Helium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
@@ -339,8 +357,10 @@ struct NucleiHistTask {
     // histograms for antiHelium-3
     aHelium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aHelium3_reg.add("histTofSignalData", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    aHelium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aHelium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium3_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{3}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium3_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{3}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
@@ -359,8 +379,10 @@ struct NucleiHistTask {
     // histograms for Helium-4 (alpha)
     Helium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     Helium4_reg.add("histTofSignalData", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    Helium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    Helium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium4_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{4}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    Helium4_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{4}He) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     Helium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     Helium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
@@ -379,8 +401,10 @@ struct NucleiHistTask {
     // histograms for antiHelium-4 (alpha)
     aHelium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
     aHelium4_reg.add("histTofSignalData", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
-    aHelium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
+    aHelium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium4_reg.add("histDcaVsPtData_after_cut", "dcaXY vs Pt (^{4}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
+    aHelium4_reg.add("histDcaZVsPtData_after_cut", "dcaZ vs Pt (^{4}#bar{He}) after cut", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
     aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
@@ -409,7 +433,7 @@ struct NucleiHistTask {
     MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
-    MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
+    MC_recon_reg.add("histDCA", "DCA xy", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_recon_reg.add("histDCAz", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_recon_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}, PDGBINNING});
     MC_recon_reg.add("histTofSignalData", "TOF signal", HistType::kTH3F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}, PDGBINNING});
@@ -447,11 +471,12 @@ struct NucleiHistTask {
     MC_recon_reg.add("histTofNsigmaDataAl", "TOF nSigma (^{4}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
     MC_recon_reg.add("histTofNsigmaDataaAl", "TOF nSigma (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{4}He}"}});
 
-    MC_DCA.add("histDCA_prim", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
+    MC_DCA.add("histEta", "#eta", HistType::kTH2F, {{204, -2.01, 2.01}, PDGBINNING});
+    MC_DCA.add("histDCA_prim", "DCA xy", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_DCA.add("histDCAz_prim", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
-    MC_DCA.add("histDCA_weak", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
+    MC_DCA.add("histDCA_weak", "DCA xy", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_DCA.add("histDCAz_weak", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
-    MC_DCA.add("histDCA_mat", "DCA xy", HistType::kTH3F, {ptAxis, {250, -0.5, 0.5, "dca"}, PDGBINNING});
+    MC_DCA.add("histDCA_mat", "DCA xy", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
     MC_DCA.add("histDCAz_mat", "DCA z", HistType::kTH3F, {ptAxis, {1000, -2.0, 2.0, "dca"}, PDGBINNING});
   }
 
@@ -497,12 +522,37 @@ struct NucleiHistTask {
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", false, "Enable the requirement of GoldenChi2"};
   Configurable<bool> event_selection_sel8{"event_selection_sel8", true, "Enable sel8 event selection"};
   Configurable<bool> event_selection_MC_sel8{"event_selection_MC_sel8", true, "Enable sel8 event selection in MC processing"};
+  Configurable<bool> require_PhysicalPrimary_MC_reco{"require_PhysicalPrimary_MC_reco", true, "Enable PhysicalPrimary selection in reconstructed MC processing"};
   Configurable<bool> require_PhysicalPrimary_MC_gen{"require_PhysicalPrimary_MC_gen", true, "Enable PhysicalPrimary selection in generated MC processing"};
   Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
   Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
+
+  TF1* Particle_Tpc_nSigma_shift = 0;
+  Configurable<bool> enable_pT_shift_tpc_nSigma{"enable_pT_shift_tpc_nSigma", false, "Enable Data TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPt{"parShiftPt", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "Parameters for pT shift."};
+
+  TF1* Pion_Tpc_nSigma_shift = 0;
+  TF1* Proton_Tpc_nSigma_shift = 0;
+  TF1* Deuteron_Tpc_nSigma_shift = 0;
+  TF1* Triton_Tpc_nSigma_shift = 0;
+  TF1* He3_Tpc_nSigma_shift = 0;
+  TF1* He4_Tpc_nSigma_shift = 0;
+
+  Configurable<bool> enable_pT_shift_pion_tpc_nSigma{"enable_pT_shift_pion_tpc_nSigma", false, "Enable MC Pi plus TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_proton_tpc_nSigma{"enable_pT_shift_proton_tpc_nSigma", false, "Enable MC Proton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_deuteron_tpc_nSigma{"enable_pT_shift_deuteron_tpc_nSigma", false, "Enable MC Deuteron TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_triton_tpc_nSigma{"enable_pT_shift_triton_tpc_nSigma", false, "Enable MC Triton TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He3_tpc_nSigma{"enable_pT_shift_He3_tpc_nSigma", false, "Enable MC Helium-3 TPC nSigma recentering by TF1"};
+  Configurable<bool> enable_pT_shift_He4_tpc_nSigma{"enable_pT_shift_He4_tpc_nSigma", false, "Enable MC Helium-4 TPC nSigma recentering by TF1"};
+  Configurable<std::vector<float>> parShiftPtPion{"parShiftPtPion", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Pi plus pT shift."};
+  Configurable<std::vector<float>> parShiftPtProton{"parShiftPtProton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Proton pT shift."};
+  Configurable<std::vector<float>> parShiftPtDeuteron{"parShiftPtDeuteron", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Deuteron pT shift."};
+  Configurable<std::vector<float>> parShiftPtTriton{"parShiftPtTriton", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Triton pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe3{"parShiftPtHe3", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Helium-3 pT shift."};
+  Configurable<std::vector<float>> parShiftPtHe4{"parShiftPtHe4", {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, "MC Parameters for Alpha pT shift."};
 
   //***********************************************************************************
 
@@ -612,6 +662,12 @@ struct NucleiHistTask {
 
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
     for (auto track : tracks) {
 
       float TPCnSigma_particle = -100;
@@ -675,6 +731,11 @@ struct NucleiHistTask {
           break;
       }
 
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
+      }
+
       histTrackcuts_data_particle->AddBinContent(1);
       if (event_selection_sel8 && !event.sel8())
         continue;
@@ -689,37 +750,49 @@ struct NucleiHistTask {
       if (lorentzVector_particle.Rapidity() < yMin || lorentzVector_particle.Rapidity() > yMax)
         continue;
       histTrackcuts_data_particle->AddBinContent(3);
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(4);
+      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(5);
+      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(6);
+      if (!(track.passedTPCRefit()))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(7);
+      if (!(track.passedITSRefit()))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(8);
+      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(9);
+      if (momentum < p_min || momentum > p_max)
+        continue;
+      histTrackcuts_data_particle->AddBinContent(10);
+      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
+        continue;
+      histTrackcuts_data_particle->AddBinContent(11);
+      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
+        continue;
+
+      histTrackcuts_data_particle->AddBinContent(12);
+
+      if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh) {
+        if (track.sign() > 0) {
+          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+        }
+        if (track.sign() < 0) {
+          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+        }
+      }
 
       bool insideDCAxy = (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(momentum, 1.1f))));
 
       if (!(insideDCAxy) || TMath::Abs(track.dcaZ()) > maxDCA_Z)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(4);
-      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(5);
-      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(6);
-      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(7);
-      if (!(track.passedTPCRefit()))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(8);
-      if (!(track.passedITSRefit()))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(9);
-      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(10);
-      if (momentum < p_min || momentum > p_max)
-        continue;
-      histTrackcuts_data_particle->AddBinContent(11);
-      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
-        continue;
-      histTrackcuts_data_particle->AddBinContent(12);
-      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
         continue;
       histTrackcuts_data_particle->AddBinContent(13);
 
@@ -735,8 +808,8 @@ struct NucleiHistTask {
       if (TPCnSigma_particle > nsigmacutLow && TPCnSigma_particle < nsigmacutHigh) {
 
         if (track.sign() > 0) {
-          particle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
-          particle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          particle_reg.fill(HIST("histDcaVsPtData_after_cut"), momentum, track.dcaXY());
+          particle_reg.fill(HIST("histDcaZVsPtData_after_cut"), momentum, track.dcaZ());
           particle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
           particle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsFound());
           particle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
@@ -765,8 +838,8 @@ struct NucleiHistTask {
         }
 
         if (track.sign() < 0) {
-          aparticle_reg.fill(HIST("histDcaVsPtData"), momentum, track.dcaXY());
-          aparticle_reg.fill(HIST("histDcaZVsPtData"), momentum, track.dcaZ());
+          aparticle_reg.fill(HIST("histDcaVsPtData_after_cut"), momentum, track.dcaXY());
+          aparticle_reg.fill(HIST("histDcaZVsPtData_after_cut"), momentum, track.dcaZ());
           aparticle_reg.fill(HIST("histTpcSignalData"), momentum, track.tpcSignal());
           aparticle_reg.fill(HIST("histNClusterTPC"), momentum, track.tpcNClsFound());
           aparticle_reg.fill(HIST("histNClusterITS"), momentum, track.itsNCls());
@@ -804,6 +877,13 @@ struct NucleiHistTask {
   {
     if (!isEventSelected(event))
       return;
+
+    if (enable_pT_shift_tpc_nSigma) {
+      Particle_Tpc_nSigma_shift = new TF1("Particle_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPt;
+      Particle_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     if (event_selection_sel8 && event.sel8())
       spectra_reg.fill(HIST("histCentrality"), event.centFT0C());
     if (!event_selection_sel8)
@@ -872,6 +952,11 @@ struct NucleiHistTask {
         default:
           continue;
           break;
+      }
+
+      if (enable_pT_shift_tpc_nSigma) {
+        float nSigma_shift = Particle_Tpc_nSigma_shift->Eval(momentum);
+        TPCnSigma_particle -= nSigma_shift;
       }
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
@@ -1128,151 +1213,122 @@ struct NucleiHistTask {
     if (!isEventSelected(collisions))
       return;
 
+    if (enable_pT_shift_pion_tpc_nSigma) {
+      Pion_Tpc_nSigma_shift = new TF1("Pion_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtPion;
+      Pion_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_proton_tpc_nSigma) {
+      Proton_Tpc_nSigma_shift = new TF1("Proton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtProton;
+      Proton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_deuteron_tpc_nSigma) {
+      Deuteron_Tpc_nSigma_shift = new TF1("Deuteron_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtDeuteron;
+      Deuteron_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_triton_tpc_nSigma) {
+      Triton_Tpc_nSigma_shift = new TF1("Triton_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtTriton;
+      Triton_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He3_tpc_nSigma) {
+      He3_Tpc_nSigma_shift = new TF1("He3_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe3;
+      He3_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+    if (enable_pT_shift_He4_tpc_nSigma) {
+      He4_Tpc_nSigma_shift = new TF1("He4_Tpc_nSigma_shift", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x + [5] * x * x", 0.f, 14.f);
+      auto par = (std::vector<float>)parShiftPtHe4;
+      He4_Tpc_nSigma_shift->SetParameters(par[0], par[1], par[2], par[3], par[4], par[5]);
+    }
+
     for (auto& track : tracks) {
       histTrackcuts_MC->AddBinContent(1);
       const auto particle = track.mcParticle();
 
       int pdgbin = 0;
+      TLorentzVector lorentzVector_particle_MC{};
       switch (particle.pdgCode()) {
         case +211:
           pdgbin = 0;
+          histPDG_reco->AddBinContent(1);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case -211:
           pdgbin = 1;
+          histPDG_reco->AddBinContent(2);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
           break;
         case +321:
           pdgbin = 2;
+          histPDG_reco->AddBinContent(3);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case -321:
           pdgbin = 3;
+          histPDG_reco->AddBinContent(4);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
           break;
         case +2212:
           pdgbin = 4;
+          histPDG_reco->AddBinContent(5);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case -2212:
           pdgbin = 5;
+          histPDG_reco->AddBinContent(6);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
           break;
         case +1000010020:
           pdgbin = 6;
+          histPDG_reco->AddBinContent(7);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case -1000010020:
           pdgbin = 7;
+          histPDG_reco->AddBinContent(8);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
           break;
         case +1000010030:
           pdgbin = 8;
+          histPDG_reco->AddBinContent(9);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case -1000010030:
           pdgbin = 9;
+          histPDG_reco->AddBinContent(10);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
           break;
         case +1000020030:
           pdgbin = 10;
+          histPDG_reco->AddBinContent(11);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case -1000020030:
           pdgbin = 11;
+          histPDG_reco->AddBinContent(12);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
           break;
         case +1000020040:
           pdgbin = 12;
+          histPDG_reco->AddBinContent(13);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         case -1000020040:
           pdgbin = 13;
+          histPDG_reco->AddBinContent(14);
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
           break;
         default:
           pdgbin = -1;
           break;
       }
 
-      if (particle.isPhysicalPrimary()) {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_prim"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_prim"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_prim"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_prim"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      } else if (particle.has_mothers()) {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_weak"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_weak"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_weak"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_weak"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      } else {
-        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
-          MC_DCA.fill(HIST("histDCA_mat"), track.pt() * 2.0, track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_mat"), track.pt() * 2.0, track.dcaZ(), pdgbin);
-        } else {
-          MC_DCA.fill(HIST("histDCA_mat"), track.pt(), track.dcaXY(), pdgbin);
-          MC_DCA.fill(HIST("histDCAz_mat"), track.pt(), track.dcaZ(), pdgbin);
-        }
-      }
-
-      if (!particle.isPhysicalPrimary())
+      if (require_PhysicalPrimary_MC_reco && !particle.isPhysicalPrimary())
         continue;
       histTrackcuts_MC->AddBinContent(2);
-      TLorentzVector lorentzVector_particle_MC{};
-
-      switch (particle.pdgCode()) {
-        case +211:
-          histPDG_reco->AddBinContent(1);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
-          break;
-        case -211:
-          histPDG_reco->AddBinContent(2);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
-          break;
-        case +321:
-          histPDG_reco->AddBinContent(3);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
-          break;
-        case -321:
-          histPDG_reco->AddBinContent(4);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
-          break;
-        case +2212:
-          histPDG_reco->AddBinContent(5);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-          break;
-        case -2212:
-          histPDG_reco->AddBinContent(6);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
-          break;
-        case +1000010020:
-          histPDG_reco->AddBinContent(7);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-          break;
-        case -1000010020:
-          histPDG_reco->AddBinContent(8);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
-          break;
-        case +1000010030:
-          histPDG_reco->AddBinContent(9);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-          break;
-        case -1000010030:
-          histPDG_reco->AddBinContent(10);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
-          break;
-        case +1000020030:
-          histPDG_reco->AddBinContent(11);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-          break;
-        case -1000020030:
-          histPDG_reco->AddBinContent(12);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
-          break;
-        case +1000020040:
-          histPDG_reco->AddBinContent(13);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-          break;
-        case -1000020040:
-          histPDG_reco->AddBinContent(14);
-          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
-          break;
-        default:
-          continue;
-          break;
-      }
 
       if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
         continue;
@@ -1352,6 +1408,31 @@ struct NucleiHistTask {
       float nSigmaHe3 = track.tpcNSigmaHe();
       float nSigmaHe4 = track.tpcNSigmaAl();
 
+      if (enable_pT_shift_pion_tpc_nSigma) {
+        float nSigmaPion_shift = Pion_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaPion -= nSigmaPion_shift;
+      }
+      if (enable_pT_shift_proton_tpc_nSigma) {
+        float nSigmaProton_shift = Proton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaProton -= nSigmaProton_shift;
+      }
+      if (enable_pT_shift_deuteron_tpc_nSigma) {
+        float nSigmaDeuteron_shift = Deuteron_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaDeuteron -= nSigmaDeuteron_shift;
+      }
+      if (enable_pT_shift_triton_tpc_nSigma) {
+        float nSigmaTriton_shift = Triton_Tpc_nSigma_shift->Eval(track.pt());
+        nSigmaTriton -= nSigmaTriton_shift;
+      }
+      if (enable_pT_shift_He3_tpc_nSigma) {
+        float nSigmaHe3_shift = He3_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe3 -= nSigmaHe3_shift;
+      }
+      if (enable_pT_shift_He4_tpc_nSigma) {
+        float nSigmaHe4_shift = He4_Tpc_nSigma_shift->Eval(track.pt() * 2.0);
+        nSigmaHe4 -= nSigmaHe4_shift;
+      }
+
       if (track.sign() > 0) {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), track.pt(), nSigmaPion);
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPr"), track.pt(), nSigmaProton);
@@ -1408,6 +1489,141 @@ struct NucleiHistTask {
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCreco, "process reconstructed MC", false);
+
+  void processMCdca(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+                    aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+  {
+
+    if (event_selection_MC_sel8 && !collisions.sel8())
+      return;
+    if (!isEventSelected(collisions))
+      return;
+
+    for (auto& track : tracks) {
+      histTrackcuts_MC->AddBinContent(1);
+      const auto particle = track.mcParticle();
+
+      int pdgbin = 0;
+      TLorentzVector lorentzVector_particle_MC{};
+      switch (particle.pdgCode()) {
+        case +211:
+          pdgbin = 0;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+          break;
+        case -211:
+          pdgbin = 1;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassPiPlus);
+          break;
+        case +321:
+          pdgbin = 2;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+          break;
+        case -321:
+          pdgbin = 3;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassKPlus);
+          break;
+        case +2212:
+          pdgbin = 4;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          break;
+        case -2212:
+          pdgbin = 5;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassProton);
+          break;
+        case +1000010020:
+          pdgbin = 6;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+          break;
+        case -1000010020:
+          pdgbin = 7;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassDeuteron);
+          break;
+        case +1000010030:
+          pdgbin = 8;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+          break;
+        case -1000010030:
+          pdgbin = 9;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), constants::physics::MassTriton);
+          break;
+        case +1000020030:
+          pdgbin = 10;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          break;
+        case -1000020030:
+          pdgbin = 11;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
+          break;
+        case +1000020040:
+          pdgbin = 12;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+          break;
+        case -1000020040:
+          pdgbin = 13;
+          lorentzVector_particle_MC.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
+          break;
+        default:
+          pdgbin = -1;
+          break;
+      }
+
+      if (lorentzVector_particle_MC.Rapidity() < yMin || lorentzVector_particle_MC.Rapidity() > yMax)
+        continue;
+      float TPCnumberClsFound = track.tpcNClsFound();
+      float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
+      float RatioCrossedRowsOverFindableTPC = track.tpcCrossedRowsOverFindableCls();
+      float Chi2perClusterTPC = track.tpcChi2NCl();
+      float Chi2perClusterITS = track.itsChi2NCl();
+
+      if (TPCnumberClsFound < minTPCnClsFound || TPC_nCls_Crossed_Rows < minNCrossedRowsTPC)
+        continue;
+      if (RatioCrossedRowsOverFindableTPC < minRatioCrossedRowsTPC || RatioCrossedRowsOverFindableTPC > maxRatioCrossedRowsTPC)
+        continue;
+      if (Chi2perClusterTPC > maxChi2PerClusterTPC || Chi2perClusterTPC < minChi2PerClusterTPC || Chi2perClusterITS > maxChi2PerClusterITS)
+        continue;
+      if (!(track.passedTPCRefit()))
+        continue;
+      if (!(track.passedITSRefit()))
+        continue;
+      if ((track.itsNClsInnerBarrel()) < minReqClusterITSib || (track.itsNCls()) < minReqClusterITS)
+        continue;
+      if (track.pt() < p_min || track.pt() > p_max)
+        continue;
+      if ((requireITS && !(track.hasITS())) || (requireTPC && !(track.hasTPC())))
+        continue;
+      if (requireGoldenChi2 && !(track.passedGoldenChi2()))
+        continue;
+
+      MC_DCA.fill(HIST("histEta"), track.eta(), pdgbin);
+
+      if (particle.isPhysicalPrimary()) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_prim"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_prim"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_prim"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_prim"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      } else if (particle.getProcess() == 4) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_weak"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_weak"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_weak"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_weak"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      } else if (particle.getProcess() == 23) {
+        if ((particle.pdgCode() == 1000020030) || (particle.pdgCode() == -1000020030) || (particle.pdgCode() == 1000020040) || (particle.pdgCode() == -1000020040)) {
+          MC_DCA.fill(HIST("histDCA_mat"), track.pt() * 2.0, track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_mat"), track.pt() * 2.0, track.dcaZ(), pdgbin);
+        } else {
+          MC_DCA.fill(HIST("histDCA_mat"), track.pt(), track.dcaXY(), pdgbin);
+          MC_DCA.fill(HIST("histDCAz_mat"), track.pt(), track.dcaZ(), pdgbin);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(NucleiHistTask, processMCdca, "process MC DCA", false);
 };
 
 //***********************************************************************************

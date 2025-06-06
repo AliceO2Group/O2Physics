@@ -14,6 +14,7 @@
 #include <TMath.h>
 #include <cmath>
 #include <string>
+#include <vector>
 
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
@@ -94,13 +95,13 @@ struct jetFilter {
 
   Filter trackFilter = (nabs(aod::jtrack::eta) < static_cast<float>(cfgEtaTPC)) && (aod::jtrack::pt > trackPtMin);
   int trackSelection = -1;
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(o2::framework::InitContext&)
   {
     triggerJetR = TMath::Nint(cfgJetR * 100.0f);
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(evSel));
 
     spectra.add("fCollZpos", "collision z position", HistType::kTH1F,
                 {{200, -20., +20., "#it{z}_{vtx} position (cm)"}});
@@ -196,7 +197,7 @@ struct jetFilter {
     spectra.fill(HIST("fCollZpos"), collision.posZ());
     hProcessedEvents->Fill(static_cast<float>(kBinAllEvents) + 0.1f); // all minimum bias events
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
       return;
     }

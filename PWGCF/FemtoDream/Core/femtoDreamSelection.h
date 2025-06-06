@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -84,16 +84,16 @@ class FemtoDreamSelection
       case (femtoDreamSelection::SelectionType::kUpperLimit):
         return (observable <= mSelVal);
       case (femtoDreamSelection::SelectionType::kAbsUpperLimit):
-        return (std::abs(observable) <= mSelVal);
+        return (std::fabs(observable) <= mSelVal);
         break;
       case (femtoDreamSelection::SelectionType::kLowerLimit):
         return (observable >= mSelVal);
       case (femtoDreamSelection::SelectionType::kAbsLowerLimit):
-        return (std::abs(observable) >= mSelVal);
+        return (std::fabs(observable) >= mSelVal);
         break;
       case (femtoDreamSelection::SelectionType::kEqual):
         /// \todo can the comparison be done a bit nicer?
-        return (std::abs(observable - mSelVal) < std::abs(mSelVal * 1e-6));
+        return (std::fabs(observable - mSelVal) < std::abs(mSelVal * 1e-6));
         break;
     }
     return false;

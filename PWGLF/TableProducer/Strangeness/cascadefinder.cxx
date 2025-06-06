@@ -244,7 +244,7 @@ struct cascadefinder {
             auto lCascadeTrack = fitterCasc.createParentTrackPar();
             lCascadeTrack.setAbsCharge(-1);                // to be sure
             lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo;
             dcaInfo[0] = 999;
             dcaInfo[1] = 999;
 
@@ -334,7 +334,7 @@ struct cascadefinder {
             auto lCascadeTrack = fitterCasc.createParentTrackPar();
             lCascadeTrack.setAbsCharge(+1);                // to be sure
             lCascadeTrack.setPID(o2::track::PID::XiMinus); // FIXME: not OK for omegas
-            gpu::gpustd::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo;
             dcaInfo[0] = 999;
             dcaInfo[1] = 999;
 
@@ -430,17 +430,10 @@ struct cascadefinderQA {
   }
 };
 
-/// Extends the cascdata table with expression columns
-struct cascadeinitializer {
-  Spawns<aod::CascCores> cascdataext;
-  void init(InitContext const&) {}
-};
-
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<cascadeprefilter>(cfgc, TaskName{"lf-cascadeprefilter"}),
     adaptAnalysisTask<cascadefinder>(cfgc, TaskName{"lf-cascadefinder"}),
-    adaptAnalysisTask<cascadefinderQA>(cfgc, TaskName{"lf-cascadefinderQA"}),
-    adaptAnalysisTask<cascadeinitializer>(cfgc, TaskName{"lf-cascadeinitializer"})};
+    adaptAnalysisTask<cascadefinderQA>(cfgc, TaskName{"lf-cascadefinderQA"})};
 }

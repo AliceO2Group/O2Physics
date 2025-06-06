@@ -88,6 +88,7 @@ struct JetTriggerQA {
   Configurable<bool> b_DoFiducialCut{"b_DoFiducialCut", false, "do a fiducial cut on jets to check if they are in the emcal"};
   Configurable<bool> b_RejectExoticClusters{"b_RejectExoticClusters", true, "Reject exotic clusters"};
   Configurable<int> f_GammaObservable{"f_gammaObservable", 0, "Observable for gamma trigger (0 - energy, 1 - pt)"};
+  Configurable<bool> b_doLightOutput{"b_doLightOutput", true, "do light output (disables most histograms not needed for QA)"};
 
   Configurable<float> cfgVertexCut{"cfgVertexCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
@@ -103,18 +104,18 @@ struct JetTriggerQA {
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
     jetReclusterer.jetR = f_jetR * 2.5; // Use larger R for CA reclustering to prevent losing particles
 
-    Int_t nPtBins = 200;
-    Float_t kMinPt = 0.;
-    Float_t kMaxPt = 201.;
-    Int_t nPhiBins = 18 * 8;
-    Float_t kMinPhi = 0.;
-    Float_t kMaxPhi = 2. * TMath::Pi();
-    Int_t nEtaBins = 100;
-    Float_t kMinEta = -1.;
-    Float_t kMaxEta = 1.;
-    Int_t nRBins = 6;
-    Float_t kMinR = 0.05;
-    Float_t kMaxR = 0.65;
+    int nPtBins = 200;
+    float kMinPt = 0.;
+    float kMaxPt = 201.;
+    int nPhiBins = 18 * 8;
+    float kMinPhi = 0.;
+    float kMaxPhi = o2::constants::math::TwoPI;
+    int nEtaBins = 100;
+    float kMinEta = -1.;
+    float kMaxEta = 1.;
+    int nRBins = 6;
+    float kMinR = 0.05;
+    float kMaxR = 0.65;
 
     // EMCAL gamma observables (for histogram and axis title)
     std::string observableName = (f_GammaObservable == 0) ? "Energy" : "#it{p}_{T}",
@@ -137,9 +138,11 @@ struct JetTriggerQA {
     HistogramConfigSpec hJetRMaxPtEtaPhiNoFiducial({HistType::kTHnF, {rAxis, jetPtAxis, etaAxis, phiAxis}});
 
     registry.add("jetRPtEtaPhi", "JetRPtEtaPhi", hJetRPtEtaPhi);
-    registry.add("jetRMaxPtEtaPhi", "JetRMaxPtEtaPhi", hJetRMaxPtEtaPhi);
+    if (!b_doLightOutput)
+      registry.add("jetRMaxPtEtaPhi", "JetRMaxPtEtaPhi", hJetRMaxPtEtaPhi);
     registry.add("jetRPtEtaPhiNoFiducial", "JetRPtEtaPhiNoFiducial", hJetRPtEtaPhiNoFiducial);
-    registry.add("jetRMaxPtEtaPhiNoFiducial", "JetRMaxPtEtaPhiNoFiducial", hJetRMaxPtEtaPhiNoFiducial);
+    if (!b_doLightOutput)
+      registry.add("jetRMaxPtEtaPhiNoFiducial", "JetRMaxPtEtaPhiNoFiducial", hJetRMaxPtEtaPhiNoFiducial);
 
     registry.add("hProcessedEvents", "Processed events", HistType::kTH1D, {{15, -0.5, 14.5, "Trigger type"}});
     auto histProcessed = registry.get<TH1>(HIST("hProcessedEvents"));
@@ -170,156 +173,192 @@ struct JetTriggerQA {
     // Histograms for events where the EMCAL is live
     registry.add("hJetRPtEta", "Jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
     registry.add("hJetRPtPhi", "Jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
-    registry.add("hJetRMaxPtEta", "Leading jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
-    registry.add("hJetRMaxPtPhi", "Leading jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
-    registry.add("hJetRMaxPtEtaMinBias", "Leading jets #it{p}_{T} and #eta (min. bias)", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
-    registry.add("hJetRMaxPtPhiMinBias", "Leading jets #it{p}_{T} and #phi (min. bias)", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
-    registry.add("hJetRMaxPtEtaLevel0", "Leading jets #it{p}_{T} and #eta (level0)", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
-    registry.add("hJetRMaxPtPhiLevel0", "Leading jets #it{p}_{T} and #phi (level0)", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    if (!b_doLightOutput) {
+      registry.add("hJetRMaxPtEta", "Leading jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+      registry.add("hJetRMaxPtPhi", "Leading jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+      registry.add("hJetRMaxPtEtaMinBias", "Leading jets #it{p}_{T} and #eta (min. bias)", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+      registry.add("hJetRMaxPtPhiMinBias", "Leading jets #it{p}_{T} and #phi (min. bias)", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+      registry.add("hJetRMaxPtEtaLevel0", "Leading jets #it{p}_{T} and #eta (level0)", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+      registry.add("hJetRMaxPtPhiLevel0", "Leading jets #it{p}_{T} and #phi (level0)", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    }
     registry.add("hClusterPtEtaPhi", Form("Cluster %s, #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
     registry.add("hClusterPtEtaPhiMinBias", Form("Cluster %s (Min. bias trigger), #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
     registry.add("hClusterPtEtaPhiLevel0", Form("Cluster %s (Level-0 trigger), #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterEMCALMaxPtEtaPhi", Form("Leading cluster %s, #eta and #phi (EMCAL)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterEMCALMaxPtEtaPhiMinBias", Form("Leading cluster %s, #eta and #phi (EMCAL, min. bias trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterEMCALMaxPtEtaPhiLevel0", Form("Leading cluster %s, #eta and #phi (EMCAL, Level-0 trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterDCALMaxPtEtaPhi", Form("Leading cluster %s, #eta and #phi (DCAL)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterDCALMaxPtEtaPhiMinBias", Form("Leading cluster %s, #eta and #phi (DCAL, min, bias trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hClusterDCALMaxPtEtaPhiLevel0", Form("Leading cluster %s, #eta and #phi (DCAL, Level-0 trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hEventsNoMaxClusterEMCAL", "Events with no max. cluster in EMCAL", HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxClusterEMCALMinBias", "Events with no max. cluster in EMCAL (min. bias trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxClusterEMCALLevel0", "Events with no max. cluster in EMCAL (level0 trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxClusterDCAL", ("Events with no max. cluster in DCAL"), HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxClusterDCALMinBias", "Events with no max. cluster in DCAL (min. bias trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxClusterDCALLevel0", "Events with no max. cluster in DCAL (level0 trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
-    registry.add("hEventsNoMaxJet", "Events with no max. jet", HistType::kTH1D, {{rAxis}});
-    registry.add("hEventsNoMaxJetMinBias", "Events with no max. jet (min. bias trigger)", HistType::kTH1D, {{rAxis}});
-    registry.add("hEventsNoMaxJetLevel0", "Events with no max. jet (level0 trigger)", HistType::kTH1D, {{rAxis}});
-    registry.add("hJetRPtTrackPt", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
-    registry.add("hJetRPtClusterPt", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
-    registry.add("hJetRPtPtd", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
-    registry.add("hJetRPtChargeFrag", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
-    registry.add("hJetRPtNEF", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
-    registry.add("hJetRPtZTheta", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
-    registry.add("hJetRPtZSqTheta", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
-    registry.add("hJetRPtZThetaSq", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
-    registry.add("hJetRMaxPtClusterMaxPt", "Leading jets and clusters", HistType::kTH3F, {rAxis, jetPtAxis, observableAxisCluster});
+
+    if (!b_doLightOutput) {
+      registry.add("hClusterEMCALMaxPtEtaPhi", Form("Leading cluster %s, #eta and #phi (EMCAL)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hClusterEMCALMaxPtEtaPhiMinBias", Form("Leading cluster %s, #eta and #phi (EMCAL, min. bias trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hClusterEMCALMaxPtEtaPhiLevel0", Form("Leading cluster %s, #eta and #phi (EMCAL, Level-0 trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hClusterDCALMaxPtEtaPhi", Form("Leading cluster %s, #eta and #phi (DCAL)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hClusterDCALMaxPtEtaPhiMinBias", Form("Leading cluster %s, #eta and #phi (DCAL, min, bias trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hClusterDCALMaxPtEtaPhiLevel0", Form("Leading cluster %s, #eta and #phi (DCAL, Level-0 trigger)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+      registry.add("hEventsNoMaxClusterEMCAL", "Events with no max. cluster in EMCAL", HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxClusterEMCALMinBias", "Events with no max. cluster in EMCAL (min. bias trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxClusterEMCALLevel0", "Events with no max. cluster in EMCAL (level0 trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxClusterDCAL", ("Events with no max. cluster in DCAL"), HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxClusterDCALMinBias", "Events with no max. cluster in DCAL (min. bias trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxClusterDCALLevel0", "Events with no max. cluster in DCAL (level0 trigger)", HistType::kTH1D, {{1, 0.5, 1.5}});
+      registry.add("hEventsNoMaxJet", "Events with no max. jet", HistType::kTH1D, {{rAxis}});
+      registry.add("hEventsNoMaxJetMinBias", "Events with no max. jet (min. bias trigger)", HistType::kTH1D, {{rAxis}});
+      registry.add("hEventsNoMaxJetLevel0", "Events with no max. jet (level0 trigger)", HistType::kTH1D, {{rAxis}});
+
+      registry.add("hJetRPtTrackPt", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
+      registry.add("hJetRPtClusterPt", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
+      registry.add("hJetRPtPtd", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
+      registry.add("hJetRPtChargeFrag", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
+      registry.add("hJetRPtNEF", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
+      registry.add("hJetRPtZTheta", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
+      registry.add("hJetRPtZSqTheta", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
+      registry.add("hJetRPtZThetaSq", "Jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
+
+      registry.add("hJetRMaxPtClusterMaxPt", "Leading jets and clusters", HistType::kTH3F, {rAxis, jetPtAxis, observableAxisCluster});
+    }
 
     // Histograms for triggered events
     registry.add("hSelectedClusterPtEtaPhi", Form("Selected cluster %s, #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedClusterMaxPtEtaPhi", Form("Leading Selected cluster %s, #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+
+    if (!b_doLightOutput) {
+      registry.add("hSelectedClusterMaxPtEtaPhi", Form("Leading Selected cluster %s, #eta and #phi", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    }
 
     // Jet high trigger
-    registry.add("hSelectedJetRMaxPtEta", "Leading selected jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
-    registry.add("hSelectedJetRMaxPtPhi", "Leading selected jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    if (!b_doLightOutput) {
+      registry.add("hSelectedJetRMaxPtEta", "Leading selected jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+      registry.add("hSelectedJetRMaxPtPhi", "Leading selected jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    }
     registry.add("hSelectedJetRPtEta", "Selected jets #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
     registry.add("hSelectedJetRPtPhi", "Selected jets #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
-    registry.add("hSelectedJetRPtTrackPt", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
-    registry.add("hSelectedJetRPtClusterPt", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
-    registry.add("hSelectedJetRPtPtd", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
-    registry.add("hSelectedJetRPtChargeFrag", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
-    registry.add("hSelectedJetRPtNEF", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
-    registry.add("hSelectedJetRPtZTheta", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
-    registry.add("hSelectedJetRPtZSqTheta", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
-    registry.add("hSelectedJetRPtZThetaSq", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
+    if (!b_doLightOutput) {
+      registry.add("hSelectedJetRPtTrackPt", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
+      registry.add("hSelectedJetRPtClusterPt", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
+      registry.add("hSelectedJetRPtPtd", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
+      registry.add("hSelectedJetRPtChargeFrag", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
+      registry.add("hSelectedJetRPtNEF", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
+      registry.add("hSelectedJetRPtZTheta", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
+      registry.add("hSelectedJetRPtZSqTheta", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
+      registry.add("hSelectedJetRPtZThetaSq", "Selected jets", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
+    }
 
     // Jet low trigger
-    registry.add("hSelectedJetLowRMaxPtEta", "Leading selected jets (low threshold) #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
-    registry.add("hSelectedJetLowRMaxPtPhi", "Leading selected jets (low threshold) #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    if (!b_doLightOutput) {
+      registry.add("hSelectedJetLowRMaxPtEta", "Leading selected jets (low threshold) #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
+      registry.add("hSelectedJetLowRMaxPtPhi", "Leading selected jets (low threshold) #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
+    }
     registry.add("hSelectedJetLowRPtEta", "Selected jets (low threshold) #it{p}_{T} and #eta", HistType::kTH3F, {rAxis, jetPtAxis, etaAxis});
     registry.add("hSelectedJetLowRPtPhi", "Selected jets (low threshold) #it{p}_{T} and #phi", HistType::kTH3F, {rAxis, jetPtAxis, phiAxis});
-    registry.add("hSelectedJetLowRPtTrackPt", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
-    registry.add("hSelectedJetLowRPtClusterPt", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
-    registry.add("hSelectedJetLowRPtPtd", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
-    registry.add("hSelectedJetLowRPtChargeFrag", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
-    registry.add("hSelectedJetLowRPtNEF", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
-    registry.add("hSelectedJetLowRPtZTheta", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
-    registry.add("hSelectedJetLowRPtZSqTheta", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
-    registry.add("hSelectedJetLowRPtZThetaSq", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
+
+    if (!b_doLightOutput) {
+      registry.add("hSelectedJetLowRPtTrackPt", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisTrackInJet});
+      registry.add("hSelectedJetLowRPtClusterPt", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, ptAxisClusterInJet});
+      registry.add("hSelectedJetLowRPtPtd", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "p_{t,D}"}});
+      registry.add("hSelectedJetLowRPtChargeFrag", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z"}});
+      registry.add("hSelectedJetLowRPtNEF", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "NEF"}});
+      registry.add("hSelectedJetLowRPtZTheta", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z#theta"}});
+      registry.add("hSelectedJetLowRPtZSqTheta", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z^{2} #theta"}});
+      registry.add("hSelectedJetLowRPtZThetaSq", "Selected jets (low threshold)", HistType::kTH3F, {rAxis, jetPtAxis, {nPtBins / 2, 0., 1., "z #theta^{2}"}});
+    }
 
     // EMCAL gamma very-high trigger
     registry.add("hSelectedGammaEMCALPtEtaPhiVeryHigh", Form("Selected Gamma %s, #eta and #phi (EMCAL, very high threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaEMCALMaxPtEtaPhiVeryHigh", Form("Leading selected gamma %s, #eta and #phi (EMCAL, very high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaEMCALMaxPtEtaPhiVeryHigh", Form("Leading selected gamma %s, #eta and #phi (EMCAL, very high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // DCAL gamma very-high trigger
     registry.add("hSelectedGammaDCALPtEtaPhiVeryHigh", Form("Selected gamma %s, #eta and #phi (DCAL, very high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaDCALMaxPtEtaPhiVeryHigh", Form("Leading selected gamma %s, #eta and #phi (DCAL, very high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaDCALMaxPtEtaPhiVeryHigh", Form("Leading selected gamma %s, #eta and #phi (DCAL, very high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // EG1 trigger
     registry.add("hSelectedGammaEMCALPtEtaPhi", Form("Selected Gamma %s, #eta and #phi (EMCAL, high threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaEMCALMaxPtEtaPhi", Form("Leading selected gamma %s, #eta and #phi (EMCAL, high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaEMCALMaxPtEtaPhi", Form("Leading selected gamma %s, #eta and #phi (EMCAL, high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // DG1 trigger
     registry.add("hSelectedGammaDCALPtEtaPhi", Form("Selected gamma %s, #eta and #phi (DCAL, high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaDCALMaxPtEtaPhi", Form("Leading selected gamma %s, #eta and #phi (DCAL, high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaDCALMaxPtEtaPhi", Form("Leading selected gamma %s, #eta and #phi (DCAL, high treshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // EG2 trigger
     registry.add("hSelectedGammaEMCALPtEtaPhiLow", Form("Selected gamma %s, #eta and #phi (EMCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaEMCALMaxPtEtaPhiLow", Form("Leading selected gamma %s, #eta and #phi (EMCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaEMCALMaxPtEtaPhiLow", Form("Leading selected gamma %s, #eta and #phi (EMCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // DG2 trigger
     registry.add("hSelectedGammaDCALPtEtaPhiLow", Form("Selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaDCALMaxPtEtaPhiLow", Form("Leading selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaDCALMaxPtEtaPhiLow", Form("Leading selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     // EMCAL gamma very-low trigger
     registry.add("hSelectedGammaEMCALPtEtaPhiVeryLow", Form("Selected gamma %s, #eta and #phi (EMCAL, very low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaEMCALMaxPtEtaPhiVeryLow", Form("Leading selected gamma %s, #eta and #phi (EMCAL, very low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaEMCALMaxPtEtaPhiVeryLow", Form("Leading selected gamma %s, #eta and #phi (EMCAL, very low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
     //  DCAL gamma very-low trigger
     registry.add("hSelectedGammaDCALPtEtaPhiVeryLow", Form("Selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
-    registry.add("hSelectedGammaDCALMaxPtEtaPhiVeryLow", Form("Leading selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
+    if (!b_doLightOutput)
+      registry.add("hSelectedGammaDCALMaxPtEtaPhiVeryLow", Form("Leading selected gamma %s, #eta and #phi (DCAL, low threshold)", observableName.data()), HistType::kTH3F, {observableAxisCluster, etaAxis, phiAxis});
 
-    registry.add("hSelectedJetRMaxPtClusterMaxPt", "Leading selected jets and clusters", HistType::kTH3F, {rAxis, jetPtAxis, observableAxisCluster});
-    registry.add("hJetRMaxPtJetPt", "Leading jet #it{p}_{T} vs jet #it{p}_{T}", HistType::kTH3F, {rAxis, jetMaxPtAxis, jetPtAxis});
-    registry.add("hJetRMaxPtJetPtNoFiducial", "Leading jet #it{p}_{T} vs jet #it{p}_{T} (no fiducial cut)", HistType::kTH3F, {rAxis, jetMaxPtAxis, jetPtAxis});
-    registry.add("hClusterEMCALMaxPtClusterEMCALPt", Form("Leading clusterEMCAL %s vs clusterEMCAL %s", observableName.data(), observableName.data()), HistType::kTH2F, {observableAxisMaxCluster, observableAxisCluster});
-    registry.add("hClusterDCALMaxPtClusterDCALPt", Form("Leading clusterDCAL %s vs clusterDCAL %s", observableName.data(), observableName.data()), HistType::kTH2F, {observableAxisMaxCluster, observableAxisCluster});
+    if (!b_doLightOutput) {
+      registry.add("hSelectedJetRMaxPtClusterMaxPt", "Leading selected jets and clusters", HistType::kTH3F, {rAxis, jetPtAxis, observableAxisCluster});
+      registry.add("hJetRMaxPtJetPt", "Leading jet #it{p}_{T} vs jet #it{p}_{T}", HistType::kTH3F, {rAxis, jetMaxPtAxis, jetPtAxis});
+      registry.add("hJetRMaxPtJetPtNoFiducial", "Leading jet #it{p}_{T} vs jet #it{p}_{T} (no fiducial cut)", HistType::kTH3F, {rAxis, jetMaxPtAxis, jetPtAxis});
+      registry.add("hClusterEMCALMaxPtClusterEMCALPt", Form("Leading clusterEMCAL %s vs clusterEMCAL %s", observableName.data(), observableName.data()), HistType::kTH2F, {observableAxisMaxCluster, observableAxisCluster});
+      registry.add("hClusterDCALMaxPtClusterDCALPt", Form("Leading clusterDCAL %s vs clusterDCAL %s", observableName.data(), observableName.data()), HistType::kTH2F, {observableAxisMaxCluster, observableAxisCluster});
+    }
 
     if (b_JetsInEmcalOnly) {
       registry.get<TH3>(HIST("hJetRPtEta"))->SetTitle("Jets (in emcal only) #it{p}_{T} and #eta");
       registry.get<TH3>(HIST("hJetRPtPhi"))->SetTitle("Jets (in emcal only) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hJetRPtTrackPt"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtClusterPt"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtPtd"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtChargeFrag"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtNEF"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtZTheta"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtZSqTheta"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRPtZThetaSq"))->SetTitle("Jets (in emcal only)");
-      registry.get<TH3>(HIST("hJetRMaxPtEta"))->SetTitle("Leading jets (in emcal only) #it{p}_{T} and #eta");
-      registry.get<TH3>(HIST("hJetRMaxPtPhi"))->SetTitle("Leading jets (in emcal only) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hJetRMaxPtEtaMinBias"))->SetTitle("Leading jets (in emcal only, min. bias) #it{p}_{T} and #eta");
-      registry.get<TH3>(HIST("hJetRMaxPtPhiMinBias"))->SetTitle("Leading jets (in emcal only, min. bias) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hJetRMaxPtEtaLevel0"))->SetTitle("Leading jets (in emcal only, level-0) #it{p}_{T} and #eta");
-      registry.get<TH3>(HIST("hJetRMaxPtPhiLevel0"))->SetTitle("Leading jets (in emcal only, level-0) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hJetRMaxPtClusterMaxPt"))->SetTitle("Leading jets (in emcal only) and clusters");
+      if (!b_doLightOutput) {
+        registry.get<TH3>(HIST("hJetRPtTrackPt"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtClusterPt"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtPtd"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtChargeFrag"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtNEF"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtZTheta"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtZSqTheta"))->SetTitle("Jets (in emcal only)");
+        registry.get<TH3>(HIST("hJetRPtZThetaSq"))->SetTitle("Jets (in emcal only)");
+
+        registry.get<TH3>(HIST("hJetRMaxPtEta"))->SetTitle("Leading jets (in emcal only) #it{p}_{T} and #eta");
+        registry.get<TH3>(HIST("hJetRMaxPtPhi"))->SetTitle("Leading jets (in emcal only) #it{p}_{T} and #phi");
+        registry.get<TH3>(HIST("hJetRMaxPtEtaMinBias"))->SetTitle("Leading jets (in emcal only, min. bias) #it{p}_{T} and #eta");
+        registry.get<TH3>(HIST("hJetRMaxPtPhiMinBias"))->SetTitle("Leading jets (in emcal only, min. bias) #it{p}_{T} and #phi");
+        registry.get<TH3>(HIST("hJetRMaxPtEtaLevel0"))->SetTitle("Leading jets (in emcal only, level-0) #it{p}_{T} and #eta");
+        registry.get<TH3>(HIST("hJetRMaxPtPhiLevel0"))->SetTitle("Leading jets (in emcal only, level-0) #it{p}_{T} and #phi");
+        registry.get<TH3>(HIST("hJetRMaxPtClusterMaxPt"))->SetTitle("Leading jets (in emcal only) and clusters");
+      }
 
       registry.get<TH3>(HIST("hSelectedJetRPtEta"))->SetTitle("Selected jets (in emcal only) #it{p}_{T} and #eta");
       registry.get<TH3>(HIST("hSelectedJetRPtPhi"))->SetTitle("Selected jets (in emcal only) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hSelectedJetRPtTrackPt"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtClusterPt"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtPtd"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtChargeFrag"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtNEF"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtZTheta"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtZSqTheta"))->SetTitle("Selected jets (in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetRPtZThetaSq"))->SetTitle("Selected jets (in emcal only)");
+      if (!b_doLightOutput) {
+        registry.get<TH3>(HIST("hSelectedJetRPtTrackPt"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtClusterPt"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtPtd"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtChargeFrag"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtNEF"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtZTheta"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtZSqTheta"))->SetTitle("Selected jets (in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetRPtZThetaSq"))->SetTitle("Selected jets (in emcal only)");
+      }
 
       registry.get<TH3>(HIST("hSelectedJetLowRPtEta"))->SetTitle("Selected jets (low threshold, in emcal only) #it{p}_{T} and #eta");
       registry.get<TH3>(HIST("hSelectedJetLowRPtPhi"))->SetTitle("Selected jets (low threshold, in emcal only) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtTrackPt"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtClusterPt"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtPtd"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtChargeFrag"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtNEF"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtZTheta"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtZSqTheta"))->SetTitle("Selected jets (low threshold, in emcal only)");
-      registry.get<TH3>(HIST("hSelectedJetLowRPtZThetaSq"))->SetTitle("Selected jets (low threshold, in emcal only)");
+      if (!b_doLightOutput) {
+        registry.get<TH3>(HIST("hSelectedJetLowRPtTrackPt"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtClusterPt"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtPtd"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtChargeFrag"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtNEF"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtZTheta"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtZSqTheta"))->SetTitle("Selected jets (low threshold, in emcal only)");
+        registry.get<TH3>(HIST("hSelectedJetLowRPtZThetaSq"))->SetTitle("Selected jets (low threshold, in emcal only)");
 
-      registry.get<TH3>(HIST("hSelectedJetRMaxPtEta"))->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #eta");
-      registry.get<TH3>(HIST("hSelectedJetRMaxPtPhi"))->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #phi");
-      registry.get<TH3>(HIST("hSelectedJetRMaxPtClusterMaxPt"))->SetTitle("Leading selected jets (in emcal only) and clusters");
+        registry.get<TH3>(HIST("hSelectedJetRMaxPtEta"))->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #eta");
+        registry.get<TH3>(HIST("hSelectedJetRMaxPtPhi"))->SetTitle("Leading selected jets (in emcal only) #it{p}_{T} and #phi");
+        registry.get<TH3>(HIST("hSelectedJetRMaxPtClusterMaxPt"))->SetTitle("Leading selected jets (in emcal only) and clusters");
 
-      registry.get<TH3>(HIST("hJetRMaxPtJetPt"))->SetTitle("Leading jet #it{p}_{T} vs jet #it{p}_{T} (in emcal only)");
+        registry.get<TH3>(HIST("hJetRMaxPtJetPt"))->SetTitle("Leading jet #it{p}_{T} vs jet #it{p}_{T} (in emcal only)");
+      }
     }
   } // init
 
@@ -328,16 +367,16 @@ struct JetTriggerQA {
 
   double check_dphi(double dphi) const
   {
-    if (dphi > TMath::Pi()) {
-      dphi -= TMath::Pi();
-    } else if (dphi <= -1 * TMath::Pi()) {
-      dphi += TMath::Pi();
+    if (dphi > o2::constants::math::PI) {
+      dphi -= o2::constants::math::PI;
+    } else if (dphi <= -1 * o2::constants::math::PI) {
+      dphi += o2::constants::math::PI;
     }
     return dphi;
   }
 
   template <typename T>
-  Bool_t isJetInEmcal(T const& jet)
+  bool isJetInEmcal(T const& jet)
   {
     double emcalEtaMin = -0.7, emcalEtaMax = 0.7, emcalPhiMin = 1.40, emcalPhiMax = 3.26; // Phi: 80 - 187 deg
     double R = jet.r() * 1e-2;                                                            // Jet R is saved as round(100*R)
@@ -351,7 +390,7 @@ struct JetTriggerQA {
   {
     std::array<triggerAliases, 11> selectAliases = {{triggerAliases::kTVXinEMC, triggerAliases::kEMC7, triggerAliases::kDMC7, triggerAliases::kEG1, triggerAliases::kEG2, triggerAliases::kDG1, triggerAliases::kDG2, triggerAliases::kEJ1, triggerAliases::kEJ2, triggerAliases::kDJ1, triggerAliases::kDJ2}};
     bool found = false;
-    for (auto alias : selectAliases) {
+    for (const auto& alias : selectAliases) {
       if (collision.alias_bit(alias)) {
         found = true;
         break;
@@ -360,7 +399,7 @@ struct JetTriggerQA {
     return found;
   }
 
-  Bool_t isClusterInEmcal(selectedClusters::iterator const& cluster)
+  bool isClusterInEmcal(selectedClusters::iterator const& cluster)
   {
     if (cluster.phi() < f_PhiEmcalOrDcal) {
       return true;
@@ -466,78 +505,79 @@ struct JetTriggerQA {
         registry.fill(HIST("hSelectedGammaDCALPtEtaPhiVeryLow"), clusterObservable, cluster.eta(), cluster.phi());
       }
     } // for clusters
-
-    if (maxClusterObservableEMCAL > 0) {
-      registry.fill(HIST("hClusterEMCALMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
-        registry.fill(HIST("hClusterEMCALMaxPtEtaPhiMinBias"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_EMC7)) {
-        registry.fill(HIST("hClusterEMCALMaxPtEtaPhiLevel0"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      for (const auto& cluster : analysedClusters) {
-        if (cluster.mEMCALcluster) {
-          registry.fill(HIST("hClusterEMCALMaxPtClusterEMCALPt"), maxClusterObservableEMCAL, cluster.mTriggerObservable);
+    if (!b_doLightOutput) {
+      if (maxClusterObservableEMCAL > 0) {
+        registry.fill(HIST("hClusterEMCALMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
+          registry.fill(HIST("hClusterEMCALMaxPtEtaPhiMinBias"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_EMC7)) {
+          registry.fill(HIST("hClusterEMCALMaxPtEtaPhiLevel0"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        for (const auto& cluster : analysedClusters) {
+          if (cluster.mEMCALcluster) {
+            registry.fill(HIST("hClusterEMCALMaxPtClusterEMCALPt"), maxClusterObservableEMCAL, cluster.mTriggerObservable);
+          }
+        }
+        if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
+          registry.fill(HIST("hSelectedClusterMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kEmcalGammaVeryHigh)) {
+          registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiVeryHigh"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kEmcalGammaHigh)) {
+          registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kEmcalGammaLow)) {
+          registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiLow"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kEmcalGammaVeryLow)) {
+          registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiVeryLow"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
+        }
+      } else {
+        // count events where max. cluster has not been found
+        registry.fill(HIST("hEventsNoMaxClusterEMCAL"), 1.);
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
+          registry.fill(HIST("hEventsNoMaxClusterEMCALMinBias"), 1.);
+        }
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_EMC7)) {
+          registry.fill(HIST("hEventsNoMaxClusterEMCALLevel0"), 1.);
         }
       }
-      if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
-        registry.fill(HIST("hSelectedClusterMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kEmcalGammaVeryHigh)) {
-        registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiVeryHigh"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kEmcalGammaHigh)) {
-        registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhi"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kEmcalGammaLow)) {
-        registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiLow"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kEmcalGammaVeryLow)) {
-        registry.fill(HIST("hSelectedGammaEMCALMaxPtEtaPhiVeryLow"), maxClusterObservableEMCAL, maxClusterEMCAL.eta(), maxClusterEMCAL.phi());
-      }
-    } else {
-      // count events where max. cluster has not been found
-      registry.fill(HIST("hEventsNoMaxClusterEMCAL"), 1.);
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
-        registry.fill(HIST("hEventsNoMaxClusterEMCALMinBias"), 1.);
-      }
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_EMC7)) {
-        registry.fill(HIST("hEventsNoMaxClusterEMCALLevel0"), 1.);
-      }
-    }
-    if (maxClusterObservableDCAL > 0) {
-      registry.fill(HIST("hClusterDCALMaxPtEtaPhi"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
-        registry.fill(HIST("hClusterDCALMaxPtEtaPhiMinBias"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_DMC7)) {
-        registry.fill(HIST("hClusterDCALMaxPtEtaPhiLevel0"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-      for (const auto& cluster : analysedClusters) {
-        if (!cluster.mEMCALcluster) {
-          registry.fill(HIST("hClusterDCALMaxPtClusterDCALPt"), maxClusterObservableDCAL, cluster.mTriggerObservable);
+      if (maxClusterObservableDCAL > 0) {
+        registry.fill(HIST("hClusterDCALMaxPtEtaPhi"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
+          registry.fill(HIST("hClusterDCALMaxPtEtaPhiMinBias"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
         }
-      }
-      if (isTrigger(TriggerType_t::kDcalGammaVeryHigh)) {
-        registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiVeryHigh"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kDcalGammaHigh)) {
-        registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhi"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kDcalGammaLow)) {
-        registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiLow"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-      if (isTrigger(TriggerType_t::kDcalGammaVeryLow)) {
-        registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiVeryLow"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
-      }
-    } else {
-      registry.fill(HIST("hEventsNoMaxClusterDCAL"), 1.);
-      // count events where max. cluster has not been found
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
-        registry.fill(HIST("hEventsNoMaxClusterDCALMinBias"), 1.);
-      }
-      if (hwtrg.test(EMCALHardwareTrigger::TRG_DMC7)) {
-        registry.fill(HIST("hEventsNoMaxClusterDCALLevel0"), 1.);
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_DMC7)) {
+          registry.fill(HIST("hClusterDCALMaxPtEtaPhiLevel0"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        }
+        for (const auto& cluster : analysedClusters) {
+          if (!cluster.mEMCALcluster) {
+            registry.fill(HIST("hClusterDCALMaxPtClusterDCALPt"), maxClusterObservableDCAL, cluster.mTriggerObservable);
+          }
+        }
+        if (isTrigger(TriggerType_t::kDcalGammaVeryHigh)) {
+          registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiVeryHigh"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kDcalGammaHigh)) {
+          registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhi"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kDcalGammaLow)) {
+          registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiLow"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        }
+        if (isTrigger(TriggerType_t::kDcalGammaVeryLow)) {
+          registry.fill(HIST("hSelectedGammaDCALMaxPtEtaPhiVeryLow"), maxClusterObservableDCAL, maxClusterDCAL.eta(), maxClusterDCAL.phi());
+        }
+      } else {
+        registry.fill(HIST("hEventsNoMaxClusterDCAL"), 1.);
+        // count events where max. cluster has not been found
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_MB)) {
+          registry.fill(HIST("hEventsNoMaxClusterDCALMinBias"), 1.);
+        }
+        if (hwtrg.test(EMCALHardwareTrigger::TRG_DMC7)) {
+          registry.fill(HIST("hEventsNoMaxClusterDCALLevel0"), 1.);
+        }
       }
     }
     return std::make_pair(maxClusterObservableEMCAL, maxClusterObservableDCAL);
@@ -568,80 +608,90 @@ struct JetTriggerQA {
       // This gives us access to all jet substructure information
       // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
       // for (const auto& trackList : tracksInJet) {
-      for (auto& track : jet.template tracks_as<aod::JetTracks>()) {
-        auto trackPt = track.pt();
-        auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
-        chargeFrag /= (jet.p() * jet.p());
-        auto z = trackPt / jetPt;
-        auto dphi = jet.phi() - track.phi();
-        dphi = check_dphi(dphi);
-        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - track.eta(), 2));
-        zTheta += z * dR / jetR;
-        zSqTheta += z * z * dR / jetR;
-        zThetaSq += z * dR * dR / (jetR * jetR);
-        ptD += z * z;
-        registry.fill(HIST("hJetRPtTrackPt"), jetR, jetPt, trackPt);
-        registry.fill(HIST("hJetRPtChargeFrag"), jetR, jetPt, chargeFrag);
-        if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
-          registry.fill(HIST("hSelectedJetRPtTrackPt"), jetR, jetPt, trackPt);
-          registry.fill(HIST("hSelectedJetRPtChargeFrag"), jetR, jetPt, chargeFrag);
-        }
-        if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
-          registry.fill(HIST("hSelectedJetLowRPtTrackPt"), jetR, jetPt, trackPt);
-          registry.fill(HIST("hSelectedJetLowRPtChargeFrag"), jetR, jetPt, chargeFrag);
-        }
-      } // for tracks in jet
+      if (!b_doLightOutput) {
+        for (const auto& track : jet.template tracks_as<aod::JetTracks>()) {
+          auto trackPt = track.pt();
+          auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
+          chargeFrag /= (jet.p() * jet.p());
+          auto z = trackPt / jetPt;
+          auto dphi = jet.phi() - track.phi();
+          dphi = check_dphi(dphi);
+          auto dR = std::sqrt(dphi * dphi + std::pow(jet.eta() - track.eta(), 2));
+          zTheta += z * dR / jetR;
+          zSqTheta += z * z * dR / jetR;
+          zThetaSq += z * dR * dR / (jetR * jetR);
+          ptD += z * z;
+          registry.fill(HIST("hJetRPtTrackPt"), jetR, jetPt, trackPt);
+          registry.fill(HIST("hJetRPtChargeFrag"), jetR, jetPt, chargeFrag);
+          if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
+            registry.fill(HIST("hSelectedJetRPtTrackPt"), jetR, jetPt, trackPt);
+            registry.fill(HIST("hSelectedJetRPtChargeFrag"), jetR, jetPt, chargeFrag);
+          }
+          if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
+            registry.fill(HIST("hSelectedJetLowRPtTrackPt"), jetR, jetPt, trackPt);
+            registry.fill(HIST("hSelectedJetLowRPtChargeFrag"), jetR, jetPt, chargeFrag);
+          }
+        } // for tracks in jet
+      }
 
       // auto clustersInJet = jetClusterConstituents.sliceBy(perJetClusterConstituents, jet.globalIndex());
       // for (const auto& clusterList : clustersInJet) {
-      for (auto& cluster : jet.template clusters_as<selectedClusters>()) {
-        auto clusterPt = cluster.energy() / std::cosh(cluster.eta());
-        neutralEnergyFraction += cluster.energy();
-        auto z = clusterPt / jetPt;
-        auto dphi = jet.phi() - cluster.phi();
-        dphi = check_dphi(dphi);
-        auto dR = TMath::Sqrt(dphi * dphi + TMath::Power(jet.eta() - cluster.eta(), 2));
-        zTheta += z * dR / jetR;
-        zSqTheta += z * z * dR / jetR;
-        zThetaSq += z * dR * dR / (jetR * jetR);
-        ptD += z * z;
-        registry.fill(HIST("hJetRPtClusterPt"), jetR, jetPt, clusterPt);
-        if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
-          registry.fill(HIST("hSelectedJetRPtClusterPt"), jetR, jetPt, clusterPt);
-        }
-        if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
-          registry.fill(HIST("hSelectedJetLowRPtClusterPt"), jetR, jetPt, clusterPt);
-        }
-      } // for clusters in jet
+      if (!b_doLightOutput) {
+        for (const auto& cluster : jet.template clusters_as<selectedClusters>()) {
+          auto clusterPt = cluster.energy() / std::cosh(cluster.eta());
+          neutralEnergyFraction += cluster.energy();
+          auto z = clusterPt / jetPt;
+          auto dphi = jet.phi() - cluster.phi();
+          dphi = check_dphi(dphi);
+          auto dR = std::sqrt(dphi * dphi + std::pow(jet.eta() - cluster.eta(), 2));
+          zTheta += z * dR / jetR;
+          zSqTheta += z * z * dR / jetR;
+          zThetaSq += z * dR * dR / (jetR * jetR);
+          ptD += z * z;
+          registry.fill(HIST("hJetRPtClusterPt"), jetR, jetPt, clusterPt);
+          if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
+            registry.fill(HIST("hSelectedJetRPtClusterPt"), jetR, jetPt, clusterPt);
+          }
+          if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
+            registry.fill(HIST("hSelectedJetLowRPtClusterPt"), jetR, jetPt, clusterPt);
+          }
+        } // for clusters in jet
+      }
       neutralEnergyFraction /= jet.energy();
-      ptD = TMath::Sqrt(ptD);
+      ptD = std::sqrt(ptD);
 
       // Fillng histograms
       registry.fill(HIST("hJetRPtEta"), jetR, jetPt, jet.eta());
       registry.fill(HIST("hJetRPtPhi"), jetR, jetPt, jet.phi());
-      registry.fill(HIST("hJetRPtPtd"), jetR, jetPt, ptD);
-      registry.fill(HIST("hJetRPtNEF"), jetR, jetPt, neutralEnergyFraction);
-      registry.fill(HIST("hJetRPtZTheta"), jetR, jetPt, zTheta);
-      registry.fill(HIST("hJetRPtZSqTheta"), jetR, jetPt, zSqTheta);
-      registry.fill(HIST("hJetRPtZThetaSq"), jetR, jetPt, zThetaSq);
+      if (!b_doLightOutput) {
+        registry.fill(HIST("hJetRPtPtd"), jetR, jetPt, ptD);
+        registry.fill(HIST("hJetRPtNEF"), jetR, jetPt, neutralEnergyFraction);
+        registry.fill(HIST("hJetRPtZTheta"), jetR, jetPt, zTheta);
+        registry.fill(HIST("hJetRPtZSqTheta"), jetR, jetPt, zSqTheta);
+        registry.fill(HIST("hJetRPtZThetaSq"), jetR, jetPt, zThetaSq);
+      }
       registry.get<THn>(HIST("jetRPtEtaPhi"))->Fill(jetR, jetPt, jet.eta(), jet.phi());
       if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
         registry.fill(HIST("hSelectedJetRPtEta"), jetR, jetPt, jet.eta());
         registry.fill(HIST("hSelectedJetRPtPhi"), jetR, jetPt, jet.phi());
-        registry.fill(HIST("hSelectedJetRPtPtd"), jetR, jetPt, ptD);
-        registry.fill(HIST("hSelectedJetRPtNEF"), jetR, jetPt, neutralEnergyFraction);
-        registry.fill(HIST("hSelectedJetRPtZTheta"), jetR, jetPt, zTheta);
-        registry.fill(HIST("hSelectedJetRPtZSqTheta"), jetR, jetPt, zSqTheta);
-        registry.fill(HIST("hSelectedJetRPtZThetaSq"), jetR, jetPt, zThetaSq);
+        if (!b_doLightOutput) {
+          registry.fill(HIST("hSelectedJetRPtPtd"), jetR, jetPt, ptD);
+          registry.fill(HIST("hSelectedJetRPtNEF"), jetR, jetPt, neutralEnergyFraction);
+          registry.fill(HIST("hSelectedJetRPtZTheta"), jetR, jetPt, zTheta);
+          registry.fill(HIST("hSelectedJetRPtZSqTheta"), jetR, jetPt, zSqTheta);
+          registry.fill(HIST("hSelectedJetRPtZThetaSq"), jetR, jetPt, zThetaSq);
+        }
       }
       if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
         registry.fill(HIST("hSelectedJetLowRPtEta"), jetR, jetPt, jet.eta());
         registry.fill(HIST("hSelectedJetLowRPtPhi"), jetR, jetPt, jet.phi());
-        registry.fill(HIST("hSelectedJetLowRPtPtd"), jetR, jetPt, ptD);
-        registry.fill(HIST("hSelectedJetLowRPtNEF"), jetR, jetPt, neutralEnergyFraction);
-        registry.fill(HIST("hSelectedJetLowRPtZTheta"), jetR, jetPt, zTheta);
-        registry.fill(HIST("hSelectedJetLowRPtZSqTheta"), jetR, jetPt, zSqTheta);
-        registry.fill(HIST("hSelectedJetLowRPtZThetaSq"), jetR, jetPt, zThetaSq);
+        if (!b_doLightOutput) {
+          registry.fill(HIST("hSelectedJetLowRPtPtd"), jetR, jetPt, ptD);
+          registry.fill(HIST("hSelectedJetLowRPtNEF"), jetR, jetPt, neutralEnergyFraction);
+          registry.fill(HIST("hSelectedJetLowRPtZTheta"), jetR, jetPt, zTheta);
+          registry.fill(HIST("hSelectedJetLowRPtZSqTheta"), jetR, jetPt, zSqTheta);
+          registry.fill(HIST("hSelectedJetLowRPtZThetaSq"), jetR, jetPt, zThetaSq);
+        }
       }
     } // for jets
     return std::make_pair(vecMaxJet, vecMaxJetNoFiducial);
@@ -761,67 +811,74 @@ struct JetTriggerQA {
 
     std::array<bool, 5> foundMaxJet;
     std::fill(foundMaxJet.begin(), foundMaxJet.end(), false);
-    for (auto maxJet : vecMaxJet) {
-      double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
-      foundMaxJet[static_cast<int>(maxJet.r() * 1e-1) - 2] = true;
-      registry.fill(HIST("hJetRMaxPtEta"), jetR, jetPt, jetEta);
-      registry.fill(HIST("hJetRMaxPtPhi"), jetR, jetPt, jetPhi);
-      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
-        registry.fill(HIST("hJetRMaxPtEtaMinBias"), jetR, jetPt, jetEta);
-        registry.fill(HIST("hJetRMaxPtPhiMinBias"), jetR, jetPt, jetPhi);
-      }
-      if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7)) {
-        registry.fill(HIST("hJetRMaxPtEtaLevel0"), jetR, jetPt, jetEta);
-        registry.fill(HIST("hJetRMaxPtPhiLevel0"), jetR, jetPt, jetPhi);
-      }
-      // hJetRMaxPtEtaPhi->Fill(jetR, jetPt, jetEta, jetPhi);
-      registry.get<THn>(HIST("jetRMaxPtEtaPhi"))->Fill(jetR, jetPt, jetEta, jetPhi);
-      if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
-        registry.fill(HIST("hSelectedJetRMaxPtEta"), jetR, jetPt, jetEta);
-        registry.fill(HIST("hSelectedJetRMaxPtPhi"), jetR, jetPt, jetPhi);
-      }
-      if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
-        registry.fill(HIST("hSelectedJetLowRMaxPtEta"), jetR, jetPt, jetEta);
-        registry.fill(HIST("hSelectedJetLowRMaxPtPhi"), jetR, jetPt, jetPhi);
-      }
-      if (maxClusterObservableEMCAL > 0) {
-        registry.fill(HIST("hJetRMaxPtClusterMaxPt"), jetR, jetPt, maxClusterObservableEMCAL);
-        if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
-          registry.fill(HIST("hSelectedJetRMaxPtClusterMaxPt"), jetR, jetPt, maxClusterObservableEMCAL);
-        }
-      } // if maxClusterPt
-      if (maxJet.r() == std::round(f_jetR * 100)) {
-        for (const auto& jet : jets) {
-          if (isJetInEmcal(jet)) {
-            registry.fill(HIST("hJetRMaxPtJetPt"), jet.r() * 1e-2, jetPt, jet.pt());
-          }
-        } // for jets
-      } // if maxJet.r() == std::round(f_jetR * 100)
-    } // for maxJet
-    // Fill counters for events without max jets
-    for (std::size_t ir = 0; ir < foundMaxJet.size(); ir++) {
-      if (!foundMaxJet[ir]) {
-        double rval = static_cast<double>(ir) / 10.;
-        registry.fill(HIST("hEventsNoMaxJet"), rval);
+    if (!b_doLightOutput) {
+      for (const auto& maxJet : vecMaxJet) {
+        double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
+        foundMaxJet[static_cast<int>(maxJet.r() * 1e-1) - 2] = true;
+        registry.fill(HIST("hJetRMaxPtEta"), jetR, jetPt, jetEta);
+        registry.fill(HIST("hJetRMaxPtPhi"), jetR, jetPt, jetPhi);
         if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
-          registry.fill(HIST("hEventsNoMaxJetMinBias"), rval);
+          registry.fill(HIST("hJetRMaxPtEtaMinBias"), jetR, jetPt, jetEta);
+          registry.fill(HIST("hJetRMaxPtPhiMinBias"), jetR, jetPt, jetPhi);
         }
         if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7)) {
-          registry.fill(HIST("hEventsNoMaxJetLevel0"), rval);
+          registry.fill(HIST("hJetRMaxPtEtaLevel0"), jetR, jetPt, jetEta);
+          registry.fill(HIST("hJetRMaxPtPhiLevel0"), jetR, jetPt, jetPhi);
+        }
+        // hJetRMaxPtEtaPhi->Fill(jetR, jetPt, jetEta, jetPhi);
+        registry.get<THn>(HIST("jetRMaxPtEtaPhi"))->Fill(jetR, jetPt, jetEta, jetPhi);
+        if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
+          registry.fill(HIST("hSelectedJetRMaxPtEta"), jetR, jetPt, jetEta);
+          registry.fill(HIST("hSelectedJetRMaxPtPhi"), jetR, jetPt, jetPhi);
+        }
+        if (isTrigger(TriggerType_t::kEmcalJetFullLow) || isTrigger(TriggerType_t::kEmcalJetNeutralLow)) {
+          registry.fill(HIST("hSelectedJetLowRMaxPtEta"), jetR, jetPt, jetEta);
+          registry.fill(HIST("hSelectedJetLowRMaxPtPhi"), jetR, jetPt, jetPhi);
+        }
+        if (maxClusterObservableEMCAL > 0) {
+          registry.fill(HIST("hJetRMaxPtClusterMaxPt"), jetR, jetPt, maxClusterObservableEMCAL);
+          if (isTrigger(TriggerType_t::kEmcalJetFull) || isTrigger(TriggerType_t::kEmcalJetNeutral)) {
+            registry.fill(HIST("hSelectedJetRMaxPtClusterMaxPt"), jetR, jetPt, maxClusterObservableEMCAL);
+          }
+        } // if maxClusterPt
+        if (maxJet.r() == std::round(f_jetR * 100)) {
+          for (const auto& jet : jets) {
+            if (isJetInEmcal(jet)) {
+              registry.fill(HIST("hJetRMaxPtJetPt"), jet.r() * 1e-2, jetPt, jet.pt());
+            }
+          } // for jets
+        } // if maxJet.r() == std::round(f_jetR * 100)
+      } // for maxJet
+    }
+    // Fill counters for events without max jets
+    if (!b_doLightOutput) {
+      for (std::size_t ir = 0; ir < foundMaxJet.size(); ir++) {
+        if (!foundMaxJet[ir]) {
+          double rval = static_cast<double>(ir) / 10.;
+          registry.fill(HIST("hEventsNoMaxJet"), rval);
+          if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_MB)) {
+            registry.fill(HIST("hEventsNoMaxJetMinBias"), rval);
+          }
+          if (hardwaretriggers.test(EMCALHardwareTrigger::TRG_EMC7)) {
+            registry.fill(HIST("hEventsNoMaxJetLevel0"), rval);
+          }
         }
       }
     }
-    for (auto maxJet : vecMaxJetNoFiducial) {
-      double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
-      // hJetRMaxPtEtaPhiNoFiducial->Fill(jetR, jetPt, jetEta, jetPhi);
-      registry.get<THn>(HIST("jetRMaxPtEtaPhiNoFiducial"))->Fill(jetR, jetPt, jetEta, jetPhi);
-      if (maxJet.r() == std::round(f_jetR * 100)) {
-        for (const auto& jet : jets) {
-          registry.fill(HIST("hJetRMaxPtJetPtNoFiducial"), jet.r() * 1e-2, jetPt, jet.pt());
-        } // for jets
-      } // if maxJet.r() == std::round(f_jetR * 100)
-    } // for maxjet no fiducial
 
+    if (!b_doLightOutput) {
+      for (const auto& maxJet : vecMaxJetNoFiducial) {
+        double jetR = maxJet.r() * 1e-2, jetPt = maxJet.pt(), jetEta = maxJet.eta(), jetPhi = maxJet.phi();
+        // hJetRMaxPtEtaPhiNoFiducial->Fill(jetR, jetPt, jetEta, jetPhi);
+        registry.get<THn>(HIST("jetRMaxPtEtaPhiNoFiducial"))->Fill(jetR, jetPt, jetEta, jetPhi);
+        if (maxJet.r() == std::round(f_jetR * 100)) {
+          for (const auto& jet : jets) {
+            if (!b_doLightOutput)
+              registry.fill(HIST("hJetRMaxPtJetPtNoFiducial"), jet.r() * 1e-2, jetPt, jet.pt());
+          } // for jets
+        } // if maxJet.r() == std::round(f_jetR * 100)
+      } // for maxjet no fiducial
+    }
   } // process
 
   void processFullJets(collisionWithTrigger const& collision,

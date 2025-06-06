@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -329,6 +329,10 @@ void FemtoUniverseV0Selection::init(HistogramRegistry* registry)
                             kTH1F, {massAxisAntiLambda});
     mHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
                             "", kTH2F, {massAxisLambda, massAxisAntiLambda});
+    mHistogramRegistry->add((folderName + "/hInvMassAntiLambdavsPt").c_str(),
+                            "; ; #it{p}_{T} (GeV/#it{c})", kTH2F, {massAxisAntiLambda, {8, 0.0, 5.0}});
+    mHistogramRegistry->add((folderName + "/hInvMassLambdavsPt").c_str(),
+                            "; ; #it{p}_{T} (GeV/#it{c})", kTH2F, {massAxisLambda, {8, 0.0, 5.0}});
 
     posDaughTrack.init<aod::femtouniverseparticle::ParticleType::kV0Child,
                        aod::femtouniverseparticle::TrackType::kPosChild,
@@ -585,7 +589,7 @@ std::array<CutContainerType, 5>
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
   float observable = 0.;
-  for (auto& sel : mSelections) {
+  for (auto& sel : mSelections) { // o2-linter: disable=const-ref-in-for-loop
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femto_universe_v0_selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
@@ -691,6 +695,14 @@ void FemtoUniverseV0Selection::fillQA(C const& /*col*/, V const& v0, T const& po
       HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
         HIST("/hInvMassLambdaAntiLambda"),
       v0.mLambda(), v0.mAntiLambda());
+    mHistogramRegistry->fill(
+      HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
+        HIST("/hInvMassAntiLambdavsPt"),
+      v0.mAntiLambda(), v0.pt());
+    mHistogramRegistry->fill(
+      HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) +
+        HIST("/hInvMassLambdavsPt"),
+      v0.mLambda(), v0.pt());
   }
 
   posDaughTrack.fillQA<aod::femtouniverseparticle::ParticleType::kV0Child,

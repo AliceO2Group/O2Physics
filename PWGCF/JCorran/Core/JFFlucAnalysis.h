@@ -37,6 +37,8 @@ class JFFlucAnalysis : public TNamed
   TComplex Q(int n, int p);
   TComplex Two(int n1, int n2);
   TComplex Four(int n1, int n2, int n3, int n4);
+  TComplex TwoDiff(int n1, int n2);
+  TComplex FourDiff(int n1, int n2, int n3, int n4);
   void UserExec(Option_t* option);
   void Terminate(Option_t*);
 
@@ -44,6 +46,7 @@ class JFFlucAnalysis : public TNamed
   inline float GetEventCentrality() const { return fCent; }
   inline void SetEventImpactParameter(float ip) { fImpactParameter = ip; }
   inline void SetEventVertex(float zvertex) { fVertex = zvertex; }
+  inline void SetAverageInvariantMass(float mass) { fAvgInvariantMass = mass; }
   enum SubEvent {
     kSubEvent_A = 0x1,
     kSubEvent_B = 0x2
@@ -123,6 +126,7 @@ class JFFlucAnalysis : public TNamed
          kK4,
          nKL }; // order
   using JQVectorsT = JQVectors<TComplex, kNH, nKL, true>;
+  TComplex Q(const JQVectorsT& qvecs, int n, int p);
   inline void SetJQVectors(const JQVectorsT* _pqvecs)
   {
     pqvecs = _pqvecs;
@@ -139,10 +143,10 @@ class JFFlucAnalysis : public TNamed
   template <class T>
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
   template <class T>
-  using hasType = decltype(std::declval<T&>().particleType());
+  using hasSign = decltype(std::declval<T&>().sign());
 
   template <class JInputClass>
-  inline void FillQA(JInputClass& inputInst, UInt_t type = 0)
+  inline void FillQA(JInputClass& inputInst, UInt_t type = 0u)
   {
     ph1[HIST_TH1_CENTRALITY]->Fill(fCent);
     ph1[HIST_TH1_IMPACTPARAM]->Fill(fImpactParameter);
@@ -152,31 +156,33 @@ class JFFlucAnalysis : public TNamed
       using JInputClassIter = typename JInputClass::iterator;
       if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
         corrInv /= track.weightEff();
-      pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), corrInv);
+      if constexpr (std::experimental::is_detected<hasSign, const JInputClassIter>::value)
+        pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), track.sign(), corrInv);
+      else
+        pht[HIST_THN_PTETA]->Fill(fCent, track.pt(), track.eta(), 0.0, corrInv);
       if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
         corrInv /= track.weightNUA();
       pht[HIST_THN_PHIETA]->Fill(fCent, track.phi(), track.eta(), corrInv);
-      if constexpr (std::experimental::is_detected<hasType, const JInputClassIter>::value)
-        type = track.particleType();
       pht[HIST_THN_PHIETAZ]->Fill(fCent, static_cast<Double_t>(type), track.phi(), track.eta(), fVertex, corrInv);
     }
 
     ph1[HIST_TH1_ZVERTEX]->Fill(fVertex);
   }
 
-#define kcNH kH6 // max second dimension + 1
+#define kcNH kH4 // max second dimension + 1
  protected:
-  Float_t fVertex;          //!
-  Float_t fCent;            //!
-  Float_t fImpactParameter; //!
-  UInt_t subeventMask;      //!
-  UInt_t flags;             //!
+  Float_t fVertex;           //!
+  Float_t fAvgInvariantMass; //!
+  Float_t fCent;             //!
+  Float_t fImpactParameter;  //!
+  UInt_t subeventMask;       //!
+  UInt_t flags;              //!
 
   const JQVectorsT* pqvecs;    //!
   const JQVectorsT* pqvecsRef; //!
 
   TH1* ph1[HIST_TH1_COUNT];              //!
-  THn* pht[HIST_THN_COUNT];              //!
+  THnSparse* pht[HIST_THN_COUNT];        //!
   THnSparse* phs[HIST_THN_SPARSE_COUNT]; //!
 
   ClassDef(JFFlucAnalysis, 1)

@@ -16,7 +16,6 @@
 #define PWGCF_JCORRAN_CORE_FLOWJHISTMANAGER_H_
 
 /* Header files. */
-#include <iostream>
 #include <vector>
 #include <array>
 #include <string>
@@ -33,8 +32,6 @@
 // O2 Physics headers.
 
 /* Namespaces. */
-using namespace o2;
-using namespace o2::framework;
 
 // ----------------------------------------------------------------------------
 // Histogram manager to fill the general QA common to all flow tasks.
@@ -45,52 +42,52 @@ class FlowJHistManager
   FlowJHistManager() = default;
 
   // Setters and getters, in the same order as the data members.
-  void SetHistRegistryQA(HistogramRegistry* myRegistry)
+  void setHistRegistryQA(o2::framework::HistogramRegistry* myRegistry)
   {
     mHistRegistryQA = myRegistry;
     LOGF(info, "QA histogram registry successfully set.");
   }
-  HistogramRegistry* GetHistRegistryQA() const { return mHistRegistryQA; }
+  o2::framework::HistogramRegistry* getHistRegistryQA() const { return mHistRegistryQA; }
 
-  void SetDebugLog(bool debug)
+  void setDebugLog(bool debug)
   {
     mDebugLog = debug;
     LOGF(info, "Debug level: %d", mDebugLog);
   }
-  bool GetDebugLog() const { return mDebugLog; }
+  bool getDebugLog() const { return mDebugLog; }
 
-  void SetObtainNUA(bool nua)
+  void setObtainNUA(bool nua)
   {
     mObtainNUA = nua;
     LOGF(info, "Obtain 3D Zvtx-eta-phi distribution: %d", mObtainNUA);
   }
-  bool GetObtainNUA() const { return mObtainNUA; }
+  bool getObtainNUA() const { return mObtainNUA; }
 
-  void SetSaveAllQA(bool saveQA)
+  void setSaveAllQA(bool saveQA)
   {
     mSaveAllQA = saveQA;
     LOGF(info, "Save the additional QA : %d.", mSaveAllQA);
   }
-  bool GetSaveAllQA() const { return mSaveAllQA; }
+  bool getSaveAllQA() const { return mSaveAllQA; }
 
-  void SetSaveQABefore(bool saveQA)
+  void setSaveQABefore(bool saveQA)
   {
     mSaveQABefore = saveQA;
     LOGF(info, "Save the QA before the selection : %d.", mSaveQABefore);
   }
-  bool GetSaveQABefore() const { return mSaveQABefore; }
+  bool getSaveQABefore() const { return mSaveQABefore; }
 
-  void SetUseVariablePtBins(bool myAxis)
+  void setUseVariablePtBins(bool myAxis)
   {
     mUseVariablePtBins = myAxis;
     LOGF(info, "Use variable pT binning: %d.", mUseVariablePtBins);
   }
-  bool GetUseVariablePtBins() const { return mUseVariablePtBins; }
+  bool getUseVariablePtBins() const { return mUseVariablePtBins; }
 
   /* Methods specific to this class. */
   // The template functions are defined down here to prevent compilation errors.
-  void CreateHistQA();
-  int GetCentBin(float cValue);
+  void createHistQA();
+  int getCentBin(float cValue);
 
   /// \brief Fill the event QA histograms.
   /// \tparam T Type of collision.
@@ -100,71 +97,72 @@ class FlowJHistManager
   /// \param cent Centrality percentile of the collision.
   /// \param multi Collision multiplicity at this step.
   template <int mode, typename T>
-  void FillEventQA(T const& coll, int cBin, float cent, int multi)
+  void fillEventQA(T const& coll, int cBin, float cent, int multi)
   {
     if (!mHistRegistryQA) {
       LOGF(fatal, "QA histogram registry missing. Quitting...");
       return;
     }
 
-    static constexpr std::string_view subDir[] = {"Before/", "After/"};
+    static constexpr std::string_view SubDir[] = {"Before/", "After/"};
     switch (cBin) {
       case 0:
-        mHistRegistryQA->fill(HIST(mCentClasses[0]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[0]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[0]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[0]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[0]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[0]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 1:
-        mHistRegistryQA->fill(HIST(mCentClasses[1]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[1]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[1]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[1]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[1]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[1]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 2:
-        mHistRegistryQA->fill(HIST(mCentClasses[2]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[2]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[2]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[2]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[2]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[2]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 3:
-        mHistRegistryQA->fill(HIST(mCentClasses[3]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[3]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[3]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[3]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[3]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[3]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 4:
-        mHistRegistryQA->fill(HIST(mCentClasses[4]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[4]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[4]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[4]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[4]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[4]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 5:
-        mHistRegistryQA->fill(HIST(mCentClasses[5]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[5]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[5]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[5]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[5]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[5]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 6:
-        mHistRegistryQA->fill(HIST(mCentClasses[6]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[6]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[6]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[6]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[6]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[6]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 7:
-        mHistRegistryQA->fill(HIST(mCentClasses[7]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[7]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[7]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[7]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[7]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[7]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 8:
-        mHistRegistryQA->fill(HIST(mCentClasses[8]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[8]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[8]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[8]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[8]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[8]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
       case 9:
-        mHistRegistryQA->fill(HIST(mCentClasses[9]) + HIST(subDir[mode]) + HIST("histCent"), cent);
-        mHistRegistryQA->fill(HIST(mCentClasses[9]) + HIST(subDir[mode]) + HIST("histMulti"), multi);
-        mHistRegistryQA->fill(HIST(mCentClasses[9]) + HIST(subDir[mode]) + HIST("histZvtx"), coll.posZ());
+        mHistRegistryQA->fill(HIST(MCentClasses[9]) + HIST(SubDir[mode]) + HIST("histCent"), cent);
+        mHistRegistryQA->fill(HIST(MCentClasses[9]) + HIST(SubDir[mode]) + HIST("histMulti"), multi);
+        mHistRegistryQA->fill(HIST(MCentClasses[9]) + HIST(SubDir[mode]) + HIST("histZvtx"), coll.posZ());
         break;
     }
 
-    LOGF(info, "The EventQA has been filled.");
+    if (mDebugLog)
+      LOGF(info, "The EventQA has been filled.");
   }
 
-  /// \brief Hardcode the cBin for FillThisTrackQA if not constant.
+  /// \brief Hardcode the cBin for fillThisTrackQA if not constant.
   /// \tparam T Type of track.
   /// \tparam mode Set if we fill Before/ or After/ objects.
   /// \param track Track entry.
@@ -172,7 +170,7 @@ class FlowJHistManager
   /// \param weightNUE Value of the NUE weight to apply to pT.
   /// \param weightNUA Value of the NUA weight to apply to phi.
   template <int mode, typename T>
-  void FillTrackQA(T const& track, int cBin,
+  void fillTrackQA(T const& track, int cBin,
                    float weightNUE = 1., float weightNUA = 1., float zVtx = 0.)
   {
     if (!mHistRegistryQA) {
@@ -182,34 +180,34 @@ class FlowJHistManager
 
     switch (cBin) {
       case 0:
-        FillThisTrackQA<0, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<0, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 1:
-        FillThisTrackQA<1, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<1, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 2:
-        FillThisTrackQA<2, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<2, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 3:
-        FillThisTrackQA<3, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<3, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 4:
-        FillThisTrackQA<4, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<4, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 5:
-        FillThisTrackQA<5, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<5, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 6:
-        FillThisTrackQA<6, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<6, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 7:
-        FillThisTrackQA<7, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<7, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 8:
-        FillThisTrackQA<8, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<8, mode>(track, zVtx, weightNUE, weightNUA);
         break;
       case 9:
-        FillThisTrackQA<9, mode>(track, zVtx, weightNUE, weightNUA);
+        fillThisTrackQA<9, mode>(track, zVtx, weightNUE, weightNUA);
         break;
     }
 
@@ -229,61 +227,61 @@ class FlowJHistManager
   /// \note This method can be directly used if no switch is previously needed.
   // TODO: Add filling of the weight histograms.
   template <int cBin, int mode, typename T>
-  void FillThisTrackQA(T const& track, float zVtx = 0.,
+  void fillThisTrackQA(T const& track, float zVtx = 0.,
                        float weightNUE = 1., float weightNUA = 1.)
   {
-    static constexpr std::string_view subDir[] = {"Before/", "After/"};
+    static constexpr std::string_view SubDir[] = {"Before/", "After/"};
 
-    mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histPt"), track.pt());
-    mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histEta"), track.eta());
-    mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histPhi"), track.phi());
-    mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histCharge"), track.sign());
+    mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histPt"), track.pt());
+    mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histEta"), track.eta());
+    mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histPhi"), track.phi());
+    mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histCharge"), track.sign());
 
     if (mode == 1) { // 'Weight' distributions are defined only for After/.
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST("After/histPtCorrected"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPtCorrected"),
                             track.pt(), 1. / weightNUE);
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST("After/histPhiCorrected"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histPhiCorrected"),
                             track.phi(), 1. / weightNUA);
 
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST("After/histNUEWeights"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histNUEWeights"),
                             track.pt(), weightNUE);
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST("After/histNUAWeights"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histNUAWeights"),
                             track.phi(), weightNUA);
 
       // 3D distribution Zvtx-eta-phi.
       if (mObtainNUA) {
-        mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST("After/histZvtxEtaPhi"),
+        mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST("After/histZvtxEtaPhi"),
                               zVtx, track.eta(), track.phi());
       }
     }
 
     if (mSaveAllQA) {
       // TPC information.
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCNClsFound"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsFound"),
                             track.tpcNClsFound());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCNClsCrossedRows"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCNClsCrossedRows"),
                             track.tpcNClsCrossedRows());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCCrossedRowsOverFindableCls"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCCrossedRowsOverFindableCls"),
                             track.tpcCrossedRowsOverFindableCls());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCFoundOverFindableCls"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCFoundOverFindableCls"),
                             track.tpcFoundOverFindableCls());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCFractionSharedCls"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCFractionSharedCls"),
                             track.tpcFractionSharedCls());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histTPCChi2NCl"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histTPCChi2NCl"),
                             track.tpcChi2NCl());
 
       // ITS information.
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histITSNCls"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histITSNCls"),
                             track.itsNCls());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histITSNClsInnerBarrel"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histITSNClsInnerBarrel"),
                             track.itsNClsInnerBarrel());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histITSChi2NCl"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histITSChi2NCl"),
                             track.itsChi2NCl());
 
       // DCA information.
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histDCAxy"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histDCAxy"),
                             track.pt(), track.dcaXY());
-      mHistRegistryQA->fill(HIST(mCentClasses[cBin]) + HIST(subDir[mode]) + HIST("histDCAz"),
+      mHistRegistryQA->fill(HIST(MCentClasses[cBin]) + HIST(SubDir[mode]) + HIST("histDCAz"),
                             track.dcaZ());
     }
 
@@ -293,7 +291,7 @@ class FlowJHistManager
   }
 
  private:
-  HistogramRegistry* mHistRegistryQA = nullptr; ///< For the QA output.
+  o2::framework::HistogramRegistry* mHistRegistryQA = nullptr; ///< For the QA output.
 
   bool mDebugLog = false;          ///< Enable to print additional log for debug.
   bool mObtainNUA = false;         ///< Enable to get the 3D Zvtx-eta-phi distribution for NUA.
@@ -302,7 +300,7 @@ class FlowJHistManager
   bool mUseVariablePtBins = false; ///< Enable the use of a variable width pT binning.
 
   static const int mNcentBins = 10;                    ///< Number of centrality classes.
-  static constexpr std::string_view mCentClasses[] = { ///< Centrality classes.
+  static constexpr std::string_view MCentClasses[] = { ///< Centrality classes.
     "Centrality_00-01/", "Centrality_01-02/", "Centrality_02-05/",
     "Centrality_05-10/", "Centrality_10-20/", "Centrality_20-30/",
     "Centrality_30-40/", "Centrality_40-50/", "Centrality_50-60/",
