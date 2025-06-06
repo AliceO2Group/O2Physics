@@ -1959,6 +1959,8 @@ struct AnalysisDileptonTrackTrack {
   Configurable<std::string> fConfigQuadrupletCuts{"cfgQuadrupletCuts", "pairX3872Cut1", "Comma separated list of Dilepton-Track-Track cut"};
   Configurable<std::string> fConfigAddDileptonHistogram{"cfgAddDileptonHistogram", "barrel", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddQuadrupletHistogram{"cfgAddQuadrupletHistogram", "xtojpsipipi", "Comma separated list of histograms"};
+  Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+  Configurable<bool> fConfigUseDCAVertexing{"cfgUseDCAVertexing", false, "Use DCA for secondary vertex reconstruction (DCAFitter is used by default)"};
 
   Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
 
@@ -2037,6 +2039,25 @@ struct AnalysisDileptonTrackTrack {
 
     // LOGF(info, "Number of dileptons: %d", dileptons.size());
 
+    // set up KF or DCAfitter
+    if (fConfigUseDCAVertexing) {
+      VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
+      // VarManager::SetupThreeProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
+      VarManager::SetupFourProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, false); // TODO: get these parameters from Configurables
+    } else if (fConfigUseKFVertexing) {
+      VarManager::SetupFourProngKFParticle(5.0f);
+    }
+
+    int indexOffset = -999;
+    std::vector<int> trackGlobalIndexes;
+
+    if (dileptons.size() > 0) {
+      for (auto track : tracks) {
+        trackGlobalIndexes.push_back(track.globalIndex());
+        // std::cout << track.index() << " " << track.globalIndex() << std::endl;
+      }
+    }
+
     // loop over dileptons
     for (auto dilepton : dileptons) {
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
@@ -2050,6 +2071,14 @@ struct AnalysisDileptonTrackTrack {
       // get the index of the electron legs
       int indexLepton1 = dilepton.index0Id();
       int indexLepton2 = dilepton.index1Id();
+
+      if (indexOffset == -999) {
+        indexOffset = trackGlobalIndexes.at(0);
+      }
+      trackGlobalIndexes.clear();
+
+      auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
+      auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
 
       // loop over hadrons pairs
       for (auto& [t1, t2] : combinations(tracks, tracks)) {
@@ -2070,6 +2099,10 @@ struct AnalysisDileptonTrackTrack {
 
         // fill variables
         VarManager::FillDileptonTrackTrack<TCandidateType>(dilepton, t1, t2, fValuesQuadruplet);
+        // reconstruct the secondary vertex
+        if (fConfigUseDCAVertexing || fConfigUseKFVertexing) {
+          VarManager::FillDileptonTrackTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, t1, t2, fValuesQuadruplet);
+        }
 
         int iCut = 0;
         uint32_t CutDecision = 0;
@@ -2107,9 +2140,14 @@ struct AnalysisDileptonTrackTrack {
     } // end loop over dileptons
   }
 
-  void processJpsiPiPi(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+  void processChicToJpsiPiPi(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
     runDileptonTrackTrack<VarManager::kXtoJpsiPiPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
+  }
+
+  void processPsi2SToJpsiPiPi(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
+  {
+    runDileptonTrackTrack<VarManager::kPsi2StoJpsiPiPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
   }
 
   void processDummy(MyEvents&)
@@ -2117,7 +2155,8 @@ struct AnalysisDileptonTrackTrack {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processJpsiPiPi, "Run dilepton-dihadron pairing to study X(3872), using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processChicToJpsiPiPi, "Run dilepton-dihadron pairing to study X(3872), using skimmed data", false);
+  PROCESS_SWITCH(AnalysisDileptonTrackTrack, processPsi2SToJpsiPiPi, "Run dilepton-dihadron pairing to study Psi(2S), using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", false);
 };
 
