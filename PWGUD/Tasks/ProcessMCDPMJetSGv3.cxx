@@ -20,7 +20,7 @@
 #include "TDatabasePDG.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "TLorentzVector.h"
+// #include "TLorentzVector.h"
 // #include "TVector3.h"
 #include "Math/LorentzVector.h"           // ROOT::Math::LorentzVector
 #include "Math/PxPyPzM4D.h"               // ROOT::Math::PxPyPzM4D
@@ -180,7 +180,9 @@ struct ProcessMCDPMJetSGv3 {
           mcParticle.pz(),
           massPion
       );
-      if (std::fabs(protoMC.Eta()) < 0.8 && protoMC.Pt() > 0.1) {
+      double etaMax = 0.8;
+      double ptMin = 0.1;
+      if (std::fabs(protoMC.Eta()) < etaMax && protoMC.Pt() > ptMin) {
         counter += 1;
       }
       if (!mcParticle.isPhysicalPrimary())
@@ -205,7 +207,8 @@ struct ProcessMCDPMJetSGv3 {
         pMC.SetM(massProton);
         histos.fill(HIST("ptGeneratedProton"), pMC.Pt());
       }
-      if (std::abs(pMC.Rapidity()) < 0.8) {
+      double yMax = 0.8;
+      if (std::abs(pMC.Rapidity()) < yMax) {
         if (std::abs(mcParticle.pdgCode()) == codePion)
           histos.fill(HIST("ptGeneratedPionAxE"), pMC.Pt());
         if (std::abs(mcParticle.pdgCode()) == codeKaon)
@@ -243,12 +246,15 @@ struct ProcessMCDPMJetSGv3 {
     // massProton = protonPDG.Mass();
 
     histos.fill(HIST("numberOfTracksReco"), tracks.size());
+    double etaMax = 0.8;
+    double ptMin = 0.1;
+    int NFindableMin = 70;
 
     int counter = 0;
     for (auto& track : tracks) {
       if (track.isPVContributor()) {
         int NFindable = track.tpcNClsFindable();
-        if (NFindable < 70) {
+        if (NFindable < ptMin) {
           continue;
         }
         // int NMinusFound = track.tpcNClsFindableMinusFound();
@@ -256,7 +262,7 @@ struct ProcessMCDPMJetSGv3 {
         // if (NCluster < 70) {
         //   continue;
         // }
-        if (track.pt() < 0.1) {
+        if (track.pt() < ptMin) {
           continue;
         }
         // if (!(std::abs(track.dcaZ()) < 2.)) {
