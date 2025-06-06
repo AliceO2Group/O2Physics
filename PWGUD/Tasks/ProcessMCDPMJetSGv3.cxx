@@ -52,6 +52,10 @@ struct ProcessMCDPMJetSGv3 {
   using TCs = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   // using TCs = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksPID, aod::UDMcTrackLabels>;
   using TC = TCs::iterator;
+  using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
+
+
+
 
   double massPion = 0.;
   double massKaon = 0.;
@@ -168,28 +172,35 @@ struct ProcessMCDPMJetSGv3 {
         continue;
       counterMC += 1;
       // if(mcParticle.isPhysicalPrimary()) counterMC += 1;
-      TLorentzVector protoMC;
-      protoMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
+      LorentzVectorM protoMC(
+          mcParticle.px(),
+          mcParticle.py(),
+          mcParticle.pz(),
+          massPion
+      );
       if (std::fabs(protoMC.Eta()) < 0.8 && protoMC.Pt() > 0.1) {
         counter += 1;
       }
       if (!mcParticle.isPhysicalPrimary())
         continue;
       // if(mcParticle.isPhysicalPrimary() && fabs(mcParticle.eta())<0.9){ // do this in the context of the MC loop ! (context matters!!!)
-      TLorentzVector pMC;
+      // LorentzVectorM pMC;
+      LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
       if (std::abs(mcParticle.pdgCode()) == codePion) {
         // histos.fill(HIST("ptGeneratedPion"), mcParticle.pt());
-        pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
+        // LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massPion);
         histos.fill(HIST("ptGeneratedPion"), pMC.Pt());
       }
       if (std::abs(mcParticle.pdgCode()) == codeKaon) {
         // histos.fill(HIST("ptGenerateKaon"), mcParticle.pt());
-        pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massKaon);
+        // LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massKaon);
+        pMC.SetM(massKaon);
         histos.fill(HIST("ptGeneratedKaon"), pMC.Pt());
       }
       if (std::abs(mcParticle.pdgCode()) == codeProton) {
         // histos.fill(HIST("ptGeneratedProton"), mcParticle.pt());
-        pMC.SetXYZM(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massProton);
+        // LorentzVectorM pMC(mcParticle.px(), mcParticle.py(), mcParticle.pz(), massProton);
+        pMC.SetM(massProton);
         histos.fill(HIST("ptGeneratedProton"), pMC.Pt());
       }
       if (std::abs(pMC.Rapidity()) < 0.8) {
@@ -258,12 +269,9 @@ struct ProcessMCDPMJetSGv3 {
         double dEdx = track.tpcSignal();
         histos.fill(HIST("hdEdx"), momentum, dEdx);
 
-        TLorentzVector pion;
-        pion.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
-        TLorentzVector kaon;
-        kaon.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassKaonCharged);
-        TLorentzVector proton;
-        proton.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassProton);
+        LorentzVectorM pion(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged);
+        LorentzVectorM kaon(track.px(), track.py(), track.pz(), o2::constants::physics::MassKaonCharged);
+        LorentzVectorM proton(track.px(), track.py(), track.pz(), o2::constants::physics::MassProton);
         auto nSigmaPi = -999.;
         auto nSigmaKa = -999.;
         auto nSigmaPr = -999.;
