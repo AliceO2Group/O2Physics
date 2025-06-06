@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \file processMCDPMJetSGv3.cxx
-/// \brief Process MC DPMJet events for inclusive studies
+/// \brief Process MC DPMJet events for inclusive studies.
+///
 /// \author Simone Ragoni
-/// \since 2025-06-06
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
