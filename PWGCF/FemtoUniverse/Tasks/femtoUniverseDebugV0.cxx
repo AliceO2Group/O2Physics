@@ -81,13 +81,8 @@ struct FemtoUniverseDebugV0 {
   void init(InitContext&)
   {
     eventHisto.init(&EventRegistry);
-<<<<<<< Updated upstream
-    posChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodePositiveChild.value, true);
-    negChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
-=======
     positiveChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodePositiveChild.value, true);
     negativeChildHistos.init(&V0Registry, confChildTempFitVarpTBins, confChildTempFitVarBins, false, confPDGCodeNegativeChild, true);
->>>>>>> Stashed changes
     V0Histos.init(&V0Registry, confV0TempFitVarpTBins, confV0TempFitVarBins, false, confPDGCodeV0.value, true);
 
     thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {50, -5, 5}});
@@ -110,21 +105,6 @@ struct FemtoUniverseDebugV0 {
       }
 
       // Check cuts on V0 children
-<<<<<<< Updated upstream
-      if (posChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
-          negChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
-          isFullPIDSelected(posChild.pidCut(), posChild.p(), 999.f, confPositiveChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confPositiveChildPIDnSigmaMax.value, 1.f) &&
-          isFullPIDSelected(negChild.pidCut(), negChild.p(), 999.f, confNegativeChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confNegativeChildPIDnSigmaMax.value, 1.f)) {
-        auto pdgDB = TDatabasePDG::Instance();
-        auto protonMass = pdgDB->GetParticle(confPDGCodePositiveChild)->Mass();
-        auto pionMass = pdgDB->GetParticle(confPDGCodeNegativeChild)->Mass();
-        auto protonBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, protonMass, negChild, pionMass);
-        auto cosineTheta = (protonBoosted.Px() * part.px() + protonBoosted.Py() * part.py() + protonBoosted.Pz() * part.pz()) / (protonBoosted.P() * part.p());
-
-        V0Histos.fillQA<false, true>(part);
-        posChildHistos.fillQA<false, true>(posChild);
-        negChildHistos.fillQA<false, true>(negChild);
-=======
       if (positiveChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           negativeChild.partType() == uint8_t(aod::femtouniverseparticle::ParticleType::kV0Child) &&
           isFullPIDSelected(positiveChild.pidCut(), positiveChild.p(), 999.f, confPositiveChildIndex.value, confChildnSpecies.value, confChildPIDnSigmaMax.value, confPositiveChildPIDnSigmaMax.value, 1.f) &&
@@ -137,7 +117,6 @@ struct FemtoUniverseDebugV0 {
         V0Histos.fillQA<false, true>(part);
         positiveChildHistos.fillQA<false, true>(positiveChild);
         negativeChildHistos.fillQA<false, true>(negativeChild);
->>>>>>> Stashed changes
         thetaRegistry.fill(HIST("Theta/hTheta"), part.p(), cosineTheta);
       }
     }
