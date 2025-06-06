@@ -29,6 +29,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include "TFormula.h"
 
 //__________________________________________
 // MultModule
@@ -245,9 +246,13 @@ struct standardConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> minNclsITSibGlobalTrack{"minNclsITSibGlobalTrack", 1, "min. number of ITSib clusters for global tracks"};
 
   // ccdb information
-  o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+  o2::framework::Configurable<std::string> ccdbPathVtxZ{"ccdbPathVtxZ", "Centrality/Calibration", "The CCDB path for vertex-Z calibration"};
+  o2::framework::Configurable<std::string> ccdbPathCentrality{"ccdbPathCentrality", "Centrality/Estimators", "The CCDB path for centrality information"};
   o2::framework::Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
 
+  // centrality operation 
+  o2::framework::Configurable<std::string> generatorName{"generatorName", "", {"Specify if and only if this is MC. Typical: PYTHIA"}};
+  o2::framework::Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
 };
 
 class MultModule
@@ -257,6 +262,7 @@ class MultModule
   {
     // constructor
     mRunNumber = 0;
+    mRunNumberCentrality = 0;
     lCalibLoaded = false;
     lCalibObjects = nullptr;
     hVtxZFV0A = nullptr;
@@ -269,6 +275,7 @@ class MultModule
 
   // internal: calib related, vtx-z profiles
   int mRunNumber;
+  int mRunNumberCentrality;
   bool lCalibLoaded;
   TList* lCalibObjects;
   TProfile* hVtxZFV0A;
@@ -282,14 +289,90 @@ class MultModule
   // (N.B.: will be invisible to the outside, create your own copies)
   o2::common::multiplicity::standardConfigurables internalOpts;
 
+  //_________________________________________________
+  // centrality-related objects 
+  struct TagRun2V0MCalibration {
+    bool mCalibrationStored = false;
+    TFormula* mMCScale = nullptr;
+    float mMCScalePars[6] = {0.0};
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhVtxAmpCorrV0C = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2V0MInfo;
+  struct TagRun2V0ACalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorrV0A = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2V0AInfo;
+  struct TagRun2SPDTrackletsCalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2SPDTksInfo;
+  struct TagRun2SPDClustersCalibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorrCL0 = nullptr;
+    TH1* mhVtxAmpCorrCL1 = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2SPDClsInfo;
+  struct TagRun2CL0Calibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2CL0Info;
+  struct TagRun2CL1Calibration {
+    bool mCalibrationStored = false;
+    TH1* mhVtxAmpCorr = nullptr;
+    TH1* mhMultSelCalib = nullptr;
+  } Run2CL1Info;
+  struct CalibrationInfo {
+    std::string name = "";
+    bool mCalibrationStored = false;
+    TH1* mhMultSelCalib = nullptr;
+    float mMCScalePars[6] = {0.0};
+    TFormula* mMCScale = nullptr;
+    explicit CalibrationInfo(std::string name)
+      : name(name),
+        mCalibrationStored(false),
+        mhMultSelCalib(nullptr),
+        mMCScalePars{0.0},
+        mMCScale(nullptr)
+    {
+    }
+    bool isSane(bool fatalize = false)
+    {
+      if (!mhMultSelCalib) {
+        return true;
+      }
+      for (int i = 1; i < mhMultSelCalib->GetNbinsX() + 1; i++) {
+        if (mhMultSelCalib->GetXaxis()->GetBinLowEdge(i) > mhMultSelCalib->GetXaxis()->GetBinUpEdge(i)) {
+          if (fatalize) {
+            LOG(fatal) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          }
+          LOG(warning) << "Centrality calibration table " << name << " has bins with low edge > up edge";
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+
+  CalibrationInfo fv0aInfo = CalibrationInfo("FV0");
+  CalibrationInfo ft0mInfo = CalibrationInfo("FT0");
+  CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
+  CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
+  CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
+  CalibrationInfo fddmInfo = CalibrationInfo("FDD");
+  CalibrationInfo ntpvInfo = CalibrationInfo("NTracksPV");
+  CalibrationInfo nGlobalInfo = CalibrationInfo("NGlobal");
+  CalibrationInfo mftInfo = CalibrationInfo("MFT");
+
+
   template <typename TConfigurables, typename TInitContext>
   void init(TConfigurables const& opts, TInitContext& context)
   {
     // read in configurations from the task where it's used
     internalOpts = opts;
-
-    mRunNumber = 0;
-
     internalOpts.mEnabledTables.resize(nTablesConst, 0);
 
     LOGF(info, "Configuring tables to generate");
@@ -333,6 +416,7 @@ class MultModule
     }
 
     mRunNumber = 0;
+    mRunNumberCentrality = 0;
     lCalibLoaded = false;
     hVtxZFV0A = nullptr;
     hVtxZFT0A = nullptr;
@@ -344,10 +428,12 @@ class MultModule
 
   //__________________________________________________
   template <typename TCollision, typename TTracks, typename TBCs, typename TZdc, typename TFV0A, typename TFV0C, typename TFT0>
-  void collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TZdc const& zdc, TFV0A const& fv0a, TFV0C const& fv0c, TFT0 const& ft0 )
+  o2::common::multiplicity::multEntry  collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TZdc const& zdc, TFV0A const& fv0a, TFV0C const& fv0c, TFT0 const& ft0 )
   {
     // initialize properties
     o2::common::multiplicity::multEntry mults; 
+
+    return mults;
   }
 
   //__________________________________________________
@@ -664,6 +750,169 @@ class MultModule
     cursors.mftMults(nAllTracks, nTracks);
     mults[collision.globalIndex()].multMFTAllTracks = nAllTracks; 
     mults[collision.globalIndex()].multMFTTracks = nTracks; 
+  }
+
+  //__________________________________________________
+  template <typename TCCDB, typename TMetadata, typename TBC>
+  void ConfigureCentralityRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc){
+    if (bc.runNumber() != mRunNumberCentrality) {
+      mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
+      LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+      TList* callst = nullptr;
+      // Check if the ccdb path is a root file
+      if (internalOpts.ccdbPathCentrality.value.find(".root") != std::string::npos) {
+        TFile f(internalOpts.ccdbPathCentrality.value.c_str(), "READ");
+        f.GetObject(internalOpts.reconstructionPass.value.c_str(), callst);
+        if (!callst) {
+          f.ls();
+          LOG(fatal) << "No calibration list " << internalOpts.reconstructionPass.value << " found.";
+        }
+      } else {
+        if (internalOpts.reconstructionPass.value == "") {
+          callst = ccdb->template getForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber());
+        } else if (internalOpts.reconstructionPass.value == "metadata") {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+          LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+          callst = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber(), metadata);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = internalOpts.reconstructionPass.value;
+          LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", internalOpts.reconstructionPass.value);
+          callst = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber(), metadata);
+        }
+      }
+
+      fv0aInfo.mCalibrationStored = false;
+      ft0mInfo.mCalibrationStored = false;
+      ft0aInfo.mCalibrationStored = false;
+      ft0cInfo.mCalibrationStored = false;
+      ft0cVariant1Info.mCalibrationStored = false;
+      fddmInfo.mCalibrationStored = false;
+      ntpvInfo.mCalibrationStored = false;
+      nGlobalInfo.mCalibrationStored = false;
+      mftInfo.mCalibrationStored = false;
+      if (callst != nullptr) {
+        LOGF(info, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+        auto getccdb = [callst, bc](struct CalibrationInfo& estimator, const o2::framework::Configurable<std::string> generatorName) { // TODO: to consider the name inside the estimator structure
+          estimator.mhMultSelCalib = reinterpret_cast<TH1*>(callst->FindObject(TString::Format("hCalibZeq%s", estimator.name.c_str()).Data()));
+          estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
+          if (estimator.mhMultSelCalib != nullptr) {
+            if (generatorName->length() != 0) {
+              LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
+              if (estimator.mMCScale != nullptr) {
+                for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                  estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                  LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
+                }
+              } else {
+                LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
+              }
+            }
+            estimator.mCalibrationStored = true;
+            estimator.isSane();
+          } else {
+            LOGF(info, "Calibration information from %s for run %d not available, will fill this estimator with invalid values and continue (no crash).", estimator.name.c_str(), bc.runNumber());
+          }
+        };
+
+        // invoke loading only for requested centralities
+        if(internalOpts.mEnabledTables[kCentFV0As])
+          getccdb(fv0aInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentFT0Ms]) 
+          getccdb(ft0mInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentFT0As])
+          getccdb(ft0aInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentFT0Cs])
+          getccdb(ft0cInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentFT0CVariant1s])  
+          getccdb(ft0cVariant1Info, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentFDDMs])
+          getccdb(fddmInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentNTPVs])
+          getccdb(ntpvInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentNGlobals])
+          getccdb(nGlobalInfo, internalOpts.generatorName);
+        if(internalOpts.mEnabledTables[kCentMFTs])
+          getccdb(mftInfo, internalOpts.generatorName);
+      } else {
+        LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+      }
+    }
+  }
+
+  //__________________________________________________
+  template <typename TCCDB, typename TMetadata, typename TBC, typename TMultBuffer, typename TOutputGroup>
+  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc, TMultBuffer const& mults, TOutputGroup& cursors){
+    // takes multiplicity buffer and generates the desirable centrality values (if any)
+
+    // first step: did someone actually ask for it? Otherwise, go home
+    if(
+      internalOpts.mEnabledTables[kCentRun2V0Ms] || internalOpts.mEnabledTables[kCentRun2V0As] || 
+      internalOpts.mEnabledTables[kCentRun2SPDTrks] || internalOpts.mEnabledTables[kCentRun2SPDClss] || 
+      internalOpts.mEnabledTables[kCentRun2CL0s] || internalOpts.mEnabledTables[kCentRun2CL1s] ||
+      internalOpts.mEnabledTables[kCentFV0As] || internalOpts.mEnabledTables[kCentFT0Ms] ||
+      internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
+      internalOpts.mEnabledTables[kCentFT0CVariant1s] || internalOpts.mEnabledTables[kCentFDDMs] ||
+      internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
+      internalOpts.mEnabledTables[kCentMFTs])
+    {
+      // check and update centrality calibration objects for Run 3
+      ConfigureCentralityRun3(ccdb, metadataInfo, bc); 
+
+      /************************************************************
+       * @brief Populates a table with data based on the given calibration information and multiplicity.
+       *
+       * @param table The table to populate.
+       * @param estimator The calibration information.
+       * @param multiplicity The multiplicity value.
+       *************************************************************/
+
+      auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity, bool isInelGt0) {
+        const bool assignOutOfRange = internalOpts.embedINELgtZEROselection && !isInelGt0;
+        auto scaleMC = [](float x, float pars[6]) {
+          return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+        };
+
+        float percentile = 105.0f;
+        float scaledMultiplicity = multiplicity;
+        if (estimator.mCalibrationStored) {
+          if (estimator.mMCScale != nullptr) {
+            scaledMultiplicity = scaleMC(multiplicity, estimator.mMCScalePars);
+            LOGF(debug, "Unscaled %s multiplicity: %f, scaled %s multiplicity: %f", estimator.name.c_str(), multiplicity, estimator.name.c_str(), scaledMultiplicity);
+          }
+          percentile = estimator.mhMultSelCalib->GetBinContent(estimator.mhMultSelCalib->FindFixBin(scaledMultiplicity));
+          if (assignOutOfRange)
+            percentile = 100.5f;
+        }
+        LOGF(debug, "%s centrality/multiplicity percentile = %.0f for a zvtx eq %s value %.0f", estimator.name.c_str(), percentile, estimator.name.c_str(), scaledMultiplicity);
+        table(percentile);
+        return percentile;
+      };
+
+      // populate centralities
+      for (size_t iEv = 0; iEv < mults.size(); iEv++) {
+      bool isInelGt0 = (mults[iEv].multNContribsEta1 > 0);
+      if(internalOpts.mEnabledTables[kCentFV0As])
+        populateTable(cursors.centFV0A, fv0aInfo, mults[iEv].multFV0AZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentFT0Ms]) 
+        populateTable(cursors.centFT0M, ft0mInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentFT0As])
+        populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentFT0Cs])
+        populateTable(cursors.centFT0C, ft0cInfo, mults[iEv].multFT0CZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentFT0CVariant1s])  
+        populateTable(cursors.centFT0CVariant1, ft0cVariant1Info, mults[iEv].multFT0CZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentFDDMs])
+        populateTable(cursors.centFDDM, fddmInfo, mults[iEv].multFDDAZeq + mults[iEv].multFDDCZeq, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentNTPVs])
+        populateTable(cursors.centNTPV, ntpvInfo, mults[iEv].multNContribs, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentNGlobals])
+        populateTable(cursors.centNGlobals, nGlobalInfo, mults[iEv].multGlobalTracks, isInelGt0);
+      if(internalOpts.mEnabledTables[kCentMFTs])
+        populateTable(cursors.centMFTs, mftInfo, mults[iEv].multMFTTracks, isInelGt0);
+      }
+    }
   }
 }; // end BuilderModule
 

@@ -144,7 +144,7 @@ struct MultCentTable {
       products.tableExtraMult2MCExtras(collision.mcCollisionId()); 
     }
   }
-  void processCentrality(aod::Collisions const& collisions)
+  void processCentrality(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::Timestamps> const&)
   {
     // it is important that this function is at the end of the other process functions. 
     // it requires `mults` to be properly set, which will only happen after the other process
@@ -157,10 +157,11 @@ struct MultCentTable {
     if(collisions.size() != mults.size()) { 
       LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
     }
-
-    // module.generateCentralities();
+    auto const& collision = collisions.begin();
+    const auto& bc = collision.bc_as<soa::Join<aod::BCs, aod::Timestamps>>();
+    module.generateCentralities(ccdb, metadataInfo, bc, mults, products);
   }
-  
+
   PROCESS_SWITCH(MultCentTable, processRun2, "Process Run 2", false);
   PROCESS_SWITCH(MultCentTable, processRun3, "Process Run 3", true);
   PROCESS_SWITCH(MultCentTable, processRun3WithGlobalCounters, "Process Run 3 + global tracking counters", false);
