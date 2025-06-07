@@ -844,10 +844,8 @@ struct Lstaranalysis {
 
           if (std::abs(mctrack1.pdgCode()) != PDG_t::kProton || std::abs(mctrack2.pdgCode()) != PDG_t::kKPlus)
             continue;
-          bool isSameMother = false;
           bool isMotherOk = false;
           int pdgCodeMother = -999;
-          float ptMother = -9999.;
 
           if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
             continue;
