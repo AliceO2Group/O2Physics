@@ -13,11 +13,17 @@
 /// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
-// required
+// 1. Own header (doesn't exist)
+
+// 2. C system headers (none)
+
+// 3. C++ system headers
+#include <string>
+
+// 4. Other includes: O2 framework, ROOT, etc.
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
-// ccdb
 #include <CCDB/BasicCCDBManager.h>
 
 #include "Framework/O2DatabasePDGPlugin.h"
