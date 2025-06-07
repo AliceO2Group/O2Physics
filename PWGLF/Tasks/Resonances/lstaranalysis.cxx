@@ -9,9 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file Lstaranalysis.cxx
 /// \brief This task reconstructs track-track decay of lambda(1520) resonance candidate
-///
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 // required
@@ -375,7 +373,7 @@ struct Lstaranalysis {
   float massKa = MassKaonCharged;
   float massPr = MassProton;
 
-  int kLambda1520PDG = 102134;
+  int kLambda1520PDG = static_cast<int>(102134); // PDG code for Lambda(1520)
 
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
