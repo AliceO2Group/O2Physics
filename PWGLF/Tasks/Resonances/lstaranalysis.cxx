@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file Lstaranalysis.cxx
-/// \brief This task reconstructs track-track decay of lambda(1520) resonance candidate
+/// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 // required
@@ -32,10 +32,8 @@
 
 #include "TRandom.h"
 #include "TVector3.h"
-#include "TLorentzVector.h"
 
 using namespace o2;
-using namespace std;
 using namespace o2::soa;
 using namespace o2::aod;
 using namespace o2::framework;
@@ -59,7 +57,7 @@ struct Lstaranalysis {
   ccdb::CcdbApi ccdbApi;
 
   Configurable<string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -106,21 +104,21 @@ struct Lstaranalysis {
   Configurable<int> cPIDcutType{"cPIDcutType", 2, "cPIDcutType = 1 for square cut, 2 for circular cut"}; // By pass TOF PID selection
 
   // Kaon
-  Configurable<vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<vector<float>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-  Configurable<vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
-  Configurable<vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
+  Configurable<std::vector<float>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {0.5}, "pT intervals for Kaon TPC PID cuts"};
+  Configurable<std::vector<float>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+  Configurable<std::vector<float>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+  Configurable<std::vector<float>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+  Configurable<std::vector<float>> kaonTPCTOFCombinedpTintv{"kaonTPCTOFCombinedpTintv", {999.}, "pT intervals for Kaon TPC-TOF PID cuts"};
+  Configurable<std::vector<float>> kaonTPCTOFCombinedPIDcuts{"kaonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Kaon TPC-TOF PID cuts"};
   Configurable<float> cMaxTPCnSigmaKaonVETO{"cMaxTPCnSigmaKaonVETO", 3.0, "TPC nSigma VETO cut for Kaon"}; // TPC
 
   // Proton
-  Configurable<vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
-  Configurable<vector<float>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
-  Configurable<vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
-  Configurable<vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
-  Configurable<vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
-  Configurable<vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
+  Configurable<std::vector<float>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {0.9}, "pT intervals for Kaon TPC PID cuts"};
+  Configurable<std::vector<float>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
+  Configurable<std::vector<float>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
+  Configurable<std::vector<float>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
+  Configurable<std::vector<float>> protonTPCTOFCombinedpTintv{"protonTPCTOFCombinedpTintv", {999.}, "pT intervals for Proton TPC-TOF PID cuts"};
+  Configurable<std::vector<float>> protonTPCTOFCombinedPIDcuts{"protonTPCTOFCombinedPIDcuts", {2}, "nSigma list for Proton TPC-TOF PID cuts"};
   Configurable<float> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
 
   // Additional purity check
@@ -444,13 +442,13 @@ struct Lstaranalysis {
   template <typename T>
   bool pTdependentPIDProton(const T& candidate)
   {
-    auto vProtonTPCPIDpTintv = static_cast<vector<float>>(protonTPCPIDpTintv);
+    auto vProtonTPCPIDpTintv = static_cast<std::vector<float>>(protonTPCPIDpTintv);
     vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vProtonTPCPIDcuts = static_cast<vector<float>>(protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = static_cast<vector<float>>(protonTOFPIDpTintv);
-    auto vProtonTPCTOFCombinedpTintv = static_cast<vector<float>>(protonTPCTOFCombinedpTintv);
-    auto vProtonTPCTOFCombinedPIDcuts = static_cast<vector<float>>(protonTPCTOFCombinedPIDcuts);
-    auto vProtonTOFPIDcuts = static_cast<vector<float>>(protonTOFPIDcuts);
+    auto vProtonTPCPIDcuts = static_cast<std::vector<float>>(protonTPCPIDcuts);
+    auto vProtonTOFPIDpTintv = static_cast<std::vector<float>>(protonTOFPIDpTintv);
+    auto vProtonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(protonTPCTOFCombinedpTintv);
+    auto vProtonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(protonTPCTOFCombinedPIDcuts);
+    auto vProtonTOFPIDcuts = static_cast<std::vector<float>>(protonTOFPIDcuts);
     auto lengthOfprotonTPCPIDpTintv = static_cast<int>(vProtonTPCPIDpTintv.size());
     auto lengthOfprotonTOFPIDpTintv = static_cast<int>(vProtonTOFPIDpTintv.size());
     auto lengthOfprotonTPCTOFCombinedPIDpTintv = static_cast<int>(vProtonTPCTOFCombinedpTintv.size());
@@ -522,13 +520,13 @@ struct Lstaranalysis {
   template <typename T>
   bool pTdependentPIDKaon(const T& candidate)
   {
-    auto vKaonTPCPIDpTintv = static_cast<vector<float>>(kaonTPCPIDpTintv);
+    auto vKaonTPCPIDpTintv = static_cast<std::vector<float>>(kaonTPCPIDpTintv);
     vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vKaonTPCPIDcuts = static_cast<vector<float>>(kaonTPCPIDcuts);
-    auto vKaonTOFPIDpTintv = static_cast<vector<float>>(kaonTOFPIDpTintv);
-    auto vKaonTPCTOFCombinedpTintv = static_cast<vector<float>>(kaonTPCTOFCombinedpTintv);
-    auto vKaonTPCTOFCombinedPIDcuts = static_cast<vector<float>>(kaonTPCTOFCombinedPIDcuts);
-    auto vKaonTOFPIDcuts = static_cast<vector<float>>(kaonTOFPIDcuts);
+    auto vKaonTPCPIDcuts = static_cast<std::vector<float>>(kaonTPCPIDcuts);
+    auto vKaonTOFPIDpTintv = static_cast<std::vector<float>>(kaonTOFPIDpTintv);
+    auto vKaonTPCTOFCombinedpTintv = static_cast<std::vector<float>>(kaonTPCTOFCombinedpTintv);
+    auto vKaonTPCTOFCombinedPIDcuts = static_cast<std::vector<float>>(kaonTPCTOFCombinedPIDcuts);
+    auto vKaonTOFPIDcuts = static_cast<std::vector<float>>(kaonTOFPIDcuts);
     auto lengthOfkaonTPCPIDpTintv = static_cast<int>(vKaonTPCPIDpTintv.size());
     auto lengthOfkaonTOFPIDpTintv = static_cast<int>(vKaonTOFPIDpTintv.size());
     auto lengthOfkaonTPCTOFCombinedPIDpTintv = static_cast<int>(vKaonTPCTOFCombinedpTintv.size());
@@ -634,7 +632,7 @@ struct Lstaranalysis {
     }
     // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.centFT0M() << endl;
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
+    ROOT::Math::LorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -750,8 +748,8 @@ struct Lstaranalysis {
 
       // Apply kinematic opening angle cut
       if (cApplyOpeningAngle) {
-        TVector3 v1(trk1.px(), trk1.py(), trk1.pz());
-        TVector3 v2(trk2.px(), trk2.py(), trk2.pz());
+        Tstd::vector3 v1(trk1.px(), trk1.py(), trk1.pz());
+        Tstd::vector3 v2(trk2.px(), trk2.py(), trk2.pz());
         float alpha = v1.Angle(v2);
         if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle)
           continue;
@@ -948,7 +946,7 @@ struct Lstaranalysis {
   {
     auto multiplicity = collision.centFT0M();
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, vresoParent;
+    ROOT::Math::LorentzVector lDecayDaughter1, lDecayDaughter2, vresoParent;
 
     // Not related to the real collisions
     for (const auto& part : mcParticles) { // loop over all MC particles
