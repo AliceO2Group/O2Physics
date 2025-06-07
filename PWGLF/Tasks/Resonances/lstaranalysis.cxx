@@ -9,7 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \brief This task reconstructs track-track decay of lambda(1520) resonance candidate
+/// \file lstaranalysis.cxx
+/// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 // required
