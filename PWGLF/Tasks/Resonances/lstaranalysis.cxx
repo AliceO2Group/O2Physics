@@ -65,7 +65,7 @@ struct Lstaranalysis {
   ccdb::CcdbApi ccdbApi;
 
   Configurable<string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  Configurable<int> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -381,9 +381,9 @@ struct Lstaranalysis {
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == static_cast<int>(1)) {
       return collision.multFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == static_cast<int>(2)) {
       return collision.multFT0M();
     } else {
       return -999;
@@ -499,7 +499,7 @@ struct Lstaranalysis {
             }
           }
         }
-      } else if (cPIDcutType == 2) {
+      } else if (cPIDcutType == static_cast<int>(2)) {
         if (lengthOfprotonTPCTOFCombinedPIDpTintv > 0) {
           if (candidate.pt() > vProtonTPCTOFCombinedpTintv[lengthOfprotonTPCTOFCombinedPIDpTintv - 1]) {
             tofPIDPassed = false;
@@ -577,7 +577,7 @@ struct Lstaranalysis {
             }
           }
         }
-      } else if (cPIDcutType == 2) {
+      } else if (cPIDcutType == static_cast<int>(2)) {
         if (lengthOfkaonTPCTOFCombinedPIDpTintv > 0) {
           if (candidate.pt() > vKaonTPCTOFCombinedpTintv[lengthOfkaonTPCTOFCombinedPIDpTintv - 1]) {
             tofPIDPassed = false;
@@ -606,7 +606,7 @@ struct Lstaranalysis {
   template <typename T>
   bool rejectPion(const T& candidate)
   {
-    if (candidate.pt() > 1.0 && candidate.pt() < 2.0 && !candidate.hasTOF() && candidate.tpcNSigmaPi() < 2) {
+    if (candidate.pt() > static_cast<float>(1.0) && candidate.pt() < static_cast<float>(2.0) && !candidate.hasTOF() && candidate.tpcNSigmaPi() < static_cast<float>(2)) {
       return false;
     }
     return true;
@@ -768,7 +768,7 @@ struct Lstaranalysis {
       lDecayDaughter2 = LorentzVectorPtEtaPhiMass(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (std::abs(lResonance.Rapidity()) > 0.5)
+      if (std::abs(lResonance.Rapidity()) > static_cast<float>(0.5))
         continue;
 
       if (cfgCutsOnMother) {
@@ -962,7 +962,7 @@ struct Lstaranalysis {
         continue;
 
       auto kDaughters = part.daughters_as<aod::McParticles>();
-      if (kDaughters.size() != 2) {
+      if (kDaughters.size() != static_cast<int>(2)) {
         continue;
       }
 
@@ -993,7 +993,7 @@ struct Lstaranalysis {
       histos.fill(HIST("QA/MC/h2GenEtaPt_beforeanycut"), vresoParent.Eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeanycut"), vresoParent.Phi(), part.y());
 
-      if (std::abs(part.y()) > 0.5) // rapidity cut
+      if (std::abs(part.y()) > static_cast<float>(0.5)) // rapidity cut
         continue;
 
       histos.fill(HIST("QA/MC/h2GenEtaPt_beforeEtacut"), vresoParent.Eta(), part.pt());
