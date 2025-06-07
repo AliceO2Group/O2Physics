@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -11,6 +11,7 @@
 
 /// \file Lstaranalysis.cxx
 /// \brief This task reconstructs track-track decay of lambda(1520) resonance candidate
+///
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 // required
@@ -42,7 +43,7 @@ using namespace o2::constants::physics;
 
 using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
 
-enum PDG_t { kProton = 2212,
+enum pdg_t { kProton = 2212,
              kKPlus = 321,
              kLambda1520 = 102134 };
 
@@ -837,7 +838,7 @@ struct Lstaranalysis {
           const auto mctrack1 = trk1.mcParticle();
           const auto mctrack2 = trk2.mcParticle();
 
-          if (std::abs(mctrack1.pdgCode()) != kProton || std::abs(mctrack2.pdgCode()) != kKPlus)
+          if (std::abs(mctrack1.pdgCode()) != pdg_t::kProton || std::abs(mctrack2.pdgCode()) != pdg_t::kKPlus)
             continue;
           bool isSameMother = false;
           bool isMotherOk = false;
@@ -854,7 +855,7 @@ struct Lstaranalysis {
               if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
                 continue;
 
-              if (std::abs(mothertrack1.pdgCode()) == kLambda1520) // Pb PDG code
+              if (std::abs(mothertrack1.pdgCode()) == pdg_t::kLambda1520) // Pb PDG code
                 continue;
 
               pdgCodeMother = mothertrack1.pdgCode();
@@ -867,7 +868,7 @@ struct Lstaranalysis {
 
           // if (motherdTracks1.id() != motherdTracks2.id()) // Same mother
           //   continue;
-          //  if (std::abs(motherdTracks1.pdgCode()) != kLambda1520)
+          //  if (std::abs(motherdTracks1.pdgCode()) != pdg_t::kLambda1520)
           //   continue;
 
           if (std::abs(lResonance.Eta()) > cEtacutMC) // eta cut
@@ -956,8 +957,8 @@ struct Lstaranalysis {
     LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, vresoParent;
 
     // Not related to the real collisions
-    for (const auto& part : mcParticles) {         // loop over all MC particles
-      if (std::abs(part.pdgCode()) != kLambda1520) // Lambda1520(0)
+    for (const auto& part : mcParticles) {                // loop over all MC particles
+      if (std::abs(part.pdgCode()) != pdg_t::kLambda1520) // Lambda1520(0)
         continue;
 
       auto kDaughters = part.daughters_as<aod::McParticles>();
@@ -974,10 +975,10 @@ struct Lstaranalysis {
         if (!kCurrentDaughter.isPhysicalPrimary())
           break;
 
-        if (std::abs(kCurrentDaughter.pdgCode()) == kProton) { // Proton
+        if (std::abs(kCurrentDaughter.pdgCode()) == pdg_t::kProton) { // Proton
           daughtp = true;
           lDecayDaughter1 = LorentzVectorPtEtaPhiMass(kCurrentDaughter.pt(), kCurrentDaughter.eta(), kCurrentDaughter.phi(), massPr);
-        } else if (std::abs(kCurrentDaughter.pdgCode()) == kKPlus) {
+        } else if (std::abs(kCurrentDaughter.pdgCode()) == pdg_t::kKPlus) {
           daughtk = true;
           lDecayDaughter2 = LorentzVectorPtEtaPhiMass(kCurrentDaughter.pt(), kCurrentDaughter.eta(), kCurrentDaughter.phi(), massKa);
         }
