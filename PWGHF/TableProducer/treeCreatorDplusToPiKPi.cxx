@@ -23,7 +23,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/CorrelatedBkgs.h"
+// #include "PWGHF/Core/CorrelatedBkgs.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -266,7 +266,8 @@ struct HfTreeCreatorDplusToPiKPi {
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using SelectedCandidatesMcCorrBkgsWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using MatchedGenCandidatesMcCorrBkgs = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using SelectedCandidatesMcCorrBkgsWithMl = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -277,7 +278,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK);
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
   Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DstarToPiKPi);
-  Partition<SelectedCandidatesMcWithMl> reconstructedCandCorrBkgsMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != 0; // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+  Partition<SelectedCandidatesMcWithMl> reconstructedCandCorrBkgsMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != 0; // static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
 
   void init(InitContext const&)
   {
@@ -514,11 +515,11 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
-  template <bool applyMl = false, typename CandType, typename CollType>
+  template <bool applyMl = false, typename CandTypeMcRec, typename CandTypeMcGen, typename CollType>
   void fillMcTables(CollType const& collisions,
                     aod::McCollisions const&,
-                    CandType const& candidates,
-                    MatchedGenCandidatesMc const& particles,
+                    CandTypeMcRec const& candidates,
+                    CandTypeMcGen const& particles,
                     TracksWPid const&)
   {
     // Filling event properties
@@ -622,7 +623,7 @@ struct HfTreeCreatorDplusToPiKPi {
   void processMcCorrBkgsSgnWCentMl(aod::Collisions const& collisions,
         aod::McCollisions const& mccollisions,
         SelectedCandidatesMcCorrBkgsWithMl const&,
-        MatchedGenCandidatesMc const& particles,
+        MatchedGenCandidatesMcCorrBkgs const& particles,
         TracksWPid const& tracks)
         {
     LOG(info) << "processMcCorrBkgsSgnWCentMl with " << particles.size() << " particles";

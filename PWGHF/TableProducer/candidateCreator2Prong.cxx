@@ -47,7 +47,7 @@
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/Core/CorrelatedBkgs.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -60,9 +60,10 @@ using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_2prong;
+using namespace o2::hf_decay::hf_cand_2prong;
+using namespace o2::hf_corrbkg;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
-using namespace o2::hf_corrbkg;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::aod::pid_tpc_tof_utils;
@@ -804,7 +805,7 @@ struct HfCandidateCreator2ProngExpressions {
             
             if (indexRec != -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], sign*finalState[2]};
               if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, false, &sign, depth)) {
                 indexRec = -1; // Reset indexRec if the generated decay
               }
@@ -825,7 +826,7 @@ struct HfCandidateCreator2ProngExpressions {
           }
           if (indexRec > -1) {
             // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
-            flag = sign * (chn + 10);   // Only D0 decay channels are considered here
+            flag = sign * chn;   // Only D0 decay channels are considered here
             
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
