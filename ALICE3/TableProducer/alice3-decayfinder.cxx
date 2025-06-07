@@ -480,7 +480,7 @@ struct alice3decayFinder {
         // int daugID[2];
         int daugPDG[2], i = 0;
         for (const auto& dau : daughters) {
-        // daugID[i] = dau.globalIndex();
+          // daugID[i] = dau.globalIndex();
           daugPDG[i] = dau.pdgCode();
           i++;
         }
