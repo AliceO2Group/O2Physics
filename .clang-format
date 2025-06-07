@@ -39,7 +39,60 @@ PenaltyBreakFirstLessLess: 120
 PenaltyBreakString: 1000
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
-SortIncludes: false
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # O2Physics, PWG
+  - Regex: ^(<|")PWG[A-Z]{2}/.*\.h
+    Priority: 2
+    CaseSensitive: true
+  # O2Physics, non-PWG
+  - Regex: ^(<|")(Common|ALICE3|DPG|EventFiltering|Tools|Tutorials)/.*\.h
+    Priority: 3
+    CaseSensitive: true
+  # O2
+  - Regex: ^(<|")(Algorithm|CCDB|Common[A-Z]|DataFormats|DCAFitter|Detectors|EMCAL|Field|Framework|FT0|FV0|GlobalTracking|ITS|MathUtils|MFT|MCH|MID|PHOS|PID|ReconstructionDataFormats|SimulationDataFormat|TOF|TPC|ZDC).*/.*\.h
+    Priority: 4
+    CaseSensitive: true
+  # ROOT
+  - Regex: ^(<|")(T[A-Z]|Math/|Roo[A-Z])[[:alnum:]/]+\.h
+    Priority: 5
+    CaseSensitive: true
+  # known third-party: KFParticle
+  - Regex: ^(<|")KF[A-Z][[:alnum:]]+\.h
+    Priority: 6
+    CaseSensitive: true
+  # known third-party: FastJet
+  - Regex: ^(<|")fastjet/
+    Priority: 6
+    CaseSensitive: true
+  # known third-party: ONNX runtime
+  - Regex: ^(<|")onnxruntime
+    Priority: 6
+    CaseSensitive: true
+  # incomplete path to DataModel
+  - Regex: ^(<|").*DataModel/
+    Priority: 1
+    CaseSensitive: true
+  # other third-party
+  - Regex: ^(<|")([[:alnum:]_]+/)+[[:alnum:]_]+\.h
+    Priority: 6
+    CaseSensitive: true
+  # other local-looking file
+  - Regex: ^".*\.
+    Priority: 1
+    CaseSensitive: true
+  # C system
+  - Regex: ^(<|")[[:lower:]_]+\.h(>|")
+    Priority: 102
+    CaseSensitive: true
+  # C++ system
+  - Regex: ^(<|")[[:lower:]_/]+(>|")
+    Priority: 101
+    CaseSensitive: true
+  # rest
+  - Regex: .*
+    Priority: 100
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
