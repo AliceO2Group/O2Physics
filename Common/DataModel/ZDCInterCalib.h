@@ -20,21 +20,23 @@
 
 namespace o2::aod
 {
-namespace znoutput
+namespace znoutput // o2-linter: disable=name/workflow-file
 {
-DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float); //! PMC ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);      //! PM1 ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm2, ZNAPM2, float);      //! PM2 ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm3, ZNAPM3, float);      //! PM3 ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNApm4, ZNAPM4, float);      //! PM4 ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNAtdc, ZNATDC, float);      //! TDC ZNA // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpmc, commonPMZNC, float); //! PMC ZNC // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm1, ZNCPM1, float);      //! PM1 ZNC // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm2, ZNCPM2, float);      //! PM2 ZNC // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm3, ZNCPM3, float);      //! PM3 ZNC // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCpm4, ZNCPM4, float);      //! PM4 ZNC // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);      //! TDC ZNC // o2-linter: disable=name/o2-column
-
+DECLARE_SOA_COLUMN(ZNApmc, commonPMZNA, float);            //! PMC ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm1, ZNAPM1, float);                 //! PM1 ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm2, ZNAPM2, float);                 //! PM2 ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm3, ZNAPM3, float);                 //! PM3 ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNApm4, ZNAPM4, float);                 //! PM4 ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNAtdc, ZNATDC, float);                 //! TDC ZNA         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpmc, commonPMZNC, float);            //! PMC ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm1, ZNCPM1, float);                 //! PM1 ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm2, ZNCPM2, float);                 //! PM2 ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm3, ZNCPM3, float);                 //! PM3 ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCpm4, ZNCPM4, float);                 //! PM4 ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ZNCtdc, ZNCTDC, float);                 //! TDC ZNC         // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(Centrality, centrality, float);         //! Centrality
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);        //! Timestamp
+DECLARE_SOA_COLUMN(SelectionBits, selectionBits, uint8_t); //! Selection Flags
 } // namespace znoutput
 
 DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
@@ -49,7 +51,10 @@ DECLARE_SOA_TABLE(ZDCInterCalib, "AOD", "ZDCIC", o2::soa::Index<>,
                   znoutput::ZNCpm2,
                   znoutput::ZNCpm3,
                   znoutput::ZNCpm4,
-                  znoutput::ZNCtdc);
+                  znoutput::ZNCtdc,
+                  znoutput::Centrality,
+                  znoutput::Timestamp,
+                  znoutput::SelectionBits);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_ZDCINTERCALIB_H_
