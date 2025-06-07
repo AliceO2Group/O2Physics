@@ -861,8 +861,6 @@ struct Lstaranalysis {
                 continue;
 
               pdgCodeMother = mothertrack1.pdgCode();
-              ptMother = mothertrack1.pt();
-              isSameMother = true;
 
               isMotherOk = true;
             }
