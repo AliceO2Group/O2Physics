@@ -63,6 +63,8 @@ using namespace o2::aod;
 using namespace o2::hf_centrality;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::hf_cand_2prong;
+using namespace o2::aod::hf_cand_3prong;
 
 // enum for candidate type
 enum CandidateType {
@@ -1222,8 +1224,8 @@ struct HfTrackIndexSkimCreator {
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
-  static constexpr int kN2ProngDecays = hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                               // number of 2-prong hadron types
-  static constexpr int kN3ProngDecays = hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                               // number of 3-prong hadron types
+  static constexpr int kN2ProngDecays = o2::aod::hf_cand_2prong::DecayType::N2ProngDecays;                                                                                                               // number of 2-prong hadron types
+  static constexpr int kN3ProngDecays = o2::aod::hf_cand_3prong::DecayType::N3ProngDecays;                                                                                                               // number of 3-prong hadron types
   static constexpr int kNCuts2Prong[kN2ProngDecays] = {hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars, hf_cuts_presel_2prong::NCutVars};                                      // how many different selections are made on 2-prongs
   static constexpr int kNCuts3Prong[kN3ProngDecays] = {hf_cuts_presel_3prong::NCutVars, hf_cuts_presel_3prong::NCutVars + 1, hf_cuts_presel_ds::NCutVars, hf_cuts_presel_3prong::NCutVars + 1}; // how many different selections are made on 3-prongs (Lc and Xic have also PID potentially)
   static constexpr int kNCutsDstar = 3;                                                                                                                                                         // how many different selections are made on Dstars

@@ -23,6 +23,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+// #include "PWGHF/Core/CorrelatedBkgs.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -31,6 +32,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
+using namespace o2::hf_corrbkg;
 
 namespace o2::aod
 {
@@ -236,14 +238,15 @@ DECLARE_SOA_TABLE(HfCandDpFullPs, "AOD", "HFCANDDPFULLP",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_3prong::FlagMcMatchGen,
+                  hf_cand_3prong::FlagMcDecayChanGen,
                   hf_cand_3prong::OriginMcGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDplusToPiKPi {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents; 
   Produces<o2::aod::HfCandDpFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDpLites> rowCandidateLite;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
@@ -263,6 +266,8 @@ struct HfTreeCreatorDplusToPiKPi {
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using SelectedCandidatesMcWithMl = soa::Filtered<soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using MatchedGenCandidatesMcCorrBkgs = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using SelectedCandidatesMcCorrBkgsWithMl = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngMcRec, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   using CollisionsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::CentFT0Ms>;
@@ -273,6 +278,7 @@ struct HfTreeCreatorDplusToPiKPi {
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK);
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
   Partition<SelectedCandidatesMcWithMl> reconstructedCandSigMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) || nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DstarToPiKPi);
+  Partition<SelectedCandidatesMcWithMl> reconstructedCandCorrBkgsMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != 0; // static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
 
   void init(InitContext const&)
   {
@@ -509,11 +515,11 @@ struct HfTreeCreatorDplusToPiKPi {
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processDataWCent, "Process data with cent", false);
 
-  template <bool applyMl = false, typename CandType, typename CollType>
+  template <bool applyMl = false, typename CandTypeMcRec, typename CandTypeMcGen, typename CollType>
   void fillMcTables(CollType const& collisions,
                     aod::McCollisions const&,
-                    CandType const& candidates,
-                    MatchedGenCandidatesMc const& particles,
+                    CandTypeMcRec const& candidates,
+                    CandTypeMcGen const& particles,
                     TracksWPid const&)
   {
     // Filling event properties
@@ -522,6 +528,7 @@ struct HfTreeCreatorDplusToPiKPi {
       fillEvent(collision, 0, 1);
     }
 
+    LOG(info) << "Filling reconstructed " << candidates.size() << " candidates";
     // Filling candidate properties
     if (fillCandidateLiteTable) {
       rowCandidateLite.reserve(candidates.size());
@@ -541,6 +548,10 @@ struct HfTreeCreatorDplusToPiKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
+      // LOG(info) << "Filling particle with pt: " << particle.pt() << ", eta: " << particle.eta() << ", phi: " << particle.phi();
+      // LOG(info) << "Flag MC match gen: " << static_cast<int>(particle.flagMcMatchGen());
+      // LOG(info) << "Flag MC decay chan gen: " << static_cast<int>(particle.flagMcDecayChanGen());
+      // LOG(info) << "Origin MC gen: " << static_cast<int>(particle.originMcGen());
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
@@ -548,6 +559,7 @@ struct HfTreeCreatorDplusToPiKPi {
         particle.phi(),
         RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus),
         particle.flagMcMatchGen(),
+        particle.flagMcDecayChanGen(),
         particle.originMcGen());
     }
   }
@@ -587,26 +599,38 @@ struct HfTreeCreatorDplusToPiKPi {
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcWCent, "Process MC with cent", false);
 
   void processMcSgnWMl(aod::Collisions const& collisions,
-                       aod::McCollisions const& mccollisions,
-                       SelectedCandidatesMcWithMl const&,
-                       MatchedGenCandidatesMc const& particles,
-                       TracksWPid const& tracks)
-  {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
-  }
+    aod::McCollisions const& mccollisions,
+    SelectedCandidatesMcWithMl const&,
+    MatchedGenCandidatesMc const& particles,
+    TracksWPid const& tracks)
+    {
+      fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+    }
 
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
+    PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWMl, "Process MC signal with ML info", false);
 
   void processMcSgnWCentMl(CollisionsCent const& collisions,
-                           aod::McCollisions const& mccollisions,
-                           SelectedCandidatesMcWithMl const&,
-                           MatchedGenCandidatesMc const& particles,
-                           TracksWPid const& tracks)
-  {
-    fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+      aod::McCollisions const& mccollisions,
+      SelectedCandidatesMcWithMl const&,
+      MatchedGenCandidatesMc const& particles,
+      TracksWPid const& tracks)
+      {
+        fillMcTables<true>(collisions, mccollisions, reconstructedCandSigMl, particles, tracks);
+      }
+      
+      PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
+
+  void processMcCorrBkgsSgnWCentMl(aod::Collisions const& collisions,
+        aod::McCollisions const& mccollisions,
+        SelectedCandidatesMcCorrBkgsWithMl const&,
+        MatchedGenCandidatesMcCorrBkgs const& particles,
+        TracksWPid const& tracks)
+        {
+    LOG(info) << "processMcCorrBkgsSgnWCentMl with " << particles.size() << " particles";
+    fillMcTables(collisions, mccollisions, reconstructedCandCorrBkgsMl, particles, tracks);
   }
 
-  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
+  PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcCorrBkgsSgnWCentMl, "Process MC correlated bkgs with cent and ML info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
