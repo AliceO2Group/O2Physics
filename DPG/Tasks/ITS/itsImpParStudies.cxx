@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \author Mattia Faggin <mattia.faggin@cern.ch>, Padova University and INFN
+/// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
 #include <string>
 
@@ -34,9 +34,9 @@
 #include "DataFormatsCalibration/MeanVertexObject.h"
 #include "CommonConstants/GeomConstants.h"
 
-#include <iostream>
-#include <vector>
-#include <set>
+#include "iostream"
+#include "vector"
+#include "set"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -50,7 +50,7 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 /// QA task for impact parameter distribution monitoring
-struct QaImpactPar {
+struct ItsImpactParStudies {
 
   /// Input parameters
   Configurable<bool> fDebug{"fDebug", false, "Debug flag enabling outputs"};
@@ -95,6 +95,7 @@ struct QaImpactPar {
   // Configurable<std::string> ccdbpath_geo{"ccdbpath_geo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbpath_grp", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> doPVrefit{"doPVrefit", true, "Do PV refit"};
+  Configurable<bool> fillHistoPVrefit{"fillHistoPVrefit", false, "Do PV refit"};
   Configurable<int> nBinsDeltaXPVrefit{"nBins_DeltaX_PVrefit", 1000, "Number of bins of DeltaX for PV refit"};
   Configurable<int> nBinsDeltaYPVrefit{"nBins_DeltaY_PVrefit", 1000, "Number of bins of DeltaY for PV refit"};
   Configurable<int> nBinsDeltaZPVrefit{"nBins_DeltaZ_PVrefit", 1000, "Number of bins of DeltaZ for PV refit"};
@@ -167,7 +168,7 @@ struct QaImpactPar {
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     processReco<false>(collision, tracksUnfiltered, tracks, tracksIU, 0, bc);
   }
-  PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
+  PROCESS_SWITCH(ItsImpactParStudies, processData, "process data", true);
 
   /// MC
   using CollisionMCRecoTable = o2::soa::Join<CollisionRecoTable, o2::aod::McCollisionLabels>;
@@ -184,7 +185,7 @@ struct QaImpactPar {
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     processReco<true>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
   }
-  PROCESS_SWITCH(QaImpactPar, processMC, "process MC", false);
+  PROCESS_SWITCH(ItsImpactParStudies, processMC, "process MC", false);
 
   /// core template process function
   /// template<bool IS_MC, typename C, typename T, typename T_MC>
@@ -218,7 +219,7 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Reco/vertices_perTrack"))->GetXaxis()->SetBinLabel(3, "PV refit #chi^{2}!=-1");
     histograms.add("Reco/vertexZ", "", kTH1D, {collisionZAxis});
     histograms.add("Reco/numberContributors", "", kTH1D, {collisionNumberContributorAxis});
-    if (doPVrefit) {
+    if (doPVrefit && fillHistoPVrefit) {
       histograms.add("Reco/nContrib_vs_DeltaX_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaX_PVrefit});
       histograms.add("Reco/nContrib_vs_DeltaY_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaY_PVrefit});
       histograms.add("Reco/nContrib_vs_DeltaZ_PVrefit", "", kTH2D, {collisionNumberContributorAxis, collisionDeltaZ_PVrefit});
@@ -235,9 +236,7 @@ struct QaImpactPar {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    // if (!o2::base::GeometryManager::isGeometryLoaded()) {
-    //   ccdb->get<TGeoManager>(ccdbpath_geo);
-    // }
+
     mRunNumber = -1;
 
     /// Custom cut selection objects - ITS layers that must be present
@@ -305,49 +304,29 @@ struct QaImpactPar {
 
     histograms.add("Reco/pt", "", kTH1D, {trackPtAxis});
     histograms.add("Reco/itsHits", "Number of hits vs ITS layer;layer ITS", kTH2D, {{8, -1.5, 6.5, "ITS layer"}, {8, -0.5, 7.5, "Number of hits"}});
-    histograms.add("Reco/refitRun3", "Refit conditions for tracks", kTH1D, {{5, 0.5, 5.5, ""}});
-    histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(1, "hasTPC");
-    histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(2, "hasITS");
-    histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(3, "hasTPC && !hasITS");
-    histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(4, "!hasTPC && hasITS");
-    histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
-    histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-    histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+
     if (addTrackIUinfo) {
       histograms.add("Reco/h4ClusterSizeIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
-      // histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
       histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPaxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
     }
-    // if(fEnablePulls && !doPVrefit) {
-    //   LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
-    // }
-    if (fEnablePulls) {
-      histograms.add("Reco/h4ImpParPulls", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-      histograms.add("Reco/h4ImpParZPulls", "", kTHnSparseD, {trackPtAxis, trackImpParZPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-    }
+
     isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     if (isPIDPionApplied) {
       if (addTrackIUinfo) {
         histograms.add("Reco/h4ClusterSizeIU_Pion", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
-      histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-      histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
     if (isPIDKaonApplied) {
       if (addTrackIUinfo) {
         histograms.add("Reco/h4ClusterSizeIU_Kaon", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
-      histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-      histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
     if (isPIDProtonApplied) {
       if (addTrackIUinfo) {
         histograms.add("Reco/h4ClusterSizeIU_Proton", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis, trackIUclusterSize});
       }
-      histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
-      histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
     histograms.add("Reco/hNSigmaTPCPion", "", kTH2D, {trackPtAxis, trackNSigmaTPCPionAxis});
     histograms.add("Reco/hNSigmaTPCKaon", "", kTH2D, {trackPtAxis, trackNSigmaTPCKaonAxis});
@@ -373,19 +352,6 @@ struct QaImpactPar {
                    o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
-
-    auto PDGtoIndex = [](const int pdg) {
-      switch (pdg) {
-        case 211: // pion
-          return 1;
-        case 321: // kaon
-          return 2;
-        case 2212: // proton
-          return 3;
-        default: // not identified
-          return 0;
-      }
-    };
 
     /// trigger selection
     if (useTriggerkINT7) {
@@ -491,15 +457,9 @@ struct QaImpactPar {
     /// loop over tracks
     float pt = -999.f;
     float p = -999.f;
-    float eta = -999.f;
-    float phi = -999.f;
-    int8_t sign = -1;
     bool isPvContributor = false;
-    int nContributors = -1;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
-    float impParRPhiSigma = 999.f;
-    float impParZSigma = 999.f;
     float tpcNSigmaPion = -999.f;
     float tpcNSigmaKaon = -999.f;
     float tpcNSigmaProton = -999.f;
@@ -523,7 +483,6 @@ struct QaImpactPar {
       }
 
       /// Specific MC selections
-      int pdgIndex = -1;
       if constexpr (IS_MC) {
         if (keepOnlyPhysPrimary) {
           /// we want only physical primary particles
@@ -534,12 +493,10 @@ struct QaImpactPar {
           if (keepOnlyPhysPrimary && particle.isPhysicalPrimary()) {
             continue;
           }
-          pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));
           histograms.fill(HIST("MC/ptMC"), particle.pt());
         } else {
           if (track.has_mcParticle()) {
             auto particle = track.mcParticle();
-            pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));
             histograms.fill(HIST("MC/ptMC"), particle.pt());
           }
         }
@@ -576,22 +533,6 @@ struct QaImpactPar {
       }
       if (!trkHasITS) {
         histograms.fill(HIST("Reco/itsHits"), -1, itsNhits);
-      }
-      /// Test refit conditions
-      if (track.hasTPC()) { // hasTPC
-        histograms.fill(HIST("Reco/refitRun3"), 1);
-      }
-      if (track.hasITS()) { // hasITS
-        histograms.fill(HIST("Reco/refitRun3"), 2);
-      }
-      if (track.hasTPC() && !track.hasITS()) { // hasTPC && !hasITS
-        histograms.fill(HIST("Reco/refitRun3"), 3);
-      }
-      if (!track.hasTPC() && track.hasITS()) { // !hasTPC && hasITS
-        histograms.fill(HIST("Reco/refitRun3"), 4);
-      }
-      if (track.hasTPC() && track.hasITS()) { // hasTPC && hasITS
-        histograms.fill(HIST("Reco/refitRun3"), 5);
       }
 
       pt = track.pt();
@@ -638,14 +579,14 @@ struct QaImpactPar {
           /// enable the dca recalculation for the current PV contributor, after removing it from the PV refit
           recalc_imppar = true;
 
-          if (Pvtx_refitted.getChi2() < 0) {
+          if (Pvtx_refitted.getChi2() < 0 && fillHistoPVrefit) {
             LOG(info) << "---> Refitted vertex has bad chi2 = " << Pvtx_refitted.getChi2();
             histograms.fill(HIST("Reco/X_PVrefitChi2minus1"), Pvtx_refitted.getX(), collision.posX());
             histograms.fill(HIST("Reco/Y_PVrefitChi2minus1"), Pvtx_refitted.getY(), collision.posY());
             histograms.fill(HIST("Reco/Z_PVrefitChi2minus1"), Pvtx_refitted.getZ(), collision.posZ());
             histograms.fill(HIST("Reco/nContrib_PVrefitChi2minus1"), collision.numContrib());
             recalc_imppar = false;
-          } else {
+          } else if (fillHistoPVrefit) {
             histograms.fill(HIST("Reco/vertices_perTrack"), 3);
           }
           // histograms.fill(HIST("Reco/nContrib_vs_Chi2PVrefit"), /*Pvtx_refitted.getNContributors()*/collision.numContrib()-1, Pvtx_refitted.getChi2());
@@ -658,10 +599,11 @@ struct QaImpactPar {
             const double DeltaX = Pvtx.getX() - Pvtx_refitted.getX();
             const double DeltaY = Pvtx.getY() - Pvtx_refitted.getY();
             const double DeltaZ = Pvtx.getZ() - Pvtx_refitted.getZ();
-            histograms.fill(HIST("Reco/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
-            histograms.fill(HIST("Reco/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
-            histograms.fill(HIST("Reco/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
-
+            if (fillHistoPVrefit) {
+              histograms.fill(HIST("Reco/nContrib_vs_DeltaX_PVrefit"), collision.numContrib(), DeltaX);
+              histograms.fill(HIST("Reco/nContrib_vs_DeltaY_PVrefit"), collision.numContrib(), DeltaY);
+              histograms.fill(HIST("Reco/nContrib_vs_DeltaZ_PVrefit"), collision.numContrib(), DeltaZ);
+            }
             // fill the newly calculated PV
             PVbase_recalculated.setX(Pvtx_refitted.getX());
             PVbase_recalculated.setY(Pvtx_refitted.getY());
@@ -677,8 +619,6 @@ struct QaImpactPar {
       // value calculated wrt global PV (not recalculated) ---> coming from trackextension workflow
       impParRPhi = toMicrometers * track.dcaXY(); // dca.getY();
       impParZ = toMicrometers * track.dcaZ();     // dca.getY();
-      impParRPhiSigma = toMicrometers * std::sqrt(track.sigmaDcaXY2());
-      impParZSigma = toMicrometers * std::sqrt(track.sigmaDcaZ2());
       // updated value after PV recalculation
       if (recalc_imppar) {
         if (fEnablePulls) {
@@ -687,8 +627,6 @@ struct QaImpactPar {
           if (o2::base::Propagator::Instance()->propagateToDCABxByBz(PVbase_recalculated, trackParCov, 2.f, matCorr, &dcaInfoCov)) {
             impParRPhi = dcaInfoCov.getY() * toMicrometers;
             impParZ = dcaInfoCov.getZ() * toMicrometers;
-            impParRPhiSigma = std::sqrt(dcaInfoCov.getSigmaY2()) * toMicrometers;
-            impParZSigma = std::sqrt(dcaInfoCov.getSigmaZ2()) * toMicrometers;
           }
         } else {
           auto trackPar = getTrackPar(track);
@@ -719,20 +657,10 @@ struct QaImpactPar {
         // downsampling - do not consider the current track
         continue;
       }
-      eta = track.eta();
-      phi = track.phi();
-      sign = track.sign();
-      nContributors = collision.numContrib();
-      histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
-      histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
+
       if (addTrackIUinfo) {
         histograms.fill(HIST("Reco/h4ClusterSizeIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
-        // histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
         histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
-      }
-      if (fEnablePulls) {
-        histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
-        histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
       }
 
       if (isPIDPionApplied && nSigmaTPCPionMin < tpcNSigmaPion && tpcNSigmaPion < nSigmaTPCPionMax && nSigmaTOFPionMin < tofNSigmaPion && tofNSigmaPion < nSigmaTOFPionMax) {
@@ -740,8 +668,6 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Pion"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Pion"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
-        histograms.fill(HIST("Reco/h4ImpParZ_Pion"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCPion_afterPID"), pt, tpcNSigmaPion);
         histograms.fill(HIST("Reco/hNSigmaTOFPion_afterPID"), pt, tofNSigmaPion);
       }
@@ -750,8 +676,6 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Kaon"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Kaon"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
-        histograms.fill(HIST("Reco/h4ImpParZ_Kaon"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCKaon_afterPID"), pt, tpcNSigmaKaon);
         histograms.fill(HIST("Reco/hNSigmaTOFKaon_afterPID"), pt, tofNSigmaKaon);
       }
@@ -760,8 +684,6 @@ struct QaImpactPar {
         if (addTrackIUinfo) {
           histograms.fill(HIST("Reco/h4ClusterSizeIU_Proton"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ, clusterSizeInLayer0);
         }
-        histograms.fill(HIST("Reco/h4ImpPar_Proton"), pt, impParRPhi, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
-        histograms.fill(HIST("Reco/h4ImpParZ_Proton"), pt, impParZ, eta, phi, pdgIndex, sign, nContributors, isPvContributor);
         histograms.fill(HIST("Reco/hNSigmaTPCProton_afterPID"), pt, tpcNSigmaProton);
         histograms.fill(HIST("Reco/hNSigmaTOFProton_afterPID"), pt, tofNSigmaProton);
       }
@@ -772,6 +694,6 @@ struct QaImpactPar {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec w{
-    adaptAnalysisTask<QaImpactPar>(cfgc)};
+    adaptAnalysisTask<ItsImpactParStudies>(cfgc)};
   return w;
 }

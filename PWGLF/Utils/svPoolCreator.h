@@ -73,20 +73,20 @@ class svPoolCreator
   o2::vertexing::DCAFitterN<2>* getFitter() { return &fitter; }
   std::array<std::vector<TrackCand>, 4> getTrackCandPool() { return trackCandPool; }
 
-  template <typename C>
-  void fillBC2Coll(const C& collisions, aod::BCsWithTimestamps const&)
+  template <typename C, typename BC>
+  void fillBC2Coll(const C& collisions, BC const&)
   {
     for (unsigned i = 0; i < collisions.size(); i++) {
       auto collision = collisions.rawIteratorAt(i);
       if (!collision.has_bc()) {
         continue;
       }
-      bc2Coll[collision.template bc_as<aod::BCsWithTimestamps>().globalBC()] = i;
+      bc2Coll[collision.template bc_as<BC>().globalBC()] = i;
     }
   }
 
-  template <typename T, typename C>
-  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const&)
+  template <typename T, typename C, typename BC>
+  void appendTrackCand(const T& trackCand, const C& collisions, int pdgHypo, o2::aod::AmbiguousTracks const& ambiTracks, BC const&)
   {
     if (pdgHypo != track0Pdg && pdgHypo != track1Pdg) {
       LOG(debug) << "Wrong pdg hypothesis";
@@ -97,18 +97,18 @@ class svPoolCreator
     uint64_t globalBC = BcInvalid;
     if (trackCand.has_collision()) {
       if (trackCand.template collision_as<C>().has_bc()) {
-        globalBC = trackCand.template collision_as<C>().template bc_as<aod::BCsWithTimestamps>().globalBC();
+        globalBC = trackCand.template collision_as<C>().template bc_as<BC>().globalBC();
       }
     } else if (!skipAmbiTracks) {
       for (const auto& ambTrack : ambiTracks) {
         if (ambTrack.trackId() != trackCand.globalIndex()) {
           continue;
         }
-        if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
+        if (!ambTrack.has_bc() || ambTrack.bc_as<BC>().size() == 0) {
           globalBC = BcInvalid;
           break;
         }
-        globalBC = ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC();
+        globalBC = ambTrack.bc_as<BC>().begin().globalBC();
         break;
       }
     } else {
@@ -134,7 +134,7 @@ class svPoolCreator
       const auto& collision = collisions.rawIteratorAt(i);
       float collTime = collision.collisionTime();
       float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
-      uint64_t collBC = collision.template bc_as<aod::BCsWithTimestamps>().globalBC();
+      uint64_t collBC = collision.template bc_as<BC>().globalBC();
       int collIdx = collision.globalIndex();
       int64_t bcOffset = globalBC - static_cast<int64_t>(collBC);
       if (static_cast<uint64_t>(std::abs(bcOffset)) > bOffsetMax) {

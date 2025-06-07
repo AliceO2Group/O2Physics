@@ -55,7 +55,8 @@ class DelphesO2LutWriter
                 const float mass = 0.13957000,
                 int itof = 0,
                 int otof = 0,
-                int q = 1);
+                int q = 1,
+                const float nch = 1);
   bool fwdSolve(float* covm, float pt = 0.1, float eta = 0.0, float mass = 0.13957000);
   bool fwdPara(lutEntry_t& lutEntry, float pt = 0.1, float eta = 0.0, float mass = 0.13957000, float Bfield = 0.5);
   void lutWrite(const char* filename = "lutCovm.dat", int pdg = 211, float field = 0.2, int itof = 0, int otof = 0);

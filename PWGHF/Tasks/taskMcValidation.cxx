@@ -1106,21 +1106,21 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if (isDPlusSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
           whichHad = DplusToPiKPi;
-        } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
+        } else if (isDsSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi) {
             whichHad = DsToPhiPiToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K) {
             whichHad = DsToK0starKToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi) {
             whichHad = DplusToPhiPiToKKPi;
           }
-        } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
+        } else if (isLcSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           whichHad = LcToPKPi;
-        } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
+        } else if (isXicSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
           whichHad = XiCplusToPKPi;
         }
         int whichOrigin;

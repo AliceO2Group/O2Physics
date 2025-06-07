@@ -36,8 +36,8 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "string"
-#include "vector"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

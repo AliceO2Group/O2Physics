@@ -581,6 +581,13 @@ struct HStrangeCorrelation {
         hEfficiencyV0[0] = hEfficiencyK0Short;
         hEfficiencyV0[1] = hEfficiencyLambda;
         hEfficiencyV0[2] = hEfficiencyAntiLambda;
+
+        float etaWeight = 1;
+        if (systCuts.doOnTheFlyFlattening) {
+          float preWeight = 1 - std::abs(deltaeta) / 1.6;
+          etaWeight = preWeight != 0 ? 1.0f / preWeight : 0.0f;
+        }
+
         static_for<0, 2>([&](auto i) {
           constexpr int Index = i.value;
           float efficiency = 1.0f;
@@ -595,6 +602,7 @@ struct HStrangeCorrelation {
           }
 
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+          weight = weight * etaWeight;
           if (TESTBIT(doCorrelation, Index) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(kV0names[Index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
@@ -703,6 +711,12 @@ struct HStrangeCorrelation {
         hEfficiencyCascade[2] = hEfficiencyOmegaMinus;
         hEfficiencyCascade[3] = hEfficiencyOmegaPlus;
 
+        float etaWeight = 1;
+        if (systCuts.doOnTheFlyFlattening) {
+          float preWeight = 1 - std::abs(deltaeta) / 1.6;
+          etaWeight = preWeight != 0 ? 1.0f / preWeight : 0.0f;
+        }
+
         static_for<0, 3>([&](auto i) {
           constexpr int Index = i.value;
           float efficiency = 1.0f;
@@ -716,6 +730,7 @@ struct HStrangeCorrelation {
             efficiency = 1;
           }
           float weight = (applyEfficiencyCorrection || applyEfficiencyForTrigger) ? 1. / efficiency : 1.0f;
+          weight = weight * etaWeight;
           if (TESTBIT(doCorrelation, Index + 3) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma)
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(kCascadenames[Index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
@@ -1094,8 +1109,8 @@ struct HStrangeCorrelation {
 
     if (TESTBIT(doCorrelation, 8)) {
       histos.add("hAsssocTrackEtaVsPtVsPhi", "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add("hAssocPrimaryEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMultNDim});
-      histos.add("hAssocHadronsAllSelectedEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMultNDim});
+      histos.add("hAssocPrimaryEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMult});
+      histos.add("hAssocHadronsAllSelectedEtaVsPt", "", kTH3F, {axisPtQA, axisEta, axisMult});
       histos.add("hAssocPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
     }
 
