@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file Lstaranalysis.cxx
-/// \brief This standalone task reconstructs track-track decay of lambda(1520) resonance candidate
+/// \brief This task reconstructs track-track decay of lambda(1520) resonance candidate
 /// \author Hirak Kumar Koley <hirak.koley@cern.ch>
 
 // required
@@ -32,12 +32,19 @@
 
 #include "TRandom.h"
 #include "TVector3.h"
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::constants::physics;
+
+using LorentzVectorPtEtaPhiMass = ROOT::Math::PtEtaPhiMVector;
+
+enum PDG_t { kProton = 2212,
+             kKPlus = 321,
+             kLambda1520 = 102134 };
 
 struct Lstaranalysis {
   // Define slice per Resocollision
@@ -57,7 +64,7 @@ struct Lstaranalysis {
   ccdb::CcdbApi ccdbApi;
 
   Configurable<string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-  Configurable<int64_t> nolaterthan{"nolaterthan", chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
@@ -359,7 +366,7 @@ struct Lstaranalysis {
       ccdbApi.init("http://alice-ccdb.cern.ch");
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
     // Print output histograms statistics
@@ -371,7 +378,7 @@ struct Lstaranalysis {
   float massPr = MassProton;
 
   template <typename CollisionType>
-  float GetCentrality(CollisionType const& collision)
+  float getCentrality(CollisionType const& collision)
   {
     if (cfgCentEst == 1) {
       return collision.multFT0C();
@@ -383,9 +390,9 @@ struct Lstaranalysis {
   }
 
   template <typename DetNameType>
-  int GetDetId(DetNameType const& name)
+  int getDetId(DetNameType const& name)
   {
-    LOGF(info, "GetDetID running");
+    LOGF(info, "getDetId running");
     if (name.value == "FT0C") {
       return 0;
     } else if (name.value == "FT0A") {
@@ -407,16 +414,16 @@ struct Lstaranalysis {
   bool trackCut(const TrackType track)
   {
     // basic track cuts
-    if (abs(track.pt()) < cMinPtcut)
+    if (std::abs(track.pt()) < cMinPtcut)
       return false;
     if (cDCAr7SigCut) {
-      if (abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
+      if (std::abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
-      if (abs(track.dcaXY()) > cMaxDCArToPVcut)
+      if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
         return false;
     }
-    if (abs(track.dcaZ()) > cMaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (cTPCNClsFound && (track.tpcNClsFound() < cMinTPCNClsFound))
       return false;
@@ -463,7 +470,7 @@ struct Lstaranalysis {
       } else {
         for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
           if (candidate.pt() > vProtonTPCPIDpTintv[i] && candidate.pt() < vProtonTPCPIDpTintv[i + 1]) {
-            if (abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts[i])
+            if (std::abs(candidate.tpcNSigmaPr()) < vProtonTPCPIDcuts[i])
               tpcPIDPassed = true;
           }
         }
@@ -485,7 +492,7 @@ struct Lstaranalysis {
             for (int i = 0; i < lengthOfprotonTOFPIDpTintv; i++) {
               if (candidate.pt() < vProtonTOFPIDpTintv[i]) {
 
-                if (abs(candidate.tofNSigmaPr()) < vProtonTOFPIDcuts[i] && abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProtonVETO)
+                if (std::abs(candidate.tofNSigmaPr()) < vProtonTOFPIDcuts[i] && std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProtonVETO)
                   tofPIDPassed = true;
               }
             }
@@ -541,7 +548,7 @@ struct Lstaranalysis {
       } else {
         for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
           if (candidate.pt() > vKaonTPCPIDpTintv[i] && candidate.pt() < vKaonTPCPIDpTintv[i + 1]) {
-            if (abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[i])
+            if (std::abs(candidate.tpcNSigmaKa()) < vKaonTPCPIDcuts[i])
               tpcPIDPassed = true;
           }
         }
@@ -563,7 +570,7 @@ struct Lstaranalysis {
             for (int i = 0; i < lengthOfkaonTOFPIDpTintv; i++) {
               if (candidate.pt() < vKaonTOFPIDpTintv[i]) {
 
-                if (abs(candidate.tofNSigmaKa()) < vKaonTOFPIDcuts[i] && abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaonVETO)
+                if (std::abs(candidate.tofNSigmaKa()) < vKaonTOFPIDcuts[i] && std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaonVETO)
                   tofPIDPassed = true;
               }
             }
@@ -632,7 +639,7 @@ struct Lstaranalysis {
     }
     // LOG(info) << "After pass, Collision index:" << collision.index() << "multiplicity: " << collision.centFT0M() << endl;
 
-    ROOT::Math::LorentzVector lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
+    LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lresonanceRot;
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -663,8 +670,8 @@ struct Lstaranalysis {
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
 
-      auto deltaEta = abs(trk1.eta() - trk2.eta());
-      auto deltaPhi = abs(trk1.phi() - trk2.phi());
+      auto deltaEta = std::abs(trk1.eta() - trk2.eta());
+      auto deltaPhi = std::abs(trk1.phi() - trk2.phi());
       deltaPhi = (deltaPhi > constants::math::PI) ? (constants::math::TwoPI - deltaPhi) : deltaPhi;
 
       //// QA plots before the selection
@@ -748,19 +755,19 @@ struct Lstaranalysis {
 
       // Apply kinematic opening angle cut
       if (cApplyOpeningAngle) {
-        Tstd::vector3 v1(trk1.px(), trk1.py(), trk1.pz());
-        Tstd::vector3 v2(trk2.px(), trk2.py(), trk2.pz());
+        TVector3 v1(trk1.px(), trk1.py(), trk1.pz());
+        TVector3 v2(trk2.px(), trk2.py(), trk2.pz());
         float alpha = v1.Angle(v2);
         if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle)
           continue;
       }
 
       //// Resonance reconstruction
-      lDecayDaughter1.SetPtEtaPhiM(trk1.pt(), trk1.eta(), trk1.phi(), massPr);
-      lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
+      lDecayDaughter1 = LorentzVectorPtEtaPhiMass(trk1.pt(), trk1.eta(), trk1.phi(), massPr);
+      lDecayDaughter2 = LorentzVectorPtEtaPhiMass(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) > 0.5)
+      if (std::abs(lResonance.Rapidity()) > 0.5)
         continue;
 
       if (cfgCutsOnMother) {
@@ -792,7 +799,7 @@ struct Lstaranalysis {
           if (isCalcRotBkg) {
             for (int i = 0; i < cNofRotations; i++) {
               float theta2 = rn->Uniform(constants::math::PI - constants::math::PI / rotationalcut, constants::math::PI + constants::math::PI / rotationalcut);
-              ldaughterRot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
+              ldaughterRot = LorentzVectorPtEtaPhiMass(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonanceRot = lDecayDaughter1 + ldaughterRot;
               histos.fill(HIST("Result/Data/h3lambda1520InvMassRotation"), multiplicity, lresonanceRot.Pt(), lresonanceRot.M());
             }
@@ -830,7 +837,7 @@ struct Lstaranalysis {
           const auto mctrack1 = trk1.mcParticle();
           const auto mctrack2 = trk2.mcParticle();
 
-          if (abs(mctrack1.pdgCode()) != 2212 || abs(mctrack2.pdgCode()) != 321)
+          if (std::abs(mctrack1.pdgCode()) != kProton || std::abs(mctrack2.pdgCode()) != kKPlus)
             continue;
           bool isSameMother = false;
           bool isMotherOk = false;
@@ -847,7 +854,7 @@ struct Lstaranalysis {
               if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
                 continue;
 
-              if (std::abs(mothertrack1.pdgCode()) == 102134) // Pb PDG code
+              if (std::abs(mothertrack1.pdgCode()) == kLambda1520) // Pb PDG code
                 continue;
 
               pdgCodeMother = mothertrack1.pdgCode();
@@ -860,10 +867,10 @@ struct Lstaranalysis {
 
           // if (motherdTracks1.id() != motherdTracks2.id()) // Same mother
           //   continue;
-          //  if (abs(motherdTracks1.pdgCode()) != 102134)
+          //  if (std::abs(motherdTracks1.pdgCode()) != kLambda1520)
           //   continue;
 
-          if (abs(lResonance.Eta()) > cEtacutMC) // eta cut
+          if (std::abs(lResonance.Eta()) > cEtacutMC) // eta cut
             continue;
 
           if (!isMotherOk)
@@ -920,7 +927,7 @@ struct Lstaranalysis {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
 
-    centrality = GetCentrality(collision);
+    centrality = getCentrality(collision);
     // if (centrality < cfgEventCentralityMin || centrality > cfgEventCentralityMax)
     //  return;
 
@@ -936,7 +943,7 @@ struct Lstaranalysis {
                  MCTrackCandidates const& tracks,
                  BCsWithTimestamps const&)
   {
-    if (!colCuts.isSelected(collision) || (abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    if (!colCuts.isSelected(collision) || (std::abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
     fillHistograms<false, true, false>(collision, tracks, tracks);
   }
@@ -946,11 +953,11 @@ struct Lstaranalysis {
   {
     auto multiplicity = collision.centFT0M();
 
-    ROOT::Math::LorentzVector lDecayDaughter1, lDecayDaughter2, vresoParent;
+    LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, vresoParent;
 
     // Not related to the real collisions
-    for (const auto& part : mcParticles) { // loop over all MC particles
-      if (abs(part.pdgCode()) != 102134)   // Lambda1520(0)
+    for (const auto& part : mcParticles) {         // loop over all MC particles
+      if (std::abs(part.pdgCode()) != kLambda1520) // Lambda1520(0)
         continue;
 
       auto kDaughters = part.daughters_as<aod::McParticles>();
@@ -958,8 +965,8 @@ struct Lstaranalysis {
         continue;
       }
 
-      // bool pass1 = abs(part.daughterPDG1()) == 321 || abs(part.daughterPDG2()) == 321;   // At least one decay to Kaon
-      // bool pass2 = abs(part.daughterPDG1()) == 2212 || abs(part.daughterPDG2()) == 2212; // At least one decay to Proton
+      // bool pass1 = std::abs(part.daughterPDG1()) == 321 || std::abs(part.daughterPDG2()) == 321;   // At least one decay to Kaon
+      // bool pass2 = std::abs(part.daughterPDG1()) == 2212 || std::abs(part.daughterPDG2()) == 2212; // At least one decay to Proton
 
       auto daughtp = false;
       auto daughtk = false;
@@ -967,12 +974,12 @@ struct Lstaranalysis {
         if (!kCurrentDaughter.isPhysicalPrimary())
           break;
 
-        if (std::abs(kCurrentDaughter.pdgCode()) == 2212) { // Proton
+        if (std::abs(kCurrentDaughter.pdgCode()) == kProton) { // Proton
           daughtp = true;
-          lDecayDaughter1.SetXYZM(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPr);
-        } else if (std::abs(kCurrentDaughter.pdgCode()) == 321) {
+          lDecayDaughter1 = LorentzVectorPtEtaPhiMass(kCurrentDaughter.pt(), kCurrentDaughter.eta(), kCurrentDaughter.phi(), massPr);
+        } else if (std::abs(kCurrentDaughter.pdgCode()) == kKPlus) {
           daughtk = true;
-          lDecayDaughter2.SetXYZM(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
+          lDecayDaughter2 = LorentzVectorPtEtaPhiMass(kCurrentDaughter.pt(), kCurrentDaughter.eta(), kCurrentDaughter.phi(), massKa);
         }
       }
 
@@ -985,13 +992,13 @@ struct Lstaranalysis {
       histos.fill(HIST("QA/MC/h2GenEtaPt_beforeanycut"), vresoParent.Eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeanycut"), vresoParent.Phi(), part.y());
 
-      if (abs(part.y()) > 0.5) // rapidity cut
+      if (std::abs(part.y()) > 0.5) // rapidity cut
         continue;
 
       histos.fill(HIST("QA/MC/h2GenEtaPt_beforeEtacut"), vresoParent.Eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeEtacut"), vresoParent.Phi(), part.y());
 
-      if (abs(vresoParent.Eta()) > cEtacutMC) // eta cut
+      if (std::abs(vresoParent.Eta()) > cEtacutMC) // eta cut
         continue;
 
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterEtacut"), vresoParent.Eta(), part.pt());
@@ -1043,7 +1050,7 @@ struct Lstaranalysis {
                  TrackCandidates const& tracks,
                  BCsWithTimestamps const&)
   {
-    auto tracksTuple = make_tuple(tracks);
+    auto tracksTuple = std::make_tuple(tracks);
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collision, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
