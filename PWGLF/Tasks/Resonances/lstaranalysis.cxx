@@ -1011,21 +1011,21 @@ struct Lstaranalysis {
       else
         histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), multiplicity);
 
-      if (collision.posZ() > 10.) // INEL10
+      if (collision.posZ() > static_cast<float>(10.)) // INEL10
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), multiplicity);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), multiplicity);
       }
-      if (collision.posZ() > 10. && collision.sel8()) // INEL>10, vtx10
+      if (collision.posZ() > static_cast<float>(10.) && collision.sel8()) // INEL>10, vtx10
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), multiplicity);
         else
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 2, part.pt(), multiplicity);
       }
-      if (collision.posZ() > 10. && collision.selection_bit(aod::evsel::kIsTriggerTVX)) // vtx10, TriggerTVX
+      if (collision.posZ() > static_cast<float>(10.) && collision.selection_bit(aod::evsel::kIsTriggerTVX)) // vtx10, TriggerTVX
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), multiplicity);
