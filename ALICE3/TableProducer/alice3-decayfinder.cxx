@@ -477,9 +477,10 @@ struct alice3decayFinder {
         auto daughters = mcParticle.template daughters_as<aod::McParticles>();
         if (daughters.size() != 2)
           continue;
-        int daugID[2], daugPDG[2], i = 0;
+        // int daugID[2];
+        int daugPDG[2], i = 0;
         for (const auto& dau : daughters) {
-          daugID[i] = dau.globalIndex();
+        // daugID[i] = dau.globalIndex();
           daugPDG[i] = dau.pdgCode();
           i++;
         }
