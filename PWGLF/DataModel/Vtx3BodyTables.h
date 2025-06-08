@@ -42,7 +42,7 @@ DECLARE_SOA_COLUMN(Z, z, float);       //! decay position Z
 DECLARE_SOA_COLUMN(Px, px, float);     //! momentum X
 DECLARE_SOA_COLUMN(Py, py, float);     //! momentum Y
 DECLARE_SOA_COLUMN(Pz, pz, float);     //! momentum Z
-DECLARE_SOA_COLUMN(Chi2, chi2, float);  //! KFParticle: chi2geo/ndf or chi2topo/ndf of vertex fit, DCA fitter: Chi2AtPCACandidate value
+DECLARE_SOA_COLUMN(Chi2, chi2, float); //! KFParticle: chi2geo/ndf or chi2topo/ndf of vertex fit, DCA fitter: Chi2AtPCACandidate value
 
 // daughter properties
 DECLARE_SOA_COLUMN(MassV0, massV0, float);       //! V0 mass (with H3L or Anti-H3L mass hypothesis depending on deuteron charge)
@@ -105,7 +105,7 @@ DECLARE_SOA_COLUMN(GenZ, genZ, float);                  // generated decay vtx p
 DECLARE_SOA_COLUMN(GenCt, genCt, float);                // generated Ct of the hypertriton
 DECLARE_SOA_COLUMN(GenPhi, genPhi, float);              // generated Phi of the hypertriton
 DECLARE_SOA_COLUMN(GenEta, genEta, float);              // Eta of the hypertriton
-DECLARE_SOA_COLUMN(GenRap, genRap, float);                  // generated rapidity of the hypertriton
+DECLARE_SOA_COLUMN(GenRap, genRap, float);              // generated rapidity of the hypertriton
 DECLARE_SOA_COLUMN(GenPPr, genPPr, float);              //! generated momentum proton daughter particle
 DECLARE_SOA_COLUMN(GenPPi, genPPi, float);              //! generated momentum pion daughter particle
 DECLARE_SOA_COLUMN(GenPDe, genPDe, float);              //! generated momentum deuteron daughter particle
@@ -186,9 +186,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(TrackDePhi, trackDePhi, //! daughter2 phi
 
 // index table
 DECLARE_SOA_TABLE(Decay3BodyIndices, "AOD", "3BodyINDEX", //!
-                  o2::soa::Index<>, 
-                  vtx3body::Decay3BodyId, 
-                  vtx3body::TrackPrId, vtx3body::TrackPiId, vtx3body::TrackDeId, 
+                  o2::soa::Index<>,
+                  vtx3body::Decay3BodyId,
+                  vtx3body::TrackPrId, vtx3body::TrackPiId, vtx3body::TrackDeId,
                   vtx3body::CollisionId);
 
 // reconstructed candidate table for analysis
