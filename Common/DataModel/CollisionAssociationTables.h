@@ -41,10 +41,6 @@ DECLARE_SOA_TABLE(TrackAssoc, "AOD", "TRACKASSOC", //! Table for track-to-collis
 DECLARE_SOA_TABLE(TrackCompColls, "AOD", "TRACKCOMPCOLL", //! Table with vectors of collision indices stored per track
                   track_association::CollisionIds);
 
-DECLARE_SOA_TABLE(EMCalTrackAssoc, "AOD", "EMCALTRACKASSOC", //! Table for emcaltrack-to-collision association
-                  track_association::CollisionId,
-                  track_association::EMCalTrackId);
-
 DECLARE_SOA_TABLE(FwdTrackAssoc, "AOD", "FWDTRACKASSOC", //! Table for fwdtrack-to-collision association
                   track_association::CollisionId,
                   track_association::FwdTrackId);
