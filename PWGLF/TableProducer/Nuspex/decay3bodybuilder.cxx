@@ -16,9 +16,6 @@
 /// \author Carolina Reetz <c.reetz@cern.ch>
 // ========================
 
-/// TODO: include likesign analysis here
-/// TODO: include possibility to mix 3bodys with opposite B fields
-
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -624,7 +621,6 @@ struct decay3bodyBuilder {
     o2::base::Propagator::Instance()->setNominalBz(magField);
 
     // Set magnetic field for KF vertexing
-    /// TODO: KF field has to be set in the helper class where KF is used!! --> really?
 #ifdef HomogeneousField
     KFParticle::SetField(magField);
 #endif
