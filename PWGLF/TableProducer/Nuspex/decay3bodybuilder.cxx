@@ -183,10 +183,10 @@ struct decay3bodyBuilder {
     std::string prefix = "mixingOpts";
     Configurable<int> n3bodyMixing{"n3bodyMixing", 0, "Number of decay3bodys to mix: 0 - value set to maximum bin entry in hDecay3BodyRadiusPhi, > 0 - manual setting"};
     Configurable<int> mixingType{"mixingType", 0, "0: mix V0 from one event with bachelor from another, 1: mix pion and bachelor from one event with proton from another, 1: mix proton and bachelor from one event with pion from another "};
-    ConfigurableAxis bins3BodyRadius{"bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f}, "Mixing bins - 3body radius"};
-    ConfigurableAxis bins3BodyPhi{"bins3BodyPhi", {VARIABLE_WIDTH, -180 * TMath::Pi() / 180, -120 * TMath::Pi() / 180, -60 * TMath::Pi() / 180, 0, 60 * TMath::Pi() / 180, 120 * TMath::Pi() / 180, 180 * TMath::Pi() / 180}, "Mixing bins - 3body phi (rad)"};
-    ConfigurableAxis bins3BodyPhiDegree{"bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -120, -60, 0, 60, 120, 180}, "Mixing bins - 3body phi (degree)"};
-    ConfigurableAxis bins3BodyPosZ{"bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "3body SV z position"};
+    ConfigurableAxis bins3BodyRadius{"mixingOpts.bins3BodyRadius", {VARIABLE_WIDTH, 0.0f, 2.0f, 4.0f, 7.0f, 10.0f, 14.0f, 18.0f, 22.0f, 30.0f, 40.0f}, "Mixing bins - 3body radius"};
+    ConfigurableAxis bins3BodyPhi{"mixingOpts.bins3BodyPhi", {VARIABLE_WIDTH, -180 * TMath::Pi() / 180, -120 * TMath::Pi() / 180, -60 * TMath::Pi() / 180, 0, 60 * TMath::Pi() / 180, 120 * TMath::Pi() / 180, 180 * TMath::Pi() / 180}, "Mixing bins - 3body phi (rad)"};
+    ConfigurableAxis bins3BodyPhiDegree{"mixingOpts.bins3BodyPhiDegree", {VARIABLE_WIDTH, -180, -120, -60, 0, 60, 120, 180}, "Mixing bins - 3body phi (degree)"};
+    ConfigurableAxis bins3BodyPosZ{"mixingOpts.bins3BodyPosZ", {VARIABLE_WIDTH, -500.0f, -200.0f, -100.0f, -70.0f, -60.0f, -50.0f, -40.0f, -35.0f, -30.0f, -25.0f, -20.0f, -15.0f, -13.0f, -10.0f, -8.0f, -6.0f, -4.0f, -2.0f, 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 13.0f, 15.0f, 20.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f, 60.0f, 70.0f, 100.0f, 200.0f, 500.0f}, "3body SV z position"};
     Configurable<bool> selectPVPosZ3bodyMixing{"selectPVPosZ3bodyMixing", true, "Select same pvPosZ events in case of 3body mixing"};
     Configurable<float> maxDeltaPVPosZ3bodyMixing{"maxDeltaPVPosZ3bodyMixing", 1., "max difference between PV z position in case of 3body mixing"};
     // SVertexer selections
@@ -464,14 +464,14 @@ struct decay3bodyBuilder {
     }
     
     if (doprocessRealDataReduced3bodyMixing == true) {
-      auto h3bodyCombinationCounter = registry.add<TH1>("EM/h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
+      auto h3bodyCombinationCounter = registry.add<TH1>("Mixing/h3bodyCombinationCounter", "h3bodyCombinationCounter", HistType::kTH1D, {{4, 0.0f, 4.0f}});
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(1, "total");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(2, "not same collision");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(3, "collision VtxZ");
       h3bodyCombinationCounter->GetXaxis()->SetBinLabel(4, "bach sign/ID");
       h3bodyCombinationCounter->LabelsOption("v");
-      registry.add("EM/hDecay3BodyRadiusPhi", "hDecay3BodyRadiusPhi", HistType::kTH2F, {mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi});
-      registry.add("EM/hDecay3BodyPosZ", "hDecay3BodyPosZ", HistType::kTH1F, {mixingOpts.bins3BodyPosZ});
+      registry.add("Mixing/hDecay3BodyRadiusPhi", "hDecay3BodyRadiusPhi", HistType::kTH2F, {mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi});
+      registry.add("Mixing/hDecay3BodyPosZ", "hDecay3BodyPosZ", HistType::kTH1F, {mixingOpts.bins3BodyPosZ});
     }
   }
 
@@ -652,8 +652,7 @@ struct decay3bodyBuilder {
       return; // don't do if no request for decay3bodys in place
     }
 
-    // prepare MC containers (not necessarily used)
-    std::vector<mc3Bodyinfo> mc3BodyInfos; // Decay3bodyMCCore information
+    // prepare MC container (not necessarily used)
     std::vector<bool> mcParticleIsReco;
 
     // clear and reserve size for MC info vectors
@@ -983,7 +982,7 @@ struct decay3bodyBuilder {
     if (!mEnabledTables[kVtx3BodyDatas]) {
       return; // don't do if no request for decay3bodys in place
     }
-
+    
     // Strictly upper index policy for decay3body objects binned by radius, phi
     for (const auto& [decay3body0, decay3body1] : selfPairCombinations(binningType, mixingOpts.n3bodyMixing, -1, decay3bodys)) {
       auto trackPos0 = decay3body0.template track0_as<TRedTracks>();
@@ -1007,13 +1006,13 @@ struct decay3bodyBuilder {
         trackPion1 = trackPos1;
       }
 
-      registry.fill(HIST("h3bodyCombinationCounter"), 0.5);
+      registry.fill(HIST("Mixing/h3bodyCombinationCounter"), 0.5);
 
       // only combine if from different event
       if (decay3body0.collisionId() == decay3body1.collisionId()) {
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 1.5);
+      registry.fill(HIST("Mixing/h3bodyCombinationCounter"), 1.5);
 
       // collision vertex selection
       auto collision0 = decay3body0.template collision_as<TRedCollisions>();
@@ -1027,27 +1026,27 @@ struct decay3bodyBuilder {
       if (mixingOpts.selectPVPosZ3bodyMixing && std::abs(collision0.posZ() - collision1.posZ()) > mixingOpts.maxDeltaPVPosZ3bodyMixing) {
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 2.5);
+      registry.fill(HIST("Mixing/h3bodyCombinationCounter"), 2.5);
 
       // Charge selections
       // same magnetic fields --> mix matter with matter
-      if (std::signbit(magFieldCol0) == std::signbit(magFieldCol1)) {
+      if ((magFieldCol0/std::abs(magFieldCol0)) == (magFieldCol1/std::abs(magFieldCol1))) {
         if (trackDeuteron0.sign() != trackDeuteron1.sign()) {
-            continue;
-          }
+          continue;
+        }
       }
       // opposite magnetic fields --> mix matter with anti-matter
-      if (std::signbit(magFieldCol0) != std::signbit(magFieldCol1)) {
+      if ((magFieldCol0/std::abs(magFieldCol0)) != (magFieldCol1/std::abs(magFieldCol1))) {
         if (trackDeuteron0.sign() == trackDeuteron1.sign()) {
-            continue;
-          }
+          continue;
+        }
       }
 
       // don't mix 3body with itself
       if ((trackDeuteron0.globalIndex() == trackDeuteron1.globalIndex()) || (trackProton0.globalIndex() == trackProton1.globalIndex()) || (trackPion0.globalIndex() == trackPion1.globalIndex())) {
         continue;
       }
-      registry.fill(HIST("QA/EM/h3bodyCombinationCounter"), 3.5);
+      registry.fill(HIST("Mixing/h3bodyCombinationCounter"), 3.5);
 
       // candidate analysis
       // mix deuteron
@@ -1300,29 +1299,29 @@ struct decay3bodyBuilder {
                                          soa::Join<aod::RedDecay3Bodys, aod::Red3BodyInfo> const& decay3bodys,
                                          aod::RedIUTracks const&)
   {
-    auto xAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetXaxis();
-    auto yAxis = registry.get<TH2>(HIST("hDecay3BodyRadiusPhi"))->GetYaxis();
+    auto xAxis = registry.get<TH2>(HIST("Mixing/hDecay3BodyRadiusPhi"))->GetXaxis();
+    auto yAxis = registry.get<TH2>(HIST("Mixing/hDecay3BodyRadiusPhi"))->GetYaxis();
 
     for (const auto& decay3body : decay3bodys) {
       int bin_Radius, bin_Phi;
       if (decay3bodyBuilderOpts.useKFParticle) {
         bin_Radius = xAxis->FindBin(decay3body.radiusKF());
         bin_Phi = yAxis->FindBin(decay3body.phiKF());
-        registry.fill(HIST("hDecay3BodyPosZ"), decay3body.poszKF());
+        registry.fill(HIST("Mixing/hDecay3BodyPosZ"), decay3body.poszKF());
       } else {
         bin_Radius = xAxis->FindBin(decay3body.radiusDCA());
         bin_Phi = yAxis->FindBin(decay3body.phiDCA());
-        registry.fill(HIST("hDecay3BodyPosZ"), decay3body.poszDCA());
+        registry.fill(HIST("Mixing/hDecay3BodyPosZ"), decay3body.poszDCA());
       }
-      registry.fill(HIST("hDecay3BodyRadiusPhi"), xAxis->GetBinCenter(bin_Radius), yAxis->GetBinCenter(bin_Phi));
+      registry.fill(HIST("Mixing/hDecay3BodyRadiusPhi"), xAxis->GetBinCenter(bin_Radius), yAxis->GetBinCenter(bin_Phi));
     }
 
     if (decay3bodyBuilderOpts.useKFParticle) {
-      Binning3BodyKF binningOnRadPhi{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
-      buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
+      Binning3BodyKF binningOnRadPhiKF{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
+      buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhiKF);
     } else {
-      Binning3BodyDCAfitter binningOnRadPhi{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
-      buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhi);
+      Binning3BodyDCAfitter binningOnRadPhiDCA{{mixingOpts.bins3BodyRadius, mixingOpts.bins3BodyPhi}, true};
+      buildMixedCandidates<aod::RedCollisions, aod::RedIUTracks>(decay3bodys, binningOnRadPhiDCA);
     }
   }
 
