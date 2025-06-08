@@ -297,13 +297,21 @@ DECLARE_SOA_COLUMN(Definition, definition, int);                       //! clust
 // emcal track information
 DECLARE_SOA_TABLE(ReducedEMCals, "AOD", "REDUCEDEMCALS", //!
                   o2::soa::Index<>, reducedemcal::ReducedEventId, reducedemcal::FilteringFlags,
-                  reducedemcal::CollisionId, /*reducedemcal::BC,*/ reducedemcal::ID,
+                  reducedemcal::CollisionId, reducedemcal::ID,
                   reducedemcal::Energy, reducedemcal::CoreEnergy, reducedemcal::RawEnergy,
                   reducedemcal::Eta, reducedemcal::Phi, reducedemcal::M02, reducedemcal::M20,
                   reducedemcal::NCells, reducedemcal::Time, reducedemcal::IsExotic,
                   reducedemcal::DistanceToBadChannel, reducedemcal::NLM, reducedemcal::Definition);
 
+// table of ambiguous clusters that could not be matched to a collision
+DECLARE_SOA_TABLE(ReducedAmbiguousEMCals, "AOD", "REDUCEDAMBEMCALS", //!
+                  o2::soa::Index<>, reducedemcal::BCId, reducedemcal::ID, reducedemcal::Energy,
+                  reducedemcal::CoreEnergy, reducedemcal::RawEnergy, reducedemcal::Eta, reducedemcal::Phi,
+                  reducedemcal::M02, reducedemcal::M20, reducedemcal::NCells, reducedemcal::Time,
+                  reducedemcal::IsExotic, reducedemcal::DistanceToBadChannel, reducedemcal::NLM, reducedemcal::Definition);
+
 using ReducedEMCal = ReducedEMCals::iterator;
+using ReducedAmbiguousEMCal = ReducedAmbiguousEMCals::iterator;
 
 namespace reducedtrack
 {
@@ -338,6 +346,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, matchEMCalTrack); //!
 } // namespace reducedtrack
 
 // basic track information
@@ -348,6 +357,12 @@ DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
                   reducedtrack::Py<reducedtrack::Pt, reducedtrack::Phi>,
                   reducedtrack::Pz<reducedtrack::Pt, reducedtrack::Eta>,
                   reducedtrack::P<reducedtrack::Pt, reducedtrack::Eta>);
+
+// Track-EMCal association table (separate from ReducedTracks to avoid breaking existing code)
+DECLARE_SOA_TABLE(ReducedTracksEMCalAssoc, "AOD", "RTEMCALASSOC", //!
+                  reducedtrack::ReducedEventId, 
+                  o2::soa::Index<>,  // Track index
+                  reducedtrack::ReducedEMCalId);  // EMCal cluster index
 
 // barrel track information
 DECLARE_SOA_TABLE(ReducedTracksBarrel, "AOD", "RTBARREL", //!
