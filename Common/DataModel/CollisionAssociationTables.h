@@ -29,7 +29,6 @@ namespace track_association
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);            //! Collision index
 DECLARE_SOA_INDEX_COLUMN(Track, track);                    //! Track index
-DECLARE_SOA_INDEX_COLUMN(EMCalTrack, emcaltrack);          //! EMCalTrack index
 DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);              //! FwdTrack index
 DECLARE_SOA_INDEX_COLUMN(MFTTrack, mfttrack);              //! MFTTrack index
 DECLARE_SOA_ARRAY_INDEX_COLUMN(Collision, compatibleColl); //! Array of collision indices

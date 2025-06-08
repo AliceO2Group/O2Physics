@@ -390,7 +390,7 @@ struct TableMaker {
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") || context.mOptions.get<bool>("processPPBarrelEMCal") ||
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
                               context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF");
-    
+
     bool enableEMCalHistos = (context.mOptions.get<bool>("processPPEMCalOnly") || context.mOptions.get<bool>("processPPBarrelEMCal"));
 
     bool enableMuonHistos = (context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
@@ -1181,23 +1181,23 @@ struct TableMaker {
   { // Skim the EMCal tracks - no association table needed
     uint64_t trackFilteringTag = static_cast<uint64_t>(0);
     uint32_t trackTempFilterMap = static_cast<uint32_t>(0);
-  
+
     // Loop directly over EMCal tracks
     for (const auto& emcaltrack : emcalTracks) {
       // Check if EMCal track belongs to this collision
       if (emcaltrack.collisionId() != collision.globalIndex()) {
         continue;
       }
-  
+
       // Skip if the original collision was not selected for skimming
       if (fCollIndexMap.find(emcaltrack.collisionId()) == fCollIndexMap.end()) {
         continue;
       }
-  
+
       trackFilteringTag = static_cast<uint64_t>(0);
       trackTempFilterMap = static_cast<uint32_t>(0);
       VarManager::FillTrack<TEMCalFillMap>(emcaltrack);
-  
+
       if (fDoDetailedQA) {
         fHistMan->FillHistClass("EMCal_BeforeCuts", VarManager::fgValues);
       }
@@ -1218,14 +1218,14 @@ struct TableMaker {
       }
 
       trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << VarManager::kEMcalUserCutsBits);
-  
+
       if (fEmcalIndexMap.find(emcaltrack.globalIndex()) == fEmcalIndexMap.end()) {
         uint32_t reducedEventIdx = fCollIndexMap[emcaltrack.collisionId()];
         trackBarrelEMCal(reducedEventIdx, trackFilteringTag, collision.globalIndex(), emcaltrack.id(),
                          emcaltrack.energy(), emcaltrack.coreEnergy(), emcaltrack.rawEnergy(), emcaltrack.eta(),
                          emcaltrack.phi(), emcaltrack.m02(), emcaltrack.m20(), emcaltrack.nCells(), emcaltrack.isExotic(),
                          emcaltrack.time(), emcaltrack.distanceToBadChannel(), emcaltrack.nlm(), emcaltrack.definition());
-      
+
         fEmcalIndexMap[emcaltrack.globalIndex()] = trackBarrelEMCal.lastIndex();
       }
       trackBarrelEMCalTrackAssoc(fCollIndexMap[collision.globalIndex()], fEmcalIndexMap[emcaltrack.globalIndex()]);
@@ -1579,19 +1579,12 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
-  // produce the barrel+EMCal DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
-  void processPPBarrelEMCal(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
-                            MyBarrelTracksWithCov const& tracksBarrel, MyEMCals const& emcalTracks,
-                            TrackAssoc const& trackAssocs)
+  // produce the barrel-only DQ skimmed barrel data model, with V0 tagged tracks
+  void processPPBarrelOnlyWithV0s(MyEventsWithMults const& collisions, MyBCs const& bcs,
+                                  MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
+                                  TrackAssoc const& trackAssocs)
   {
-    fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, gkEMCalFillMap, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, emcalTracks, nullptr, nullptr, trackAssocs, nullptr, nullptr);
-  }
-
-  // produce the EMCal-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
-  void processPPEMCalOnly(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
-                          MyEMCals const& emcalTracks)
-  {
-    fullSkimming<gkEventFillMapWithMultsZdc, 0u, gkEMCalFillMap, 0u, 0u>(collisions, bcs, zdcs, nullptr, emcalTracks, nullptr, nullptr, nullptr, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithMults, gkTrackFillMapWithV0BitsNoTOF, 0u, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
   // produce the muon-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
@@ -1599,6 +1592,13 @@ struct TableMaker {
                          MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs)
   {
     fullSkimming<gkEventFillMapWithMults, 0u, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr);
+  }
+
+  // produce the realigned muon-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
+  void processPPRealignedMuonOnly(MyEventsWithMults const& collisions, BCsWithTimestamps const& bcs,
+                                  MyMuonsRealignWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMults, 0u, 0u, gkMuonRealignFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr);
   }
 
   // produce the muon+mft DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
@@ -1632,7 +1632,16 @@ struct TableMaker {
                              MyBarrelTracksWithCov const& tracksBarrel,
                              TrackAssoc const& trackAssocs)
   {
-    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, 0u, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr);
+  }
+
+  // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no TOF
+  void processPbPbBarrelOnlyNoTOF(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
+                                  MyBarrelTracksWithCovNoTOF const& tracksBarrel,
+                                  TrackAssoc const& trackAssocs)
+  {
+    computeOccupancyEstimators(collisions, tracksPosWithCovNoTOF, tracksNegWithCovNoTOF, presliceWithCovNoTOF, bcs);
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapNoTOF, 0u, 0u>(collisions, bcs, nullptr, tracksBarrel, nullptr, nullptr, nullptr, trackAssocs, nullptr, nullptr);
   }
 
   // produce the barrel-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
@@ -1666,6 +1675,13 @@ struct TableMaker {
                            MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, 0u, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr);
+  }
+
+  // produce the realigned muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
+  void processPbPbRealignedMuonOnly(MyEventsWithCentAndMults const& collisions, BCsWithTimestamps const& bcs,
+                                    MyMuonsRealignWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, 0u, 0u, gkMuonRealignFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr);
   }
 
   // produce the muon+mft DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter

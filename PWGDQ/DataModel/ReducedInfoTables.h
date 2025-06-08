@@ -291,7 +291,7 @@ DECLARE_SOA_COLUMN(Time, time, float);                                 //! clust
 DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
 DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
 DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
-DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h 
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
 } // namespace reducedemcal
 
 // emcal track information
@@ -360,7 +360,7 @@ DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
 
 // Track-EMCal association table (separate from ReducedTracks to avoid breaking existing code)
 DECLARE_SOA_TABLE(ReducedTracksEMCalAssoc, "AOD", "RTEMCALASSOC", //!
-                  reducedtrack::ReducedEventId, 
+                  reducedtrack::ReducedEventId,
                   o2::soa::Index<>,  // Track index
                   reducedtrack::ReducedEMCalId);  // EMCal cluster index
 
