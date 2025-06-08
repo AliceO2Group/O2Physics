@@ -88,7 +88,6 @@ struct reduced3bodyCreator {
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID;
 
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
-  Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -285,7 +284,7 @@ struct reduced3bodyCreator {
   //------------------------------------------------------------------
   // function to fit KFParticle 3body vertex
   template <typename TKFParticle>
-  void fit3bodyVertex(TKFParticle& kfpProton, TKFParticle& kfpPion, TKFParticle& kfpDeuteron, TKFParticle& KFHt)
+  bool fit3bodyVertex(TKFParticle& kfpProton, TKFParticle& kfpPion, TKFParticle& kfpDeuteron, TKFParticle& KFHt)
   {
     // Construct 3body vertex
     int nDaughters3body = 3;
@@ -295,9 +294,10 @@ struct reduced3bodyCreator {
       KFHt.Construct(Daughters3body, nDaughters3body);
     } catch (std::runtime_error& e) {
       LOG(debug) << "Failed to create Hyper triton 3-body vertex." << e.what();
-      return;
+      return false;
     }
     LOG(debug) << "Hypertriton vertex constructed.";
+    return true;
   }
 
   void process(ColwithEvTimesMultsCents const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::Tracked3Bodys const& tracked3bodys, aod::BCsWithTimestamps const&)
@@ -423,12 +423,18 @@ struct reduced3bodyCreator {
         kfpPion = createKFParticleFromTrackParCov(trackParCovPos, daughter0.sign(), constants::physics::MassPionCharged);
       }
       kfpDeuteron = createKFParticleFromTrackParCov(trackParCovBach, daughter2.sign(), constants::physics::MassDeuteron);
-      // fit 3body vertex
+      // fit 3body vertex and caclulate radius, phi, z position
+      float radius, phi, posZ;
       KFParticle KFHt;
-      fit3bodyVertex(kfpProton, kfpPion, kfpDeuteron, KFHt);
-      // calculate radius and phi
-      auto radius = std::hypot(KFHt.GetX(), KFHt.GetY());
-      auto phi = RecoDecay::phi(KFHt.GetPx(), KFHt.GetPy());
+      if (fit3bodyVertex(kfpProton, kfpPion, kfpDeuteron, KFHt)) {
+        radius = std::hypot(KFHt.GetX(), KFHt.GetY());
+        phi = std::atan2(KFHt.GetPx(), KFHt.GetPy());
+        posZ = KFHt.GetZ();
+      } else {
+        radius = -999.;
+        phi = -999.;
+        posZ = -999.;
+      }
 
       // -------- get decay3body info with DCA fitter --------
       auto Track0 = getTrackParCov(daughter0);
@@ -457,7 +463,7 @@ struct reduced3bodyCreator {
       }
 
       // fill 3body info table (KF and DCA fitter info)
-      reduced3BodyInfo(radius, phi, KFHt.GetZ(), rVtx, phiVtx, zVtx, fTrackedClSizeVector[d3body.globalIndex()]);
+      reduced3BodyInfo(radius, phi, posZ, rVtx, phiVtx, zVtx, fTrackedClSizeVector[d3body.globalIndex()]);
     } // end decay3body loop
 
     registry.fill(HIST("hEventCounter"), 3.5, reducedCollisions.lastIndex() + 1);
