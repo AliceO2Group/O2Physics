@@ -769,7 +769,6 @@ struct DiHadronCor {
         cent = getCentrality(collision);
       }
     }
-    
 
     if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
       return;
