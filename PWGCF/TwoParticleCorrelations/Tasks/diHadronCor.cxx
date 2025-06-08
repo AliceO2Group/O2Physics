@@ -76,8 +76,7 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgSampleSize, double, 10, "Sample size for mixed event")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
-  O2_DEFINE_CONFIGURABLE(cfgCentFT0CMin, float, 0.0f, "Minimum centrality (FT0C) to cut events in filter")
-  O2_DEFINE_CONFIGURABLE(cfgCentFT0CMax, float, 100.0f, "Maximum centrality (FT0C) to cut events in filter")
+  O2_DEFINE_CONFIGURABLE(cfgCentTableUnavailable, bool, false, "if a dataset does not provide centrality information")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseTentativeEventCounter, bool, false, "After sel8(), count events regardless of real event selection")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -98,23 +97,23 @@ struct DiHadronCor {
   SliceCache cache;
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "multiplicity axis for histograms"};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity axis for histograms"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
-  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt trigger axis for histograms"};
-  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt associated axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt associated axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
-  ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "multiplicity / centrality axis for mixed event histograms"};
+  ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.5, 3, 4, 5, 6, 8, 10}, "pt axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for efficiency histograms"};
 
   // make the filters and cuts.
-  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ) && (aod::evsel::sel8) == true && (aod::cent::centFT0C > cfgCentFT0CMin) && (aod::cent::centFT0C < cfgCentFT0CMax);
+  Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
@@ -128,7 +127,7 @@ struct DiHadronCor {
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVtxZ;
   using FilteredMcCollisions = soa::Filtered<aod::McCollisions>;
 
-  using FilteredSmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
+  using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   PresliceUnsorted<aod::McCollisionLabels> collisionPerMCCollision = aod::mccollisionlabel::mcCollisionId;
@@ -171,13 +170,14 @@ struct DiHadronCor {
 
   void init(InitContext&)
   {
+    if (cfgCentTableUnavailable && !cfgSelCollByNch) {
+      LOGF(fatal, "Centrality table is unavailable, cannot select collisions by centrality");
+    }
     const AxisSpec axisPhi{72, 0.0, constants::math::TwoPI, "#varphi"};
     const AxisSpec axisEta{40, -1., 1., "#eta"};
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
@@ -325,6 +325,24 @@ struct DiHadronCor {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.itsNCls() >= cfgCutITSclu));
   }
 
+  template <typename TTrack>
+  bool genTrackSelected(TTrack track)
+  {
+    if (!track.isPhysicalPrimary()) {
+      return false;
+    }
+    if (!track.producedByGenerator()) {
+      return false;
+    }
+    if (std::abs(track.eta()) > cfgCutEta) {
+      return false;
+    }
+    if (std::abs(track.pt()) < cfgCutPtMin || std::abs(track.pt()) > cfgCutPtMax) {
+      return false;
+    }
+    return true;
+  }
+
   void loadEfficiency(uint64_t timestamp)
   {
     if (correctionsLoaded) {
@@ -420,7 +438,8 @@ struct DiHadronCor {
     }
 
     if (system == SameEvent) {
-      registry.fill(HIST("Centrality_used"), cent);
+      if (!cfgCentTableUnavailable)
+        registry.fill(HIST("Centrality_used"), cent);
       registry.fill(HIST("Nch_used"), tracks1.size());
     }
 
@@ -499,13 +518,17 @@ struct DiHadronCor {
     for (auto const& track1 : tracks1) {
       if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track1.isPhysicalPrimary())
         continue;
+      if (doprocessOntheflySame && !genTrackSelected(track1))
+        continue;
 
-      if (system == SameEvent && doprocessMCSame)
+      if (system == SameEvent && (doprocessMCSame || doprocessOntheflySame))
         registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.pt(), triggerWeight);
 
       for (auto const& track2 : tracks2) {
 
         if (step >= CorrelationContainer::kCFStepTrackedOnlyPrim && !track2.isPhysicalPrimary())
+          continue;
+        if (doprocessOntheflyMixed && !genTrackSelected(track2))
           continue;
 
         if (track1.pt() <= track2.pt())
@@ -517,11 +540,11 @@ struct DiHadronCor {
         // fill the right sparse and histograms
         if (system == SameEvent) {
           same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
-          if (doprocessMCSame)
+          if (doprocessMCSame || doprocessOntheflySame)
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
           mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
-          if (doprocessMCMixed)
+          if (doprocessMCMixed || doprocessOntheflyMixed)
             registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
         }
       }
@@ -603,20 +626,24 @@ struct DiHadronCor {
 
   void processSame(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
-
+    if (!collision.sel8())
+      return;
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    float cent = getCentrality(collision);
+    float cent = -1.;
+    if (!cfgCentTableUnavailable)
+      cent = getCentrality(collision);
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, true))
       return;
 
-    registry.fill(HIST("Centrality"), cent);
+    if (!cfgCentTableUnavailable)
+      registry.fill(HIST("Centrality"), cent);
     registry.fill(HIST("Nch"), tracks.size());
     registry.fill(HIST("zVtx"), collision.posZ());
 
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
       return;
     }
 
@@ -646,6 +673,8 @@ struct DiHadronCor {
     auto tracksTuple = std::make_tuple(tracks, tracks);
     Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
+      if (!collision1.sel8() || !collision2.sel8())
+        continue;
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
         continue;
@@ -653,17 +682,21 @@ struct DiHadronCor {
       if (cfgSelCollByNch && (tracks2.size() < cfgCutMultMin || tracks2.size() >= cfgCutMultMax))
         continue;
 
-      float cent1 = getCentrality(collision1);
-      float cent2 = getCentrality(collision2);
+      float cent1 = -1;
+      float cent2 = -1;
+      if (!cfgCentTableUnavailable) {
+        cent1 = getCentrality(collision1);
+        cent2 = getCentrality(collision2);
+      }
       if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), cent1, false))
         continue;
       if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), cent2, false))
         continue;
 
-      if (!cfgSelCollByNch && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent1 < cfgCutCentMin || cent1 >= cfgCutCentMax))
         continue;
 
-      if (!cfgSelCollByNch && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent2 < cfgCutCentMin || cent2 >= cfgCutCentMax))
         continue;
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
@@ -724,26 +757,29 @@ struct DiHadronCor {
   }
   PROCESS_SWITCH(DiHadronCor, processMCEfficiency, "MC: Extract efficiencies", false);
 
-  void processMCSame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles, FilteredSmallGroupMcCollisions const& collisions)
+  void processMCSame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
     if (cfgVerbosity) {
       LOGF(info, "processMCSame. MC collision: %d, particles: %d, collisions: %d", mcCollision.globalIndex(), mcParticles.size(), collisions.size());
     }
 
     float cent = -1;
-    for (const auto& collision : collisions) {
-      cent = getCentrality(collision);
+    if (!cfgCentTableUnavailable) {
+      for (const auto& collision : collisions) {
+        cent = getCentrality(collision);
+      }
     }
 
     if (cfgSelCollByNch && (mcParticles.size() < cfgCutMultMin || mcParticles.size() >= cfgCutMultMax)) {
       return;
     }
-    if (!cfgSelCollByNch && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
+    if (!cfgSelCollByNch && !cfgCentTableUnavailable && (cent < cfgCutCentMin || cent >= cfgCutCentMax)) {
       return;
     }
 
     registry.fill(HIST("MCTrue/MCeventcount"), SameEvent); // because its same event i put it in the 1 bin
-    registry.fill(HIST("MCTrue/MCCentrality"), cent);
+    if (!cfgCentTableUnavailable)
+      registry.fill(HIST("MCTrue/MCCentrality"), cent);
     registry.fill(HIST("MCTrue/MCNch"), mcParticles.size());
     registry.fill(HIST("MCTrue/MCzVtx"), mcCollision.posZ());
     for (const auto& mcParticle : mcParticles) {
@@ -766,7 +802,7 @@ struct DiHadronCor {
   }
   PROCESS_SWITCH(DiHadronCor, processMCSame, "Process MC same event", false);
 
-  void processMCMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, FilteredSmallGroupMcCollisions const& collisions)
+  void processMCMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles, SmallGroupMcCollisions const& collisions)
   {
     auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
@@ -793,11 +829,13 @@ struct DiHadronCor {
         LOGF(info, "Found %d related collisions", groupedCollisions.size());
       }
       float cent = -1;
-      for (const auto& collision : groupedCollisions) {
-        cent = getCentrality(collision);
+      if (!cfgCentTableUnavailable) {
+        for (const auto& collision : groupedCollisions) {
+          cent = getCentrality(collision);
+        }
       }
 
-      if (!cfgSelCollByNch && groupedCollisions.size() != 0 && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
+      if (!cfgSelCollByNch && !cfgCentTableUnavailable && groupedCollisions.size() != 0 && (cent < cfgCutCentMin || cent >= cfgCutCentMax))
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
@@ -813,7 +851,7 @@ struct DiHadronCor {
   }
   PROCESS_SWITCH(DiHadronCor, processMCMixed, "Process MC mixed events", false);
 
-  void processOntheflySame(FilteredMcCollisions::iterator const& mcCollision, FilteredMcParticles const& mcParticles)
+  void processOntheflySame(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
     if (cfgVerbosity) {
       LOGF(info, "processOntheflySame. MC collision: %d, particles: %d", mcCollision.globalIndex(), mcParticles.size());
@@ -842,9 +880,9 @@ struct DiHadronCor {
   }
   PROCESS_SWITCH(DiHadronCor, processOntheflySame, "Process on-the-fly same event", false);
 
-  void processOntheflyMixed(FilteredMcCollisions const& mcCollisions, FilteredMcParticles const& mcParticles)
+  void processOntheflyMixed(aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    auto getTracksSize = [&mcParticles, this](FilteredMcCollisions::iterator const& mcCollision) {
+    auto getTracksSize = [&mcParticles, this](aod::McCollisions::iterator const& mcCollision) {
       auto associatedTracks = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
       return mult;
@@ -855,7 +893,7 @@ struct DiHadronCor {
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<FilteredMcCollisions, FilteredMcParticles, FilteredMcParticles, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    Pair<aod::McCollisions, aod::McParticles, aod::McParticles, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
