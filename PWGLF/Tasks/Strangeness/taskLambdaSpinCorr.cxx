@@ -290,7 +290,6 @@ struct LfTaskLambdaSpinCorr {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-
     auto cosThetaDiff = -999.0;
     if (cosCalculation == 0) {
       cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
