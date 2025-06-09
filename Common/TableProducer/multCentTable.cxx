@@ -122,23 +122,17 @@ struct MultCentTable {
                   o2::aod::MFTTracks const& mfttracks,
                   soa::SmallGroups<aod::BestCollisionsFwd> const& retracks)
   {
-    if (opts.mEnabledTables[o2::common::multiplicity::kMFTMults]) {
-      // populates MFT information in the mults buffer (in addition to filling table)
-      module.collisionProcessMFT(collision, mfttracks, retracks, mults, products);
-    }
+    // populates MFT information in the mults buffer (in addition to filling table)
+    module.collisionProcessMFT(collision, mfttracks, retracks, mults, products);
   }
   void processMonteCarlo(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    if (opts.mEnabledTables[o2::common::multiplicity::kMultMCExtras]) {
-      module.collisionProcessMonteCarlo(mcCollision, mcParticles, pdg, products);
-    }
+    module.collisionProcessMonteCarlo(mcCollision, mcParticles, pdg, products);
   }
   void processMonteCarlo2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
   {
-    if (opts.mEnabledTables[o2::common::multiplicity::kMult2MCExtras]) {
-      // establish simple interlink for posterior analysis (derived data)
-      products.tableExtraMult2MCExtras(collision.mcCollisionId());
-    }
+    // establish simple interlink for posterior analysis (derived data)
+    products.tableExtraMult2MCExtras(collision.mcCollisionId());
   }
   void processCentrality(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const& bcs, aod::FT0s const&)
   {
