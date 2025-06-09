@@ -211,7 +211,6 @@ struct HfCandidateSelectorD0 {
     if (candidate.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
       return false;
     }
-    LOG(info) << "D0 candidate selected with pT: " << candpT << " GeV/c, mass: " << hfHelper.invMassD0ToPiK(candidate) << " GeV/c^2";
     return true;
   }
 
@@ -289,7 +288,6 @@ struct HfCandidateSelectorD0 {
         }
       }
     }
-    LOG(info) << "D0 candidate selected with pT: " << candpT << " GeV/c, mass: " << (trackPion.sign() > 0 ? massD0 : massD0bar) << " GeV/c^2";
     return true;
   }
   template <int reconstructionType, typename CandType>
@@ -484,16 +482,12 @@ struct HfCandidateSelectorD0 {
 
   void processWithDCAFitterN(aod::HfCand2ProngWPid const& candidates, TracksSel const& tracks)
   {
-    LOG(info) << "Processing candidates selection with DCAFitterN";
-    LOG(info) << "Number of candidates: " << candidates.size();
     processSel<aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
   
   void processWithKFParticle(soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
   {
-    LOG(info) << "Processing candidates selection with KFParticle";
-    LOG(info) << "Number of candidates: " << candidates.size();
     processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);

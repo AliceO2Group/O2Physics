@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <unordered_map>
 #include <array>
-#include <variant>
 
 using namespace o2::constants::physics;
 
@@ -64,9 +63,9 @@ std::unordered_map<DecayChannelMain, std::vector<int> > finalStates2Prongs =
 {
     {DecayChannelMain::D0ToPiK,          std::vector<int>{+kKMinus,   +kPiPlus}},
     {DecayChannelMain::D0ToKK,           std::vector<int>{+kKMinus,   +kKPlus}},
-    {DecayChannelMain::D0ToPiKPi0,       std::vector<int>{+kKMinus,   +kPiPlus, +kPi0}},
+    {DecayChannelMain::D0ToPiKPi0,       std::vector<int>{+kKMinus,   +kPiPlus,   +kPi0}},
     {DecayChannelMain::D0ToPiPi,         std::vector<int>{+kPiMinus,  +kPiPlus}},
-    {DecayChannelMain::D0ToPiPiPi0,      std::vector<int>{+kPiMinus,  +kPiPlus, +kPi0}}
+    {DecayChannelMain::D0ToPiPiPi0,      std::vector<int>{+kPiMinus,  +kPiPlus,   +kPi0}}
 };
 
 std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesD0 = 
@@ -167,7 +166,7 @@ std::unordered_map<DecayChannelMain, std::vector<int> > finalStatesDPlus =
 {
   {DecayChannelMain::DplusToPiKPi,      std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
   {DecayChannelMain::DplusToPiKK,       std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
-  {DecayChannelMain::DplusToPiKPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
+  {DecayChannelMain::DplusToPiKPiPi0,   std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus,   +kPi0}},
   {DecayChannelMain::DplusToPiPiPi,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
 };
     
@@ -188,10 +187,10 @@ std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesDs =
 std::unordered_map<DecayChannelMain, std::vector<int> > finalStatesDs = 
 {
   {DecayChannelMain::DsToPiKK,       std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
-  {DecayChannelMain::DsToPiKKPi0,    std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
+  {DecayChannelMain::DsToPiKKPi0,    std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus,  +kPi0}},
   {DecayChannelMain::DsToPiPiK,      std::vector<int>{+kKPlus,    +kPiPlus,  +kPiMinus}},
   {DecayChannelMain::DsToPiPiPi,     std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
-  {DecayChannelMain::DsToPiPiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+  {DecayChannelMain::DsToPiPiPiPi0,  std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus,  +kPi0}},
 };
 
 // Dstar → K± K∓ π±
@@ -201,22 +200,22 @@ std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesDstar =
   {DecayChannelResonant::DstarToD0ToRhoplusK,         std::array<int, 2>{213,            +kKMinus}},
   {DecayChannelResonant::DstarToD0ToKstar0Pi0,        std::array<int, 2>{-kK0Star892,    +kPi0}},
   {DecayChannelResonant::DstarToD0ToKstarPi,          std::array<int, 2>{-kKPlusStar892, +kPiPlus}},
-  {DecayChannelResonant::DstarToDplusToPhiPi,         std::array<int, 2>{+kPhi,       +kPiPlus}},
-  {DecayChannelResonant::DstarToDplusToKstar0K,       std::array<int, 2>{-kK0Star892, +kKPlus}},
-  {DecayChannelResonant::DstarToDplusToKstar1430_0K,  std::array<int, 2>{+10311,      +kKPlus}},
-  {DecayChannelResonant::DstarToDplusToRho0Pi,        std::array<int, 2>{+113,        +kPiPlus}},
-  {DecayChannelResonant::DstarToDplusToF2_1270Pi,     std::array<int, 2>{+225,        +kPiPlus}},
+  {DecayChannelResonant::DstarToDplusToPhiPi,         std::array<int, 2>{+kPhi,          +kPiPlus}},
+  {DecayChannelResonant::DstarToDplusToKstar0K,       std::array<int, 2>{-kK0Star892,    +kKPlus}},
+  {DecayChannelResonant::DstarToDplusToKstar1430_0K,  std::array<int, 2>{+10311,         +kKPlus}},
+  {DecayChannelResonant::DstarToDplusToRho0Pi,        std::array<int, 2>{+113,           +kPiPlus}},
+  {DecayChannelResonant::DstarToDplusToF2_1270Pi,     std::array<int, 2>{+225,           +kPiPlus}},
 };
 
 std::unordered_map<DecayChannelMain, std::vector<int> > finalStatesDstar = 
 {
   {DecayChannelMain::DstarToPiKPi,        std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus}},
-  {DecayChannelMain::DstarToPiKPiPi0,     std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0}},
-  {DecayChannelMain::DstarToPiKPiPi0Pi0,  std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus, +kPi0, +kPi0}},
+  {DecayChannelMain::DstarToPiKPiPi0,     std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus,   +kPi0}},
+  {DecayChannelMain::DstarToPiKPiPi0Pi0,  std::vector<int>{+kKMinus,   +kPiPlus,  +kPiPlus,   +kPi0,  +kPi0}},
   {DecayChannelMain::DstarToPiKK,         std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus}},
-  {DecayChannelMain::DstarToPiKKPi0,      std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus, +kPi0}},
+  {DecayChannelMain::DstarToPiKKPi0,      std::vector<int>{+kKMinus,   +kKPlus,   +kPiPlus,   +kPi0}},
   {DecayChannelMain::DstarToPiPiPi,       std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus}},
-  {DecayChannelMain::DstarToPiPiPiPi0,    std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus, +kPi0}},
+  {DecayChannelMain::DstarToPiPiPiPi0,    std::vector<int>{+kPiMinus,  +kPiPlus,  +kPiPlus,   +kPi0}},
 };
 
 // Lc → p K∓ π±
@@ -230,7 +229,7 @@ std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesLambdaC 
 std::unordered_map<DecayChannelMain, std::vector<int> > finalStatesLc = 
 {
   {DecayChannelMain::LcToPKPi,     std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}},
-  {DecayChannelMain::LcToPKPiPi0,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus, +kPi0}},
+  {DecayChannelMain::LcToPKPiPi0,  std::vector<int>{+kProton,   +kKMinus,  +kPiPlus,  +kPi0}},
   {DecayChannelMain::LcToPPiPi,    std::vector<int>{+kProton,   +kPiMinus, +kPiPlus}},
   {DecayChannelMain::LcToPKK,      std::vector<int>{+kProton,   +kKMinus,  +kKPlus}}
 };
@@ -244,8 +243,8 @@ std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesXiC =
 
 std::unordered_map<DecayChannelMain, std::vector<int> > finalStatesXic = 
 {
-  {DecayChannelMain::XicToPKPi,   std::vector<int>{+kProton,   +kKMinus,  +kPiPlus}},
-  {DecayChannelMain::XicToPKK,    std::vector<int>{+kProton,   +kKMinus,  +kKPlus}},
+  {DecayChannelMain::XicToPKPi,   std::vector<int>{+kProton,      +kKMinus,   +kPiPlus}},
+  {DecayChannelMain::XicToPKK,    std::vector<int>{+kProton,      +kKMinus,   +kKPlus}},
   {DecayChannelMain::XicToSPiPi,  std::vector<int>{+kSigmaPlus,   +kPiMinus,  +kPiPlus}},
 };
 } // namespace hf_cand_3prong
@@ -378,9 +377,7 @@ namespace o2::hf_corrbkg
   }
 
   template <std::size_t N>
-  bool checkResonantDecay(std::vector<int> arrDaughIndex, std::array<int, N> arrPDGResonant) {
-      // LOG(info) << "Entered checkResonantDecay with daughters: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " and resonant PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
-      // LOG(info) << "arrDaughIndex.size(): " << arrDaughIndex.size() << ", arrPDGResonant.size(): " << arrPDGResonant.size();
+  bool checkResonantDecay(std::array<int, N> arrDaughIndex, std::array<int, N> arrPDGResonant) {
       LOG(info) << "Testing: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " matching PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
       for (int i = 0; i < N; i++) {
         LOG(info) << "Checking daughter index: " << arrDaughIndex[i];
@@ -407,13 +404,13 @@ namespace o2::hf_corrbkg
     /// \tparam arrDaughIndex index of the particle daughters at resonance level
     /// \tparam arrPDGResonant PDG code of the resonant decay
     /// \return true if the decay is resonant
-    template <bool is3Prong = false>
-    void flagResonantDecay(int motherPdg, int8_t* channel, std::vector<int> arrDaughIndex) {
+    template <bool is3Prong = false, std::size_t N>
+    void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> arrDaughIndex) {
       if constexpr (is3Prong) {
         std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelResonant, std::array<int, 2> > resoStates = getResoChannels3Prong(motherPdg);
         for (const auto& [flag, pdgCodes] : resoStates) {
           if (abs(motherPdg) == Pdg::kDStar) {
-            std::cout << "Checking D0 resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughIndex[0] << " " << arrDaughIndex[1] << std::endl;
+            std::cout << "Checking Dstar resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughIndex[0] << " " << arrDaughIndex[1] << std::endl;
           }
           if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
             *channel = flag;
@@ -441,72 +438,6 @@ namespace o2::hf_corrbkg
         }
       }
     }
-      
-    //   switch (motherPdg) {
-    //     case Pdg::kD0:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_2prong::resoStatesD0) {
-    //         std::cout << "Checking D0 resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughIndex[0] << " " << arrDaughIndex[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "D0 resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       break;
-    //     case Pdg::kDPlus:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::resoStatesDPlus) {
-    //         // std::cout << "Checking DPlus resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "D+ resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       break;
-    //     case Pdg::kDS:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::resoStatesDs) {
-    //         // std::cout << "Checking DS resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "Ds resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       break;
-    //     case Pdg::kDStar:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::resoStatesDstar) {
-    //         std::cout << "Checking Dstar resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "Dstar resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       LOG(info) << "Dstar resonant decay not found, checking D0 resonances";
-    //       break;
-    //     case Pdg::kLambdaCPlus:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::resoStatesLambdaC) {
-    //         // std::cout << "Checking LambdaC resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "Lc resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       break;
-    //     case Pdg::kXiCPlus:
-    //       for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_3prong::resoStatesXiC) {
-    //         // std::cout << "Checking XiC resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << std::endl;
-    //         if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-    //           *channel = flag;
-    //           LOG(info) << "Xic resonant decay found with channel: " << static_cast<int>(*channel);
-    //           break;
-    //         }
-    //       }
-    //       break;
-    //   }
-    // }
-
 } // namespace o2::hf_corrbkg
 
 #endif // PWGHF_CORE_DECAYCHANNELS_H_

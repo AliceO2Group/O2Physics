@@ -42,15 +42,15 @@ template <bool matchCorrBkgs = false, typename T, typename U, typename V>
 void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
 {
   using namespace o2::constants::physics;
+  constexpr std::size_t NDaughtersResonant{2u};
 
   // Match generated particles.
+  int maxDepth = 2; // Default depth for matching
   for (const auto& particle : mcParticlesPerMcColl) {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t channel = 0; // Not used in 2-prong decays
     int8_t sign = 0;
-    bool matched = false;
-    int maxDepth = 2; // Default depth for matching
     std::vector<int> idxBhadMothers{};
     // Reject particles from background events
     if (particle.fromBackgroundEvent() && rejectBackground) {
@@ -58,15 +58,17 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       continue;
     }
     if (matchCorrBkgs) {
-      int maxDepth = 2;
       bool matched = false;
 
-      std::vector<int> arrResoDaughIndex = {};
       for (const auto& [chn, finalState] : finalStates2Prongs) {
         if (finalState.size() == 3) {                     // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
-            finalStateParts.back() = -finalState.back();
+            for (auto& part : finalStateParts) {
+              if (part == kPi0) {
+                part = -part; // Ensure all parts are positive for matching
+              }
+            }
           }
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
         } else if (finalState.size() == 2) {              // Fully Reco 3-prong decays
@@ -82,20 +84,19 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 
           // Flag the resonant decay channel
           int resoMaxDepth = 1;
-          int NDaughtersResonant = 2;
-
+          std::vector<int> arrResoDaughIndex = {};
           RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, resoMaxDepth);
-          std::vector<int> arrPDGDaugh = {};
+          std::array<int, NDaughtersResonant> arrPDGDaugh = {};
           if (arrResoDaughIndex.size() == NDaughtersResonant) {
             for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
               auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
               // std::cout << "Adding daughter PDG: " << daughI.pdgCode() << std::endl;
-              LOG(info) << "[matchFinalStateCorrBkgsGen] Adding daughter PDG: " << daughI.pdgCode();
-              arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
+              // LOG(info) << "[matchFinalStateCorrBkgsGen] Adding daughter PDG: " << daughI.pdgCode();
+              arrPDGDaugh[iProng] = daughI.pdgCode();
             }
             flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
-            LOG(info) << "[matchFinalStateCorrBkgsGen] Matched final state: " << chn << " with PDG code: " << Pdg::kD0 << ", flag: " << static_cast<int>(flag) << ", sign: " << static_cast<int>(sign);
-            LOG(info) << "[matchFinalStateCorrBkgsGen] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " <<  static_cast<int>(channel);
+            // LOG(info) << "[matchFinalStateCorrBkgsGen] Matched final state: " << chn << " with PDG code: " << Pdg::kD0 << ", flag: " << static_cast<int>(flag) << ", sign: " << static_cast<int>(sign);
+            // LOG(info) << "[matchFinalStateCorrBkgsGen] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " <<  static_cast<int>(channel);
           }
           break; // Exit loop if a match is found
         }
@@ -179,7 +180,6 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
           maxDepth = 3; // to catch the D0 resonances
         }
         
-        std::vector<int> arrResoDaughIndex = {};
         std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters
         for (const auto& [chn, finalState] : finalStates) {
           if (finalState.size() == 5) {                     // Partly Reco 3-prong decays
@@ -195,7 +195,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             }
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          }else if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
+          } else if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
             std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
             if (particle.pdgCode() < 0) {
               for (auto& part : finalStateParts) {
@@ -224,7 +224,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             }
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
-            int NDaughtersResonant = 2;
+            std::vector<int> arrResoDaughIndex = {};
             if (std::abs(motherPdgCode) == Pdg::kDStar) { 
               std::vector<int> arrResoDaughIndexDStar = {};
               RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, resoMaxDepth);
@@ -248,7 +248,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             } else {
               RecoDecay::getDaughters(particle, &arrResoDaughIndex, std::array{0}, resoMaxDepth);
             }
-            std::vector<int> arrPDGDaugh = {};
+            std::array<int, NDaughtersResonant> arrPDGDaugh = {};
             if (std::abs(motherPdgCode) == Pdg::kDStar) {
               LOG(info) << "[matchFinalStateCorrBkgsGen] D* decay detected, arrResoDaughIndex size: " << arrResoDaughIndex.size();
             }
@@ -256,17 +256,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
               if (std::abs(motherPdgCode) == Pdg::kDStar) {
                 LOG(info) << "[matchFinalStateCorrBkgsGen] Flagging resonant decay ... ";
               }
-              for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
+              for (auto iProng = 0u; iProng < NDaughtersResonant; ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-                // if ((std::abs(motherPdgCode) == Pdg::kXiCPlus)  && 
-                //     (std::abs(daughI.pdgCode()) == kPiPlus) && 
-                //     (arrPDGDaugh.size() >= 2) ) {
-                //   continue; // Skip the pion from D* decay and the second pion from XiC --> Sigma Pi Pi
-                // }
                 if (std::abs(motherPdgCode) == Pdg::kDStar) {
                   std::cout << "Adding daughter PDG: " << daughI.pdgCode() << std::endl;
                 }
-                arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
+                arrPDGDaugh[iProng] = daughI.pdgCode();
               }
               flagResonantDecay<true>(motherPdgCode, &channel, arrPDGDaugh);
               if (std::abs(motherPdgCode) == Pdg::kDStar) {

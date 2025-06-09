@@ -231,6 +231,7 @@ struct HfTreeCreatorD0ToKPi {
   // parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<bool> fillCorrBkgs{"fillCorrBkgs", false, "Flag to fill derived tables with correlated background candidates"};
 
   HfHelper hfHelper;
 
@@ -242,8 +243,7 @@ struct HfTreeCreatorD0ToKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= -1 || aod::hf_sel_candidate_d0::isSelD0bar >= -1;
-  // Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0;
+  Filter filterMcGenMatching = (nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
 
   // Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0;

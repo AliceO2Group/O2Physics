@@ -746,6 +746,7 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t origin = 0;
     int8_t nKinkedTracks = 0;
     int8_t nInteractionsWithMaterial = 0;
+    constexpr std::size_t NDaughtersResonant{2u};
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -778,17 +779,6 @@ struct HfCandidateCreator2ProngExpressions {
         LOG(info) << "--------------------------------------------";
         LOG(info) << "Matching correlated bkgs";
         indexRec = -1; // Index of the matched reconstructed candidate
-        std::vector<int> arrResoDaughIndex = {};
-        // const std::unordered_map<int, std::vector<int>>* finalStates = nullptr;
-        // switch (pdgMother) {
-          //   case Pdg::kD0:
-          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates2Prongs);
-          //   break;
-          //   default:
-          //   finalStates = reinterpret_cast<const std::unordered_map<int, std::vector<int>>*>(&finalStates3Prongs);
-          //   break;
-          // }
-          
         int depth = 2;
         for (const auto& [chn, finalState] : finalStates2Prongs) {
           std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
@@ -805,7 +795,14 @@ struct HfCandidateCreator2ProngExpressions {
             
             if (indexRec != -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], sign*finalState[2]};
+              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
+              if (sign < 0) {
+                for (auto& part : finalStateParts2ProngAll) {
+                  if (part == kPi0) {
+                    part = -part; // Ensure all parts are positive for matching
+                  }
+                }
+              }
               if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, false, &sign, depth)) {
                 indexRec = -1; // Reset indexRec if the generated decay
               }
@@ -830,13 +827,13 @@ struct HfCandidateCreator2ProngExpressions {
             
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
-            int NDaughtersResonant = 2;
+            std::vector<int> arrResoDaughIndex = {};
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, resoMaxDepth);
-            std::vector<int> arrPDGDaugh = {};
+            std::array<int, NDaughtersResonant> arrPDGDaugh = {};
             if (arrResoDaughIndex.size() == NDaughtersResonant) {
               for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-                arrPDGDaugh.push_back(std::abs(daughI.pdgCode()));
+                arrPDGDaugh[iProng] = daughI.pdgCode();
               }
               flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
               // LOG(info) << "[matchFinalStateCorrBkgs] Matched D0 final state: " << chn << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
@@ -845,22 +842,7 @@ struct HfCandidateCreator2ProngExpressions {
             break; // Exit loop if a match is found
           }
         }
-        LOG(info) << "D0 matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
-
-        // LOG(info) << "--------------------------------------------";
-        // LOG(info) << "Matching correlated bkgs of " << Pdg::kD0;
-        // if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-        //   indexRec = matchFinalStateCorrBkgs<true, true>(Pdg::kD0, mcParticles, arrayDaughters, &flag, &sign, &channel, 1, &nKinkedTracks, &nInteractionsWithMaterial);
-        // } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-        //   indexRec = matchFinalStateCorrBkgs<true, false>(Pdg::kD0, mcParticles, arrayDaughters, &flag, &sign, &channel, 1, &nKinkedTracks, &nInteractionsWithMaterial);
-        // } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-        //   indexRec = matchFinalStateCorrBkgs<false, true>(Pdg::kD0, mcParticles, arrayDaughters, &flag, &sign, &channel, 1, &nKinkedTracks, &nInteractionsWithMaterial);
-        // } else {
-        //   indexRec = matchFinalStateCorrBkgs<false, false>(Pdg::kD0, mcParticles, arrayDaughters, &flag, &sign, &channel, 1, &nKinkedTracks, &nInteractionsWithMaterial);
-        // }
-        // if (indexRec > -1) {
-        //   LOG(info) << "Matched!";
-        // }
+        // LOG(info) << "D0 matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D0(bar) → π± K∓
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
