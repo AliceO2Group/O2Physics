@@ -296,6 +296,9 @@ struct NonPromptCascadeTask {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (runNumber != bc.runNumber()) {
           mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
+          if(mZorro.getNTOIs() > 32) {
+            LOG(fatal) << "N TOIs:" << mZorro.getNTOIs() << " Max 32 TOIs possible.";
+          }
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
           runNumber = bc.runNumber();
         }
@@ -303,8 +306,8 @@ struct NonPromptCascadeTask {
         if (sel) {
           std::vector<bool> toivect = mZorro.getTriggerOfInterestResults();
           uint32_t toiMask = 0;
-          for (uint i = 0; i < toivect.size(); i++) {
-            toiMask += 1 << i;
+          for (int i{0}; i < toivect.size(); i++) {
+            toiMask += toivect[i] << i;
           }
           toiMap[bc.globalBC()] = toiMask;
         }
