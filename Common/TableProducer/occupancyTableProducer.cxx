@@ -1692,7 +1692,7 @@ struct TrackMeanOccTableProducer {
     }
   }
 
-  using MyTracksQA = aod::TracksQA_002;
+  using MyTracksQA = aod::TracksQAVersion; // using MyTracksQA = aod::TracksQA_002;
 
   // Process the Data
   int dfCount = 0;
