@@ -65,12 +65,12 @@ float dcaZinSigma(T const& track)
 template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
-  float cXX = track.cXXatDCA();                       // in cm^2
-  float cYY = track.cYYatDCA();                       // in cm^2
-  float cXY = track.cXYatDCA();                       // in cm^2
-  float dcaX = track.fwdDcaX();                       // in cm
-  float dcaY = track.fwdDcaY();                       // in cm
-  float det = cXX * cYY - cXY * cXY;                  // determinant
+  float cXX = track.cXXatDCA();      // in cm^2
+  float cYY = track.cYYatDCA();      // in cm^2
+  float cXY = track.cXYatDCA();      // in cm^2
+  float dcaX = track.fwdDcaX();      // in cm
+  float dcaY = track.fwdDcaY();      // in cm
+  float det = cXX * cYY - cXY * cXY; // determinant
 
   if (det < 0) {
     return 999.f;
@@ -86,6 +86,20 @@ float sigmaFwdDcaXY(T const& track)
   float dcaY = track.fwdDcaY();                       // in cm
   float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY); // in cm
   return dcaXY / fwdDcaXYinSigma(track);
+}
+//_______________________________________________________________________
+template <int begin = 0, int end = 9, typename T>
+bool checkMFTHitMap(T const& track)
+{
+  // logical-OR
+  uint64_t mftClusterSizesAndTrackFlags = track.mftClusterSizesAndTrackFlags();
+  uint16_t clmap = 0;
+  for (unsigned int layer = begin; layer <= end; layer++) {
+    if ((mftClusterSizesAndTrackFlags >> (layer * 6)) & 0x3f) {
+      clmap |= (1 << layer);
+    }
+  }
+  return (clmap > 0);
 }
 //_______________________________________________________________________
 template <bool is_wo_acc = false, typename TTrack, typename TCut, typename TTracks>
