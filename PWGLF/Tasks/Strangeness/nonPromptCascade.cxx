@@ -296,7 +296,7 @@ struct NonPromptCascadeTask {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
         if (runNumber != bc.runNumber()) {
           mZorro.initCCDB(mCCDB.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
-          if(mZorro.getNTOIs() > 32) {
+          if (mZorro.getNTOIs() > 32) {
             LOG(fatal) << "N TOIs:" << mZorro.getNTOIs() << " Max 32 TOIs possible.";
           }
           mZorro.populateHistRegistry(mRegistry, bc.runNumber());
