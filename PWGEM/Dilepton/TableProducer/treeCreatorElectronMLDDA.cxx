@@ -54,7 +54,7 @@ using namespace o2::constants::physics;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov,
+using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
@@ -77,19 +77,18 @@ struct TreeCreatorElectronMLDDA {
       {"V0/hMassK0Short", "V0 mass K0S", {HistType::kTH1F, {{200, 0.4, 0.6}}}},
       {"V0/hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
       {"V0/hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.08, 1.18}}}},
-      {"hMvsPhiV", "mee vs. phiv", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
+      {"hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", {HistType::kTH2F, {{90, 0, M_PI}, {100, 0, 0.1}}}},
 
-      {"V0/hTPCdEdx_P_El", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"V0/hTPCdEdx_P_Mu", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"V0/hTPCdEdx_P_Pi", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"V0/hTPCdEdx_P_Ka", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-      {"V0/hTPCdEdx_P_Pr", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
-
-      {"V0/hTOFbeta_P_El", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"V0/hTOFbeta_P_Mu", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"V0/hTOFbeta_P_Pi", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"V0/hTOFbeta_P_Ka", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
-      {"V0/hTOFbeta_P_Pr", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      {"V0/hTPCdEdx_P_El", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      {"V0/hTPCdEdx_P_Mu", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      {"V0/hTPCdEdx_P_Pi", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      {"V0/hTPCdEdx_P_Ka", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      {"V0/hTPCdEdx_P_Pr", "TPC dEdx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
+      {"V0/hTOFbeta_P_El", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      {"V0/hTOFbeta_P_Mu", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      {"V0/hTOFbeta_P_Pi", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      {"V0/hTOFbeta_P_Ka", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
+      {"V0/hTOFbeta_P_Pr", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
 
       {"Cascade/hRxy_Xi", "R_{xy} of cascade vs. mass;m_{#Lambda#pi};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
       {"Cascade/hRxy_Omega", "R_{xy} of cascade vs. mass;m_{#LambdaK};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
@@ -103,9 +102,7 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hMassXi", "cascade mass #Xi", {HistType::kTH1F, {{200, 1.2, 1.4}}}},
       {"Cascade/hMassOmega", "cascade mass #Omega", {HistType::kTH1F, {{200, 1.6, 1.8}}}},
       {"Cascade/hMassPt_Xi", "cascade mass #Xi^{#pm};m_{#Lambda#pi} (GeV/c^{2});p_{T,#Lambda#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
-      {"Cascade/hMassPt_Xi_bachelor", "cascade mass #Xi^{#pm};m_{#Lambda#pi} (GeV/c^{2});p_{T,#pi} (GeV/c)", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
       {"Cascade/hMassPt_Omega", "cascade mass #Omega^{#pm};m_{#LambdaK} (GeV/c^{2});p_{T,#LambdaK} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
-      {"Cascade/hMassPt_Omega_bachelor", "cascade mass #Omega^{#pm};m_{#LambdaK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
     },
   };
 
@@ -386,15 +383,15 @@ struct TreeCreatorElectronMLDDA {
     }
 
     mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto track_par_cov_recalc = getTrackParCov(track);
-    track_par_cov_recalc.setPID(track.pidForTracking());
+    auto trackParCov = getTrackParCov(track);
+    trackParCov.setPID(track.pidForTracking());
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     float dcaXY = mDcaInfoCov.getY();
     float dcaZ = mDcaInfoCov.getZ();
 
-    if (std::fabs(track_par_cov_recalc.getEta()) > trackcuts.cfg_max_eta || track_par_cov_recalc.getPt() < trackcuts.cfg_min_pt) {
+    if (std::fabs(trackParCov.getEta()) > trackcuts.cfg_max_eta || trackParCov.getPt() < trackcuts.cfg_min_pt) {
       return false;
     }
 
@@ -442,15 +439,15 @@ struct TreeCreatorElectronMLDDA {
     }
 
     mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto track_par_cov_recalc = getTrackParCov(track);
-    track_par_cov_recalc.setPID(track.pidForTracking());
+    auto trackParCov = getTrackParCov(track);
+    trackParCov.setPID(track.pidForTracking());
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
     float dcaXY = mDcaInfoCov.getY();
     // float dcaZ = mDcaInfoCov.getZ();
 
-    if (std::fabs(track_par_cov_recalc.getEta()) > v0cuts.cfg_max_eta || track_par_cov_recalc.getPt() < v0cuts.cfg_min_pt) {
+    if (std::fabs(trackParCov.getEta()) > v0cuts.cfg_max_eta || trackParCov.getPt() < v0cuts.cfg_min_pt) {
       return false;
     }
 
@@ -526,17 +523,17 @@ struct TreeCreatorElectronMLDDA {
 
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       mDcaInfoCov.set(999, 999, 999, 999, 999);
-      auto track_par_cov_recalc = getTrackParCov(track);
-      track_par_cov_recalc.setPID(track.pidForTracking());
+      auto trackParCov = getTrackParCov(track);
+      trackParCov.setPID(track.pidForTracking());
       mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
       mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, track_par_cov_recalc, 2.f, matCorr, &mDcaInfoCov);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
       emprimarytracks(collision.globalIndex(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
-                      track.pt(), track.eta(), track.phi(), track.tgl(), track.signed1Pt(),
-                      dcaXY, dcaZ, track_par_cov_recalc.getSigmaY2(), track_par_cov_recalc.getSigmaZ2(), track_par_cov_recalc.getSigmaZY(),
+                      trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi() > 0.f ? trackParCov.getPhi() : trackParCov.getPhi() + 2 * M_PI, trackParCov.getTgl(), trackParCov.getQ2Pt(),
+                      dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
                       track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
@@ -582,18 +579,7 @@ struct TreeCreatorElectronMLDDA {
       for (const auto& v0 : v0s_coll) {
         auto pos = v0.template posTrack_as<MyTracks>();
         auto neg = v0.template negTrack_as<MyTracks>();
-        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg)) {
-          continue;
-        }
-        if (pos.sign() * neg.sign() > 0) {
-          continue;
-        }
-
         // LOGF(info, "v0.globalIndex() = %d, v0.collisionId() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", v0.globalIndex(), v0.collisionId(), v0.posTrackId(), v0.negTrackId());
-
-        registry.fill(HIST("V0/hPCA"), v0.dcaV0daughters());
-        registry.fill(HIST("V0/hCosPA"), v0.v0cosPA());
-        registry.fill(HIST("V0/hAP"), v0.alpha(), v0.qtarm());
 
         if (v0.dcaV0daughters() > v0cuts.cfg_max_dcadau) {
           continue;
@@ -601,14 +587,24 @@ struct TreeCreatorElectronMLDDA {
         if (v0.v0cosPA() < v0cuts.cfg_min_cospa) {
           continue;
         }
+        if (pos.sign() * neg.sign() > 0) {
+          continue;
+        }
+        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg)) {
+          continue;
+        }
+
+        registry.fill(HIST("V0/hPCA"), v0.dcaV0daughters());
+        registry.fill(HIST("V0/hCosPA"), v0.v0cosPA());
+        registry.fill(HIST("V0/hAP"), v0.alpha(), v0.qtarm());
 
         if (isPion(pos) && isPion(neg)) {
           registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
           if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
-            registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.p(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.p(), neg.beta());
-            registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.p(), pos.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.p(), pos.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Pi"), neg.tpcInnerParam(), neg.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Pi"), pos.tpcInnerParam(), pos.beta());
             if (dist01(engine) < downscaling_pion || pos.tpcInnerParam() > max_pin_for_downscaling_pion) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
@@ -623,8 +619,8 @@ struct TreeCreatorElectronMLDDA {
             if (dist01(engine) < downscaling_proton || pos.tpcInnerParam() > max_pin_for_downscaling_proton) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.p(), pos.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.p(), pos.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
           }
         }
         if (isPionTight(pos) && isProton(neg)) {
@@ -633,14 +629,14 @@ struct TreeCreatorElectronMLDDA {
             if (dist01(engine) < downscaling_proton || neg.tpcInnerParam() > max_pin_for_downscaling_proton) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.p(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.p(), neg.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
           }
         }
-        registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-        registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-        registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
         if (isElectron(pos) && isElectron(neg)) {
+          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+          registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
           if ((v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon)) {
             if (dist01(engine) < downscaling_electron || pos.tpcInnerParam() > max_pin_for_downscaling_electron) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
@@ -648,10 +644,10 @@ struct TreeCreatorElectronMLDDA {
             if (dist01(engine) < downscaling_electron || neg.tpcInnerParam() > max_pin_for_downscaling_electron) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary), false);
             }
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.p(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), neg.p(), neg.beta());
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.p(), pos.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), pos.p(), pos.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
           }
         }
       } // end of v0 loop
@@ -662,10 +658,6 @@ struct TreeCreatorElectronMLDDA {
         auto bachelor = cascade.template bachelor_as<MyTracks>();
         auto pos = cascade.template posTrack_as<MyTracks>();
         auto neg = cascade.template negTrack_as<MyTracks>();
-        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg) || !isSelectedV0Leg(collision, bachelor)) {
-          continue;
-        }
-
         if (pos.sign() * neg.sign() > 0) {
           continue;
         }
@@ -680,7 +672,6 @@ struct TreeCreatorElectronMLDDA {
           }
         }
 
-        registry.fill(HIST("Cascade/hMassLambda"), cascade.mLambda());
         if (!(v0cuts.cfg_min_mass_lambda < cascade.mLambda() && cascade.mLambda() < v0cuts.cfg_max_mass_lambda)) {
           continue;
         }
@@ -688,11 +679,6 @@ struct TreeCreatorElectronMLDDA {
         if (cascade.cascradius() > cascade.v0radius()) {
           continue;
         }
-
-        registry.fill(HIST("Cascade/hV0PCA"), cascade.dcaV0daughters());
-        registry.fill(HIST("Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-        registry.fill(HIST("Cascade/hPCA"), cascade.dcacascdaughters()); // distance between bachelor and V0.
-        registry.fill(HIST("Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
 
         if (cascade.dcaV0daughters() > cascadecuts.cfg_max_dcadau_v0) {
           continue;
@@ -715,6 +701,16 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
+        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg) || !isSelectedV0Leg(collision, bachelor)) {
+          continue;
+        }
+
+        registry.fill(HIST("Cascade/hMassLambda"), cascade.mLambda());
+        registry.fill(HIST("Cascade/hV0PCA"), cascade.dcaV0daughters());
+        registry.fill(HIST("Cascade/hV0CosPA"), cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
+        registry.fill(HIST("Cascade/hPCA"), cascade.dcacascdaughters()); // distance between bachelor and V0.
+        registry.fill(HIST("Cascade/hCosPA"), cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
+
         float length = std::sqrt(std::pow(cascade.x() - collision.posX(), 2) + std::pow(cascade.y() - collision.posY(), 2) + std::pow(cascade.z() - collision.posZ(), 2));
         float mom = cascade.p();
         float ctauXi = length / mom * o2::constants::physics::MassXiMinus;       // 4.91 cm in PDG
@@ -723,19 +719,17 @@ struct TreeCreatorElectronMLDDA {
         if (isPion(bachelor)) {
           registry.fill(HIST("Cascade/hMassXi"), cascade.mXi());
           registry.fill(HIST("Cascade/hMassPt_Xi"), cascade.mXi(), cascade.pt());
-          registry.fill(HIST("Cascade/hMassPt_Xi_bachelor"), cascade.mXi(), bachelor.p());
           registry.fill(HIST("Cascade/hRxy_Xi"), cascade.mXi(), cascade.cascradius());
           registry.fill(HIST("Cascade/hCTau_Xi"), cascade.mXi(), ctauXi);
         }
         if (!(cascadecuts.cfg_min_mass_Xi < cascade.mXi() && cascade.mXi() < cascadecuts.cfg_max_mass_Xi) && isKaon(bachelor)) { // reject Xi candidates
           registry.fill(HIST("Cascade/hMassOmega"), cascade.mOmega());
           registry.fill(HIST("Cascade/hMassPt_Omega"), cascade.mOmega(), cascade.pt());
-          registry.fill(HIST("Cascade/hMassPt_Omega_bachelor"), cascade.mOmega(), bachelor.p());
           registry.fill(HIST("Cascade/hRxy_Omega"), cascade.mOmega(), cascade.cascradius());
           registry.fill(HIST("Cascade/hCTau_Omega"), cascade.mOmega(), ctauOmega);
           if (cascadecuts.cfg_min_mass_Omega < cascade.mOmega() && cascade.mOmega() < cascadecuts.cfg_max_mass_Omega) { // select Omega candidates
-            registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.p(), bachelor.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.p(), bachelor.beta());
+            registry.fill(HIST("V0/hTPCdEdx_P_Ka"), bachelor.tpcInnerParam(), bachelor.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_Ka"), bachelor.tpcInnerParam(), bachelor.beta());
             if (dist01(engine) < downscaling_kaon || bachelor.tpcInnerParam() > max_pin_for_downscaling_kaon) {
               fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary), false);
             }
@@ -743,21 +737,38 @@ struct TreeCreatorElectronMLDDA {
         }
       } // end of cascade loop
 
+      std::array<float, 3> ppos{0, 0, 0};
+      std::array<float, 3> pneg{0, 0, 0};
+
       // for electron sample for validation
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
-        if (!isSelectedTrack(collision, pos) || !isSelectedTrack(collision, neg)) {
-          continue;
-        }
         if (!isElectron(pos) || !isElectron(neg)) {
           continue;
         }
+        if (!isSelectedTrack(collision, pos) || !isSelectedTrack(collision, neg)) {
+          continue;
+        }
 
-        ROOT::Math::PtEtaPhiMVector v1(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+        auto posParCov = getTrackParCov(pos);
+        posParCov.setPID(pos.pidForTracking());
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, posParCov, 2.f, matCorr, &mDcaInfoCov);
+        getPxPyPz(posParCov, ppos);
+
+        auto negParCov = getTrackParCov(neg);
+        negParCov.setPID(pos.pidForTracking());
+        mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+        mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, negParCov, 2.f, matCorr, &mDcaInfoCov);
+        getPxPyPz(negParCov, pneg);
+
+        ROOT::Math::PtEtaPhiMVector v1(negParCov.getPt(), negParCov.getEta(), negParCov.getPhi() > 0.f ? negParCov.getPhi() : negParCov.getPhi() + 2 * M_PI, o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(posParCov.getPt(), posParCov.getEta(), posParCov.getPhi() > 0.f ? posParCov.getPhi() : posParCov.getPhi() + 2 * M_PI, o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), neg.px(), neg.py(), neg.pz(), pos.sign(), neg.sign(), d_bz);
+        float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(ppos[0], ppos[1], ppos[2], pneg[0], pneg[1], pneg[2], pos.sign(), neg.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
 
         if ((dalitzcuts.cfg_min_mass_ee < v12.M() && v12.M() < dalitzcuts.cfg_max_mass_ee) && (dalitzcuts.cfg_min_phiv_ee < phiv && phiv < dalitzcuts.cfg_max_phiv_ee)) { // ee from pi0 dalitz decay is found.
@@ -793,19 +804,19 @@ struct MLTrackQC {
     {
       {"hTPCdEdx_P_All", "TPC dE/dx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
       {"hTOFbeta_P_All", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSClusterSize_P_All", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {64, 0.0, 16}}}},
+      {"hITSobClusterSize_P_All", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"hTPCdEdx_P_Electron", "TPC dE/dx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
       {"hTOFbeta_P_Electron", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSClusterSize_P_Electron", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {64, 0.0, 16}}}},
+      {"hITSobClusterSize_P_Electron", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"hTPCdEdx_P_Pion", "TPC dE/dx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
       {"hTOFbeta_P_Pion", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSClusterSize_P_Pion", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {64, 0.0, 16}}}},
+      {"hITSobClusterSize_P_Pion", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"hTPCdEdx_P_Kaon", "TPC dE/dx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
       {"hTOFbeta_P_Kaon", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSClusterSize_P_Kaon", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {64, 0.0, 16}}}},
+      {"hITSobClusterSize_P_Kaon", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
       {"hTPCdEdx_P_Proton", "TPC dE/dx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
       {"hTOFbeta_P_Proton", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSClusterSize_P_Proton", "mean ITS cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITS cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {64, 0.0, 16}}}},
+      {"hITSobClusterSize_P_Proton", "mean ITSob cluster size vs. p;p^{ITS-TPC} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
 
       {"hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
       {"hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p^{ITS-TPC} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
@@ -823,29 +834,29 @@ struct MLTrackQC {
     for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
       registry.fill(HIST("hTOFbeta_P_All"), track.p(), track.beta());
-      registry.fill(HIST("hITSClusterSize_P_All"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+      registry.fill(HIST("hITSobClusterSize_P_All"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
       if (track.pidlabel() == static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron)) {
         registry.fill(HIST("hTPCdEdx_P_Electron"), track.p(), track.tpcSignal());
         registry.fill(HIST("hTOFbeta_P_Electron"), track.p(), track.beta());
-        registry.fill(HIST("hITSClusterSize_P_Electron"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hITSobClusterSize_P_Electron"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         registry.fill(HIST("hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
         registry.fill(HIST("hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
       } else if (track.pidlabel() == static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion)) {
         registry.fill(HIST("hTPCdEdx_P_Pion"), track.p(), track.tpcSignal());
         registry.fill(HIST("hTOFbeta_P_Pion"), track.p(), track.beta());
-        registry.fill(HIST("hITSClusterSize_P_Pion"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hITSobClusterSize_P_Pion"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         registry.fill(HIST("hTPCNsigmaPi_P"), track.p(), track.tpcNSigmaPi());
         registry.fill(HIST("hTOFNsigmaPi_P"), track.p(), track.tofNSigmaPi());
       } else if (track.pidlabel() == static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon)) {
         registry.fill(HIST("hTPCdEdx_P_Kaon"), track.p(), track.tpcSignal());
         registry.fill(HIST("hTOFbeta_P_Kaon"), track.p(), track.beta());
-        registry.fill(HIST("hITSClusterSize_P_Kaon"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hITSobClusterSize_P_Kaon"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         registry.fill(HIST("hTPCNsigmaKa_P"), track.p(), track.tpcNSigmaKa());
         registry.fill(HIST("hTOFNsigmaKa_P"), track.p(), track.tofNSigmaKa());
       } else if (track.pidlabel() == static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton)) {
         registry.fill(HIST("hTPCdEdx_P_Proton"), track.p(), track.tpcSignal());
         registry.fill(HIST("hTOFbeta_P_Proton"), track.p(), track.beta());
-        registry.fill(HIST("hITSClusterSize_P_Proton"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hITSobClusterSize_P_Proton"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         registry.fill(HIST("hTPCNsigmaPr_P"), track.p(), track.tpcNSigmaPr());
         registry.fill(HIST("hTOFNsigmaPr_P"), track.p(), track.tofNSigmaPr());
       }
