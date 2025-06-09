@@ -3530,6 +3530,8 @@ struct AnalysisDileptonTrackTrack {
   Configurable<std::string> fConfigGRPmagPath{"cfgGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
 
+  Produces<aod::DileptonTrackTrackCandidates> DileptonTrackTrackTable;
+
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
   // uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // cut name setting
@@ -3549,13 +3551,14 @@ struct AnalysisDileptonTrackTrack {
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use some values array to avoid mixing up the quantities
-  float* fValuesDitrack;
+  float* fValuesDileptonTrack1;
+  float* fValuesDileptonTrack2;
   float* fValuesQuadruplet;
   HistogramManager* fHistMan;
 
   void init(o2::framework::InitContext& context)
   {
-    bool isBarrel = context.mOptions.get<bool>("processJpsiPiPi");
+    // bool isBarrel = context.mOptions.get<bool>("processJpsiPiPi");
 
     if (context.mOptions.get<bool>("processDummy")) {
       return;
@@ -3656,6 +3659,9 @@ struct AnalysisDileptonTrackTrack {
         continue;
       }
       VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesQuadruplet);
+      // fill the dilepton track variables
+      VarManager::FillTrack<TTrackFillMap>(lepton1, fValuesDileptonTrack1);
+      VarManager::FillTrack<TTrackFillMap>(lepton2, fValuesDileptonTrack2);
       // LOGP(info, "is dilepton selected: {}", fDileptonCut.IsSelected(fValuesQuadruplet));
 
       // apply the dilepton cut
@@ -3720,6 +3726,15 @@ struct AnalysisDileptonTrackTrack {
         // fill table
         if (!CutDecision)
           continue;
+        DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
+                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kDeltaR],
+                                dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
+                                fValuesDileptonTrack1[VarManager::kTPCnSigmaEl], fValuesDileptonTrack1[VarManager::kTPCnSigmaPi], fValuesDileptonTrack1[VarManager::kTPCnSigmaPr], fValuesDileptonTrack1[VarManager::kTPCncls],
+                                fValuesDileptonTrack2[VarManager::kTPCnSigmaEl], fValuesDileptonTrack2[VarManager::kTPCnSigmaPi], fValuesDileptonTrack2[VarManager::kTPCnSigmaPr], fValuesDileptonTrack2[VarManager::kTPCncls],
+                                fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], track1.pt(), track2.pt(), track1.eta(), track2.eta(), track1.phi(), track2.phi(), track1.sign(), track2.sign(), track1.tpcNSigmaPi(), track2.tpcNSigmaPi(), track1.tpcNSigmaKa(), track2.tpcNSigmaKa(), track1.tpcNSigmaPr(), track1.tpcNSigmaPr(), track1.tpcNClsFound(), track2.tpcNClsFound(),
+                                fValuesQuadruplet[VarManager::kKFMass], fValuesQuadruplet[VarManager::kVertexingProcCode], fValuesQuadruplet[VarManager::kVertexingChi2PCA], fValuesQuadruplet[VarManager::kCosPointingAngle], fValuesQuadruplet[VarManager::kKFDCAxyzBetweenProngs], fValuesQuadruplet[VarManager::kKFChi2OverNDFGeo],
+                                fValuesQuadruplet[VarManager::kVertexingLz], fValuesQuadruplet[VarManager::kVertexingLxy], fValuesQuadruplet[VarManager::kVertexingLxyz], fValuesQuadruplet[VarManager::kVertexingTauz], fValuesQuadruplet[VarManager::kVertexingTauxy], fValuesQuadruplet[VarManager::kVertexingLzErr], fValuesQuadruplet[VarManager::kVertexingLxyzErr],
+                                fValuesQuadruplet[VarManager::kVertexingTauzErr], fValuesQuadruplet[VarManager::kVertexingLzProjected], fValuesQuadruplet[VarManager::kVertexingLxyProjected], fValuesQuadruplet[VarManager::kVertexingLxyzProjected], fValuesQuadruplet[VarManager::kVertexingTauzProjected], fValuesQuadruplet[VarManager::kVertexingTauxyProjected]);
       }
     }
   }

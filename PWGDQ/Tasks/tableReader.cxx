@@ -1971,7 +1971,8 @@ struct AnalysisDileptonTrackTrack {
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use some values array to avoid mixing up the quantities
-  float* fValuesDitrack;
+  float* fValuesDileptonTrack1;
+  float* fValuesDileptonTrack2;
   float* fValuesQuadruplet;
   HistogramManager* fHistMan;
 
@@ -2080,6 +2081,10 @@ struct AnalysisDileptonTrackTrack {
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
 
+      // fill the dilepton track variables
+      VarManager::FillTrack<TTrackFillMap>(lepton1, fValuesDileptonTrack1);
+      VarManager::FillTrack<TTrackFillMap>(lepton2, fValuesDileptonTrack2);
+
       // loop over hadrons pairs
       for (auto& [t1, t2] : combinations(tracks, tracks)) {
         // avoid self-combinations
@@ -2130,15 +2135,17 @@ struct AnalysisDileptonTrackTrack {
         } // loop over dilepton-track-track cuts
 
         // table to be written out for ML analysis
-        // if (!CutDecision)
-        //   continue;
-        // DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
-        //                         fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kDeltaR],
-        //                         dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(), dilepton.tpcNSigmaEl1(), dilepton.tpcNSigmaPi1(), dilepton.tpcNSigmaPr1(), dilepton.tpcNClsFound1(), dilepton.tpcNSigmaEl2(), dilepton.tpcNSigmaPi2(), dilepton.tpcNSigmaPr2(), dilepton.tpcNClsFound2(),
-        //                         fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign(), t1.tpcNSigmaPi(), t2.tpcNSigmaPi(), t1.tpcNSigmaKa(), t2.tpcNSigmaKa(), t1.tpcNSigmaPr(), t1.tpcNSigmaPr(), t1.tpcNClsFound(), t2.tpcNClsFound(),
-        //                         fValuesQuadruplet[VarManager::kKFMass], fValuesQuadruplet[VarManager::kVertexingProcCode], fValuesQuadruplet[VarManager::kVertexingChi2PCA], fValuesQuadruplet[VarManager::kCosPointingAngle], fValuesQuadruplet[VarManager::kKFDCAxyzBetweenProngs], fValuesQuadruplet[VarManager::kKFChi2OverNDFGeo],
-        //                         fValuesQuadruplet[VarManager::kVertexingLz], fValuesQuadruplet[VarManager::kVertexingLxy], fValuesQuadruplet[VarManager::kVertexingLxyz], fValuesQuadruplet[VarManager::kVertexingTauz], fValuesQuadruplet[VarManager::kVertexingTauxy], fValuesQuadruplet[VarManager::kVertexingLzErr], fValuesQuadruplet[VarManager::kVertexingLxyzErr],
-        //                         fValuesQuadruplet[VarManager::kVertexingTauzErr], fValuesQuadruplet[VarManager::kVertexingLzProjected], fValuesQuadruplet[VarManager::kVertexingLxyProjected], fValuesQuadruplet[VarManager::kVertexingLxyzProjected], fValuesQuadruplet[VarManager::kVertexingTauzProjected], fValuesQuadruplet[VarManager::kVertexingTauxyProjected]);
+        if (!CutDecision)
+          continue;
+        DileptonTrackTrackTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kQuadPhi], fValuesQuadruplet[VarManager::kRap],
+                                fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kDeltaR],
+                                dilepton.mass(), dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.sign(),
+                                fValuesDileptonTrack1[VarManager::kTPCnSigmaEl], fValuesDileptonTrack1[VarManager::kTPCnSigmaPi], fValuesDileptonTrack1[VarManager::kTPCnSigmaPr], fValuesDileptonTrack1[VarManager::kTPCncls],
+                                fValuesDileptonTrack2[VarManager::kTPCnSigmaEl], fValuesDileptonTrack2[VarManager::kTPCnSigmaPi], fValuesDileptonTrack2[VarManager::kTPCnSigmaPr], fValuesDileptonTrack2[VarManager::kTPCncls],
+                                fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kDitrackPt], t1.pt(), t2.pt(), t1.eta(), t2.eta(), t1.phi(), t2.phi(), t1.sign(), t2.sign(), t1.tpcNSigmaPi(), t2.tpcNSigmaPi(), t1.tpcNSigmaKa(), t2.tpcNSigmaKa(), t1.tpcNSigmaPr(), t1.tpcNSigmaPr(), t1.tpcNClsFound(), t2.tpcNClsFound(),
+                                fValuesQuadruplet[VarManager::kKFMass], fValuesQuadruplet[VarManager::kVertexingProcCode], fValuesQuadruplet[VarManager::kVertexingChi2PCA], fValuesQuadruplet[VarManager::kCosPointingAngle], fValuesQuadruplet[VarManager::kKFDCAxyzBetweenProngs], fValuesQuadruplet[VarManager::kKFChi2OverNDFGeo],
+                                fValuesQuadruplet[VarManager::kVertexingLz], fValuesQuadruplet[VarManager::kVertexingLxy], fValuesQuadruplet[VarManager::kVertexingLxyz], fValuesQuadruplet[VarManager::kVertexingTauz], fValuesQuadruplet[VarManager::kVertexingTauxy], fValuesQuadruplet[VarManager::kVertexingLzErr], fValuesQuadruplet[VarManager::kVertexingLxyzErr],
+                                fValuesQuadruplet[VarManager::kVertexingTauzErr], fValuesQuadruplet[VarManager::kVertexingLzProjected], fValuesQuadruplet[VarManager::kVertexingLxyProjected], fValuesQuadruplet[VarManager::kVertexingLxyzProjected], fValuesQuadruplet[VarManager::kVertexingTauzProjected], fValuesQuadruplet[VarManager::kVertexingTauxyProjected]);
       } // end loop over track-track pairs
     } // end loop over dileptons
   }
