@@ -35,7 +35,7 @@ o2physics_add_dpl_workflow(antiproton-cumulants-mc
                     COMPONENT_NAME Analysis)
 		
 o2physics_add_dpl_workflow(ident-mean-pt-fluct
-                    SOURCES identMeanPtFluct.cxx
+                    SOURCES eventMeanPtId.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
