@@ -703,8 +703,6 @@ struct decay3bodyBuilder {
       }
     } // loop over collisions
 
-    int nDecay3Bodys = 0;
-
     // Loop over all decay3bodys in same time frame
     registry.fill(HIST("Counters/hInputStatistics"), kVtx3BodyDatas, decay3bodys.size());
     int lastRunNumber = -1;
@@ -777,7 +775,6 @@ struct decay3bodyBuilder {
                                            false /*isEventMixing*/)) {
         continue;
       }
-      nDecay3Bodys++;
 
       // fill QA histograms
       if (doTrackQA) { // histograms filled for daughter tracks of (selected) 3body candidates
