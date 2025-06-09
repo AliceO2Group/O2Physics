@@ -35,7 +35,7 @@
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGLF/DataModel/PIDTOFGeneric.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 #include <TF1.h>
 
 namespace o2::aod
