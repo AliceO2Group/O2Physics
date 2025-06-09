@@ -157,8 +157,8 @@ struct LFStrangeTreeCreator {
 
   int mRunNumber;
   float d_bz;
-  // o2::base::MatLayerCylSet* lut = nullptr;
-  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+  o2::base::MatLayerCylSet* lut = nullptr;
+  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -248,7 +248,11 @@ struct LFStrangeTreeCreator {
     mRunNumber = bc.runNumber();
     fitter.setBz(d_bz);
 
-    // o2::base::Propagator::Instance()->setMatLUT(lut);
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+
+    int mat{static_cast<int>(cfgMaterialCorrection)};
+    fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
   }
 
   void init(o2::framework::InitContext&)
@@ -261,7 +265,6 @@ struct LFStrangeTreeCreator {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
 
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
@@ -272,8 +275,6 @@ struct LFStrangeTreeCreator {
     fitter.setMaxChi2(1e9);
     fitter.setUseAbsDCA(true);
     fitter.setWeightedFinalPCA(false);
-    int mat{static_cast<int>(cfgMaterialCorrection)};
-    fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
