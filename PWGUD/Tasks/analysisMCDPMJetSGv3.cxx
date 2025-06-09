@@ -256,7 +256,7 @@ struct AnalysisMCDPMJetSGv3 {
     int nFindableMin = 70;
     double dcaZlimit = 2.;
 
-    int counter = 0;
+    // int counter = 0;
     for (const auto& track : tracks) {
       if (track.isPVContributor()) {
         int nFindable = track.tpcNClsFindable();
@@ -394,7 +394,7 @@ struct AnalysisMCDPMJetSGv3 {
             }
           }
         }
-        counter++;
+        // counter++;
         // histos.fill(HIST("hVisibleMultiVsGeneratedMulti"), counterMC, counter);
         // histos.fill(HIST("hVisibleMultiVsGeneratedMulti"), mcParticles.size(), counter);
       }
