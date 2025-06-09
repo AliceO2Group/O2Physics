@@ -2375,7 +2375,7 @@ struct FemtoUniverseProducerTask {
       }
     }
   }
-  PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3Casc, "Provide both MC truth and reco for tracks and V0s with centrality", false);
+  PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCentRun3Casc, "Provide both MC truth and reco for tracks and cascades with centrality", false);
 
   Preslice<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>> perCollisionD0s = aod::track::collisionId;
   void processTrackD0MC(aod::McCollisions const& mccols,
