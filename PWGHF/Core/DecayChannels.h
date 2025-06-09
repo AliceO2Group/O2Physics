@@ -152,7 +152,6 @@ enum DecayChannelResonant : int8_t {
   LastChannelResonant
 };
 
-
 std::unordered_map<DecayChannelResonant, std::array<int, 2> > resoStatesDPlus = 
 {
    {DecayChannelResonant::DplusToPhiPi,         std::array<int, 2>{+kPhi,       +kPiPlus}},
@@ -336,108 +335,134 @@ enum DecayChannelToJpsiResonant : int8_t {
 } // namespace hf_cand_beauty
 } // namespace o2::hf_decay
 
-// using namespace o2::hf_decay;
-
 namespace o2::hf_corrbkg
 {
-  std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelMain, std::vector<int> > getDecayChannel3Prong(int pdgMother) {
+  using namespace o2::hf_decay;
+
+  /// Returns a map of the possible final states for a specific 3-prong particle specie
+  /// \param pdgMother PDG code of the mother particle
+  /// \return a map of final states with their corresponding PDG codes
+  std::unordered_map<hf_cand_3prong::DecayChannelMain, std::vector<int> > getDecayChannel3Prong(int pdgMother) {
     switch (pdgMother) {
       case Pdg::kDPlus:
-        return o2::hf_decay::hf_cand_3prong::finalStatesDPlus;
+        return hf_cand_3prong::finalStatesDPlus;
       case Pdg::kDS:
-        return o2::hf_decay::hf_cand_3prong::finalStatesDs;
+        return hf_cand_3prong::finalStatesDs;
       case Pdg::kDStar:
-        return o2::hf_decay::hf_cand_3prong::finalStatesDstar;
+        return hf_cand_3prong::finalStatesDstar;
       case Pdg::kLambdaCPlus:
-        return o2::hf_decay::hf_cand_3prong::finalStatesLc;
+        return hf_cand_3prong::finalStatesLc;
       case Pdg::kXiCPlus:
-        return o2::hf_decay::hf_cand_3prong::finalStatesXic;
+        return hf_cand_3prong::finalStatesXic;
       default:
         LOG(error) << "Unknown PDG code for 3-prong final states: " << pdgMother;
         return {};
     }
   }
 
-  std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelResonant, std::array<int, 2> > getResoChannels3Prong(int pdgMother) {
+  /// Returns a map of the resonant decay channels for a specific 3-prong particle specie
+  /// \param pdgMother PDG code of the mother particle
+  /// \return a map of resonant decay channels with their corresponding PDG codes
+  std::unordered_map<hf_cand_3prong::DecayChannelResonant, std::array<int, 2> > getResoChannels3Prong(int pdgMother) {
     switch (pdgMother) {
       case Pdg::kDPlus:
-        return o2::hf_decay::hf_cand_3prong::resoStatesDPlus;
+        return hf_cand_3prong::resoStatesDPlus;
       case Pdg::kDS:
-        return o2::hf_decay::hf_cand_3prong::resoStatesDs;
+        return hf_cand_3prong::resoStatesDs;
       case Pdg::kDStar:
-        return o2::hf_decay::hf_cand_3prong::resoStatesDstar;
+        return hf_cand_3prong::resoStatesDstar;
       case Pdg::kLambdaCPlus:
-        return o2::hf_decay::hf_cand_3prong::resoStatesLambdaC;
+        return hf_cand_3prong::resoStatesLambdaC;
       case Pdg::kXiCPlus:
-        return o2::hf_decay::hf_cand_3prong::resoStatesXiC;
+        return hf_cand_3prong::resoStatesXiC;
       default:
         LOG(error) << "Unknown PDG code for 3-prong final states: " << pdgMother;
         return {};
     }
   }
 
+  /// Perform the matching for a single resonant channel
+  /// \tparam N size of the array of daughter PDG codes
+  /// \param arrPdgResoChn array of daughter indices
+  /// \param arrPdgDaugs array of PDG codes for the resonant decay
+  /// \return true if the resonant channel is matched, false otherwise
   template <std::size_t N>
-  bool checkResonantDecay(std::array<int, N> arrDaughIndex, std::array<int, N> arrPDGResonant) {
-      LOG(info) << "Testing: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " matching PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
-      for (int i = 0; i < N; i++) {
-        LOG(info) << "Checking daughter index: " << arrDaughIndex[i];
-        bool findDaug = false;
-        for (int j = 0; j < N; j++) {
-          LOG(info) << "Checking daughter PDG: " << arrDaughIndex[i] << " against resonant PDG: " << arrPDGResonant[j];
-          if (std::abs(arrDaughIndex[i]) == std::abs(arrPDGResonant[j])) {
-            arrPDGResonant[j] = -1; // Mark as found
-            LOG(info) << "Matched!";
-            findDaug = true;
-            break;
-          }
-        }
-        if (!findDaug) {
-          LOG(info) << "Returning false";
-          return false;
+  bool checkResonantDecay(std::array<int, N> arrPdgResoChn, std::array<int, N> arrPdgDaugs) {
+    // LOG(info) << "Testing: " << arrPdgResoChn[0] << ", " << arrPdgResoChn[1] << " matching PDG codes: " << arrPdgDaugs[0] << ", " << arrPdgDaugs[1];
+    for (size_t i = 0; i < N; i++) {
+      // LOG(info) << "Checking daughter index: " << arrPdgResoChn[i];
+      bool findDaug = false;
+      for (size_t j = 0; j < N; j++) {
+        // LOG(info) << "Checking daughter PDG: " << arrPdgResoChn[i] << " against resonant PDG: " << arrPdgDaugs[j];
+        if (std::abs(arrPdgResoChn[i]) == std::abs(arrPdgDaugs[j])) {
+          arrPdgDaugs[j] = -1; // Mark as found
+          // LOG(info) << "Matched!";
+          findDaug = true;
+          break;
         }
       }
-      LOG(info) << "Resonant decay found with daughters: " << arrDaughIndex[0] << ", " << arrDaughIndex[1] << " matching PDG codes: " << arrPDGResonant[0] << ", " << arrPDGResonant[1];
-      return true;
+      if (!findDaug) {
+        // LOG(info) << "Returning false";
+        return false;
+      }
     }
+    // LOG(info) << "Resonant decay found with daughters: " << arrPdgResoChn[0] << ", " << arrPdgResoChn[1] << " matching PDG codes: " << arrPdgDaugs[0] << ", " << arrPdgDaugs[1];
+    return true;
+  }
 
-    /// Check if the decay is resonant
-    /// \tparam arrDaughIndex index of the particle daughters at resonance level
-    /// \tparam arrPDGResonant PDG code of the resonant decay
-    /// \return true if the decay is resonant
-    template <bool is3Prong = false, std::size_t N>
-    void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> arrDaughIndex) {
-      if constexpr (is3Prong) {
-        std::unordered_map<o2::hf_decay::hf_cand_3prong::DecayChannelResonant, std::array<int, 2> > resoStates = getResoChannels3Prong(motherPdg);
-        for (const auto& [flag, pdgCodes] : resoStates) {
-          if (abs(motherPdg) == Pdg::kDStar) {
-            std::cout << "Checking Dstar resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughIndex[0] << " " << arrDaughIndex[1] << std::endl;
-          }
-          if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-            *channel = flag;
-            if (abs(motherPdg) == Pdg::kDStar) {
-              LOG(info) << "Dstar resonant decay found with channel: " << static_cast<int>(*channel);
-            }
-            break;
-          }
+  /// Flag the resonant decays
+  /// Function documentation:
+  /// \tparam is3Prong bool to specify if the mother decays with a 3-prong decay
+  /// \tparam N size of the array of daughter PDG codes
+  /// \param motherPdg PDG code of the mother particle
+  /// \param channel decay channel flag to be set
+  /// \param arrDaughPdgs array of daughter PDG codes
+  template <bool is3Prong = false, std::size_t N>
+  void flagResonantDecay(int motherPdg, int8_t* channel, std::array<int, N> arrDaughPdgs) {
+    if constexpr (is3Prong) {
+      std::unordered_map<hf_cand_3prong::DecayChannelResonant, std::array<int, 2> > resoStates = getResoChannels3Prong(motherPdg);
+      if (abs(motherPdg) == Pdg::kDPlus) {
+        std::cout << "Flagging resonant channel for D+ with daughters: " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+      }
+      if (abs(motherPdg) == Pdg::kDS) {
+        std::cout << "Flagging resonant channel for Ds with daughters: " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+      }
+      if (abs(motherPdg) == Pdg::kDStar) {
+        std::cout << "Flagging resonant channel for Dstar with daughters: " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+      }
+      if (abs(motherPdg) == Pdg::kLambdaCPlus) {
+        std::cout << "Flagging resonant channel for LambdaC with daughters: " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+      }
+      if (abs(motherPdg) == Pdg::kXiCPlus) {
+        std::cout << "Flagging resonant channel for XiC with daughters: " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+      }
+      for (const auto& [flag, pdgCodes] : resoStates) {
+        if (checkResonantDecay(arrDaughPdgs, pdgCodes)) {
+          *channel = flag;
+          // if (abs(motherPdg) == Pdg::kDStar) {
+          //   LOG(info) << "Dstar resonant decay found with channel: " << static_cast<int>(*channel);
+          // }
+          break;
         }
-        if (abs(motherPdg) == Pdg::kDStar) {
-          LOG(info) << "Leaving function with channel: " << static_cast<int>(*channel);
-        }
-      } else {
-        if (motherPdg != Pdg::kD0) {
-          LOG(error) << "Resonant decay flagging is only implemented for D0 resonances in 2-prong decays.";
-          return;
-        }
-        for (const auto& [flag, pdgCodes] : o2::hf_decay::hf_cand_2prong::resoStatesD0) {
-          std::cout << "Checking D0 resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughIndex[0] << " " << arrDaughIndex[1] << std::endl;
-          if (checkResonantDecay(arrDaughIndex, pdgCodes)) {
-            *channel = flag;
-            LOG(info) << "D0 resonant decay found with channel: " << static_cast<int>(*channel);
-            break;
-          }
+      }
+      // if (abs(motherPdg) == Pdg::kDStar) {
+      //   LOG(info) << "Leaving function with channel: " << static_cast<int>(*channel);
+      // }
+    } else {
+      if (motherPdg != Pdg::kD0) {
+        // LOG(error) << "Resonant decay flagging is only implemented for D0 resonances in 2-prong decays.";
+        return;
+      }
+      for (const auto& [flag, pdgCodes] : hf_cand_2prong::resoStatesD0) {
+        // std::cout << "Checking D0 resonant decay with flag: " << flag << ", pdgCodes: " << pdgCodes[0] << ", " << pdgCodes[1] << " vs " << arrDaughPdgs[0] << " " << arrDaughPdgs[1] << std::endl;
+        if (checkResonantDecay(arrDaughPdgs, pdgCodes)) {
+          *channel = flag;
+          // LOG(info) << "D0 resonant decay found with channel: " << static_cast<int>(*channel);
+          break;
         }
       }
     }
+  }
 } // namespace o2::hf_corrbkg
 
 #endif // PWGHF_CORE_DECAYCHANNELS_H_

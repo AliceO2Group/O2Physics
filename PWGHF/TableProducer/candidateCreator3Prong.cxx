@@ -59,13 +59,13 @@ using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_decay;
-using namespace o2::hf_corrbkg;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pid_tpc_tof_utils;
+using namespace o2::hf_corrbkg;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
@@ -985,12 +985,12 @@ struct HfCandidateCreator3ProngExpressions {
                   if (sign < 0) {
                     for (auto& part : finalStateParts3ProngAll) {
                       if (part == kPi0) {
-                        part = -part; // Ensure all parts are positive for matching
+                        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                       }
                     }
                   }
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
-                    indexRec = -1; // Reset indexRec if the generated decay is not matched
+                    indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
                   // LOG(info) << "CIAO 3.0.3";
                 } else if (finalState.size() == 5) { // Check if the final state has 3 particles
@@ -1000,13 +1000,13 @@ struct HfCandidateCreator3ProngExpressions {
                   if (sign < 0) {
                     for (auto& part : finalStateParts3ProngAll) {
                       if (part == kPi0) {
-                        part = -part; // Ensure all parts are positive for matching
+                        part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                       }
                     }
                     // LOG(info) << "CIAO 3.0.5";
                   }
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
-                    indexRec = -1; // Reset indexRec if the generated decay is not matched
+                    indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                     // LOG(info) << "CIAO 3.0.6";
                   }
                   // LOG(info) << "CIAO 3.0.7";
@@ -1059,7 +1059,7 @@ struct HfCandidateCreator3ProngExpressions {
           }
         }
         // LOG(info) << "CIAO 7";
-        LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
+        // LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D± → π± K∓ π±
         if (flag == 0) {
@@ -1121,6 +1121,19 @@ struct HfCandidateCreator3ProngExpressions {
           }
         }
 
+        // D* → D0π → Kππ
+        if (flag == 0) {
+          if (matchKinkedDecayTopology) {
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2, &nKinkedTracks);
+          } else {
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
+          }
+          if (indexRec > -1) {
+            flag = sign * hf_cand_3prong::DecayChannelMain::DstarToPiKPi;
+            channel = 1;
+          }
+        }
+
         // Λc± → p± K∓ π±
         if (flag == 0) {
           if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -1134,6 +1147,25 @@ struct HfCandidateCreator3ProngExpressions {
           }
           if (indexRec > -1) {
             flag = sign * hf_cand_3prong::DecayChannelMain::LcToPKPi;
+
+            // Flagging the different Λc± → p± K∓ π± decay channels
+            if (arrayDaughters[0].has_mcParticle()) {
+              swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+            }
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == NDaughtersResonant) {
+              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+                auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+                arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaugh[0] == arrPDGResonant1[0] && arrPDGDaugh[1] == arrPDGResonant1[1]) || (arrPDGDaugh[0] == arrPDGResonant1[1] && arrPDGDaugh[1] == arrPDGResonant1[0])) {
+                channel = 1;
+              } else if ((arrPDGDaugh[0] == arrPDGResonant2[0] && arrPDGDaugh[1] == arrPDGResonant2[1]) || (arrPDGDaugh[0] == arrPDGResonant2[1] && arrPDGDaugh[1] == arrPDGResonant2[0])) {
+                channel = 2;
+              } else if ((arrPDGDaugh[0] == arrPDGResonant3[0] && arrPDGDaugh[1] == arrPDGResonant3[1]) || (arrPDGDaugh[0] == arrPDGResonant3[1] && arrPDGDaugh[1] == arrPDGResonant3[0])) {
+                channel = 3;
+              }
+            }
           }
         }
 
@@ -1165,15 +1197,15 @@ struct HfCandidateCreator3ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
+        // LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
+        // LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
     
-    LOG(info) << "BYE REC MATCHING, HELLO GEN MATCHING";
+    // LOG(info) << "BYE REC MATCHING, HELLO GEN MATCHING";
     // LOG(info) << "Filling MC match gen for 3 prong candidates";
     // LOG(info) << "Number of MC collisions: " << mcCollisions.size();
     for (const auto& mcCollision : mcCollisions) {
@@ -1216,7 +1248,7 @@ struct HfCandidateCreator3ProngExpressions {
         hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
       }
     }
-    LOG(info) << "BYE GEN MATCHING";
+    // LOG(info) << "BYE GEN MATCHING";
 
   }
 

@@ -776,8 +776,6 @@ struct HfCandidateCreator2ProngExpressions {
       std::vector<int> idxBhadMothers{};
 
       if (matchCorrBkgs) {
-        LOG(info) << "--------------------------------------------";
-        LOG(info) << "Matching correlated bkgs";
         indexRec = -1; // Index of the matched reconstructed candidate
         int depth = 2;
         for (const auto& [chn, finalState] : finalStates2Prongs) {
@@ -799,12 +797,12 @@ struct HfCandidateCreator2ProngExpressions {
               if (sign < 0) {
                 for (auto& part : finalStateParts2ProngAll) {
                   if (part == kPi0) {
-                    part = -part; // Ensure all parts are positive for matching
+                    part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                   }
                 }
               }
               if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, false, &sign, depth)) {
-                indexRec = -1; // Reset indexRec if the generated decay
+                indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
               }
             }
           } else if (finalState.size() == 2) {            // Fully Reco 2-prong decays
@@ -819,12 +817,11 @@ struct HfCandidateCreator2ProngExpressions {
             }
           } else {
             LOG(info) << "Final state size not supported: " << finalStateParts2Prong.size();
-            continue; // Skip unsupported final states
+            continue;
           }
           if (indexRec > -1) {
-            // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
-            flag = sign * chn;   // Only D0 decay channels are considered here
-            
+            flag = sign * chn;
+
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
             std::vector<int> arrResoDaughIndex = {};
@@ -836,13 +833,10 @@ struct HfCandidateCreator2ProngExpressions {
                 arrPDGDaugh[iProng] = daughI.pdgCode();
               }
               flagResonantDecay(Pdg::kD0, &channel, arrPDGDaugh);
-              // LOG(info) << "[matchFinalStateCorrBkgs] Matched D0 final state: " << chn << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
-              // LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
             }
-            break; // Exit loop if a match is found
+            break;
           }
         }
-        // LOG(info) << "D0 matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D0(bar) → π± K∓
         if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -890,10 +884,8 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }

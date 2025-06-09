@@ -211,6 +211,7 @@ struct HfCandidateSelectorD0 {
     if (candidate.decayLengthXY() > cuts->get(pTBin, "max decay length XY")) {
       return false;
     }
+
     return true;
   }
 
@@ -288,6 +289,7 @@ struct HfCandidateSelectorD0 {
         }
       }
     }
+
     return true;
   }
   template <int reconstructionType, typename CandType>
@@ -485,7 +487,7 @@ struct HfCandidateSelectorD0 {
     processSel<aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
-  
+
   void processWithKFParticle(soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
   {
     processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
