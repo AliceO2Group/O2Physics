@@ -300,10 +300,10 @@ struct NonPromptCascadeTask {
           runNumber = bc.runNumber();
         }
         bool sel = mZorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
-        if(sel) {
+        if (sel) {
           std::vector<bool> toivect = mZorro.getTriggerOfInterestResults();
           uint32_t toiMask = 0;
-          for(uint i = 0; i < toivect.size(); i++) {
+          for (uint i = 0; i < toivect.size(); i++) {
             toiMask += 1 << i;
           }
           toiMap[bc.globalBC()] = toiMask;
@@ -312,7 +312,7 @@ struct NonPromptCascadeTask {
     }
   }
   template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates, std::map<uint64_t,uint32_t> toiMap = {})
+  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates, std::map<uint64_t, uint32_t> toiMap = {})
   {
 
     const auto& getCascade = [](auto const& candidate) {
@@ -517,7 +517,7 @@ struct NonPromptCascadeTask {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, ntCascadeTrack, mBz, 2.f, matCorr, &motherDCA);
       }
       uint32_t toiMask = 0x0;
-      if(toiMap.count(bc.globalBC())) {
+      if (toiMap.count(bc.globalBC())) {
         toiMask = toiMap[bc.globalBC()];
       }
       candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
@@ -589,7 +589,7 @@ struct NonPromptCascadeTask {
                                 c.sel8, c.multFT0C, c.multFT0A, c.multFT0M, c.centFT0C, c.centFT0A, c.centFT0M,
                                 particle.pt(), particle.eta(), particle.phi(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
                                 particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(),
-                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters,c.toiMask);
+                                mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == recCollision.mcCollisionId(), c.hasFakeReassociation, motherDecayDaughters, c.toiMask);
     }
   }
 
