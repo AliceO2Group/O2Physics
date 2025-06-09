@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file processMCDPMJetSGv3.cxx
+/// \file analysisMCDPMJetSGv3.cxx
 /// \brief Process MC DPMJet events for inclusive studies.
 ///
 /// \author Simone Ragoni
@@ -30,7 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct ProcessMCDPMJetSGv3 {
+struct analysisMCDPMJetSGv3 {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // TDatabasePDG* fPDG = TDatabasePDG::Instance();
 
@@ -225,7 +225,7 @@ struct ProcessMCDPMJetSGv3 {
     }
     histos.fill(HIST("hVisibleMultiVsGeneratedMulti"), counterMC, counter);
   }
-  PROCESS_SWITCH(ProcessMCDPMJetSGv3, processSim, "processSim", true);
+  PROCESS_SWITCH(analysisMCDPMJetSGv3, processSim, "processSim", true);
 
   void processReco(CC const& collision,
                    TCs const& tracks,
@@ -402,11 +402,11 @@ struct ProcessMCDPMJetSGv3 {
 
     // } // collision loop
   }
-  PROCESS_SWITCH(ProcessMCDPMJetSGv3, processReco, "processReco", true);
+  PROCESS_SWITCH(analysisMCDPMJetSGv3, processReco, "processReco", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ProcessMCDPMJetSGv3>(cfgc)};
+    adaptAnalysisTask<analysisMCDPMJetSGv3>(cfgc)};
 }
