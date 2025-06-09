@@ -254,6 +254,7 @@ struct ProcessMCDPMJetSGv3 {
     double sigmaMax = 3.;
     double ptMin = 0.1;
     int nFindableMin = 70;
+    double dcaZlimit = 2.;
 
     int counter = 0;
     for (const auto& track : tracks) {
@@ -270,7 +271,7 @@ struct ProcessMCDPMJetSGv3 {
         if (track.pt() < ptMin) {
           continue;
         }
-        if (!(std::abs(track.dcaZ()) < 2.)) {
+        if (!(std::abs(track.dcaZ()) < dcaZlimit)) {
           continue;
         }
         double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
