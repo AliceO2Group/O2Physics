@@ -14,7 +14,7 @@
 /// \author Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
-#include"TRandom3.h"
+#include "TRandom3.h"
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
@@ -196,7 +196,7 @@ struct FlowCorrelationsUpc {
   void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float Nch) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize); 
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
     // loop over all tracks
     for (auto const& track1 : tracks1) {
