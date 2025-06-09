@@ -2336,7 +2336,6 @@ struct FemtoUniverseProducerTask {
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTruthAndFullMCCasc, "Provide both MC truth and reco for tracks and Cascades", false);
 
-// EDIT
   void processTruthAndFullMCCentRun3Casc(
     aod::McCollisions const& mccols,
     aod::McParticles const& mcParticles,
@@ -2350,7 +2349,7 @@ struct FemtoUniverseProducerTask {
     std::set<int> recoMcIds;
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
-      auto groupedCascParts = fullCascades.sliceBy(perCollisionCascs, col.globalIndex()); // cech percollisioncascs
+      auto groupedCascParts = fullCascades.sliceBy(perCollisionCascs, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       const auto colcheck = fillCollisionsCentRun3<true>(col);
       if (colcheck) {
