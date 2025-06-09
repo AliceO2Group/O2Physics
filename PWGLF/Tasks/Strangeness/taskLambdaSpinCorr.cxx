@@ -61,8 +61,8 @@ struct LfTaskLambdaSpinCorr {
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctCut;
   // mixing
-  Configurable<int> cosCalculation{"cosCalculation", 1, "cos calculation"};
-  Configurable<int> mixingCombination{"mixingCombination", 1, "mixing Combination"};
+  Configurable<int> cosCalculation{"cosCalculation", 0, "cos calculation"};
+  Configurable<int> mixingCombination{"mixingCombination", 0, "mixing Combination"};
   Configurable<bool> mixingEvSel{"mixingEvSel", false, "mixingEvSel"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
   ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
@@ -128,7 +128,8 @@ struct LfTaskLambdaSpinCorr {
     AxisSpec thnAxisInvMasspair{iMNbinspair, lbinIMpair, hbinIMpair, "#it{M} (GeV/#it{c}^{2})"};
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     histos.add("hPtDiff", "hPtDiff", kTH1F, {{1000, 0, 100.0}});
-    histos.add("hRDiff", "hRDiff", kTH1F, {{640, 0, 16.0}});
+    histos.add("hPhiDiff", "hPhiDiff", kTH1F, {{800, -8.0, 8.0}});
+    histos.add("hRDiff", "hRDiff", kTH1F, {{640, -16.0, 16.0}});
     histos.add("hv0Mult", "hv0Mult", kTH1F, {{10001, -0.5, 10000.5}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{configcentAxis}});
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisInvMass, configthnAxisPol, configcentAxis, thnAxisInvMasspair}, true);
@@ -244,8 +245,8 @@ struct LfTaskLambdaSpinCorr {
                     const ROOT::Math::PxPyPzMVector& Lambdadummy,
                     const ROOT::Math::PxPyPzMVector& AntiLambdadummy)
   {
-    const double minMass = 1.0;
-    const double maxMass = 2.0;
+    const double minMass = 1.09;
+    const double maxMass = 1.14;
     return (lambdaTag && aLambdaTag &&
             (Lambdadummy.M() > minMass && Lambdadummy.M() < maxMass) &&
             (AntiLambdadummy.M() > minMass && AntiLambdadummy.M() < maxMass));
@@ -293,8 +294,8 @@ struct LfTaskLambdaSpinCorr {
       double cosTheta2 = proton2LambdaRF.Vect().Unit().Dot(quantizationAxis);
       cosThetaDiff = cosTheta1 * cosTheta2;
     }
-
-    double deltaR = TMath::Sqrt(TMath::Power(particle1.Eta() - particle2.Eta(), 2.0) + TMath::Power(particle1.Phi() - particle2.Phi(), 2.0));
+    double deltaPhi = RecoDecay::constrainAngle(particle1.Phi() - particle2.Phi(), 0.0);
+    double deltaR = TMath::Sqrt(TMath::Power(particle1.Eta() - particle2.Eta(), 2.0) + TMath::Power(deltaPhi, 2.0));
     if (datatype == 0) {
       if (tag1 && tag3) {
         histos.fill(HIST("hSparseLambdaLambda"), particle1.M(), particle2.M(), cosThetaDiff, centrality, deltaR);
@@ -411,7 +412,7 @@ struct LfTaskLambdaSpinCorr {
 
     return {lambdaTag, aLambdaTag, true}; // Valid candidate
   }
-
+  ROOT::Math::PxPyPzMVector lambda0, antiLambda0, proton0, pion0, antiProton0, antiPion0;
   ROOT::Math::PxPyPzMVector lambda, antiLambda, proton, pion, antiProton, antiPion;
   ROOT::Math::PxPyPzMVector lambda2, antiLambda2, proton2, pion2, antiProton2, antiPion2;
   ROOT::Math::PxPyPzMVector lambdamc, antiLambdamc, protonmc, pionmc, antiProtonmc, antiPionmc;
@@ -478,7 +479,12 @@ struct LfTaskLambdaSpinCorr {
         pion = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
         antiLambda = antiProton + pion;
       }
-
+      if (lambdaTag && (lambda.M() < lbinIM || lambda.M() > hbinIM)) {
+        continue;
+      }
+      if (aLambdaTag && (antiLambda.M() < lbinIM || antiLambda.M() > hbinIM)) {
+        continue;
+      }
       auto postrack1 = v0.template posTrack_as<AllTrackCandidates>();
       auto negtrack1 = v0.template negTrack_as<AllTrackCandidates>();
 
@@ -503,6 +509,12 @@ struct LfTaskLambdaSpinCorr {
           antiProton2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), o2::constants::physics::MassProton);
           pion2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), o2::constants::physics::MassPionCharged);
           antiLambda2 = antiProton2 + pion2;
+        }
+        if (lambdaTag2 && (lambda2.M() < lbinIM || lambda2.M() > hbinIM)) {
+          continue;
+        }
+        if (aLambdaTag2 && (antiLambda2.M() < lbinIM || antiLambda2.M() > hbinIM)) {
+          continue;
         }
         auto postrack2 = v02.template posTrack_as<AllTrackCandidates>();
         auto negtrack2 = v02.template negTrack_as<AllTrackCandidates>();
@@ -630,8 +642,42 @@ struct LfTaskLambdaSpinCorr {
         if (postrack1.globalIndex() == postrack2.globalIndex() || negtrack1.globalIndex() == negtrack2.globalIndex()) {
           continue;
         }
-        auto samePairSumPt = t1.pt() + t2.pt();
-        auto samePairR = TMath::Sqrt(TMath::Power(t1.phi() - t2.phi(), 2.0) + TMath::Power(t1.eta() - t2.eta(), 2.0));
+        // auto samePairSumPt = t1.pt() + t2.pt();
+        double deltaPhiSame = RecoDecay::constrainAngle(t1.phi() - t2.phi(), 0.0);
+        auto samePairR = TMath::Sqrt(TMath::Power(deltaPhiSame, 2.0) + TMath::Power(t1.eta() - t2.eta(), 2.0));
+
+        if (lambdaTag1) {
+          proton0 = ROOT::Math::PxPyPzMVector(t1.pxpos(), t1.pypos(), t1.pzpos(), o2::constants::physics::MassProton);
+          antiPion0 = ROOT::Math::PxPyPzMVector(t1.pxneg(), t1.pyneg(), t1.pzneg(), o2::constants::physics::MassPionCharged);
+          lambda0 = proton0 + antiPion0;
+        }
+        if (aLambdaTag1) {
+          antiProton0 = ROOT::Math::PxPyPzMVector(t1.pxneg(), t1.pyneg(), t1.pzneg(), o2::constants::physics::MassProton);
+          pion0 = ROOT::Math::PxPyPzMVector(t1.pxpos(), t1.pypos(), t1.pzpos(), o2::constants::physics::MassPionCharged);
+          antiLambda0 = antiProton0 + pion0;
+        }
+        if (lambdaTag1 && (lambda0.M() < lbinIM || lambda0.M() > hbinIM)) {
+          continue;
+        }
+        if (aLambdaTag1 && (antiLambda0.M() < lbinIM || antiLambda0.M() > hbinIM)) {
+          continue;
+        }
+        if (lambdaTag2) {
+          proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
+          antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
+          lambda = proton + antiPion;
+        }
+        if (aLambdaTag2) {
+          antiProton = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassProton);
+          pion = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassPionCharged);
+          antiLambda = antiProton + pion;
+        }
+        if (lambdaTag2 && (lambda.M() < lbinIM || lambda.M() > hbinIM)) {
+          continue;
+        }
+        if (aLambdaTag2 && (antiLambda.M() < lbinIM || antiLambda.M() > hbinIM)) {
+          continue;
+        }
         for (const auto& t3 : groupV03) {
           // if (pairStatus[t3.index()][t2.index()]) {
           // LOGF(info, "repeat match found v0 id: (%d, %d)", t3.index(), t2.index());
@@ -653,45 +699,7 @@ struct LfTaskLambdaSpinCorr {
           if (lambdaTag1 != lambdaTag3 || aLambdaTag1 != aLambdaTag3) {
             continue;
           }
-          // if (std::abs(t1.pt() - t3.pt()) > ptMix) {
-          // continue;
-          // }
-          // if (std::abs(t1.eta() - t3.eta()) > etaMix) {
-          // continue;
-          // }
-          // if (std::abs(t1.phi() - t3.phi()) > phiMix) {
-          // continue;
-          // }
-          auto mixPairSumPt = t3.pt() + t2.pt();
-          auto mixPairR = TMath::Sqrt(TMath::Power(t3.phi() - t2.phi(), 2.0) + TMath::Power(t3.eta() - t2.eta(), 2.0));
-          histos.fill(HIST("hPtDiff"), TMath::Abs(mixPairSumPt - samePairSumPt));
-          histos.fill(HIST("hRDiff"), TMath::Abs(mixPairR - samePairR));
-          if (mixingCombination == 0 && std::abs(t1.pt() - t3.pt()) > ptMix) {
-            continue;
-          }
-          if (mixingCombination == 0 && std::abs(t1.eta() - t3.eta()) > etaMix) {
-            continue;
-          }
-          if (mixingCombination == 0 && std::abs(t1.phi() - t3.phi()) > phiMix) {
-            continue;
-          }
 
-          if (mixingCombination == 1 && std::abs(mixPairSumPt - samePairSumPt) > ptMix) {
-            continue;
-          }
-          if (mixingCombination == 1 && std::abs(mixPairR - samePairR) > etaMix) {
-            continue;
-          }
-          if (lambdaTag2) {
-            proton = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassProton);
-            antiPion = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassPionCharged);
-            lambda = proton + antiPion;
-          }
-          if (aLambdaTag2) {
-            antiProton = ROOT::Math::PxPyPzMVector(t2.pxneg(), t2.pyneg(), t2.pzneg(), o2::constants::physics::MassProton);
-            pion = ROOT::Math::PxPyPzMVector(t2.pxpos(), t2.pypos(), t2.pzpos(), o2::constants::physics::MassPionCharged);
-            antiLambda = antiProton + pion;
-          }
           if (lambdaTag3) {
             proton2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassProton);
             antiPion2 = ROOT::Math::PxPyPzMVector(t3.pxneg(), t3.pyneg(), t3.pzneg(), o2::constants::physics::MassPionCharged);
@@ -702,6 +710,38 @@ struct LfTaskLambdaSpinCorr {
             pion2 = ROOT::Math::PxPyPzMVector(t3.pxpos(), t3.pypos(), t3.pzpos(), o2::constants::physics::MassPionCharged);
             antiLambda2 = antiProton2 + pion2;
           }
+          if (lambdaTag3 && (lambda2.M() < lbinIM || lambda2.M() > hbinIM)) {
+            continue;
+          }
+          if (aLambdaTag3 && (antiLambda2.M() < lbinIM || antiLambda2.M() > hbinIM)) {
+            continue;
+          }
+          double deltaPhiMix = RecoDecay::constrainAngle(t3.phi() - t2.phi(), 0.0);
+          auto mixPairR = TMath::Sqrt(TMath::Power(deltaPhiMix, 2.0) + TMath::Power(t3.eta() - t2.eta(), 2.0));
+          auto etaDiff = t1.eta() - t3.eta();
+          auto phiDiff = RecoDecay::constrainAngle(t1.phi() - t3.phi(), 0.0);
+
+          histos.fill(HIST("hPtDiff"), t1.pt() - t3.pt());
+          histos.fill(HIST("hPhiDiff"), phiDiff);
+          histos.fill(HIST("hRDiff"), etaDiff);
+
+          if (mixingCombination == 0 && std::abs(t1.pt() - t3.pt()) > ptMix) {
+            continue;
+          }
+          if (mixingCombination == 0 && t1.eta() * t3.eta() > 0 && std::abs(etaDiff) > etaMix) {
+            continue;
+          }
+          if (mixingCombination == 0 && phiDiff > phiMix) {
+            continue;
+          }
+
+          if (mixingCombination == 1 && std::abs(t1.pt() - t3.pt()) > ptMix) {
+            continue;
+          }
+          if (mixingCombination == 1 && std::abs(mixPairR - samePairR) > etaMix) {
+            continue;
+          }
+
           if (lambdaTag2 && lambdaTag3) {
             fillHistograms(1, 0, 1, 0, lambda, lambda2, proton, proton2, centrality, 2);
           } else if (aLambdaTag2 && aLambdaTag3) {
@@ -714,7 +754,6 @@ struct LfTaskLambdaSpinCorr {
             continue;
           }
           pairfound = true;
-          // pairStatus[t3.index()][t2.index()] = true;
           pairStatus[t3.index()][t2.index()] = true;
           // LOGF(info, "v0 id: (%d, %d)", t3.index(), t2.index());
           if (pairfound) {
