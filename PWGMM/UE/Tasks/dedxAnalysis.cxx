@@ -97,7 +97,7 @@ struct DedxAnalysis {
   Configurable<float> maxMassGamma{"maxMassGamma", 0.002022f,
                                    "Maximum Mass Gamma"};
   Configurable<bool> calibrationMode{"calibrationMode", false, "calibration mode"};
-  Configurable<bool> additionalTrackCuts{"additionalTrackCuts", false, "additional track cuts"};
+  Configurable<bool> additionalCuts{"additionalCuts", false, "additional cuts"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -424,7 +424,7 @@ struct DedxAnalysis {
     if (!collision.sel8())
       return;
 
-    if (additionalTrackCuts) {
+    if (additionalCuts) {
       if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
         return;
 
