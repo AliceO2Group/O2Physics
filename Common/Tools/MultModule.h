@@ -48,6 +48,7 @@ static const std::vector<std::string> tableNames{
   "FV0Mults",
   "FV0AOuterMults",
   "FT0Mults",
+  "FDDMults",
   "ZDCMults",
   "TrackletMults",
   "TPCMults",
@@ -83,10 +84,11 @@ static const std::vector<std::string> tableNames{
   "BCCentFT0As",
   "BCCentFT0Cs"};
 
-static constexpr int nTablesConst = 35;
+static constexpr int nTablesConst = 36;
 
 static const std::vector<std::string> parameterNames{"enable"};
 static const int defaultParameters[nTablesConst][nParameters]{
+  {-1},
   {-1},
   {-1},
   {-1},
@@ -674,6 +676,8 @@ class MultModule
           }
         } // end constexpr requires track selection stuff
       }
+
+      cursors.multsGlobal(mults.multGlobalTracks, mults.multNbrContribsEta08GlobalTrackWoDCA, mults.multNbrContribsEta10GlobalTrackWoDCA, mults.multNbrContribsEta05GlobalTrackWoDCA);
     }
 
     // fill track counters at this stage if requested
