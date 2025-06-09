@@ -114,7 +114,7 @@ static const std::vector<int> particleCharge{1, 2};
 static const std::vector<float> particleChargeFactor{2.3, 2.55};
 static const std::vector<std::string> betheBlochParNames{
   "p0", "p1", "p2", "p3", "p4", "resolution"};
-constexpr float betheBlochDefault[nParticles][nBetheParams]{
+constexpr float BetheBlochDefault[nParticles][nBetheParams]{
   {0.248753, 3.58634, 0.0167065, 2.29194, 0.774344,
    0.07}, // triton
   {0.0274556, 18.3054, 3.99987e-05, 3.17219, 11.1775,
@@ -229,7 +229,7 @@ struct TrHeAnalysis {
     Configurable<float> nsigmaTPCTr{"nsigmaTPCTr", 5.f, "Value of the Nsigma TPC cut for tritons"};
     Configurable<float> nsigmaTPCHe{"nsigmaTPCHe", 5.f, "Value of the Nsigma TPC cut for helium-3"};
   } nsigmaTPCvar;
-  Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams", {BetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
 
   void init(o2::framework::InitContext&)
   {
