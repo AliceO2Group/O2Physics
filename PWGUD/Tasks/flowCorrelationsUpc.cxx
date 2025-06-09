@@ -14,6 +14,7 @@
 /// \author Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
 /// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 
+#include"TRandom3.h"
 #include <vector>
 
 #include "Framework/runDataProcessing.h"
