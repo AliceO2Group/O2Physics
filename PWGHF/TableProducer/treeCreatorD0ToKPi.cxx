@@ -242,19 +242,18 @@ struct HfTreeCreatorD0ToKPi {
   using SelectedCandidatesMcKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= -1 || aod::hf_sel_candidate_d0::isSelD0bar >= -1;
-  Filter filterMcGenMatching = (nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
+  Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
+  Filter filterMcGenMatching = (nabs(aod::hf_cand_2prong::flagMcMatchGen) == aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
 
-  // Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0;
-  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == aod::hf_cand_2prong::DecayType::D0ToPiK || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != aod::hf_cand_2prong::DecayType::D0ToPiK;
+  Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == aod::hf_cand_2prong::DecayType::D0ToPiK || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != aod::hf_cand_2prong::DecayType::D0ToPiK;
 
-  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcMl> reconstructedCandBkgMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKfMl> reconstructedCandSigKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKfMl> reconstructedCandBkgKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == aod::hf_cand_2prong::DecayType::D0ToPiK || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcMl> reconstructedCandBkgMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != aod::hf_cand_2prong::DecayType::D0ToPiK;
+  Partition<SelectedCandidatesMcKfMl> reconstructedCandSigKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == aod::hf_cand_2prong::DecayType::D0ToPiK || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcKfMl> reconstructedCandBkgKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != aod::hf_cand_2prong::DecayType::D0ToPiK;
 
   void init(InitContext const&)
   {
@@ -514,9 +513,9 @@ struct HfTreeCreatorD0ToKPi {
     LOG(info) << "Processing " << candidates.size() << " candidates";
     for (const auto& candidate : candidates) {
       if constexpr (onlyBkg) {
-        // if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        //   continue;
-        // }
+        if ( (std::abs(candidate.flagMcMatchRec() == aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0)) ) {
+          continue;
+        }
         if (downSampleBkgFactor < 1.) {
           float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
           if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
@@ -525,9 +524,9 @@ struct HfTreeCreatorD0ToKPi {
         }
       }
       if constexpr (onlySig) {
-        // if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        //   continue;
-        // }
+        if ( !(std::abs(candidate.flagMcMatchRec()) == aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0)) ) {
+          continue;
+        }
       }
       double yD = hfHelper.yD0(candidate);
       double eD = hfHelper.eD0(candidate);
@@ -543,11 +542,9 @@ struct HfTreeCreatorD0ToKPi {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       if (candidate.isSelD0()) {
-        LOG(info) << "Filling D0 candidate with mass: " << massD0 << ", pt: " << candidate.pt() << ", y: " << yD;
         fillTable<applyMl>(candidate, 0, massD0, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
       if (candidate.isSelD0bar()) {
-        LOG(info) << "Filling D0 candidate with mass: " << massD0 << ", pt: " << candidate.pt() << ", y: " << yD;
         fillTable<applyMl>(candidate, 1, massD0bar, topolChi2PerNdf, ctD, yD, eD, candidate.flagMcMatchRec(), candidate.flagMcDecayChanRec(), candidate.originMcRec());
       }
     }
@@ -555,7 +552,7 @@ struct HfTreeCreatorD0ToKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
-      // if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if ((nabs(aod::hf_cand_2prong::flagMcMatchGen) == aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0))) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
           particle.pt(),
@@ -566,7 +563,7 @@ struct HfTreeCreatorD0ToKPi {
           particle.flagMcDecayChanGen(),
           particle.originMcGen(),
           particle.globalIndex());
-      // }
+      }
     }
   }
 
@@ -621,10 +618,6 @@ struct HfTreeCreatorD0ToKPi {
                                  aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
-    LOG(info) << "Processing MC with DCAFitterN for all candidates";
-    LOG(info) << "Number of candidates: " << candidates.size();
-    LOG(info) << "Number of MC particles: " << mcParticles.size();
-    LOG(info) << "Number of collisions: " << collisions.size();
     processMc<aod::hf_cand::VertexerType::DCAFitter, false, false, false>(collisions, mcCollisions, candidates, mcParticles, tracks, bcs);
   }
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
