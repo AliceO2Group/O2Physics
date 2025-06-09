@@ -141,7 +141,6 @@ class Particle
   float chargeFactor;
   std::vector<float> betheParams;
   static constexpr int NNumBetheParams = 5;
-  static constexpr int NNumBetheParams = 5;
 
   Particle(const std::string name_, int pdgCode_, float mass_, int charge_,
            LabeledArray<float> bethe, float chargeFactor_)
@@ -702,7 +701,7 @@ struct TrHeAnalysis {
       const float rigidity = getRigidity(track);
       float tofStartTime = track.evTimeForTrack();
       float tofTime = track.tofSignal();
-      constexpr float CInCmPS = 2.99792458e-2f;
+      constexpr float CInCmPs = 2.99792458e-2f;
       float length = track.length();
       float time = tofTime - tofStartTime;
       if (time > 0.f && length > 0.f) {
