@@ -157,12 +157,12 @@ struct CreateResolutionMap {
     Configurable<float> cfg_mid_rabs{"cfg_mid_rabs", 26.5, "middle R at absorber end for pDCA cut"};
     Configurable<float> cfg_max_pdca_forLargeR{"cfg_max_pdca_forLargeR", 324.f, "max. pDCA for large R at absorber end"};
     Configurable<float> cfg_max_pdca_forSmallR{"cfg_max_pdca_forSmallR", 594.f, "max. pDCA for small R at absorber end"};
-    Configurable<int> cfg_min_nclusters_MFT{"cfg_min_nclusters_MFT", 5, "min nclusters MFT"};
-    Configurable<int> cfg_min_nclusters_MCH{"min_min_nclusters_MCH", 5, "min nclusters MCH"};
     Configurable<float> cfg_max_reldpt{"cfg_max_reldpt", 1e+10f, "max. relative dpt between MFT-MCH-MID and MCH-MID"};
     Configurable<float> cfg_max_deta{"cfg_max_deta", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
     Configurable<float> cfg_max_dphi{"cfg_max_dphi", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
     Configurable<bool> refitGlobalMuon{"refitGlobalMuon", true, "flag to refit global muon"};
+    Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to require MFT hit map"};
+    Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{4}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   } muoncuts;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -583,6 +583,15 @@ struct CreateResolutionMap {
         return;
       }
 
+      if (muoncuts.requireMFTHitMap) {
+        std::vector<bool> hasMFTs{hasMFT<0, 1>(mfttrack), hasMFT<2, 3>(mfttrack), hasMFT<4, 5>(mfttrack), hasMFT<6, 7>(mfttrack), hasMFT<8, 9>(mfttrack)};
+        for (int i = 0; i < static_cast<int>(muoncuts.requiredMFTDisks->size()); i++) {
+          if (!hasMFTs[muoncuts.requiredMFTDisks->at(i)]) {
+            return;
+          }
+        }
+      }
+
     } else if (muon.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
       o2::dataformats::GlobalFwdTrack propmuonAtRabs = propagateMuon(muon, collision, propagationPoint::kToRabs); // this is necessary only for MuonStandaloneTrack
       float xAbs = propmuonAtRabs.getX();
@@ -678,6 +687,20 @@ struct CreateResolutionMap {
     }
 
     return true;
+  }
+
+  template <int begin = 0, int end = 9, typename T>
+  bool hasMFT(T const& track)
+  {
+    // logical-OR
+    uint64_t mftClusterSizesAndTrackFlags = track.mftClusterSizesAndTrackFlags();
+    uint16_t clmap = 0;
+    for (unsigned int layer = begin; layer <= end; layer++) {
+      if ((mftClusterSizesAndTrackFlags >> (layer * 6)) & 0x3f) {
+        clmap |= (1 << layer);
+      }
+    }
+    return (clmap > 0);
   }
 
   SliceCache cache;
