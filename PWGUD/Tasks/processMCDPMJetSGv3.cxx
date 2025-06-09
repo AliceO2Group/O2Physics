@@ -22,8 +22,8 @@
 #include "PWGUD/DataModel/UDTables.h"
 // #include "TLorentzVector.h"
 // #include "TVector3.h"
-#include "Math/LorentzVector.h"           // ROOT::Math::LorentzVector
-#include "Math/PxPyPzM4D.h"               // ROOT::Math::PxPyPzM4D
+#include "Math/LorentzVector.h" // ROOT::Math::LorentzVector
+#include "Math/PxPyPzM4D.h"     // ROOT::Math::PxPyPzM4D
 #include "TMath.h"
 
 using namespace o2;
@@ -55,9 +55,6 @@ struct ProcessMCDPMJetSGv3 {
   // using TCs = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksPID, aod::UDMcTrackLabels>;
   using TC = TCs::iterator;
   using LorentzVectorM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
-
-
-
 
   double massPion = 0.;
   double massKaon = 0.;
@@ -144,6 +141,7 @@ struct ProcessMCDPMJetSGv3 {
     histos.add("allreconstructedPFProtonTOF", "allreconstructedPFProtonTOF", kTH1F, {axisPt});
 
     histos.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{100, -0.5f, 99.5f}});
+    histos.add("numberOfRecoCollisions2", "numberOfRecoCollisions2", kTH1F, {{100, -0.5f, 99.5f}});
     histos.add("numberOfTracksMC", "numberOfTracksMC", kTH1F, {{100, -0.5f, 99.5f}});
     histos.add("numberOfTracksReco", "numberOfTracksReco", kTH1F, {{100, -0.5f, 99.5f}});
 
@@ -156,7 +154,7 @@ struct ProcessMCDPMJetSGv3 {
   //-----------------------------------------------------------------------------------------------------------------------
   void processSim(aod::UDMcCollision const& mcCollision, aod::UDMcParticles const& mcParticles)
   {
-    histos.fill(HIST("eventCounter"), 0.5);
+    // histos.fill(HIST("eventCounter"), 0.5);
 
     // auto massPion = 0.;
     // TParticlePDG pionPDG = fPDG->GetParticle(codePion);
@@ -168,6 +166,7 @@ struct ProcessMCDPMJetSGv3 {
     // TParticlePDG protonPDG = fPDG->GetParticle(codeProton);
     // massProton = protonPDG.Mass();
     histos.fill(HIST("numberOfTracksMC"), mcParticles.size());
+    histos.fill(HIST("eventCounter"), mcCollision.size());
     // LOGF(info, "New event! mcParticles.size() = %d", mcParticles.size());
 
     int counterMC = 0;
@@ -178,11 +177,10 @@ struct ProcessMCDPMJetSGv3 {
       counterMC += 1;
       // if(mcParticle.isPhysicalPrimary()) counterMC += 1;
       LorentzVectorM protoMC(
-          mcParticle.px(),
-          mcParticle.py(),
-          mcParticle.pz(),
-          massPion
-      );
+        mcParticle.px(),
+        mcParticle.py(),
+        mcParticle.pz(),
+        massPion);
       double etaMax = 0.8;
       double ptMin = 0.1;
       if (std::fabs(protoMC.Eta()) < etaMax && protoMC.Pt() > ptMin) {
@@ -234,7 +232,9 @@ struct ProcessMCDPMJetSGv3 {
                    // aod::UDMcCollisions const& /*mccollisions*/,
                    aod::UDMcParticles const& mcParticles)
   {
-    histos.fill(HIST("numberOfRecoCollisions"), 2.); // number of times coll was reco-ed
+    histos.fill(HIST("numberOfRecoCollisions"), 88.);              // number of times coll was reco-ed
+    histos.fill(HIST("numberOfRecoCollisions"), collision.size()); // number of times coll was reco-ed
+    histos.fill(HIST("numberOfRecoCollisions2"), mcParticles.size());
     Partition<TCs> pvContributors = aod::udtrack::isPVContributor == true;
     pvContributors.bindTable(tracks);
 
@@ -249,7 +249,7 @@ struct ProcessMCDPMJetSGv3 {
     // massProton = protonPDG.Mass();
 
     histos.fill(HIST("numberOfTracksReco"), tracks.size());
-    double etaMax = 0.8;
+    // double etaMax = 0.8;
     double yMax = 0.8;
     double sigmaMax = 3.;
     double ptMin = 0.1;
@@ -270,13 +270,13 @@ struct ProcessMCDPMJetSGv3 {
         if (track.pt() < ptMin) {
           continue;
         }
-        // if (!(std::abs(track.dcaZ()) < 2.)) {
-        //   continue;
-        // }
+        if (!(std::abs(track.dcaZ()) < 2.)) {
+          continue;
+        }
         double dcaLimit = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
-        // if (!(std::abs(track.dcaXY()) < dcaLimit)) {
-        //   continue;
-        // }
+        if (!(std::abs(track.dcaXY()) < dcaLimit)) {
+          continue;
+        }
 
         double momentum = std::sqrt(track.px() * track.px() + track.py() * track.py() + track.pz() * track.pz());
         double dEdx = track.tpcSignal();
