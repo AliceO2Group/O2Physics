@@ -858,8 +858,8 @@ struct LfTaskLambdaSpinCorr {
         continue;
       }
 
-      auto postrack1 = v0.template posTrackExtra_as<dauTracks>();
-      auto negtrack1 = v0.template negTrackExtra_as<dauTracks>();
+      // auto postrack1 = v0.template posTrackExtra_as<dauTracks>();
+      // auto negtrack1 = v0.template negTrackExtra_as<dauTracks>();
 
       // 2nd loop for combination of lambda lambda
       for (const auto& v02 : V0s) {
@@ -891,8 +891,8 @@ struct LfTaskLambdaSpinCorr {
           continue;
         }
 
-        auto postrack2 = v02.template posTrackExtra_as<dauTracks>();
-        auto negtrack2 = v02.template negTrackExtra_as<dauTracks>();
+        // auto postrack2 = v02.template posTrackExtra_as<dauTracks>();
+        // auto negtrack2 = v02.template negTrackExtra_as<dauTracks>();
         if (v0.posTrackExtraId() == v02.posTrackExtraId() || v0.negTrackExtraId() == v02.negTrackExtraId()) {
           continue;
         }
@@ -999,10 +999,10 @@ struct LfTaskLambdaSpinCorr {
         if (lambdaTag2 && aLambdaTag2) {
           continue;
         }
-        auto postrack1 = t1.template posTrackExtra_as<dauTracks>();
-        auto negtrack1 = t1.template negTrackExtra_as<dauTracks>();
-        auto postrack2 = t2.template posTrackExtra_as<dauTracks>();
-        auto negtrack2 = t2.template negTrackExtra_as<dauTracks>();
+        // auto postrack1 = t1.template posTrackExtra_as<dauTracks>();
+        // auto negtrack1 = t1.template negTrackExtra_as<dauTracks>();
+        // auto postrack2 = t2.template posTrackExtra_as<dauTracks>();
+        // auto negtrack2 = t2.template negTrackExtra_as<dauTracks>();
         if (t1.posTrackExtraId() == t2.posTrackExtraId() || t1.negTrackExtraId() == t2.negTrackExtraId()) {
           continue;
         }
