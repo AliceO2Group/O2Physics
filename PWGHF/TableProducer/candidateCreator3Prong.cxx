@@ -973,7 +973,7 @@ struct HfCandidateCreator3ProngExpressions {
                 if (finalState.size() == 4) { // Check if the final state has 4 particles
                   std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
                   if (sign < 0) {
-                    for (const auto& part : finalStateParts3ProngAll) {
+                    for (auto& part : finalStateParts3ProngAll) {
                       if (part == kPi0) {
                         part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                       }
@@ -985,7 +985,7 @@ struct HfCandidateCreator3ProngExpressions {
                 } else if (finalState.size() == 5) { // Check if the final state has 5 particles
                   std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
                   if (sign < 0) {
-                    for (const auto& part : finalStateParts3ProngAll) {
+                    for (auto& part : finalStateParts3ProngAll) {
                       if (part == kPi0) {
                         part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                       }

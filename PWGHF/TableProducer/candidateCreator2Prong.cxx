@@ -795,7 +795,7 @@ struct HfCandidateCreator2ProngExpressions {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
               std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
               if (motherParticle.pdgCode() < 0) {
-                for (const auto& part : finalStateParts2ProngAll) {
+                for (auto& part : finalStateParts2ProngAll) {
                   if (part == kPi0) {
                     part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                   }
