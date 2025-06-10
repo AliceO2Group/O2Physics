@@ -3587,7 +3587,7 @@ struct AnalysisDileptonTrackTrack {
     }
 
     if (!context.mOptions.get<bool>("processDummy")) {
-      DefineHistograms(fHistMan, Form("Dileptons_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram.value.data());
+      DefineHistograms(fHistMan, Form("Pairs_%s", configDileptonCutNamesStr.Data()), fConfigAddDileptonHistogram.value.data());
       if (!configQuadruletCutNamesStr.IsNull()) {
         for (std::size_t icut = 0; icut < fQuadrupletCutNames.size(); ++icut) {
           if (fIsSameTrackCut) {
@@ -3663,7 +3663,7 @@ struct AnalysisDileptonTrackTrack {
       if (!fDileptonCut.IsSelected(fValuesQuadruplet))
         continue;
 
-      fHistMan->FillHistClass(Form("Dileptons_%s", fDileptonCut.GetName()), fValuesQuadruplet);
+      fHistMan->FillHistClass(Form("Pairs_%s", fDileptonCut.GetName()), fValuesQuadruplet);
 
       // loop over hadrons pairs
       for (auto& [a1, a2] : o2::soa::combinations(assocs, assocs)) {
