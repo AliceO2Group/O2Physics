@@ -618,8 +618,9 @@ struct HfTaskFlowCharmHadrons {
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
           // std::cout<<candidate.pxProng0()<<std::endl;
           getQvecXic0Tracks(candidate, tracksQx, tracksQy, ampl);
-        } else
+        } else {
           getQvecDtracks<channel>(candidate, tracksQx, tracksQy, ampl);
+        }
         for (auto iTrack{0u}; iTrack < tracksQx.size(); ++iTrack) {
           xQVec -= tracksQx[iTrack];
           yQVec -= tracksQy[iTrack];
