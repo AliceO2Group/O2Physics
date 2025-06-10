@@ -313,8 +313,8 @@ struct HfTaskDstarToD0Pi {
         continue;
       }
       auto collision = candDstarMcRec.template collision_as<CollisionsWCentMcLabel>();
-      auto centrality = collision.centFT0M();                                                               // 0-100%
-      if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
+      auto centrality = collision.centFT0M();                                                                     // 0-100%
+      if (std::abs(candDstarMcRec.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // if MC matching is successful at Reconstruction Level
         // LOGF(info, "MC Rec Dstar loop MC Matched");
         // get MC Mother particle
         auto prong0 = candDstarMcRec.template prong0_as<aod::TracksWMc>();
@@ -392,7 +392,7 @@ struct HfTaskDstarToD0Pi {
   {
     // MC Gen level
     for (auto const& mcParticle : rowsMcPartilces) {
-      if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
+      if (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) { // MC Matching is successful at Generator Level
         auto ptGen = mcParticle.pt();
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {

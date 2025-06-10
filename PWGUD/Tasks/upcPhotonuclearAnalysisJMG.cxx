@@ -567,7 +567,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(sameGapSideA, multiplicity) == false) {
           return;
         }
-        LOGF(info, "Filling sameGapSideA events");
+        // LOGF(debug, "Filling sameGapSideA events");
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedTracks);
         fillCorrelationsUD(sameGapSideA, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
@@ -581,7 +581,7 @@ struct upcPhotonuclearAnalysisJMG {
           return;
         }
         histos.fill(HIST("eventcount"), -1);
-        LOGF(info, "Filling sameGapSideC events");
+        // LOGF(info, "Filling sameGapSideC events");
         fillCorrelationsUD(sameGapSideC, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
         break;
       default:

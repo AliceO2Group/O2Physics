@@ -563,7 +563,7 @@ struct HfFemtoDreamProducer {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
     for (const auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
+      if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         rowCandCharmHadGen(
           particle.mcCollisionId(),
           particle.flagMcMatchGen(),
