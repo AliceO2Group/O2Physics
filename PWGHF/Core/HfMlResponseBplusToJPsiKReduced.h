@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfMlResponseBplusToJPsiKReduced.h
+/// \file HfMlResponseBplusToJpsiKReduced.h
 /// \brief Class to compute the ML response for B± → J/Psi K± analysis selections in the reduced format
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università degli Studi and INFN Torino
 
@@ -24,17 +24,16 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_BPLUS(FEATURE)                                               \
-  {                                                                           \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::FEATURE) \
-  }
+#define FILL_MAP_BPLUS(FEATURE) \
+  {                             \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesBplusToJpsiKReduced::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)            \
-  case static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::FEATURE): { \
+  case static_cast<uint8_t>(InputFeaturesBplusToJpsiKReduced::FEATURE): { \
     inputFeatures.emplace_back(OBJECT.GETTER());                          \
     break;                                                                \
   }
@@ -44,7 +43,7 @@
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the GETTER function taking OBJECT in argument
 #define CHECK_AND_FILL_VEC_BPLUS_FUNC(OBJECT, FEATURE, GETTER)            \
-  case static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::FEATURE): { \
+  case static_cast<uint8_t>(InputFeaturesBplusToJpsiKReduced::FEATURE): { \
     inputFeatures.emplace_back(GETTER(OBJECT));                           \
     break;                                                                \
   }
@@ -52,7 +51,7 @@
 // Specific case of CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_BPLUS(GETTER)                                 \
-  case static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::GETTER): { \
+  case static_cast<uint8_t>(InputFeaturesBplusToJpsiKReduced::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());                      \
     break;                                                               \
   }
@@ -60,7 +59,7 @@
 // Specific case of CHECK_AND_FILL_VEC_BPLUS_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate, FEATURE = GETTER, and args are needed
 #define CHECK_AND_FILL_VEC_BPLUS_WITH_ARGS(GETTER, ARGS...)              \
-  case static_cast<uint8_t>(InputFeaturesBplusToJPsiKReduced::GETTER): { \
+  case static_cast<uint8_t>(InputFeaturesBplusToJpsiKReduced::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER(ARGS));                  \
     break;                                                               \
   }
@@ -68,14 +67,14 @@
 namespace o2::analysis
 {
 
-enum class InputFeaturesBplusToJPsiKReduced : uint8_t {
+enum class InputFeaturesBplusToJpsiKReduced : uint8_t {
   ptProng0 = 0,
   ptProng1,
   impactParameter0,
   impactParameter1,
   impactParameter2,
   impactParameterProduct,
-  impactParameterProductJPsi,
+  impactParameterProductJpsi,
   chi2PCA,
   decayLength,
   decayLengthXY,
@@ -91,13 +90,13 @@ enum class InputFeaturesBplusToJPsiKReduced : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
+class HfMlResponseBplusToJpsiKReduced : public HfMlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  HfMlResponseBplusToJPsiKReduced() = default;
+  HfMlResponseBplusToJpsiKReduced() = default;
   /// Default destructor
-  virtual ~HfMlResponseBplusToJPsiKReduced() = default;
+  virtual ~HfMlResponseBplusToJpsiKReduced() = default;
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the B+ candidate
@@ -117,7 +116,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_BPLUS(impactParameter1);
         CHECK_AND_FILL_VEC_BPLUS(impactParameter2);
         CHECK_AND_FILL_VEC_BPLUS(impactParameterProduct);
-        CHECK_AND_FILL_VEC_BPLUS(impactParameterProductJPsi);
+        CHECK_AND_FILL_VEC_BPLUS(impactParameterProductJpsi);
         CHECK_AND_FILL_VEC_BPLUS(chi2PCA);
         CHECK_AND_FILL_VEC_BPLUS(decayLength);
         CHECK_AND_FILL_VEC_BPLUS(decayLengthXY);
@@ -150,7 +149,7 @@ class HfMlResponseBplusToJPsiKReduced : public HfMlResponse<TypeOutputScore>
       FILL_MAP_BPLUS(impactParameter1),
       FILL_MAP_BPLUS(impactParameter2),
       FILL_MAP_BPLUS(impactParameterProduct),
-      FILL_MAP_BPLUS(impactParameterProductJPsi),
+      FILL_MAP_BPLUS(impactParameterProductJpsi),
       FILL_MAP_BPLUS(chi2PCA),
       FILL_MAP_BPLUS(decayLength),
       FILL_MAP_BPLUS(decayLengthXY),

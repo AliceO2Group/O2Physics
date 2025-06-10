@@ -878,7 +878,7 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);                      // pa
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                        // debug flag for mis-association reconstruction level
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Impact parameter product for B+ -> J/Psi K
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float impParK) -> float { return impParK * RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{px0, py0, pz0}, std::array{px1, py1, pz1})); });
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJPsi, impactParameterProductJPsi, // J/Psi impact parameter for B+ -> J/Psi K
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for B+ -> J/Psi K
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 
 enum DecayType { BplusToD0Pi = 0 };
@@ -889,7 +889,7 @@ enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
                              OtherDecay,
                              NDecayTypeMc };
 
-enum class DecayTypeBToJPsiMc : uint8_t { BplusToJPsiKToMuMuK = 0,
+enum class DecayTypeBToJpsiMc : uint8_t { BplusToJpsiKToMuMuK = 0,
                                           PartlyRecoDecay,
                                           OtherDecay,
                                           NDecayTypeMc };
@@ -1131,7 +1131,7 @@ DECLARE_SOA_TABLE(HfCandBpJPBase, "AOD", "HFCANDBPJPBASE",
                   hf_cand_3prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_cand_3prong::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   hf_cand_bplus::ImpactParameterProduct<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex, hf_cand::ImpactParameter2>,
-                  hf_cand_bplus::ImpactParameterProductJPsi<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_bplus::ImpactParameterProductJpsi<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_3prong::Px, hf_cand_3prong::Py>,
                   hf_cand::Pt2<hf_cand_3prong::Px, hf_cand_3prong::Py>,
@@ -1157,7 +1157,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBpJPExt, HfCandBpJPBase, "HFCANDBPJPEXT",
 DECLARE_SOA_TABLE(HfCandBpJPDaus, "AOD", "HFCANDBPJPDAUS",
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id);
 
-using HfCandBplusToJPsi = soa::Join<HfCandBpJPExt, HfCandBpJPDaus>;
+using HfCandBplusToJpsi = soa::Join<HfCandBpJPExt, HfCandBpJPDaus>;
 
 namespace hf_cand_casc_lf
 {
@@ -2143,12 +2143,12 @@ DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);                      // pa
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);                      // particle origin, generator level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                        // debug flag for mis-association reconstruction level
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProduct, impactParameterProduct, // Impact parameter product for Bs -> J/Psi phi
-                           [](float pxJPsiDauPos, float pyJPsiDauPos, float pzJPsiDauPos, float pxJPsiDauNeg, float pyJPsiDauNeg, float pzJPsiDauNeg, float pxLfTrack0, float pyLfTrack0, float pzLfTrack0, float pxLfTrack1, float pyLfTrack1, float pzLfTrack1, float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float {
-                             float impParJPsi = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxJPsiDauPos, pyJPsiDauPos, pzJPsiDauPos}, std::array{pxJPsiDauNeg, pyJPsiDauNeg, pzJPsiDauNeg}));
+                           [](float pxJpsiDauPos, float pyJpsiDauPos, float pzJpsiDauPos, float pxJpsiDauNeg, float pyJpsiDauNeg, float pzJpsiDauNeg, float pxLfTrack0, float pyLfTrack0, float pzLfTrack0, float pxLfTrack1, float pyLfTrack1, float pzLfTrack1, float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS) -> float {
+                             float impParJpsi = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxJpsiDauPos, pyJpsiDauPos, pzJpsiDauPos}, std::array{pxJpsiDauNeg, pyJpsiDauNeg, pzJpsiDauNeg}));
                              float impParPhi = RecoDecay::impParXY(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, RecoDecay::pVec(std::array{pxLfTrack0, pyLfTrack0, pzLfTrack0}, std::array{pxLfTrack1, pyLfTrack1, pzLfTrack1}));
-                             return impParJPsi * impParPhi;
+                             return impParJpsi * impParPhi;
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJPsi, impactParameterProductJPsi, // J/Psi impact parameter for Bs -> J/Psi phi
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductJpsi, impactParameterProductJpsi, // J/Psi impact parameter for Bs -> J/Psi phi
                            [](float dcaDauPos, float dcaDauNeg) -> float { return dcaDauPos * dcaDauNeg; });
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterProductPhi, impactParameterProductPhi, // J/Psi impact parameter for Bs -> J/Psi phi
                            [](float dcaLfTrack0, float dcaLfTrack1) -> float { return dcaLfTrack0 * dcaLfTrack1; });
@@ -2166,7 +2166,7 @@ enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓
                              OtherDecay,
                              NDecayTypeMc }; // counter of differentiated MC decay types
 
-enum class DecayTypeBToJPsiMc : uint8_t { BsToJPsiPhiToMuMuKK = 0, // Bs(bar) → J/Psi Phi → (µ+ µ-) (K- K+)
+enum class DecayTypeBToJpsiMc : uint8_t { BsToJpsiPhiToMuMuKK = 0, // Bs(bar) → J/Psi Phi → (µ+ µ-) (K- K+)
                                           PartlyRecoDecay,         // 4 final state particles have another common b-hadron ancestor
                                           OtherDecay,
                                           NDecayTypeMc }; // counter of differentiated MC decay types
@@ -2270,7 +2270,7 @@ DECLARE_SOA_TABLE(HfCandBsJPBase, "AOD", "HFCANDBSJPBASE",
                   hf_cand_4prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3>,
                   hf_cand_4prong::ImpactParameterProngSqSum<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2, hf_cand::ImpactParameter3>,
                   hf_cand_bs::ImpactParameterProduct<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng3, hf_cand::PyProng3, hf_cand::PzProng3, collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex>,
-                  hf_cand_bs::ImpactParameterProductJPsi<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
+                  hf_cand_bs::ImpactParameterProductJpsi<hf_cand::ImpactParameter0, hf_cand::ImpactParameter1>,
                   hf_cand_bs::ImpactParameterProductPhi<hf_cand::ImpactParameter2, hf_cand::ImpactParameter3>,
                   /* dynamic columns that use candidate momentum components */
                   hf_cand::Pt<hf_cand_4prong::Px, hf_cand_4prong::Py>,
@@ -2298,7 +2298,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBsJPExt, HfCandBsJPBase, "HFCANDBSJPEXT",
 DECLARE_SOA_TABLE(HfCandBsJPDaus, "AOD", "HFCANDBSJPDAUS",
                   hf_cand_bs::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_track_index::Prong3Id);
 
-using HfCandBsToJPsi = soa::Join<HfCandBsJPExt, HfCandBsJPDaus>;
+using HfCandBsToJpsi = soa::Join<HfCandBsJPExt, HfCandBsJPDaus>;
 
 // specific Σc0,++ candidate properties
 namespace hf_cand_sigmac
