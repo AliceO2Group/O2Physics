@@ -156,7 +156,7 @@ class DimuonCut : public TNamed
     if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
       return false;
     }
-    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTHitMap)) {
+    if (mApplyMFTHitMap && track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTHitMap)) {
       return false;
     }
     if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kDPtDEtaDPhiwrtMCHMID)) {
@@ -243,7 +243,7 @@ class DimuonCut : public TNamed
   void SetDCAxy(float min, float max); // in cm
   void SetRabs(float min, float max);  // in cm
   void SetMaxPDCARabsDep(std::function<float(float)> RabsDepCut);
-  void SetMFTHitMap(std::vector<int> hitMap);
+  void SetMFTHitMap(bool flag, std::vector<int> hitMap);
   void SetMaxdPtdEtadPhiwrtMCHMID(float reldPtMax, float dEtaMax, float dPhiMax); // this is relevant for global muons
 
  private:
@@ -273,6 +273,7 @@ class DimuonCut : public TNamed
   float mMinRabs{17.6}, mMaxRabs{89.5};
   float mMinDcaXY{0.0f}, mMaxDcaXY{1e10f};
   float mMaxReldPtwrtMCHMID{1e10f}, mMaxdEtawrtMCHMID{1e10f}, mMaxdPhiwrtMCHMID{1e10f};
+  bool mApplyMFTHitMap{false};
   std::vector<int> mRequiredMFTDisks{};
 
   ClassDef(DimuonCut, 1);
