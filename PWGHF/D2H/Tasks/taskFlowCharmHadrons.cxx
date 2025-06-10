@@ -14,6 +14,7 @@
 ///
 /// \author S. Politanò, INFN Torino, Italy
 /// \author Wu Chuntai, CUG, China
+/// \author Ran Tu, Fudan University, China
 
 #include <string>
 #include <vector>
