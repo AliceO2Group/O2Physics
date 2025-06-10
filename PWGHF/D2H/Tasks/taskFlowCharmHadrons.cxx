@@ -663,7 +663,7 @@ struct HfTaskFlowCharmHadrons {
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", true);
 
   // Dplus with rectangular cuts
   void processDplus(CollsWithQvecs::iterator const& collision,
@@ -726,7 +726,7 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<DecayChannel::XicToPKPi>(collision, candsXicToPKPiWMl);
     runFlowAnalysis<DecayChannel::XicToPiKP>(collision, candsXicToPiKPWMl);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXicMl, "Process Xic candidates with ML", true);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processXicMl, "Process Xic candidates with ML", false);
 
   // Xic with rectangular cuts
   void processXic(CollsWithQvecs::iterator const& collision,
