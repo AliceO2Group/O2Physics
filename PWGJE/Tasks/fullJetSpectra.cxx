@@ -1395,20 +1395,12 @@ struct FullJetSpectra {
   void processDataTracks(soa::Filtered<EMCCollisionsData>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, soa::Filtered<aod::JetClusters> const& clusters)
   {
     bool eventAccepted = false;
-    double weight = 1.0;
-    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
 
     registry.fill(HIST("hCollisionsUnweighted"), 0.5); // allDetColl
     if (std::fabs(collision.posZ()) > vertexZCut) {
       return;
     }
     registry.fill(HIST("hCollisionsUnweighted"), 1.5); // DetCollWithVertexZ
-
-    // for (auto const& track : tracks) {
-    if (pTHat < pTHatAbsoluteMin) { // Track outlier rejection: should this be for every track iteration or for every collision?
-      return;
-    }
-    // }
 
     if (doMBGapTrigger && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
       registry.fill(HIST("hCollisionsUnweighted"), 2.5); // MBRejectedDetEvents
