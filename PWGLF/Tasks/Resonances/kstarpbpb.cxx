@@ -101,6 +101,7 @@ struct kstarpbpb {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
+  Configurable<bool> usepolar{"usepolar", true, "flag to fill type of SA"};
   Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<bool> isTOFOnly{"isTOFOnly", false, "use TOF only PID"};
@@ -159,8 +160,8 @@ struct kstarpbpb {
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
 
   SliceCache cache;
-  Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
-  Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
+  // Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
+  // Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -183,8 +184,8 @@ struct kstarpbpb {
     AxisSpec resAxis = {6000, -30, 30, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
+    histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     if (!fillSA) {
-      histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
       if (same) {
         histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisPt, configThnAxisV2, configThnAxisCentrality});
       }
@@ -663,15 +664,25 @@ struct kstarpbpb {
           threeVecDauCM = fourVecDauCM.Vect();
           threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
           eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
 
-          if (track1Sign * track2Sign < 0)
-            histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
-          else if (track1Sign * track2Sign > 0)
-            histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          if (track1Sign * track2Sign < 0) {
+            if (usepolar) {
+              histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+            } else {
+              histos.fill(HIST("hSparseSAvsrapsameunlike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+            }
+          } else if (track1Sign * track2Sign > 0) {
+            if (usepolar) {
+              histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+            } else {
+              histos.fill(HIST("hSparseSAvsrapsamelike"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+            }
+          }
         }
-
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
@@ -707,8 +718,12 @@ struct kstarpbpb {
                 threeVecDauCMXYrot = ROOT::Math::XYZVector(threeVecDauCMrot.X(), threeVecDauCMrot.Y(), 0.);
                 auto cosPhistarminuspsirot = GetPhiInRange(fourVecDauCMrot.Phi() - psiFT0C);
                 auto SArot = TMath::Cos(2.0 * cosPhistarminuspsirot);
-
-                histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), SArot, kstarrot.Rapidity(), centrality);
+                auto cosThetaStarrot = eventplaneVecNorm.Dot(threeVecDauCMrot) / std::sqrt(threeVecDauCMrot.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+                if (usepolar) {
+                  histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), cosThetaStarrot, kstarrot.Rapidity(), centrality);
+                } else {
+                  histos.fill(HIST("hSparseSAvsraprot"), kstarrot.M(), kstarrot.Pt(), SArot, kstarrot.Rapidity(), centrality);
+                }
               }
             }
           }
@@ -1203,10 +1218,15 @@ struct kstarpbpb {
           threeVecDauCM = fourVecDauCM.Vect();
           threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
           eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+          eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
           auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
           auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-
-          histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
+          if (usepolar) {
+            histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), cosThetaStar, KstarMother.Rapidity(), centrality);
+          } else {
+            histos.fill(HIST("hSparseSAvsrapmix"), KstarMother.M(), KstarMother.Pt(), SA, KstarMother.Rapidity(), centrality);
+          }
         }
       }
     }
