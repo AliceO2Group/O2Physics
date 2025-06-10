@@ -5176,10 +5176,8 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     } else {
       Vec3D secondaryVertex;
       std::array<float, 6> covMatrixPCA;
-      if (procCodeDileptonTrackTrack == 0) {
-        secondaryVertex = fgFitterFourProngBarrel.getPCACandidate();
-        covMatrixPCA = fgFitterFourProngBarrel.calcPCACovMatrixFlat();
-      }
+      secondaryVertex = fgFitterFourProngBarrel.getPCACandidate();
+      covMatrixPCA = fgFitterFourProngBarrel.calcPCACovMatrixFlat();
 
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
