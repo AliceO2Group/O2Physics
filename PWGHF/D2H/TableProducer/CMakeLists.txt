@@ -11,8 +11,8 @@
 
 # Candidate creators
 
-o2physics_add_dpl_workflow(candidate-creator-b-to-j-psi-reduced
-                    SOURCES candidateCreatorBToJPsiReduced.cxx
+o2physics_add_dpl_workflow(candidate-creator-b-to-jpsi-reduced
+                    SOURCES candidateCreatorBToJpsiReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
@@ -75,8 +75,8 @@ o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(data-creator-j-psi-had-reduced
-                    SOURCES dataCreatorJPsiHadReduced.cxx
+o2physics_add_dpl_workflow(data-creator-jpsi-had-reduced
+                    SOURCES dataCreatorJpsiHadReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 

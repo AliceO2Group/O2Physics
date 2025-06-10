@@ -25,7 +25,7 @@
 
 #include "Common/Core/RecoDecay.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponseBsToJPsiPhiReduced.h"
+#include "PWGHF/Core/HfMlResponseBsToJpsiPhiReduced.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/D2H/DataModel/ReducedDataModel.h"
