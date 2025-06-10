@@ -985,11 +985,11 @@ struct FlowEsePHe3 {
       ese_parameters::hPIDQARef2D[3]  =  histsESE.add<TH2>(Form("ESE/TrackQA/hist_nSigmaITS_pt_%s", cfgRefName.value.c_str()), ";#it{p}_{T};n#sigmaITS", HistType::kTH2F, {cfgaxispt, cfgnSigmaBinsITS});
       if (cfgOpen3DPIDPlots->get(0u)) {
         ese_parameters::hPIDQATar3D[0] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaTOFITSPt_%s", cfgTarName.value.c_str()), ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsITS, cfgaxispt});
-        ese_parameters::hPIDQARef3D[2] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaTOFITSPt_%s", cfgRefName.value.c_str()), ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsITS, cfgaxispt});
+        ese_parameters::hPIDQARef3D[0] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaTOFITSPt_%s", cfgRefName.value.c_str()), ";n_{#sigma}TOF;n_{#sigma}ITS;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsITS, cfgaxispt});
       }
       if (cfgOpen3DPIDPlots->get(1u)) {
         ese_parameters::hPIDQATar3D[1] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaITSTPCPt_%s", cfgTarName.value.c_str()), ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsITS, cfgnSigmaBinsTPC, cfgaxispt});
-        ese_parameters::hPIDQARef3D[2] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaITSTPCPt_%s", cfgRefName.value.c_str()), ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsITS, cfgnSigmaBinsTPC, cfgaxispt});
+        ese_parameters::hPIDQARef3D[1] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaITSTPCPt_%s", cfgRefName.value.c_str()), ";n_{#sigma}ITS;n_{#sigma}TPC;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsITS, cfgnSigmaBinsTPC, cfgaxispt});
       }
       if (cfgOpen3DPIDPlots->get(2u)) {
         ese_parameters::hPIDQATar3D[2] = histsESE.add<TH3>(Form("ESE/TrackQA/hist_nSigmaTOFTPCPt_%s", cfgTarName.value.c_str()), ";n_{#sigma}TOF;n_{#sigma}TPC;#it{p}_{T}", HistType::kTH3F, {cfgnSigmaBinsTOF, cfgnSigmaBinsTPC, cfgaxispt});
