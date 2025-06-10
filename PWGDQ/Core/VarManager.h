@@ -2917,7 +2917,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
       ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
       if (fgUsedVars[kCosThetaPP]) {
-        values[kCosThetaPP] = zaxis_PP.Dot(v_CM);
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
         values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
@@ -3979,6 +3979,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0) {
       // TODO: set the other variables to appropriate values and return
+      values[kVertexingChi2PCA] = -999.;
       values[kVertexingLxy] = -999.;
       values[kVertexingLxyz] = -999.;
       values[kVertexingLz] = -999.;
@@ -4012,6 +4013,11 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
+
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
+        values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
@@ -4279,9 +4285,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
       }
 
-      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
-      if (fgUsedVars[kVertexingChi2PCA])
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
         values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),

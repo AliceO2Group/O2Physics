@@ -267,6 +267,7 @@ struct alice3decayFinder {
         dmeson.mcTruth = 2; // D0bar
       }
     }
+
     return true;
   }
 
@@ -362,7 +363,9 @@ struct alice3decayFinder {
 
     if (doprocessFindDmesons) {
       histos.add("h2dGenD", "h2dGenD", kTH2F, {axisPt, axisEta});
+      histos.add("h2dGenD_KpiOnly", "h2dGenD_KpiOnly", kTH2F, {axisPt, axisEta});
       histos.add("h2dGenDbar", "h2dGenDbar", kTH2F, {axisPt, axisEta});
+      histos.add("h2dGenDbar_KpiOnly", "h2dGenDbar_KpiOnly", kTH2F, {axisPt, axisEta});
       histos.add("h3dRecD", "h3dRecD", kTH3F, {axisPt, axisEta, axisDMass});
       histos.add("h3dRecDSig", "h3dRecDSig", kTH3F, {axisPt, axisEta, axisDMass});
       histos.add("h3dRecDRefl", "h3dRecDRefl", kTH3F, {axisPt, axisEta, axisDMass});
@@ -471,11 +474,37 @@ struct alice3decayFinder {
     if (doprocessFindDmesons) {
       for (auto const& mcParticle : trueD) {
         histos.fill(HIST("h2dGenD"), mcParticle.pt(), mcParticle.eta());
-        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
+        auto daughters = mcParticle.template daughters_as<aod::McParticles>();
+        if (daughters.size() != 2)
+          continue;
+        // int daugID[2];
+        int daugPDG[2], i = 0;
+        for (const auto& dau : daughters) {
+          // daugID[i] = dau.globalIndex();
+          daugPDG[i] = dau.pdgCode();
+          i++;
+        }
+        if ((std::fabs(daugPDG[0]) == 321 && std::fabs(daugPDG[1]) == 211) || (std::fabs(daugPDG[0]) == 211 && std::fabs(daugPDG[1]) == 321)) {
+          histos.fill(HIST("h2dGenD_KpiOnly"), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
+        }
       }
       for (auto const& mcParticle : trueDbar) {
         histos.fill(HIST("h2dGenDbar"), mcParticle.pt(), mcParticle.eta());
-        histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
+        auto daughters = mcParticle.template daughters_as<aod::McParticles>();
+        if (daughters.size() != 2)
+          continue;
+        // int daugID[2];
+        int daugPDG[2], i = 0;
+        for (const auto& dau : daughters) {
+          // daugID[i] = dau.globalIndex();
+          daugPDG[i] = dau.pdgCode();
+          i++;
+        }
+        if ((std::fabs(daugPDG[0]) == 321 && std::fabs(daugPDG[1]) == 211) || (std::fabs(daugPDG[0]) == 211 && std::fabs(daugPDG[1]) == 321)) {
+          histos.fill(HIST("h2dGenDbar_KpiOnly"), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hDGenForEfficiency"), mcParticle.pt(), mcParticle.y()); // in common for D and Dbar
+        }
       }
     }
     if (doprocessFindLcBaryons) {
@@ -509,6 +538,7 @@ struct alice3decayFinder {
     // D0 mesons
     for (auto const& posTrackRow : tracksPiPlusFromDgrouped) {
       for (auto const& negTrackRow : tracksKaMinusFromDgrouped) {
+
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
         if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, mcParticles))
@@ -651,9 +681,11 @@ struct alice3decayFinder {
         mcTruthOutcome(dmeson.mcTruth);
       }
     }
+
     // D0bar mesons
     for (auto const& posTrackRow : tracksKaPlusFromDgrouped) {
       for (auto const& negTrackRow : tracksPiMinusFromDgrouped) {
+
         if (mcSameMotherCheck && !checkSameMother(posTrackRow, negTrackRow))
           continue;
         if (!buildDecayCandidateTwoBody(posTrackRow, negTrackRow, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPionCharged, mcParticles))

@@ -631,6 +631,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // MC truth
   void processSameEventMCgen(const FilteredFDCollision& col, [[maybe_unused]] const FemtoFullParticles& parts)
   {
+    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+
     auto groupPartsOne = partsOneMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -665,7 +667,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         int pdgCodeCasc = static_cast<int>(p2.pidCut());
         if ((confCascType1 == 0 && pdgCodeCasc != 3334) || (confCascType1 == 2 && pdgCodeCasc != -3334) || (confCascType1 == 1 && pdgCodeCasc != 3312) || (confCascType1 == 3 && pdgCodeCasc != -3312))
           continue;
-        sameEventCont.setPair<false>(p1, p2, col.multNtr(), confUse3D, 1.0f);
+        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
       }
     }
   }
@@ -676,6 +678,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
 
       auto groupPartsOne = partsOneMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwoMCgen->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -692,7 +695,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         int pdgCodeCasc = static_cast<int>(p2.pidCut());
         if ((confCascType1 == 0 && pdgCodeCasc != 3334) || (confCascType1 == 2 && pdgCodeCasc != -3334) || (confCascType1 == 1 && pdgCodeCasc != 3312) || (confCascType1 == 3 && pdgCodeCasc != -3312))
           continue;
-        mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), confUse3D, 1.0f);
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
       }
     }
   }

@@ -28,6 +28,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "TF1.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +59,8 @@ struct DedxAnalysis {
   float pionTofCut = 1.0;
   float invMassCut = 0.01;
   float invMassCutGamma = 0.0015;
+  float magField = 1.0;
+  float pTcut = 2.0;
 
   // Configurable Parameters
   // Tracks cuts
@@ -103,6 +106,10 @@ struct DedxAnalysis {
   Configurable<std::vector<float>> calibrationFactorPos{"calibrationFactorPos", {50.5157, 50.6359, 50.3198, 49.3345, 48.9197, 49.4931, 50.0188, 50.1406}, "positive calibration factors"};
   ConfigurableAxis binP{"binP", {VARIABLE_WIDTH, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0}, ""};
 
+  // phi cut fits
+  TF1* fphiCutHigh = nullptr;
+  TF1* fphiCutLow = nullptr;
+
   TrackSelection myTrackSelection()
   {
     TrackSelection selectedTracks;
@@ -130,6 +137,8 @@ struct DedxAnalysis {
     AxisSpec ptAxis = {binP, "pT (GeV/c)"};
     AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
     AxisSpec pAxis = {binP, "#it{p}/Z (GeV/c)"};
+    fphiCutLow = new TF1("StandardPhiCutLow", "0.1/x/x+pi/18.0-0.025", 0, 50);
+    fphiCutHigh = new TF1("StandardPhiCutHigh", "0.12/x+pi/18.0+0.035", 0, 50);
     if (calibrationMode) {
       // MIP for pions
       registryDeDx.add(
@@ -201,6 +210,11 @@ struct DedxAnalysis {
     registryDeDx.add(
       "hdEdx_vs_phi", "dE/dx", HistType::kTH2F,
       {{100, 0.0, 6.4, "#phi"}, {dedxAxis}});
+
+    // phi cut
+    registryDeDx.add(
+      "hpt_vs_phi", "phi cut", HistType::kTH2F,
+      {{ptAxis}, {100, 0.0, 6.4, "#phi"}});
 
     registryDeDx.add(
       "hbeta_vs_p_Neg", "beta", HistType::kTH2F,
@@ -375,6 +389,33 @@ struct DedxAnalysis {
     return true;
   }
 
+  // Phi cut
+  template <typename T>
+  bool passedPhiCut(const T& trk, float magField, const TF1& fphiCutLow, const TF1& fphiCutHigh)
+  {
+    float pt = trk.pt();
+    float phi = trk.phi();
+    int charge = trk.sign();
+
+    if (pt < pTcut)
+      return true;
+
+    if (magField < 0.) // for negatve polarity field
+      phi = o2::constants::math::TwoPI - phi;
+    if (charge < 0) // for negatve charge
+      phi = o2::constants::math::TwoPI - phi;
+
+    // to center gap in the middle
+    phi += o2::constants::math::PI / 18.0f;
+    phi = std::fmod(phi, o2::constants::math::PI / 9.0f);
+
+    if (phi < fphiCutHigh.Eval(pt) && phi > fphiCutLow.Eval(pt))
+      return false; // reject track
+
+    registryDeDx.fill(HIST("hpt_vs_phi"), pt, phi);
+    return true;
+  }
+
   // Process Data
   void process(SelectedCollisions::iterator const& collision,
                aod::V0Datas const& fullV0s, PIDTracks const& tracks)
@@ -408,6 +449,10 @@ struct DedxAnalysis {
         continue;
 
       if (!mySelectionPrim.IsSelected(trk))
+        continue;
+
+      // phi cut
+      if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
         continue;
 
       float signedP = trk.sign() * trk.tpcInnerParam();
