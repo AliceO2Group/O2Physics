@@ -892,7 +892,7 @@ struct UpcPhotonuclearAnalysisJMG {
         if (fillCollisionUD(sameGapSideA, multiplicity) == false) {
           return;
         }
-        // LOGF(debug, "Filling sameGapSideA events");
+        LOGF(info, "Filling sameGapSideA events");
         histos.fill(HIST("eventcount"), -2);
         fillQAUD(reconstructedTracks);
         fillCorrelationsUD(sameGapSideA, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
