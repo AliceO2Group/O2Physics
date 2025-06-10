@@ -93,7 +93,7 @@ struct epvector {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
   // Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
-  Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "Harmonic for event plane calculation"};
+  Configurable<float> cfgHarmonic{"cfgHarmonic", 2, "Harmonic for event plane calculation"};
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
@@ -229,10 +229,10 @@ struct epvector {
     return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
   }
 
-  double GetPhiInRange(double phi)
+  double GetPhiInRange(double phi, double harmonic = 2)
   {
     double result = phi;
-    double period = 2. * TMath::Pi() / cfgHarmonic.value;
+    double period = 2. * TMath::Pi() / harmonic;
     while (result < 0) {
       result = result + period;
     }
@@ -242,10 +242,10 @@ struct epvector {
     return result;
   }
 
-  double GetDeltaPsiSubInRange(double psi1, double psi2)
+  double GetDeltaPsiSubInRange(double psi1, double psi2, double harmonic = 2)
   {
     double delta = psi1 - psi2;
-    double period = TMath::Pi() / cfgHarmonic.value;
+    double period = TMath::Pi() / harmonic;
     if (TMath::Abs(delta) > period) {
       if (delta > 0.)
         delta -= 2. * period;
