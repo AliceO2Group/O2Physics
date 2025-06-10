@@ -193,7 +193,7 @@ struct FlowCorrelationsUpc {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks>
-  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float Nch) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float cent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
