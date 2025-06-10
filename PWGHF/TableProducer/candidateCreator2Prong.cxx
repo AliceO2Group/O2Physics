@@ -791,17 +791,17 @@ struct HfCandidateCreator2ProngExpressions {
               indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
             }
             
-            if (indexRec != -1) {
+            if (indexRec > -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
               std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
-              if (sign < 0) {
+              if (motherParticle.pdgCode() < 0) {
                 for (auto& part : finalStateParts2ProngAll) {
                   if (part == kPi0) {
                     part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                   }
                 }
               }
-              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, false, &sign, depth)) {
+              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, true, &sign, depth)) {
                 indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
               }
             }

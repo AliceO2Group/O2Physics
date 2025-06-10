@@ -590,7 +590,7 @@ struct HfCandidateCreator3Prong {
       uint8_t bitmapProngsContributorsPV = 0;
       if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 0);
-      } 
+      }
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 1);
       }
@@ -957,7 +957,7 @@ struct HfCandidateCreator3ProngExpressions {
           auto finalStates = getDecayChannel3Prong(pdg);
           for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
-            if (finalState.size() > 3) {                     // Partly Reco 3-prong decays
+            if (finalState.size() > 3) {                     // Partly Reco 4-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -968,11 +968,10 @@ struct HfCandidateCreator3ProngExpressions {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
               }
 
-              if (indexRec != -1) {
+              if (indexRec > -1) {
                 auto motherParticle = mcParticles.rawIteratorAt(indexRec);
                 if (finalState.size() == 4) { // Check if the final state has 4 particles
                   std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
-                  // std::array<int, 4> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], sign*finalState[3]};
                   if (sign < 0) {
                     for (auto& part : finalStateParts3ProngAll) {
                       if (part == kPi0) {
@@ -983,8 +982,7 @@ struct HfCandidateCreator3ProngExpressions {
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
-                } else if (finalState.size() == 5) { // Check if the final state has 3 particles
-                  // std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], sign*finalState[3], sign*finalState[4]};
+                } else if (finalState.size() == 5) { // Check if the final state has 5 particles
                   std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
                   if (sign < 0) {
                     for (auto& part : finalStateParts3ProngAll) {
@@ -993,7 +991,7 @@ struct HfCandidateCreator3ProngExpressions {
                       }
                     }
                   }
-                  if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
+                  if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
                 }
@@ -1013,7 +1011,6 @@ struct HfCandidateCreator3ProngExpressions {
               continue; // Skip unsupported final states
             }
             if (indexRec > -1) {
-              // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
               flag = sign * chn;
 
               // Flag the resonant decay channel
@@ -1031,8 +1028,6 @@ struct HfCandidateCreator3ProngExpressions {
                   arrPDGDaugh[iProng] = daughI.pdgCode();
                 }
                 flagResonantDecay<true>(pdg, &channel, arrPDGDaugh);
-                LOG(info) << "[matchFinalStateCorrBkgs] Matched final state: " << chn << " with PDG code: " << static_cast<int>(pdg) << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
-                LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
               }
               break; // Exit loop if a match is found
             }
@@ -1041,7 +1036,6 @@ struct HfCandidateCreator3ProngExpressions {
             break; // Exit loop if a match is found
           }
         }
-        // LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D± → π± K∓ π±
         if (flag == 0) {

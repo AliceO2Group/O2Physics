@@ -510,7 +510,6 @@ struct HfTreeCreatorD0ToKPi {
     if constexpr (applyMl) {
       rowCandidateMl.reserve(candidates.size());
     }
-    LOG(info) << "Processing " << candidates.size() << " candidates";
     for (const auto& candidate : candidates) {
       if constexpr (onlyBkg) {
         if ( TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0)) ) {
