@@ -29,6 +29,9 @@
 #include <TMatrixD.h>
 #include "TProfile2D.h"
 #include "PWGLF/DataModel/lambdaJetpolarization.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/ClusterSequenceArea.hh>
