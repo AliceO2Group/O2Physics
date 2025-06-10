@@ -101,7 +101,7 @@ struct upcPhotonuclearAnalysisJMG {
 
   // Declare configurables on events/collisions
   Configurable<int> nEventsMixed{"nEventsMixed", 3, {"Events to be Mixed"}};
-  Configurable<int> factorEventsMixedEventsMixed{"factorEventsMixedEventsMixed", 100, {"factorEventsMixed to events mixed"}};
+  Configurable<int> factorEventsMixed{"factorEventsMixed", 100, {"factorEventsMixed to events mixed"}};
   Configurable<float> myZVtxCut{"myZVtxCut", 10., {"My collision cut"}};
   Configurable<float> myTimeZNACut{"myTimeZNACut", 2., {"My collision cut"}};
   Configurable<float> myTimeZNCCut{"myTimeZNCCut", 2., {"My collision cut"}};
