@@ -64,7 +64,7 @@ DECLARE_SOA_COLUMN(EseCentFT0C, eseCentFT0C, float);
 DECLARE_SOA_COLUMN(EsePsi2FT0C, esePsi2FT0C, float);
 DECLARE_SOA_COLUMN(Eseq2Tar, eseq2Tar, float);
 DECLARE_SOA_COLUMN(Eseq2Ref, eseq2Ref, float);
-DECLARE_SOA_COLUMN(EseTarSign, eseTarSign, short);
+DECLARE_SOA_COLUMN(EseTarSign, eseTarSign, int8_t);
 DECLARE_SOA_COLUMN(EseTarTPCInnerParam, eseTarTPCInnerParam, float);
 DECLARE_SOA_COLUMN(EseTarTPCSignal, eseTarTPCSignal, float);
 DECLARE_SOA_COLUMN(EseTarPt, eseTarPt, float);
@@ -112,7 +112,7 @@ struct ESECandidate {
   float psi2FT0C;
   float q2Tar;
   float q2Ref;
-  short signTar;
+  int8_t signTar;
   float tpcInnerParamTar;
   float tpcSignalTar;
   float ptTar;
@@ -809,7 +809,7 @@ struct FlowEsePHe3 {
           }
         }
         ese_parameters::eseCandidates.emplace_back(ESECandidate{
-          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, track.sign(), correctedTpcInnerParam, track.tpcSignal(), track.pt(), track.eta(), track.phi(),
+          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, static_cast<int8_t>track.sign(), correctedTpcInnerParam, track.tpcSignal(), track.pt(), track.eta(), track.phi(),
           track.dcaXY(), track.dcaZ(), static_cast<uint8_t>(track.tpcNClsFound()), track.itsNCls(), track.tpcChi2NCl(), track.itsChi2NCl(),
           nSigmaTPCTar, nSigmaTOFTar, nSigmaITSTar, track.itsClusterSizes()});
       }
