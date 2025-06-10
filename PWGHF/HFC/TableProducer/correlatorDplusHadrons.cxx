@@ -422,7 +422,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+        isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
         isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -531,7 +531,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      if (!TESTBIT(std::abs(particle1.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+      if (std::abs(particle1.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -637,7 +637,7 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // Dplus flag
-      bool isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
+      bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
       // prompt and non-prompt division
       bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -675,7 +675,7 @@ struct HfCorrelatorDplusHadrons {
         std::vector<float> outputMl = {-1., -1., -1.};
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
-        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
         // prompt and non-prompt division
         bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         if (pAssoc.has_mcParticle()) {

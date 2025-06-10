@@ -369,6 +369,7 @@ struct HfTreeCreatorOmegacSt {
           } else if (idxKaonDaughter >= 0 && idxCascDaughter >= 0) {
             decayChannel = o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK; // OmegaC -> Omega + K
           } else {
+            decayChannel = -1;
             LOG(warning) << "Decay channel not recognized!";
           }
           if (decayChannel != -1) {
