@@ -156,12 +156,6 @@ constexpr double BbMomScalingDefault[5][2]{// 0:poscharged 1:negcharged
                                            {1., 1.},
                                            {1., 1.},
                                            {1., 1.}};
-constexpr double DownscalingDefault[5][1]{
-  {1.},
-  {1.},
-  {1.},
-  {1.},
-  {1.}};
 constexpr int Open3DPIDPlots[3][1]{
   {0},
   {0},
