@@ -445,8 +445,8 @@ namespace o2::hf_corrbkg
           break;
         }
       }
+      LOG(info) << "Leaving function with channel: " << static_cast<int>(*channel);
       // if (abs(motherPdg) == Pdg::kDStar) {
-      //   LOG(info) << "Leaving function with channel: " << static_cast<int>(*channel);
       // }
     } else {
       if (motherPdg != Pdg::kD0) {

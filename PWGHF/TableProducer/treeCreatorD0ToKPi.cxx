@@ -243,14 +243,14 @@ struct HfTreeCreatorD0ToKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
+  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && (nabs(aod::hf_cand_2prong::flagMcMatchGen) != 0));
 
   Partition<SelectedCandidatesMc> reconstructedCandSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
   Partition<SelectedCandidatesMc> reconstructedCandBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKf> reconstructedCandSigKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
   Partition<SelectedCandidatesMcKf> reconstructedCandBkgKF = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
 
-  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
+  Partition<SelectedCandidatesMcMl> reconstructedCandSigMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
   Partition<SelectedCandidatesMcMl> reconstructedCandBkgMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
   Partition<SelectedCandidatesMcKfMl> reconstructedCandSigKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && nabs(aod::hf_cand_2prong::flagMcMatchRec) != 0);
   Partition<SelectedCandidatesMcKfMl> reconstructedCandBkgKFMl = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));

@@ -945,25 +945,17 @@ struct HfCandidateCreator3ProngExpressions {
         }
       }
 
-      // LOG(info) << "CIAO REC MATCHING";
       if (matchCorrBkgs) {
-        // LOG(info) << "CIAO 1";
-        // LOG(info) << "--------------------------------------------";
-        // LOG(info) << "Matching correlated bkgs";
         std::array<int, 5> mothersPdgCodes = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus};
         indexRec = -1; // Index of the matched reconstructed candidate
-        
-        // LOG(info) << "CIAO 2";
+
         for (const auto& pdg : mothersPdgCodes) {
           int depth = 2;
           if (pdg == Pdg::kDStar) {
             depth = 3; // D0 resonant decays are active
           }
-          // LOG(info) << "CIAO 3";
           auto finalStates = getDecayChannel3Prong(pdg);
-          // LOG(info) << "CIAO 3.0";
           for (const auto& [chn, finalState] : finalStates) {
-            // LOG(info) << "CIAO 3.0.1";
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
             if (finalState.size() > 3) {                     // Partly Reco 3-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -975,8 +967,7 @@ struct HfCandidateCreator3ProngExpressions {
               } else {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
               }
-              
-              // LOG(info) << "CIAO 3.0.2";
+
               if (indexRec != -1) {
                 auto motherParticle = mcParticles.rawIteratorAt(indexRec);
                 if (finalState.size() == 4) { // Check if the final state has 4 particles
@@ -992,10 +983,8 @@ struct HfCandidateCreator3ProngExpressions {
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
-                  // LOG(info) << "CIAO 3.0.3";
                 } else if (finalState.size() == 5) { // Check if the final state has 3 particles
                   // std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], sign*finalState[3], sign*finalState[4]};
-                  // LOG(info) << "CIAO 3.0.4";
                   std::array<int, 5> finalStateParts3ProngAll = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
                   if (sign < 0) {
                     for (auto& part : finalStateParts3ProngAll) {
@@ -1003,19 +992,13 @@ struct HfCandidateCreator3ProngExpressions {
                         part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                       }
                     }
-                    // LOG(info) << "CIAO 3.0.5";
                   }
                   if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
-                    // LOG(info) << "CIAO 3.0.6";
                   }
-                  // LOG(info) << "CIAO 3.0.7";
                 }
-                // LOG(info) << "CIAO 3.0.8";
               }
-              // LOG(info) << "CIAO 3.0.9";
             } else if (finalState.size() == 3) {            // Fully Reco 3-prong decays
-              // LOG(info) << "CIAO 3.1";
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -1025,19 +1008,18 @@ struct HfCandidateCreator3ProngExpressions {
               } else {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth);
               }
-              // LOG(info) << "CIAO 3.2";
             } else {
               LOG(info) << "Final state size not supported: " << finalState.size();
               continue; // Skip unsupported final states
             }
-            // LOG(info) << "CIAO 4";
             if (indexRec > -1) {
               // std::cout << "Matched final state: " << chn << " with PDG code: " << pdg << std::endl;
               flag = sign * chn;
-              
+
               // Flag the resonant decay channel
               int resoMaxDepth = 1;
-              if (std::abs(pdg) == Pdg::kDStar) { 
+              // if (std::abs(pdg) == Pdg::kDStar) { 
+              if (std::abs(mcParticles.rawIteratorAt(indexRec).pdgCode()) == Pdg::kDStar) { 
                 resoMaxDepth = 2; // Flag D0 resonances 
               }
               std::vector<int> arrResoDaughIndex = {};
@@ -1049,16 +1031,16 @@ struct HfCandidateCreator3ProngExpressions {
                   arrPDGDaugh[iProng] = daughI.pdgCode();
                 }
                 flagResonantDecay<true>(pdg, &channel, arrPDGDaugh);
-                // LOG(info) << "CIAO 5";
-                // LOG(info) << "[matchFinalStateCorrBkgs] Matched final state: " << chn << " with PDG code: " << static_cast<int>(pdg) << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
-                // LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
+                LOG(info) << "[matchFinalStateCorrBkgs] Matched final state: " << chn << " with PDG code: " << static_cast<int>(pdg) << ", flag: " << static_cast<int>(flag) << ", &sign: " << static_cast<int>(sign);
+                LOG(info) << "[matchFinalStateCorrBkgs] Flag set to: " << static_cast<int>(flag) << " sign: " << static_cast<int>(sign) << " for channel: " << static_cast<int>(channel);
               }
               break; // Exit loop if a match is found
             }
-            // LOG(info) << "CIAO 6";
+          }
+          if (indexRec > -1) {
+            break; // Exit loop if a match is found
           }
         }
-        // LOG(info) << "CIAO 7";
         // LOG(info) << "Corr Bkg matching ended with flag " << static_cast<int>(flag) << " and indexRec " << static_cast<int>(indexRec) << ", &sign " << static_cast<int>(sign) << ", channel " << static_cast<int>(channel);
       } else {
         // D± → π± K∓ π±
