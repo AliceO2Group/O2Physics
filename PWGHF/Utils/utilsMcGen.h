@@ -312,17 +312,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     }
 
     // Check whether the particle is non-prompt (from a b quark).
-    // LOG(info) << "[Gen] Flag: " << static_cast<int>(flag);
     if (flag != 0) {
-      // LOG(info) << "[Gen] Setting origin gen";
       origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
     }
     if (origin == RecoDecay::OriginType::NonPrompt) {
-      // LOG(info) << "Origin is non-prompt";
-      // LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, idxBhadMothers[0]);
     } else {
-      // LOG(info) << "[MCGEN] flag " << static_cast<int>(flag) << " origin " << static_cast<int>(origin) << " channel " << static_cast<int>(channel);
       rowMcMatchGen(flag, origin, channel, -1);
     }
   }

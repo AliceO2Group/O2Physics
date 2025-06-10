@@ -979,7 +979,7 @@ struct HfCandidateCreator3ProngExpressions {
                       }
                     }
                   }
-                  if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, false, &sign, depth)) {
+                  if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, pdg, finalStateParts3ProngAll, true, &sign, depth)) {
                     indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one is not matched
                   }
                 } else if (finalState.size() == 5) { // Check if the final state has 5 particles
@@ -1015,7 +1015,6 @@ struct HfCandidateCreator3ProngExpressions {
 
               // Flag the resonant decay channel
               int resoMaxDepth = 1;
-              // if (std::abs(pdg) == Pdg::kDStar) { 
               if (std::abs(mcParticles.rawIteratorAt(indexRec).pdgCode()) == Pdg::kDStar) { 
                 resoMaxDepth = 2; // Flag D0 resonances 
               }
@@ -1167,23 +1166,17 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Check whether the particle is non-prompt (from a b quark).
       if (flag != 0) {
-        // LOG(info) << "Setting origin";
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        // LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        // LOG(info) << "[MCREC] Filling with flag: " << static_cast<int>(flag) << ", origin: " << static_cast<int>(origin) << ", channel: " << static_cast<int>(channel);
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
     
-    // LOG(info) << "BYE REC MATCHING, HELLO GEN MATCHING";
-    // LOG(info) << "Filling MC match gen for 3 prong candidates";
-    // LOG(info) << "Number of MC collisions: " << mcCollisions.size();
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision
