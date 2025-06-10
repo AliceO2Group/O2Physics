@@ -23,42 +23,42 @@
 /// \author Roberto Preghenella preghenella@bo.infn.it
 ///
 
-#include <utility>
-#include <array>
-#include <string>
-#include <map>
-#include <vector>
-
-#include <TGeoGlobalMagField.h>
-#include <TGenPhaseSpace.h>
-#include <TLorentzVector.h>
-#include <TRandom3.h>
-#include <TPDGCode.h>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/MathConstants.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "DetectorsVertexing/PVertexerHelpers.h"
-#include "SimulationDataFormat/InteractionSampler.h"
-#include "Field/MagneticField.h"
-
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
-#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/DetLayer.h"
+#include "ALICE3/Core/FastTracker.h"
 #include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "DetectorsVertexing/PVertexerHelpers.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "SimulationDataFormat/InteractionSampler.h"
+
+#include <TGenPhaseSpace.h>
+#include <TGeoGlobalMagField.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TRandom3.h>
+
+#include <array>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
