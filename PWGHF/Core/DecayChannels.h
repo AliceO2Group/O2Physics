@@ -24,6 +24,7 @@
 #include <array>
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 using namespace o2::constants::physics;
 

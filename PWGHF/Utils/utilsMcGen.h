@@ -64,14 +64,14 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         if (finalState.size() == 3) {                     // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
-            for (auto& part : finalStateParts) {
+            for (const auto& part : finalStateParts) {
               if (part == kPi0) {
                 part = -part; // The Pi0 pdg code does not change between particle and antiparticle
               }
             }
           }
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
-        } else if (finalState.size() == 2) {              // Fully Reco 3-prong decays
+        } else if (finalState.size() == 2) {              // Fully Reco 2-prong decays
           std::array<int, 2> finalStateParts = std::array{finalState[0], finalState[1]};
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
         } else {
@@ -173,7 +173,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
           if (finalState.size() == 5) {                     // Partly Reco 3-prong decays
             std::array<int, 5> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
             if (particle.pdgCode() < 0) {
-              for (auto& part : finalStateParts) {
+              for (const auto& part : finalStateParts) {
                 if (part == kPi0) {
                   part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                 }
@@ -184,7 +184,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
           } else if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
             std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
             if (particle.pdgCode() < 0) {
-              for (auto& part : finalStateParts) {
+              for (const auto& part : finalStateParts) {
                 if (part == kPi0) {
                   part = -part; // The Pi0 pdg code does not change between particle and antiparticle
                 }
