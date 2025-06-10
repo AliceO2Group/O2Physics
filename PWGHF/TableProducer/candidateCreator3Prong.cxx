@@ -957,9 +957,9 @@ struct HfCandidateCreator3ProngExpressions {
           auto finalStates = getDecayChannel3Prong(pdg);
           for (const auto& [chn, finalState] : finalStates) {
             std::array<int, 3> finalStateParts3Prong = std::array{finalState[0], finalState[1], finalState[2]};
-            if (finalState.size() > 3) {                     // Partly Reco 4-prong decays
+            if (finalState.size() > 3) { // Partly Reco 4-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-                indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+                indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks);
               } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -996,7 +996,7 @@ struct HfCandidateCreator3ProngExpressions {
                   }
                 }
               }
-            } else if (finalState.size() == 3) {            // Fully Reco 3-prong decays
+            } else if (finalState.size() == 3) { // Fully Reco 3-prong decays
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdg, finalStateParts3Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -1015,8 +1015,8 @@ struct HfCandidateCreator3ProngExpressions {
 
               // Flag the resonant decay channel
               int resoMaxDepth = 1;
-              if (std::abs(mcParticles.rawIteratorAt(indexRec).pdgCode()) == Pdg::kDStar) { 
-                resoMaxDepth = 2; // Flag D0 resonances 
+              if (std::abs(mcParticles.rawIteratorAt(indexRec).pdgCode()) == Pdg::kDStar) {
+                resoMaxDepth = 2; // Flag D0 resonances
               }
               std::vector<int> arrResoDaughIndex = {};
               RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, resoMaxDepth);
@@ -1176,7 +1176,7 @@ struct HfCandidateCreator3ProngExpressions {
         rowMcMatchRec(flag, origin, swapping, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
-    
+
     for (const auto& mcCollision : mcCollisions) {
 
       // Slice the particles table to get the particles for the current MC collision

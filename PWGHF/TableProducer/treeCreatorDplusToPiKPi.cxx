@@ -245,7 +245,7 @@ DECLARE_SOA_TABLE(HfCandDpFullPs, "AOD", "HFCANDDPFULLP",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorDplusToPiKPi {
   Produces<o2::aod::HfCandDpFulls> rowCandidateFull;
-  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents; 
+  Produces<o2::aod::HfCandDpFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandDpFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDpLites> rowCandidateLite;
   Produces<o2::aod::HfCandDpMls> rowCandidateMl;
@@ -611,7 +611,6 @@ struct HfTreeCreatorDplusToPiKPi {
   }
 
   PROCESS_SWITCH(HfTreeCreatorDplusToPiKPi, processMcSgnWCentMl, "Process MC signal with cent and ML info", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

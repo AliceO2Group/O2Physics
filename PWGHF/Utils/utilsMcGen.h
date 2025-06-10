@@ -61,7 +61,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
       bool matched = false;
 
       for (const auto& [chn, finalState] : finalStates2Prongs) {
-        if (finalState.size() == 3) {                     // Partly Reco 3-prong decays
+        if (finalState.size() == 3) { // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
             for (const auto& part : finalStateParts) {
@@ -71,7 +71,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             }
           }
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
-        } else if (finalState.size() == 2) {              // Fully Reco 2-prong decays
+        } else if (finalState.size() == 2) { // Fully Reco 2-prong decays
           std::array<int, 2> finalStateParts = std::array{finalState[0], finalState[1]};
           matched = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, finalStateParts, true, &sign, maxDepth);
         } else {
@@ -165,12 +165,12 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         int maxDepth = 2;
         bool matched = false;
         if (motherPdgCode == Pdg::kDStar) {
-          maxDepth = 3;   // D0 resonant decays are switched on
+          maxDepth = 3; // D0 resonant decays are switched on
         }
-        
+
         std::vector<int> arrAllDaughtersIndex;
         for (const auto& [chn, finalState] : finalStates) {
-          if (finalState.size() == 5) {                     // Partly Reco 3-prong decays
+          if (finalState.size() == 5) { // Partly Reco 3-prong decays
             std::array<int, 5> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3], finalState[4]};
             if (particle.pdgCode() < 0) {
               for (const auto& part : finalStateParts) {
@@ -181,7 +181,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             }
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 4) {                     // Partly Reco 3-prong decays
+          } else if (finalState.size() == 4) { // Partly Reco 3-prong decays
             std::array<int, 4> finalStateParts = std::array{finalState[0], finalState[1], finalState[2], finalState[3]};
             if (particle.pdgCode() < 0) {
               for (const auto& part : finalStateParts) {
@@ -192,7 +192,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             }
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, -1);
-          } else if (finalState.size() == 3) {              // Fully Reco 3-prong decays
+          } else if (finalState.size() == 3) { // Fully Reco 3-prong decays
             std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
             RecoDecay::getDaughters<false>(particle, &arrAllDaughtersIndex, finalStateParts, maxDepth);
             matched = RecoDecay::isMatchedMCGen(mcParticles, particle, motherPdgCode, finalStateParts, true, &sign, maxDepth);
@@ -205,7 +205,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
             // Flag the resonant decay channel
             int resoMaxDepth = 1;
             std::vector<int> arrResoDaughIndex = {};
-            if (std::abs(motherPdgCode) == Pdg::kDStar) { 
+            if (std::abs(motherPdgCode) == Pdg::kDStar) {
               std::vector<int> arrResoDaughIndexDStar = {};
               RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, resoMaxDepth);
               for (size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {

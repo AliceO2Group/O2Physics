@@ -780,9 +780,9 @@ struct HfCandidateCreator2ProngExpressions {
         int depth = 2;
         for (const auto& [chn, finalState] : finalStates2Prongs) {
           std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
-          if (finalState.size() == 3) {                     // Partly Reco 2-prong decays
+          if (finalState.size() == 3) { // Partly Reco 2-prong decays
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-             indexRec = RecoDecay::getMatchedMCRec<false, false, true, true,  true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks);
             } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
@@ -790,7 +790,7 @@ struct HfCandidateCreator2ProngExpressions {
             } else {
               indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
             }
-            
+
             if (indexRec > -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
               std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
@@ -805,15 +805,15 @@ struct HfCandidateCreator2ProngExpressions {
                 indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
               }
             }
-          } else if (finalState.size() == 2) {            // Fully Reco 2-prong decays
+          } else if (finalState.size() == 2) { // Fully Reco 2-prong decays
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-                indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, &nKinkedTracks);
             } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth, nullptr, &nInteractionsWithMaterial);
             } else {
-                indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, depth);
             }
           } else {
             LOG(info) << "Final state size not supported: " << finalStateParts2Prong.size();

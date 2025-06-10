@@ -512,7 +512,7 @@ struct HfTreeCreatorD0ToKPi {
     }
     for (const auto& candidate : candidates) {
       if constexpr (onlyBkg) {
-        if ( TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0)) ) {
+        if (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0))) {
           continue;
         }
         if (downSampleBkgFactor < 1.) {
@@ -523,7 +523,7 @@ struct HfTreeCreatorD0ToKPi {
         }
       }
       if constexpr (onlySig) {
-        if ( !(TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0)) ) {
+        if (!(TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_2prong::DecayType::D0ToPiK)) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0))) {
           continue;
         }
       }
@@ -551,7 +551,7 @@ struct HfTreeCreatorD0ToKPi {
     // Filling particle properties
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
-      if ( TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && particle.flagMcMatchGen() != 0) ) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK) || (fillCorrBkgs && particle.flagMcMatchGen() != 0)) {
         rowCandidateFullParticles(
           particle.mcCollisionId(),
           particle.pt(),
