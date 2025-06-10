@@ -300,7 +300,7 @@ struct HfTaskFlowCharmHadrons {
   void getQvecXic0Tracks(const T1& cand,
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
-                         const float& ampl)
+                         float ampl)
   {
     // add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXTrack0 = cand.pxPosV0Dau();
