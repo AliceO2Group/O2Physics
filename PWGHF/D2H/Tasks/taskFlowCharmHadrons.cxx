@@ -300,7 +300,7 @@ struct HfTaskFlowCharmHadrons {
   void getQvecXic0Tracks(const T1& cand,
                          std::vector<float>& tracksQx,
                          std::vector<float>& tracksQy,
-                         float& ampl)
+                         const float& ampl)
   {
     // add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXTrack0 = cand.pxPosV0Dau();
@@ -664,7 +664,7 @@ struct HfTaskFlowCharmHadrons {
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", true);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", false);
 
   // Dplus with rectangular cuts
   void processDplus(CollsWithQvecs::iterator const& collision,
@@ -672,7 +672,7 @@ struct HfTaskFlowCharmHadrons {
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus);
   }
-  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", false);
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
 
   // D0 with ML
   void processD0Ml(CollsWithQvecs::iterator const& collision,
