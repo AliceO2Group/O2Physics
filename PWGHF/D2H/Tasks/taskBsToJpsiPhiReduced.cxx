@@ -339,7 +339,7 @@ struct HfTaskBsToJpsiPhiReduced {
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = TESTBIT(std::abs(flagMcMatchRec), static_cast<int>(hf_cand_bs::DecayTypeBToJpsiMc::BsToJpsiPhiToMuMuKK));
+      isSignal = flagMcMatchRec == o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
     }
 
     SETBIT(statusBs, SelectionStep::RecoSkims);

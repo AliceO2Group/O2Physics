@@ -416,7 +416,7 @@ struct HfDataCreatorJpsiHadReduced {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true, &sign, 1);
         }
         if (indexRec > -1) {
-          flag = sign * BIT(static_cast<uint8_t>(hf_cand_bplus::DecayTypeBToJpsiMc::BplusToJpsiKToMuMuK));
+          flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
         } else {
           debug = 1;
           LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -448,7 +448,7 @@ struct HfDataCreatorJpsiHadReduced {
         if (indexRec > -1) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kPhi, std::array{-kKPlus, +kKPlus}, true, &sign, 1);
           if (indexRec > -1) {
-            flag = sign * BIT(static_cast<uint8_t>(hf_cand_bs::DecayTypeBToJpsiMc::BsToJpsiPhiToMuMuKK));
+            flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
           } else {
             debug = 1;
             LOGF(debug, "Bs decays in the expected final state but the condition on the phi intermediate state is not fulfilled");

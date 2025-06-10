@@ -401,7 +401,7 @@ struct HfCandidateCreatorBToJpsiReduced {
 }; // struct
 
 /// Extends the table base with expression columns and performs MC matching.
-struct HfCandidateCreatorBplusToJpsiReducedExpressions {
+struct HfCandidateCreatorBToJpsiReducedExpressions {
   Spawns<aod::HfCandBpJPExt> rowCandidateBPlus;
   Spawns<aod::HfCandBsJPExt> rowCandidateBs;
   Spawns<aod::HfRedBach0Ext> rowTracksExt0;
@@ -449,17 +449,17 @@ struct HfCandidateCreatorBplusToJpsiReducedExpressions {
   {
     fillMcRec<DecayChannel::BplusToJpsiK>(rowsJpsiKMcRec, candsBplus);
   }
-  PROCESS_SWITCH(HfCandidateCreatorBplusToJpsiReducedExpressions, processMcBPlus, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorBToJpsiReducedExpressions, processMcBPlus, "Process MC", false);
 
   void processMcBs(HfMcRecRedJPPhis const& rowsJpsiPhiMcRec, HfRedBs2JpsiDaus const& Bs)
   {
     fillMcRec<DecayChannel::BsToJpsiPhi>(rowsJpsiPhiMcRec, Bs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorBplusToJpsiReducedExpressions, processMcBs, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorBToJpsiReducedExpressions, processMcBs, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorBToJpsiReduced>(cfgc),
-                      adaptAnalysisTask<HfCandidateCreatorBplusToJpsiReducedExpressions>(cfgc)};
+                      adaptAnalysisTask<HfCandidateCreatorBToJpsiReducedExpressions>(cfgc)};
 }
