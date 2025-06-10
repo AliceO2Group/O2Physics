@@ -89,7 +89,6 @@ struct HfCandidateCreatorXicToXiPiPi {
   //  KFParticle
   Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
-  Configurable<bool> constrainXiToXicPlus{"constrainXiToXicPlus", false, "Constrain Xi to XicPlus"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
 
@@ -527,40 +526,21 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCandCounter"), VertexFit);
       }
 
-      // get geometrical chi2 of XicPlus
+      // get chi2
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
+      float chi2PrimXi = kfXi.GetDeviationFromVertex(kfPv);
+      float chi2PrimPi0 = kfCharmBachelor0.GetDeviationFromVertex(kfPv);
+      float chi2PrimPi1 = kfCharmBachelor1.GetDeviationFromVertex(kfPv);
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(kfPv);
+      float chi2TopoXicPlusToPVBefConst = kfXicPlus.GetDeviationFromVertex(kfPv);
       KFParticle kfXicPlusToPV = kfXicPlus;
       kfXicPlusToPV.SetProductionVertex(kfPv);
-      float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
+      float chi2TopoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
         kfXicPlus.TransportToDecayVertex();
       }
-
-      // topological constraint of Xi to XicPlus
-      float chi2topoXiToXicPlusBeforeConstraint = kfXi.GetDeviationFromVertex(kfXicPlus);
-      KFParticle kfXiToXicPlus = kfXi;
-      kfXiToXicPlus.SetProductionVertex(kfXicPlus);
-      float chi2topoXiToXicPlus = kfXiToXicPlus.GetChi2() / kfXiToXicPlus.GetNDF();
-      kfXiToXicPlus.TransportToDecayVertex();
-      if (constrainXiToXicPlus) {
-        KFParticle kfXicPlusWithXiToXicPlus;
-        const KFParticle* kfDaughtersXicPlusWithXiToXicPlus[3] = {&kfCharmBachelor0, &kfCharmBachelor1, &kfXiToXicPlus};
-        kfXicPlusWithXiToXicPlus.SetConstructMethod(kfConstructMethod);
-        try {
-          kfXicPlusWithXiToXicPlus.Construct(kfDaughtersXicPlusWithXiToXicPlus, 3);
-        } catch (std::runtime_error& e) {
-          LOG(debug) << "Failed to construct XicPlus with Xi connstrained to XicPlus: " << e.what();
-          continue;
-        }
-        kfXicPlus = kfXicPlusWithXiToXicPlus;
-      }
-
-      // get covariance matrix of XicPlus
-      auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
 
       //---------------------calculate physical parameters of XicPlus candidate----------------------
       // sign of charm baryon
@@ -592,13 +572,18 @@ struct HfCandidateCreatorXicToXiPiPi {
       float cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
+      // get chi2 deviation of Pi0-Pi1, Pi0-Xi, Pi1-Xi
+      float chi2DevPi0Pi1 = kfCharmBachelor0.GetDeviationFromParticle(kfCharmBachelor1);
+      float chi2DevPi0Xi = kfCharmBachelor0.GetDeviationFromParticle(kfXi);
+      float chi2DevPi1Xi = kfCharmBachelor1.GetDeviationFromParticle(kfXi);
+
       // get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
-      float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
-      float dcaXYPi0Xi = kfCharmBachelor0.GetDistanceFromParticleXY(kfXi);
-      float dcaXYPi1Xi = kfCharmBachelor1.GetDistanceFromParticleXY(kfXi);
       float dcaPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticle(kfCharmBachelor1);
       float dcaPi0Xi = kfCharmBachelor0.GetDistanceFromParticle(kfXi);
       float dcaPi1Xi = kfCharmBachelor1.GetDistanceFromParticle(kfXi);
+      float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
+      float dcaXYPi0Xi = kfCharmBachelor0.GetDistanceFromParticleXY(kfXi);
+      float dcaXYPi1Xi = kfCharmBachelor1.GetDistanceFromParticleXY(kfXi);
 
       // mass of Xi-Pi0 pair
       KFParticle kfXiPi0;
@@ -675,6 +660,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
         registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
         // covariance matrix elements of SV
+        auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
         registry.fill(HIST("hCovSVXX"), covMatrixXicPlus[0]);
         registry.fill(HIST("hCovSVYY"), covMatrixXicPlus[2]);
         registry.fill(HIST("hCovSVXZ"), covMatrixXicPlus[3]);
@@ -711,11 +697,13 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*PID information*/
                        nSigTpcPiFromXicPlus0, nSigTpcPiFromXicPlus1, nSigTpcBachelorPi, nSigTpcPiFromLambda, nSigTpcPrFromLambda,
                        nSigTofPiFromXicPlus0, nSigTofPiFromXicPlus1, nSigTofBachelorPi, nSigTofPiFromLambda, nSigTofPrFromLambda);
-      rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
-                     kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
-                     chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
-                     dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
-                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi);
+      rowCandidateKF(kfDecayLength, kfDecayLengthNormalised, kfDecayLengthXY, kfDecayLengthXYNormalised,
+                     casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     chi2TopoXicPlusToPVBefConst, chi2TopoXicPlusToPV,
+                     chi2PrimXi, chi2PrimPi0, chi2PrimPi1,
+                     chi2DevPi0Pi1, chi2DevPi0Xi, chi2DevPi1Xi,
+                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
+                     dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
     } // loop over track triplets
   }
 
