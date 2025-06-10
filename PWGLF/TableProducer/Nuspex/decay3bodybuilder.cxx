@@ -23,6 +23,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <memory>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -907,12 +908,12 @@ struct decay3bodyBuilder {
           }
           // get daughters
           for (auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
-            if (abs(mcparticleDaughter.pdgCode()) == PDG_t::kProton) { // proton
+            if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kProton) { // proton
               this3BodyMCInfo.genMomProton = mcparticleDaughter.p();
               this3BodyMCInfo.genPtProton = mcparticleDaughter.pt();
               this3BodyMCInfo.daughterPrPdgCode = mcparticleDaughter.pdgCode();
               this3BodyMCInfo.genDecVtx = {mcparticleDaughter.vx(), mcparticleDaughter.vy(), mcparticleDaughter.vz()};
-            } else if (abs(mcparticleDaughter.pdgCode()) == PDG_t::kPiPlus) { // pion
+            } else if (std::abs(mcparticleDaughter.pdgCode()) == PDG_t::kPiPlus) { // pion
               this3BodyMCInfo.genMomPion = mcparticleDaughter.p();
               this3BodyMCInfo.genPtPion = mcparticleDaughter.pt();
               this3BodyMCInfo.daughterPiPdgCode = mcparticleDaughter.pdgCode();
@@ -1182,7 +1183,7 @@ struct decay3bodyBuilder {
   template <typename MCTrack3B>
   int checkH3LTruth(MCTrack3B const& mcParticlePr, MCTrack3B const& mcParticlePi, MCTrack3B const& mcParticleDe, bool& isMuonReco)
   {
-    if (abs(mcParticlePr.pdgCode()) != 2212 || abs(mcParticleDe.pdgCode()) != 1000010020) {
+    if (std::abs(mcParticlePr.pdgCode()) != 2212 || std::abs(mcParticleDe.pdgCode()) != 1000010020) {
       return -1;
     }
     // check proton and deuteron mother

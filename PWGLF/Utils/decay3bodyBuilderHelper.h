@@ -835,4 +835,4 @@ class decay3bodyBuilderHelper
 } // namespace pwglf
 } // namespace o2
 
-#endif // PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_000,0
+#endif // PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_
