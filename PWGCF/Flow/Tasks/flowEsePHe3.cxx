@@ -809,7 +809,7 @@ struct FlowEsePHe3 {
           }
         }
         ese_parameters::eseCandidates.emplace_back(ESECandidate{
-          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, static_cast<int8_t>track.sign(), correctedTpcInnerParam, track.tpcSignal(), track.pt(), track.eta(), track.phi(),
+          collision.posZ(), collision.centFT0C(), psi2, q2Tarinit, q2Refinit, static_cast<int8_t>(track.sign()), correctedTpcInnerParam, track.tpcSignal(), track.pt(), track.eta(), track.phi(),
           track.dcaXY(), track.dcaZ(), static_cast<uint8_t>(track.tpcNClsFound()), track.itsNCls(), track.tpcChi2NCl(), track.itsChi2NCl(),
           nSigmaTPCTar, nSigmaTOFTar, nSigmaITSTar, track.itsClusterSizes()});
       }
