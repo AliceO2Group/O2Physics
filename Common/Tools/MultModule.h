@@ -218,19 +218,19 @@ struct products : o2::framework::ProducesGroup {
 // FIXME ideally cursors could be readable
 // to avoid duplicate memory allocation but ok
 struct multEntry {
-  float multFV0A = -999.0f;
-  float multFV0C = -999.0f;
-  float multFV0AOuter = -999.0f;
-  float multFT0A = -999.0f;
-  float multFT0C = -999.0f;
-  float multFDDA = -999.0f;
-  float multFDDC = -999.0f;
-  float multZNA = -999.0f;
-  float multZNC = -999.0f;
-  float multZEM1 = -999.0f;
-  float multZEM2 = -999.0f;
-  float multZPA = -999.0f;
-  float multZPC = -999.0f;
+  float multFV0A = 0.0f;
+  float multFV0C = 0.0f;
+  float multFV0AOuter = 0.0f;
+  float multFT0A = 0.0f;
+  float multFT0C = 0.0f;
+  float multFDDA = 0.0f;
+  float multFDDC = 0.0f;
+  float multZNA = 0.0f;
+  float multZNC = 0.0f;
+  float multZEM1 = 0.0f;
+  float multZEM2 = 0.0f;
+  float multZPA = 0.0f;
+  float multZPC = 0.0f;
   int multTracklets = 0;
 
   int multNContribs = 0;        // PVMult 0.8
@@ -407,7 +407,7 @@ class MultModule
   CalibrationInfo mftInfo = CalibrationInfo("MFT");
 
   template <typename TConfigurables, typename TInitContext>
-  void init(TConfigurables const& opts, TInitContext& context)
+  void init(TConfigurables& opts, TInitContext& context)
   {
     // read in configurations from the task where it's used
     internalOpts = opts;
@@ -444,6 +444,8 @@ class MultModule
         }
       }
     }
+
+    opts = internalOpts;
 
     // list enabled tables
     for (int i = 0; i < nTablesConst; i++) {
@@ -532,6 +534,9 @@ class MultModule
           mults.multFV0AOuter += amplitude;
         }
       }
+    } else {
+      mults.multFV0A = -999.f;
+      mults.multFV0AOuter = -999.f;
     }
     if (collision.has_foundFT0()) {
       const auto& ft0 = collision.foundFT0();
@@ -541,6 +546,9 @@ class MultModule
       for (const auto& amplitude : ft0.amplitudeC()) {
         mults.multFT0C += amplitude;
       }
+    } else {
+      mults.multFT0A = -999.f;
+      mults.multFT0C = -999.f;
     }
     if (collision.has_foundFDD()) {
       const auto& fdd = collision.foundFDD();
@@ -550,6 +558,9 @@ class MultModule
       for (const auto& amplitude : fdd.chargeC()) {
         mults.multFDDC += amplitude;
       }
+    } else {
+      mults.multFDDA = -999.f;
+      mults.multFDDC = -999.f;
     }
     if (bc.has_zdc()) {
       mults.multZNA = bc.zdc().amplitudeZNA();
@@ -558,9 +569,19 @@ class MultModule
       mults.multZEM2 = bc.zdc().amplitudeZEM2();
       mults.multZPA = bc.zdc().amplitudeZPA();
       mults.multZPC = bc.zdc().amplitudeZPC();
+    } else {
+      mults.multZNA = -999.f;
+      mults.multZNC = -999.f;
+      mults.multZEM1 = -999.f;
+      mults.multZEM2 = -999.f;
+      mults.multZPA = -999.f;
+      mults.multZPC = -999.f;
     }
 
     // fill standard cursors if required
+    if (internalOpts.mEnabledTables[kTrackletMults]) { // Tracklets (only Run2) nothing to do (to be removed!)
+      cursors.tableTracklet(0);
+    }
     if (internalOpts.mEnabledTables[kFV0Mults]) {
       cursors.tableFV0(mults.multFV0A, mults.multFV0C);
     }
@@ -970,6 +991,9 @@ class MultModule
           for (const auto& amplitude : ft0.amplitudeC()) {
             bcMultFT0C += amplitude;
           }
+        } else {
+          bcMultFT0A = -999.f;
+          bcMultFT0C = -999.f;
         }
 
         if (internalOpts.mEnabledTables[kBCCentFT0Ms])
