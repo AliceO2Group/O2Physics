@@ -900,68 +900,68 @@ class HfHelper
     auto candJpsi = candBp.jPsi();
     float pseudoPropDecLen = candBp.decayLengthXY() * mCandBp / ptCandBp;
 
-    int pTBin = o2::analysis::findBin(binsPt, ptCandBp);
-    if (pTBin == -1) {
+    int binPt = o2::analysis::findBin(binsPt, ptCandBp);
+    if (binPt == -1) {
       return false;
     }
 
     // B+ mass cut
-    if (std::abs(mCandBp - o2::constants::physics::MassBPlus) > cuts->get(pTBin, "m")) {
+    if (std::abs(mCandBp - o2::constants::physics::MassBPlus) > cuts->get(binPt, "m")) {
       return false;
     }
 
     // kaon pt
-    if (ptKa < cuts->get(pTBin, "pT K")) {
+    if (ptKa < cuts->get(binPt, "pT K")) {
       return false;
     }
 
     // J/Psi pt
-    if (ptJpsi < cuts->get(pTBin, "pT J/Psi")) {
+    if (ptJpsi < cuts->get(binPt, "pT J/Psi")) {
       return false;
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(pTBin, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
     // d0(J/Psi)xd0(K)
-    if (candBp.impactParameterProduct() > cuts->get(pTBin, "B Imp. Par. Product")) {
+    if (candBp.impactParameterProduct() > cuts->get(binPt, "B Imp. Par. Product")) {
       return false;
     }
 
     // B+ Decay length
-    if (candBp.decayLength() < cuts->get(pTBin, "B decLen")) {
+    if (candBp.decayLength() < cuts->get(binPt, "B decLen")) {
       return false;
     }
 
     // B+ Decay length XY
-    if (candBp.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+    if (candBp.decayLengthXY() < cuts->get(binPt, "B decLenXY")) {
       return false;
     }
 
     // B+ CPA cut
-    if (candBp.cpa() < cuts->get(pTBin, "CPA")) {
+    if (candBp.cpa() < cuts->get(binPt, "CPA")) {
       return false;
     }
 
     // B+ CPAXY cut
-    if (candBp.cpaXY() < cuts->get(pTBin, "CPAXY")) {
+    if (candBp.cpaXY() < cuts->get(binPt, "CPAXY")) {
       return false;
     }
 
     // d0 of K
-    if (std::abs(candBp.impactParameter1()) < cuts->get(pTBin, "d0 K")) {
+    if (std::abs(candBp.impactParameter1()) < cuts->get(binPt, "d0 K")) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candBp.impactParameter0()) < cuts->get(pTBin, "d0 J/Psi")) {
+    if (std::abs(candBp.impactParameter0()) < cuts->get(binPt, "d0 J/Psi")) {
       return false;
     }
 
     // B pseudoproper decay length
-    if (pseudoPropDecLen < cuts->get(pTBin, "B pseudoprop. decLen")) {
+    if (pseudoPropDecLen < cuts->get(binPt, "B pseudoprop. decLen")) {
       return false;
     }
 
@@ -1091,74 +1091,74 @@ class HfHelper
     auto candJpsi = candBs.jPsi();
     float pseudoPropDecLen = candBs.decayLengthXY() * mCandBs / ptCandBs;
 
-    int pTBin = o2::analysis::findBin(binsPt, ptCandBs);
-    if (pTBin == -1) {
+    int binPt = o2::analysis::findBin(binsPt, ptCandBs);
+    if (binPt == -1) {
       return false;
     }
 
     // Bs mass cut
-    if (std::abs(mCandBs - o2::constants::physics::MassBPlus) > cuts->get(pTBin, "m")) {
+    if (std::abs(mCandBs - o2::constants::physics::MassBPlus) > cuts->get(binPt, "m")) {
       return false;
     }
 
     // kaon pt
-    if (candKa0.pt() < cuts->get(pTBin, "pT K") &&
-        candKa1.pt() < cuts->get(pTBin, "pT K")) {
+    if (candKa0.pt() < cuts->get(binPt, "pT K") &&
+        candKa1.pt() < cuts->get(binPt, "pT K")) {
       return false;
     }
 
     // J/Psi pt
-    if (ptJpsi < cuts->get(pTBin, "pT J/Psi")) {
+    if (ptJpsi < cuts->get(binPt, "pT J/Psi")) {
       return false;
     }
 
     // phi mass
-    if (std::abs(mcandPhi - o2::constants::physics::MassPhi) < cuts->get(pTBin, "DeltaM phi")) {
+    if (std::abs(mcandPhi - o2::constants::physics::MassPhi) < cuts->get(binPt, "DeltaM phi")) {
       return false;
     }
 
     // J/Psi mass
-    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(pTBin, "DeltaM J/Psi")) {
+    if (std::abs(candJpsi.m() - o2::constants::physics::MassJPsi) < cuts->get(binPt, "DeltaM J/Psi")) {
       return false;
     }
 
     // d0(J/Psi)xd0(phi)
-    if (candBs.impactParameterProduct() > cuts->get(pTBin, "B Imp. Par. Product")) {
+    if (candBs.impactParameterProduct() > cuts->get(binPt, "B Imp. Par. Product")) {
       return false;
     }
 
     // Bs Decay length
-    if (candBs.decayLength() < cuts->get(pTBin, "B decLen")) {
+    if (candBs.decayLength() < cuts->get(binPt, "B decLen")) {
       return false;
     }
 
     // Bs Decay length XY
-    if (candBs.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+    if (candBs.decayLengthXY() < cuts->get(binPt, "B decLenXY")) {
       return false;
     }
 
     // Bs CPA cut
-    if (candBs.cpa() < cuts->get(pTBin, "CPA")) {
+    if (candBs.cpa() < cuts->get(binPt, "CPA")) {
       return false;
     }
 
     // Bs CPAXY cut
-    if (candBs.cpaXY() < cuts->get(pTBin, "CPAXY")) {
+    if (candBs.cpaXY() < cuts->get(binPt, "CPAXY")) {
       return false;
     }
 
     // d0 of phi
-    if (std::abs(candBs.impactParameter1()) < cuts->get(pTBin, "d0 phi")) {
+    if (std::abs(candBs.impactParameter1()) < cuts->get(binPt, "d0 phi")) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candBs.impactParameter0()) < cuts->get(pTBin, "d0 J/Psi")) {
+    if (std::abs(candBs.impactParameter0()) < cuts->get(binPt, "d0 J/Psi")) {
       return false;
     }
 
     // B pseudoproper decay length
-    if (pseudoPropDecLen < cuts->get(pTBin, "B pseudoprop. decLen")) {
+    if (pseudoPropDecLen < cuts->get(binPt, "B pseudoprop. decLen")) {
       return false;
     }
 
