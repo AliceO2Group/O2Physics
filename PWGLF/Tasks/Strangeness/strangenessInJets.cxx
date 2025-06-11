@@ -1662,6 +1662,7 @@ struct StrangenessInJets {
           continue;
 
         int pdgParent(0);
+        bool isPhysPrim = false;
         for (const auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
           for (const auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
             for (const auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
