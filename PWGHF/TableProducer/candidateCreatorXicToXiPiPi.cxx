@@ -21,38 +21,37 @@
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
 #endif
 
-#include <string>
-#include <utility>
-#include <vector>
-#include <array>
-#include <algorithm>
-
-#include <KFParticleBase.h>
-#include <KFParticle.h>
-#include <KFPTrack.h>
-#include <KFPVertex.h>
-#include <KFVertex.h>
-
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsBfieldCCDB.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <TPDGCode.h>
+
+#include <KFPTrack.h>
+#include <KFPVertex.h>
+#include <KFParticle.h>
+#include <KFParticleBase.h>
+#include <KFVertex.h>
+
+#include <algorithm>
+#include <array>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -526,7 +525,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCandCounter"), VertexFit);
       }
 
-      // get chi2
+      // get chi2 values
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
       float chi2PrimXi = kfXi.GetDeviationFromVertex(kfPv);
       float chi2PrimPi0 = kfCharmBachelor0.GetDeviationFromVertex(kfPv);
@@ -922,11 +921,11 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     // for non-prompt
     std::vector<int> idxBhadMothers;
     // residuals and pulls
-    std::array<float, 2> momentumResiduals;
-    std::array<float, 3> pvResiduals;
-    std::array<float, 3> pvPulls;
-    std::array<float, 3> svResiduals;
-    std::array<float, 3> svPulls;
+    std::array<float, 2> momentumResiduals{-9999.f};
+    std::array<float, 3> pvResiduals{-9999.f};
+    std::array<float, 3> pvPulls{-9999.f};
+    std::array<float, 3> svResiduals{-9999.f};
+    std::array<float, 3> svPulls{-9999.f};
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateXic) {
