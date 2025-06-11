@@ -139,11 +139,6 @@ struct HfTaskCorrelationDsHadrons {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  /*std::vector<double> vBinsPtEfficiencyD;
-  std::vector<double> vBinsPtEfficiencyHad;
-  std::vector<double> vEfficiencyD;
-  std::vector<double> vEfficiencyHad;*/
-
   void init(InitContext&)
   {
     AxisSpec axisMassD = {binsMassD, "inv. mass (K^{#pm}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
@@ -157,11 +152,6 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
-
-    /*vBinsPtEfficiencyD = static_cast<std::vector<double>>(binsPtEfficiencyD);
-    vBinsPtEfficiencyHad = static_cast<std::vector<double>>(binsPtEfficiencyHad);
-    vEfficiencyD = static_cast<std::vector<double>>(efficiencyD);
-    vEfficiencyHad = static_cast<std::vector<double>>(efficiencyHad);*/
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "Ds BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
