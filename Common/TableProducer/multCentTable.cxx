@@ -77,7 +77,7 @@ struct MultCentTable {
     module.init(opts, initContext);
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse> const& collisions, 
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse> const& collisions,
                    soa::Join<aod::Tracks, aod::TracksExtra> const& tracks,
                    soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps> const& bcs,
                    aod::Zdcs const&,
