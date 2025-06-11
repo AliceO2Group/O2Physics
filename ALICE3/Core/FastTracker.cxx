@@ -494,18 +494,18 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
     return nIntercepts;
 
   // generate efficiency
-    float eff = 1.;
-    for (int i = 0; i < kMaxNumberOfDetectors; i++) {
-      float iGoodHit = goodHitProbability[i];
-      if (iGoodHit <= 0)
-        continue;
+  float eff = 1.;
+  for (int i = 0; i < kMaxNumberOfDetectors; i++) {
+    float iGoodHit = goodHitProbability[i];
+    if (iGoodHit <= 0)
+      continue;
 
-      eff *= iGoodHit;
+    eff *= iGoodHit;
     }
-  if (mApplyEffCorrection) {
-    if (gRandom->Uniform() > eff)
-      return -8;
-  }
+    if (mApplyEffCorrection) {
+      if (gRandom->Uniform() > eff)
+        return -8;
+    }
 
   outputTrack.setCov(inwardTrack.getCov());
   outputTrack.checkCovariance();
