@@ -14,6 +14,29 @@
 /// \author Sawan <sawan.sawan@cern.ch>
 
 // #include <TDatabasePDG.h>
+#include "PWGLF/DataModel/LFStrangenessTables.h" //
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h" //
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h" //
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h" //
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h" //
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TH1F.h>
@@ -23,33 +46,12 @@
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TPDGCode.h>
+
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <vector>
-#include <algorithm>
-#include "TF1.h"
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h" //
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" //
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"              //
-#include "Framework/runDataProcessing.h"         //
-#include "PWGLF/DataModel/LFStrangenessTables.h" //
 
 using namespace o2;
 using namespace o2::framework;
@@ -154,6 +156,7 @@ struct HigherMassResonances {
     Configurable<int> ksMassBins{"ksMassBins", 200, "Number of mass bins for K0s"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
     ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
+    ConfigurableAxis configThnAxisPhi{"configThnAxisPhi", {70, 0.0f, 7.0f}, "Phi axis"}; // 0 to 2pi
     // ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
     // ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
     // ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
@@ -182,6 +185,7 @@ struct HigherMassResonances {
     // AxisSpec multiplicityAxis = {110, 0.0f, 150.0f, "Multiplicity Axis"};
     AxisSpec multiplicityAxis = {config.binsCent, "Multiplicity Axis"};
     AxisSpec thnAxisPOL{config.configThnAxisPOL, "Configurabel theta axis"};
+    AxisSpec thnAxisPhi = {config.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
     // AxisSpec occupancyAxis = {occupancyBins, "Occupancy [-40,100]"};
 
     //  THnSparses
@@ -216,9 +220,9 @@ struct HigherMassResonances {
       // rEventSelection.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
     }
 
-    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
+    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
+    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
+    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, thnAxisPhi}, true);
     hglue.add("heventscheck", "heventscheck", kTH1I, {{10, 0, 10}});
     hglue.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
     hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
@@ -565,6 +569,7 @@ struct HigherMassResonances {
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
   using V0TrackCandidatesMC = soa::Join<aod::V0Datas, aod::McV0Labels>;
+  // z_beam direction in lab frame
 
   template <typename T2, typename T3, typename T4>
   void fillInvMass(const T2& lv3, const T3& lv5, float multiplicity, const T4& daughter1, bool isMix)
@@ -572,52 +577,73 @@ struct HigherMassResonances {
 
     // polarization calculations
 
-    fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short); // Kaon or Pion
+    ROOT::Math::XYZVector z_beam(0, 0, 1);
+    fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), o2::constants::physics::MassK0Short);
 
-    fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
-    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                               // boost mother to center of mass frame
-    fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter same as mother
+    fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // 4 vector of mother particle
+    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                               // define the boost to the center of mass frame
+    fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter to the center of mass frame
     threeVecDauCM = fourVecDauCM.Vect();                                              // get the 3 vector of daughter in the frame of mother
+    // define y = z_beam x z: Normal to the production plane
+    // ẑ: mother direction in lab, boosted into mother's rest frame
+    ROOT::Math::Boost boostToMotherCM{fourVecMother.BoostToCM()};
+    auto p_dau_CM = fourVecDauCM.Vect();                   // 3-momentum of daughter in mother rest frame
+    auto motherLabDirection = fourVecMother.Vect().Unit(); // unit vector in lab
+    ROOT::Math::PxPyPzMVector dummyZ(motherLabDirection.X(), motherLabDirection.Y(), motherLabDirection.Z(), 0.0);
+    auto boostedZ = boostToMotherCM(dummyZ).Vect().Unit(); // ẑ axis in mother rest frame
+
+    // ŷ = z_beam × ẑ (normal to production plane)
+    auto y_axis = z_beam.Cross(boostedZ).Unit();
+
+    // x̂ = ŷ × ẑ
+    auto x_axis = y_axis.Cross(boostedZ).Unit();
+
+    // Project daughter momentum onto x–y plane
+    auto p_proj_x = p_dau_CM.Dot(x_axis);
+    auto p_proj_y = p_dau_CM.Dot(y_axis);
+
+    // Calculate φ in [-π, π]
+    auto angle_phi = std::atan2(p_proj_y, p_proj_x); // φ in radians
 
     if (std::abs(lv3.Rapidity()) < 0.5) {
       if (config.activateTHnSparseCosThStarHelicity) {
         helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
         auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
 
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarProduction) {
         normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
         auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarBeam) {
         beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
         auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, angle_phi);
         }
 
       } else if (config.activateTHnSparseCosThStarRandom) {
@@ -627,13 +653,13 @@ struct HigherMassResonances {
         randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
         auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         if (!isMix) {
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
           for (int i = 0; i < config.cRotations; i++) {
             theta2 = rn->Uniform(0, o2::constants::math::PI);
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom, angle_phi);
           }
         } else {
-          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+          hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, angle_phi);
         }
       }
     }
