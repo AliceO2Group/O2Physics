@@ -13,36 +13,41 @@
 /// \brief Analysis task for Lambda spin spin correlation
 ///
 /// \author prottay.das@cern.ch
+/// \author sourav.kundu@cern.ch
 
-#include <fairlogger/Logger.h>
-#include <tuple>
-#include <string>
-#include <vector>
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
 #include "Math/Vector2D.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <tuple>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,7 +71,6 @@ struct LfTaskLambdaSpinCorr {
   // mixing
   Configurable<int> cosCalculation{"cosCalculation", 0, "cos calculation"};
   Configurable<int> mixingCombination{"mixingCombination", 0, "mixing Combination"};
-  Configurable<bool> mixingEvSel{"mixingEvSel", false, "mixingEvSel"};
   Configurable<int> cfgCutOccupancy{"cfgCutOccupancy", 2000, "Occupancy cut"};
   ConfigurableAxis axisVertex{"axisVertex", {5, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
@@ -94,13 +98,13 @@ struct LfTaskLambdaSpinCorr {
   Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> confV0PtMax{"confV0PtMax", 0.f, "Maximum transverse momentum of V0"};
   Configurable<float> confV0Rap{"confV0Rap", 0.8f, "Rapidity range of V0"};
-  Configurable<double> confV0DCADaughMax{"confV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
+  Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 0.2f, "Maximum DCA between the V0 daughters"};
   Configurable<double> confV0CPAMin{"confV0CPAMin", 0.9998f, "Minimum CPA of V0"};
   Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
   Configurable<float> confV0TranRadV0Max{"confV0TranRadV0Max", 100.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1.2, "Maximum V0 DCA to PV"};
-  Configurable<double> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
-  Configurable<double> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
+  Configurable<float> cMinV0DCAPr{"cMinV0DCAPr", 0.05, "Minimum V0 daughters DCA to PV for Pr"};
+  Configurable<float> cMinV0DCAPi{"cMinV0DCAPi", 0.05, "Minimum V0 daughters DCA to PV for Pi"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
 
   // config for V0 daughters
@@ -610,7 +614,7 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (mixingEvSel && additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
 
@@ -620,7 +624,7 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (mixingEvSel && additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
 
@@ -795,7 +799,11 @@ struct LfTaskLambdaSpinCorr {
   }
   PROCESS_SWITCH(LfTaskLambdaSpinCorr, processME, "Process data ME", true);
 
-  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
+  Filter v0der = (nabs(aod::v0data::dcapostopv) > cMinV0DCAPr && nabs(aod::v0data::dcanegtopv) > cMinV0DCAPi && nabs(aod::v0data::dcaV0daughters) < confV0DCADaughMax);
+  using v0Cand = soa::Filtered<v0Candidates>;
+
+  // void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Cand const& V0s, dauTracks const&)
   {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
@@ -914,8 +922,10 @@ struct LfTaskLambdaSpinCorr {
   }
   PROCESS_SWITCH(LfTaskLambdaSpinCorr, processDerivedData, "Process derived data", true);
 
-  Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
-  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  // Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+  Preslice<v0Cand> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
+  // void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Candidates const& V0s, dauTracks const&)
+  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Cand const& V0s, dauTracks const&)
 
   {
 
@@ -954,7 +964,7 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel4 && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (mixingEvSel && additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (additionalEvSel5 && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
 
@@ -964,13 +974,16 @@ struct LfTaskLambdaSpinCorr {
       if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (mixingEvSel && additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (additionalEvSel5 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
       auto centrality = collision1.centFT0C();
-      auto groupV01 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.globalIndex());
-      auto groupV02 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.globalIndex());
-      auto groupV03 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.globalIndex());
+      // auto groupV01 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.globalIndex());
+      // auto groupV02 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.globalIndex());
+      // auto groupV03 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.globalIndex());
+      auto groupV01 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      auto groupV02 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
+      auto groupV03 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.index());
 
       size_t rows = groupV03.size() + 20;
       size_t cols = groupV01.size() + 20;
