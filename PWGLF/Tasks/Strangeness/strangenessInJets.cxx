@@ -253,8 +253,8 @@ struct StrangenessInJets {
     registryQC.add("sumPtUE", "sumPtUE", HistType::kTH1F, {{500, 0, 50, "#it{p}_{T} (GeV/#it{c})"}});
     registryQC.add("nJets_found", "nJets_found", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
     registryQC.add("nJets_selected", "nJets_selected", HistType::kTH1F, {{10, 0, 10, "#it{n}_{Jet}"}});
-    //registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
-    //registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
+    // registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
+    // registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     registryQC.add("jet_jet_overlaps", "jet_jet_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
     registryQC.add("ue_ue_overlaps", "ue_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
@@ -390,12 +390,12 @@ struct StrangenessInJets {
       registryMC.add("XiNeg_reconstructed_incl", "XiNeg_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("OmegaPos_reconstructed_incl", "OmegaPos_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
       registryMC.add("OmegaNeg_reconstructed_incl", "OmegaNeg_reconstructed_incl", HistType::kTH2F, {multBinning, ptAxis});
-     
+
       // Histograms for secondary lambda in jet and UE
-      //registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
-      //registryMC.add("Secondary_Lambda_Ue", "Secondary_Lambda_Ue", HistType::kTH1F, {ptAxis});
-      //registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
-      //registryMC.add("Secondary_AntiLambda_Ue", "Secondary_AntiLambda_Ue", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_Lambda_InJet", "Secondary_Lambda_InJet", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_Lambda_Ue", "Secondary_Lambda_Ue", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_AntiLambda_InJet", "Secondary_AntiLambda_InJet", HistType::kTH1F, {ptAxis});
+      // registryMC.add("Secondary_AntiLambda_Ue", "Secondary_AntiLambda_Ue", HistType::kTH1F, {ptAxis});
 
       // Histograms for 2d reweighting (pion)
       registryMC.add("mc_pi_plus_eta_pt/jet", "", HistType::kTH2F, {ptAxisPi, etaAxis});
@@ -1047,13 +1047,12 @@ struct StrangenessInJets {
     get2DWeightHisto(histoNameWeightsXiUe, twodWeightsXiUe);
     get2DWeightHisto(histoNameWeightsAntiXiInJet, twodWeightsAntiXiInJet);
     get2DWeightHisto(histoNameWeightsAntiXiUe, twodWeightsAntiXiUe);
-    
+
     // Omega
     get2DWeightHisto(histoNameWeightsOmegaInJet, twodWeightsOmegaInJet);
     get2DWeightHisto(histoNameWeightsOmegaUe, twodWeightsOmegaUe);
     get2DWeightHisto(histoNameWeightsAntiOmegaInJet, twodWeightsAntiOmegaInJet);
     get2DWeightHisto(histoNameWeightsAntiOmegaUe, twodWeightsAntiOmegaUe);
-    
   }
 
   void processData(SelCollisions::iterator const& collision,
@@ -1522,7 +1521,7 @@ struct StrangenessInJets {
         TVector3 momentumV0 = momentumPos + momentumNeg;
 
         // Feed-down for lambda
-        //if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
+        // if (passedLambdaSelection(v0, pos, neg) && pdgParent == kLambda0) {
         //  if (!isPhysPrim) {
         //    double wSecLambdaInJet(1.0);
         //    double wSecLambdaUe(1.0);
@@ -1553,7 +1552,7 @@ struct StrangenessInJets {
         //}
 
         // Feed-down for antilambda
-        //if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
+        // if (passedAntiLambdaSelection(v0, pos, neg) && pdgParent == kLambda0Bar) {
         //  if (!isPhysPrim) {
         //    double wSecAntiLambdaInJet(1.0);
         //    double wSecAntiLambdaUe(1.0);
@@ -1686,8 +1685,8 @@ struct StrangenessInJets {
         TVector3 momentumPos(posParticle.px(), posParticle.py(), posParticle.pz());
         TVector3 momentumNeg(negParticle.px(), negParticle.py(), negParticle.pz());
         TVector3 momentumBach(bachParticle.px(), bachParticle.py(), bachParticle.pz());
-        TVector3 momentumV0 = momentumPos + momentumNeg;      
-        TVector3 momentumCasc = momentumV0 + momentumBach; 
+        TVector3 momentumV0 = momentumPos + momentumNeg;
+        TVector3 momentumCasc = momentumV0 + momentumBach;
 
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiPlusBar) {
@@ -1705,28 +1704,28 @@ struct StrangenessInJets {
         if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdgParent == kOmegaMinus) {
           registryMC.fill(HIST("OmegaNeg_reconstructed_incl"), multiplicity, casc.pt());
         }
-        
+
         if (!isPhysPrim)
           continue;
-        
+
         double wXiPosJet(1.0), wXiPosUe(1.0), wXiNegJet(1.0), wXiNegUe(1.0), wOmegaPosJet(1.0), wOmegaPosUe(1.0), wOmegaNegJet(1.0), wOmegaNegUe(1.0);
         if (applyReweighting) {
-         int ix = twodWeightsXiInJet->GetXaxis()->FindBin(momentumCasc.Pt());
-         int iy = twodWeightsXiInJet->GetYaxis()->FindBin(momentumCasc.Eta());   
-         wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
-         wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
-         wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
-         wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
-         wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
-         wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
-         wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
-         wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
-        
-         // protections
-         if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
+          int ix = twodWeightsXiInJet->GetXaxis()->FindBin(momentumCasc.Pt());
+          int iy = twodWeightsXiInJet->GetYaxis()->FindBin(momentumCasc.Eta());
+          wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
+          wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
+          wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
+          wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
+          wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
+          wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
+          wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
+          wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
             wXiPosJet = 1.0;
             wXiPosUe = 1.0;
-            wXiNegJet = 1.0; 
+            wXiNegJet = 1.0;
             wXiNegUe = 1.0;
             wOmegaPosJet = 1.0;
             wOmegaPosUe = 1.0;
@@ -1736,7 +1735,7 @@ struct StrangenessInJets {
           if (iy == 0 || iy > twodWeightsXiInJet->GetNbinsY()) {
             wXiPosJet = 1.0;
             wXiPosUe = 1.0;
-            wXiNegJet = 1.0; 
+            wXiNegJet = 1.0;
             wXiNegUe = 1.0;
             wOmegaPosJet = 1.0;
             wOmegaPosUe = 1.0;
@@ -1744,7 +1743,7 @@ struct StrangenessInJets {
             wOmegaNegUe = 1.0;
           }
         }
-        
+
         // Xi+
         if (passedXiSelection(casc, pos, neg, bach, collision) && pdgParent == kXiPlusBar) {
           registryMC.fill(HIST("XiPos_reconstructed_jet"), multiplicity, casc.pt(), wXiPosJet);
@@ -1765,9 +1764,7 @@ struct StrangenessInJets {
           registryMC.fill(HIST("OmegaNeg_reconstructed_jet"), multiplicity, casc.pt(), wOmegaNegJet);
           registryMC.fill(HIST("OmegaNeg_reconstructed_ue"), multiplicity, casc.pt(), wOmegaNegUe);
         }
-        
-          
-      } 
+      }
 
       /*
       // Reconstructed Tracks
@@ -1942,25 +1939,25 @@ struct StrangenessInJets {
             wAntilambdaUe = 1.0;
           }
         }
-        
+
         double wXiPosJet(1.0), wXiPosUe(1.0), wXiNegJet(1.0), wXiNegUe(1.0), wOmegaPosJet(1.0), wOmegaPosUe(1.0), wOmegaNegJet(1.0), wOmegaNegUe(1.0);
         if (applyReweighting) {
-         int ix = twodWeightsXiInJet->GetXaxis()->FindBin(mcParticle.pt());
-         int iy = twodWeightsXiInJet->GetYaxis()->FindBin(mcParticle.eta());   
-         wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
-         wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
-         wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
-         wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
-         wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
-         wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
-         wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
-         wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
-          
-         // protections
-         if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
+          int ix = twodWeightsXiInJet->GetXaxis()->FindBin(mcParticle.pt());
+          int iy = twodWeightsXiInJet->GetYaxis()->FindBin(mcParticle.eta());
+          wXiPosJet = twodWeightsAntiXiInJet->GetBinContent(ix, iy);
+          wXiPosUe = twodWeightsAntiXiUe->GetBinContent(ix, iy);
+          wXiNegJet = twodWeightsXiInJet->GetBinContent(ix, iy);
+          wXiNegUe = twodWeightsXiUe->GetBinContent(ix, iy);
+          wOmegaPosJet = twodWeightsAntiOmegaInJet->GetBinContent(ix, iy);
+          wOmegaPosUe = twodWeightsAntiOmegaUe->GetBinContent(ix, iy);
+          wOmegaNegJet = twodWeightsOmegaInJet->GetBinContent(ix, iy);
+          wOmegaNegUe = twodWeightsOmegaUe->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twodWeightsXiInJet->GetNbinsX()) {
             wXiPosJet = 1.0;
             wXiPosUe = 1.0;
-            wXiNegJet = 1.0; 
+            wXiNegJet = 1.0;
             wXiNegUe = 1.0;
             wOmegaPosJet = 1.0;
             wOmegaPosUe = 1.0;
@@ -1970,7 +1967,7 @@ struct StrangenessInJets {
           if (iy == 0 || iy > twodWeightsXiInJet->GetNbinsY()) {
             wXiPosJet = 1.0;
             wXiPosUe = 1.0;
-            wXiNegJet = 1.0; 
+            wXiNegJet = 1.0;
             wXiNegUe = 1.0;
             wOmegaPosJet = 1.0;
             wOmegaPosUe = 1.0;
@@ -1978,7 +1975,6 @@ struct StrangenessInJets {
             wOmegaNegUe = 1.0;
           }
         }
-        
 
         switch (mcParticle.pdgCode()) {
           /*
