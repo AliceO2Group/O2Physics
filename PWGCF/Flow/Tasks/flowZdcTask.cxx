@@ -153,7 +153,7 @@ struct FlowZdcTask {
   Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
   Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/s/shernan/test", "base path to the ccdb object"};
   Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/s/shernan/testSigma", "base path to the ccdb object"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};  
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
 
   enum EvCutLabel {
@@ -367,7 +367,7 @@ struct FlowZdcTask {
     ccdb->setFatalWhenNull(false);
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);    
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
   }
   template <typename EventCuts>
   bool isEventSelected(EventCuts const& col)
@@ -510,7 +510,7 @@ struct FlowZdcTask {
       }
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
-    
+
     const double normT0M{(aT0A + aT0C) / 100.};
     float znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
     float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
@@ -581,7 +581,7 @@ struct FlowZdcTask {
       histos.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
       et += std::sqrt(std::pow(track.pt(), 2.) + std::pow(o2::constants::physics::MassPionCharged, 2.));
       meanpt += track.pt();
-    }    
+    }
     histos.fill(HIST("zPos"), collision.posZ());
     histos.fill(HIST("T0Ccent"), collision.centFT0C());
 
