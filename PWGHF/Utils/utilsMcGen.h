@@ -30,6 +30,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
 
 using namespace o2::hf_decay::hf_cand_2prong;
 using namespace o2::hf_decay::hf_cand_3prong;

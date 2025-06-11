@@ -54,6 +54,7 @@
 #include "PWGHF/Utils/utilsMcGen.h"
 #include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGHF/Utils/utilsMcMatching.h"
 
 using namespace o2;
 using namespace o2::analysis;
