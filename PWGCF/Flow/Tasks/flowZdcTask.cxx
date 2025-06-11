@@ -24,14 +24,13 @@
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
 
-#include <TComplex.h>
 #include "TList.h"
+#include <TComplex.h>
 #include <TF1.h>
 #include <TMath.h>
 #include <TProfile.h>
@@ -39,8 +38,8 @@
 #include <TRandom3.h>
 
 #include <cmath>
-#include <vector>
 #include <complex>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
