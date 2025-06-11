@@ -64,12 +64,12 @@ namespace o2
     /// It uses a sinh-based scaling function, which provides a compromise between fixed-step and relative quantization.
     // This approach reflects typical resolution formulas and is well-suited for detector calibration data.
     ///\param origValue is the original value
-    ///\param sigma0 is a asinh parameter 
+    ///\param sigma0 is a asinh parameter
     ///\param sigma1 is a asinh parameter
     ///\param clampMin is the maximum value
     ///\param clampMax is the minimum value
     ///\return The value compressed
-    int codeSqrtScaling(float origValue, float sigma0, float sigma1, int clampMin, int clampMax) 
+    int codeSqrtScaling(float origValue, float sigma0, float sigma1, int clampMin, int clampMax)
     {
       float codeF = std::asinh((sigma1 * origValue) / sigma0) / sigma0;
       return std::clamp(static_cast<int>(std::round(codeF)), clampMin, clampMax);
@@ -151,17 +151,17 @@ namespace o2
       3.0,
       1000.0};
     auto vecBinsPtTrack = std::vector<float>{BinsPtTrack, BinsPtTrack + NBinsPtTrack + 1};
-    
+
     // default values for the dca_xy and dca_z cuts of displaced tracks
     constexpr float CutsTrack[NBinsPtTrack][NCutVarsTrack] = {{0.0015, 2., 0.0000, 2.},  /* 0   < pt < 0.5 */
                                                               {0.0015, 2., 0.0000, 2.},  /* 0.5 < pt < 1 */
                                                               {0.0015, 2., 0.0000, 2.},  /* 1   < pt < 1.5 */
                                                               {0.0015, 2., 0.0000, 2.},  /* 1.5 < pt < 2 */
                                                               {0.0000, 2., 0.0000, 2.},  /* 2   < pt < 3 */
-                                                              {0.0000, 2., 0.0000, 2.}}; /* 3   < pt < 1000 */    
+                                                              {0.0000, 2., 0.0000, 2.}}; /* 3   < pt < 1000 */
     // row labels
     static const std::vector<std::string> labelsPtTrack{};
-    
+
     // column labels
     static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary", "min_dcaztoprimary", "max_dcaztoprimary"};
 
@@ -219,8 +219,8 @@ namespace o2
       DECLARE_SOA_COLUMN(RunNumber, runNumber, int); //! Run number
       DECLARE_SOA_COLUMN(Orbit, orbit, uint32_t); //! orbit ID
       DECLARE_SOA_COLUMN(CentFT0C, centFT0C, uint8_t); //! FTOC centrality
-      DECLARE_SOA_COLUMN(OccupancyTracks, occupancyTracks, uint8_t); //! FT0 occupancy 
-      DECLARE_SOA_COLUMN(OccupancyFT0C, occupancyFT0C, uint8_t); //! FT0 occupancy 
+      DECLARE_SOA_COLUMN(OccupancyTracks, occupancyTracks, uint8_t); //! FT0 occupancy
+      DECLARE_SOA_COLUMN(OccupancyFT0C, occupancyFT0C, uint8_t); //! FT0 occupancy
     } // namespace hf_calib
 
     DECLARE_SOA_TABLE(D0CalibColl, "AOD", "D0CALIBCOLLS",
@@ -347,6 +347,6 @@ namespace o2
                       hf_calib::PointingAngle,
                       hf_calib::PointingAngleXY,
                       hf_calib::DecVtxChi2);
-  } // namespace aod 
+  } // namespace aod
 } // namespace o2
 #endif // D0CALIBTABLES_H_

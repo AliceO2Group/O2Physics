@@ -87,7 +87,7 @@ struct HfDerivedDataCreatorD0Calibration {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
-  Service<o2::ccdb::BasicCCDBManager> ccdb; 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -204,7 +204,7 @@ struct HfDerivedDataCreatorD0Calibration {
           if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCovNeg.getPt(), dcaNeg.getY(), dcaNeg.getZ())) {
             continue;
           }
-  
+
           int pidTrackNegKaon{-1};
           int pidTrackNegPion{-1};
           if (cfgTrackCuts.usePidTpcOnly) {
