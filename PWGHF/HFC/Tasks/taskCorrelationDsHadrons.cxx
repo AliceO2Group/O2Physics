@@ -139,10 +139,10 @@ struct HfTaskCorrelationDsHadrons {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  std::vector<double> vBinsPtEfficiencyD;
+  /*std::vector<double> vBinsPtEfficiencyD;
   std::vector<double> vBinsPtEfficiencyHad;
   std::vector<double> vEfficiencyD;
-  std::vector<double> vEfficiencyHad;
+  std::vector<double> vEfficiencyHad;*/
 
   void init(InitContext&)
   {
@@ -158,10 +158,10 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
 
-    vBinsPtEfficiencyD = static_cast<std::vector<double>>(binsPtEfficiencyD);
+    /*vBinsPtEfficiencyD = static_cast<std::vector<double>>(binsPtEfficiencyD);
     vBinsPtEfficiencyHad = static_cast<std::vector<double>>(binsPtEfficiencyHad);
     vEfficiencyD = static_cast<std::vector<double>>(efficiencyD);
-    vEfficiencyHad = static_cast<std::vector<double>>(efficiencyHad);
+    vEfficiencyHad = static_cast<std::vector<double>>(efficiencyHad);*/
 
     // Histograms for data analysis
     registry.add("hBdtScorePrompt", "Ds BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
@@ -278,54 +278,62 @@ struct HfTaskCorrelationDsHadrons {
     }
   }
 
+  enum class EfficiencyMode {
+    DsOnly = 1,
+    DsHadronPair = 2
+  };
+
   bool isSelectedCandidate(const int ptBinD, const float bdtScorePrompt, const float bdtScoreBkg)
   {
 
     return (ptBinD != -1 && bdtScorePrompt >= mlOutputPromptMin->at(ptBinD) && bdtScorePrompt <= mlOutputPromptMax->at(ptBinD) && bdtScoreBkg <= mlOutputBkg->at(ptBinD));
   }
 
-  template <typename T1, typename EfficiencyContainer, typename Histogram, typename T2>
-  double getEfficiencyWeight(float ptD,
-                             const T1* binsPtEfficiencyD,
-                             const EfficiencyContainer* efficiencyD,
-                             Histogram* mEfficiencyD,
-                             const std::optional<float> ptAssoc = std::nullopt,
-                             const T2* binsPtEfficiencyAssoc = nullptr,
-                             const EfficiencyContainer* efficiencyAssoc = nullptr,
-                             Histogram* mEfficiencyAssoc = nullptr)
+  // template <typename T1, typename EfficiencyContainer, typename Histogram, typename T2>
+  double getEfficiencyWeight(float ptD, std::optional<float> ptAssoc = std::nullopt, EfficiencyMode mode = EfficiencyMode::DsOnly)
   {
     if (!applyEfficiency) {
       return 1.;
     }
 
     double weight = 1.;
-    if (loadAccXEffFromCCDB) {
-      if (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) != 0) {
-        weight = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
-      } else {
-        LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
-      }
-      if (ptAssoc && mEfficiencyAssoc) {
-        if (mEfficiencyAssoc->GetBinContent(mEfficiencyAssoc->FindBin(*ptAssoc)) != 0) {
-          weight /= mEfficiencyAssoc->GetBinContent(mEfficiencyAssoc->FindBin(*ptAssoc));
+
+    switch (mode) {
+      case EfficiencyMode::DsOnly:
+        if (loadAccXEffFromCCDB) {
+          if (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) == 0) {
+            LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
+          }
+          weight = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
         } else {
-          LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
+          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) == 0) {
+            LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
+          }
+          weight = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
         }
-      }
-    } else {
-      if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) != 0) {
-        weight = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
-      } else {
-        LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
-      }
-      if (ptAssoc && binsPtEfficiencyAssoc && efficiencyAssoc) {
-        if (efficiencyAssoc->at(o2::analysis::findBin(binsPtEfficiencyAssoc, *ptAssoc)) != 0) {
-          weight /= efficiencyAssoc->at(o2::analysis::findBin(binsPtEfficiencyAssoc, *ptAssoc));
+        break;
+      case EfficiencyMode::DsHadronPair:
+        if (loadAccXEffFromCCDB) {
+          if (ptAssoc && mEfficiencyAssociated) {
+            if (mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)) == 0) {
+              LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
+            }
+            weight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)));
+          }
         } else {
-          LOG(fatal) << "A bin content in associated particle efficiency vector is zero!";
+          if (ptAssoc) {
+            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) == 0) {
+              LOG(fatal) << "A bin content in associated particle efficiency vector is zero!";
+            }
+            weight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)));
+          }
         }
-      }
+        break;
+      default:
+        LOG(fatal) << "Unknown efficiency mode!";
+        break;
     }
+
     return weight;
   }
 
@@ -343,7 +351,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeightD = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), std::nullopt, static_cast<const std::vector<double>*>(nullptr), static_cast<const std::vector<double>*>(nullptr), static_cast<TH1*>(nullptr));
+      double efficiencyWeightD = getEfficiencyWeight(ptD);
 
       registry.fill(HIST("hMassDsVsPt"), massD, ptD, efficiencyWeightD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
@@ -373,7 +381,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeight = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+      double efficiencyWeight = getEfficiencyWeight(ptD, ptHadron, EfficiencyMode::DsHadronPair);
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -413,7 +421,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeightD = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), std::nullopt, static_cast<const std::vector<double>*>(nullptr), static_cast<const std::vector<double>*>(nullptr), static_cast<TH1*>(nullptr));
+      double efficiencyWeightD = getEfficiencyWeight(ptD);
 
       if (isDsPrompt) {
         registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
@@ -452,7 +460,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeight = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+      double efficiencyWeight = getEfficiencyWeight(ptD, ptHadron, EfficiencyMode::DsHadronPair);
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -543,7 +551,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeight = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+      double efficiencyWeight = getEfficiencyWeight(ptD, ptHadron, EfficiencyMode::DsHadronPair);
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -579,7 +587,7 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
-      double efficiencyWeight = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+      double efficiencyWeight = getEfficiencyWeight(ptD, ptHadron, EfficiencyMode::DsHadronPair);
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -632,7 +640,7 @@ struct HfTaskCorrelationDsHadrons {
         continue;
       }
 
-      double efficiencyWeight = getEfficiencyWeight(ptD, &vBinsPtEfficiencyD, &vEfficiencyD, mEfficiencyD.get(), ptHadron, &vBinsPtEfficiencyHad, &vEfficiencyHad, mEfficiencyAssociated.get());
+      double efficiencyWeight = getEfficiencyWeight(ptD, ptHadron, EfficiencyMode::DsHadronPair);
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
