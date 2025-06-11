@@ -748,7 +748,7 @@ struct DiHadronCor {
         if (track.has_mcParticle()) {
           const auto& mcParticle = track.mcParticle();
           if (mcParticle.isPhysicalPrimary()) {
-          registry.fill(HIST("MCEffeventcount"), 1.5);
+            registry.fill(HIST("MCEffeventcount"), 1.5);
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
           }
           registry.fill(HIST("MCEffeventcount"), 2.5);
