@@ -78,7 +78,6 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
   O2_DEFINE_CONFIGURABLE(cfgCentTableUnavailable, bool, false, "if a dataset does not provide centrality information")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
-  O2_DEFINE_CONFIGURABLE(cfgUseTentativeEventCounter, bool, false, "After sel8(), count events regardless of real event selection")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, false, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, false, "no collisions in specified time range")
@@ -93,6 +92,7 @@ struct DiHadronCor {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, bool, false, "Use local efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, bool, false, "Verbose output")
+  O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
 
   SliceCache cache;
 
@@ -184,29 +184,18 @@ struct DiHadronCor {
     LOGF(info, "Starting init");
 
     // Event Counter
-    registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "occupancy");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "MultCorrelation");
-    registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
-    if (cfgUseTentativeEventCounter) {
-      registry.add("hEventCountTentative", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(1, "after sel8");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(8, "occupancy");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(9, "MultCorrelation");
-      registry.get<TH1>(HIST("hEventCountTentative"))->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
+    if (doprocessSame && cfgUseAdditionalEventCut) {
+      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{10, 0, 10}}});
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(4, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInRofStandard");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kNoHighMultCollInPrevRof");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "occupancy");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "MultCorrelation");
+      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "cfgEvSelV0AT0ACut");
     }
 
     if (cfgUseAdditionalEventCut) {
@@ -226,23 +215,24 @@ struct DiHadronCor {
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    // Make histograms to check the distributions after cuts
-    registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
-    registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
-    registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
-    registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
-    registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
-    registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
-    registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
-    registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
-    registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
     std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
-    registry.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
-    registry.add("Centrality_used", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}}); // histogram to see how many events are in the same and mixed event
-    registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
-    registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
-
-    registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+    // Make histograms to check the distributions after cuts
+    if (doprocessSame) {
+      registry.add("deltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
+      registry.add("deltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
+      registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
+      registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
+      registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
+      registry.add("pT", "pT", {HistType::kTH1D, {axisPtTrigger}});
+      registry.add("pTCorrected", "pTCorrected", {HistType::kTH1D, {axisPtTrigger}});
+      registry.add("Nch", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}});
+      registry.add("Nch_used", "N_{ch}", {HistType::kTH1D, {axisMultiplicity}}); // histogram to see how many events are in the same and mixed event
+      registry.add("Centrality", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}});
+      registry.add("Centrality_used", hCentTitle.c_str(), {HistType::kTH1D, {axisCentrality}}); // histogram to see how many events are in the same and mixed event
+      registry.add("zVtx", "zVtx", {HistType::kTH1D, {axisVertex}});
+      registry.add("zVtx_used", "zVtx_used", {HistType::kTH1D, {axisVertex}});
+      registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
+    }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
     if (doprocessMCSame && doprocessOntheflySame) {
@@ -262,6 +252,13 @@ struct DiHadronCor {
       registry.add("MCTrue/MCTrig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       registry.add("MCTrue/MCdeltaEta_deltaPhi_same", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // check to see the delta eta and delta phi distribution
       registry.add("MCTrue/MCdeltaEta_deltaPhi_mixed", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});
+    }
+    if (doprocessMCEfficiency) {
+      registry.add("MCEffeventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}});
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(1, "MC");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(2, "Reco Primary");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(3, "Reco All");
+      registry.get<TH1>(HIST("MCEffeventcount"))->GetXaxis()->SetBinLabel(4, "Fake");
     }
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
@@ -424,7 +421,7 @@ struct DiHadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, int magneticField, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // Cache efficiency for particles (too many FindBin lookups)
     if (mEfficiency) {
@@ -455,7 +452,7 @@ struct DiHadronCor {
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
       if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), triggerWeight);
+        registry.fill(HIST("Trig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
       }
 
       for (auto const& track2 : tracks2) {
@@ -497,18 +494,18 @@ struct DiHadronCor {
         // fill the right sparse and histograms
         if (system == SameEvent) {
 
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
-          registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
 
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
-          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
+          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
       }
     }
   }
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillMCCorrelations(TTracks tracks1, TTracksAssoc tracks2, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -522,7 +519,7 @@ struct DiHadronCor {
         continue;
 
       if (system == SameEvent && (doprocessMCSame || doprocessOntheflySame))
-        registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.pt(), triggerWeight);
+        registry.fill(HIST("MCTrue/MCTrig_hist"), fSampleIndex, posZ, track1.pt(), eventWeight * triggerWeight);
 
       for (auto const& track2 : tracks2) {
 
@@ -539,13 +536,13 @@ struct DiHadronCor {
 
         // fill the right sparse and histograms
         if (system == SameEvent) {
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          same->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           if (doprocessMCSame || doprocessOntheflySame)
-            registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+            registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_same"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         } else if (system == MixedEvent) {
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), track2.pt(), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
           if (doprocessMCMixed || doprocessOntheflyMixed)
-            registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, triggerWeight * associatedWeight);
+            registry.fill(HIST("MCTrue/MCdeltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, eventWeight * triggerWeight * associatedWeight);
         }
       }
     }
@@ -652,7 +649,7 @@ struct DiHadronCor {
     fillYield(collision, tracks);
 
     same->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks, tracks, collision.posZ(), SameEvent, getMagneticField(bc.timestamp()), cent, 1.0f);
   }
   PROCESS_SWITCH(DiHadronCor, processSame, "Process same event", true);
 
@@ -671,8 +668,9 @@ struct DiHadronCor {
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
 
     auto tracksTuple = std::make_tuple(tracks, tracks);
-    Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
+    Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMixEventNumMin, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
       if (!collision1.sel8() || !collision2.sel8())
         continue;
 
@@ -702,8 +700,12 @@ struct DiHadronCor {
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       loadEfficiency(bc.timestamp());
+      float eventWeight = 1.0f;
+      if (cfgUseEventWeights) {
+        eventWeight = 1.0f / it.currentWindowNeighbours();
+      }
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()), cent1);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, getMagneticField(bc.timestamp()), cent1, eventWeight);
     }
   }
 
@@ -723,7 +725,7 @@ struct DiHadronCor {
     }
   }
 
-  void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, aod::BCsWithTimestamps const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, FilteredMcParticles const& mcParticles, FilteredTracksWithMCLabels const& tracks)
+  void processMCEfficiency(FilteredMcCollisions::iterator const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, FilteredMcParticles const& mcParticles, FilteredTracksWithMCLabels const& tracks)
   {
     if (cfgSelCollByNch && (tracks.size() < cfgCutMultMin || tracks.size() >= cfgCutMultMax)) {
       return;
@@ -731,6 +733,7 @@ struct DiHadronCor {
     // Primaries
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.isPhysicalPrimary()) {
+        registry.fill(HIST("MCEffeventcount"), 0.5);
         same->getTrackHistEfficiency()->Fill(CorrelationContainer::MC, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
       }
     }
@@ -745,11 +748,14 @@ struct DiHadronCor {
         if (track.has_mcParticle()) {
           const auto& mcParticle = track.mcParticle();
           if (mcParticle.isPhysicalPrimary()) {
+            registry.fill(HIST("MCEffeventcount"), 1.5);
             same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoPrimaries, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
           }
+          registry.fill(HIST("MCEffeventcount"), 2.5);
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::RecoAll, mcParticle.eta(), mcParticle.pt(), getSpecies(mcParticle.pdgCode()), 0., mcCollision.posZ());
         } else {
           // fake track
+          registry.fill(HIST("MCEffeventcount"), 3.5);
           same->getTrackHistEfficiency()->Fill(CorrelationContainer::Fake, track.eta(), track.pt(), 0, 0., mcCollision.posZ());
         }
       }
@@ -791,14 +797,15 @@ struct DiHadronCor {
     }
 
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
-    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
 
     if (collisions.size() == 0) {
       return;
     }
 
+    registry.fill(HIST("MCTrue/MCeventcount"), 2.5);
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
   }
   PROCESS_SWITCH(DiHadronCor, processMCSame, "Process MC same event", false);
 
@@ -815,8 +822,9 @@ struct DiHadronCor {
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<FilteredMcCollisions, FilteredMcParticles, FilteredMcParticles, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
+    Pair<FilteredMcCollisions, FilteredMcParticles, FilteredMcParticles, MixedBinning> pairs{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
         continue;
@@ -839,14 +847,18 @@ struct DiHadronCor {
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      float eventWeight = 1.0f;
+      if (cfgUseEventWeights) {
+        eventWeight = 1.0f / it.currentWindowNeighbours();
+      }
 
-      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
 
       if (groupedCollisions.size() == 0) {
         continue;
       }
 
-      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
     }
   }
   PROCESS_SWITCH(DiHadronCor, processMCMixed, "Process MC mixed events", false);
@@ -873,10 +885,10 @@ struct DiHadronCor {
     }
 
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepAll);
-    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+    fillMCCorrelations<CorrelationContainer::kCFStepAll>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
 
     same->fillEvent(mcParticles.size(), CorrelationContainer::kCFStepTrackedOnlyPrim);
-    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent);
+    fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(mcParticles, mcParticles, mcCollision.posZ(), SameEvent, 1.0f);
   }
   PROCESS_SWITCH(DiHadronCor, processOntheflySame, "Process on-the-fly same event", false);
 
@@ -893,8 +905,9 @@ struct DiHadronCor {
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<aod::McCollisions, aod::McParticles, aod::McParticles, MixedBinning> pair{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    for (auto const& [collision1, tracks1, collision2, tracks2] : pair) {
+    Pair<aod::McCollisions, aod::McParticles, aod::McParticles, MixedBinning> pairs{binningOnVtxAndMult, cfgMixEventNumMin, -1, mcCollisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
 
       if (cfgSelCollByNch && (tracks1.size() < cfgCutMultMin || tracks1.size() >= cfgCutMultMax))
         continue;
@@ -903,10 +916,14 @@ struct DiHadronCor {
         continue;
 
       registry.fill(HIST("MCTrue/MCeventcount"), MixedEvent); // fill the mixed event in the 3 bin
+      float eventWeight = 1.0f;
+      if (cfgUseEventWeights) {
+        eventWeight = 1.0f / it.currentWindowNeighbours();
+      }
 
-      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+      fillMCCorrelations<CorrelationContainer::kCFStepAll>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
 
-      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent);
+      fillMCCorrelations<CorrelationContainer::kCFStepTrackedOnlyPrim>(tracks1, tracks2, collision1.posZ(), MixedEvent, eventWeight);
     }
   }
   PROCESS_SWITCH(DiHadronCor, processOntheflyMixed, "Process on-the-fly mixed events", false);
