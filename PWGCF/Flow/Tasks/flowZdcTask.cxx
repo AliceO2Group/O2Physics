@@ -39,8 +39,8 @@
 
 #include <cmath>
 #include <complex>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -652,7 +652,6 @@ struct FlowZdcTask {
       return;
     int nTot{0};                     // Tracks are already filtered with GlobalTrack || GlobalTrackSDD
     for (const auto& track : tracks) {
-      double phi = track.phi();
       nTot++;
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("phiHistogram"), track.phi());
