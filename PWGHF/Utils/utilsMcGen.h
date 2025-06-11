@@ -32,12 +32,10 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsMcMatching.h"
 
-using namespace o2::hf_decay::hf_cand_2prong;
-using namespace o2::hf_decay::hf_cand_3prong;
-using namespace o2::hf_corrbkg;
-
 namespace hf_mc_gen
 {
+
+using namespace o2::hf_corrbkg;
 
 template <bool matchCorrBkgs = false, typename T, typename U, typename V>
 void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
@@ -61,7 +59,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     if (matchCorrBkgs) {
       bool matched = false;
 
-      for (const auto& [chn, finalState] : finalStates2Prongs) {
+      for (const auto& [chn, finalState] : o2::hf_corrbkg::hf_chns_2prong::finalStates2Prongs) {
         if (finalState.size() == 3) { // Partly Reco 3-prong decays
           std::array<int, 3> finalStateParts = std::array{finalState[0], finalState[1], finalState[2]};
           if (particle.pdgCode() < 0) {
@@ -131,7 +129,7 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
 }
 
 template <bool matchCorrBkgs = false, typename T, typename U, typename V>
-void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground)
+void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, std::vector<int> const& corrBkgMothersPdgs = {})
 {
   using namespace o2::constants::physics;
   constexpr std::size_t NDaughtersResonant{2u};
@@ -157,8 +155,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
     }
 
     if (matchCorrBkgs) {
-      std::array<int, 5> mothersPdgCodes = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus};
-      for (const auto& motherPdgCode : mothersPdgCodes) {
+      for (const auto& motherPdgCode : corrBkgMothersPdgs) {
         if (std::abs(particle.pdgCode()) != motherPdgCode) {
           continue; // Skip if the particle PDG code does not match the mother PDG code
         }

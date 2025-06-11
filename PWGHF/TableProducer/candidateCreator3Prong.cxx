@@ -59,14 +59,14 @@ using namespace o2;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
-using namespace o2::hf_decay;
+using namespace o2::hf_decay::hf_cand_3prong;
+using namespace o2::hf_corrbkg;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pid_tpc_tof_utils;
-using namespace o2::hf_corrbkg;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
@@ -853,6 +853,7 @@ struct HfCandidateCreator3ProngExpressions {
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
   Configurable<bool> matchCorrBkgs{"matchCorrBkgs", false, "Match correlated background candidates"};
+  Configurable<std::vector<int>> mothersCorrBkgsPdgs{"mothersCorrBkgsPdgs", {411, 413, 431, 4122, 4232}, "PDG codes of the mother particles of correlated background candidates"};
 
   constexpr static std::size_t NDaughtersResonant{2u};
 
@@ -947,10 +948,9 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       if (matchCorrBkgs) {
-        std::array<int, 5> mothersPdgCodes = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus};
         indexRec = -1; // Index of the matched reconstructed candidate
 
-        for (const auto& pdg : mothersPdgCodes) {
+        for (const auto& pdg : mothersCorrBkgsPdgs.value) {
           int depth = 2;
           if (pdg == Pdg::kDStar) {
             depth = 3; // D0 resonant decays are active
@@ -1206,7 +1206,7 @@ struct HfCandidateCreator3ProngExpressions {
         continue;
       }
       if (matchCorrBkgs) {
-        hf_mc_gen::fillMcMatchGen3Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
+        hf_mc_gen::fillMcMatchGen3Prong<true>(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, mothersCorrBkgsPdgs.value);
       } else {
         hf_mc_gen::fillMcMatchGen3Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground);
       }
