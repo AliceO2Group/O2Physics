@@ -1106,15 +1106,19 @@ class VarManager : public TObject
     // Check whether all the needed objects for TPC postcalibration are available
     if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[0] = true;
+      fgUsedVars[kTPCnSigmaEl_Corr] = true;
     }
     if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[1] = true;
+      fgUsedVars[kTPCnSigmaPi_Corr] = true;
     }
     if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[2] = true;
+      fgUsedVars[kTPCnSigmaKa_Corr] = true;
     }
     if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
       fgRunTPCPostCalibration[3] = true;
+      fgUsedVars[kTPCnSigmaPr_Corr] = true;
     }
   }
   static TObject* GetCalibrationObject(CalibObjects calib)
@@ -2376,7 +2380,7 @@ void VarManager::FillTrack(T const& track, float* values)
   }
 
   // Quantities based on the barrel PID tables
-  if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
+  if constexpr ((fillMap & TrackPID) > 0 || (fillMap & TrackTPCPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
     values[kTPCnSigmaEl] = track.tpcNSigmaEl();
     values[kTPCnSigmaPi] = track.tpcNSigmaPi();
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
@@ -2479,10 +2483,13 @@ void VarManager::FillTrack(T const& track, float* values)
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
-    values[kTOFnSigmaEl] = track.tofNSigmaEl();
-    values[kTOFnSigmaPi] = track.tofNSigmaPi();
-    values[kTOFnSigmaKa] = track.tofNSigmaKa();
-    values[kTOFnSigmaPr] = track.tofNSigmaPr();
+
+    if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
+      values[kTOFnSigmaEl] = track.tofNSigmaEl();
+      values[kTOFnSigmaPi] = track.tofNSigmaPi();
+      values[kTOFnSigmaKa] = track.tofNSigmaKa();
+      values[kTOFnSigmaPr] = track.tofNSigmaPr();
+    }
 
     if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
       // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
@@ -2910,7 +2917,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
       ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
       if (fgUsedVars[kCosThetaPP]) {
-        values[kCosThetaPP] = zaxis_PP.Dot(v_CM);
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
         values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
@@ -3972,6 +3979,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     values[VarManager::kVertexingProcCode] = procCode;
     if (procCode == 0) {
       // TODO: set the other variables to appropriate values and return
+      values[kVertexingChi2PCA] = -999.;
       values[kVertexingLxy] = -999.;
       values[kVertexingLxyz] = -999.;
       values[kVertexingLz] = -999.;
@@ -4005,6 +4013,11 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
       o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
       auto covMatrixPV = primaryVertex.getCov();
+
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
+        values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
@@ -4272,9 +4285,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
         covMatrixPCA = fgFitterThreeProngFwd.calcPCACovMatrixFlat();
       }
 
-      auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
-      if (fgUsedVars[kVertexingChi2PCA])
+      if (fgUsedVars[kVertexingChi2PCA]) {
+        auto chi2PCA = fgFitterThreeProngBarrel.getChi2AtPCACandidate();
         values[VarManager::kVertexingChi2PCA] = chi2PCA;
+      }
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
       double theta = std::atan2(secondaryVertex[2] - collision.posZ(),

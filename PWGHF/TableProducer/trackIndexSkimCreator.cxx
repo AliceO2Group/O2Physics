@@ -50,6 +50,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"

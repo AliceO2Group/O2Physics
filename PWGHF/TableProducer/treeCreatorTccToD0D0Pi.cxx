@@ -111,6 +111,8 @@ DECLARE_SOA_COLUMN(CentOfCand, centOfCand, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);     //! Global index for the collisionAdd commentMore actions
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t); //! Timestamp for the collision
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
@@ -135,7 +137,6 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::MD2,
                   full::DeltaMD1,
                   full::DeltaMD2,
-                  full::MDD,
                   full::MDPi1,
                   full::MDPi2,
                   full::MDDPi,
@@ -165,7 +166,34 @@ DECLARE_SOA_TABLE(HfCandTccLites, "AOD", "HFCANDTCCLITE",
                   full::NITSClsSoftPi,
                   full::NTPCClsCrossedRowsSoftPi,
                   full::NTPCChi2NClSoftPi,
-                  full::CentOfCand);
+                  full::CentOfCand,
+                  full::GIndexCol,
+                  full::TimeStamp);
+
+DECLARE_SOA_TABLE(HfCandDDPairs, "AOD", "HFCANDDDPAIR",
+                  full::PxProng0D1,
+                  full::PxProng1D1,
+                  full::PyProng0D1,
+                  full::PyProng1D1,
+                  full::PzProng0D1,
+                  full::PzProng1D1,
+                  full::PxProng0D2,
+                  full::PxProng1D2,
+                  full::PyProng0D2,
+                  full::PyProng1D2,
+                  full::PzProng0D2,
+                  full::PzProng1D2,
+                  full::SelFlagD1,
+                  full::SelFlagD2,
+                  full::EtaD1,
+                  full::EtaD2,
+                  full::PhiD1,
+                  full::PhiD2,
+                  full::MlScoreD1,
+                  full::MlScoreD2,
+                  full::CentOfCand,
+                  full::GIndexCol,
+                  full::TimeStamp);
 
 DECLARE_SOA_TABLE(HfCandTccFullEvs, "AOD", "HFCANDTCCFULLEV",
                   full::CollisionId,
@@ -180,6 +208,7 @@ DECLARE_SOA_TABLE(HfCandTccFullEvs, "AOD", "HFCANDTCCFULLEV",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorTccToD0D0Pi {
   Produces<o2::aod::HfCandTccLites> rowCandidateLite;
+  Produces<o2::aod::HfCandDDPairs> rowCandidateDDPair;
   Produces<o2::aod::HfCandTccFullEvs> rowCandidateFullEvents;
 
   Configurable<float> ptMinSoftPion{"ptMinSoftPion", 0.0, "Min pt for the soft pion"};
@@ -208,6 +237,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   o2::vertexing::DCAFitterN<3> dfTcc; // Tcc vertex fitter
+  o2::vertexing::DCAFitterN<2> dfDD;  // DD pair vertex fitter
   o2::vertexing::DCAFitterN<2> dfD1;  // 2-prong vertex fitter (to rebuild D01 vertex)
   o2::vertexing::DCAFitterN<2> dfD2;  // 2-prong vertex fitter (to rebuild D02 vertex)
 
@@ -232,7 +262,7 @@ struct HfTreeCreatorTccToD0D0Pi {
   Preslice<SelectedCandidatesMl> candsD0PerCollisionWithMl = aod::track_association::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   // Partition<SelectedCandidatesMl> candidatesMlAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-  std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc;
+  std::shared_ptr<TH1> hCandidatesD1, hCandidatesD2, hCandidatesTcc, hCandidatesDD;
   HistogramRegistry registry{"registry"};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "Tcc candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
   OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "Tcc candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
@@ -260,6 +290,14 @@ struct HfTreeCreatorTccToD0D0Pi {
       dfD2.setUseAbsDCA(useAbsDCA);
       dfD2.setWeightedFinalPCA(useWeightedFinalPCA);
 
+      dfDD.setPropagateToPCA(propagateToPCA);
+      dfDD.setMaxR(maxR);
+      dfDD.setMaxDZIni(maxDZIni);
+      dfDD.setMinParamChange(minParamChange);
+      dfDD.setMinRelChi2Change(minRelChi2Change);
+      dfDD.setUseAbsDCA(useAbsDCA);
+      dfDD.setWeightedFinalPCA(useWeightedFinalPCA);
+
       dfTcc.setPropagateToPCA(propagateToPCA);
       dfTcc.setMaxR(maxR);
       dfTcc.setMaxDZIni(maxDZIni);
@@ -277,9 +315,12 @@ struct HfTreeCreatorTccToD0D0Pi {
       hCandidatesD1 = registry.add<TH1>("hCandidatesD1", "D1 candidate counter", {HistType::kTH1D, {axisCands}});
       hCandidatesD2 = registry.add<TH1>("hCandidatesD2", "D2 candidate counter", {HistType::kTH1D, {axisCands}});
       hCandidatesTcc = registry.add<TH1>("hCandidatesTcc", "Tcc candidate counter", {HistType::kTH1D, {axisCands}});
+      hCandidatesDD = registry.add<TH1>("hCandidatesDD", "DD pair candidate counter", {HistType::kTH1D, {axisCands}});
+
       setLabelHistoCands(hCandidatesD1);
       setLabelHistoCands(hCandidatesD2);
       setLabelHistoCands(hCandidatesTcc);
+      setLabelHistoCands(hCandidatesDD);
     }
   }
 
@@ -316,7 +357,7 @@ struct HfTreeCreatorTccToD0D0Pi {
       auto primaryVertex = getPrimaryVertex(collision);
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       fillEvent(collision, 0, bc.runNumber());
-
+      int64_t timeStamp = bc.timestamp();
       if (buildVertex) {
         if (runNumber != bc.runNumber()) {
           LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
@@ -325,9 +366,13 @@ struct HfTreeCreatorTccToD0D0Pi {
           LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
         }
         dfTcc.setBz(bz);
+        dfDD.setBz(bz);
         dfD1.setBz(bz);
         dfD2.setBz(bz);
       }
+
+      o2::dataformats::V0 trackD1;
+      o2::dataformats::V0 trackD2;
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
       if (candwD0ThisColl.size() <= 1)
@@ -335,7 +380,165 @@ struct HfTreeCreatorTccToD0D0Pi {
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& candidateD1 : candwD0ThisColl) {
+
+        auto trackD1Prong0 = tracks.rawIteratorAt(candidateD1.prong0Id()); // positive daughter for D1
+        auto trackD1Prong1 = tracks.rawIteratorAt(candidateD1.prong1Id()); // negative daughter for D1
+        std::array<float, 3> pVecD1Prong0{trackD1Prong0.pVector()};
+        std::array<float, 3> pVecD1Prong1{trackD1Prong1.pVector()};
+        std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
+
         for (auto candidateD2 = candidateD1 + 1; candidateD2 != candwD0ThisColl.end(); ++candidateD2) {
+          // avoid shared tracks
+          if (
+            (candidateD1.prong0Id() == candidateD2.prong0Id()) ||
+            (candidateD1.prong0Id() == candidateD2.prong1Id()) ||
+            (candidateD1.prong1Id() == candidateD2.prong0Id()) ||
+            (candidateD1.prong1Id() == candidateD2.prong1Id())) {
+            continue;
+          }
+
+          auto trackD2Prong0 = tracks.rawIteratorAt(candidateD2.prong0Id()); // positive daughter for D2
+          auto trackD2Prong1 = tracks.rawIteratorAt(candidateD2.prong1Id()); // negative daughter for D2
+          std::array<float, 3> pVecD2Prong0{trackD2Prong0.pVector()};
+          std::array<float, 3> pVecD2Prong1{trackD2Prong1.pVector()};
+          std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
+
+          if (buildVertex) {
+            auto trackParVarD1Prong0 = getTrackParCov(trackD1Prong0);
+            auto trackParVarD1Prong1 = getTrackParCov(trackD1Prong1);
+            auto dca0D1 = o2::dataformats::DCA(trackD1Prong0.dcaXY(), trackD1Prong0.dcaZ(), trackD1Prong0.cYY(), trackD1Prong0.cZY(), trackD1Prong0.cZZ());
+            auto dca1D1 = o2::dataformats::DCA(trackD1Prong1.dcaXY(), trackD1Prong1.dcaZ(), trackD1Prong1.cYY(), trackD1Prong1.cZY(), trackD1Prong1.cZZ());
+
+            // repropagate tracks to this collision if needed
+            if (trackD1Prong0.collisionId() != thisCollId) {
+              trackParVarD1Prong0.propagateToDCA(primaryVertex, bz, &dca0D1);
+            }
+
+            if (trackD1Prong1.collisionId() != thisCollId) {
+              trackParVarD1Prong1.propagateToDCA(primaryVertex, bz, &dca1D1);
+            }
+            // reconstruct the 2-prong secondary vertex
+            hCandidatesD1->Fill(SVFitting::BeforeFit);
+            try {
+              if (dfD1.process(trackParVarD1Prong0, trackParVarD1Prong1) == 0) {
+                continue;
+              }
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for first D0 cannot work, skipping the candidate.";
+              hCandidatesD1->Fill(SVFitting::Fail);
+              continue;
+            }
+            hCandidatesD1->Fill(SVFitting::FitOk);
+            const auto& vertexD1 = dfD1.getPCACandidatePos();
+            trackParVarD1Prong0.propagateTo(vertexD1[0], bz);
+            trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
+
+            // build a D1 neutral track
+            trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
+
+            auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
+            auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
+            auto dca0D2 = o2::dataformats::DCA(trackD2Prong0.dcaXY(), trackD2Prong0.dcaZ(), trackD2Prong0.cYY(), trackD2Prong0.cZY(), trackD2Prong0.cZZ());
+            auto dca1D2 = o2::dataformats::DCA(trackD2Prong1.dcaXY(), trackD2Prong1.dcaZ(), trackD2Prong1.cYY(), trackD2Prong1.cZY(), trackD2Prong1.cZZ());
+
+            // repropagate tracks to this collision if needed
+            if (trackD2Prong0.collisionId() != thisCollId) {
+              trackParVarD2Prong0.propagateToDCA(primaryVertex, bz, &dca0D2);
+            }
+            if (trackD2Prong1.collisionId() != thisCollId) {
+              trackParVarD2Prong1.propagateToDCA(primaryVertex, bz, &dca1D2);
+            }
+
+            // reconstruct the 2-prong secondary vertex
+            hCandidatesD2->Fill(SVFitting::BeforeFit);
+            try {
+              if (dfD2.process(trackParVarD2Prong0, trackParVarD2Prong1) == 0) {
+                continue;
+              }
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for second D0 cannot work, skipping the candidate.";
+              hCandidatesD2->Fill(SVFitting::Fail);
+              continue;
+            }
+
+            hCandidatesD2->Fill(SVFitting::FitOk);
+            const auto& vertexD2 = dfD2.getPCACandidatePos();
+            trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
+            trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
+            // build a D2 neutral track
+            trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
+
+            hCandidatesDD->Fill(SVFitting::BeforeFit);
+            try {
+              if (dfDD.process(trackD1, trackD2) == 0) {
+                continue;
+              }
+            } catch (const std::runtime_error& error) {
+              LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for DD cannot work, skipping the candidate.";
+              hCandidatesDD->Fill(SVFitting::Fail);
+              continue;
+            }
+            hCandidatesDD->Fill(SVFitting::FitOk);
+          }
+
+          int candFlagD1 = -999;
+          int candFlagD2 = -999;
+          float cent = evaluateCentralityColl(collision);
+          float massD01 = -999;
+          float massD02 = -999;
+          std::vector<float> mlScoresD1;
+          std::vector<float> mlScoresD2;
+
+          if (candidateD1.isSelD0()) {
+            candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
+            std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
+            massD01 = hfHelper.invMassD0ToPiK(candidateD1);
+          }
+          if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
+            candFlagD1 = 2;
+            std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
+            massD01 = hfHelper.invMassD0barToKPi(candidateD1);
+          }
+
+          if (candidateD2.isSelD0()) {
+            candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
+            std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
+            massD02 = hfHelper.invMassD0ToPiK(candidateD2);
+          }
+          if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
+            candFlagD2 = 2;
+            std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
+            massD02 = hfHelper.invMassD0barToKPi(candidateD2);
+          }
+
+          // const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
+
+          rowCandidateDDPair(
+            candidateD1.pxProng0(),
+            candidateD1.pxProng1(),
+            candidateD1.pyProng0(),
+            candidateD1.pyProng1(),
+            candidateD1.pzProng0(),
+            candidateD1.pzProng1(),
+            candidateD2.pxProng0(),
+            candidateD2.pxProng1(),
+            candidateD2.pyProng0(),
+            candidateD2.pyProng1(),
+            candidateD2.pzProng0(),
+            candidateD2.pzProng1(),
+            candFlagD1,
+            candFlagD2,
+            candidateD1.eta(),
+            candidateD2.eta(),
+            candidateD1.phi(),
+            candidateD2.phi(),
+            mlScoresD1[0],
+            mlScoresD2[0],
+            cent,
+            collision.globalIndex(),
+            timeStamp);
+
+          // start to add the track of softpi to reconstruct Tcc
           for (const auto& trackId : trackIdsThisCollision) {
 
             auto trackPion = trackId.template track_as<TrkType>();
@@ -351,10 +554,6 @@ struct HfTreeCreatorTccToD0D0Pi {
             }
             // avoid shared tracks
             if (
-              (candidateD1.prong0Id() == candidateD2.prong0Id()) ||
-              (candidateD1.prong0Id() == candidateD2.prong1Id()) ||
-              (candidateD1.prong1Id() == candidateD2.prong0Id()) ||
-              (candidateD1.prong1Id() == candidateD2.prong1Id()) ||
               (candidateD1.prong0Id() == trackPion.globalIndex()) ||
               (candidateD1.prong1Id() == trackPion.globalIndex()) ||
               (candidateD2.prong0Id() == trackPion.globalIndex()) ||
@@ -362,91 +561,14 @@ struct HfTreeCreatorTccToD0D0Pi {
               continue;
             }
 
-            auto trackD1Prong0 = tracks.rawIteratorAt(candidateD1.prong0Id()); // positive daughter for D1
-            auto trackD1Prong1 = tracks.rawIteratorAt(candidateD1.prong1Id()); // negative daughter for D1
-            auto trackD2Prong0 = tracks.rawIteratorAt(candidateD2.prong0Id()); // positive daughter for D2
-            auto trackD2Prong1 = tracks.rawIteratorAt(candidateD2.prong1Id()); // negative daughter for D2
-
-            std::array<float, 3> pVecD1Prong0{trackD1Prong0.pVector()};
-            std::array<float, 3> pVecD1Prong1{trackD1Prong1.pVector()};
-            std::array<float, 3> pVecD2Prong0{trackD2Prong0.pVector()};
-            std::array<float, 3> pVecD2Prong1{trackD2Prong1.pVector()};
             std::array<float, 3> pVecSoftPi = {trackPion.pVector()};
-            // Get D momentum
-            std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
-            std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
 
             float impactParameterYD1 = -999.f;
             float impactParameterYD2 = -999.f;
             float impactParameterYSoftPi = -999.f;
             float chi2PCA = -999.f;
             if (buildVertex) {
-              auto trackParVarD1Prong0 = getTrackParCov(trackD1Prong0);
-              auto trackParVarD1Prong1 = getTrackParCov(trackD1Prong1);
-              auto dca0D1 = o2::dataformats::DCA(trackD1Prong0.dcaXY(), trackD1Prong0.dcaZ(), trackD1Prong0.cYY(), trackD1Prong0.cZY(), trackD1Prong0.cZZ());
-              auto dca1D1 = o2::dataformats::DCA(trackD1Prong1.dcaXY(), trackD1Prong1.dcaZ(), trackD1Prong1.cYY(), trackD1Prong1.cZY(), trackD1Prong1.cZZ());
-
-              // repropagate tracks to this collision if needed
-              if (trackD1Prong0.collisionId() != thisCollId) {
-                trackParVarD1Prong0.propagateToDCA(primaryVertex, bz, &dca0D1);
-              }
-
-              if (trackD1Prong1.collisionId() != thisCollId) {
-                trackParVarD1Prong1.propagateToDCA(primaryVertex, bz, &dca1D1);
-              }
-              // reconstruct the 2-prong secondary vertex
-              hCandidatesD1->Fill(SVFitting::BeforeFit);
-              try {
-                if (dfD1.process(trackParVarD1Prong0, trackParVarD1Prong1) == 0) {
-                  continue;
-                }
-              } catch (const std::runtime_error& error) {
-                LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for first D0 cannot work, skipping the candidate.";
-                hCandidatesD1->Fill(SVFitting::Fail);
-                continue;
-              }
-              hCandidatesD1->Fill(SVFitting::FitOk);
-              const auto& vertexD1 = dfD1.getPCACandidatePos();
-              trackParVarD1Prong0.propagateTo(vertexD1[0], bz);
-              trackParVarD1Prong1.propagateTo(vertexD1[0], bz);
-
-              // build a D1 neutral track
-              auto trackD1 = o2::dataformats::V0(vertexD1, pVecD1, dfD1.calcPCACovMatrixFlat(), trackParVarD1Prong0, trackParVarD1Prong1);
-
-              auto trackParVarD2Prong0 = getTrackParCov(trackD2Prong0);
-              auto trackParVarD2Prong1 = getTrackParCov(trackD2Prong1);
-              auto dca0D2 = o2::dataformats::DCA(trackD2Prong0.dcaXY(), trackD2Prong0.dcaZ(), trackD2Prong0.cYY(), trackD2Prong0.cZY(), trackD2Prong0.cZZ());
-              auto dca1D2 = o2::dataformats::DCA(trackD2Prong1.dcaXY(), trackD2Prong1.dcaZ(), trackD2Prong1.cYY(), trackD2Prong1.cZY(), trackD2Prong1.cZZ());
-
-              // repropagate tracks to this collision if needed
-              if (trackD2Prong0.collisionId() != thisCollId) {
-                trackParVarD2Prong0.propagateToDCA(primaryVertex, bz, &dca0D2);
-              }
-              if (trackD2Prong1.collisionId() != thisCollId) {
-                trackParVarD2Prong1.propagateToDCA(primaryVertex, bz, &dca1D2);
-              }
-
-              // reconstruct the 2-prong secondary vertex
-              hCandidatesD2->Fill(SVFitting::BeforeFit);
-              try {
-                if (dfD2.process(trackParVarD2Prong0, trackParVarD2Prong1) == 0) {
-                  continue;
-                }
-              } catch (const std::runtime_error& error) {
-                LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for second D0 cannot work, skipping the candidate.";
-                hCandidatesD2->Fill(SVFitting::Fail);
-                continue;
-              }
-
-              hCandidatesD2->Fill(SVFitting::FitOk);
-              const auto& vertexD2 = dfD2.getPCACandidatePos();
-              trackParVarD2Prong0.propagateTo(vertexD2[0], bz);
-              trackParVarD2Prong1.propagateTo(vertexD2[0], bz);
-              // build a D2 neutral track
-              auto trackD2 = o2::dataformats::V0(vertexD2, pVecD2, dfD2.calcPCACovMatrixFlat(), trackParVarD2Prong0, trackParVarD2Prong1);
-
               auto trackParCovPi = getTrackParCov(trackPion);
-
               // find the DCA between the D01, D02 and the bachelor track, for Tcc
               hCandidatesTcc->Fill(SVFitting::BeforeFit);
               try {
@@ -488,38 +610,8 @@ struct HfTreeCreatorTccToD0D0Pi {
             // Retrieve properties of the two D0 candidates
             float yD1 = hfHelper.yD0(candidateD1);
             float yD2 = hfHelper.yD0(candidateD2);
-            float massD01 = -999;
-            float massD02 = -999;
             float deltaMassD01 = -999;
             float deltaMassD02 = -999;
-            int candFlagD1 = -999;
-            int candFlagD2 = -999;
-            float cent = evaluateCentralityColl(collision);
-
-            std::vector<float> mlScoresD1;
-            std::vector<float> mlScoresD2;
-
-            if (candidateD1.isSelD0()) {
-              candFlagD1 = (candidateD1.isSelD0bar()) ? 3 : 1;
-              std::copy(candidateD1.mlProbD0().begin(), candidateD1.mlProbD0().end(), std::back_inserter(mlScoresD1));
-              massD01 = hfHelper.invMassD0ToPiK(candidateD1);
-            }
-            if (candidateD1.isSelD0bar() && !candidateD1.isSelD0()) {
-              candFlagD1 = 2;
-              std::copy(candidateD1.mlProbD0bar().begin(), candidateD1.mlProbD0bar().end(), std::back_inserter(mlScoresD1));
-              massD01 = hfHelper.invMassD0barToKPi(candidateD1);
-            }
-
-            if (candidateD2.isSelD0()) {
-              candFlagD2 = (candidateD2.isSelD0bar()) ? 3 : 1;
-              std::copy(candidateD2.mlProbD0().begin(), candidateD2.mlProbD0().end(), std::back_inserter(mlScoresD2));
-              massD02 = hfHelper.invMassD0ToPiK(candidateD2);
-            }
-            if (candidateD2.isSelD0bar() && !candidateD2.isSelD0()) {
-              candFlagD2 = 2;
-              std::copy(candidateD2.mlProbD0bar().begin(), candidateD2.mlProbD0bar().end(), std::back_inserter(mlScoresD2));
-              massD02 = hfHelper.invMassD0barToKPi(candidateD2);
-            }
 
             std::array<double, 2> massD1Daus{MassPiPlus, MassKPlus};
             std::array<double, 2> massD2Daus{MassPiPlus, MassKPlus};
@@ -539,7 +631,6 @@ struct HfTreeCreatorTccToD0D0Pi {
             auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPi};
             const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
             const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
-            const auto massD0D0Pair = RecoDecay::m(std::array{pVecD1, pVecD2}, std::array{MassD0, MassD0});
 
             deltaMassD01 = massKpipi1 - massD01;
             deltaMassD02 = massKpipi2 - massD02;
@@ -570,7 +661,6 @@ struct HfTreeCreatorTccToD0D0Pi {
               massD02,
               deltaMassD01,
               deltaMassD02,
-              massD0D0Pair,
               massKpipi1,
               massKpipi2,
               massD0D0Pi,
@@ -600,7 +690,9 @@ struct HfTreeCreatorTccToD0D0Pi {
               trackPion.itsNCls(),
               trackPion.tpcNClsCrossedRows(),
               trackPion.tpcChi2NCl(),
-              cent);
+              cent,
+              collision.globalIndex(),
+              timeStamp);
           } // end of loop track
         } // end of loop second D0
       } // end of loop first D0

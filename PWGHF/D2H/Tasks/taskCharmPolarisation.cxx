@@ -1086,8 +1086,8 @@ struct TaskPolarisationCharmHadrons {
     bool partRecoDstar{false};
     if constexpr (doMc) {
       if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-        partRecoDstar = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0PiPi0) && TESTBIT(std::abs(candidate.flagMcMatchRecD0()), aod::hf_cand_dstar::DecayType::D0ToPiKPi0);
-        bool signalDstar = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi) && TESTBIT(std::abs(candidate.flagMcMatchRecD0()), aod::hf_cand_dstar::DecayType::D0ToPiK);
+        partRecoDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
+        bool signalDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
         if (!signalDstar && (!partRecoDstar || !activatePartRecoDstar)) { // this candidate is not signal and not partially reconstructed signal, skip
           return isCandidateInSignalRegion;
         }
@@ -1099,8 +1099,8 @@ struct TaskPolarisationCharmHadrons {
           return isCandidateInSignalRegion;
         }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-        if constexpr (!studyLcPKPiBkgMc) {                                                                // skip this if studyLcPKPiBkgMc is true, since we are interested in background
-          if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this candidate is not signal, skip
+        if constexpr (!studyLcPKPiBkgMc) {                                                                    // skip this if studyLcPKPiBkgMc is true, since we are interested in background
+          if (std::abs(candidate.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) { // this candidate is not signal, skip
             return isCandidateInSignalRegion;
           }
           origin = candidate.originMcRec();
@@ -1501,7 +1501,7 @@ struct TaskPolarisationCharmHadrons {
 
           /// check if the pKpi triplet is a Lc->pKpi
           int8_t isRealLcPKPi = 0;
-          if (isRealPKPi && TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+          if (isRealPKPi && (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi)) {
             isRealLcPKPi = 1;
           }
 
@@ -1607,8 +1607,8 @@ struct TaskPolarisationCharmHadrons {
     int8_t charge = -99;
     bool partRecoDstar{false};
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-      partRecoDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0PiPi0) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), aod::hf_cand_dstar::DecayType::D0ToPiKPi0);
-      bool signalDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), aod::hf_cand_dstar::DecayType::D0ToPiK);
+      partRecoDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
+      bool signalDstar = TESTBIT(std::abs(mcParticle.flagMcMatchGen()), hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && TESTBIT(std::abs(mcParticle.flagMcMatchGenD0()), hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
       if (!signalDstar && (!activatePartRecoDstar || !partRecoDstar)) { // this particle is not signal and not partially reconstructed signal, skip
         return;
@@ -1629,7 +1629,7 @@ struct TaskPolarisationCharmHadrons {
       massDau = massPi;
       massCharmHad = massDstar;
     } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-      if (!TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this particle is not signal, skip
+      if (std::abs(mcParticle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) { // this particle is not signal, skip
         return;
       }
       origin = mcParticle.originMcGen();

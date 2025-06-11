@@ -147,27 +147,29 @@ struct HfTaskElectronWeakBoson {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
+    // add configurable for CCDB path
+    zorro.setBaseCCDBPath(cfgCCDBPath.value);
+
     // define axes you want to use
-    const AxisSpec axisZvtx{400, -20, 20, "Zvtx"};
+    const AxisSpec axisZvtx{40, -20, 20, "Zvtx"};
     const AxisSpec axisCounter{1, 0, 1, "events"};
-    const AxisSpec axisEta{200, -1.0, 1.0, "#eta"};
+    const AxisSpec axisEta{20, -1.0, 1.0, "#eta"};
     const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
-    const AxisSpec axisdPhi{200, -1, 1, "dPhi"};
-    const AxisSpec axisdEta{200, -1, 1, "dEta"};
+    const AxisSpec axisdPhi{100, -0.5, 0.5, "dPhi"};
+    const AxisSpec axisdEta{100, -0.5, 0.5, "dEta"};
     const AxisSpec axisPhi{350, 0, 7, "Phi"};
     const AxisSpec axisEop{200, 0, 2, "Eop"};
-    const AxisSpec axisChi2{500, 0.0, 50.0, "#chi^{2}"};
+    const AxisSpec axisChi2{250, 0.0, 25.0, "#chi^{2}"};
     const AxisSpec axisCluster{100, 0.0, 200.0, "counts"};
-    const AxisSpec axisITSNCls{20, 0.0, 20, "counts"};
-    const AxisSpec axisEMCtime{200, -100.0, 100, "EMC time"};
-    const AxisSpec axisIsoEnergy{100, 0, 1, "Isolation energy(GeV/C)"};
-    const AxisSpec axisIsoTrack{20, -0.5, 19.5, "Isolation Track"};
-    const AxisSpec axisInvMassZ{200, 0, 200, "M_{ee} (GeV/c^{2})"};
-    const AxisSpec axisInvMassDy{200, 0, 2, "M_{ee} (GeV/c^{2})"};
-    const AxisSpec axisTrigger{3, 0, 2, "Trigger status of zorro"};
+    const AxisSpec axisITSNCls{10, 0.0, 10, "counts"};
+    const AxisSpec axisEMCtime{100, -50.0, 50, "EMC time"};
+    const AxisSpec axisIsoEnergy{100, 0, 1.0, "Isolation energy(GeV/C)"};
+    const AxisSpec axisIsoTrack{15, -0.5, 14.5, "Isolation Track"};
+    const AxisSpec axisInvMassZ{150, 0, 150, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
@@ -182,8 +184,6 @@ struct HfTaskElectronWeakBoson {
     registry.add("hPt", "track pt", kTH1F, {axisPt});
     registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
     registry.add("hEnergy", "EMC cluster energy", kTH1F, {axisE});
-    registry.add("hM02", "EMC M02", kTH2F, {{axisNsigma}, {axisM02}});
-    registry.add("hM20", "EMC M20", kTH2F, {{axisNsigma}, {axisM02}});
     registry.add("hTrMatch", "Track EMC Match", kTH2F, {{axisdPhi}, {axisdEta}});
     registry.add("hTrMatch_mim", "Track EMC Match minimu minimumm", kTH2F, {{axisdPhi}, {axisdEta}});
     registry.add("hMatchPhi", "Match in Phi", kTH2F, {{axisPhi}, {axisPhi}});
@@ -197,13 +197,13 @@ struct HfTaskElectronWeakBoson {
     registry.add("hIsolationTrack", "Isolation Track", kTH2F, {{axisE}, {axisIsoTrack}});
     registry.add("hInvMassZeeLs", "invariant mass for Z LS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
-    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisM02, axisEop, axisIsoEnergy});
+    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
   }
 
-  double calIsolatedCluster(const o2::aod::EMCALCluster& cluster,
+  double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
                             const SelectedClusters& clusters)
   {
     double energySum = 0.0;
@@ -236,7 +236,7 @@ struct HfTaskElectronWeakBoson {
 
     return (isoEnergy);
   }
-  int calIsolatedTrack(double etaEle,
+  int getIsolatedTrack(double etaEle,
                        double phiEle,
                        float ptEle,
                        TrackEle const& tracks)
@@ -244,9 +244,6 @@ struct HfTaskElectronWeakBoson {
     int trackCount = 0;
 
     for (const auto& track : tracks) {
-      // skip the reference track
-      if (std::abs(track.pt() - ptEle) < 1e-4)
-        continue;
 
       double dEta = track.eta() - etaEle;
       double dPhi = track.phi() - phiEle;
@@ -285,9 +282,6 @@ struct HfTaskElectronWeakBoson {
       LOGF(info, "Initializing Zorro for run %d", runNumber);
       uint64_t currentTimestamp = bc.timestamp();
 
-      // add configurable for CCDB path
-      zorro.setBaseCCDBPath(cfgCCDBPath.value);
-
       // debug for timestamp
       LOGF(info, "Using CCDB path: %s, timestamp: %llu", cfgCCDBPath.value.c_str(), currentTimestamp);
 
@@ -308,7 +302,6 @@ struct HfTaskElectronWeakBoson {
         return;
       }
     }
-
     // initialze for inclusive-electron
     selectedElectronsIso.clear();
     selectedElectronsAss.clear();
@@ -381,7 +374,6 @@ struct HfTaskElectronWeakBoson {
           if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax)
             continue;
 
-          float m20Emc = match.emcalcluster_as<SelectedClusters>().m20();
           float m02Emc = match.emcalcluster_as<SelectedClusters>().m02();
           float energyEmc = match.emcalcluster_as<SelectedClusters>().energy();
           double phiEmc = match.emcalcluster_as<SelectedClusters>().phi();
@@ -416,17 +408,15 @@ struct HfTaskElectronWeakBoson {
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
 
-            double isoEnergy = calIsolatedCluster(cluster, emcClusters);
+            double isoEnergy = getIsolatedCluster(cluster, emcClusters);
 
-            int trackCount = calIsolatedTrack(track.phi(), track.eta(), track.pt(), tracks);
+            int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks) - 1;
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
-              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, m20Emc, eop, isoEnergy);
+              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount);
             }
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
-            registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc);
-            registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), m20Emc);
             if (match.emcalcluster_as<SelectedClusters>().m02() < m02Min || match.emcalcluster_as<SelectedClusters>().m02() > m02Max)
               continue;
 

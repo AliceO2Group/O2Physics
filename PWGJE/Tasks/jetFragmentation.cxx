@@ -56,9 +56,9 @@ using MatchedMCPJetsWithConstituents = soa::Join<MCPJets, aod::ChargedMCParticle
 
 // V0 jets
 using DataV0JetsWithConstituents = soa::Join<aod::V0ChargedJets, aod::V0ChargedJetConstituents>;
-using CandidatesV0DataWithFlags = soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags>;
+using CandidatesV0DataWithFlags = aod::CandidatesV0Data;
 
-using CandidatesV0MCDWithLabelsAndFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels, aod::V0SignalFlags>;
+using CandidatesV0MCDWithLabelsAndFlags = soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>;
 using MCDV0Jets = aod::V0ChargedMCDetectorLevelJets;
 using MCDV0JetsWithConstituents = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetConstituents>;
 using MatchedMCDV0Jets = soa::Join<MCDV0Jets, aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets>;
