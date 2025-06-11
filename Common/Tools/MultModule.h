@@ -262,6 +262,11 @@ struct multEntry {
 
   int multMFTAllTracks = 0; // mft
   int multMFTTracks = 0;    // mft
+
+  // For Run2 only
+  float posZ = -999.0f;
+  uint16_t spdClustersL0 = 0;
+  uint16_t spdClustersL1 = 0;
 };
 
 // strangenessBuilder: 1st-order configurables
@@ -467,11 +472,95 @@ class MultModule
   }
 
   //__________________________________________________
-  template <typename TCollision, typename TTracks, typename TBCs, typename TZdc, typename TFV0A, typename TFV0C, typename TFT0>
-  o2::common::multiplicity::multEntry collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TZdc const& zdc, TFV0A const& fv0a, TFV0C const& fv0c, TFT0 const& ft0)
+  template <typename TCollision, typename TTracks, typename TBCs, typename TOutputGroup>
+  o2::common::multiplicity::multEntry collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TOutputGroup& cursors)
   {
     // initialize properties
     o2::common::multiplicity::multEntry mults;
+
+    mults.posZ = collision.posZ();
+    // mults.spdClustersL0 = bc.spdClustersL0();
+    // mults.spdClustersL1 = bc.spdClustersL1();
+    //_______________________________________________________________________
+    // forward detector signals, raw
+    if (collision.has_fv0a()) {
+      for (const auto& amplitude : collision.fv0a().amplitude()) {
+        mults.multFV0A += amplitude;
+      }
+    }
+    if (collision.has_fv0c()) {
+      for (const auto& amplitude : collision.fv0c().amplitude()) {
+        mults.multFV0C += amplitude;
+      }
+    }
+    if (collision.has_ft0()) {
+      auto ft0 = collision.ft0();
+      for (const auto& amplitude : ft0.amplitudeA()) {
+        mults.multFT0A += amplitude;
+      }
+      for (const auto& amplitude : ft0.amplitudeC()) {
+        mults.multFT0C += amplitude;
+      }
+    }
+    if (collision.has_zdc()) {
+      auto zdc = collision.zdc();
+      mults.multZNA = zdc.energyCommonZNA();
+      mults.multZNC = zdc.energyCommonZNC();
+    }
+
+    //_______________________________________________________________________
+    // determine if barrel track loop is required, do it (once!) if so but save CPU if not
+    if (internalOpts.mEnabledTables[kPVMults] || internalOpts.mEnabledTables[kTPCMults] || internalOpts.mEnabledTables[kTrackletMults]) {
+      // Try to do something Similar to https://github.com/alisw/AliPhysics/blob/22862a945004f719f8e9664c0264db46e7186a48/OADB/AliPPVsMultUtils.cxx#L541C26-L541C37
+      for (const auto& track : tracks) {
+        // check whether the track is a tracklet
+        if (track.trackType() == o2::aod::track::Run2Tracklet) {
+          if(internalOpts.mEnabledTables[kTrackletMults]) {
+            mults.multTracklets++;
+          }
+          if (internalOpts.mEnabledTables[kPVMults]) {
+            if (std::abs(track.eta()) < 1.0) {
+              mults.multNContribsEta1++; // pvmults
+              if (std::abs(track.eta()) < 0.8) {
+                mults.multNContribs++; // pvmults
+                if (std::abs(track.eta()) < 0.5) {
+                  mults.multNContribsEtaHalf++; // pvmults
+                }
+              }
+            }
+          }
+        }
+        // check whether the track is a global ITS-TPC track
+        if (track.tpcNClsFindable() > 0) {
+          if(internalOpts.mEnabledTables[kTPCMults]) {
+            mults.multTPC++;
+          }
+        }
+      }
+    }
+
+    // fill standard cursors if required
+    if (internalOpts.mEnabledTables[kFV0Mults]) {
+      cursors.tableFV0(mults.multFV0A, mults.multFV0C);
+    }
+    if (internalOpts.mEnabledTables[kFT0Mults]) {
+      cursors.tableFT0(mults.multFT0A, mults.multFT0C);
+    }
+    if (internalOpts.mEnabledTables[kFDDMults]) {
+      cursors.tableFDD(mults.multFDDA, mults.multFDDC);
+    }
+    if (internalOpts.mEnabledTables[kZDCMults]) {
+      cursors.tableZDC(mults.multZNA, mults.multZNC, 0.0f, 0.0f, 0.0f, 0.0f);
+    }
+    if (internalOpts.mEnabledTables[kTrackletMults]) { // Tracklets only Run2
+      cursors.tableTracklet(mults.multTracklets);
+    }
+    if (internalOpts.mEnabledTables[kTPCMults]) {
+      cursors.tableTpc(mults.multTPC);
+    }
+    if (internalOpts.mEnabledTables[kPVMults]) {
+      cursors.tablePv(mults.multNContribs, mults.multNContribsEta1, mults.multNContribsEtaHalf);
+    }
 
     return mults;
   }
@@ -815,6 +904,139 @@ class MultModule
 
   //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBC>
+  void ConfigureCentralityRun2(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc)
+  {
+    if (bc.runNumber() != mRunNumberCentrality) {
+      mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
+      LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+      TList* callst = nullptr;
+      // Check if the ccdb path is a root file
+      if (internalOpts.ccdbPathCentrality.value.find(".root") != std::string::npos) {
+        TFile f(internalOpts.ccdbPathCentrality.value.c_str(), "READ");
+        f.GetObject(internalOpts.reconstructionPass.value.c_str(), callst);
+        if (!callst) {
+          f.ls();
+          LOG(fatal) << "No calibration list " << internalOpts.reconstructionPass.value << " found.";
+        }
+      } else {
+        if (internalOpts.reconstructionPass.value == "") {
+          callst = ccdb->template getForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber());
+        } else if (internalOpts.reconstructionPass.value == "metadata") {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+          LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+          callst = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber(), metadata);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = internalOpts.reconstructionPass.value;
+          LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", internalOpts.reconstructionPass.value);
+          callst = ccdb->template getSpecificForRun<TList>(internalOpts.ccdbPathCentrality, bc.runNumber(), metadata);
+        }
+      }
+
+      Run2V0MInfo.mCalibrationStored = false;
+      Run2V0AInfo.mCalibrationStored = false;
+      Run2SPDTksInfo.mCalibrationStored = false;
+      Run2SPDClsInfo.mCalibrationStored = false;
+      Run2CL0Info.mCalibrationStored = false;
+      Run2CL1Info.mCalibrationStored = false;
+      if (callst != nullptr) {
+        auto getccdb = [callst](const char* ccdbhname) {
+          TH1* h = reinterpret_cast<TH1*>(callst->FindObject(ccdbhname));
+          return h;
+        };
+        auto getformulaccdb = [callst](const char* ccdbhname) {
+          TFormula* f = reinterpret_cast<TFormula*>(callst->FindObject(ccdbhname));
+          return f;
+        };
+
+        if (internalOpts.mEnabledTables[kCentRun2V0Ms]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+          Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
+          Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
+          Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", internalOpts.generatorName->c_str()).Data());
+          if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
+            if (internalOpts.generatorName->length() != 0) {
+              if (Run2V0MInfo.mMCScale != nullptr) {
+                for (int ixpar = 0; ixpar < 6; ++ixpar) {
+                  Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
+                }
+              } else {
+                // continue filling with non-valid values (105)
+                LOGF(info, "MC Scale information from V0M for run %d not available", bc.runNumber());
+              }
+            }
+            Run2V0MInfo.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from V0M for run %d corrupted, will fill V0M tables with dummy values", bc.runNumber());
+          }
+        }
+        if (internalOpts.mEnabledTables[kCentRun2V0As]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2V0AInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
+          Run2V0AInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0A");
+          if ((Run2V0AInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0AInfo.mhMultSelCalib != nullptr)) {
+            Run2V0AInfo.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from V0A for run %d corrupted, will fill V0A tables with dummy values", bc.runNumber());
+          }
+        }
+        if (internalOpts.mEnabledTables[kCentRun2SPDTrks]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2SPDTksInfo.mhVtxAmpCorr = getccdb("hVtx_fnTracklets_Normalized");
+          Run2SPDTksInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDTracklets");
+          if ((Run2SPDTksInfo.mhVtxAmpCorr != nullptr) && (Run2SPDTksInfo.mhMultSelCalib != nullptr)) {
+            Run2SPDTksInfo.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from SPD tracklets for run %d corrupted, will fill SPD tracklets tables with dummy values", bc.runNumber());
+          }
+        }
+        if (internalOpts.mEnabledTables[kCentRun2SPDClss]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2SPDClsInfo.mhVtxAmpCorrCL0 = getccdb("hVtx_fnSPDClusters0_Normalized");
+          Run2SPDClsInfo.mhVtxAmpCorrCL1 = getccdb("hVtx_fnSPDClusters1_Normalized");
+          Run2SPDClsInfo.mhMultSelCalib = getccdb("hMultSelCalib_SPDClusters");
+          if ((Run2SPDClsInfo.mhVtxAmpCorrCL0 != nullptr) && (Run2SPDClsInfo.mhVtxAmpCorrCL1 != nullptr) && (Run2SPDClsInfo.mhMultSelCalib != nullptr)) {
+            Run2SPDClsInfo.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from SPD clusters for run %d corrupted, will fill SPD clusters tables with dummy values", bc.runNumber());
+          }
+        }
+        if (internalOpts.mEnabledTables[kCentRun2CL0s]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
+          Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
+          if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
+            Run2CL0Info.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from CL0 multiplicity for run %d corrupted, will fill CL0 multiplicity tables with dummy values", bc.runNumber());
+          }
+        }
+        if (internalOpts.mEnabledTables[kCentRun2CL1s]) {
+          LOGF(debug, "Getting new histograms with %d run number for %d run number", mRunNumber, bc.runNumber());
+          Run2CL1Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters1_Normalized");
+          Run2CL1Info.mhMultSelCalib = getccdb("hMultSelCalib_CL1");
+          if ((Run2CL1Info.mhVtxAmpCorr != nullptr) && (Run2CL1Info.mhMultSelCalib != nullptr)) {
+            Run2CL1Info.mCalibrationStored = true;
+          } else {
+            // continue filling with non-valid values (105)
+            LOGF(info, "Calibration information from CL1 multiplicity for run %d corrupted, will fill CL1 multiplicity tables with dummy values", bc.runNumber());
+          }
+        }
+      } else {
+        LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
+      }
+    }
+  }
+
+  //__________________________________________________
+  template <typename TCCDB, typename TMetadata, typename TBC>
   void ConfigureCentralityRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBC const& bc)
   {
     if (bc.runNumber() != mRunNumberCentrality) {
@@ -905,15 +1127,12 @@ class MultModule
 
   //__________________________________________________
   template <typename TCCDB, typename TMetadata, typename TBCs, typename TMultBuffer, typename TOutputGroup>
-  void generateCentralities(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
+  void generateCentralitiesRun3(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
   {
     // takes multiplicity buffer and generates the desirable centrality values (if any)
 
     // first step: did someone actually ask for it? Otherwise, go home
     if (
-      internalOpts.mEnabledTables[kCentRun2V0Ms] || internalOpts.mEnabledTables[kCentRun2V0As] ||
-      internalOpts.mEnabledTables[kCentRun2SPDTrks] || internalOpts.mEnabledTables[kCentRun2SPDClss] ||
-      internalOpts.mEnabledTables[kCentRun2CL0s] || internalOpts.mEnabledTables[kCentRun2CL1s] ||
       internalOpts.mEnabledTables[kCentFV0As] || internalOpts.mEnabledTables[kCentFT0Ms] ||
       internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
       internalOpts.mEnabledTables[kCentFT0CVariant1s] || internalOpts.mEnabledTables[kCentFDDMs] ||
@@ -1002,6 +1221,93 @@ class MultModule
           populateTable(cursors.bcCentFT0A, ft0aInfo, bcMultFT0A, true);
         if (internalOpts.mEnabledTables[kBCCentFT0Cs])
           populateTable(cursors.bcCentFT0C, ft0cInfo, bcMultFT0C, true);
+      }
+    }
+  }
+  //__________________________________________________
+  template <typename TCCDB, typename TMetadata, typename TBCs, typename TMultBuffer, typename TOutputGroup>
+  void generateCentralitiesRun2(TCCDB& ccdb, TMetadata const& metadataInfo, TBCs const& bcs, TMultBuffer const& mults, TOutputGroup& cursors)
+  {
+    // takes multiplicity buffer and generates the desirable centrality values (if any)
+    // For Run 2
+    if (
+      internalOpts.mEnabledTables[kCentRun2V0Ms] || internalOpts.mEnabledTables[kCentRun2V0As] ||
+      internalOpts.mEnabledTables[kCentRun2SPDTrks] || internalOpts.mEnabledTables[kCentRun2SPDClss] ||
+      internalOpts.mEnabledTables[kCentRun2CL0s] || internalOpts.mEnabledTables[kCentRun2CL1s]) {
+      // check and update centrality calibration objects for Run 3
+      const auto& firstbc = bcs.begin();
+      ConfigureCentralityRun2(ccdb, metadataInfo, firstbc);
+
+      auto scaleMC = [](float x, float pars[6]) {
+        return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
+      };
+
+      // populate centralities per event
+      for (size_t iEv = 0; iEv < mults.size(); iEv++) {
+        if (internalOpts.mEnabledTables[kCentRun2V0Ms]) {
+          float cV0M = 105.0f;
+          if (Run2V0MInfo.mCalibrationStored) {
+            float v0m;
+            if (Run2V0MInfo.mMCScale != nullptr) {
+              v0m = scaleMC(mults[iEv].multFV0A + mults[iEv].multFV0C, Run2V0MInfo.mMCScalePars);
+              LOGF(debug, "Unscaled v0m: %f, scaled v0m: %f", mults[iEv].multFV0A + mults[iEv].multFV0C, v0m);
+            } else {
+              v0m = mults[iEv].multFV0A * Run2V0MInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0A->FindFixBin(mults[iEv].posZ)) +
+                    mults[iEv].multFV0C * Run2V0MInfo.mhVtxAmpCorrV0C->GetBinContent(Run2V0MInfo.mhVtxAmpCorrV0C->FindFixBin(mults[iEv].posZ));
+            }
+            cV0M = Run2V0MInfo.mhMultSelCalib->GetBinContent(Run2V0MInfo.mhMultSelCalib->FindFixBin(v0m));
+          }
+          LOGF(debug, "centRun2V0M=%.0f", cV0M);
+          // fill centrality columns
+          cursors.centRun2V0M(cV0M);
+        }
+        if (internalOpts.mEnabledTables[kCentRun2V0As]) {
+          float cV0A = 105.0f;
+          if (Run2V0AInfo.mCalibrationStored) {
+            float v0a = mults[iEv].multFV0A * Run2V0AInfo.mhVtxAmpCorrV0A->GetBinContent(Run2V0AInfo.mhVtxAmpCorrV0A->FindFixBin(mults[iEv].posZ));
+            cV0A = Run2V0AInfo.mhMultSelCalib->GetBinContent(Run2V0AInfo.mhMultSelCalib->FindFixBin(v0a));
+          }
+          LOGF(debug, "centRun2V0A=%.0f", cV0A);
+          // fill centrality columns
+          cursors.centRun2V0A(cV0A);
+        }
+        if (internalOpts.mEnabledTables[kCentRun2SPDTrks]) {
+          float cSPD = 105.0f;
+          if (Run2SPDTksInfo.mCalibrationStored) {
+            float spdm = mults[iEv].multTracklets * Run2SPDTksInfo.mhVtxAmpCorr->GetBinContent(Run2SPDTksInfo.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
+            cSPD = Run2SPDTksInfo.mhMultSelCalib->GetBinContent(Run2SPDTksInfo.mhMultSelCalib->FindFixBin(spdm));
+          }
+          LOGF(debug, "centSPDTracklets=%.0f", cSPD);
+          cursors.centRun2SPDTracklets(cSPD);
+        }
+        if (internalOpts.mEnabledTables[kCentRun2SPDClss]) {
+          float cSPD = 105.0f;
+          if (Run2SPDClsInfo.mCalibrationStored) {
+            float spdm = mults[iEv].spdClustersL0 * Run2SPDClsInfo.mhVtxAmpCorrCL0->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL0->FindFixBin(mults[iEv].posZ)) +
+                         mults[iEv].spdClustersL1 * Run2SPDClsInfo.mhVtxAmpCorrCL1->GetBinContent(Run2SPDClsInfo.mhVtxAmpCorrCL1->FindFixBin(mults[iEv].posZ));
+            cSPD = Run2SPDClsInfo.mhMultSelCalib->GetBinContent(Run2SPDClsInfo.mhMultSelCalib->FindFixBin(spdm));
+          }
+          LOGF(debug, "centSPDClusters=%.0f", cSPD);
+          cursors.centRun2SPDClusters(cSPD);
+        }
+        if (internalOpts.mEnabledTables[kCentRun2CL0s]) {
+          float cCL0 = 105.0f;
+          if (Run2CL0Info.mCalibrationStored) {
+            float cl0m = mults[iEv].spdClustersL0 * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
+            cCL0 = Run2CL0Info.mhMultSelCalib->GetBinContent(Run2CL0Info.mhMultSelCalib->FindFixBin(cl0m));
+          }
+          LOGF(debug, "centCL0=%.0f", cCL0);
+          cursors.centRun2CL0(cCL0);
+        }
+        if (internalOpts.mEnabledTables[kCentRun2CL1s]) {
+          float cCL1 = 105.0f;
+          if (Run2CL1Info.mCalibrationStored) {
+            float cl1m = mults[iEv].spdClustersL1 * Run2CL1Info.mhVtxAmpCorr->GetBinContent(Run2CL1Info.mhVtxAmpCorr->FindFixBin(mults[iEv].posZ));
+            cCL1 = Run2CL1Info.mhMultSelCalib->GetBinContent(Run2CL1Info.mhMultSelCalib->FindFixBin(cl1m));
+          }
+          LOGF(debug, "centCL1=%.0f", cCL1);
+          cursors.centRun2CL1(cCL1);
+        }
       }
     }
   }
