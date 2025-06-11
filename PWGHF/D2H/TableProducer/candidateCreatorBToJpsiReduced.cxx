@@ -422,24 +422,24 @@ struct HfCandidateCreatorBToJpsiReducedExpressions {
           if ((rowJpsiHadMcRec.jPsiId() != candB.jPsiId()) || (rowJpsiHadMcRec.prong1Id() != candB.bachKaId())) {
             continue;
           }
-          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBplusMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
-          rowBplusMcRec(0, -1, -1, -1.f);
+          rowBplusMcRec(0, -1, -1, -1, -1.f);
         }
       } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
         for (const auto& rowJpsiHadMcRec : rowsJpsiHadMcRec) {
           if ((rowJpsiHadMcRec.jPsiId() != candB.jPsiId()) || (rowJpsiHadMcRec.prong0PhiId() != candB.prong0PhiId()) || (rowJpsiHadMcRec.prong1PhiId() != candB.prong1PhiId())) {
             continue;
           }
-          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
+          rowBsMcRec(rowJpsiHadMcRec.flagMcMatchRec(), rowJpsiHadMcRec.channelMcMatchRec(), rowJpsiHadMcRec.flagWrongCollision(), rowJpsiHadMcRec.debugMcRec(), rowJpsiHadMcRec.ptMother());
           filledMcInfo = true;
           break;
         }
         if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the Jpsi-K creator
-          rowBsMcRec(0, -1, -1, -1.f);
+          rowBsMcRec(0, -1, -1, -1, -1.f);
         }
       }
     }

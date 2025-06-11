@@ -394,8 +394,7 @@ struct HfDataCreatorJpsiHadReduced {
   {
 
     // we check the MC matching to be stored
-    int8_t sign{0};
-    int8_t flag{0};
+    int8_t sign{0}, flag{0}, channel{0};
     int8_t flagWrongCollision{WrongCollisionType::None};
     int8_t debug{0};
     float motherPt{-1.f};
@@ -411,9 +410,9 @@ struct HfDataCreatorJpsiHadReduced {
       if (indexRec > -1) {
         // J/Psi → µ+µ-
         if (!runJpsiToee) {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kMuonMinus, +kMuonMinus}, true);
         } else {
-          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true, &sign, 1);
+          indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true);
         }
         if (indexRec > -1) {
           flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
@@ -429,7 +428,7 @@ struct HfDataCreatorJpsiHadReduced {
           checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
         }
       }
-      rowHfJpsiKMcRecReduced(indexHfCandJpsi, selectedTracksBach[0][vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      rowHfJpsiKMcRecReduced(indexHfCandJpsi, selectedTracksBach[0][vecDaughtersB.back().globalIndex()], flag, channel, flagWrongCollision, debug, motherPt);
     } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
       // Bs → J/Psi phi → (µ+µ-) (K+K-)
       int indexRec = -1;
@@ -446,9 +445,10 @@ struct HfDataCreatorJpsiHadReduced {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kJPsi, std::array{-kElectron, +kElectron}, true, &sign, 1);
         }
         if (indexRec > -1) {
+          flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kPhi, std::array{-kKPlus, +kKPlus}, true, &sign, 1);
           if (indexRec > -1) {
-            flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
+            channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
           } else {
             debug = 1;
             LOGF(debug, "Bs decays in the expected final state but the condition on the phi intermediate state is not fulfilled");
@@ -465,7 +465,7 @@ struct HfDataCreatorJpsiHadReduced {
           checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
         }
       }
-      rowHfJpsiPhiMcRecReduced(indexHfCandJpsi, selectedTracksBach[0][vecDaughtersB.back().globalIndex()], selectedTracksBach[1][vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
+      rowHfJpsiPhiMcRecReduced(indexHfCandJpsi, selectedTracksBach[0][vecDaughtersB.back().globalIndex()], selectedTracksBach[1][vecDaughtersB.back().globalIndex()], flag, channel, flagWrongCollision, debug, motherPt);
     }
   }
 
@@ -491,21 +491,20 @@ struct HfDataCreatorJpsiHadReduced {
   {
     // Match generated particles.
     for (const auto& particle : particlesMc) {
-      int8_t sign{0};
-      int8_t flag{0};
+      int8_t sign{0}, flag{0}, channel{0};
       if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
         // B+ → J/Psi K+ → (µ+µ-) K+
-        if (RecoDecay::isMatchedMCGen<false>(particlesMc, particle, Pdg::kBPlus, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen<false>(particlesMc, particle, Pdg::kBPlus, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus}, true, &sign)) {
           // Match J/Psi -> µ+µ-
           auto candJpsiMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking J/Psi -> µ+µ-");
           if (!runJpsiToee) {
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2)) {
+            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
               flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
             }
           } else { // debug
             // Printf("Checking J/Psi -> e+e-");
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2)) {
+            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true)) {
               flag = sign * o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
             }
           }
@@ -530,32 +529,29 @@ struct HfDataCreatorJpsiHadReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBpMcGenReduced(flag, channel, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
         // Bs → J/Psi phi → (µ+µ-) (K+K-)
-        if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{static_cast<int>(Pdg::kJPsi), static_cast<int>(Pdg::kPhi)}, true)) {
+        if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus, -kKPlus}, true, &sign, 2)) {
           // Match J/Psi -> µ+µ- and phi -> K+K-
           auto candJpsiMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           auto candPhiMC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
           // Printf("Checking J/Psi -> µ+µ- and phi -> K+K-");
-          if (!runJpsiToee) {
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true, &sign, 2) &&
-                RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
-            }
-          } else { // debug
-            // Printf("Checking J/Psi -> e+e- and phi -> K+K-");
-            if (RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true, &sign, 2) &&
-                RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true, &sign, 2)) {
-              flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
-            }
+          if (runJpsiToee && RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kElectron, +kElectron}, true)) {
+            flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
+          } else if (!runJpsiToee && RecoDecay::isMatchedMCGen(particlesMc, candJpsiMC, static_cast<int>(Pdg::kJPsi), std::array{-kMuonMinus, +kMuonMinus}, true)) {
+            flag = sign * o2::hf_decay::hf_cand_beauty::BsToJpsiKK;
+          }
+          // Check phi -> K+K-
+          if (RecoDecay::isMatchedMCGen(particlesMc, candPhiMC, static_cast<int>(Pdg::kPhi), std::array{-kKPlus, +kKPlus}, true)) {
+            channel = o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
           }
         }
 
         // save information for Bs task
-        if (std::abs(flag) != o2::hf_decay::hf_cand_beauty::BsToJpsiPhi) {
+        if (abs(flag) != o2::hf_decay::hf_cand_beauty::BsToJpsiKK) {
           continue;
         }
 
@@ -573,7 +569,7 @@ struct HfDataCreatorJpsiHadReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBsMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBsMcGenReduced(flag, channel, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       }

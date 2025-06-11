@@ -129,8 +129,9 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplustojpsik_lite::NSigTofKaBachelor,
                   hf_cand_bplustojpsik_lite::NSigTpcTofKaBachelor,
                   // MC truth
-                  hf_cand_2prong::FlagMcMatchRec,
-                  hf_cand_2prong::OriginMcRec,
+                  hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::ChannelMcMatchRec,
+                  hf_cand_bplus::OriginMcRec,
                   hf_cand_bplustojpsik_lite::FlagWrongCollision,
                   hf_cand_bplustojpsik_lite::PtGen);
 
@@ -303,11 +304,11 @@ struct HfTaskBplusToJpsiKReduced {
     auto invMassJpsi = candJpsi.m();
     uint8_t statusBplus = 0;
 
-    int8_t flagMcMatchRec = 0;
-    int8_t flagWrongCollision = 0;
+    int8_t flagMcMatchRec{0}, channelMcMatchRec{0}, flagWrongCollision{0};
     bool isSignal = false;
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
+      channelMcMatchRec = candidate.channelMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::BplusToJpsiK;
     }
@@ -410,6 +411,7 @@ struct HfTaskBplusToJpsiKReduced {
         candKa.tpcTofNSigmaKa(),
         // MC truth
         flagMcMatchRec,
+        channelMcMatchRec,
         isSignal,
         flagWrongCollision,
         ptMother);

@@ -871,6 +871,7 @@ namespace hf_cand_bplus
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // D0 index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);                // reconstruction level
+DECLARE_SOA_COLUMN(ChannelMcMatchRec, channelMcMatchRec, int8_t);          // reconstruction level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);        // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);                // generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);                      // particle origin, reconstruction level
@@ -2061,6 +2062,7 @@ namespace hf_cand_b0
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // D index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         // reconstruction level
+DECLARE_SOA_COLUMN(ChannelMcMatchRec, channelMcMatchRec, int8_t);   // reconstruction level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         // generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle origin, reconstruction level
@@ -2137,6 +2139,7 @@ namespace hf_cand_bs
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // Ds index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);                // reconstruction level
+DECLARE_SOA_COLUMN(ChannelMcMatchRec, channelMcMatchRec, int8_t);          // reconstruction level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);        // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);                // generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);                      // particle origin, reconstruction level

@@ -1311,7 +1311,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfB0McGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfB0McGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BsToDsminusPi) {
@@ -1386,7 +1386,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBsMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBsMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BplusToD0barPi) {
@@ -1419,7 +1419,7 @@ struct HfDataCreatorCharmHadPiReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        rowHfBpMcGenReduced(flag, ptParticle, yParticle, etaParticle,
+        rowHfBpMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::LbToLcplusPi) {

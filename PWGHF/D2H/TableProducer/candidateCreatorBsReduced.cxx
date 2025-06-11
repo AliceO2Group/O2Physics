@@ -292,7 +292,7 @@ struct HfCandidateCreatorBsReducedExpressions {
         if ((rowDPiMcRec.prong0Id() != candB.prong0Id()) || (rowDPiMcRec.prong1Id() != candB.prong1Id())) {
           continue;
         }
-        rowBsMcRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
+        rowBsMcRec(rowDPiMcRec.flagMcMatchRec(), -1 /*channel*/, rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBsMcCheck(rowDPiMcRec.pdgCodeBeautyMother(),
@@ -305,7 +305,7 @@ struct HfCandidateCreatorBsReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the DsPi creator
-        rowBsMcRec(0, -1, -1, -1.f);
+        rowBsMcRec(0, -1, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowBsMcCheck(-1, -1, -1, -1, -1, -1);
         }
