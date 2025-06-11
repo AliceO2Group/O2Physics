@@ -14,8 +14,6 @@
 /// \since  10/01/2024
 /// \brief  task to evaluate flow and neutron skin with information from ZDC
 
-// o2-analysis-cf-flow-zdc-task --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-track-propagation --aod-file AO2D.root --configuration json://configuration_run3.json |  o2-analysis-timestamp --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-event-selection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-trackselection --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-centrality-table --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-multiplicity-table --aod-file AO2D.root --configuration json://configuration_run3.json | o2-analysis-tracks-extra-v002-converter --aod-file AO2D.root --configuration json://configuration_run3.json -b
-
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
@@ -155,8 +153,7 @@ struct FlowZdcTask {
   Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
   Configurable<std::string> paTHmeanNch{"paTHmeanNch", "Users/s/shernan/test", "base path to the ccdb object"};
   Configurable<std::string> paTHsigmaNch{"paTHsigmaNch", "Users/s/shernan/testSigma", "base path to the ccdb object"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};  
-
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   enum EvCutLabel {
     All = 1,
@@ -369,7 +366,7 @@ struct FlowZdcTask {
     ccdb->setFatalWhenNull(false);
     // Not later than now, will be replaced by the value of the train creation
     // This avoids that users can replace objects **while** a train is running
-    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);    
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
   }
   template <typename EventCuts>
   bool isEventSelected(EventCuts const& col)
@@ -512,7 +509,7 @@ struct FlowZdcTask {
       }
       histos.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
-    
+
     const double normT0M{(aT0A + aT0C) / 100.};
     float znA = zdc.amplitudeZNA() / cfgCollisionEnergy;
     float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
