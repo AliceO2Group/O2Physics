@@ -64,6 +64,7 @@ struct MultCentTable {
   // slicers
   Preslice<soa::Join<aod::TracksIU, aod::TracksExtra>> slicerTracksIU = o2::aod::track::collisionId;
   Preslice<soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>> slicerTracksIUwithSelections = o2::aod::track::collisionId;
+  Preslice<soa::Join<aod::Tracks, aod::TracksExtra>> slicerTrackRun2 = o2::aod::track::collisionId;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -76,9 +77,23 @@ struct MultCentTable {
     module.init(opts, initContext);
   }
 
-  void processRun2(aod::Collisions const& collisions, soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const&, aod::BCs const& bcs)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse> const& collisions, 
+                   soa::Join<aod::Tracks, aod::TracksExtra> const& tracks,
+                   soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps> const& bcs,
+                   aod::Zdcs const&,
+                   aod::FV0As const&,
+                   aod::FV0Cs const&,
+                   aod::FT0s const&)
   {
-    // WIP
+    mults.clear();
+    for (auto const& collision : collisions) {
+      o2::common::multiplicity::multEntry mult;
+      // const auto& bc = collision.bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
+      const uint64_t collIdx = collision.globalIndex();
+      auto tracksThisCollision = tracks.sliceBy(slicerTrackRun2, collIdx);
+      mult = module.collisionProcessRun2(collision, tracksThisCollision, bcs, products);
+      mults.push_back(mult);
+    }
   }
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
@@ -140,7 +155,7 @@ struct MultCentTable {
       products.tableExtraMult2MCExtras(collision.mcCollisionId());
     }
   }
-  void processCentrality(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const& bcs, aod::FT0s const&)
+  void processCentralityRun2(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps> const& bcs)
   {
     // it is important that this function is at the end of the other process functions.
     // it requires `mults` to be properly set, which will only happen after the other process
@@ -153,7 +168,22 @@ struct MultCentTable {
     if (collisions.size() != mults.size()) {
       LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
     }
-    module.generateCentralities(ccdb, metadataInfo, bcs, mults, products);
+    module.generateCentralitiesRun2(ccdb, metadataInfo, bcs, mults, products);
+  }
+  void processCentralityRun3(aod::Collisions const& collisions, soa::Join<aod::BCs, aod::BcSels, aod::Timestamps> const& bcs, aod::FT0s const&)
+  {
+    // it is important that this function is at the end of the other process functions.
+    // it requires `mults` to be properly set, which will only happen after the other process
+    // functions have been called.
+
+    // internally, the function below will do nothing if no centrality is requested.
+    // it is thus safer to always keep the actual process function for centrality
+    // generation to true, since the requisites for being in this context are
+    // always fulfilled
+    if (collisions.size() != mults.size()) {
+      LOGF(fatal, "Size of collisions doesn't match size of multiplicity buffer!");
+    }
+    module.generateCentralitiesRun3(ccdb, metadataInfo, bcs, mults, products);
   }
 
   PROCESS_SWITCH(MultCentTable, processRun2, "Process Run 2", false);
@@ -162,7 +192,8 @@ struct MultCentTable {
   PROCESS_SWITCH(MultCentTable, processMFT, "Process MFT info", false);
   PROCESS_SWITCH(MultCentTable, processMonteCarlo, "Process Monte Carlo information", false);
   PROCESS_SWITCH(MultCentTable, processMonteCarlo2Mults, "Process Monte Carlo information", false);
-  PROCESS_SWITCH(MultCentTable, processCentrality, "Generate centralities", true);
+  PROCESS_SWITCH(MultCentTable, processCentralityRun2, "Generate Run 2 centralities", false);
+  PROCESS_SWITCH(MultCentTable, processCentralityRun3, "Generate Run 3 centralities", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
