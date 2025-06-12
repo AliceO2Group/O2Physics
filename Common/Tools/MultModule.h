@@ -461,15 +461,15 @@ class MultModule
     }
 
     // dependency checker
-    if(internalOpts.mEnabledTables[kCentFV0As] && !internalOpts.mEnabledTables[kFV0MultZeqs]){
+    if (internalOpts.mEnabledTables[kCentFV0As] && !internalOpts.mEnabledTables[kFV0MultZeqs]) {
       internalOpts.mEnabledTables[kFV0MultZeqs] = 1;
       listOfRequestors[kFV0MultZeqs].Append(Form("%s ", "dependency check"));
     }
-    if((internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kCentFT0CVariant1s]) && !internalOpts.mEnabledTables[kFT0MultZeqs]){
+    if ((internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kCentFT0CVariant1s]) && !internalOpts.mEnabledTables[kFT0MultZeqs]) {
       internalOpts.mEnabledTables[kFT0MultZeqs] = 1;
       listOfRequestors[kFT0MultZeqs].Append(Form("%s ", "dependency check"));
     }
-    if(internalOpts.mEnabledTables[kCentFDDMs] && !internalOpts.mEnabledTables[kFDDMultZeqs]){
+    if (internalOpts.mEnabledTables[kCentFDDMs] && !internalOpts.mEnabledTables[kFDDMultZeqs]) {
       internalOpts.mEnabledTables[kFDDMultZeqs] = 1;
       listOfRequestors[kFDDMultZeqs].Append(Form("%s ", "dependency check"));
     }
@@ -529,7 +529,7 @@ class MultModule
       for (const auto& track : tracks) {
         // check whether the track is a tracklet
         if (track.trackType() == o2::aod::track::Run2Tracklet) {
-          if(internalOpts.mEnabledTables[kTrackletMults]) {
+          if (internalOpts.mEnabledTables[kTrackletMults]) {
             mults.multTracklets++;
           }
           if (internalOpts.mEnabledTables[kPVMults]) {
@@ -546,7 +546,7 @@ class MultModule
         }
         // check whether the track is a global ITS-TPC track
         if (track.tpcNClsFindable() > 0) {
-          if(internalOpts.mEnabledTables[kTPCMults]) {
+          if (internalOpts.mEnabledTables[kTPCMults]) {
             mults.multTPC++;
           }
         }
