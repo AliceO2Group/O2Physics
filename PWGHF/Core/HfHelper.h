@@ -796,8 +796,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B0 candidate passes all selections
-  template <typename T1 = int, typename T2 = bool>
-  bool selectionB0ToDPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  bool selectionB0ToDPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -872,8 +871,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  template <typename T1 = int, typename T2 = bool>
-  bool selectionBplusToD0PiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  bool selectionBplusToD0PiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -972,8 +970,7 @@ class HfHelper
   /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  template <typename T1 = bool>
-  bool selectionBplusToJpsiKPid(int pidTrackKa, const T1& acceptPIDNotApplicable)
+  bool selectionBplusToJpsiKPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
       return false;
@@ -1059,8 +1056,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of Bs candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of Bs candidate passes all selections
-  template <typename T1 = bool>
-  bool selectionBsToDsPiPid(int pidTrackPi, const T1& acceptPIDNotApplicable)
+  bool selectionBsToDsPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
@@ -1169,8 +1165,7 @@ class HfHelper
   /// \param pidTrackKa PID status of trackKa (prong1 of B+ candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of B+ candidate passes all selections
-  template <typename T1 = int, typename T2 = bool>
-  bool selectionBsToJpsiPhiPid(const T1& pidTrackKa, const T2& acceptPIDNotApplicable)
+  bool selectionBsToJpsiPhiPid(const int pidTrackKa, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackKa != TrackSelectorPID::Accepted) {
       return false;
@@ -1250,8 +1245,7 @@ class HfHelper
   /// \param pidTrackPi PID status of trackPi (prong1 of Lb candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 of Lb candidate passes all selections
-  template <typename T1 = int, typename T2 = bool>
-  bool selectionLbToLcPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  bool selectionLbToLcPiPid(const int pidTrackPi, const bool acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;
