@@ -8,12 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file k1analysismicro.cxx
+///
+/// \file k1AnalysisMicro.cxx
 /// \brief Reconstruction of track-track decay resonance candidates
+/// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///
-///
-/// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
+
 
 #include <vector>
 #include <TLorentzVector.h>
@@ -26,7 +26,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
-#include "LFResonanceTables.h"
+#include "PWGLF/DataModel/LFResonanceTables.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "CommonConstants/PhysicsConstants.h"
 
@@ -38,13 +38,13 @@ using namespace o2::constants::physics;
 using namespace o2::constants::math;
 ;
 
-struct k1analysismicro {
-  enum binAnti : unsigned int {
+struct K1AnalysisMicro {
+  enum BinAnti : unsigned int {
     kNormal = 0,
     kAnti,
     kNAEnd
   };
-  enum binType : unsigned int {
+  enum BinType : unsigned int {
     kK1P = 0,
     kK1N,
     kK1P_Mix,
@@ -71,8 +71,8 @@ struct k1analysismicro {
   Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
   /// Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
   /// Pre-selection cuts
   Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minium pt cut"};
 
@@ -100,7 +100,6 @@ struct k1analysismicro {
   Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
   Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
-  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
   Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
@@ -142,8 +141,8 @@ struct k1analysismicro {
     AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
 
     // THnSparse
-    AxisSpec axisAnti = {binAnti::kNAEnd, 0, binAnti::kNAEnd, "Type of bin: Normal or Anti"};
-    AxisSpec axisType = {binType::kTYEnd, 0, binType::kTYEnd, "Type of bin with charge and mix"};
+    AxisSpec axisAnti = {BinAnti::kNAEnd, 0, BinAnti::kNAEnd, "Type of bin: Normal or Anti"};
+    AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     // DCA QA
@@ -386,15 +385,15 @@ struct k1analysismicro {
   template <typename T, typename T2>
   bool isTrueK1(const T& trk1, const T& trk2, const T2& bTrack)
   {
-    if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
+    if (std::abs(trk1.pdgCode()) != kPiPlus || std::abs(trk2.pdgCode()) != kPiPlus)
       return false;
-    if (abs(bTrack.pdgCode()) != kKPlus)
+    if (std::abs(bTrack.pdgCode()) != kKPlus)
       return false;
     auto mother1 = trk1.motherId();
     auto mother2 = trk2.motherId();
     if (mother1 != mother2)
       return false;
-    if (((abs(trk1.motherPDG()) && abs(trk2.motherPDG()) != kPDGRho770) && (abs(bTrack.motherPDG()) != kK1Plus)) || (abs(trk1.motherPDG()) && abs(bTrack.motherPDG()) != kK0Star892 && (abs(trk2.motherPDG()) != kK1Plus)) || (abs(trk2.motherPDG()) && abs(bTrack.motherPDG()) != kK0Star892 && (abs(trk1.motherPDG()) != kK1Plus)))
+    if (((std::abs(trk1.motherPDG()) && std::abs(trk2.motherPDG()) != kPDGRho770) && (std::abs(bTrack.motherPDG()) != kK1Plus)) || (std::abs(trk1.motherPDG()) && std::abs(bTrack.motherPDG()) != kK0Star892 && (std::abs(trk2.motherPDG()) != kK1Plus)) || (std::abs(trk2.motherPDG()) && std::abs(bTrack.motherPDG()) != kK0Star892 && (std::abs(trk1.motherPDG()) != kK1Plus)))
       return false;
     auto siblings = bTrack.siblingIds();
     if (siblings[0] != mother1 && siblings[1] != mother2)
@@ -405,13 +404,13 @@ struct k1analysismicro {
   template <typename T>
   bool isTrueK892(const T& trk1, const T& trk2)
   {
-    if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kKPlus)
+    if (std::abs(trk1.pdgCode()) != kPiPlus || std::abs(trk2.pdgCode()) != kKPlus)
       return false;
     auto mother1 = trk1.motherId();
     auto mother2 = trk2.motherId();
     if (mother1 != mother2)
       return false;
-    if (abs(trk1.motherPDG()) != kK0Star892)
+    if (std::abs(trk1.motherPDG()) != kK0Star892)
       return false;
     return true;
   }
@@ -419,13 +418,13 @@ struct k1analysismicro {
   template <typename T>
   bool isTrueRho(const T& trk1, const T& trk2)
   {
-    if (abs(trk1.pdgCode()) != kPiPlus || abs(trk2.pdgCode()) != kPiPlus)
+    if (std::abs(trk1.pdgCode()) != kPiPlus || std::abs(trk2.pdgCode()) != kPiPlus)
       return false;
     auto mother1 = trk1.motherId();
     auto mother2 = trk2.motherId();
     if (mother1 != mother2)
       return false;
-    if (abs(trk1.motherPDG()) != kPDGRho770)
+    if (std::abs(trk1.motherPDG()) != kPDGRho770)
       return false;
     return true;
   }
@@ -434,7 +433,7 @@ struct k1analysismicro {
   {
     auto multiplicity = collision.cent();
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonanceSecondary, lDecayDaughter_bach, lResonanceK1;
-    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks2, dTracks2))) {
+    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks2, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs too. But the same id pairs are not needed.
@@ -522,7 +521,7 @@ struct k1analysismicro {
       }
       // Mass Window cut is removed
 
-      for (auto bTrack : dTracks1) {
+      for (const auto& bTrack : dTracks1) {
         if (bTrack.index() == trk1.index() || bTrack.index() == trk2.index())
           continue;
         if (!trackCut<IsResoMicrotrack>(bTrack))
@@ -556,8 +555,8 @@ struct k1analysismicro {
         // QA histograms after the cuts are removed as no cuts are applied
 
         if constexpr (!IsMix) {
-          unsigned int typeK1 = bTrack.sign() > 0 ? binType::kK1P : binType::kK1N;
-          unsigned int typeNormal = binAnti::kNormal;
+          unsigned int typeK1 = bTrack.sign() > 0 ? BinType::kK1P : BinType::kK1N;
+          unsigned int typeNormal = BinAnti::kNormal;
           if (trk1.sign() * trk2.sign() < 0) {
             histos.fill(HIST("k1invmass"), lResonanceK1.M());
             histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
@@ -568,7 +567,7 @@ struct k1analysismicro {
 
           if constexpr (IsMC) {
             if (isTrueK1(trk1, trk2, bTrack)) {
-              typeK1 = bTrack.sign() > 0 ? binType::kK1P_Rec : binType::kK1N_Rec;
+              typeK1 = bTrack.sign() > 0 ? BinType::kK1P_Rec : BinType::kK1N_Rec;
               histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
               histos.fill(HIST("k1invmass_MC"), lResonanceK1.M());
               histos.fill(HIST("QAMC/K1OA"), lK1Angle);
@@ -631,8 +630,8 @@ struct k1analysismicro {
             }
           } // IsMC
         } else {
-          unsigned int typeK1 = bTrack.sign() > 0 ? binType::kK1P_Mix : binType::kK1N_Mix;
-          unsigned int typeNormal = binAnti::kNormal;
+          unsigned int typeK1 = bTrack.sign() > 0 ? BinType::kK1P_Mix : BinType::kK1N_Mix;
+          unsigned int typeNormal = BinAnti::kNormal;
           histos.fill(HIST("hInvmass_K1_Mix"), typeNormal, typeK1, multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
           histos.fill(HIST("k1invmass_Mix"), lResonanceK1.M());
         }
@@ -640,109 +639,109 @@ struct k1analysismicro {
     }
   } // fillHistograms
 
-  void processResoTracks(aod::ResoCollision& collision,
+  void processResoTracks(aod::ResoCollision const& collision,
                          aod::ResoTracks const& resotracks)
   {
     fillHistograms<false, false, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(k1analysismicro, processResoTracks, "Process ResoTracks", false);
+  PROCESS_SWITCH(K1AnalysisMicro, processResoTracks, "Process ResoTracks", false);
 
-  void processResoMicroTracks(aod::ResoCollision& collision,
+  void processResoMicroTracks(aod::ResoCollision const& collision,
                               aod::ResoMicroTracks const& resomicrotracks)
   {
     fillHistograms<false, false, true>(collision, resomicrotracks, resomicrotracks);
   }
-  PROCESS_SWITCH(k1analysismicro, processResoMicroTracks, "Process ResoMicroTracks", true);
+  PROCESS_SWITCH(K1AnalysisMicro, processResoMicroTracks, "Process ResoMicroTracks", true);
 
-  void processMC(aod::ResoCollision& collision,
+  void processMC(aod::ResoCollision const& collision,
                  soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
   {
     fillHistograms<true, false, false>(collision, resotracks, resotracks);
   }
-  PROCESS_SWITCH(k1analysismicro, processMC, "Process Event for MC", false);
+  PROCESS_SWITCH(K1AnalysisMicro, processMC, "Process Event for MC", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
   {
     auto multiplicity = collision.cent();
-    for (auto& part : resoParents) {
-      if (abs(part.pdgCode()) != kK1Plus)
+    for (const auto& part : resoParents) {
+      if (std::abs(part.pdgCode()) != kK1Plus)
         continue;
-      if (abs(part.y()) > 0.5) {
+      if (std::abs(part.y()) > 0.5) {
         continue;
       }
       bool pass1 = false;
       bool pass2 = false;
       bool pass3 = false;
       bool pass4 = false;
-      if (abs(part.daughterPDG1()) == 313 || abs(part.daughterPDG2()) == 313) { // At least one decay into K892
+      if (std::abs(part.daughterPDG1()) == 313 || std::abs(part.daughterPDG2()) == 313) { // At least one decay into K892
         pass2 = true;
       }
-      if (abs(part.daughterPDG1()) == kPiPlus || abs(part.daughterPDG2()) == kPiPlus) { // At lest one decay into pion
+      if (std::abs(part.daughterPDG1()) == kPiPlus || std::abs(part.daughterPDG2()) == kPiPlus) { // At lest one decay into pion
         pass1 = true;
       }
-      if (abs(part.daughterPDG1()) == kPDGRho770 || abs(part.daughterPDG2()) == kPDGRho770) {
+      if (std::abs(part.daughterPDG1()) == kPDGRho770 || std::abs(part.daughterPDG2()) == kPDGRho770) {
         pass4 = true;
       }
-      if (abs(part.daughterPDG1()) == kKPlus || abs(part.daughterPDG2()) == kKPlus) {
+      if (std::abs(part.daughterPDG1()) == kKPlus || std::abs(part.daughterPDG2()) == kKPlus) {
         pass3 = true;
       }
       if (!pass1 || !pass2 || !pass3 || !pass4) // If we have both decay products
         continue;
-      auto typeNormal = part.pdgCode() > 0 ? binAnti::kNormal : binAnti::kAnti;
+      auto typeNormal = part.pdgCode() > 0 ? BinAnti::kNormal : BinAnti::kAnti;
       if (collision.isVtxIn10()) // INEL>10
       {
-        auto typeK1 = part.pdgCode() > 0 ? binType::kK1P_GenINEL10 : binType::kK1N_GenINEL10;
+        auto typeK1 = part.pdgCode() > 0 ? BinType::kK1P_GenINEL10 : BinType::kK1N_GenINEL10;
         histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, part.pt(), 1);
       }
       if (collision.isVtxIn10() && collision.isInSel8()) // INEL>10, vtx10
       {
-        auto typeK1 = part.pdgCode() > 0 ? binType::kK1P_GenINELgt10 : binType::kK1N_GenINELgt10;
+        auto typeK1 = part.pdgCode() > 0 ? BinType::kK1P_GenINELgt10 : BinType::kK1N_GenINELgt10;
         histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, part.pt(), 1);
       }
       if (collision.isVtxIn10() && collision.isTriggerTVX()) // vtx10, TriggerTVX
       {
-        auto typeK1 = part.pdgCode() > 0 ? binType::kK1P_GenTrig10 : binType::kK1N_GenTrig10;
+        auto typeK1 = part.pdgCode() > 0 ? BinType::kK1P_GenTrig10 : BinType::kK1N_GenTrig10;
         histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, part.pt(), 1);
       }
       if (collision.isInAfterAllCuts()) // after all event selection
       {
-        auto typeK1 = part.pdgCode() > 0 ? binType::kK1P_GenEvtSel : binType::kK1N_GenEvtSel;
+        auto typeK1 = part.pdgCode() > 0 ? BinType::kK1P_GenEvtSel : BinType::kK1N_GenEvtSel;
         histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, part.pt(), 1);
       }
     }
   }
-  PROCESS_SWITCH(k1analysismicro, processMCTrue, "Process Event for MC", false);
+  PROCESS_SWITCH(K1AnalysisMicro, processMCTrue, "Process Event for MC", false);
 
   // Processing Event Mixing
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
+  void processME(o2::aod::ResoCollisions const& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       fillHistograms<false, true, false>(collision1, tracks1, tracks2);
     }
   };
-  PROCESS_SWITCH(k1analysismicro, processME, "Process EventMixing light without partition", false);
+  PROCESS_SWITCH(K1AnalysisMicro, processME, "Process EventMixing light without partition", false);
 
   // Processing Event Mixing -- Micro
   // using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
-  void processMEMicro(o2::aod::ResoCollisions& collisions, aod::ResoMicroTracks const& resomicrotracks)
+  void processMEMicro(o2::aod::ResoCollisions const& collisions, aod::ResoMicroTracks const& resomicrotracks)
   {
     auto tracksTuple = std::make_tuple(resomicrotracks);
-    BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
+    BinningTypeVtxZT0M colBinning{{cfgVtxBins, cfgMultBins}, true};
     SameKindPair<aod::ResoCollisions, aod::ResoMicroTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
-    for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       fillHistograms<false, true, true>(collision1, tracks1, tracks2);
     }
   };
-  PROCESS_SWITCH(k1analysismicro, processMEMicro, "Process EventMixing light without partition", true);
+  PROCESS_SWITCH(K1AnalysisMicro, processMEMicro, "Process EventMixing light without partition", true);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<k1analysismicro>(cfgc, TaskName{"lf-k1analysis"})};
+  return WorkflowSpec{adaptAnalysisTask<K1AnalysisMicro>(cfgc)};
 }
