@@ -89,6 +89,7 @@ struct HfTaskCorrelationDsHadrons {
 
   std::shared_ptr<TH1> mEfficiencyD = nullptr;
   std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
+  const float epsilon = 1.e-12;
 
   enum CandidateStep {
     kCandidateStepMcGenDsToKKPi = 0,
@@ -291,12 +292,12 @@ struct HfTaskCorrelationDsHadrons {
     switch (mode) {
       case EfficiencyMode::DsOnly:
         if (loadAccXEffFromCCDB) {
-          if (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) == 0) {
+          if (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) <= epsilon) {
             LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
           }
           weight = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
         } else {
-          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) == 0) {
+          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) <= epsilon) {
             LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
           }
           weight = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
@@ -305,14 +306,14 @@ struct HfTaskCorrelationDsHadrons {
       case EfficiencyMode::DsHadronPair:
         if (loadAccXEffFromCCDB) {
           if (ptAssoc && mEfficiencyAssociated) {
-            if (mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)) == 0) {
+            if (mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
               LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
             }
             weight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(*ptAssoc)));
           }
         } else {
           if (ptAssoc) {
-            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) == 0) {
+            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) <= epsilon) {
               LOG(fatal) << "A bin content in associated particle efficiency vector is zero!";
             }
             weight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)));
