@@ -27,6 +27,7 @@
 #include "MathUtils/Utils.h"
 
 #include "PWGHF/Utils/utilsPid.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 namespace o2::aod
 {
@@ -270,6 +271,48 @@ DECLARE_SOA_TABLE(ReducedZdcsExtra, "AOD", "REDUCEDZDCEXTRA", //!   Event ZDC ex
 using ReducedZdc = ReducedZdcs::iterator;
 using ReducedZdcExtra = ReducedZdcsExtra::iterator;
 
+// emcal quantities
+namespace reducedemcal
+{
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);
+DECLARE_SOA_BITMAP_COLUMN(FilteringFlags, filteringFlags, 64); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                        //! collisionID used as index for matched clusters
+DECLARE_SOA_INDEX_COLUMN(BC, bc);                                      //! bunch crossing ID used as index for ambiguous clusters
+DECLARE_SOA_COLUMN(ID, id, int);                                       //! cluster ID identifying cluster in event
+DECLARE_SOA_COLUMN(Energy, energy, float);                             //! cluster energy (GeV)
+DECLARE_SOA_COLUMN(CoreEnergy, coreEnergy, float);                     //! cluster core energy (GeV)
+DECLARE_SOA_COLUMN(RawEnergy, rawEnergy, float);                       //! raw cluster energy (GeV)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                   //! cluster pseudorapidity (calculated using vertex)
+DECLARE_SOA_COLUMN(Phi, phi, float);                                   //! cluster azimuthal angle (calculated using vertex)
+DECLARE_SOA_COLUMN(M02, m02, float);                                   //! shower shape long axis
+DECLARE_SOA_COLUMN(M20, m20, float);                                   //! shower shape short axis
+DECLARE_SOA_COLUMN(NCells, nCells, int);                               //! number of cells in cluster
+DECLARE_SOA_COLUMN(Time, time, float);                                 //! cluster time (ns)
+DECLARE_SOA_COLUMN(IsExotic, isExotic, bool);                          //! flag to mark cluster as exotic
+DECLARE_SOA_COLUMN(DistanceToBadChannel, distanceToBadChannel, float); //! distance to bad channel
+DECLARE_SOA_COLUMN(NLM, nlm, int);                                     //! number of local maxima
+DECLARE_SOA_COLUMN(Definition, definition, int);                       //! cluster definition, see EMCALClusterDefinition.h
+} // namespace reducedemcal
+
+// emcal track information
+DECLARE_SOA_TABLE(ReducedEMCals, "AOD", "REDUCEDEMCALS", //!
+                  o2::soa::Index<>, reducedemcal::ReducedEventId, reducedemcal::FilteringFlags,
+                  reducedemcal::CollisionId, reducedemcal::ID,
+                  reducedemcal::Energy, reducedemcal::CoreEnergy, reducedemcal::RawEnergy,
+                  reducedemcal::Eta, reducedemcal::Phi, reducedemcal::M02, reducedemcal::M20,
+                  reducedemcal::NCells, reducedemcal::Time, reducedemcal::IsExotic,
+                  reducedemcal::DistanceToBadChannel, reducedemcal::NLM, reducedemcal::Definition);
+
+// table of ambiguous clusters that could not be matched to a collision
+DECLARE_SOA_TABLE(ReducedAmbiguousEMCals, "AOD", "REDUCEDAMBEMCALS", //!
+                  o2::soa::Index<>, reducedemcal::BCId, reducedemcal::ID, reducedemcal::Energy,
+                  reducedemcal::CoreEnergy, reducedemcal::RawEnergy, reducedemcal::Eta, reducedemcal::Phi,
+                  reducedemcal::M02, reducedemcal::M20, reducedemcal::NCells, reducedemcal::Time,
+                  reducedemcal::IsExotic, reducedemcal::DistanceToBadChannel, reducedemcal::NLM, reducedemcal::Definition);
+
+using ReducedEMCal = ReducedEMCals::iterator;
+using ReducedAmbiguousEMCal = ReducedAmbiguousEMCals::iterator;
+
 namespace reducedtrack
 {
 // basic track information
@@ -303,6 +346,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, matchEMCalTrack); //!
 } // namespace reducedtrack
 
 // basic track information
@@ -313,6 +357,12 @@ DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
                   reducedtrack::Py<reducedtrack::Pt, reducedtrack::Phi>,
                   reducedtrack::Pz<reducedtrack::Pt, reducedtrack::Eta>,
                   reducedtrack::P<reducedtrack::Pt, reducedtrack::Eta>);
+
+// Track-EMCal association table (separate from ReducedTracks to avoid breaking existing code)
+DECLARE_SOA_TABLE(ReducedTracksEMCalAssoc, "AOD", "RTEMCALASSOC", //!
+                  reducedtrack::ReducedEventId,
+                  o2::soa::Index<>,  // Track index
+                  reducedtrack::ReducedEMCalId);  // EMCal cluster index
 
 // barrel track information
 DECLARE_SOA_TABLE(ReducedTracksBarrel, "AOD", "RTBARREL", //!
@@ -351,11 +401,19 @@ DECLARE_SOA_TABLE(ReducedTracksBarrelPID, "AOD", "RTBARRELPID", //!
 DECLARE_SOA_TABLE(ReducedTracksBarrelInfo, "AOD", "RTBARRELINFO",
                   reducedtrack::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedtrack::TrackId);
 
+DECLARE_SOA_TABLE(ReducedTracksBarrelEMCal, "AOD", "RTBARRELEMCAL",
+                  emcalcluster::Energy,
+                  emcalcluster::CoreEnergy, emcalcluster::RawEnergy, emcalcluster::Eta, emcalcluster::Phi,
+                  emcalcluster::M02, emcalcluster::M20, emcalcluster::NCells, emcalcluster::Time,
+                  emcalcluster::IsExotic, emcalcluster::DistanceToBadChannel, emcalcluster::NLM, emcalcluster::Definition);
+
 using ReducedTrack = ReducedTracks::iterator;
 using ReducedTrackBarrel = ReducedTracksBarrel::iterator;
 using ReducedTrackBarrelCov = ReducedTracksBarrelCov::iterator;
 using ReducedTrackBarrelPID = ReducedTracksBarrelPID::iterator;
 using ReducedTrackBarrelInfo = ReducedTracksBarrelInfo::iterator;
+using ReducedTrackBarrelEMCal = ReducedTracksBarrelEMCal::iterator;
+
 
 namespace reducedtrackMC
 {
@@ -552,6 +610,7 @@ namespace reducedtrack_association
 {
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent); //! ReducedEvent index
 DECLARE_SOA_INDEX_COLUMN(ReducedTrack, reducedtrack); //! ReducedTrack index
+DECLARE_SOA_INDEX_COLUMN(ReducedEMCal, reducedemcal); //! ReducedEMCal index
 DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon);   //! ReducedMuon index
 DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 } // namespace reducedtrack_association
@@ -559,6 +618,9 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMFT, reducedmft);     //! ReducedMFTTrack index
 DECLARE_SOA_TABLE(ReducedTracksAssoc, "AOD", "RTASSOC", //! Table for reducedtrack-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedTrackId);
+DECLARE_SOA_TABLE(ReducedEMCalsAssoc, "AOD", "RTEMCALASSOC", //! Table for reducedemcal-to-reducedcollision association
+                  reducedtrack_association::ReducedEventId,
+                  reducedtrack_association::ReducedEMCalId);
 DECLARE_SOA_TABLE(ReducedMuonsAssoc, "AOD", "RMASSOC", //! Table for reducedmuon-to-reducedcollision association
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMuonId);

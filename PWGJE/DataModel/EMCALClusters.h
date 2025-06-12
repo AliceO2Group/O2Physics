@@ -49,7 +49,7 @@ const EMCALClusterDefinition kV3MostSplitSmallestTimeDiff(ClusterAlgorithm_t::kV
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
 /// \return EMCALClusterDefinition for the given name
-const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& clusterDefinitionName)
+inline const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& clusterDefinitionName)
 {
   if (clusterDefinitionName == "kV3NoSplit") {
     return kV3NoSplit;
