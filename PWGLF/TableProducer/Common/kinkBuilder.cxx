@@ -106,6 +106,7 @@ struct kinkBuilder {
   Configurable<float> etaMax{"etaMax", 1., "eta daughter"};
   Configurable<float> nTPCClusMinDaug{"nTPCClusMinDaug", 80, "daug NTPC clusters cut"};
   Configurable<bool> askTOFforDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
+  Configurable<bool> doSVRadiusCut{"doSVRadiusCut", true, "If true, apply the cut on the radius of the secondary vertex and tracksIU"};
 
   o2::vertexing::DCAFitterN<2> fitter;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -329,7 +330,7 @@ struct kinkBuilder {
 
       // cut on decay radius to 17 cm
       float decRad2 = kinkCand.decVtx[0] * kinkCand.decVtx[0] + kinkCand.decVtx[1] * kinkCand.decVtx[1];
-      if (decRad2 < LayerRadii[3] * LayerRadii[3]) {
+      if (doSVRadiusCut && decRad2 < LayerRadii[3] * LayerRadii[3]) {
         continue;
       }
 
@@ -348,11 +349,11 @@ struct kinkBuilder {
         }
       }
 
-      if (lastLayerMoth >= firstLayerDaug) {
+      if (doSVRadiusCut && lastLayerMoth >= firstLayerDaug) {
         continue;
       }
 
-      if (decRad2 < LayerRadii[lastLayerMoth] * LayerRadii[lastLayerMoth]) {
+      if (doSVRadiusCut && decRad2 < LayerRadii[lastLayerMoth] * LayerRadii[lastLayerMoth]) {
         continue;
       }
 
