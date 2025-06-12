@@ -460,6 +460,20 @@ class MultModule
       }
     }
 
+    // dependency checker
+    if(internalOpts.mEnabledTables[kCentFV0As] && !internalOpts.mEnabledTables[kFV0MultZeqs]){
+      internalOpts.mEnabledTables[kFV0MultZeqs] = 1;
+      listOfRequestors[kFV0MultZeqs].Append(Form("%s ", "dependency check"));
+    }
+    if((internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kCentFT0Ms] || internalOpts.mEnabledTables[kCentFT0CVariant1s]) && !internalOpts.mEnabledTables[kFT0MultZeqs]){
+      internalOpts.mEnabledTables[kFT0MultZeqs] = 1;
+      listOfRequestors[kFT0MultZeqs].Append(Form("%s ", "dependency check"));
+    }
+    if(internalOpts.mEnabledTables[kCentFDDMs] && !internalOpts.mEnabledTables[kFDDMultZeqs]){
+      internalOpts.mEnabledTables[kFDDMultZeqs] = 1;
+      listOfRequestors[kFDDMultZeqs].Append(Form("%s ", "dependency check"));
+    }
+
     mRunNumber = 0;
     mRunNumberCentrality = 0;
     lCalibLoaded = false;

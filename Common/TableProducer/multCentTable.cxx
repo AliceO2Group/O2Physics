@@ -98,11 +98,11 @@ struct MultCentTable {
 
   void processRun3(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks,
-                   soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs,
-                   aod::Zdcs const& zdcs,
-                   aod::FV0As const& fv0as,
-                   aod::FT0s const& ft0s,
-                   aod::FDDs const& fdds)
+                   soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const&,
+                   aod::Zdcs const&,
+                   aod::FV0As const&,
+                   aod::FT0s const&,
+                   aod::FDDs const&)
   {
     mults.clear();
     for (auto const& collision : collisions) {
@@ -117,11 +117,11 @@ struct MultCentTable {
 
   void processRun3WithGlobalCounters(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                                      soa::Join<aod::TracksIU, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension> const& tracks,
-                                     soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs,
-                                     aod::Zdcs const& zdcs,
-                                     aod::FV0As const& fv0as,
-                                     aod::FT0s const& ft0s,
-                                     aod::FDDs const& fdds)
+                                     soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const&,
+                                     aod::Zdcs const&,
+                                     aod::FV0As const&,
+                                     aod::FT0s const&,
+                                     aod::FDDs const&)
   {
     mults.clear();
     for (auto const& collision : collisions) {
