@@ -29,6 +29,7 @@ struct NucleusCandidate {
   float tpcInnerParam;
   float beta;
   float zVertex;
+  int nContrib;
   float DCAxy;
   float DCAz;
   float TPCsignal;
