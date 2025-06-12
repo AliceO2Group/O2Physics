@@ -97,6 +97,7 @@ struct tofSpectra {
   } trkselOptions;
 
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
+  Configurable<bool> enablepuredcahist{"enablepuredcahist", false, "Enables the pure DCA histograms"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
@@ -760,7 +761,7 @@ struct tofSpectra {
           hDcaXYWrongCollisionPrm[i] = histos.add<TH2>("dcaxywrongcollprm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           hDcaXYWrongCollisionStr[i] = histos.add<TH2>("dcaxywrongcollstr" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           hDcaXYWrongCollisionMat[i] = histos.add<TH2>("dcaxywrongcollmat" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-
+        
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
@@ -1017,7 +1018,6 @@ struct tofSpectra {
         }
       }
     }
-
     if constexpr (fillFullInfo) {
       if (enableDeltaHistograms) {
         const auto& deltaTOF = o2::aod::pidutils::tofExpSignalDiff<id>(track);
@@ -1036,7 +1036,6 @@ struct tofSpectra {
         }
       }
     }
-
     // Filling DCA info with the TPC+TOF PID
     bool isDCAPureSample = (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < 2.f);
     if (track.pt() <= 0.4) {
@@ -1060,23 +1059,24 @@ struct tofSpectra {
             }
           }
         }
-      } else {
-        if (track.sign() > 0) {
-          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
-          histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
-          if (isInPtRangeForPhi) {
-            if (enableDCAxyphiHistograms) {
-              histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
-            }
-          }
-        } else {
-          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
-          histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
-          if (isInPtRangeForPhi) {
-            if (enableDCAxyphiHistograms) {
-              histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
-            }
-          }
+      }
+    } 
+    const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
+    if (track.sign() > 0) {
+      histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
+      histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
+      if (isInPtRangeForPhi) {
+        if (enableDCAxyphiHistograms) {
+          histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+        }
+      }
+    } 
+    else {
+      histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
+      histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
+      if (isInPtRangeForPhi) {
+        if (enableDCAxyphiHistograms) {
+          histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
         }
       }
     }
@@ -1889,7 +1889,7 @@ struct tofSpectra {
     }
 
     const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
-    const float multiplicity = getMultiplicityMC(mcCollision);
+    const float multiplicity = getMultiplicity(collision);
     const int occupancy = collision.trackOccupancyInTimeRange();
     //************************************RD**************************************************
     const float impParam = mcCollision.impactParameter();
@@ -1912,123 +1912,133 @@ struct tofSpectra {
 
     const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
     const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-
-    // Filling DCA info with the TPC+TOF PID
-    bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
-    if (track.pt() <= 0.4) {
-      isDCAPureSample = (nsigmaTPCKa < 1.f);
-    }
-
-    if (isDCAPureSample) {
-      if (enableDCAvsmotherHistograms) {
-        hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
-        hDcaZMC[i]->Fill(track.pt(), track.dcaZ());
+    if (enablepuredcahist){
+      // Filling DCA info with the TPC+TOF PID
+      bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
+      if (track.pt() <= 0.4) {
+        isDCAPureSample = (nsigmaTPCKa < 1.f);
       }
-
-      if (!mcParticle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
-        if (mcParticle.getProcess() == 4) {  // Particles from decay
-          if (enableDCAxyzHistograms) {
-            hDcaXYZStr[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
-          } else {
-            histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
-            histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
-          }
-
-          if (mcParticle.has_mothers()) {
-            for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-              auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
-              double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-              double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-              auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
-              hDecayLengthStr[i]->Fill(track.pt(), decayLength);
-            }
-          }
-        } else { // Particles from the material
-          if (enableDCAxyzHistograms) {
-            hDcaXYZMat[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
-          } else {
-            histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY());
-            histos.fill(HIST(hdcazmat[i]), track.pt(), track.dcaZ());
-          }
-        }
-      } else { // Primaries
-        if (enableDCAxyzHistograms) {
-          hDcaXYZPrm[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
-          if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
-            histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY(), track.dcaZ());
-          }
-        } else {
-          // DCAxy for all primaries
-          histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
-          histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
-        }
-        if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
-          histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
-          histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
-        }
-
+      if (isDCAPureSample) {
         if (enableDCAvsmotherHistograms) {
-          bool IsD0Mother = false;
-          bool IsCharmMother = false;
-          bool IsBeautyMother = false;
-          bool IsNotHFMother = false;
-          if (mcParticle.has_mothers()) {
-            const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false);
-            for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-              const int motherPdgCode = std::abs(mother.pdgCode());
-              if (motherPdgCode == 421) {
-                IsD0Mother = true;
-              }
-              if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
-                IsBeautyMother = true;
-              }
-              if (charmOrigin == RecoDecay::OriginType::Prompt) {
-                IsCharmMother = true;
-              }
-              if (charmOrigin == RecoDecay::OriginType::None) {
-                IsNotHFMother = true;
+          hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
+          hDcaZMC[i]->Fill(track.pt(), track.dcaZ());
+        }
+
+        if (!mcParticle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
+          if (mcParticle.getProcess() == 4) {  // Particles from decay
+            if (enableDCAxyzHistograms) {
+              hDcaXYZStr[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+            } else {
+              histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
+              histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
+            }
+
+            if (mcParticle.has_mothers()) {
+              for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+                auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+                double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+                double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+                auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+                hDecayLengthStr[i]->Fill(track.pt(), decayLength);
               }
             }
+          } else { // Particles from the material
+            if (enableDCAxyzHistograms) {
+              hDcaXYZMat[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+            } else {
+              histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY());
+              histos.fill(HIST(hdcazmat[i]), track.pt(), track.dcaZ());
+            }
           }
-          if (IsD0Mother) {
-            hDcaXYMCD0[i]->Fill(track.pt(), track.dcaXY());
-            hDcaZMCD0[i]->Fill(track.pt(), track.dcaZ());
+        } else { // Primaries
+          if (enableDCAxyzHistograms) {
+            hDcaXYZPrm[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
+            if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
+              histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY(), track.dcaZ());
+            }
+          } else {
+            // DCAxy for all primaries
+            histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
+            histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
           }
-          if (IsCharmMother) {
-            hDcaXYMCCharm[i]->Fill(track.pt(), track.dcaXY());
-            hdcaZMCCharm[i]->Fill(track.pt(), track.dcaZ());
-          }
-          if (IsBeautyMother) {
-            hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
-            hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
-          }
-          if (IsNotHFMother) {
-            hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
-            hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
+          if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
+            histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
+            histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
           }
 
-          if (mcParticle.has_mothers()) {
-            for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-              auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
-              double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-              double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
-              auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+          if (enableDCAvsmotherHistograms) {
+            bool IsD0Mother = false;
+            bool IsCharmMother = false;
+            bool IsBeautyMother = false;
+            bool IsNotHFMother = false;
+            if (mcParticle.has_mothers()) {
+              const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false);
+              for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+                const int motherPdgCode = std::abs(mother.pdgCode());
+                if (motherPdgCode == 421) {
+                  IsD0Mother = true;
+                }
+                if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
+                  IsBeautyMother = true;
+                }
+                if (charmOrigin == RecoDecay::OriginType::Prompt) {
+                  IsCharmMother = true;
+                }
+                if (charmOrigin == RecoDecay::OriginType::None) {
+                  IsNotHFMother = true;
+                }
+              }
+            }
+            if (IsD0Mother) {
+              hDcaXYMCD0[i]->Fill(track.pt(), track.dcaXY());
+              hDcaZMCD0[i]->Fill(track.pt(), track.dcaZ());
+            }
+            if (IsCharmMother) {
+              hDcaXYMCCharm[i]->Fill(track.pt(), track.dcaXY());
+              hdcaZMCCharm[i]->Fill(track.pt(), track.dcaZ());
+            }
+            if (IsBeautyMother) {
+              hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
+              hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
+            }
+            if (IsNotHFMother) {
+              hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
+              hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
+            }
 
-              if (IsD0Mother) {
-                hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
-              }
-              if (IsCharmMother) {
-                hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
-              }
-              if (IsBeautyMother) {
-                hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
-              }
-              if (IsNotHFMother) {
-                hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+            if (mcParticle.has_mothers()) {
+              for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+                auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
+                double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+                double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+                auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
+
+                if (IsD0Mother) {
+                  hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
+                }
+                if (IsCharmMother) {
+                  hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
+                }
+                if (IsBeautyMother) {
+                  hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
+                }
+                if (IsNotHFMother) {
+                  hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+                }
               }
             }
           }
         }
+      }
+    } else {
+      if (!mcParticle.isPhysicalPrimary()) {
+        if (mcParticle.getProcess() == 4) {
+          histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
+        } else {
+          histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY());
+        }
+      } else {
+        histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
       }
     }
 
@@ -2042,7 +2052,7 @@ struct tofSpectra {
       } else {
         hDcaXYWrongCollisionPrm[i]->Fill(track.pt(), track.dcaXY());
       }
-    }
+    } 
 
     if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
       return;
