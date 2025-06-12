@@ -33,8 +33,10 @@
 #include <array>
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #endif
 
