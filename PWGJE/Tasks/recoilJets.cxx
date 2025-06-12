@@ -366,7 +366,7 @@ struct RecoilJets {
     }
 
     if (nTT > 0) {
-      
+
       phiTT = getPhiTT(vPhiOfTT);
 
       if (bSigEv) {
