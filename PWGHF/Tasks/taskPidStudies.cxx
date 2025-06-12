@@ -197,7 +197,6 @@ struct HfTaskPidStudies {
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
   using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
-  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
   ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
@@ -337,17 +336,17 @@ struct HfTaskPidStudies {
     return Particle::NotMatched;
   }
 
-  template <typename Coll, typename BCs>
-  bool isCollSelected(const Coll& coll, const BCs& bcs)
+  template <typename Coll>
+  bool isCollSelected(const Coll& coll)
   {
-    auto bc = coll.template bc_as<BCs>();
+    auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
     interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), ctpFetcherSource.value) * 1.e-3; // convert to kHz
     if (interactionRate < interactionRateMin || interactionRate > interactionRateMax) {
       return false;
     }
 
     float cent{-1.f};
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, BCs>(coll, cent, ccdb, registry, bcs);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, registry);
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(coll, rejectionMask, cent);
     return rejectionMask == 0;
@@ -504,10 +503,10 @@ struct HfTaskPidStudies {
                    aod::V0MCCores const&,
                    aod::McParticles const& /*particlesMc*/,
                    PidTracks const& /*tracks*/,
-                   BCs const& bcs)
+                   aod::BCsWithTimestamps const&)
   {
     for (const auto& v0 : V0s) {
-      if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>(), bcs)) {
+      if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
         continue;
       }
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
@@ -525,11 +524,11 @@ struct HfTaskPidStudies {
 
   void processV0Data(aod::V0Datas const& V0s,
                      PidTracks const&,
-                     BCs const& bcs,
+                     aod::BCsWithTimestamps const&,
                      CollSels const&)
   {
     for (const auto& v0 : V0s) {
-      if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>(), bcs)) {
+      if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
         continue;
       }
       if (applyTrackSels && !isTrackSelected<true>(v0)) {
@@ -547,10 +546,10 @@ struct HfTaskPidStudies {
                      aod::CascMCCores const&,
                      aod::McParticles const& /*particlesMc*/,
                      PidTracks const&,
-                     BCs const& bcs)
+                     aod::BCsWithTimestamps const&)
   {
     for (const auto& casc : cascades) {
-      if (applyEvSels && !isCollSelected(casc.collision_as<CollisionsMc>(), bcs)) {
+      if (applyEvSels && !isCollSelected(casc.collision_as<CollisionsMc>())) {
         continue;
       }
       if (applyTrackSels && !isTrackSelected<false>(casc)) {
@@ -568,11 +567,11 @@ struct HfTaskPidStudies {
 
   void processCascData(aod::CascDatas const& cascades,
                        PidTracks const&,
-                       BCs const& bcs,
+                       aod::BCsWithTimestamps const&,
                        CollSels const&)
   {
     for (const auto& casc : cascades) {
-      if (applyEvSels && !isCollSelected(casc.collision_as<CollSels>(), bcs)) {
+      if (applyEvSels && !isCollSelected(casc.collision_as<CollSels>())) {
         continue;
       }
       if (applyTrackSels && !isTrackSelected<false>(casc)) {

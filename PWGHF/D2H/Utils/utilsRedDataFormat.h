@@ -84,4 +84,3 @@ float getTpcTofNSigmaPi1(const T1& prong1)
 } // namespace o2::pid_tpc_tof_utils
 
 #endif // PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
-
