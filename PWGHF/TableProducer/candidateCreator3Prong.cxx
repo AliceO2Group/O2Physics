@@ -60,13 +60,13 @@ using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::aod::hf_cand_3prong;
 using namespace o2::hf_decay::hf_cand_3prong;
-using namespace o2::hf_corrbkg;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::pid_tpc_tof_utils;
+using namespace o2::hf_corrbkg;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
@@ -853,7 +853,7 @@ struct HfCandidateCreator3ProngExpressions {
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
   Configurable<bool> matchCorrBkgs{"matchCorrBkgs", false, "Match correlated background candidates"};
-  Configurable<std::vector<int>> mothersCorrBkgsPdgs{"mothersCorrBkgsPdgs", {411, 413, 431, 4122, 4232}, "PDG codes of the mother particles of correlated background candidates"};
+  Configurable<std::vector<int>> mothersCorrBkgsPdgs{"mothersCorrBkgsPdgs", {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kXiCPlus}, "PDG codes of the mother particles of correlated background candidates"};
 
   constexpr static std::size_t NDaughtersResonant{2u};
 
@@ -1049,7 +1049,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flag = sign * hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
+            flag = sign * DecayChannelMain::DplusToPiKPi;
           }
         }
 
@@ -1078,7 +1078,7 @@ struct HfCandidateCreator3ProngExpressions {
             }
           }
           if (indexRec > -1) {
-            flag = sign * (isDplus ? hf_cand_3prong::DecayChannelMain::DplusToPiKK : hf_cand_3prong::DecayChannelMain::DsToPiKK);
+            flag = sign * (isDplus ? DecayChannelMain::DplusToPiKK : DecayChannelMain::DsToPiKK);
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
             }
@@ -1089,9 +1089,9 @@ struct HfCandidateCreator3ProngExpressions {
                 arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
-                channel = isDplus ? hf_cand_3prong::DecayChannelResonant::DplusToPhiPi : hf_cand_3prong::DecayChannelResonant::DsToPhiPi;
+                channel = isDplus ? DecayChannelResonant::DplusToPhiPi : DecayChannelResonant::DsToPhiPi;
               } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
-                channel = isDplus ? hf_cand_3prong::DecayChannelResonant::DplusToKstar0K : hf_cand_3prong::DecayChannelResonant::DsToKstar0K;
+                channel = isDplus ? DecayChannelResonant::DplusToKstar0K : DecayChannelResonant::DsToKstar0K;
               }
             }
           }
@@ -1105,7 +1105,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flag = sign * hf_cand_3prong::DecayChannelMain::DstarToPiKPi;
+            flag = sign * DecayChannelMain::DstarToPiKPi;
             channel = 1;
           }
         }
@@ -1122,7 +1122,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flag = sign * hf_cand_3prong::DecayChannelMain::LcToPKPi;
+            flag = sign * DecayChannelMain::LcToPKPi;
 
             // Flagging the different Λc± → p± K∓ π± decay channels
             if (arrayDaughters[0].has_mcParticle()) {
@@ -1157,7 +1157,7 @@ struct HfCandidateCreator3ProngExpressions {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
           }
           if (indexRec > -1) {
-            flag = sign * hf_cand_3prong::DecayChannelMain::XicToPKPi;
+            flag = sign * DecayChannelMain::XicToPKPi;
             if (arrayDaughters[0].has_mcParticle()) {
               swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
             }
