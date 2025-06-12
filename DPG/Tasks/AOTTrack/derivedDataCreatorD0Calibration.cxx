@@ -20,10 +20,12 @@
 #include <map>
 #include <string>
 
+#include <TH1D.h>
+#include <TRandom3.h>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -81,6 +83,11 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "candidateCuts";
   } cfgCandCuts;
 
+  struct : ConfigurableGroup {
+    Configurable<bool> apply{"apply", false, "flag to apply downsampling"};
+    Configurable<std::string> pathCcdbWeights{"pathCcdbWeights", "", "CCDB path containing pT-differential weights"};
+  } cfgDownsampling;
+
   using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
 
@@ -99,8 +106,19 @@ struct DerivedDataCreatorD0Calibration {
   const float ptTolerance{0.1f};
   const float invMassTolerance{0.05f};
 
+  OutputObj<TH1D> histDownSampl{"histDownSampl"};
+
   void init(InitContext const&)
   {
+    // First we set the CCDB manager
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    if (cfgDownsampling.apply) {
+      histDownSampl.setObject(reinterpret_cast<TH1D*>(ccdb->getSpecific<TH1D>(cfgDownsampling.pathCcdbWeights)));
+    }
+
     df.setPropagateToPCA(true);
     df.setMaxR(200.f);
     df.setMaxDZIni(4.f);
@@ -292,6 +310,23 @@ struct DerivedDataCreatorD0Calibration {
           if (ptBinD0 < 0) {
             continue;
           }
+
+          // random downsampling already here
+          if (cfgDownsampling.apply) {
+            int ptBinWeights{0};
+            if (ptD0 < histDownSampl->GetBinLowEdge(1)) {
+              ptBinWeights = 1;
+            } else if (ptD0 > histDownSampl->GetXaxis()->GetBinUpEdge(histDownSampl->GetNbinsX())) {
+              ptBinWeights = histDownSampl->GetNbinsX();
+            } else {
+              ptBinWeights = histDownSampl->GetXaxis()->FindBin(ptD0);
+            }
+            float weight = histDownSampl->GetBinContent(ptBinWeights);
+            if (gRandom->Rndm() > weight) {
+              continue;
+            }
+          }
+
           // d0xd0
           if (dcaPos.getY() * dcaNeg.getY() > cfgCandCuts.topologicalCuts->get(ptBinD0, "max d0d0")) {
             continue;
