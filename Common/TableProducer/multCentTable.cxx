@@ -77,7 +77,7 @@ struct MultCentTable {
     module.init(opts, initContext);
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::Run2MatchedSparse> const& collisions,
+  void processRun2(soa::Join<aod::Collisions, aod::Run2MatchedSparse> const& collisions,
                    soa::Join<aod::Tracks, aod::TracksExtra> const& tracks,
                    soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps> const& bcs,
                    aod::Zdcs const&,
@@ -88,10 +88,10 @@ struct MultCentTable {
     mults.clear();
     for (auto const& collision : collisions) {
       o2::common::multiplicity::multEntry mult;
-      // const auto& bc = collision.bc_as<soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>>();
+      const auto& bc = bcs.rawIteratorAt(collision.getId<aod::indices::BCId>());
       const uint64_t collIdx = collision.globalIndex();
       auto tracksThisCollision = tracks.sliceBy(slicerTrackRun2, collIdx);
-      mult = module.collisionProcessRun2(collision, tracksThisCollision, bcs, products);
+      mult = module.collisionProcessRun2(collision, tracksThisCollision, bc, products);
       mults.push_back(mult);
     }
   }

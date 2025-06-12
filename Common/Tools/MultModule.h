@@ -472,15 +472,15 @@ class MultModule
   }
 
   //__________________________________________________
-  template <typename TCollision, typename TTracks, typename TBCs, typename TOutputGroup>
-  o2::common::multiplicity::multEntry collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBCs const& bcs, TOutputGroup& cursors)
+  template <typename TCollision, typename TTracks, typename TBC, typename TOutputGroup>
+  o2::common::multiplicity::multEntry collisionProcessRun2(TCollision const& collision, TTracks const& tracks, TBC const& bc, TOutputGroup& cursors)
   {
     // initialize properties
     o2::common::multiplicity::multEntry mults;
 
     mults.posZ = collision.posZ();
-    // mults.spdClustersL0 = bc.spdClustersL0();
-    // mults.spdClustersL1 = bc.spdClustersL1();
+    mults.spdClustersL0 = bc.spdClustersL0();
+    mults.spdClustersL1 = bc.spdClustersL1();
     //_______________________________________________________________________
     // forward detector signals, raw
     if (collision.has_fv0a()) {
