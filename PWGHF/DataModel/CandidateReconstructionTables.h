@@ -2314,6 +2314,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(ProngLc, prongLc, int, HfCand3Prong, "");         
 DECLARE_SOA_COLUMN(Charge, charge, int8_t);                                            //! // Σc charge(either 0 or ++)
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPKPiFromPDG, statusSpreadLcMinvPKPiFromPDG, int); //! // Λc Minv(pKpi) spread from PDG Λc mass
 DECLARE_SOA_COLUMN(StatusSpreadLcMinvPiKPFromPDG, statusSpreadLcMinvPiKPFromPDG, int); //! // Λc Minv(piKp) spread from PDG Λc mass
+DECLARE_SOA_COLUMN(SoftPiDcaXY, softPiDcaXY, float);                                   //! soft-pion impact parameter in xy
+DECLARE_SOA_COLUMN(SoftPiDcaZ, softPiDcaZ, float);                                     //! soft-pion impact parameter in z
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0");                //! Λc index
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);             //! reconstruction level
@@ -2357,6 +2359,7 @@ DECLARE_SOA_TABLE(HfCandScBase, "AOD", "HFCANDSCBASE",
                   /* Σc0,++ specific columns */
                   hf_cand_sigmac::Charge,
                   hf_cand_sigmac::StatusSpreadLcMinvPKPiFromPDG, hf_cand_sigmac::StatusSpreadLcMinvPiKPFromPDG,
+                  hf_cand_sigmac::SoftPiDcaXY, hf_cand_sigmac::SoftPiDcaZ,
                   /* prong 0 */
                   // hf_cand::ImpactParameterNormalised0<hf_cand::ImpactParameter0, hf_cand::ErrorImpactParameter0>,
                   hf_cand::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
