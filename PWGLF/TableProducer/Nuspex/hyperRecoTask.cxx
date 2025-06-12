@@ -507,7 +507,7 @@ struct hyperRecoTask {
     }
 
     // if survived all selections, propagate decay daughters to PV
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, heTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hypCand.he3DCAXY = dcaInfo[0];
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);

@@ -17,13 +17,15 @@
 #ifndef PWGHF_CORE_HFHELPER_H_
 #define PWGHF_CORE_HFHELPER_H_
 
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+
+#include <array>
+#include <cmath>
 #include <vector>
-
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector4D.h"
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
@@ -947,6 +949,87 @@ class HfHelper
   /// \return true if prong1 of Bs candidate passes all selections
   template <typename T1 = int, typename T2 = bool>
   bool selectionBsToDsPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+  {
+    if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+      return false;
+    }
+    if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Apply topological cuts as defined in SelectorCuts.h
+  /// \param candLb Lb candidate
+  /// \param cuts Lb candidate selection per pT bin"
+  /// \param binsPt pT bin limits
+  /// \return true if candidate passes all selections
+  template <typename T1, typename T2, typename T3>
+  bool selectionLbToLcPiTopol(const T1& candLb, const T2& cuts, const T3& binsPt)
+  {
+    auto ptCandLb = candLb.pt();
+    auto ptLc = candLb.ptProng0();
+    auto ptPi = candLb.ptProng1();
+
+    int pTBin = o2::analysis::findBin(binsPt, ptCandLb);
+    if (pTBin == -1) {
+      return false;
+    }
+
+    // Lb mass cut
+    if (std::abs(invMassLbToLcPi(candLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
+      return false;
+    }
+
+    // pion pt
+    if (ptPi < cuts->get(pTBin, "pT Pi")) {
+      return false;
+    }
+
+    // Lc pt
+    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+      return false;
+    }
+
+    // Lb Decay length
+    if (candLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
+      return false;
+    }
+
+    // Lb Decay length XY
+    if (candLb.decayLengthXY() < cuts->get(pTBin, "Lb decLenXY")) {
+      return false;
+    }
+
+    // Lb chi2PCA cut
+    if (candLb.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+      return false;
+    }
+
+    // Lb CPA cut
+    if (candLb.cpa() < cuts->get(pTBin, "CPA")) {
+      return false;
+    }
+
+    // d0 of pi
+    if (std::abs(candLb.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+      return false;
+    }
+
+    // d0 of Lc
+    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc")) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// \param pidTrackPi PID status of trackPi (prong1 of Lb candidate)
+  /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+  /// \return true if prong1 of Lb candidate passes all selections
+  template <typename T1 = int, typename T2 = bool>
+  bool selectionLbToLcPiPid(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
   {
     if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
       return false;

@@ -25,9 +25,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_DPLUS(FEATURE)                                          \
-  {                                                                      \
-#FEATURE, static_cast < uint8_t>(InputFeaturesDplusToPiKPi::FEATURE) \
+#define FILL_MAP_DPLUS(FEATURE)                                        \
+  {                                                                    \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesDplusToPiKPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -104,9 +104,8 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
   /// \param prong1 is the candidate's prong1
   /// \param prong2 is the candidate's prong2
   /// \return inputFeatures vector
-  template <typename T1, typename T2>
-  std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong0, T2 const& prong1, T2 const& prong2)
+  template <typename T1>
+  std::vector<float> getInputFeatures(T1 const& candidate)
   {
     std::vector<float> inputFeatures;
 
@@ -130,26 +129,26 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DPLUS(maxNormalisedDeltaIP);
         CHECK_AND_FILL_VEC_DPLUS(chi2PCA);
         // TPC PID variables
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcNSigmaPi1, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcNSigmaKa1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaPi0, nSigTpcPi0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaKa0, nSigTpcKa0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaPi1, nSigTpcPi1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaKa1, nSigTpcKa1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaPi2, nSigTpcPi2);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcNSigmaKa2, nSigTpcKa2);
         // TOF PID variables
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tofNSigmaPi0, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tofNSigmaPi1, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tofNSigmaKa1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaPi0, nSigTofPi0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaKa0, nSigTofKa0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaPi1, nSigTofPi1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaKa1, nSigTofKa1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaPi2, nSigTofPi2);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tofNSigmaKa2, nSigTofKa2);
         // Combined PID variables
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DPLUS_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaPi0, tpcTofNSigmaPi0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaPi1, tpcTofNSigmaPi1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaPi2, tpcTofNSigmaPi2);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaKa0, tpcTofNSigmaKa0);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaKa1, tpcTofNSigmaKa1);
+        CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, tpcTofNSigmaKa2, tpcTofNSigmaKa2);
       }
     }
 

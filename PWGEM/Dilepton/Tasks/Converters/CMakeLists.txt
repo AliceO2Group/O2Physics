@@ -10,8 +10,8 @@
 # or submit itself to any jurisdiction.
 
 
-o2physics_add_dpl_workflow(event-converter1
-                  SOURCES eventConverter1.cxx
+o2physics_add_dpl_workflow(event-converter2
+                  SOURCES eventConverter2.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 

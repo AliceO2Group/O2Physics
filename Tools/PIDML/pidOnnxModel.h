@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidONNXModel.h
+/// \file pidOnnxModel.h
 /// \brief A class that wraps PID ML ONNX model. See README.md for more detailed instructions.
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
@@ -17,12 +17,17 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
+#include <Framework/ASoA.h>
 #include <array>
-#include <cstdint>
-#include <limits>
-#include <string>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <cstdio>
+#include <limits>
+#include <optional>
+#include <string>
 #include <map>
+#include <type_traits>
 #include <utility>
 #include <memory>
 #include <vector>
@@ -37,8 +42,6 @@
 #include "CCDB/CcdbApi.h"
 #include "Tools/PIDML/pidUtils.h"
 
-using namespace pidml::pidutils;
-
 enum PidMLDetector {
   kTPCOnly = 0,
   kTPCTOF,
@@ -46,11 +49,13 @@ enum PidMLDetector {
   kNDetectors ///< number of available detectors configurations
 };
 
+using MomentumLimitsMatrix = std::array<double, kNDetectors>;
+
 namespace pidml_pt_cuts
 {
 // TODO: for now first limit wouldn't be used,
 // network needs TPC, so we can either do not cut it by p or return 0.0f as prediction
-constexpr std::array<double, kNDetectors> defaultModelPLimits({0.0, 0.5, 0.8});
+constexpr MomentumLimitsMatrix defaultModelPLimits({0.0, 0.5, 0.8});
 } // namespace pidml_pt_cuts
 
 // TODO: Copied from cefpTask, shall we put it in some common utils code?
@@ -73,6 +78,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 }
 } // namespace
 
+template <typename T>
 struct PidONNXModel {
  public:
   PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
@@ -135,14 +141,12 @@ struct PidONNXModel {
   PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
-  template <typename T>
-  float applyModel(const T& track)
+  float applyModel(const typename T::iterator& track)
   {
     return getModelOutput(track);
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track)
+  bool applyModelBoolean(const typename T::iterator& track)
   {
     return getModelOutput(track) >= mMinCertainty;
   }
@@ -202,85 +206,84 @@ struct PidONNXModel {
 
     LOG(info) << "Using configuration files: " << localTrainColumnsPath << ", " << localScalingParamsPath;
     if (readJsonFile(localTrainColumnsPath, trainColumnsDoc)) {
-      for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
-        mTrainColumns.emplace_back(param.GetString());
+      for (const auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
+        auto columnLabel = param.GetString();
+        mTrainColumns.emplace_back(columnLabel);
+        mGetters.emplace_back(o2::soa::row_helpers::getColumnGetterByLabel<float, T>(columnLabel));
       }
     }
     if (readJsonFile(localScalingParamsPath, scalingParamsDoc)) {
-      for (auto& param : scalingParamsDoc["data"].GetArray()) {
+      for (const auto& param : scalingParamsDoc["data"].GetArray()) {
         mScalingParams[param[0].GetString()] = std::make_pair(param[1].GetFloat(), param[2].GetFloat());
       }
     }
   }
 
-  template <typename T>
-  std::vector<float> createInputsSingle(const T& track)
+  static float scale(float value, const std::pair<float, float>& scalingParams)
   {
-    // TODO: Hardcoded for now. Planning to implement RowView extension to get runtime access to selected columns
-    // sign is short, trackType and tpcNClsShared uint8_t
-
-    float scaledTPCSignal = (track.tpcSignal() - mScalingParams.at("fTPCSignal").first) / mScalingParams.at("fTPCSignal").second;
-
-    std::vector<float> inputValues{scaledTPCSignal};
-
-    // When TRD Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, mPLimits[kTPCTOFTRD]) || trdMissing(track)) {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-    } else {
-      float scaledTRDSignal = (track.trdSignal() - mScalingParams.at("fTRDSignal").first) / mScalingParams.at("fTRDSignal").second;
-      inputValues.push_back(scaledTRDSignal);
-      inputValues.push_back(track.trdPattern());
-    }
-
-    // When TOF Signal shouldn't be used we pass quiet_NaNs to the network
-    if (!inPLimit(track, mPLimits[kTPCTOF]) || tofMissing(track)) {
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-      inputValues.push_back(std::numeric_limits<float>::quiet_NaN());
-    } else {
-      float scaledTOFSignal = (track.tofSignal() - mScalingParams.at("fTOFSignal").first) / mScalingParams.at("fTOFSignal").second;
-      float scaledBeta = (track.beta() - mScalingParams.at("fBeta").first) / mScalingParams.at("fBeta").second;
-      inputValues.push_back(scaledTOFSignal);
-      inputValues.push_back(scaledBeta);
-    }
-
-    float scaledX = (track.x() - mScalingParams.at("fX").first) / mScalingParams.at("fX").second;
-    float scaledY = (track.y() - mScalingParams.at("fY").first) / mScalingParams.at("fY").second;
-    float scaledZ = (track.z() - mScalingParams.at("fZ").first) / mScalingParams.at("fZ").second;
-    float scaledAlpha = (track.alpha() - mScalingParams.at("fAlpha").first) / mScalingParams.at("fAlpha").second;
-    float scaledTPCNClsShared = (static_cast<float>(track.tpcNClsShared()) - mScalingParams.at("fTPCNClsShared").first) / mScalingParams.at("fTPCNClsShared").second;
-    float scaledDcaXY = (track.dcaXY() - mScalingParams.at("fDcaXY").first) / mScalingParams.at("fDcaXY").second;
-    float scaledDcaZ = (track.dcaZ() - mScalingParams.at("fDcaZ").first) / mScalingParams.at("fDcaZ").second;
-
-    inputValues.insert(inputValues.end(), {track.p(), track.pt(), track.px(), track.py(), track.pz(), static_cast<float>(track.sign()), scaledX, scaledY, scaledZ, scaledAlpha, static_cast<float>(track.trackType()), scaledTPCNClsShared, scaledDcaXY, scaledDcaZ});
-
-    return inputValues;
+    return (value - scalingParams.first) / scalingParams.second;
   }
 
-  template <typename T>
-  float getModelOutput(const T& track)
+  std::vector<float> getValues(const typename T::iterator& track)
+  {
+    std::vector<float> output;
+    output.reserve(mTrainColumns.size());
+
+    bool useTOF = !pidml::pidutils::tofMissing(track) && pidml::pidutils::inPLimit(track, mPLimits[kTPCTOF]);
+    bool useTRD = !pidml::pidutils::trdMissing(track) && pidml::pidutils::inPLimit(track, mPLimits[kTPCTOFTRD]);
+
+    for (uint32_t i = 0; i < mTrainColumns.size(); ++i) {
+      auto& columnLabel = mTrainColumns[i];
+
+      if (
+        ((columnLabel == "fTRDSignal" || columnLabel == "fTRDPattern") && !useTRD) ||
+        ((columnLabel == "fTOFSignal" || columnLabel == "fBeta") && !useTOF)) {
+        output.push_back(std::numeric_limits<float>::quiet_NaN());
+        continue;
+      }
+
+      std::optional<std::pair<float, float>> scalingParams = std::nullopt;
+
+      auto scalingParamsEntry = mScalingParams.find(columnLabel);
+      if (scalingParamsEntry != mScalingParams.end()) {
+        scalingParams = scalingParamsEntry->second;
+      }
+
+      float value = mGetters[i](track);
+
+      if (scalingParams) {
+        value = scale(value, scalingParams.value());
+      }
+
+      output.push_back(value);
+    }
+
+    return output;
+  }
+
+  float getModelOutput(const typename T::iterator& track)
   {
     // First rank of the expected model input is -1 which means that it is dynamic axis.
     // Axis is exported as dynamic to make it possible to run model inference with the batch of
     // tracks at once in the future (batch would need to have the same amount of quiet_NaNs in each row).
     // For now we hardcode 1.
-    static constexpr int64_t batch_size = 1;
-    auto input_shape = mInputShapes[0];
-    input_shape[0] = batch_size;
+    static constexpr int64_t BatchSize = 1;
+    auto inputShape = mInputShapes[0];
+    inputShape[0] = BatchSize;
 
-    std::vector<float> inputTensorValues = createInputsSingle(track);
+    std::vector<float> inputTensorValues = getValues(track);
     std::vector<Ort::Value> inputTensors;
 
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), input_shape));
+    inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<float>(inputTensorValues.data(), inputTensorValues.size(), inputShape));
 #else
-    Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
-    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(mem_info, inputTensorValues.data(), inputTensorValues.size(), input_shape.data(), input_shape.size()));
+    Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    inputTensors.emplace_back(Ort::Value::CreateTensor<float>(memInfo, inputTensorValues.data(), inputTensorValues.size(), inputShape.data(), inputShape.size()));
 #endif
 
     // Double-check the dimensions of the input tensor
     assert(inputTensors[0].IsTensor() &&
-           inputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
+           inputTensors[0].GetTensorTypeAndShapeInfo().GetShape() == inputShape);
     LOG(debug) << "input tensor shape: " << printShape(inputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
     try {
@@ -303,8 +306,8 @@ struct PidONNXModel {
       assert(outputTensors.size() == mOutputNames.size() && outputTensors[0].IsTensor());
       LOG(debug) << "output tensor shape: " << printShape(outputTensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
-      const float* output_value = outputTensors[0].GetTensorData<float>();
-      float certainty = *output_value;
+      const float* outputValue = outputTensors[0].GetTensorData<float>();
+      float certainty = *outputValue;
       return certainty;
     } catch (const Ort::Exception& exception) {
       LOG(error) << "Error running model inference: " << exception.what();
@@ -323,6 +326,7 @@ struct PidONNXModel {
   }
 
   std::vector<std::string> mTrainColumns;
+  std::vector<float (*)(const typename T::iterator&)> mGetters;
   std::map<std::string, std::pair<float, float>> mScalingParams;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;

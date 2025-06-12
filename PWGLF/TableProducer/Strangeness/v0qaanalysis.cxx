@@ -43,7 +43,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using DauTracksMC = soa::Join<DauTracks, aod::McTrackLabels>;
-using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentFV0As>;
+using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentNGlobals>;
 
 struct LfV0qaanalysis {
 
@@ -81,7 +81,7 @@ struct LfV0qaanalysis {
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selection");
 
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-    registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
+    registry.add("hCentNGlobals", "hCentNGlobals", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     if (isMC) {
       registry.add("hCentFT0M_RecoColl_MC", "hCentFT0M_RecoColl_MC", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
       registry.add("hCentFT0M_RecoColl_MC_INELgt0", "hCentFT0M_RecoColl_MC_INELgt0", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
@@ -110,6 +110,8 @@ struct LfV0qaanalysis {
       registry.add("Generated_MCGenRecoColl_INEL_K0Short", "Generated_MCGenRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCGenRecoColl_INEL_Lambda", "Generated_MCGenRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCGenRecoColl_INEL_AntiLambda", "Generated_MCGenRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INEL_XiMinus", "Generated_MCGenRecoColl_INEL_XiMinus", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INEL_XiPlus", "Generated_MCGenRecoColl_INEL_XiPlus", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INEL_K0Short", "Generated_MCRecoColl_INEL_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INEL_Lambda", "Generated_MCRecoColl_INEL_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INEL_AntiLambda", "Generated_MCRecoColl_INEL_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
@@ -122,6 +124,8 @@ struct LfV0qaanalysis {
       registry.add("Generated_MCGenRecoColl_INELgt0_K0Short", "Generated_MCGenRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCGenRecoColl_INELgt0_Lambda", "Generated_MCGenRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCGenRecoColl_INELgt0_AntiLambda", "Generated_MCGenRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INELgt0_XiMinus", "Generated_MCGenRecoColl_INELgt0_XiMinus", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
+      registry.add("Generated_MCGenRecoColl_INELgt0_XiPlus", "Generated_MCGenRecoColl_INELgt0_XiPlus", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INELgt0_K0Short", "Generated_MCRecoColl_INELgt0_K0Short", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INELgt0_Lambda", "Generated_MCRecoColl_INELgt0_Lambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
       registry.add("Generated_MCRecoColl_INELgt0_AntiLambda", "Generated_MCRecoColl_INELgt0_AntiLambda", {HistType::kTH2F, {{250, 0.f, 25.f}, {1000, 0.f, 100.f}}});
@@ -169,7 +173,7 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 2.5);
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
+    if (std::abs(collision.posZ()) > cutzvertex) {
       return false;
     }
     registry.fill(HIST("hNEvents"), 3.5);
@@ -207,7 +211,7 @@ struct LfV0qaanalysis {
     }
     registry.fill(HIST("hNEvents"), 8.5);
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
-    registry.fill(HIST("hCentFV0A"), collision.centFV0A());
+    registry.fill(HIST("hCentNGlobals"), collision.centNGlobal());
 
     for (auto& v0 : V0s) { // loop over V0s
 
@@ -230,6 +234,9 @@ struct LfV0qaanalysis {
       }
 
       int lPDG = 0;
+      float ptMotherMC = 0.;
+      float pdgMotherMC = 0.;
+      float yMC = 0.;
       bool isPhysicalPrimary = isMC;
       bool isDauK0Short = false, isDauLambda = false, isDauAntiLambda = false;
 
@@ -239,27 +246,26 @@ struct LfV0qaanalysis {
 
       if (v0.v0radius() > v0radius &&
           v0.v0cosPA() > v0cospa &&
-          TMath::Abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
-          TMath::Abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
+          std::abs(v0.posTrack_as<DauTracks>().eta()) < etadau &&
+          std::abs(v0.negTrack_as<DauTracks>().eta()) < etadau) {
 
         // Fill table
-        myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
+        myv0s(v0.pt(), ptMotherMC, yMC, v0.yLambda(), v0.yK0Short(),
               v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
               v0.v0radius(), v0.v0cosPA(),
               v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
               v0.posTrack_as<DauTracks>().eta(), v0.negTrack_as<DauTracks>().eta(),
-              v0.posTrack_as<DauTracks>().phi(), v0.negTrack_as<DauTracks>().phi(),
               posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
               v0.negTrack_as<DauTracks>().tpcNSigmaPr(), v0.posTrack_as<DauTracks>().tpcNSigmaPr(),
               v0.negTrack_as<DauTracks>().tpcNSigmaPi(), v0.posTrack_as<DauTracks>().tpcNSigmaPi(),
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
-              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm(),
-              v0.posTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+              v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, pdgMotherMC, isDauK0Short, isDauLambda, isDauAntiLambda, isPhysicalPrimary,
+              collision.centFT0M(), collision.centNGlobal(), evFlag, v0.alpha(), v0.qtarm(),
+              v0.posTrack_as<DauTracks>().tpcNClsCrossedRows(),
               v0.posTrack_as<DauTracks>().tpcNClsShared(), v0.posTrack_as<DauTracks>().itsChi2NCl(),
               v0.posTrack_as<DauTracks>().tpcChi2NCl(),
-              v0.negTrack_as<DauTracks>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracks>().tpcCrossedRowsOverFindableCls(),
+              v0.negTrack_as<DauTracks>().tpcNClsCrossedRows(),
               v0.negTrack_as<DauTracks>().tpcNClsShared(), v0.negTrack_as<DauTracks>().itsChi2NCl(),
               v0.negTrack_as<DauTracks>().tpcChi2NCl());
       }
@@ -344,7 +350,7 @@ struct LfV0qaanalysis {
         int lPDG = 0;
         bool isDauK0Short = false, isDauLambda = false, isDauAntiLambda = false;
         bool isprimary = false;
-        if (TMath::Abs(v0mcparticle.pdgCode()) == 310 || TMath::Abs(v0mcparticle.pdgCode()) == 3122) {
+        if (std::abs(v0mcparticle.pdgCode()) == 310 || std::abs(v0mcparticle.pdgCode()) == 3122) {
           lPDG = v0mcparticle.pdgCode();
           isprimary = v0mcparticle.isPhysicalPrimary();
         }
@@ -362,6 +368,18 @@ struct LfV0qaanalysis {
           }
         }
 
+        float ptMotherMC = 0.;
+        float pdgMother = 0.;
+
+        if (std::abs(v0mcparticle.pdgCode()) == 3122 && v0mcparticle.has_mothers()) {
+          for (auto& mcparticleMother0 : v0mcparticle.mothers_as<aod::McParticles>()) {
+            if (std::abs(mcparticleMother0.pdgCode()) == 3312 || std::abs(mcparticleMother0.pdgCode()) == 3322) {
+              ptMotherMC = mcparticleMother0.pt();
+              pdgMother = mcparticleMother0.pdgCode();
+            }
+          }
+        }
+
         const int posITSNhits = v0.posTrack_as<DauTracksMC>().itsNCls();
         const int negITSNhits = v0.negTrack_as<DauTracksMC>().itsNCls();
 
@@ -371,28 +389,27 @@ struct LfV0qaanalysis {
 
         if (v0.v0radius() > v0radius &&
             v0.v0cosPA() > v0cospa &&
-            TMath::Abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
-            TMath::Abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
+            std::abs(v0.posTrack_as<DauTracksMC>().eta()) < etadau &&
+            std::abs(v0.negTrack_as<DauTracksMC>().eta()) < etadau // &&
         ) {
 
           // Fill table
-          myv0s(v0.pt(), v0.yLambda(), v0.yK0Short(),
+          myv0s(v0.pt(), ptMotherMC, v0mcparticle.y(), v0.yLambda(), v0.yK0Short(),
                 v0.mLambda(), v0.mAntiLambda(), v0.mK0Short(),
                 v0.v0radius(), v0.v0cosPA(),
                 v0.dcapostopv(), v0.dcanegtopv(), v0.dcaV0daughters(),
                 v0.posTrack_as<DauTracksMC>().eta(), v0.negTrack_as<DauTracksMC>().eta(),
-                v0.posTrack_as<DauTracksMC>().phi(), v0.negTrack_as<DauTracksMC>().phi(),
                 posITSNhits, negITSNhits, ctauLambda, ctauAntiLambda, ctauK0s,
                 v0.negTrack_as<DauTracksMC>().tpcNSigmaPr(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tpcNSigmaPi(), v0.posTrack_as<DauTracksMC>().tpcNSigmaPi(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
-                v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
+                v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, pdgMother, isDauK0Short, isDauLambda, isDauAntiLambda, isprimary,
                 mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm(),
-                v0.posTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.posTrack_as<DauTracksMC>().tpcCrossedRowsOverFindableCls(),
+                v0.posTrack_as<DauTracksMC>().tpcNClsCrossedRows(),
                 v0.posTrack_as<DauTracksMC>().tpcNClsShared(), v0.posTrack_as<DauTracksMC>().itsChi2NCl(),
                 v0.posTrack_as<DauTracksMC>().tpcChi2NCl(),
-                v0.negTrack_as<DauTracksMC>().tpcNClsCrossedRows(), v0.negTrack_as<DauTracksMC>().tpcCrossedRowsOverFindableCls(),
+                v0.negTrack_as<DauTracksMC>().tpcNClsCrossedRows(),
                 v0.negTrack_as<DauTracksMC>().tpcNClsShared(), v0.negTrack_as<DauTracksMC>().itsChi2NCl(),
                 v0.negTrack_as<DauTracksMC>().tpcChi2NCl());
         }
@@ -443,7 +460,7 @@ struct LfV0qaanalysis {
 
     registry.fill(HIST("hNEventsMCGen"), 0.5);
 
-    if (TMath::Abs(mcCollision.posZ()) > MCcutzvertex) {
+    if (std::abs(mcCollision.posZ()) > MCcutzvertex) {
       return;
     }
     registry.fill(HIST("hNEventsMCGen"), 1.5);
@@ -597,6 +614,18 @@ struct LfV0qaanalysis {
         registry.fill(HIST("Generated_MCGenRecoColl_INEL_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
         if (recoCollIndex_INELgt0 > 0) {
           registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_AntiLambda"), mcParticle.pt(), mcCollision.centFT0M()); // AntiLambda
+        }
+      }
+      if (mcParticle.pdgCode() == 3312) {
+        registry.fill(HIST("Generated_MCGenRecoColl_INEL_XiMinus"), mcParticle.pt(), mcCollision.centFT0M()); // XiMinus
+        if (recoCollIndex_INELgt0 > 0) {
+          registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_XiMinus"), mcParticle.pt(), mcCollision.centFT0M()); // XiMinus
+        }
+      }
+      if (mcParticle.pdgCode() == -3312) {
+        registry.fill(HIST("Generated_MCGenRecoColl_INEL_XiPlus"), mcParticle.pt(), mcCollision.centFT0M()); // XiPlus
+        if (recoCollIndex_INELgt0 > 0) {
+          registry.fill(HIST("Generated_MCGenRecoColl_INELgt0_XiPlus"), mcParticle.pt(), mcCollision.centFT0M()); // XiPlus
         }
       }
     }

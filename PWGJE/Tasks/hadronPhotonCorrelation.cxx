@@ -63,13 +63,21 @@ struct HadronPhotonCorrelation {
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+  Configurable<int> subGeneratorIdSelections{"subGeneratorIdSelections", -1, "set sub generator id"};
 
-  Configurable<float> etaMax{"etaMax", 0.8, "maximum eta cut"};
+  Configurable<int> tpcNClsCrossedRows{"tpcNClsCrossedRows", 70, "tpcNClsCrossedRows"};
+  Configurable<double> tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0.8, "tpcCrossedRowsOverFindableCls"};
+  Configurable<double> tpcNSigmaPi{"tpcNSigmaPi", 2., "tpcNSigmaPi"};
 
-  AxisSpec axisPhi = {72, 0., TwoPI, "#phi"};                       // Axis for phi distribution
-  AxisSpec axisDeltaPhi = {72, -PIHalf, 3 * PIHalf, "#Delta #phi"}; // Axis for Delta phi in correlations
-  AxisSpec axisEta = {40, -.8, .8, "#eta"};                         // Axis for eta distribution
-  AxisSpec axisDeltaEta = {80, -1.6, 1.6, "#Delta #eta"};           // Axis for Delta eta in correlations
+  const int pidCodeHadronCut = 100;
+
+  Configurable<float> etaMaxTrig{"etaMaxTrig", 0.8, "maximum eta cut for triggers"};
+  Configurable<float> etaMaxAssoc{"etaMaxAssoc", 0.8, "maximum eta cut for associateds"};
+  Configurable<int> etaBinsTrig{"etaBinsTrig", 40, "number of eta bins for triggers"};
+  Configurable<int> etaBinsAssoc{"etaBinsAssoc", 40, "number of eta bins for associateds"};
+  Configurable<int> phiBins{"phiBins", 72, "number of phi bins"};
+
+  AxisSpec axisEventStats = {3, -.5, 2.5, "Stats"};
   ConfigurableAxis axisPtTrig = {"axisPtTrig",
                                  {VARIABLE_WIDTH,
                                   3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 9.0f, 11.0f, 15.0f, 20.0f},
@@ -77,13 +85,12 @@ struct HadronPhotonCorrelation {
   ConfigurableAxis axisPtAssoc = {"axisPtAssoc",
                                   {VARIABLE_WIDTH,
                                    0.2, 0.5, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 9.0f, 11.0f, 15.0f},
-                                  "p_{T, assoc} [GeV]"}; // Axis for associated particle pt distribution
-  AxisSpec axisDeltaPt = {200, 0., 1.2, "#Delta p_T"};   // Axis for pt ratio between neutral hadrons and decay photons
-  AxisSpec axisPid = {9, -3.5, 5.5, "pid"};              // Axis for PID of neutral hadrons
-  AxisSpec axisMult = {100, 0., 99., "N_{ch}"};          // Axis for mutplipicity
-  AxisSpec axisAlpha = {100, 0., 1., "alpha"};           // Axis for decay photon pt assymetry
-
-  AxisSpec axisDeltaRDecay = {100, 0., 0.8, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
+                                  "p_{T, assoc} [GeV]"};                              // Axis for associated particle pt distribution
+  ConfigurableAxis axisDeltaPt = {"axisDeltaPt", {200, 0., 1.2}, "#Delta p_T"};       // Axis for pt ratio between neutral hadrons and decay photons
+  AxisSpec axisPid = {10, -3.5, 6.5, "pid"};                                          // Axis for PID of neutral hadrons
+  ConfigurableAxis axisMult = {"axisMult", {100, 0., 99.}, "N_{ch}"};                 // Axis for mutplipicity
+  AxisSpec axisAlpha = {100, 0., 1., "alpha"};                                        // Axis for decay photon pt assymetry
+  ConfigurableAxis axisDeltaRDecay = {"axisDeltaRDecay", {400, 0., 3.2}, "#Delta R"}; // Axis for Delta R = sqrt(Delta eta^2 + Delta phi^2) between neutral hadrons and decay photons
 
   float ptMinTrig;
   float ptMaxTrig;
@@ -98,7 +105,9 @@ struct HadronPhotonCorrelation {
     {"eta", 2},    // eta
     {"eta'", 3},   // eta'
     {"phi", 4},    // phi
-    {"omega", 5}}; // omega
+    {"omega", 5},  // omega
+    {"Sigma0", 6}, // Sigma
+    {"Sigma0_bar", 6}};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -112,56 +121,66 @@ struct HadronPhotonCorrelation {
     ptMinAssoc = axisPtAssoc->at(1);
     ptMaxAssoc = axisPtAssoc->back();
 
+    AxisSpec axisPhi = {phiBins, 0., TwoPI, "#phi"};                                                                            // Axis for phi distribution
+    AxisSpec axisDeltaPhi = {phiBins, -PIHalf, 3 * PIHalf, "#Delta #phi"};                                                      // Axis for Delta phi in correlations
+    AxisSpec axisEtaTrig = {etaBinsTrig, -etaMaxTrig, etaMaxTrig, "#eta"};                                                      // Axis for eta distribution
+    AxisSpec axisEtaAssoc = {etaBinsAssoc, -etaMaxAssoc, etaMaxAssoc, "#eta"};                                                  // Axis for eta distribution
+    AxisSpec axisDeltaEta = {etaBinsTrig + etaBinsAssoc, -(etaMaxTrig + etaMaxAssoc), etaMaxTrig + etaMaxAssoc, "#Delta #eta"}; // Axis for Delta eta in correlations
+
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Generated histograms
+    registry.add("generated/events/hEventStats", "Event statistics", kTH1F, {axisEventStats});
+
     //  Triggers
     registry.add("generated/triggers/hTrigMultGen", "Generated Trigger Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/triggers/hTrigSpectrumGen", "Generated Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEta, axisPhi});
+    registry.add("generated/triggers/hTrigSpectrumGen", "Generated Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEtaTrig, axisPhi});
 
     // Hadrons
     registry.add("generated/hadrons/hHadronCorrelGen", "Generated Trigger-Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("generated/hadrons/hHadronMultGen", "Generated Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/hadrons/hHadronSpectrumGen", "Generated Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("generated/hadrons/hHadronSpectrumGen", "Generated Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     // Photons
     registry.add("generated/photons/hPhotonCorrelGen", "Generated Trigger-Photon Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPid});
     registry.add("generated/photons/hPhotonMultGen", "Generated Photon Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/photons/hPhotonSpectrumGen", "Generated Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});
+    registry.add("generated/photons/hPhotonSpectrumGen", "Generated Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi, axisPid});
 
     // Charged pions
     registry.add("generated/charged/hPionCorrelGen", "Generated Trigger-Pion Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("generated/charged/hPionMultGen", "Generated Pion Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/charged/hPionSpectrumGen", "Generated Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("generated/charged/hPionSpectrumGen", "Generated Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     ////Neutral particles
     registry.add("generated/neutral/hNeutralCorrelGen", "Generated Trigger-Neutral Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPid});
     registry.add("generated/neutral/hNeutralMultGen", "Generated Neutral Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi, axisPid});                                     // Particle ID of neutral hadrons
+    registry.add("generated/neutral/hNeutralSpectrumGen", "Generated Neutral Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi, axisPid});
     registry.add("generated/neutral/hNeutralDecayGen", "Generated Neutral Hadron-Decay Photon Correlation", kTHnSparseF, {axisPtAssoc, axisDeltaPt, axisDeltaRDecay, axisAlpha, axisPid}); // Correlation with decay photons
 
     // Reconstructed histograms
+    registry.add("reconstructed/events/hEventStats", "Event statistics", kTH1F, {axisEventStats});
+
     // Triggers
     registry.add("reconstructed/triggers/hTrigMultReco", "Reconstructed Trigger Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/triggers/hTrigSpectrumReco", "Reconstructed Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEta, axisPhi});
+    registry.add("reconstructed/triggers/hTrigSpectrumReco", "Reconstructed Trigger Spectrum", kTHnSparseF, {axisPtTrig, axisEtaTrig, axisPhi});
 
     // Hadrons
     registry.add("reconstructed/hadrons/hHadronCorrelReco", "Reconstructed Trigger-Hadron Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/hadrons/hHadronMultReco", "Reconstructed Hadron Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/hadrons/hHadronSpectrumReco", "Reconstructed Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/hadrons/hHadronSpectrumReco", "Reconstructed Hadron Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
     registry.add("reconstructed/hadrons/hHadronPtPrimReco", "Reconstructed Primaries Spectrum", kTH1F, {axisPtAssoc});  // Primary hadron spectrum
     registry.add("reconstructed/hadrons/hHadronPtSecReco", "Reconstructed Secondaries Spectrum", kTH1F, {axisPtAssoc}); // Secondary hadron spectrum
 
     // Photons
     registry.add("reconstructed/photons/hPhotonCorrelReco", "Reconstructed Trigger-Photon Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/photons/hPhotonMultReco", "Reconstructed Photon Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/photons/hPhotonSpectrumReco", "Reconstructed Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/photons/hPhotonSpectrumReco", "Reconstructed Photon Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
 
     // Charged Pions
     registry.add("reconstructed/charged/hPionCorrelReco", "Reconstructed Trigger-Pion Correlation", kTHnSparseF, {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi});
     registry.add("reconstructed/charged/hPionMultReco", "Reconstructed Pion Multiplicity", kTH1F, {axisMult});
-    registry.add("reconstructed/charged/hPionSpectrumReco", "Reconstructed Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEta, axisPhi});
+    registry.add("reconstructed/charged/hPionSpectrumReco", "Reconstructed Pion Spectrum", kTHnSparseF, {axisPtAssoc, axisEtaAssoc, axisPhi});
   }
 
   // To check if object has has_mcParticle() (i.e. is MC Track or data track)
@@ -185,7 +204,7 @@ struct HadronPhotonCorrelation {
       }
     }
 
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > etaMaxAssoc) {
       return false;
     }
 
@@ -205,7 +224,11 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (std::abs(particle.eta()) > etaMax) {
+    if (particle.getGenStatusCode() == -1) {
+      return false;
+    }
+
+    if (std::abs(particle.eta()) > etaMaxAssoc) {
       return false;
     }
 
@@ -227,7 +250,7 @@ struct HadronPhotonCorrelation {
       }
     }
 
-    if (std::abs(track.eta()) > etaMax) {
+    if (std::abs(track.eta()) > etaMaxTrig) {
       return false;
     }
 
@@ -251,7 +274,7 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (std::abs(particle.eta()) > etaMax) {
+    if (std::abs(particle.eta()) > etaMaxTrig) {
       return false;
     }
 
@@ -286,16 +309,48 @@ struct HadronPhotonCorrelation {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < 70) {
+    if (track.tpcNClsCrossedRows() < tpcNClsCrossedRows) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableCls) {
       return false;
     }
 
     return true;
   }
+
+  /****************************************************************************************************
+  ************************************************ EVENTS ********************************************
+  ****************************************************************************************************/
+
+  void processEventsMCGen(JetMcCollision const& collision)
+  {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
+    registry.fill(HIST("generated/events/hEventStats"), 0);
+    registry.fill(HIST("generated/events/hEventStats"), 1, collision.weight());
+    registry.fill(HIST("generated/events/hEventStats"), 2, collision.xsectGen());
+  }
+  PROCESS_SWITCH(HadronPhotonCorrelation, processEventsMCGen, "event stats MC gen", true);
+
+  void processEventsMCReco(JetCollisionMCD const& collision,
+                           JetMcCollisions const&)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, false)) {
+      return;
+    }
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
+    registry.fill(HIST("reconstructed/events/hEventStats"), 0);
+    registry.fill(HIST("reconstructed/events/hEventStats"), 1, collision.mcCollision().weight());
+    registry.fill(HIST("reconstructed/events/hEventStats"), 2, collision.mcCollision().xsectGen());
+  }
+  PROCESS_SWITCH(HadronPhotonCorrelation, processEventsMCReco, "event stats MC reco", true);
 
   /****************************************************************************************************
   ************************************************ TRIGGER ********************************************
@@ -329,11 +384,15 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processTrigsMCReco(JetCollision const& collision,
+  void processTrigsMCReco(JetCollisionMCD const& collision,
+                          JetMcCollisions const&,
                           Join<JetTracks, JMcTrackLbs> const& tracks,
                           JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, false)) {
+      return;
+    }
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -346,26 +405,29 @@ struct HadronPhotonCorrelation {
       if (!initTrig(track)) {
         continue;
       }
-      registry.fill(HIST("reconstructed/triggers/hTrigSpectrumReco"), track.pt(), track.eta(), track.phi());
+      registry.fill(HIST("reconstructed/triggers/hTrigSpectrumReco"), track.pt(), track.eta(), track.phi(), collision.mcCollision().weight());
       nTrigs++;
     }
-    registry.fill(HIST("reconstructed/triggers/hTrigMultReco"), nTrigs);
+    registry.fill(HIST("reconstructed/triggers/hTrigMultReco"), nTrigs, collision.mcCollision().weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processTrigsMCReco, "trigger particle mc properties", true);
 
-  void processTrigsMCGen(JetMcCollision const&,
+  void processTrigsMCGen(JetMcCollision const& collision,
                          JetParticles const& particles)
   {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
 
     int nTrigs = 0;
     for (const auto& particle : particles) {
       if (!initTrigParticle(particle)) {
         continue;
       }
-      registry.fill(HIST("generated/triggers/hTrigSpectrumGen"), particle.pt(), particle.eta(), particle.phi());
+      registry.fill(HIST("generated/triggers/hTrigSpectrumGen"), particle.pt(), particle.eta(), particle.phi(), collision.weight());
       nTrigs++;
     }
-    registry.fill(HIST("generated/triggers/hTrigMultGen"), nTrigs);
+    registry.fill(HIST("generated/triggers/hTrigMultGen"), nTrigs, collision.weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processTrigsMCGen, "trigger particle mc properties", true);
 
@@ -402,8 +464,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track.phi() - v0.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), track.eta() - v0.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(v0.phi() - track.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), v0.eta() - track.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/photons/hPhotonMultReco"), nPhotons);
@@ -413,14 +475,17 @@ struct HadronPhotonCorrelation {
   /*********************************************** MC ************************************************/
 
   using MyTracksMC = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-  void processPhotonCorrelationsMCReco(Join<JetCollisions, JCollisionPIs, JMcCollisionLbs>::iterator const& collision_reco,
+  void processPhotonCorrelationsMCReco(Join<JetCollisionsMCD, JCollisionPIs>::iterator const& collision_reco,
                                        JetMcCollisions const&,
                                        JetTracks const& tracks_reco,
                                        JetParticles const&,
                                        MyTracksMC const&,
                                        V0Datas const& v0s)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
+      return;
+    }
+    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -431,7 +496,7 @@ struct HadronPhotonCorrelation {
       if (!initV0<MyTracksMC>(v0)) {
         continue;
       }
-      registry.fill(HIST("reconstructed/photons/hPhotonSpectrumReco"), v0.pt(), v0.eta(), v0.phi());
+      registry.fill(HIST("reconstructed/photons/hPhotonSpectrumReco"), v0.pt(), v0.eta(), v0.phi(), collision_reco.mcCollision().weight());
       nPhotons++;
 
       for (const auto& track : tracks_reco) {
@@ -442,17 +507,21 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track.phi() - v0.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), track.eta() - v0.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(v0.phi() - track.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/photons/hPhotonCorrelReco"), track.pt(), v0.pt(), v0.eta() - track.eta(), dphi, collision_reco.mcCollision().weight());
       }
     }
-    registry.fill(HIST("reconstructed/photons/hPhotonMultReco"), nPhotons);
+    registry.fill(HIST("reconstructed/photons/hPhotonMultReco"), nPhotons, collision_reco.mcCollision().weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPhotonCorrelationsMCReco, "hadron-photon correlation", true);
 
-  void processPhotonCorrelationsMCGen(JetMcCollision const&,
+  void processPhotonCorrelationsMCGen(JetMcCollision const& collision,
                                       JetParticles const& tracks_true)
   {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
     int nPhotons = 0;
     for (const auto& track_assoc : tracks_true) {
       if (!initParticle(track_assoc, false)) {
@@ -474,8 +543,9 @@ struct HadronPhotonCorrelation {
       }
 
       auto pdgMother = pdg->GetParticle(mother.pdgCode());
-      if (!pdgMother)
+      if (!pdgMother) {
         continue;
+      }
       int photonGeneration;
       switch (std::abs(origPhoton.getGenStatusCode())) {
         case 23: // prompt direct photons
@@ -496,7 +566,7 @@ struct HadronPhotonCorrelation {
           break;
       }
 
-      registry.fill(HIST("generated/photons/hPhotonSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), photonGeneration);
+      registry.fill(HIST("generated/photons/hPhotonSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), photonGeneration, collision.weight());
 
       nPhotons++;
 
@@ -507,12 +577,12 @@ struct HadronPhotonCorrelation {
         if (!initParticle(track_assoc)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("generated/photons/hPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi, photonGeneration);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("generated/photons/hPhotonCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, photonGeneration, collision.weight());
       }
     }
 
-    registry.fill(HIST("generated/photons/hPhotonMultGen"), nPhotons);
+    registry.fill(HIST("generated/photons/hPhotonMultGen"), nPhotons, collision.weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPhotonCorrelationsMCGen, "mc hadron-photon correlation", true);
 
@@ -550,8 +620,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/hadrons/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/hadrons/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/hadrons/hHadronMultReco"), nHadrons);
@@ -560,9 +630,13 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processHadronCorrelationsMCGen(JetMcCollision const&,
+  void processHadronCorrelationsMCGen(JetMcCollision const& collision,
                                       JetParticles const& tracks_true)
   {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
     int nHadrons = 0;
     for (const auto& track_assoc : tracks_true) {
       if (!initParticle(track_assoc)) {
@@ -572,11 +646,11 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(track_assoc.pdgCode()) < 100) {
+      if (std::abs(track_assoc.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
-      registry.fill(HIST("generated/hadrons/hHadronSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
+      registry.fill(HIST("generated/hadrons/hHadronSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), collision.weight());
       nHadrons++;
 
       for (const auto& track_trig : tracks_true) {
@@ -586,21 +660,24 @@ struct HadronPhotonCorrelation {
         if (track_trig == track_assoc) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("generated/hadrons/hHadronCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("generated/hadrons/hHadronCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, collision.weight());
       }
     }
-    registry.fill(HIST("generated/hadrons/hHadronMultGen"), nHadrons);
+    registry.fill(HIST("generated/hadrons/hHadronMultGen"), nHadrons, collision.weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processHadronCorrelationsMCGen, "mc hadron-hadron correlation", true);
 
-  void processHadronCorrelationsMCReco(Join<JetCollisions, JMcCollisionLbs>::iterator const& collision_reco,
+  void processHadronCorrelationsMCReco(JetCollisionMCD const& collision_reco,
                                        JetMcCollisions const&,
-                                       Join<JetTracks, JMcTrackLbs> const& tracks_reco,
+                                       JetTracksMCD const& tracks_reco,
                                        JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
+      return;
+    }
+    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -618,16 +695,16 @@ struct HadronPhotonCorrelation {
       if (!pdgParticle || pdgParticle->Charge() == 0.) {
         continue;
       }
-      if (std::abs(particle.pdgCode()) < 100) {
+      if (std::abs(particle.pdgCode()) < pidCodeHadronCut) {
         continue;
       }
 
-      registry.fill(HIST("reconstructed/hadrons/hHadronSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
+      registry.fill(HIST("reconstructed/hadrons/hHadronSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), collision_reco.mcCollision().weight());
 
       if (particle.isPhysicalPrimary()) {
-        registry.fill(HIST("reconstructed/hadrons/hHadronPtPrimReco"), track_assoc.pt());
+        registry.fill(HIST("reconstructed/hadrons/hHadronPtPrimReco"), track_assoc.pt(), collision_reco.mcCollision().weight());
       } else {
-        registry.fill(HIST("reconstructed/hadrons/hHadronPtSecReco"), track_assoc.pt());
+        registry.fill(HIST("reconstructed/hadrons/hHadronPtSecReco"), track_assoc.pt(), collision_reco.mcCollision().weight());
       }
       nHadrons++;
 
@@ -641,12 +718,12 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("reconstructed/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("reconstructed/hadrons/hHadronCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, collision_reco.mcCollision().weight());
       }
     }
-    registry.fill(HIST("reconstructed/hadrons/hHadronMultReco"), nHadrons);
+    registry.fill(HIST("reconstructed/hadrons/hHadronMultReco"), nHadrons, collision_reco.mcCollision().weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processHadronCorrelationsMCReco, "mc hadron-hadron correlation", true);
 
@@ -671,7 +748,7 @@ struct HadronPhotonCorrelation {
       if (!initTrack(track_assoc)) {
         continue;
       }
-      if (std::abs(track_assoc.tpcNSigmaPi()) > 2) {
+      if (std::abs(track_assoc.tpcNSigmaPi()) > tpcNSigmaPi) {
         continue;
       } // remove non-pions
       registry.fill(HIST("reconstructed/charged/hPionSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
@@ -687,8 +764,8 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi);
       }
     }
     registry.fill(HIST("reconstructed/charged/hPionMultReco"), nPions);
@@ -697,9 +774,13 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processPionCorrelationsMCGen(JetMcCollision const&,
+  void processPionCorrelationsMCGen(JetMcCollision const& collision,
                                     JetParticles const& tracks_true)
   {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
     int nPions = 0;
     for (const auto& track_assoc : tracks_true) {
       if (!initParticle(track_assoc)) {
@@ -709,7 +790,7 @@ struct HadronPhotonCorrelation {
         continue;
       }
 
-      registry.fill(HIST("generated/charged/hPionSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
+      registry.fill(HIST("generated/charged/hPionSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), collision.weight());
       nPions++;
 
       for (const auto& track_trig : tracks_true) {
@@ -719,21 +800,24 @@ struct HadronPhotonCorrelation {
         if (track_trig == track_assoc) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
 
-        registry.fill(HIST("generated/charged/hPionCorrelGen"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        registry.fill(HIST("generated/charged/hPionCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, collision.weight());
       }
     }
-    registry.fill(HIST("generated/charged/hPionMultGen"), nPions);
+    registry.fill(HIST("generated/charged/hPionMultGen"), nPions, collision.weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPionCorrelationsMCGen, "mc hadron-pion correlation", true);
 
-  void processPionCorrelationsMCReco(Join<JetCollisions, JMcCollisionLbs>::iterator const& collision_reco,
+  void processPionCorrelationsMCReco(JetCollisionMCD const& collision_reco,
                                      JetMcCollisions const&,
-                                     Join<JetTracks, JMcTrackLbs> const& tracks_reco,
+                                     JetTracksMCD const& tracks_reco,
                                      JetParticles const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits)) {
+    if (!jetderiveddatautilities::selectCollision(collision_reco, eventSelectionBits, false)) {
+      return;
+    }
+    if (collision_reco.mcCollision().subGeneratorId() != subGeneratorIdSelections) {
       return;
     }
 
@@ -750,7 +834,7 @@ struct HadronPhotonCorrelation {
         continue;
       }
 
-      registry.fill(HIST("reconstructed/charged/hPionSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi());
+      registry.fill(HIST("reconstructed/charged/hPionSpectrumReco"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), collision_reco.mcCollision().weight());
       nPions++;
 
       for (const auto& track_trig : tracks_reco) {
@@ -764,11 +848,11 @@ struct HadronPhotonCorrelation {
         if (!initTrig(track_trig)) {
           continue;
         }
-        float dphi = RecoDecay::constrainAngle(track_trig.phi() - track_assoc.phi(), -PIHalf);
-        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_trig.eta() - track_assoc.eta(), dphi);
+        float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
+        registry.fill(HIST("reconstructed/charged/hPionCorrelReco"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, collision_reco.mcCollision().weight());
       }
     }
-    registry.fill(HIST("reconstructed/charged/hPionMultReco"), nPions);
+    registry.fill(HIST("reconstructed/charged/hPionMultReco"), nPions, collision_reco.mcCollision().weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processPionCorrelationsMCReco, "mc hadron-pion correlation", true);
 
@@ -778,9 +862,13 @@ struct HadronPhotonCorrelation {
 
   /*********************************************** MC ************************************************/
 
-  void processNeutralCorrelationsMCGen(JetMcCollision const&,
+  void processNeutralCorrelationsMCGen(JetMcCollision const& collision,
                                        JetParticles const& tracks_true)
   {
+    if (collision.subGeneratorId() != subGeneratorIdSelections) {
+      return;
+    }
+
     int nNeutrals = 0;
     for (const auto& track_assoc : tracks_true) {
       if (!initParticle(track_assoc, false)) {
@@ -793,16 +881,17 @@ struct HadronPhotonCorrelation {
       if (pdgParticle->Charge() != 0.) {
         continue;
       } // remove charged particles
-      if (track_assoc.pdgCode() < 100 || (PDG_t)track_assoc.pdgCode() == kNeutron) {
+      if (track_assoc.pdgCode() < pidCodeHadronCut || (PDG_t)track_assoc.pdgCode() == kNeutron) {
         continue;
       } // remove non-hadrons and neutrons
-      registry.fill(HIST("generated/neutral/hNeutralSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), pidCodes[pdgParticle->GetName()]);
+      registry.fill(HIST("generated/neutral/hNeutralSpectrumGen"), track_assoc.pt(), track_assoc.eta(), track_assoc.phi(), pidCodes[pdgParticle->GetName()], collision.weight());
       nNeutrals++;
 
       // Get correlations between neutral hadrons and their respective decay photons
       auto daughters = track_assoc.daughters_as<aod::JMcParticles>();
       double alpha = -1;
-      if (daughters.size() == 2) {
+      int nPhotonsPionDecay = 2;
+      if (daughters.size() == nPhotonsPionDecay) {
         auto daughter = daughters.begin();
         double pt1 = daughter.pt();
         ++daughter;
@@ -811,18 +900,18 @@ struct HadronPhotonCorrelation {
       }
 
       for (const auto& daughter : daughters) {
-        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma)
+        if ((PDG_t)std::abs(daughter.pdgCode()) != kGamma) {
           continue;
-        if (!initParticle(daughter, false))
+        }
+        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1) {
           continue;
-        if (!daughter.isPhysicalPrimary() && daughter.getGenStatusCode() == -1)
-          continue;
+        }
         double deltaPt = daughter.pt() / track_assoc.pt();
         double deltaEta = daughter.eta() - track_assoc.eta();
         double deltaPhi = RecoDecay::constrainAngle(daughter.phi() - track_assoc.phi(), -PIHalf);
         double deltaR = std::sqrt(deltaEta * deltaEta + deltaPhi * deltaPhi);
 
-        registry.fill(HIST("generated/neutral/hNeutralDecayGen"), track_assoc.pt(), deltaPt, deltaR, alpha, pidCodes[pdgParticle->GetName()]);
+        registry.fill(HIST("generated/neutral/hNeutralDecayGen"), track_assoc.pt(), deltaPt, deltaR, alpha, pidCodes[pdgParticle->GetName()], collision.weight());
       }
 
       // Get correlations between triggers and neutral hadrons
@@ -831,10 +920,10 @@ struct HadronPhotonCorrelation {
           continue;
         }
         float dphi = RecoDecay::constrainAngle(track_assoc.phi() - track_trig.phi(), -PIHalf);
-        registry.fill(HIST("generated/neutral/hNeutralCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, pidCodes[pdgParticle->GetName()]);
+        registry.fill(HIST("generated/neutral/hNeutralCorrelGen"), track_trig.pt(), track_assoc.pt(), track_assoc.eta() - track_trig.eta(), dphi, pidCodes[pdgParticle->GetName()], collision.weight());
       }
     }
-    registry.fill(HIST("generated/neutral/hNeutralMultGen"), nNeutrals);
+    registry.fill(HIST("generated/neutral/hNeutralMultGen"), nNeutrals, collision.weight());
   }
   PROCESS_SWITCH(HadronPhotonCorrelation, processNeutralCorrelationsMCGen, "mc hadron-pion correlation", true);
 };

@@ -17,13 +17,9 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
+#include <Framework/ASoA.h>
+
 #include <vector>
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelectorPID.h"
-
-#include "PWGHF/Core/SelectorCuts.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace o2::aod
 {
@@ -277,11 +273,15 @@ DECLARE_SOA_TABLE(HfMlBplusToD0Pi, "AOD", "HFMLBPLUS", //!
 
 namespace hf_sel_candidate_lb
 {
-DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int); //!
+DECLARE_SOA_COLUMN(IsSelLbToLcPi, isSelLbToLcPi, int);     //! selection flag on Lb candidate
+DECLARE_SOA_COLUMN(MlProbLbToLcPi, mlProbLbToLcPi, float); //! ML score of Lb candidate for signal class
+
 } // namespace hf_sel_candidate_lb
 
 DECLARE_SOA_TABLE(HfSelLbToLcPi, "AOD", "HFSELLB", //!
                   hf_sel_candidate_lb::IsSelLbToLcPi);
+DECLARE_SOA_TABLE(HfMlLbToLcPi, "AOD", "HFMLLB", //!
+                  hf_sel_candidate_lb::MlProbLbToLcPi);
 
 namespace hf_sel_candidate_x
 {
@@ -350,6 +350,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
+DECLARE_SOA_COLUMN(MlProbToXiPi, mlProbToXiPi, std::vector<float>);
 } // namespace hf_sel_toxipi
 
 DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
@@ -365,6 +366,9 @@ DECLARE_SOA_TABLE(HfSelToXiPiKf, "AOD", "HFSELTOXIPIKF",
                   hf_sel_toxipi::ResultSelections, hf_sel_toxipi::PidTpcInfoStored, hf_sel_toxipi::PidTofInfoStored,
                   hf_sel_toxipi::TpcNSigmaPiFromCharmBaryon, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
                   hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
+
+DECLARE_SOA_TABLE(HfMlToXiPiKf, "AOD", "HFMLSELTOXIPIKF",
+                  hf_sel_toxipi::MlProbToXiPi);
 
 namespace hf_sel_toomegapi
 {
@@ -389,7 +393,6 @@ DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 // Machine learning column for omegac0 to omega pi
 DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, std::vector<float>);
-DECLARE_SOA_COLUMN(MlProbOmegacBar, mlProbOmegacBar, std::vector<float>);
 } // namespace hf_sel_toomegapi
 
 DECLARE_SOA_TABLE(HfSelToOmegaPi, "AOD", "HFSELTOOMEPI",

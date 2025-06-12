@@ -77,7 +77,8 @@ class DielectronCut : public TNamed
     kTPConly = 3,
     kTOFif = 4,
     kPIDML = 5,
-    kTPChadrejORTOFreq_woTOFif = 6
+    kTPChadrejORTOFreq_woTOFif = 6,
+    kTPChadrejORTOFreqLowB = 7,
   };
 
   template <typename T = int, typename TPair>
@@ -261,6 +262,9 @@ class DielectronCut : public TNamed
       case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq):
         return PassTPChadrej(track) || PassTOFreq(track);
 
+      case static_cast<int>(PIDSchemes::kTPChadrejORTOFreqLowB):
+        return PassTPChadrej(track) || PassTOFreqLowB(track);
+
       case static_cast<int>(PIDSchemes::kTPConly):
         return PassTPConly(track);
 
@@ -279,6 +283,17 @@ class DielectronCut : public TNamed
       default:
         return true;
     }
+  }
+
+  template <typename T>
+  bool PassTOFreqLowB(T const& track) const
+  {
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_pi_excluded_TPC = (track.tpcInnerParam() > mMinPinForPionRejectionTPC && track.tpcInnerParam() < mMaxPinForPionRejectionTPC) ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
+    bool is_el_included_TOF = (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) && (track.hasTOF() && track.tofChi2() < mMaxChi2TOF);
+    bool is_ka_excluded_ITS = (mMinP_ITSNsigmaKa < track.p() && track.p() < mMaxP_ITSNsigmaKa) ? (track.itsNSigmaKa() < mMinITSNsigmaKa || mMaxITSNsigmaKa < track.itsNSigmaKa()) : true;
+    bool is_pr_excluded_ITS = (mMinP_ITSNsigmaPr < track.p() && track.p() < mMaxP_ITSNsigmaPr) ? (track.itsNSigmaPr() < mMinITSNsigmaPr || mMaxITSNsigmaPr < track.itsNSigmaPr()) : true;
+    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF && is_ka_excluded_ITS && is_pr_excluded_ITS;
   }
 
   template <typename T>
@@ -344,13 +359,13 @@ class DielectronCut : public TNamed
   {
     switch (cut) {
       case DielectronCuts::kTrackPtRange:
-        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
+        return track.pt() > mMinTrackPt && track.pt() < mMaxTrackPt;
 
       case DielectronCuts::kTrackEtaRange:
-        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
+        return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case DielectronCuts::kTrackPhiRange:
-        return track.phi() >= mMinTrackPhi && track.phi() <= mMaxTrackPhi;
+        return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
       case DielectronCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -359,10 +374,10 @@ class DielectronCut : public TNamed
         return track.tpcNClsCrossedRows() >= mMinNCrossedRowsTPC;
 
       case DielectronCuts::kTPCCrossedRowsOverNCls:
-        return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
+        return track.tpcCrossedRowsOverFindableCls() > mMinNCrossedRowsOverFindableClustersTPC;
 
       case DielectronCuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case DielectronCuts::kRelDiffPin:
         return mMinRelDiffPin < (track.tpcInnerParam() - track.p()) / track.p() && (track.tpcInnerParam() - track.p()) / track.p() < mMaxRelDiffPin;
@@ -371,13 +386,13 @@ class DielectronCut : public TNamed
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case DielectronCuts::kDCA3Dsigma:
-        return mMinDca3D <= dca3DinSigma(track) && dca3DinSigma(track) <= mMaxDca3D; // in sigma for single leg
+        return mMinDca3D < dca3DinSigma(track) && dca3DinSigma(track) < mMaxDca3D; // in sigma for single leg
 
       case DielectronCuts::kDCAxy:
-        return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case DielectronCuts::kDCAz:
-        return std::fabs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case DielectronCuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
@@ -445,7 +460,7 @@ class DielectronCut : public TNamed
   void SetPRangeForITSNsigmaPr(float min, float max);
 
   void SetMaxPinMuonTPConly(float max);
-  void SetMaxPinForPionRejectionTPC(float max);
+  void SetPinRangeForPionRejectionTPC(float min, float max);
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
@@ -487,16 +502,16 @@ class DielectronCut : public TNamed
   float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI}; // range in phi
 
   // track quality cuts
-  int mMinNClustersTPC{0};                                           // min number of TPC clusters
-  int mMinNCrossedRowsTPC{0};                                        // min number of crossed rows in TPC
-  float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f}; // max tpc fit chi2 per TPC cluster
-  float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
-  float mMaxFracSharedClustersTPC{999.f};                            // max ratio shared clusters / clusters in TPC
-  float mMinRelDiffPin{-1e10f}, mMaxRelDiffPin{1e10f};               // max relative difference between p at TPC inner wall and p at PV
-  int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
-  float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
-  float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
-  float mMaxPinForPionRejectionTPC{1e10f};                           // max pin for pion rejection in TPC
+  int mMinNClustersTPC{0};                                                  // min number of TPC clusters
+  int mMinNCrossedRowsTPC{0};                                               // min number of crossed rows in TPC
+  float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f};        // max tpc fit chi2 per TPC cluster
+  float mMinNCrossedRowsOverFindableClustersTPC{0.f};                       // min ratio crossed rows / findable clusters
+  float mMaxFracSharedClustersTPC{999.f};                                   // max ratio shared clusters / clusters in TPC
+  float mMinRelDiffPin{-1e10f}, mMaxRelDiffPin{1e10f};                      // max relative difference between p at TPC inner wall and p at PV
+  int mMinNClustersITS{0}, mMaxNClustersITS{7};                             // range in number of ITS clusters
+  float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f};        // max its fit chi2 per ITS cluster
+  float mMaxPinMuonTPConly{0.2f};                                           // max pin cut for muon ID with TPConly
+  float mMinPinForPionRejectionTPC{0.f}, mMaxPinForPionRejectionTPC{1e10f}; // pin range for pion rejection in TPC
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
   float mMinChi2TOF{-1e10f}, mMaxChi2TOF{1e10f}; // max tof chi2 per

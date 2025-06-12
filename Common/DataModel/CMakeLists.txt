@@ -16,6 +16,9 @@ o2physics_add_header_only_library(DataModel
                                           FT0Corrected.h
                                           Multiplicity.h
                                           PIDResponse.h
+                                          PIDResponseITS.h
+                                          PIDResponseTOF.h
+                                          PIDResponseTPC.h
                                           CollisionAssociationTables.h
                                           TrackSelectionTables.h
                                           McCollisionExtra.h
@@ -24,5 +27,4 @@ o2physics_add_header_only_library(DataModel
                                           MftmchMatchingML.h
                                           ZDCInterCalib.h
                                           EseTable.h
-                                          FwdTrackReAlignTables.h
-                                          PropagatedFwdTrackTables.h)
+                                          FwdTrackReAlignTables.h)

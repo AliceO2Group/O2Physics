@@ -381,10 +381,10 @@ struct JetSubstructureOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputSubstructureMatchingMC, "substructure matching output MC", false);
 
-  void processOutputMCD(soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>::iterator const& collision, aod::JetMcCollisions const&,
+  void processOutputMCD(soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos>::iterator const& collision,
                         soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::CMCDJetSSs> const& jets)
   {
-    analyseCharged<false>(collision, jets, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, jetMappingMCD, jetPtMinMCD, collision.mcCollision().weight());
+    analyseCharged<false>(collision, jets, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, jetMappingMCD, jetPtMinMCD, collision.weight());
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
 

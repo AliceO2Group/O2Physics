@@ -322,6 +322,7 @@ struct HfTaskBplusReduced {
           constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bplus::DecayTypeMc::NDecayTypeMc;
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi] = "B^{+} #rightarrow (#overline{D^{0}} #rightarrow K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK] = "B^{+} #rightarrow (#overline{D^{0}} #rightarrow K^{#plus} #pi^{#minus}) #K^{#plus}";
           labels[hf_cand_bplus::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_bplus::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -478,7 +479,9 @@ struct HfTaskBplusReduced {
             registry.fill(HIST("hMlScoreSigBplusRecBg"), ptCandBplus, candidate.mlProbBplusToD0Pi());
           }
         } else if constexpr (withDecayTypeCheck) {
-          if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+          if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK)) { // Partly reconstructed decay channel
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::BplusToD0KToKPiK, invMassBplus, ptCandBplus);
+          } else if (TESTBIT(flagMcMatchRec, hf_cand_bplus::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::PartlyRecoDecay, invMassBplus, ptCandBplus);
           } else {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bplus::DecayTypeMc::OtherDecay, invMassBplus, ptCandBplus);

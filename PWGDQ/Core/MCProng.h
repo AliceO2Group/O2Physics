@@ -23,6 +23,7 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 
 0 - default, accepts all PYTHIA codes
 100 - light unflavoured mesons in the code range 100-199
+101 - all light and strange mesons in the code range 100-399
 200 -        --"--                               200-299
 300 - strange mesons in the code range           300-399
 400 - charmed mesons in the code range           400-499
@@ -43,6 +44,7 @@ A few non-existent PYTHIA codes are used to select more than one PYTHIA code.
 901 - LF mesons             for LMEE             111, 221, 331, 113, 223, 333
 902 - all open charm open beauty mesons+baryons  400-439, 500-549, 4000-4399, 5000-5499
 903 - all hadrons in the code range              100-599, 1000-5999
+904 - chic0, chic1 and chic2                     445, 100441, 200443
 1000 - light unflavoured baryons in the code range 1000-1999
 2000 -        --"--                                2000-2999
 3000 - strange baryons in the code range           3000-3999
@@ -84,7 +86,7 @@ class MCProng
   };
 
   MCProng();
-  MCProng(int n);
+  explicit MCProng(int n);
   MCProng(int n, int m);
   MCProng(int n, std::vector<int> pdgs, std::vector<bool> checkBothCharges, std::vector<bool> excludePDG,
           std::vector<uint64_t> sourceBits, std::vector<uint64_t> excludeSource, std::vector<bool> useANDonSourceBitMap,

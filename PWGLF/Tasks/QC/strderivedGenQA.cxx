@@ -320,6 +320,7 @@ struct strderivedGenQA {
     histos.add("MCV0/Gamma/hdcaDau", "hdcaDau", kTH1F, {axisDCAdau});
     histos.add("MCV0/Gamma/hdcaNegtopv", "hdcaNegtopv", kTH1F, {axisDCAToPV});
     histos.add("MCV0/Gamma/hdcaPostopv", "hdcaPostopv", kTH1F, {axisDCAToPV});
+    histos.add("MCV0/Gamma/hZ", "hZ", kTH1F, {{240, -120.0f, 120.0f}});
 
     histos.add("MCV0/Lambda/h2dpTResolution", "h2dpTResolution", kTH2F, {axisPt, axisPtResolution});
     histos.add("MCV0/Lambda/h2dMass", "h2dMass", kTH2F, {axisPt, axisMassLambda});
@@ -804,6 +805,7 @@ struct strderivedGenQA {
         histos.fill(HIST("MCV0/Gamma/hdcaDau"), v0.dcaV0daughters());
         histos.fill(HIST("MCV0/Gamma/hdcaNegtopv"), v0.dcanegtopv());
         histos.fill(HIST("MCV0/Gamma/hdcaPostopv"), v0.dcapostopv());
+        histos.fill(HIST("MCV0/Gamma/hZ"), v0.z());
       }
       if (v0MC.pdgCode() == 3122) { // IsLambda
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());

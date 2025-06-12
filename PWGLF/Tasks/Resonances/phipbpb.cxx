@@ -216,6 +216,7 @@ struct phipbpb {
 
     histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    histos.add("hSparseV2MixEPAngleCosDeltaPhi", "hSparseV2MixEPAngleCosDeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventCos2DeltaPhi", "hSparseV2SameEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCos2DeltaPhi", "hSparseV2MixedEventCos2DeltaPhi", HistType::kTHnSparseD, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
@@ -461,7 +462,8 @@ struct phipbpb {
   ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
   ConfigurableAxis axisOccup{"axisOccup", {20, -0.5, 40000.0}, "occupancy axis"};
 
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
+  // using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::evsel::NumTracksInTimeRange>;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, o2::aod::epcalibrationtable::PsiFT0C>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   int currentRunNumber = -999;
@@ -711,10 +713,115 @@ struct phipbpb {
     }
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
+
+  BinningTypeVertexContributor binningOnEPAngle{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+  Preslice<aod::Tracks> tracksPerCollision = aod::track::collisionId;
+  void processMEAcc(EventCandidates const& collisions, TrackCandidates const& tracks)
+  {
+    for (auto& [collision1, collision2] : selfCombinations(binningOnEPAngle, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision2.trackOccupancyInTimeRange();
+      if (occupancy1 > cfgCutOccupancy) {
+        continue;
+      }
+      if (occupancy2 > cfgCutOccupancy) {
+        continue;
+      }
+      if (additionalEvsel && !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvsel && !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      if (additionalEvselITS && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+        continue;
+      }
+      auto centrality = collision1.centFT0C();
+      auto psiFT0C = collision1.psiFT0C();
+      auto QFT0C = collision1.qFT0C();
+      o2::aod::ITSResponse itsResponse;
+      auto grouptrack1 = tracks.sliceBy(tracksPerCollision, collision2.globalIndex());
+      auto grouptrack2 = tracks.sliceBy(tracksPerCollision, collision2.globalIndex());
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(grouptrack1, grouptrack2))) {
+        if (t2.index() <= t1.index()) {
+          continue;
+        }
+        if (t1.sign() * t2.sign() > 0) {
+          continue;
+        }
+        if (!selectionTrack(t1)) {
+          continue;
+        }
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(t1)) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(t1)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(t1)) {
+          continue;
+        }
+        if (useGlobalTrack && t1.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(t1) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(t1) < 2.5)) {
+          continue;
+        }
+
+        if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (ispTdepPID && !isTOFOnly && !selectionPIDpTdependent(t2)) {
+          continue;
+        }
+        if (!ispTdepPID && !isTOFOnly && !selectionPID(t2)) {
+          continue;
+        }
+        if (isTOFOnly && !selectionPID2(t2)) {
+          continue;
+        }
+        if (useGlobalTrack && t2.p() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(t2) > -2.5 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(t2) < 2.5)) {
+          continue;
+        }
+
+        if (!selectionPair(t1, t2)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(t1)) {
+          continue;
+        }
+        if (removefaketrak && isFakeKaon(t2)) {
+          continue;
+        }
+
+        KaonPlus = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+        KaonMinus = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa);
+        PhiMesonMother = KaonPlus + KaonMinus;
+        auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
+        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
+          continue;
+        }
+        if (useSP) {
+          histos.fill(HIST("hSparseV2MixEPAngleCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
+        } else {
+          histos.fill(HIST("hSparseV2MixEPAngleCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(phipbpb, processMEAcc, "Process ME Acceptance", true);
   void processMixedEventOpti(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisOccup}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
       // if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
@@ -729,9 +836,9 @@ struct phipbpb {
       if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup)) {
         continue;
       }
-      if (collision1.bcId() == collision2.bcId()) {
-        continue;
-      }
+      // if (collision1.bcId() == collision2.bcId()) {
+      // continue;
+      // }
       o2::aod::ITSResponse itsResponse;
       int occupancy1 = collision1.trackOccupancyInTimeRange();
       int occupancy2 = collision2.trackOccupancyInTimeRange();

@@ -266,9 +266,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_ue_rec_tpc", "antiproton_ue_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_jet_rec_tof", "antiproton_jet_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_ue_rec_tof", "antiproton_ue_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antiproton_jet_tpc_rec_vs_generatedptjet", "antiproton_jet_tpc_rec_vs_generatedptjet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T, antiproton}^{rec} (GeV/#it{c})"}, {1000, 0., 100., "#it{p}_{T, jet}^{gen} (GeV/#it{c})"}});
+      registryMC.add("antiproton_jet_tof_rec_vs_generatedptjet", "antiproton_jet_tof_rec_vs_generatedptjet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T, antiproton}^{rec} (GeV/#it{c})"}, {1000, 0., 100., "#it{p}_{T, jet}^{gen} (GeV/#it{c})"}});
 
       // detector response matrix
       registryMC.add("detectorResponseMatrix", "detectorResponseMatrix", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {2000, -20.0, 20.0, "#it{p}_{T}^{gen} - #it{p}_{T}^{rec} (GeV/#it{c})"}});
+      registryMC.add("generatedVsReconstructedPt", "generatedVsReconstructedPt", HistType::kTH2F, {{1000, 0.0, 100.0, "#it{p}_{T}^{rec} (GeV/#it{c})"}, {1000, 0.0, 100.0, "#it{p}_{T}^{gen} (GeV/#it{c})"}});
     }
 
     // systematic uncertainties
@@ -1175,6 +1178,7 @@ struct AntinucleiInJets {
 
         // fill detector response matrix
         registryMC.fill(HIST("detectorResponseMatrix"), jet.pt(), jetPtGen - jet.pt()); // maybe it should be filled after bkg sub
+        registryMC.fill(HIST("generatedVsReconstructedPt"), jet.pt(), jetPtGen);
 
         // jet pt must be larger than threshold
         auto jetForSub = jet;
@@ -1232,8 +1236,10 @@ struct AntinucleiInJets {
 
           if (passedItsPidProt) {
             registryMC.fill(HIST("antiproton_jet_rec_tpc"), track.pt(), nsigmaTPCPr);
+            registryMC.fill(HIST("antiproton_jet_tpc_rec_vs_generatedptjet"), track.pt(), jetPtGen);
             if (nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && track.hasTOF())
               registryMC.fill(HIST("antiproton_jet_rec_tof"), track.pt(), nsigmaTOFPr);
+            registryMC.fill(HIST("antiproton_jet_tof_rec_vs_generatedptjet"), track.pt(), jetPtGen);
           }
         }
 

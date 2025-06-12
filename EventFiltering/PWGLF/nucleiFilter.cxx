@@ -13,6 +13,8 @@
 #include <cmath>
 #include <string>
 
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -37,6 +39,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "PWGLF/DataModel/pidTOFGeneric.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 
 using namespace o2;
@@ -47,8 +50,6 @@ namespace
 {
 
 static constexpr int nNuclei{3};
-static constexpr int nHyperNuclei{1};
-static constexpr int nITStriggers{2};
 static constexpr int nCutsPID{5};
 static constexpr std::array<float, nNuclei> masses{
   constants::physics::MassDeuteron, constants::physics::MassTriton,
@@ -57,7 +58,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
-static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
+static const std::vector<std::string> columnsNames{o2::aod::filtering::H2::columnLabel(), o2::aod::filtering::He::columnLabel(), o2::aod::filtering::HeV0::columnLabel(), o2::aod::filtering::TritonFemto::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel(), o2::aod::filtering::Tracked3Body::columnLabel(), o2::aod::filtering::ITSmildIonisation::columnLabel(), o2::aod::filtering::ITSextremeIonisation::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -100,28 +101,31 @@ struct nucleiFilter {
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 80, "Minimum number of TPC clusters"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 3, "Max DCAxy"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 10, "Max DCAz"};
+  Configurable<float> cfgCutKstar{"cfgCutKstar", 1.f, "Kstar cut for triton femto trigger"};
+  Configurable<double> cfgCutCosPAheV0{"cfgCutCosPAheV0", 0.99, "CosPA cut for HeV0"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], nNuclei, 6, nucleiNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {bbMomScalingDefault[0], nNuclei, 2, nucleiNames, matterOrNot}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
   Configurable<LabeledArray<double>> cfgMinTPCmom{"cfgMinTPCmom", {minTPCmom[0], nNuclei, 2, nucleiNames, matterOrNot}, "Minimum TPC p/Z for nuclei PID"};
 
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
-  Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
+  Configurable<bool> cfgFixTPCinnerParam{"cfgFixTPCinnerParam", false, "Fix TPC inner param"};
 
   // variable/tool for hypertriton 3body decay
   int mRunNumber;
-  float d_bz;
+  float mBz;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TrackSelection, aod::TracksDCA, aod::EvTimeTOFFT0ForTrack, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>; // FIXME: positio has been changed
   o2::aod::pidtofgeneric::TofPidNewCollision<TrackCandidates::iterator> bachelorTOFPID;
   o2::base::MatLayerCylSet* lut = nullptr;
+  o2::vertexing::DCAFitterN<2> fitter2body;
   o2::vertexing::DCAFitterN<3> fitter3body;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   // configurable for hypertriton 3body decay
   struct : ConfigurableGroup {
-    Configurable<double> d_bz_input{"trgH3L3Body.d_bz", -999, "bz field, -999 is automatic"};
+    Configurable<double> bFieldInput{"trgH3L3Body.mBz", -999, "bz field, -999 is automatic"};
     Configurable<float> minCosPA3body{"trgH3L3Body.minCosPA3body", 0.9995, "minCosPA3body"};
-    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.02, "meen DCA among Daughters"};
+    Configurable<float> dcavtxdau{"trgH3L3Body.dcavtxdau", 0.15, "meen DCA among Daughters"};
     Configurable<float> dcapiontopv{"trgH3L3Body.dcapiontopv", 0.05, "DCA Pion To PV"};
     Configurable<float> tofPIDNSigmaMin{"trgH3L3Body.tofPIDNSigmaMin", -5, "tofPIDNSigmaMin"};
     Configurable<float> tofPIDNSigmaMax{"trgH3L3Body.tofPIDNSigmaMax", 5, "tofPIDNSigmaMax"};
@@ -134,7 +138,7 @@ struct nucleiFilter {
     Configurable<float> maxPionPt{"trgH3L3Body.maxPionPt", 1.2, "maxPionPt"};
     Configurable<float> minDeuteronPt{"trgH3L3Body.minDeuteronPt", 0.6, "minDeuteronPt"};
     Configurable<float> maxDeuteronPt{"trgH3L3Body.maxDeuteronPt", 10, "maxDeuteronPt"};
-    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
+    Configurable<float> minDeuteronPUseTOF{"trgH3L3Body.minDeuteronPUseTOF", 999, "minDeuteronPt Enable TOF PID"};
     Configurable<float> h3LMassLowerlimit{"trgH3L3Body.h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
     Configurable<float> h3LMassUpperlimit{"trgH3L3Body.h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
     Configurable<float> minP3Body{"trgH3L3Body.minP3Body", 1.5, "min P3Body"};
@@ -160,9 +164,9 @@ struct nucleiFilter {
   } trgH3L3Body;
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + nITStriggers + 1, -0.5, nNuclei + nHyperNuclei + nITStriggers + 0.5)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", kNtriggers + 1, -0.5, static_cast<double>(kNtriggers) + 0.5)};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     std::vector<double> ptBinning = {0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4., 5.};
 
@@ -198,6 +202,14 @@ struct nucleiFilter {
     fitter3body.setMaxChi2(1e9);
     fitter3body.setUseAbsDCA(true);
 
+    fitter2body.setPropagateToPCA(true);
+    fitter2body.setMaxR(200.);
+    fitter2body.setMinParamChange(1e-3);
+    fitter2body.setMinRelChi2Change(0.9);
+    fitter2body.setMaxDZIni(1e9);
+    fitter2body.setMaxChi2(1e9);
+    fitter2body.setUseAbsDCA(true);
+
     ccdb->setURL(trgH3L3Body.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -211,12 +223,11 @@ struct nucleiFilter {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (trgH3L3Body.d_bz_input > -990) {
-      d_bz = trgH3L3Body.d_bz_input;
-      fitter3body.setBz(d_bz);
+    if (trgH3L3Body.bFieldInput > -990) {
+      mBz = trgH3L3Body.bFieldInput;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(mBz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (mBz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -229,8 +240,8 @@ struct nucleiFilter {
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      mBz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(trgH3L3Body.grpmagPath, run3grp_timestamp);
       if (!grpmag) {
@@ -238,13 +249,14 @@ struct nucleiFilter {
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
-      // d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      d_bz = o2::base::Propagator::Instance()->getNominalBz();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      // mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      mBz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
     }
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
-    fitter3body.setBz(d_bz);
+    fitter2body.setBz(mBz);
+    fitter3body.setBz(mBz);
 
     if (trgH3L3Body.useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
@@ -313,27 +325,50 @@ struct nucleiFilter {
     bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
+  enum {
+    kH2 = 0,
+    kHe,
+    kHeV0,
+    kTritonFemto,
+    kH3L3Body,
+    kTracked3Body,
+    kITSmildIonisation,
+    kITSextremeIonisation,
+    kNtriggers
+  } TriggerType;
   // void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   using ColWithEvTime = soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
-  void process(ColWithEvTime::iterator const& collision, aod::Decay3Bodys const& decay3bodys, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void process(ColWithEvTime::iterator const& collision, aod::Decay3Bodys const& decay3bodys, TrackCandidates const& tracks, aod::AssignedTracked3Bodys const& tracked3Bodys, aod::V0s const& v0s, aod::BCsWithTimestamps const&)
   {
     // collision process loop
-    bool keepEvent[nNuclei + nHyperNuclei + nITStriggers]{false};
+    std::array<bool, kNtriggers> keepEvent{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
     hProcessedEvents->Fill(0);
     //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+      tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kTritonFemto], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
       return;
     }
+
     //
     const double bgScalings[nNuclei][2]{
       {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},
       {charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / masses[1], charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / masses[1]},
       {charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / masses[2], charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / masses[2]}};
 
-    for (auto& track : tracks) { // start loop over tracks
+    constexpr int nucleusIndex[nNuclei]{kH2, -1, kHe}; /// remap for nuclei triggers
+    std::vector<int> h3indices;
+    std::vector<ROOT::Math::PtEtaPhiMVector> h3vectors;
+
+    auto getNsigma = [&](const auto& track, int iN, int iC) {
+      float fixTPCrigidity{(cfgFixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+      double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+      double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
+      return static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+    };
+
+    for (const auto& track : tracks) { // start loop over tracks
       if (track.itsNCls() >= cfgCutNclusExtremeIonisationITS) {
         double avgClsSize{0.};
         double cosL{std::sqrt(1. / (1. + track.tgl() * track.tgl()))};
@@ -342,8 +377,8 @@ struct nucleiFilter {
         }
         avgClsSize = avgClsSize * cosL / track.itsNCls();
         qaHists.fill(HIST("fExtremeIonisationITS"), track.itsNCls(), avgClsSize, track.p());
-        keepEvent[4] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeMildIonisation;
-        keepEvent[5] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeExtremeIonisation;
+        keepEvent[kITSmildIonisation] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeMildIonisation;
+        keepEvent[kITSextremeIonisation] = track.p() > cfgMomentumCutExtremeIonisation && avgClsSize > cfgCutClsSizeExtremeIonisation;
       }
       if (track.itsNCls() < cfgCutNclusITS ||
           track.tpcNClsFound() < cfgCutNclusTPC) {
@@ -354,10 +389,8 @@ struct nucleiFilter {
         qaHists.fill(HIST("fDeuTOFNsigma"), track.p() * track.sign(), track.tofNSigmaDe());
       }
 
-      if (track.sign() > 0 && (std::abs(track.dcaXY()) > cfgCutDCAxy ||
-                               std::abs(track.dcaZ()) > cfgCutDCAz)) {
-        continue;
-      }
+      bool passesDCAselection{(track.sign() < 0 || (std::abs(track.dcaXY()) < cfgCutDCAxy &&
+                                                    std::abs(track.dcaZ()) < cfgCutDCAz))};
 
       float nSigmaTPC[nNuclei]{
         track.tpcNSigmaDe(), track.tpcNSigmaTr(), track.tpcNSigmaHe()};
@@ -365,7 +398,7 @@ struct nucleiFilter {
         track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
       const int iC{track.sign() < 0};
 
-      float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+      float fixTPCrigidity{(cfgFixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
 
       // fill QA hist: dEdx for all charged tracks
       qaHists.fill(HIST("fTPCsignalAll"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
@@ -377,9 +410,7 @@ struct nucleiFilter {
         }
 
         if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
-          double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
-          nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
+          nSigmaTPC[iN] = getNsigma(track, iN, iC);
         }
         h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
@@ -388,18 +419,98 @@ struct nucleiFilter {
         if (track.p() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
           continue;
         }
-        keepEvent[iN] = true;
-        if (keepEvent[iN]) {
+        if (iN == 1 && passesDCAselection) {
+          h3indices.push_back(track.globalIndex());
+          h3vectors.emplace_back(track.pt(), track.eta(), track.phi(), masses[iN]);
+        }
+        if (nucleusIndex[iN] < 0) {
+          continue;
+        }
+        keepEvent[nucleusIndex[iN]] = passesDCAselection;
+        if (keepEvent[nucleusIndex[iN]]) {
           h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
       }
-
       //
       // fill QA histograms
       //
       qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
     } // end loop over tracks
+
+    for (const auto& track : tracks) {
+      if (track.itsNCls() < cfgCutNclusITS ||
+          track.tpcNClsFound() < cfgCutNclusTPC ||
+          std::abs(track.dcaXY()) > cfgCutDCAxy ||
+          std::abs(track.dcaZ()) > cfgCutDCAz ||
+          std::abs(track.eta()) > cfgCutEta) {
+        continue;
+      }
+      const ROOT::Math::PtEtaPhiMVector trackVector(track.pt(), track.eta(), track.phi(), constants::physics::MassPiMinus);
+      for (size_t iH3{0}; iH3 < h3vectors.size(); ++iH3) {
+        if (h3indices[iH3] == track.globalIndex()) {
+          continue;
+        }
+        const auto& h3vector = h3vectors[iH3];
+        auto pivector = trackVector;
+        auto cm = h3vector + trackVector;
+        const ROOT::Math::Boost boost(cm.BoostToCM());
+        boost(pivector);
+        if (pivector.P() < cfgCutKstar) {
+          keepEvent[kTritonFemto] = true;
+          break;
+        }
+      }
+    }
+
+    for (const auto& v0 : v0s) {
+      const auto& posTrack = v0.posTrack_as<TrackCandidates>();
+      const auto& negTrack = v0.negTrack_as<TrackCandidates>();
+      if ((posTrack.itsNCls() < cfgCutNclusITS || posTrack.tpcNClsFound() < cfgCutNclusTPC) &&
+          (negTrack.itsNCls() < cfgCutNclusITS || negTrack.tpcNClsFound() < cfgCutNclusTPC)) {
+        continue;
+      }
+      float nSigmas[2]{
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(posTrack, 2, 0) : posTrack.tpcNSigmaHe(),
+        cfgBetheBlochParams->get(2, 5u) > 0.f ? getNsigma(negTrack, 2, 1) : negTrack.tpcNSigmaHe()};
+
+      bool isHe3 = nSigmas[0] > cfgCutsPID->get(2, 0u) && nSigmas[0] < cfgCutsPID->get(2, 1u);
+      bool isAntiHe3 = nSigmas[1] > cfgCutsPID->get(2, 0u) && nSigmas[1] < cfgCutsPID->get(2, 1u);
+      if (!isHe3 && !isAntiHe3) {
+        continue;
+      }
+      auto& he3Track = isHe3 ? posTrack : negTrack;
+      auto& piTrack = isHe3 ? negTrack : posTrack;
+
+      int n2bodyVtx = fitter2body.process(getTrackParCov(he3Track), getTrackParCov(piTrack));
+      if (n2bodyVtx == 0) {
+        continue;
+      }
+      auto vtxXYZ = fitter2body.getPCACandidate();
+      vtxXYZ[0] -= collision.posX();
+      vtxXYZ[1] -= collision.posY();
+      vtxXYZ[2] -= collision.posZ();
+
+      std::array<float, 3> momHe3 = {0.};
+      std::array<float, 3> momPi = {0.};
+      std::array<float, 3> momTot = {0.};
+      auto& hePropTrack = fitter2body.getTrack(0);
+      auto& piPropTrack = fitter2body.getTrack(1);
+      hePropTrack.getPxPyPzGlo(momHe3);
+      piPropTrack.getPxPyPzGlo(momPi);
+      for (int i = 0; i < 3; ++i) {
+        momHe3[i] *= 2;
+        momTot[i] = momHe3[i] + momPi[i];
+      }
+      double cosPA = (vtxXYZ[0] * momTot[0] + vtxXYZ[1] * momTot[1] + vtxXYZ[2] * momTot[2]) /
+                     std::sqrt((vtxXYZ[0] * vtxXYZ[0] + vtxXYZ[1] * vtxXYZ[1] + vtxXYZ[2] * vtxXYZ[2]) *
+                               (momTot[0] * momTot[0] + momTot[1] * momTot[1] + momTot[2] * momTot[2]));
+      if (cosPA < cfgCutCosPAheV0) {
+        continue;
+      }
+      keepEvent[kHeV0] = true;
+      break;
+    }
 
     // fH3L3Body trigger
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -479,7 +590,7 @@ struct nucleiFilter {
       }
 
       // Calculate DCA with respect to the collision associated to the SV, not individual tracks
-      gpu::gpustd::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo;
 
       auto track0Par = getTrackPar(track0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
@@ -507,7 +618,7 @@ struct nucleiFilter {
         continue;
       }
 
-      float dcaDaughters = fitter3body.getChi2AtPCACandidate();
+      float dcaDaughters = std::sqrt(fitter3body.getChi2AtPCACandidate());
       if (dcaDaughters > trgH3L3Body.dcavtxdau) {
         continue;
       }
@@ -531,7 +642,7 @@ struct nucleiFilter {
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
           qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
           qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
-          keepEvent[3] = true;
+          keepEvent[kH3L3Body] = true;
         }
       }
       if (invmassAntiH3L >= trgH3L3Body.h3LMassLowerlimit && invmassAntiH3L <= trgH3L3Body.h3LMassUpperlimit) {
@@ -541,17 +652,20 @@ struct nucleiFilter {
           qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), tofNSigmaDeuteron);
           qaHists.fill(HIST("fH3LDcaVsPt"), pt3B, dcaDaughters);
           qaHists.fill(HIST("fH3LCosPAVsPt"), pt3B, vtxCosPA);
-          keepEvent[3] = true;
+          keepEvent[kH3L3Body] = true;
         }
       }
     }
 
-    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei + nITStriggers; ++iDecision) {
+    keepEvent[kTracked3Body] = tracked3Bodys.size() > 0;
+
+    for (int iDecision{0}; iDecision < kNtriggers; ++iDecision) {
       if (keepEvent[iDecision]) {
         hProcessedEvents->Fill(iDecision + 1);
       }
     }
-    tags(keepEvent[0], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5]);
+
+    tags(keepEvent[kH2], keepEvent[kHe], keepEvent[kHeV0], keepEvent[kTritonFemto], keepEvent[kH3L3Body], keepEvent[kTracked3Body], keepEvent[kITSmildIonisation], keepEvent[kITSextremeIonisation]);
   }
 };
 

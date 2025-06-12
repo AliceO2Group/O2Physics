@@ -11,6 +11,8 @@
 
 #include "PWGDQ/Core/MCProng.h"
 
+#include <map>
+#include <vector>
 #include <cmath>
 #include <iostream>
 
@@ -128,9 +130,9 @@ void MCProng::SetSourceBit(int generation, int sourceBit, bool exclude /*=false*
   if (generation < 0 || generation >= fNGenerations) {
     return;
   }
-  fSourceBits[generation] |= (uint64_t(1) << sourceBit);
+  fSourceBits[generation] |= (static_cast<uint64_t>(1) << sourceBit);
   if (exclude) {
-    fExcludeSource[generation] |= (uint64_t(1) << sourceBit);
+    fExcludeSource[generation] |= (static_cast<uint64_t>(1) << sourceBit);
   }
 }
 
@@ -193,6 +195,13 @@ bool MCProng::ComparePDG(int pdg, int prongPDG, bool checkBothCharges, bool excl
         decision = absPDG >= 100 && absPDG <= 199;
       } else {
         decision = (prongPDG > 0 ? pdg >= 100 && pdg <= 199 : pdg >= -199 && pdg <= -100);
+      }
+      break;
+    case 101: // all light flavoured and strange mesons
+      if (checkBothCharges) {
+        decision = absPDG >= 100 && absPDG <= 399;
+      } else {
+        decision = (prongPDG > 0 ? pdg >= 100 && pdg <= 399 : pdg >= -399 && pdg <= -100);
       }
       break;
     case 1000: // light flavoured baryons

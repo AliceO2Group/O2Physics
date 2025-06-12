@@ -26,6 +26,7 @@
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseDplusToPiKPi.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -217,7 +218,7 @@ struct HfCandidateSelectorDplusToPiKPi {
     return true;
   }
 
-  void process(aod::HfCand3Prong const& candidates,
+  void process(aod::HfCand3ProngWPidPiKa const& candidates,
                TracksSel const&)
   {
     // looping over 3-prong candidates
@@ -266,13 +267,13 @@ struct HfCandidateSelectorDplusToPiKPi {
       int pidTrackPos2Pion = -1;
 
       if (usePidTpcAndTof) {
-        pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
-        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
-        pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+        pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
+        pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
       } else {
-        pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
-        pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
+        pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
       }
 
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
@@ -289,7 +290,7 @@ struct HfCandidateSelectorDplusToPiKPi {
 
       if (applyMl) {
         // ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
 

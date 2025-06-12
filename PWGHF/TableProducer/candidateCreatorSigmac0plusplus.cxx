@@ -36,9 +36,11 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -142,7 +144,8 @@ struct HfCandidateCreatorSigmac0plusplus {
     softPiCuts.SetMaxChi2PerClusterITS(softPiChi2Max);
     //  ITS hitmap
     std::set<uint8_t> setSoftPiItsHitMap; // = {};
-    for (int idItsLayer = 0; idItsLayer < 7; idItsLayer++) {
+    constexpr std::size_t NLayersIts = 7;
+    for (std::size_t idItsLayer = 0u; idItsLayer < NLayersIts; idItsLayer++) {
       if (TESTBIT(softPiItsHitMap, idItsLayer)) {
         setSoftPiItsHitMap.insert(static_cast<uint8_t>(idItsLayer));
       }
@@ -178,7 +181,7 @@ struct HfCandidateCreatorSigmac0plusplus {
 
       /// keep only the candidates flagged as possible Λc+ (and charge conj.) decaying into a charged pion, kaon and proton
       /// if not selected, skip it and go to the next one
-      if (!(candLc.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if (!(candLc.hfflag() & BIT(aod::hf_cand_3prong::DecayType::LcToPKPi))) {
         continue;
       }
       /// keep only the candidates Λc+ (and charge conj.) within the desired rapidity
@@ -234,7 +237,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       int chargeLc = candLc.template prong0_as<aod::TracksWDcaExtra>().sign() + candLc.template prong1_as<aod::TracksWDcaExtra>().sign() + candLc.template prong2_as<aod::TracksWDcaExtra>().sign();
       int chargeSoftPi = trackSoftPi.sign();
       int8_t chargeSigmac = chargeLc + chargeSoftPi;
-      if (std::abs(chargeSigmac) != 0 && std::abs(chargeSigmac) != 2) {
+      if (std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargeNull && std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargePlusPlus) {
         /// this shall never happen
         LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
       }
@@ -291,7 +294,7 @@ struct HfCandidateCreatorSigmac0plusplus {
         auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
         initCCDB(bc, runNumber, ccdb, isRun2Ccdb ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2Ccdb);
         auto trackParSoftPi = getTrackPar(trackSoftPi);
-        o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+        std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
         if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
           return;
@@ -387,26 +390,50 @@ struct HfCandidateSigmac0plusplusMc {
   Produces<aod::HfCandScMcRec> rowMCMatchScRec;
   Produces<aod::HfCandScMcGen> rowMCMatchScGen;
 
+  o2::hf_evsel::HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
-  float zPvPosMax{1000.f};
+  PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+
+  HistogramRegistry registry{"registry"};
 
   /// @brief init function
   void init(InitContext& initContext)
   {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
-        for (const auto& option : device.options) {
-          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
-            zPvPosMax = option.defaultValue.get<float>();
-            break;
-          }
-        }
+      // here we assume that the hf-candidate-creator-3prong is in the workflow
+      // configure the ev. sel from that workflow
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
+  }
+
+  // @brief function to check whether a matched Sigmac is particle or antiparticle
+  // @tparam particle the MC particle under study, matched with some Sigmac
+  // @param pdgSigmac the pdgcode to look for (either of Sigmac(2455), or of Sigmac(2520))
+  template <typename PART>
+  int8_t isParticleAntiparticle(PART const& particle, int pdgSigmac)
+  {
+
+    int pdgCode = particle.pdgCode();
+    if (pdgCode == pdgSigmac) {
+      // particle
+      return aod::hf_cand_sigmac::Particle;
+    } else if (pdgCode == -pdgSigmac) {
+      // antiparticle
+      return aod::hf_cand_sigmac::Antiparticle;
+    }
+
+    // the current particle is not a Sigmac of this species
+    return -1;
   }
 
   /// @brief dummy process function, to be run on data
@@ -419,7 +446,9 @@ struct HfCandidateSigmac0plusplusMc {
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
                  LambdacMc const& candsLc /*, const LambdacMcGen&*/,
-                 aod::McCollisions const&)
+                 McCollisionsNoCents const& collInfos,
+                 aod::McCollisions const&,
+                 BCsInfo const&)
   {
 
     // Match reconstructed candidates.
@@ -439,11 +468,12 @@ struct HfCandidateSigmac0plusplusMc {
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      int8_t particleAntiparticle = -1;
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
-      if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
-        rowMCMatchScRec(flag, origin, -1.f, 0);
+      if (std::abs(candLc.flagMcMatchRec()) != hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) { /// (*)
+        rowMCMatchScRec(flag, origin, -1.f, 0, -1);
         continue;
       }
 
@@ -453,25 +483,58 @@ struct HfCandidateSigmac0plusplusMc {
                                        candLc.prong2_as<aod::TracksWMc>(),
                                        candSigmac.prong1_as<aod::TracksWMc>()};
       chargeSigmac = candSigmac.charge();
-      if (chargeSigmac == 0) {
+      if (chargeSigmac == o2::aod::hf_cand_sigmac::ChargeNull) {
         /// candidate Σc0
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
+
+        /// look for Σc0(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaC0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-          flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+          flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
         }
-      } else if (std::abs(chargeSigmac) == 2) {
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaC0);
+
+        /// look for Σc0(2520)
+        if (flag == 0) {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStar0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+          if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+          }
+          if (particleAntiparticle < 0) {
+            auto particle = mcParticles.rawIteratorAt(indexRec);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStar0);
+          }
+        }
+
+      } else if (std::abs(chargeSigmac) == o2::aod::hf_cand_sigmac::ChargePlusPlus) {
         /// candidate Σc++
         /// 3 levels:
         ///   1. Σc0 → Λc+ π-,+
         ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
         ///   3. in case of (ii): resonant channel to pK-π+
+
+        /// look for Σc++(2455)
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
         if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
-          flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+          flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+        }
+        auto particle = mcParticles.rawIteratorAt(indexRec);
+        particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCPlusPlus);
+
+        /// look for Σc++(2520)
+        if (flag == 0) {
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kSigmaCStarPlusPlus, std::array{+kProton, -kKPlus, +kPiPlus, +kPiPlus}, true, &sign, 3);
+          if (indexRec > -1) { /// due to (*) no need to check anything for LambdaC
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+          }
+          if (particleAntiparticle < 0) {
+            auto particle = mcParticles.rawIteratorAt(indexRec);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStarPlusPlus);
+          }
         }
       }
 
@@ -483,9 +546,9 @@ struct HfCandidateSigmac0plusplusMc {
       /// fill the table with results of reconstruction level MC matching
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), particleAntiparticle);
       } else {
-        rowMCMatchScRec(flag, origin, -1.f, 0);
+        rowMCMatchScRec(flag, origin, -1.f, 0, particleAntiparticle);
       }
     } /// end loop over reconstructed Σc0,++ candidates
 
@@ -494,11 +557,19 @@ struct HfCandidateSigmac0plusplusMc {
       flag = 0;
       origin = 0;
       std::vector<int> idxBhadMothers{};
+      int8_t particleAntiparticle = -1;
 
+      /// MC ev. selection done w/o centrality estimator
+      /// In case of need, readapt the code templetizing the function
       auto mcCollision = particle.mcCollision();
-      float zPv = mcCollision.posZ();
-      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
-        rowMCMatchScGen(flag, origin, -1);
+      float centrality{-1.f};
+      uint16_t rejectionMask{0};
+      const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
+      hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
+      if (rejectionMask != 0) {
+        // at least one event selection not satisfied --> reject gen particles from this collision
+        rowMCMatchScGen(flag, origin, -1, -1);
         continue;
       }
 
@@ -507,32 +578,63 @@ struct HfCandidateSigmac0plusplusMc {
       ///   2. Λc+ → pK-π+ direct (i) or Λc+ → resonant channel Λc± → p± K*, Λc± → Δ(1232)±± K∓ or Λc± → Λ(1520) π±  (ii)
       ///   3. in case of (ii): resonant channel to pK-π+
       /// → here we check level 1. first, and then levels 2. and 3. are inherited by the Λc+ → pK-π+ MC matching in candidateCreator3Prong.cxx
+
+      /// look for Σc0,++(2455)
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaC0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
-        // generated Σc0
-        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        // generated Σc0(2455)
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaC0);
             break;
           }
         }
       } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
-        // generated Σc++
-        // for (const auto& daughter : particle.daughters_as<LambdacMcGen>()) {
+        // generated Σc++(2455)
         for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
-          // if (std::abs(daughter.flagMcMatchGen()) == (1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
           if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
             /// Λc+ daughter decaying in pK-π+ found!
-            flag = sign * (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+            flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
+            particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCPlusPlus);
             break;
+          }
+        }
+      }
+
+      /// look for Σc0,++(2520)
+      if (flag == 0) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStar0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
+          // generated Σc0(2520)
+          for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+            // look for Λc+ daughter decaying in pK-π+
+            if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
+              continue;
+            if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+              /// Λc+ daughter decaying in pK-π+ found!
+              flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
+              particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStar0);
+              break;
+            }
+          }
+        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStarPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
+          // generated Σc++(2520)
+          for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+            // look for Λc+ daughter decaying in pK-π+
+            if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
+              continue;
+            if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+              /// Λc+ daughter decaying in pK-π+ found!
+              flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
+              particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStarPlusPlus);
+              break;
+            }
           }
         }
       }
@@ -543,10 +645,16 @@ struct HfCandidateSigmac0plusplusMc {
       }
       /// fill the table with results of generation level MC matching
       if (origin == RecoDecay::OriginType::NonPrompt) {
-        rowMCMatchScGen(flag, origin, idxBhadMothers[0]);
+        rowMCMatchScGen(flag, origin, idxBhadMothers[0], particleAntiparticle);
       } else {
-        rowMCMatchScGen(flag, origin, -1);
+        rowMCMatchScGen(flag, origin, -1, particleAntiparticle);
       }
+
+      // debug
+      // if(origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+      //  LOG(info) << "   --> origin " << static_cast<int>(origin) << ", flag " << static_cast<int>(flag);
+      //}
+
     } /// end loop over mcParticles
   } /// end processMc
   PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);

@@ -37,6 +37,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Tools/ML/MlResponse.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -144,6 +145,11 @@ struct DileptonMC {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    // for RCT
+    Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadron, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -212,6 +218,7 @@ struct DileptonMC {
     Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3.0, "max. TPC n sigma for proton exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_min_pin_pirejTPC{"cfg_min_pin_pirejTPC", 0.f, "min. pin for pion rejection in TPC"};
     Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 1e+10, "max. pin for pion rejection in TPC"};
     Configurable<float> cfg_min_ITSNsigmaKa{"cfg_min_ITSNsigmaKa", -1.0, "min. ITS n sigma for kaon exclusion"};
     Configurable<float> cfg_max_ITSNsigmaKa{"cfg_max_ITSNsigmaKa", 1e+10, "max. ITS n sigma for kaon exclusion"};
@@ -266,8 +273,14 @@ struct DileptonMC {
     Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
+    Configurable<float> cfg_max_relDPt_wrt_matchedMCHMID{"cfg_max_relDPt_wrt_matchedMCHMID", 1e+10f, "max. relative dpt between MFT-MCH-MID and MCH-MID"};
+    Configurable<float> cfg_max_DEta_wrt_matchedMCHMID{"cfg_max_DEta_wrt_matchedMCHMID", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
+    Configurable<float> cfg_max_DPhi_wrt_matchedMCHMID{"cfg_max_DPhi_wrt_matchedMCHMID", 1e+10f, "max. dphi between MFT-MCH-MID and MCH-MID"};
+    Configurable<bool> requireMFTHitMap{"requireMFTHitMap", false, "flag to apply MFT hit map"};
+    Configurable<std::vector<int>> requiredMFTDisks{"requiredMFTDisks", std::vector<int>{0}, "hit map on MFT disks [0,1,2,3,4]. logical-OR of each double-sided disk"};
   } dimuoncuts;
 
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -445,11 +458,11 @@ struct DileptonMC {
     }
 
     // for correlated bkg due to mis-identified hadrons, and true combinatorial bkg
-    fRegistry.add("Pair/corr_bkg_eh/uls/hs", "rec. bkg", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
-    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lspp/");
-    fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lsmm/");
-    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/corr_bkg_hh/");
-    fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/comb_bkg/");
+    fRegistry.add("Pair/corr_bkg_lh/uls/hs", "rec. bkg", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
+    fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lspp/");
+    fRegistry.addClone("Pair/corr_bkg_lh/uls/", "Pair/corr_bkg_lh/lsmm/");
+    fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/corr_bkg_hh/");
+    fRegistry.addClone("Pair/corr_bkg_lh/", "Pair/comb_bkg/");
 
     if (cfgFillUnfolding) {
       // for 2D unfolding
@@ -493,6 +506,7 @@ struct DileptonMC {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+    rctChecker.init(eventcuts.cfgRCTLabel.value, eventcuts.cfgCheckZDC.value, eventcuts.cfgTreatLimitedAcceptanceAsBad.value);
 
     DefineEMEventCut();
     addhistograms();
@@ -510,6 +524,15 @@ struct DileptonMC {
     }
     if (doprocessNorm) {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
+    }
+    if (doprocessBC) {
+      auto hTVXCounter = fRegistry.add<TH1>("BC/hTVXCounter", "TVX counter", kTH1D, {{6, -0.5f, 5.5f}});
+      hTVXCounter->GetXaxis()->SetBinLabel(1, "TVX");
+      hTVXCounter->GetXaxis()->SetBinLabel(2, "TVX && NoTFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(3, "TVX && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(4, "TVX && GoodRCT");
+      hTVXCounter->GetXaxis()->SetBinLabel(5, "TVX && NoTFB && NoITSROFB");
+      hTVXCounter->GetXaxis()->SetBinLabel(6, "TVX && NoTFB && NoITSROFB && GoodRCT");
     }
   }
 
@@ -639,7 +662,7 @@ struct DileptonMC {
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
-    fDielectronCut.SetMaxPinForPionRejectionTPC(dielectroncuts.cfg_max_pin_pirejTPC);
+    fDielectronCut.SetPinRangeForPionRejectionTPC(dielectroncuts.cfg_min_pin_pirejTPC, dielectroncuts.cfg_max_pin_pirejTPC);
     fDielectronCut.SetITSNsigmaKaRange(dielectroncuts.cfg_min_ITSNsigmaKa, dielectroncuts.cfg_max_ITSNsigmaKa);
     fDielectronCut.SetITSNsigmaPrRange(dielectroncuts.cfg_min_ITSNsigmaPr, dielectroncuts.cfg_max_ITSNsigmaPr);
     fDielectronCut.SetPRangeForITSNsigmaKa(dielectroncuts.cfg_min_p_ITSNsigmaKa, dielectroncuts.cfg_max_p_ITSNsigmaKa);
@@ -697,6 +720,8 @@ struct DileptonMC {
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);
     fDimuonCut.SetRabs(dimuoncuts.cfg_min_rabs, dimuoncuts.cfg_max_rabs);
     fDimuonCut.SetMaxPDCARabsDep([&](float rabs) { return (rabs < 26.5 ? 594.f : 324.f); });
+    fDimuonCut.SetMaxdPtdEtadPhiwrtMCHMID(dimuoncuts.cfg_max_relDPt_wrt_matchedMCHMID, dimuoncuts.cfg_max_DEta_wrt_matchedMCHMID, dimuoncuts.cfg_max_DPhi_wrt_matchedMCHMID); // this is relevant for global muons
+    fDimuonCut.SetMFTHitMap(dimuoncuts.requireMFTHitMap, dimuoncuts.requiredMFTDisks);
   }
 
   template <typename TTrack, typename TMCParticles>
@@ -896,7 +921,7 @@ struct DileptonMC {
     o2::math_utils::bringToPMPi(phiCS);
 
     if ((FindCommonMotherFrom2ProngsWithoutPDG(t1mc, t2mc) > 0 || IsHF(t1mc, t2mc, mcparticles) > 0) && is_pair_from_same_mcevent) { // for bkg study
-      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                        // hh or eh correlated bkg
+      if (std::abs(t1mc.pdgCode()) != pdg_lepton || std::abs(t2mc.pdgCode()) != pdg_lepton) {                                        // hh or lh correlated bkg
         if (std::abs(t1mc.pdgCode()) != pdg_lepton && std::abs(t2mc.pdgCode()) != pdg_lepton) {                                      // hh correlated bkg
           if (t1.sign() * t2.sign() < 0) {                                                                                           // ULS
             fRegistry.fill(HIST("Pair/corr_bkg_hh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
@@ -905,13 +930,13 @@ struct DileptonMC {
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
             fRegistry.fill(HIST("Pair/corr_bkg_hh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           }
-        } else {                           // eh correlated bkg
+        } else {                           // lh correlated bkg
           if (t1.sign() * t2.sign() < 0) { // ULS
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-            fRegistry.fill(HIST("Pair/corr_bkg_eh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
+            fRegistry.fill(HIST("Pair/corr_bkg_lh/lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), dphi, deta, std::fabs(cos_thetaCS), std::fabs(phiCS), aco, asym, std::fabs(dphi_e_ee), pair_dca, weight);
           }
         }
       }
@@ -1195,7 +1220,7 @@ struct DileptonMC {
   template <bool isSmeared, typename TCollisions, typename TMCLeptons, typename TPreslice, typename TCut, typename TAllTracks, typename TMCCollisions, typename TMCParticles>
   void runTruePairing(TCollisions const& collisions, TMCLeptons const& posTracks, TMCLeptons const& negTracks, TPreslice const& perCollision, TCut const& cut, TAllTracks const& tracks, TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -1206,6 +1231,9 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
@@ -1214,15 +1242,15 @@ struct DileptonMC {
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
 
-      for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         fillTruePairInfo<isSmeared>(collision, mccollisions, pos, neg, cut, tracks, mcparticles);
       } // end of ULS pair loop
 
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         fillTruePairInfo<isSmeared>(collision, mccollisions, pos1, pos2, cut, tracks, mcparticles);
       } // end of LS++ pair loop
 
-      for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+      for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         fillTruePairInfo<isSmeared>(collision, mccollisions, neg1, neg2, cut, tracks, mcparticles);
       } // end of LS-- pair loop
 
@@ -1232,7 +1260,7 @@ struct DileptonMC {
   template <bool isSmeared, typename TCollisions, typename TMCCollisions, typename TMCLeptons, typename TMCParticles>
   void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCLeptons const& posTracksMC, TMCLeptons const& negTracksMC, TMCParticles const& mcparticles)
   {
-    for (auto& mccollision : mccollisions) {
+    for (const auto& mccollision : mccollisions) {
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
@@ -1250,12 +1278,15 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       fRegistry.fill(HIST("MCEvent/after/hZvtx"), mccollision.posZ());
 
       auto posTracks_per_coll = posTracksMC.sliceByCachedUnsorted(aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC.sliceByCachedUnsorted(aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
 
-      for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
 
         if (!isInAcceptance<isSmeared>(t1) || !isInAcceptance<isSmeared>(t2)) {
@@ -1520,7 +1551,7 @@ struct DileptonMC {
         } // end of HF evaluation
       } // end of true ULS pair loop
 
-      for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) {
+      for (const auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) {
         // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
 
         if (!isInAcceptance<isSmeared>(t1) || !isInAcceptance<isSmeared>(t2)) {
@@ -1658,7 +1689,7 @@ struct DileptonMC {
         }
       } // end of true LS++ pair loop
 
-      for (auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) {
+      for (const auto& [t1, t2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) {
         // LOGF(info, "pdg1 = %d, pdg2 = %d", t1.pdgCode(), t2.pdgCode());
 
         if (!isInAcceptance<isSmeared>(t1) || !isInAcceptance<isSmeared>(t2)) {
@@ -1842,7 +1873,7 @@ struct DileptonMC {
     std::vector<std::pair<int, int>> passed_pairIds;
     passed_pairIds.reserve(posTracks.size() * negTracks.size());
 
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -1850,6 +1881,9 @@ struct DileptonMC {
       }
 
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
 
@@ -1861,7 +1895,7 @@ struct DileptonMC {
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
-      for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         auto mcpos = mcparticles.iteratorAt(pos.emmcparticleId());
         auto mccollision_from_pos = mcpos.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -1877,7 +1911,7 @@ struct DileptonMC {
           passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), neg.globalIndex()));
         }
       }
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         auto mcpos1 = mcparticles.iteratorAt(pos1.emmcparticleId());
         auto mccollision_from_pos1 = mcpos1.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos1.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -1893,7 +1927,7 @@ struct DileptonMC {
           passed_pairIds.emplace_back(std::make_pair(pos1.globalIndex(), pos2.globalIndex()));
         }
       }
-      for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+      for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         auto mcneg1 = mcparticles.iteratorAt(neg1.emmcparticleId());
         auto mccollision_from_neg1 = mcneg1.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg1.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -1911,14 +1945,14 @@ struct DileptonMC {
     } // end of collision loop
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      for (auto& pairId : passed_pairIds) {
+      for (const auto& pairId : passed_pairIds) {
         auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
         auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
         // LOGF(info, "std::get<0>(pairId) = %d, std::get<1>(pairId) = %d, t1.globalIndex() = %d, t2.globalIndex() = %d", std::get<0>(pairId), std::get<1>(pairId), t1.globalIndex(), t2.globalIndex());
 
         float n = 1.f; // include myself.
-        for (auto& ambId1 : t1.ambiguousElectronsIds()) {
-          for (auto& ambId2 : t2.ambiguousElectronsIds()) {
+        for (const auto& ambId1 : t1.ambiguousElectronsIds()) {
+          for (const auto& ambId2 : t2.ambiguousElectronsIds()) {
             if (std::find(passed_pairIds.begin(), passed_pairIds.end(), std::make_pair(ambId1, ambId2)) != passed_pairIds.end()) {
               n += 1.f;
             }
@@ -1927,13 +1961,13 @@ struct DileptonMC {
         map_weight[pairId] = 1.f / n;
       } // end of passed_pairIds loop
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      for (auto& pairId : passed_pairIds) {
+      for (const auto& pairId : passed_pairIds) {
         auto t1 = tracks.rawIteratorAt(std::get<0>(pairId));
         auto t2 = tracks.rawIteratorAt(std::get<1>(pairId));
 
         float n = 1.f; // include myself.
-        for (auto& ambId1 : t1.ambiguousMuonsIds()) {
-          for (auto& ambId2 : t2.ambiguousMuonsIds()) {
+        for (const auto& ambId1 : t1.ambiguousMuonsIds()) {
+          for (const auto& ambId2 : t2.ambiguousMuonsIds()) {
             if (std::find(passed_pairIds.begin(), passed_pairIds.end(), std::make_pair(ambId1, ambId2)) != passed_pairIds.end()) {
               n += 1.f;
             }
@@ -1983,7 +2017,7 @@ struct DileptonMC {
   template <typename TCollisions, typename TTracks1, typename TTracks2, typename TPresilce, typename TCut, typename TAllTracks, typename TMCCollisions, typename TMCParticles>
   void fillUnfolding(TCollisions const& collisions, TTracks1 const& posTracks, TTracks2 const& negTracks, TPresilce const& perCollision, TCut const& cut, TAllTracks const& tracks, TMCCollisions const&, TMCParticles const& mcparticles)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       initCCDB(collision);
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
@@ -1993,11 +2027,14 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
 
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache); // reconstructed pos tracks
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache); // reconstructed neg tracks
 
-      for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+      for (const auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         auto mcpos = mcparticles.iteratorAt(pos.emmcparticleId());
         auto mccollision_from_pos = mcpos.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -2137,7 +2174,7 @@ struct DileptonMC {
         }
       } // end of ULS pairing
 
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+      for (const auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         auto mcpos1 = mcparticles.iteratorAt(pos1.emmcparticleId());
         auto mccollision_from_pos1 = mcpos1.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_pos1.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -2209,7 +2246,7 @@ struct DileptonMC {
         }
       } // end of LS++ pairing
 
-      for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+      for (const auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         auto mcneg1 = mcparticles.iteratorAt(neg1.emmcparticleId());
         auto mccollision_from_neg1 = mcneg1.template emmcevent_as<TMCCollisions>();
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg1.getSubGeneratorId() != cfgEventGeneratorType) {
@@ -2358,7 +2395,7 @@ struct DileptonMC {
   void processGen_VM(FilteredMyCollisions const& collisions, MyMCCollisions const&, aod::EMMCGenVectorMesons const& mcparticles)
   {
     // for oemga, phi efficiency
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -2367,13 +2404,16 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       auto mccollision = collision.template emmcevent_as<MyMCCollisions>();
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
       auto mctracks_per_coll = mcparticles.sliceBy(perMcCollision_vm, mccollision.globalIndex());
 
-      for (auto& mctrack : mctracks_per_coll) {
+      for (const auto& mctrack : mctracks_per_coll) {
 
         if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           continue;
@@ -2407,7 +2447,7 @@ struct DileptonMC {
 
   void processNorm(aod::EMEventNormInfos const& collisions)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
@@ -2466,10 +2506,39 @@ struct DileptonMC {
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
+      if (eventcuts.cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+        continue;
+      }
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
   PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", false);
+
+  void processBC(aod::EMBCs const& bcs)
+  {
+    for (const auto& bc : bcs) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("BC/hTVXCounter"), 0.f);
+
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 1.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 2.f);
+        }
+        if (rctChecker(bc)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 3.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 4.f);
+        }
+        if (bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && rctChecker(bc)) {
+          fRegistry.fill(HIST("BC/hTVXCounter"), 5.f);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(DileptonMC, processBC, "process BC counter", false);
 
   void processDummy(FilteredMyCollisions const&) {}
   PROCESS_SWITCH(DileptonMC, processDummy, "Dummy function", false);

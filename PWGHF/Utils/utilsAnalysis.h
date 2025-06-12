@@ -17,11 +17,14 @@
 #ifndef PWGHF_UTILS_UTILSANALYSIS_H_
 #define PWGHF_UTILS_UTILSANALYSIS_H_
 
-#include <algorithm> // std::upper_bound
-#include <iterator>  // std::distance
-#include <string>    //std::string
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <algorithm> // std::upper_bound
+#include <cstdlib>
+#include <iterator> // std::distance
+#include <string>   //std::string
 
 namespace o2::analysis
 {

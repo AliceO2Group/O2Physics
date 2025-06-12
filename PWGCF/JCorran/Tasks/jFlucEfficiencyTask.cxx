@@ -15,6 +15,7 @@
 /// \since March 2024
 
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -31,6 +32,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct JFlucEfficiencyTask {
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -55,6 +57,8 @@ struct JFlucEfficiencyTask {
   o2::analysis::CollisonCuts colCuts;
   struct : ConfigurableGroup {
     Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Min centrality"};
+    Configurable<float> cfgCentMax{"cfgCentMax", 100.0f, "Max centrality"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
@@ -68,44 +72,61 @@ struct JFlucEfficiencyTask {
     Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
     Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 Ali event cuts"};
     Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INEL>0 event cuts"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } EventCuts;
+  RCTFlagsChecker rctChecker;
+
+  // Track selections
+  struct : ConfigurableGroup {
+    Configurable<float> cfgMinPt{"cfgMinPt", 0.6, "Track minium pt cut"};
+    Configurable<float> cfgMaxPt{"cfgMaxPt", 300.0f, "Maximum transverse momentum"};
+    Configurable<float> cfgEtaMin{"cfgEtaMin", -1.0f, "Minimum pseudorapidity"};
+    Configurable<float> cfgEtaMax{"cfgEtaMax", 1.0f, "Maximum pseudorapidity"};
+    Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+    Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", false, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+    Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};                        // kGoldenChi2 | kDCAxy | kDCAz
+    Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};           // PV Contriuibutor
+    Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", false, "pT-dependent DCAxy cut"};
+    Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+    Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
+    Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
+    Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 999.0, "ITS Chi2/NCl"};
+    Configurable<float> cfgTPCChi2NCl{"cfgTPCChi2NCl", 999.0, "TPC Chi2/NCl"};
+    Configurable<bool> cfgUseTPCRefit{"cfgUseTPCRefit", false, "Require TPC Refit"};
+    Configurable<bool> cfgUseITSRefit{"cfgUseITSRefit", false, "Require ITS Refit"};
+    Configurable<bool> cfgHasITS{"cfgHasITS", false, "Require ITS"};
+    Configurable<bool> cfgHasTPC{"cfgHasTPC", false, "Require TPC"};
+    Configurable<bool> cfgHasTOF{"cfgHasTOF", false, "Require TOF"};
+    // DCA to PV
+    Configurable<float> cfgMaxbDCArToPVcut{"cfgMaxbDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
+    Configurable<float> cfgMaxbDCAzToPVcut{"cfgMaxbDCAzToPVcut", 1.0, "Track DCAz cut to PV Maximum"};
+  } TrackCuts;
 
   // Configurable for track selection
-  Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum transverse momentum"};
-  Configurable<float> cfgPtMax{"cfgPtMax", 300.0f, "Maximum transverse momentum"};
-  Configurable<float> cfgEtaMin{"cfgEtaMin", -1.0f, "Minimum pseudorapidity"};
-  Configurable<float> cfgEtaMax{"cfgEtaMax", 1.0f, "Maximum pseudorapidity"};
-  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Vertex cut"};
-  Configurable<float> cfgCentMin{"cfgCentMin", 0.0f, "Min centrality"};
-  Configurable<float> cfgCentMax{"cfgCentMax", 100.0f, "Max centrality"};
-  Configurable<uint8_t> cfgTrackBitMask{"cfgTrackBitMask", 0, "BitMask for track selection systematics"};
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
 
   // Configurable axes
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "multiplicity / centrality axis"};
 
   // Filter declarations
-  Filter cfCollisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
-  Filter cfTrackFilter = (aod::cftrack::pt >= cfgPtMin) &&
-                         (aod::cftrack::pt <= cfgPtMax) &&
-                         (aod::cftrack::eta >= cfgEtaMin) &&
-                         (aod::cftrack::eta <= cfgEtaMax);
-  // Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVertex);
-  // Filter trackFilter = (aod::track::pt >= cfgPtMin) &&
-  //                      (aod::track::pt <= cfgPtMax) &&
-  //                      (aod::track::eta >= cfgEtaMin) &&
-  //                      (aod::track::eta <= cfgEtaMax);
-  Filter trackSelectionFilter = (trackSelection.node() == 0) || // from tpcSkimsTableCreator
-                                ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                                ((trackSelection.node() == 2) && requirePrimaryTracksInFilter()) ||
-                                ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                                ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                                ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+  Filter cfCollisionFilter = (nabs(aod::collision::posZ) < EventCuts.cfgEvtZvtx);
+  Filter cfTrackFilter = (aod::cftrack::pt >= TrackCuts.cfgMinPt) &&
+                         (aod::cftrack::pt <= TrackCuts.cfgMaxPt) &&
+                         (aod::cftrack::eta >= TrackCuts.cfgEtaMin) &&
+                         (aod::cftrack::eta <= TrackCuts.cfgEtaMax);
+  // Filter collisionFilter = (nabs(aod::collision::posZ) < EventCuts.cfgEvtZvtx);
+  Filter trackFilter = (aod::track::pt >= TrackCuts.cfgMinPt) &&
+                       (aod::track::pt <= TrackCuts.cfgMaxPt) &&
+                       (aod::track::eta >= TrackCuts.cfgEtaMin) &&
+                       (aod::track::eta <= TrackCuts.cfgEtaMax);
 
   Configurable<int> cfgCentBinsForMC{"cfgCentBinsForMC", 1, "Centrality bins for MC, 0: off, 1: on"};
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
   using CollisionRun2Candidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
-  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TrackSelection>;
+  using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>;
   using MCCollisionCandidates = soa::Join<CollisionCandidates, aod::McCollisionLabel>;
   using MCRun2CollisionCandidates = soa::Join<CollisionRun2Candidates, aod::McCollisionLabel>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabel>;
@@ -144,6 +165,8 @@ struct JFlucEfficiencyTask {
     colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
     colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
     colCuts.printCuts();
+
+    rctChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     if (doprocessDerivedMC || doprocessMC || doprocessMCRun2) {
       registry.add("hPtGen", "Generated p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
@@ -218,6 +241,59 @@ struct JFlucEfficiencyTask {
     }
     return std::abs(charge) >= 3.;
   }
+  // Track selection
+  template <typename TrackType>
+  bool trackCut(TrackType const& track)
+  {
+    // basic track cuts
+    if (std::abs(track.pt()) < TrackCuts.cfgMinPt)
+      return false;
+    if (std::abs(track.pt()) > TrackCuts.cfgMaxPt)
+      return false;
+    if (track.eta() < TrackCuts.cfgEtaMin)
+      return false;
+    if (track.eta() > TrackCuts.cfgEtaMax)
+      return false;
+    if (track.itsNCls() < TrackCuts.cfgITScluster)
+      return false;
+    if (track.tpcNClsFound() < TrackCuts.cfgTPCcluster)
+      return false;
+    if (track.tpcCrossedRowsOverFindableCls() < TrackCuts.cfgRatioTPCRowsOverFindableCls)
+      return false;
+    if (track.itsChi2NCl() >= TrackCuts.cfgITSChi2NCl)
+      return false;
+    if (track.tpcChi2NCl() >= TrackCuts.cfgTPCChi2NCl)
+      return false;
+    if (TrackCuts.cfgHasITS && !track.hasITS())
+      return false;
+    if (TrackCuts.cfgHasTPC && !track.hasTPC())
+      return false;
+    if (TrackCuts.cfgHasTOF && !track.hasTOF())
+      return false;
+    if (TrackCuts.cfgUseITSRefit && !track.passedITSRefit())
+      return false;
+    if (TrackCuts.cfgUseTPCRefit && !track.passedTPCRefit())
+      return false;
+    if (TrackCuts.cfgPVContributor && !track.isPVContributor())
+      return false;
+    if (TrackCuts.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+      return false;
+    if (TrackCuts.cfgGlobalTrack && !track.isGlobalTrack())
+      return false;
+    if (TrackCuts.cfgPrimaryTrack && !track.isPrimaryTrack())
+      return false;
+    if (TrackCuts.cfgpTdepDCAxyCut) {
+      // Tuned on the LHC22f anchored MC LHC23d1d on primary pions. 7 Sigmas of the resolution
+      if (std::abs(track.dcaXY()) > (0.004 + (0.013 / track.pt())))
+        return false;
+    } else {
+      if (std::abs(track.dcaXY()) > TrackCuts.cfgMaxbDCArToPVcut)
+        return false;
+    }
+    if (std::abs(track.dcaZ()) > TrackCuts.cfgMaxbDCAzToPVcut)
+      return false;
+    return true;
+  }
 
   void processDerivedMC(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles)
   {
@@ -245,7 +321,7 @@ struct JFlucEfficiencyTask {
   {
     float centrality = cfCollision.multiplicity();
 
-    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+    if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
       return;
     }
     registry.fill(HIST("hZVertexReco"), cfCollision.posZ(), centrality);
@@ -269,7 +345,7 @@ struct JFlucEfficiencyTask {
                  aod::McParticles const& mcParticles)
   {
     registry.fill(HIST("hEventCounterMC"), 0);
-    if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
+    if (!(std::abs(mcCollision.posZ()) < EventCuts.cfgEvtZvtx)) {
       return;
     }
     if (collisions.size() < 1) {
@@ -282,12 +358,15 @@ struct JFlucEfficiencyTask {
     for (const auto& collision : collisions) { // Anayway only 1 collision per mcCollision will be selected
       if (!colCuts.isSelected(collision))      // Default event selection
         return;
+      if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+        return;
+      }
       colCuts.fillQA(collision);
       centrality = collision.centFT0C();
     }
     registry.fill(HIST("hEventCounterMC"), 1);
     registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), centrality);
-    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+    if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
       return;
     }
     for (const auto& particle : mcParticles) {
@@ -296,7 +375,7 @@ struct JFlucEfficiencyTask {
         continue;
       }
       // pT and eta selections
-      if (particle.pt() < cfgPtMin || particle.pt() > cfgPtMax || particle.eta() < cfgEtaMin || particle.eta() > cfgEtaMax) {
+      if (particle.pt() < TrackCuts.cfgMinPt || particle.pt() > TrackCuts.cfgMaxPt || particle.eta() < TrackCuts.cfgEtaMin || particle.eta() > TrackCuts.cfgEtaMax) {
         continue;
       }
       registry.fill(HIST("hPtGen"), particle.pt(), centrality);
@@ -316,12 +395,11 @@ struct JFlucEfficiencyTask {
         if (!track.has_mcParticle()) {
           continue;
         }
-        auto mcPart = track.mcParticle();
-        if (!mcPart.isPhysicalPrimary() || !isChargedParticle(mcPart.pdgCode())) {
+        if (!trackCut(track)) {
           continue;
         }
-        // pT and eta selections
-        if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+        auto mcPart = track.mcParticle();
+        if (!mcPart.isPhysicalPrimary() || !isChargedParticle(mcPart.pdgCode())) {
           continue;
         }
         registry.fill(HIST("hPtRec"), track.pt(), centrality);
@@ -342,7 +420,7 @@ struct JFlucEfficiencyTask {
                      BCsWithRun2Info const&)
   {
     registry.fill(HIST("hEventCounterMC"), 0);
-    if (!(std::abs(mcCollision.posZ()) < cfgCutVertex)) {
+    if (!(std::abs(mcCollision.posZ()) < EventCuts.cfgEvtZvtx)) {
       return;
     }
     if (collisions.size() < 1) {
@@ -360,7 +438,7 @@ struct JFlucEfficiencyTask {
     }
     registry.fill(HIST("hEventCounterMC"), 1);
     registry.fill(HIST("hZVertexMC"), mcCollision.posZ(), centrality);
-    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+    if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
       return;
     }
     for (const auto& particle : mcParticles) {
@@ -369,7 +447,7 @@ struct JFlucEfficiencyTask {
         continue;
       }
       // pT and eta selections
-      if (particle.pt() < cfgPtMin || particle.pt() > cfgPtMax || particle.eta() < cfgEtaMin || particle.eta() > cfgEtaMax) {
+      if (particle.pt() < TrackCuts.cfgMinPt || particle.pt() > TrackCuts.cfgMaxPt || particle.eta() < TrackCuts.cfgEtaMin || particle.eta() > TrackCuts.cfgEtaMax) {
         continue;
       }
       registry.fill(HIST("hPtGen"), particle.pt(), centrality);
@@ -394,7 +472,7 @@ struct JFlucEfficiencyTask {
           continue;
         }
         // pT and eta selections
-        if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+        if (!trackCut(track)) {
           continue;
         }
         registry.fill(HIST("hPtRec"), track.pt(), centrality);
@@ -412,15 +490,18 @@ struct JFlucEfficiencyTask {
   {
     if (!colCuts.isSelected(collision)) // Default event selection
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+      return;
+    }
     colCuts.fillQA(collision);
     auto centrality = collision.centFT0C();
-    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+    if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
       return;
     }
     registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
     for (const auto& track : tracks) {
       // pT and eta selections
-      if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+      if (!trackCut(track)) {
         continue;
       }
       registry.fill(HIST("hPtRec"), track.pt(), centrality);
@@ -439,13 +520,13 @@ struct JFlucEfficiencyTask {
       return;
     colCuts.fillQARun2(collision);
     auto centrality = collision.centRun2V0M();
-    if (centrality < cfgCentMin || centrality > cfgCentMax) {
+    if (centrality < EventCuts.cfgCentMin || centrality > EventCuts.cfgCentMax) {
       return;
     }
     registry.fill(HIST("hZVertexReco"), collision.posZ(), centrality);
     for (const auto& track : tracks) {
       // pT and eta selections
-      if (track.pt() < cfgPtMin || track.pt() > cfgPtMax || track.eta() < cfgEtaMin || track.eta() > cfgEtaMax) {
+      if (!trackCut(track)) {
         continue;
       }
       registry.fill(HIST("hPtRec"), track.pt(), centrality);

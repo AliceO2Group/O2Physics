@@ -56,6 +56,7 @@ DECLARE_SOA_COLUMN(Pzp, pzp, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(TrackTypep, trackTypep, int);
 DECLARE_SOA_COLUMN(EnergyN, energyN, float);
 DECLARE_SOA_COLUMN(Pxn, pxn, float);
 DECLARE_SOA_COLUMN(Pyn, pyn, float);
@@ -63,6 +64,7 @@ DECLARE_SOA_COLUMN(Pzn, pzn, float);
 DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(TrackTypen, trackTypen, int);
 // zn
 DECLARE_SOA_COLUMN(Tzna, tzna, float);
 DECLARE_SOA_COLUMN(Ezna, ezna, float);
@@ -77,8 +79,8 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::RunNumber,
                   dimu::M, dimu::Energy, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
                   dimu::PhiAv, dimu::PhiCh,
-                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
-                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin,
+                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip, dimu::TrackTypep,
+                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin, dimu::TrackTypen,
                   dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
 } // namespace o2::aod
 
@@ -86,28 +88,28 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
 namespace gendimu
 {
 // dimuon
-DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Rap, rap, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
-DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
+DECLARE_SOA_COLUMN(GenM, genM, float);
+DECLARE_SOA_COLUMN(GenPt, genPt, float);
+DECLARE_SOA_COLUMN(GenRap, genRap, float);
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);
+DECLARE_SOA_COLUMN(GenPhiAv, genPhiAv, float);
+DECLARE_SOA_COLUMN(GenPhiCh, genPhiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(Ptp, ptp, float);
-DECLARE_SOA_COLUMN(Etap, etap, float);
-DECLARE_SOA_COLUMN(Phip, phip, float);
-DECLARE_SOA_COLUMN(Ptn, ptn, float);
-DECLARE_SOA_COLUMN(Etan, etan, float);
-DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(GenPtp, genPtp, float);
+DECLARE_SOA_COLUMN(GenEtap, genEtap, float);
+DECLARE_SOA_COLUMN(GenPhip, genPhip, float);
+DECLARE_SOA_COLUMN(GenPtn, genPtn, float);
+DECLARE_SOA_COLUMN(GenEtan, genEtan, float);
+DECLARE_SOA_COLUMN(GenPhin, genPhin, float);
 } // namespace gendimu
 
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(GenDimu, "AOD", "GENDIMU",
-                  gendimu::M, gendimu::Pt, gendimu::Rap, gendimu::Phi,
-                  gendimu::PhiAv, gendimu::PhiCh,
-                  gendimu::Ptp, gendimu::Etap, gendimu::Phip,
-                  gendimu::Ptn, gendimu::Etan, gendimu::Phin);
+                  gendimu::GenM, gendimu::GenPt, gendimu::GenRap, gendimu::GenPhi,
+                  gendimu::GenPhiAv, gendimu::GenPhiCh,
+                  gendimu::GenPtp, gendimu::GenEtap, gendimu::GenPhip,
+                  gendimu::GenPtn, gendimu::GenEtan, gendimu::GenPhin);
 } // namespace o2::aod
 
 // for saving tree with info on reco MC
@@ -125,9 +127,11 @@ DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
 DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
+DECLARE_SOA_COLUMN(TrackTypep, trackTypep, int);
 DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
+DECLARE_SOA_COLUMN(TrackTypen, trackTypen, int);
 // gen info dimuon
 DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenRap, genRap, float);
@@ -147,8 +151,8 @@ DECLARE_SOA_TABLE(RecoDimu, "AOD", "RECODIMU",
                   recodimu::RunNumber,
                   recodimu::M, recodimu::Pt, recodimu::Rap, recodimu::Phi,
                   recodimu::PhiAv, recodimu::PhiCh,
-                  recodimu::Ptp, recodimu::Etap, recodimu::Phip,
-                  recodimu::Ptn, recodimu::Etan, recodimu::Phin,
+                  recodimu::Ptp, recodimu::Etap, recodimu::Phip, recodimu::TrackTypep,
+                  recodimu::Ptn, recodimu::Etan, recodimu::Phin, recodimu::TrackTypen,
                   recodimu::GenPt, recodimu::GenRap, recodimu::GenPhi,
                   recodimu::GenPtp, recodimu::GenEtap, recodimu::GenPhip,
                   recodimu::GenPtn, recodimu::GenEtan, recodimu::GenPhin);
@@ -164,9 +168,17 @@ const float kRAbsMid = 26.5;
 const float kRAbsMax = 89.5;
 const float kPDca1 = 200.;
 const float kPDca2 = 200.;
-const float kEtaMin = -4.0;
-const float kEtaMax = -2.5;
+float kEtaMin = -4.0;
+float kEtaMax = -2.5;
 const float kPtMin = 0.;
+
+const float kMaxAmpV0A = 100.;
+const int kReqMatchMIDTracks = 2;
+const int kReqMatchMFTTracks = 2;
+const int kMaxChi2MFTMatch = 30;
+const float kMaxZDCTime = 2.;
+const float kMaxZDCTimeHisto = 10.;
+const int kMuonPDG = 13;
 
 struct FwdMuonsUPC {
 
@@ -227,6 +239,10 @@ struct FwdMuonsUPC {
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
   Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
+  // my track type
+  // 0 = MCH-MID-MFT
+  // 1 = MCH-MID
+  Configurable<int> myTrackType{"myTrackType", 3, "My track type"};
 
   void init(InitContext&)
   {
@@ -237,9 +253,19 @@ struct FwdMuonsUPC {
       0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.50,
       3.00, 3.50};
 
+    std::vector<double> ptFitBinningHalfWidth = {
+      0.00, 0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04, 0.045, 0.05,
+      0.055, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.10,
+      0.105, 0.11, 0.115, 0.12, 0.125, 0.13, 0.135, 0.14, 0.145, 0.15,
+      0.1625, 0.175, 0.1875, 0.20, 0.225, 0.25, 0.275, 0.30, 0.35, 0.40,
+      0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00,
+      1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.25,
+      2.50, 2.75, 3.00, 3.25, 3.50};
+
     // axis
     const AxisSpec axisPt{nBinsPt, lowPt, highPt, "#it{p}_{T} GeV/#it{c}"};
     const AxisSpec axisPtFit = {ptFitBinning, "#it{p}_{T} (GeV/c)"};
+    const AxisSpec axisPtFit2 = {ptFitBinningHalfWidth, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisMass{nBinsMass, lowMass, highMass, "m_{#mu#mu} GeV/#it{c}^{2}"};
     const AxisSpec axisEta{nBinsEta, lowEta, highEta, "#eta"};
     const AxisSpec axisRapidity{nBinsRapidity, lowRapidity, highRapidity, "Rapidity"};
@@ -256,6 +282,7 @@ struct FwdMuonsUPC {
     registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
     registry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
     registry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
+    registry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
     registry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     registry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
@@ -314,6 +341,7 @@ struct FwdMuonsUPC {
     mcRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
     mcRecoRegistry.add("hPt", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPt});
     mcRecoRegistry.add("hPtFit", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit});
+    mcRecoRegistry.add("hPtFit2", "Transverse momentum of muon pairs;;#counts", kTH1D, {axisPtFit2});
     mcRecoRegistry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     mcRecoRegistry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     mcRecoRegistry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
@@ -442,7 +470,7 @@ struct FwdMuonsUPC {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
     TLorentzVector p;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
@@ -462,18 +490,18 @@ struct FwdMuonsUPC {
   // function to compute phi for azimuth anisotropy
   void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float& phiAverage, float& phiCharge)
   {
-
     TLorentzVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;
+    float halfUnity = 0.5;
     if (sign1 > 0) {
       tDiffCh = p1 - p2;
-      if (gRandom->Rndm() > 0.5)
+      if (gRandom->Rndm() > halfUnity)
         tDiffAv = p1 - p2;
       else
         tDiffAv = p2 - p1;
     } else {
       tDiffCh = p2 - p1;
-      if (gRandom->Rndm() > 0.5)
+      if (gRandom->Rndm() > halfUnity)
         tDiffAv = p2 - p1;
       else
         tDiffAv = p1 - p2;
@@ -498,7 +526,7 @@ struct FwdMuonsUPC {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > 100.)
+        if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
     }
@@ -509,24 +537,39 @@ struct FwdMuonsUPC {
       return;
     }
 
-    // track selection
-    if (!isMuonSelected(*tr1))
-      return;
-    if (!isMuonSelected(*tr2))
-      return;
-
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
       nMIDs++;
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
-    if (nMIDs != 2)
+    if (nMIDs != kReqMatchMIDTracks)
+      return;
+
+    // MFT-MID match selection (if MFT is requested by the trackType)
+    if (myTrackType == 0) {
+      // if MFT is requested check that the tracks is inside the MFT acceptance
+      kEtaMin = -3.6;
+      kEtaMax = -2.5;
+
+      int nMFT = 0;
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
+        nMFT++;
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
+        nMFT++;
+      if (nMFT != kReqMatchMFTTracks)
+        return;
+    }
+
+    // track selection
+    if (!isMuonSelected(*tr1))
+      return;
+    if (!isMuonSelected(*tr2))
       return;
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -554,9 +597,9 @@ struct FwdMuonsUPC {
     computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
     // zdc info
-    if (std::abs(zdc.timeA) < 10)
+    if (std::abs(zdc.timeA) < kMaxZDCTimeHisto)
       registry.fill(HIST("hTimeZNA"), zdc.timeA);
-    if (std::abs(zdc.timeC) < 10)
+    if (std::abs(zdc.timeC) < kMaxZDCTimeHisto)
       registry.fill(HIST("hTimeZNC"), zdc.timeC);
     registry.fill(HIST("hEnergyZN"), zdc.enA, zdc.enC);
 
@@ -565,9 +608,9 @@ struct FwdMuonsUPC {
     bool neutronC = false;
     int znClass = -1;
 
-    if (std::abs(zdc.timeA) < 2)
+    if (std::abs(zdc.timeA) < kMaxZDCTime)
       neutronA = true;
-    if (std::abs(zdc.timeC) < 2)
+    if (std::abs(zdc.timeC) < kMaxZDCTime)
       neutronC = true;
 
     if (std::isinf(zdc.timeC))
@@ -615,6 +658,7 @@ struct FwdMuonsUPC {
     registry.fill(HIST("hMass"), p.M());
     registry.fill(HIST("hPt"), p.Pt());
     registry.fill(HIST("hPtFit"), p.Pt());
+    registry.fill(HIST("hPtFit2"), p.Pt());
     registry.fill(HIST("hEta"), p.Eta());
     registry.fill(HIST("hRapidity"), p.Rapidity());
     registry.fill(HIST("hPhi"), p.Phi());
@@ -628,15 +672,15 @@ struct FwdMuonsUPC {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     } else {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
               phiAverage, phiCharge,
-              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+              p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
               zdc.timeA, zdc.enA, zdc.timeC, zdc.enC, znClass);
     }
   }
@@ -648,12 +692,12 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(McPart1.px(), McPart1.py(), McPart1.pz(), mMu);
     p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -717,7 +761,7 @@ struct FwdMuonsUPC {
   {
 
     // check that all pairs are mu+mu-
-    if (std::abs(McPart1.pdgCode()) != 13 && std::abs(McPart2.pdgCode()) != 13)
+    if (std::abs(McPart1.pdgCode()) != kMuonPDG && std::abs(McPart2.pdgCode()) != kMuonPDG)
       LOGF(debug, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // V0 selection
@@ -725,7 +769,7 @@ struct FwdMuonsUPC {
     const auto& ampsRelBCsV0A = cand.ampRelBCsV0A();
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
-        if (ampsV0A[i] > 100.)
+        if (ampsV0A[i] > kMaxAmpV0A)
           return;
       }
     }
@@ -736,24 +780,39 @@ struct FwdMuonsUPC {
       return;
     }
 
-    // track selection
-    if (!isMuonSelected(*tr1))
-      return;
-    if (!isMuonSelected(*tr2))
-      return;
-
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
       nMIDs++;
     if (tr2.chi2MatchMCHMID() > 0)
       nMIDs++;
-    if (nMIDs != 2)
+    if (nMIDs != kReqMatchMIDTracks)
+      return;
+
+    // MFT-MID match selection (if MFT is requested by the trackType)
+    if (myTrackType == 0) {
+      // if MFT is requested check that the tracks is inside the MFT acceptance
+      kEtaMin = -3.6;
+      kEtaMax = -2.5;
+
+      int nMFT = 0;
+      if (tr1.chi2MatchMCHMFT() > 0 && tr1.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
+        nMFT++;
+      if (tr2.chi2MatchMCHMFT() > 0 && tr2.chi2MatchMCHMFT() < kMaxChi2MFTMatch)
+        nMFT++;
+      if (nMFT != kReqMatchMFTTracks)
+        return;
+    }
+
+    // track selection
+    if (!isMuonSelected(*tr1))
+      return;
+    if (!isMuonSelected(*tr2))
       return;
 
     // form Lorentz vectors
     TLorentzVector p1, p2;
-    auto mMu = particleMass(13);
+    auto mMu = particleMass(kMuonPDG);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
@@ -812,6 +871,7 @@ struct FwdMuonsUPC {
     mcRecoRegistry.fill(HIST("hMass"), p.M());
     mcRecoRegistry.fill(HIST("hPt"), p.Pt());
     mcRecoRegistry.fill(HIST("hPtFit"), p.Pt());
+    mcRecoRegistry.fill(HIST("hPtFit2"), p.Pt());
     mcRecoRegistry.fill(HIST("hEta"), p.Eta());
     mcRecoRegistry.fill(HIST("hRapidity"), p.Rapidity());
     mcRecoRegistry.fill(HIST("hPhi"), p.Phi());
@@ -845,8 +905,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
@@ -855,8 +915,8 @@ struct FwdMuonsUPC {
       dimuReco(cand.runNumber(),
                p.M(), p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
-               p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-               p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
+               p2.Pt(), p2.PseudoRapidity(), p2.Phi(), static_cast<int>(myTrackType),
+               p1.Pt(), p1.PseudoRapidity(), p1.Phi(), static_cast<int>(myTrackType),
                // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi(),
