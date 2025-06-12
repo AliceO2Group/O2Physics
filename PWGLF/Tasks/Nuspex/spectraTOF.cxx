@@ -97,7 +97,7 @@ struct tofSpectra {
   } trkselOptions;
 
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
-  Configurable<bool> enablepuredcahist{"enablepuredcahist", false, "Enables the pure DCA histograms"};
+  Configurable<bool> enablePureDCAHistogram{"enablePureDCAHistogram", false, "Enables the pure DCA histograms"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
@@ -1911,7 +1911,7 @@ struct tofSpectra {
 
     const auto& nsigmaTOFKa = o2::aod::pidutils::tofNSigma<3>(track);
     const bool isKaonTOF = std::abs(nsigmaTOFKa) < trkselOptions.cfgCutNsigma;
-    if (enablepuredcahist) {
+    if (enablePureDCAHistogram) {
       // Filling DCA info with the TPC+TOF PID
       bool isDCAPureSample = (std::sqrt(nsigmaTOFKa * nsigmaTOFKa + nsigmaTPCKa * nsigmaTPCKa) < 2.f);
       if (track.pt() <= 0.4) {
@@ -2052,7 +2052,7 @@ struct tofSpectra {
         hDcaXYWrongCollisionPrm[i]->Fill(track.pt(), track.dcaXY());
       }
     }
-
+    
     if (!passesDCAxyCut(track)) { // Skipping tracks that don't pass the standard cuts
       return;
     }
